@@ -816,6 +816,10 @@ KnobGui::onInternalKnobLinksChanged()
     if (!knob) {
         return;
     }
+
+    // Refresh help tooltip
+    onHelpChanged();
+    
     EffectInstancePtr effect = toEffectInstance(knob->getHolder());
     if (!effect) {
         return;

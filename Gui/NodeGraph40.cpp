@@ -487,7 +487,7 @@ NodeGraph::refreshNodeLinksLater()
 bool
 NodeGraph::isNodeCloneLinked(const NodePtr& node)
 {
-    for (NodeGraphPrivate::LinkedNodesSet::const_iterator it = _imp->linkedNodes.begin(); it!=_imp->linkedNodes.end(); ++it) {
+    for (NodeGraphPrivate::LinkedNodesList::const_iterator it = _imp->linkedNodes.begin(); it!=_imp->linkedNodes.end(); ++it) {
         if (it->isCloneLink && (it->nodes[0].lock() == node || it->nodes[1].lock() == node)) {
             return true;
         }
@@ -499,7 +499,7 @@ void
 NodeGraph::refreshNodeLinksNow()
 {
     // First clear all previous links
-    for (NodeGraphPrivate::LinkedNodesSet::const_iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
+    for (NodeGraphPrivate::LinkedNodesList::const_iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
         delete it->arrow;
     }
     _imp->linkedNodes.clear();
@@ -548,7 +548,20 @@ NodeGraph::refreshNodeLinksNow()
             link.nodes[1] = it2->first;
             link.isCloneLink = it2->second;
 
-            NodeGraphPrivate::LinkedNodesSet::iterator foundExistingLink = _imp->linkedNodes.find(link);
+            NodeGraphPrivate::LinkedNodesList::iterator foundExistingLink = _imp->linkedNodes.end();
+            {
+                for (NodeGraphPrivate::LinkedNodesList::iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
+                    NodePtr a1 = it->nodes[0].lock();
+                    NodePtr a2 = it->nodes[1].lock();
+                    NodePtr b1 = link.nodes[0].lock();
+                    NodePtr b2 = link.nodes[1].lock();
+                    if ((a1 == b1 || a1 == b2) &&
+                        (a2 == b1 || a2 == b2)) {
+                        foundExistingLink = it;
+                        break;
+                    }
+                }
+            }
 
             if (foundExistingLink == _imp->linkedNodes.end()) {
                 // A link did not exist, create it

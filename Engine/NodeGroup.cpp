@@ -1619,6 +1619,9 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
 
         // A group always appear edited
         setSubGraphEditedByUser(true);
+    } else {
+        // A group always appear edited
+        setSubGraphEditedByUser(true);
     }
 }
 

@@ -2196,7 +2196,9 @@ Node::moveToGroup(const NodeCollectionPtr& group)
     }
 
     // Remove this node from the group
-    currentGroup->removeNode(this);
+    // Hold a shared_ptr to the node to ensure one is still valid and the node does not get destroyed
+    NodePtr thisShared = shared_from_this();
+    currentGroup->removeNode(thisShared);
 
 
 
@@ -2210,6 +2212,7 @@ Node::moveToGroup(const NodeCollectionPtr& group)
     {
         QMutexLocker k(&_imp->groupMutex);
         _imp->group = group;
+        group->addNode(thisShared);
     }
 
 

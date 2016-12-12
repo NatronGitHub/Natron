@@ -2351,6 +2351,9 @@ NodeGui::destroyGui()
     //Delete settings panel
     delete _settingsPanel;
     _settingsPanel = 0;
+
+    _graph->refreshNodeLinksLater();
+    
 } // NodeGui::destroyGui
 
 QSize

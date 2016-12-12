@@ -222,32 +222,9 @@ public:
         }
     };
 
-    struct LinkedNodes_Compare
-    {
-        bool operator() (const LinkedNodes& lhs, const LinkedNodes& rhs) const
-        {
-            NodePtr a1 = lhs.nodes[0].lock();
-            NodePtr a2 = lhs.nodes[1].lock();
-            NodePtr b1 = rhs.nodes[0].lock();
-            NodePtr b2 = rhs.nodes[1].lock();
-            if ((a1 == b1 || a1 == b2) &&
-                (a2 == b1 || a2 == b2)) {
-                return false;
-            }
+    typedef std::list<LinkedNodes> LinkedNodesList;
 
-            if (a1.get() < b1.get()) {
-                return true;
-            } else if (a1.get() > b1.get()) {
-                return false;
-            } else {
-                return a2.get() < b2.get();
-            }
-        }
-    };
-
-    typedef std::set<LinkedNodes, LinkedNodes_Compare> LinkedNodesSet;
-
-    LinkedNodesSet linkedNodes;
+    LinkedNodesList linkedNodes;
 
     // used to concatenate refreshing of links
     int refreshNodesLinkRequest;

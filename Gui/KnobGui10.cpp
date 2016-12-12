@@ -589,38 +589,69 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
 
 
 
-
-    std::vector<std::string> expressions;
+    int nDims = knob->getNDimensions();
+    std::vector<std::string> expressions(nDims);
     bool exprAllSame = true;
-    for (int i = 0; i < knob->getNDimensions(); ++i) {
-        expressions.push_back( knob->getExpression(DimIdx(i), view) );
+    bool hasLink = false;
+    for (int i = 0; i < nDims; ++i) {
+
+        expressions[i] =  knob->getExpression(DimIdx(i), view);
+
+        if (expressions[i].empty()) {
+            KnobDimViewKey sharingMaster;
+            if (knob->getSharingMaster(DimIdx(i), view, &sharingMaster)) {
+                KnobIPtr sharingMasterKnob = sharingMaster.knob.lock();
+                if (sharingMasterKnob) {
+                    std::string knobName;
+                    EffectInstancePtr sharingHolderIsEffect = toEffectInstance(sharingMasterKnob->getHolder());
+                    KnobTableItemPtr sharingHolderIsTableItem = toKnobTableItem(sharingMasterKnob->getHolder());
+                    if (sharingHolderIsTableItem) {
+                        sharingHolderIsEffect = sharingHolderIsTableItem->getModel()->getNode()->getEffectInstance();
+                    }
+                    if (sharingHolderIsEffect) {
+                        knobName = sharingHolderIsEffect->getNode()->getFullyQualifiedName();
+                        knobName += ".";
+                    }
+                    knobName += sharingMasterKnob->getName();
+                    expressions[i] = knobName;
+                }
+            }
+        }
+        if (!expressions[i].empty()) {
+            hasLink = true;
+        } else {
+            expressions[i] = "curve(frame,dimension,view)";
+        }
         if ( (i > 0) && (expressions[i] != expressions[0]) ) {
             exprAllSame = false;
         }
+
     }
 
     QString exprTt;
-    if (exprAllSame) {
-        if ( !expressions[0].empty() ) {
-            if (isMarkdown) {
-                exprTt = QString::fromUtf8("ret = **%1**\n\n").arg( QString::fromUtf8( expressions[0].c_str() ) );
-            } else {
-                exprTt = QString::fromUtf8("<br />ret = <b>%1</b>").arg( QString::fromUtf8( expressions[0].c_str() ) );
+    if (hasLink) {
+        if (exprAllSame) {
+            if ( !expressions[0].empty() ) {
+                if (isMarkdown) {
+                    exprTt = QString::fromUtf8("ret = **%1**\n\n").arg( QString::fromUtf8( expressions[0].c_str() ) );
+                } else {
+                    exprTt = QString::fromUtf8("<br />ret = <b>%1</b>").arg( QString::fromUtf8( expressions[0].c_str() ) );
+                }
             }
-        }
-    } else {
-        for (int i = 0; i < knob->getNDimensions(); ++i) {
-            std::string dimName = knob->getDimensionName(DimIdx(i));
-            QString toAppend;
-            if (isMarkdown) {
-                toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
-            } else {
-                toAppend = QString::fromUtf8("<br />%1 = <b>%2</b>").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+        } else {
+            for (int i = 0; i < nDims; ++i) {
+                std::string dimName = knob->getDimensionName(DimIdx(i));
+                QString toAppend;
+                if (isMarkdown) {
+                    toAppend = QString::fromUtf8("%1 = **%2**\n\n").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+                } else {
+                    toAppend = QString::fromUtf8("<br />%1 = <b>%2</b>").arg( QString::fromUtf8( dimName.c_str() ) ).arg( QString::fromUtf8( expressions[i].c_str() ) );
+                }
+                exprTt.append(toAppend);
             }
-            exprTt.append(toAppend);
         }
     }
-
+    
     if ( !exprTt.isEmpty() ) {
         tt.append(exprTt);
     }

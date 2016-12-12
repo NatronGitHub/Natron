@@ -1205,7 +1205,8 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             }
 
             bool ignorePaste = (!knob->isAnimationEnabled() && type == eKnobClipBoardTypeCopyAnim) ||
-                               ( (dimension.isAll() || cbDim.isAll()) && knob->getNDimensions() != fromKnob->getNDimensions() );
+            ( (dimension.isAll() || cbDim.isAll()) && knob->getNDimensions() != fromKnob->getNDimensions() ) ||
+            (type == eKnobClipBoardTypeCopyLink && hasExpression);
             if (!ignorePaste) {
                 if ( cbDim.isAll() && ( fromKnob->getNDimensions() == knob->getNDimensions() ) && !hasExpression ) {
                     QString title = titlebase;
@@ -1283,7 +1284,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
     }
 
 
-    if ( (knob->getNDimensions() > 1) && isAppKnob ) {
+    if ( (knob->getNDimensions() > 1) && isAppKnob && !hasSharedDimension ) {
         {
             QString label;
             if (isAllViewsAction) {
@@ -1332,7 +1333,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             menu->addAction(clearExprAction);
         }
     }
-    if ( !isAllViewsAction && ( (!dimension.isAll()) || (knob->getNDimensions() == 1) ) && isAppKnob ) {
+    if ( !isAllViewsAction && ( (!dimension.isAll()) || (knob->getNDimensions() == 1) ) && isAppKnob && dimensionSharedKnobs.empty() ) {
         {
             QAction* setExprAction = new QAction(dimensionHasExpression ? tr("Edit expression...") : tr("Set expression..."), menu);
             QObject::connect( setExprAction, SIGNAL(triggered()), this, SLOT(onSetExprActionTriggered()) );

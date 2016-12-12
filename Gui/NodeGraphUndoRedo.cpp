@@ -1589,7 +1589,7 @@ GroupFromSelectionCommand::redo()
 
                     input->setPosition(thisInputX, thisInputY);
 
-                    it2->node->connectInput(input, i);
+                    it2->node->swapInput(input, i);
 
                     containerGroup->getNode()->connectInput(originalInput, inputNb);
 
