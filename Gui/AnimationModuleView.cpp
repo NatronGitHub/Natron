@@ -242,9 +242,10 @@ AnimationModuleView::paintGL()
             int scissorY = drawCurveEditor ? h - treeItemBottomWidgetCoordY - 1 : 0;
             int scissorH = drawCurveEditor ? treeItemBottomWidgetCoordY + 1 : h;
             GL_GPU::Scissor(0, scissorY, w, scissorH);
-            
+            glCheckError(GL_GPU);
             
             _imp->drawDopeSheetView();
+            glCheckError(GL_GPU);
         }
         
     }
@@ -263,6 +264,7 @@ AnimationModuleView::paintGL()
             GL_GPU::Scissor(0, 0, w, h - treeItemBottomWidgetCoordY);
         }
         _imp->drawCurveEditorView();
+        glCheckError(GL_GPU);
     }
     GL_GPU::Disable(GL_SCISSOR_TEST);
 
@@ -274,12 +276,14 @@ AnimationModuleView::paintGL()
         
         double treeItemBottomZoomCord = _imp->curveEditorZoomContext.toZoomCoordinates(0, treeItemBottomWidgetCoordY).y();
         if (treeItemBottomWidgetCoordY < h) {
+            glCheckError(GL_GPU);
             GL_GPU::LineWidth(1.5);
             GL_GPU::Color3d(0, 0, 0);
             GL_GPU::Begin(GL_LINES);
             GL_GPU::Vertex2d(bottomLeft.x(), treeItemBottomZoomCord);
             GL_GPU::Vertex2d(topRight.x(), treeItemBottomZoomCord);
             GL_GPU::End();
+            glCheckError(GL_GPU);
         }
     }
     

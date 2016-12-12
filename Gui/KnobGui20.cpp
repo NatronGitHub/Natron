@@ -78,8 +78,16 @@ KnobGui::refreshGuiNow()
         }
     }
     if (!_imp->customInteract) {
+        KnobIPtr knob = getKnob();
+        if (!knob) {
+            return;
+        }
+        int nDims = knob->getNDimensions();
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             it->second.widgets->updateGUI();
+            for (int i = 0; i < nDims; ++i) {
+                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first));
+            }
         }
     } else {
         _imp->customInteract->update();

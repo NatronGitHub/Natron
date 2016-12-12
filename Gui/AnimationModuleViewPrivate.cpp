@@ -396,6 +396,7 @@ AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::Key
     GL_GPU::TexCoord2f(1.0f, 1.0f);
     GL_GPU::Vertex2f( rect.right(), rect.top() );
     GL_GPU::End();
+    glCheckError(GL_GPU);
 
     GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
 

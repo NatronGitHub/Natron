@@ -2005,9 +2005,7 @@ KnobHelper::linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension, DimSpec ot
 
 
 void
-KnobHelper::unlinkInternal(DimIdx dimension,
-                               ViewIdx view,
-                               bool copyState)
+KnobHelper::unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState)
 {
 
     KnobIPtr thisKnob = shared_from_this();
@@ -2017,7 +2015,7 @@ KnobHelper::unlinkInternal(DimIdx dimension,
         QMutexLocker k(&_imp->perDimViewDataMutex);
         PerViewSavedDataMap::iterator foundSavedData = _imp->perDimViewSavedData[dimension].find(view);
 
-        // A knob may not have saved data if others are linked to it
+        // A knob may not have saved data if others are linked to it but it is not linked to anything
         if (foundSavedData != _imp->perDimViewSavedData[dimension].end()) {
             redirectionLink = foundSavedData->second;
             _imp->perDimViewSavedData[dimension].erase(foundSavedData);

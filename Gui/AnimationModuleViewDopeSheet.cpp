@@ -1224,7 +1224,9 @@ void
 AnimationModuleViewPrivate::drawDopeSheetView()
 {
     drawDopeSheetScale();
+    glCheckError(GL_GPU);
     drawDopeSheetRows();
+    glCheckError(GL_GPU);
 
     if (state == eEventStateSelectionRectDopeSheet) {
         drawSelectionRect();

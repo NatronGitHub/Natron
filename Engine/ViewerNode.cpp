@@ -2561,7 +2561,7 @@ ViewerNode::isInfoBarVisible() const
 
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                        ViewSetSpec /*view*/,
+                        ViewSetSpec view,
                         double /*time*/)
 {
     if (!k || reason == eValueChangedReasonRestoreDefault) {
@@ -2680,12 +2680,12 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         } else {
             value = 1;
         }
-        _imp->gammaSliderKnob.lock()->setValue(value);
+        _imp->gammaSliderKnob.lock()->setValue(value, view, DimIdx(0), eValueChangedReasonPluginEdited);
 
     } else if (k == _imp->gammaSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGammaButtonKnob.lock();
         if (reason == eValueChangedReasonUserEdited) {
-            enableKnob->setValue(true);
+            enableKnob->setValue(true, view, DimIdx(0), eValueChangedReasonPluginEdited);
             _imp->lastGammaValue =  _imp->gammaSliderKnob.lock()->getValue();
         }
 

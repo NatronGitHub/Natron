@@ -3271,7 +3271,9 @@ EffectInstance::evaluate(bool isSignificant,
 {
 
     // We changed, abort any ongoing current render to refresh them with a newer version
-    abortAnyEvaluation();
+    if (isSignificant) {
+        abortAnyEvaluation();
+    }
 
     NodePtr node = getNode();
 
