@@ -244,9 +244,6 @@ public:
 
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
 
-    virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args) OVERRIDE FINAL;
-
-
     virtual void createGroupGui(const NodePtr & group, const CreateNodeArgs& args) OVERRIDE FINAL;
 
 private:

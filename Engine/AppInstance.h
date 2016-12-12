@@ -468,10 +468,6 @@ public:
 
     virtual void getViewportsProjection(std::map<std::string,SERIALIZATION_NAMESPACE::ViewportData>* /*projections*/) const {}
 
-
-    virtual void onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args);
-
-
     void saveApplicationWorkspace(SERIALIZATION_NAMESPACE::WorkspaceSerialization* serialization);
 
 

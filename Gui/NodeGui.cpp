@@ -204,6 +204,7 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 
 NodeGui::~NodeGui()
 {
+    qDebug() << "dest";
 }
 
 void
@@ -2294,7 +2295,7 @@ NodeGui::destroyGui()
 
 
     //Remove from animation module
-    guiObj->getAnimationModuleEditor()->removeNode( shared_from_this() );
+    guiObj->getAnimationModuleEditor()->removeNode( thisShared );
 
 
     //Remove nodegraph if group

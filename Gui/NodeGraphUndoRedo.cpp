@@ -63,20 +63,27 @@ MoveMultipleNodesCommand::MoveMultipleNodesCommand(const NodesGuiList & nodes,
                                                    QUndoCommand *parent)
     : QUndoCommand(parent)
     , _firstRedoCalled(false)
-    , _nodes(nodes)
+    , _nodes()
     , _dx(dx)
     , _dy(dy)
 {
     assert( !nodes.empty() );
+    for (NodesGuiList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        _nodes.push_back(*it);
+    }
 }
 
 void
 MoveMultipleNodesCommand::move(double dx,
                                double dy)
 {
-    for (NodesGuiList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        QPointF pos = (*it)->pos();
-        (*it)->setPosition(pos.x() + dx, pos.y() + dy);
+    for (std::list<NodeGuiWPtr>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        NodeGuiPtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        QPointF pos = n->pos();
+        n->setPosition(pos.x() + dx, pos.y() + dy);
     }
 }
 
@@ -668,15 +675,23 @@ ResizeBackdropCommand::~ResizeBackdropCommand()
 void
 ResizeBackdropCommand::undo()
 {
-    _bd->resize(_oldW, _oldH);
-    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
+    NodeGuiPtr bd = _bd.lock();
+    if (!bd) {
+        return;
+    }
+    bd->resize(_oldW, _oldH);
+    setText( tr("Resize %1").arg( QString::fromUtf8( bd->getNode()->getLabel().c_str() ) ) );
 }
 
 void
 ResizeBackdropCommand::redo()
 {
-    _bd->resize(_w, _h);
-    setText( tr("Resize %1").arg( QString::fromUtf8( _bd->getNode()->getLabel().c_str() ) ) );
+    NodeGuiPtr bd = _bd.lock();
+    if (!bd) {
+        return;
+    }
+    bd->resize(_w, _h);
+    setText( tr("Resize %1").arg( QString::fromUtf8( bd->getNode()->getLabel().c_str() ) ) );
 }
 
 bool
@@ -687,7 +702,7 @@ ResizeBackdropCommand::mergeWith(const QUndoCommand *command)
     if (!rCmd) {
         return false;
     }
-    if (rCmd->_bd != _bd) {
+    if (rCmd->_bd.lock() != _bd.lock()) {
         return false;
     }
     _w = rCmd->_w;
@@ -1048,9 +1063,9 @@ RearrangeNodesCommand::RearrangeNodesCommand(const std::list<NodeGuiPtr > & node
         for (std::list<TreeNode>::const_iterator it2 = treeNodes.begin(); it2 != treeNodes.end(); ++it2) {
             NodeToRearrange n;
             n.node = it2->first;
-            QSize size = n.node->getSize();
+            QSize size = it2->first->getSize();
             n.newPos = it2->second - QPointF(size.width() / 2., size.height() / 2.);
-            n.oldPos = n.node->pos();
+            n.oldPos = it2->first->pos();
             _nodes.push_back(n);
         }
     }
@@ -1060,7 +1075,11 @@ void
 RearrangeNodesCommand::undo()
 {
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node->refreshPosition(it->oldPos.x(), it->oldPos.y(), true);
+        NodeGuiPtr node = it->node.lock();
+        if (!node) {
+            continue;
+        }
+        node->refreshPosition(it->oldPos.x(), it->oldPos.y(), true);
     }
     setText( tr("Rearrange nodes") );
 }
@@ -1069,7 +1088,11 @@ void
 RearrangeNodesCommand::redo()
 {
     for (std::list<NodeToRearrange>::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->node->refreshPosition(it->newPos.x(), it->newPos.y(), true);
+        NodeGuiPtr node = it->node.lock();
+        if (!node) {
+            continue;
+        }
+        node->refreshPosition(it->newPos.x(), it->newPos.y(), true);
     }
     setText( tr("Rearrange nodes") );
 }

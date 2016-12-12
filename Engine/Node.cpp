@@ -1381,6 +1381,10 @@ Node::loadInternalNodeGraph(bool initialSetupAllowed,
     // Call the nodegroup derivative that is the only one to know what to do
     isGrp->loadSubGraph(projectSerialization, pyPlugSerialization);
 
+    // Ensure meta-datas are propagated on the subgraph
+    isGrp->forceComputeInputDependentDataOnAllTrees();
+
+
 }
 
 
