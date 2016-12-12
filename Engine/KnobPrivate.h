@@ -196,9 +196,8 @@ struct KnobHelperPrivate
     // When true, autoFoldDimensions can be called to check if dimensions can be folded or not.
     bool autoFoldEnabled;
 
-    // When true, autoExpandDimensions can be called to check if dimensions can be expanded or not.
-    // This is mostly used internally when setting multiple dimensions at once to prevent the dimensions from switching state
-    bool autoExpandEnabled;
+    // When true, autoAdjustFoldExpandDimensions can be called to automatically fold or expand dimensions
+    bool autoAdjustFoldExpandEnabled;
 
     // protects perDimViewData and perDimViewSavedData
     mutable QMutex perDimViewDataMutex;
@@ -307,7 +306,7 @@ struct KnobHelperPrivate
     , dimension(nDims)
     , allDimensionsVisible()
     , autoFoldEnabled(true)
-    , autoExpandEnabled(true)
+    , autoAdjustFoldExpandEnabled(true)
     , perDimViewDataMutex()
     , perDimViewData()
     , perDimViewSavedData()

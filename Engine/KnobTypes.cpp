@@ -1101,11 +1101,14 @@ KnobChoice::getActiveEntryText(ViewGetSpec view)
                 return data->activeEntry;
             }
         }
+
+        // Active entry was not set yet, give something based on the index and set the active entry
         int activeIndex = getValue(DimIdx(0), view_i);
         {
             QMutexLocker k(&data->valueMutex);
             if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
-                return data->menuOptions[activeIndex];
+                data->activeEntry = data->menuOptions[activeIndex];
+                return data->activeEntry;
             }
 
         }

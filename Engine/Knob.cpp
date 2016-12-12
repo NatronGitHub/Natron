@@ -256,6 +256,11 @@ KnobHelper::getAllDimensionsVisible(ViewGetSpec view) const
 void
 KnobHelper::autoAdjustFoldExpandDimensions(ViewIdx view)
 {
+    // This flag is used to temporarily disable the auto expanding or folding of dimensions.
+    // Mainly this is to help the implementation when setting multiple values at once.
+    if (!isAdjustFoldExpandStateAutomaticallyEnabled()) {
+        return;
+    }
     bool currentVisibility = getAllDimensionsVisible(view);
     bool allEqual = areDimensionsEqual(view);
     if (allEqual) {
@@ -270,33 +275,13 @@ KnobHelper::autoAdjustFoldExpandDimensions(ViewIdx view)
             }
         }
     } else {
+        // One of the dimension differ: make them all visible
         if (!currentVisibility) {
             setAllDimensionsVisible(view, true);
         }
     }
 }
 
-
-void
-KnobHelper::autoExpandDimensions(ViewIdx view)
-{
-    if (!isAutoExpandDimensionsEnabled()) {
-        return;
-    }
-
-    bool curVisible = getAllDimensionsVisible(view);
-
-    // If already expanded, don't do anything
-    if (curVisible) {
-        return;
-    }
-
-    bool allEquals = areDimensionsEqual(view);
-    if (!allEquals) {
-        setAllDimensionsVisible(view, true);
-    }
-
-}
 
 void
 KnobHelper::autoFoldDimensions(ViewIdx view)
@@ -339,20 +324,21 @@ KnobHelper::isAutoFoldDimensionsEnabled() const
     return _imp->autoFoldEnabled;
 }
 
+
 void
-KnobHelper::setCanAutoExpandDimensions(bool enabled)
+KnobHelper::setAdjustFoldExpandStateAutomatically(bool enabled)
 {
     {
         QMutexLocker k(&_imp->stateMutex);
-        _imp->autoExpandEnabled = enabled;
+        _imp->autoAdjustFoldExpandEnabled = enabled;
     }
 }
 
 bool
-KnobHelper::isAutoExpandDimensionsEnabled() const
+KnobHelper::isAdjustFoldExpandStateAutomaticallyEnabled() const
 {
     QMutexLocker k(&_imp->stateMutex);
-    return _imp->autoExpandEnabled;
+    return _imp->autoAdjustFoldExpandEnabled;
 }
 
 
@@ -908,8 +894,6 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
         return false;
     }
 
-    // Should use onTimeChanged() instead!
-    assert(reason != eValueChangedReasonTimeChanged);
 
 
     KnobIPtr thisShared = shared_from_this();
@@ -920,6 +904,14 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     }
 
     evaluatedKnobs->insert(thisShared);
+
+    if (reason == eValueChangedReasonTimeChanged) {
+        // Only notify gui must be refreshed when reason is time changed
+        if (!isValueChangesBlocked()) {
+            _signalSlotHandler->s_mustRefreshKnobGui(view, dimension, reason);
+        }
+        return true;
+    }
 
     AppInstancePtr app = holder->getApp();
 
@@ -970,7 +962,10 @@ KnobHelper::refreshListenersAfterValueChangeInternal(double time, ViewIdx view, 
 
     // Refresh all knobs sharing the value. If there are already in the evaluatedKnobs set nothing happens
     for (KnobDimViewKeySet::const_iterator it = data->sharedKnobs.begin(); it != data->sharedKnobs.end(); ++it) {
-        evaluateValueChangeInternal(it->dimension, time, view, reason, evaluatedKnobs);
+        KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
+        if (sharedKnob) {
+            sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs);
+        }
     }
 
 }
@@ -978,7 +973,6 @@ KnobHelper::refreshListenersAfterValueChangeInternal(double time, ViewIdx view, 
 void
 KnobHelper::refreshListenersAfterValueChange(double time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs)
 {
-    assert(QThread::currentThread() == qApp->thread());
 
     if (view.isAll()) {
         std::list<ViewIdx> views = getViewsList();
@@ -2025,11 +2019,11 @@ KnobHelper::unlinkInternal(DimIdx dimension,
 
         // A knob may not have saved data if others are linked to it
         if (foundSavedData != _imp->perDimViewSavedData[dimension].end()) {
-            _imp->perDimViewSavedData[dimension].erase(foundSavedData);
             redirectionLink = foundSavedData->second;
+            _imp->perDimViewSavedData[dimension].erase(foundSavedData);
 
             // If this knob is linked to others, its saved value should not be linked to anyone else.
-            assert(!redirectionLink.savedData || redirectionLink.savedData->sharedKnobs.size() == 1);
+            assert(!redirectionLink.savedData || redirectionLink.savedData->sharedKnobs.empty());
         }
 
         PerViewKnobDataMap::iterator currentData = _imp->perDimViewData[dimension].find(view);

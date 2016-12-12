@@ -409,13 +409,9 @@ public:
     /**
      * @brief When enabled, the knob can be automatically expanded folded dimensions
      **/
-    virtual void setCanAutoExpandDimensions(bool enabled) = 0;
-    virtual bool isAutoExpandDimensionsEnabled() const = 0;
+    virtual void setAdjustFoldExpandStateAutomatically(bool enabled) = 0;
+    virtual bool isAdjustFoldExpandStateAutomaticallyEnabled() const = 0;
 
-    /**
-     * @brief Check the knob state across all dimensions and if they have different values,  they are made all visible.
-     **/
-    virtual void autoExpandDimensions(ViewIdx view) = 0;
 
     /**
      * @brief Check the knob state across all dimensions and if they have the same values
@@ -1538,8 +1534,8 @@ public:
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
     virtual void setCanAutoFoldDimensions(bool enabled) OVERRIDE FINAL ;
     virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void setCanAutoExpandDimensions(bool enabled) OVERRIDE FINAL;
-    virtual bool isAutoExpandDimensionsEnabled() const OVERRIDE FINAL;
+    virtual void setAdjustFoldExpandStateAutomatically(bool enabled) OVERRIDE FINAL;
+    virtual bool isAdjustFoldExpandStateAutomaticallyEnabled() const OVERRIDE FINAL;
 
 private:
     void setAllDimensionsVisibleInternal(ViewIdx view, bool visible);
@@ -1550,11 +1546,6 @@ protected:
 
 public:
 
-
-    /**
-     * @brief Called after a call to setValue/setValueAtTime to check if we need to expand all dimensions or not
-     **/
-    virtual void autoExpandDimensions(ViewIdx view) OVERRIDE FINAL;
     
     virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
 
@@ -1712,14 +1703,11 @@ public:
     virtual bool linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec thisView = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void unlink(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
 
-private:
+protected:
     
     void unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState);
 
     bool linkToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView) WARN_UNUSED_RETURN;
-
-
-protected:
 
     template <typename T>
     T pyObjectToType(PyObject* o, ViewIdx view) const;

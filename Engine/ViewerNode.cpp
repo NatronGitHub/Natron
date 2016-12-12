@@ -4190,7 +4190,7 @@ ViewerNode::setRefreshButtonDown(bool down)
 {
     KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
     beginChanges();
-    knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
+    knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonTimeChanged);
 
     // Ignore evaluation
     endChanges(true);

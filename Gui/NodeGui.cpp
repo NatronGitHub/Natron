@@ -4080,34 +4080,34 @@ NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
 void
 NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links)
 {
-    if (links.empty()) {
-        if (_cloneIndicator) {
-            _cloneIndicator->setActive(false);
-        }
-        if (_expressionIndicator) {
-            _expressionIndicator->setActive(false);
-        }
-    }
 
-    bool isClone = false;
+    enum LinkType
+    {
+        eLinkTypeNone,
+        eLinkTypeSimple,
+        eLinkTypeClone
+    };
+    LinkType type = eLinkTypeNone;
     for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
         if (it->second) {
-            isClone = true;
+            type = eLinkTypeClone;
             break;
+        } else if (it->first != getNode()) {
+            type = eLinkTypeSimple;
         }
     }
     if (_cloneIndicator) {
-        _cloneIndicator->setActive(isClone);
+        _cloneIndicator->setActive(type == eLinkTypeClone);
     }
     if (_expressionIndicator) {
-        _expressionIndicator->setActive(!isClone);
+        _expressionIndicator->setActive(type == eLinkTypeSimple);
     }
 
-    if (isClone) {
+    if (type == eLinkTypeClone) {
         NodePtr cloneNode = links.front().first;
         QString tooltip = tr("This node is a clone of %1").arg(QString::fromUtf8(cloneNode->getFullyQualifiedName().c_str()));
         _cloneIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tooltip, NATRON_NAMESPACE::WhiteSpaceNormal) );
-    } else {
+    } else if (type == eLinkTypeSimple) {
         _expressionIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or multiple link(s) or expression(s) involving values of parameters of other nodes in the project."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     }
 }

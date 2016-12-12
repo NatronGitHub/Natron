@@ -192,11 +192,13 @@ Knob<T>::setValue(const T & v,
         return setValueAtTime(time, v, view, dimension, reason, newKey);
     }
 
+    // Check if we need to use the undo/redo stack
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
     if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
         undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(view, dimension, time, reason, false /*setKeyframe*/);
     }
 
+    // Actually push the value to the data for each dimension/view requested
     {
         std::list<ViewIdx> views = getViewsList();
         int nDims = getNDimensions();
@@ -215,14 +217,24 @@ Knob<T>::setValue(const T & v,
                     continue;
                 }
 
+                // When setting a value on a dimension other than 0,
+                // temporarily unlink the dimension to make sure the dimension point to a different data
+                // Make sure we don't send any signal to the gui so the dimensions doesn't become visible/unvisible
+                if ((dimension.isAll() || dimension > 0) && !getAllDimensionsVisible(*it)) {
+                    _signalSlotHandler->blockSignals(true);
+                    unlinkInternal(DimIdx(i), *it, true);
+                    _signalSlotHandler->blockSignals(false);
+                }
+
                 ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), *it).get());
                 if (data) {
                     hasChanged |= data->setValueAndCheckIfChanged(v);
                 }
+                // Auto-expand the parameter dimensions if needed
                 if (hasChanged) {
                     // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (i == nDims - 1 && nDims > 1) {
-                        autoExpandDimensions(*it);
+                    if (((dimension.isAll() && i == nDims - 1) || (!dimension.isAll() && i == dimension)) && nDims > 1) {
+                        autoAdjustFoldExpandDimensions(*it);
                     }
                 }
 
@@ -273,26 +285,33 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
     
     KnobHolderPtr holder = getHolder();
 
+    // Group value changes under the same undo/redo command if possible
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
 
     KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
     if (values.size() > 1) {
+
+        // Make sure we evaluate once
         beginChanges();
 
-        // Prevent multiple calls to knobChanged
+        // Make sure we call knobChanged handler and refresh the GUI once
         blockValueChanges();
-        setCanAutoExpandDimensions(false);
+
+        // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+        setAdjustFoldExpandStateAutomatically(false);
     }
+
     if (retCodes) {
         retCodes->resize(values.size());
     }
+
     for (std::size_t i = 0; i < values.size(); ++i) {
         if (i == values.size() - 1 && values.size() > 1) {
-            // Make sure the last setValue call triggers a knobChanged call
+            // Make sure the last setValue call triggers a knobChanged call and refreshes the gui
             unblockValueChanges();
-            setCanAutoExpandDimensions(true);
+            setAdjustFoldExpandStateAutomatically(true);
         }
         ret = setValue(values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
@@ -390,15 +409,27 @@ Knob<T>::setValueAtTime(double time,
                     continue;
                 }
             }
+
             for (int i = 0; i < nDims; ++i) {
                 if (!dimension.isAll() && dimension != i) {
                     continue;
                 }
 
+                // When setting a value on a dimension other than 0,
+                // temporarily unlink the dimension to make sure the dimension point to a different data
+                // Make sure we don't send any signal to the gui so the dimensions doesn't become visible/unvisible
+                if ((dimension.isAll() || dimension > 0) && !getAllDimensionsVisible(*it)) {
+                    _signalSlotHandler->blockSignals(true);
+                    unlinkInternal(DimIdx(i), *it, true);
+                    _signalSlotHandler->blockSignals(false);
+                }
+
+
                 setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
-                // If dimensions are folded but a setValue call is made on one of them, expand them
-                if (i == nDims - 1 && nDims > 1) {
-                    autoExpandDimensions(*it);
+
+                // If dimensions are folded but a setValue call is made on one of them, auto-compute fold/expand
+                if (((dimension.isAll() && i == nDims - 1) || (!dimension.isAll() && i == dimension)) && nDims > 1) {
+                    autoAdjustFoldExpandDimensions(*it);
                 }
             }
         }
@@ -434,11 +465,14 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
     }
 
     if (keys.size() > 1) {
+        // Make sure we evaluate once
         beginChanges();
 
-        // Prevent multiple calls to knobChanged
+        // Make sure we call knobChanged handler and refresh the GUI once
         blockValueChanges();
-        setCanAutoExpandDimensions(false);
+
+        // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+        setAdjustFoldExpandStateAutomatically(false);
     }
 
     // Group changes under the same undo/redo action if possible
@@ -456,7 +490,9 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         if (next == keys.end() && keys.size() > 1) {
             // Make sure the last setValue call triggers a knobChanged call
             unblockValueChanges();
-            setCanAutoExpandDimensions(true);
+
+            setAdjustFoldExpandStateAutomatically(true);
+            
         }
         ret = setValueAtTime(it->time, it->value, view, dimension, reason, newKeys ? &k : 0, hasChanged);
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
@@ -500,9 +536,15 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     bool hasChanged = false;
 
     if (values.size() > 1) {
+        // Make sure we evaluate once
         beginChanges();
+
+        // Make sure we call knobChanged handler and refresh the GUI once
         blockValueChanges();
-        setCanAutoExpandDimensions(false);
+
+        // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+        setAdjustFoldExpandStateAutomatically(false);
+
     }
     if (retCodes) {
         retCodes->resize(values.size());
@@ -510,7 +552,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     for (std::size_t i = 0; i < values.size(); ++i) {
         if (i == values.size() - 1 && values.size() > 1) {
             unblockValueChanges();
-            setCanAutoExpandDimensions(true);
+            setAdjustFoldExpandStateAutomatically(true);
         }
         ret = setValueAtTime(time, values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
@@ -541,8 +583,8 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
 
     beginChanges();
     blockValueChanges();
-    setCanAutoExpandDimensions(false);
-
+    // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+    setAdjustFoldExpandStateAutomatically(false);
 
     for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
 
@@ -560,7 +602,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
         for (typename std::list<TimeValuePair<T> >::const_iterator it = keysPerDimension[i].second.begin(); it!=keysPerDimension[i].second.end(); ++it) {
             if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].second.end()) {
                 unblockValueChanges();
-                setCanAutoExpandDimensions(true);
+                setAdjustFoldExpandStateAutomatically(true);
             }
             ret = setValueAtTime(it->time, it->value, view, dimension, reason, 0 /*outKey*/, hasChanged);
             hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);

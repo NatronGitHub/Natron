@@ -327,7 +327,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
@@ -469,7 +469,7 @@ KnobGuiChoice::onEntriesPopulated()
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
@@ -515,7 +515,7 @@ KnobGuiChoice::updateGUI()
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
