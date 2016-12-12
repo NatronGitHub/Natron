@@ -26,12 +26,10 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - Name: filter
-        DefaultString: Gaussian
+        DefaultString: ""
         NDims: 1
         TypeName: Choice
         Label: Filter
-        Entries: [Simple, Sobel, Rotation Invariant, Quasi-Gaussian, Gaussian, Box, Triangle, Quadratic]
-        Hints: [Gradient is estimated by centered finite differences., Compute gradient using the Sobel 3x3 filter., Compute gradient using a 3x3 rotation-invariant filter., "Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
         Props: [NoNewLine]
       - Name: cropToFormat
         DefaultBool: true
@@ -77,13 +75,10 @@ Children:
         Bool: false
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: filter
-        Props: [MasterIsAlias]
       - Name: multiChannel
         String: Separate
       - Name: blurSize
-        Float: 3
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: size}
     Pos: [908, 181]
   - PluginID: net.sf.openfx.GammaPlugin
     Name: Gamma1
@@ -108,11 +103,7 @@ Children:
     Masks: Merge1
     Params:
       - Name: size
-        Float: {N: EdgeDetect1, K: blurSize}
-      - Name: cropToFormat
-        Props: [MasterIsAlias]
-      - Name: mix
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: size}
       - Name: enableMask_Mask
         Bool: true
     Pos: [676, 349]
@@ -163,6 +154,4 @@ Children:
         String: copy
       - Name: bbox
         String: A
-      - Name: maskInvert
-        Props: [MasterIsAlias]
     Pos: [895, 341]

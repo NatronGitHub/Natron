@@ -687,6 +687,16 @@ Param::copy(Param* other,
 }
 
 bool
+Param::slaveTo(Param* other,
+              int thisDimension,
+              int otherDimension,
+              const QString& thisView,
+              const QString& otherView)
+{
+    return linkTo(other, thisDimension, otherDimension, thisView, otherView);
+}
+
+bool
 Param::linkTo(Param* other,
                int thisDimension,
                int otherDimension,
@@ -837,6 +847,31 @@ Param::curve(double time,
         return 0.;
     }
     return thisKnob->getRawCurveValueAt(time, thisViewSpec, DimIdx(dimension));
+}
+
+bool
+Param::setAsAlias(Param* other)
+{
+    if (!other) {
+        return false;
+    }
+    KnobIPtr otherKnob = other->_knob.lock();
+    KnobIPtr thisKnob = getInternalKnob();
+    if (!thisKnob || !otherKnob) {
+        PythonSetNullError();
+        return false;
+    }
+
+    if (otherKnob->typeName() != thisKnob->typeName()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot alias a parameter of a different kind").toStdString().c_str());
+        return false;
+    }
+
+    if (otherKnob->getNDimensions() != thisKnob->getNDimensions()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot alias a parameter with a different number of dimensions").toStdString().c_str());
+        return false;
+    }
+    return thisKnob->linkTo(otherKnob);
 }
 
 

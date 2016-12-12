@@ -266,6 +266,12 @@ public:
                 const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
                 const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
+    bool slaveTo(Param* other,
+                int thisDimension = kPyParamDimSpecAll,
+                int otherDimension = kPyParamDimSpecAll,
+                const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+                const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
+
     void unlink(int dimension = kPyParamDimSpecAll, const QString& thisView = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
@@ -289,6 +295,7 @@ public:
         return curve((double)time, dimension, thisView);
     }
 
+    bool setAsAlias(Param* other);
 
 protected:
 

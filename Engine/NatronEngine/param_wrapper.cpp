@@ -1397,6 +1397,53 @@ static PyObject* Sbk_ParamFunc_setAnimationEnabled(PyObject* self, PyObject* pyA
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_setAsAlias(PyObject* self, PyObject* pyArg)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: setAsAlias(Param*)
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArg)))) {
+        overloadId = 0; // setAsAlias(Param*)
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_setAsAlias_TypeError;
+
+    // Call function/method
+    {
+        if (!Shiboken::Object::isValid(pyArg))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
+
+        if (!PyErr_Occurred()) {
+            // setAsAlias(Param*)
+            bool cppResult = cppSelf->setAsAlias(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ParamFunc_setAsAlias_TypeError:
+        const char* overloads[] = {"NatronEngine.Param", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Param.setAsAlias", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_setEnabled(PyObject* self, PyObject* pyArg)
 {
     ParamWrapper* cppSelf = 0;
@@ -1967,6 +2014,131 @@ static PyObject* Sbk_ParamFunc_setVisible(PyObject* self, PyObject* pyArg)
         return 0;
 }
 
+static PyObject* Sbk_ParamFunc_slaveTo(PyObject* self, PyObject* args, PyObject* kwds)
+{
+    ParamWrapper* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = (ParamWrapper*)((::Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numNamedArgs = (kwds ? PyDict_Size(kwds) : 0);
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0, 0, 0};
+
+    // invalid argument lengths
+    if (numArgs + numNamedArgs > 5) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.slaveTo(): too many arguments");
+        return 0;
+    } else if (numArgs < 1) {
+        PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.slaveTo(): not enough arguments");
+        return 0;
+    }
+
+    if (!PyArg_ParseTuple(args, "|OOOOO:slaveTo", &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2]), &(pyArgs[3]), &(pyArgs[4])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: slaveTo(Param*,int,int,QString,QString)
+    if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppPointerConvertible((SbkObjectType*)SbkNatronEngineTypes[SBK_PARAM_IDX], (pyArgs[0])))) {
+        if (numArgs == 1) {
+            overloadId = 0; // slaveTo(Param*,int,int,QString,QString)
+        } else if ((pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1])))) {
+            if (numArgs == 2) {
+                overloadId = 0; // slaveTo(Param*,int,int,QString,QString)
+            } else if ((pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2])))) {
+                if (numArgs == 3) {
+                    overloadId = 0; // slaveTo(Param*,int,int,QString,QString)
+                } else if ((pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3])))) {
+                    if (numArgs == 4) {
+                        overloadId = 0; // slaveTo(Param*,int,int,QString,QString)
+                    } else if ((pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4])))) {
+                        overloadId = 0; // slaveTo(Param*,int,int,QString,QString)
+                    }
+                }
+            }
+        }
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ParamFunc_slaveTo_TypeError;
+
+    // Call function/method
+    {
+        if (kwds) {
+            PyObject* value = PyDict_GetItemString(kwds, "thisDimension");
+            if (value && pyArgs[1]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.slaveTo(): got multiple values for keyword argument 'thisDimension'.");
+                return 0;
+            } else if (value) {
+                pyArgs[1] = value;
+                if (!(pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[1]))))
+                    goto Sbk_ParamFunc_slaveTo_TypeError;
+            }
+            value = PyDict_GetItemString(kwds, "otherDimension");
+            if (value && pyArgs[2]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.slaveTo(): got multiple values for keyword argument 'otherDimension'.");
+                return 0;
+            } else if (value) {
+                pyArgs[2] = value;
+                if (!(pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArgs[2]))))
+                    goto Sbk_ParamFunc_slaveTo_TypeError;
+            }
+            value = PyDict_GetItemString(kwds, "thisView");
+            if (value && pyArgs[3]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.slaveTo(): got multiple values for keyword argument 'thisView'.");
+                return 0;
+            } else if (value) {
+                pyArgs[3] = value;
+                if (!(pythonToCpp[3] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[3]))))
+                    goto Sbk_ParamFunc_slaveTo_TypeError;
+            }
+            value = PyDict_GetItemString(kwds, "otherView");
+            if (value && pyArgs[4]) {
+                PyErr_SetString(PyExc_TypeError, "NatronEngine.Param.slaveTo(): got multiple values for keyword argument 'otherView'.");
+                return 0;
+            } else if (value) {
+                pyArgs[4] = value;
+                if (!(pythonToCpp[4] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[4]))))
+                    goto Sbk_ParamFunc_slaveTo_TypeError;
+            }
+        }
+        if (!Shiboken::Object::isValid(pyArgs[0]))
+            return 0;
+        ::Param* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        int cppArg1 = -1;
+        if (pythonToCpp[1]) pythonToCpp[1](pyArgs[1], &cppArg1);
+        int cppArg2 = -1;
+        if (pythonToCpp[2]) pythonToCpp[2](pyArgs[2], &cppArg2);
+        ::QString cppArg3 = QLatin1String("All");
+        if (pythonToCpp[3]) pythonToCpp[3](pyArgs[3], &cppArg3);
+        ::QString cppArg4 = QLatin1String("All");
+        if (pythonToCpp[4]) pythonToCpp[4](pyArgs[4], &cppArg4);
+
+        if (!PyErr_Occurred()) {
+            // slaveTo(Param*,int,int,QString,QString)
+            bool cppResult = cppSelf->slaveTo(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+
+    Sbk_ParamFunc_slaveTo_TypeError:
+        const char* overloads[] = {"NatronEngine.Param, int = -1, int = -1, unicode = QLatin1String(\"All\"), unicode = QLatin1String(\"All\")", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.Param.slaveTo", overloads);
+        return 0;
+}
+
 static PyObject* Sbk_ParamFunc_unlink(PyObject* self, PyObject* args, PyObject* kwds)
 {
     ParamWrapper* cppSelf = 0;
@@ -2081,6 +2253,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"randomInt", (PyCFunction)Sbk_ParamFunc_randomInt, METH_VARARGS},
     {"setAddNewLine", (PyCFunction)Sbk_ParamFunc_setAddNewLine, METH_O},
     {"setAnimationEnabled", (PyCFunction)Sbk_ParamFunc_setAnimationEnabled, METH_O},
+    {"setAsAlias", (PyCFunction)Sbk_ParamFunc_setAsAlias, METH_O},
     {"setEnabled", (PyCFunction)Sbk_ParamFunc_setEnabled, METH_O},
     {"setEvaluateOnChange", (PyCFunction)Sbk_ParamFunc_setEvaluateOnChange, METH_O},
     {"setHelp", (PyCFunction)Sbk_ParamFunc_setHelp, METH_O},
@@ -2093,6 +2266,7 @@ static PyMethodDef Sbk_Param_methods[] = {
     {"setViewerUILayoutType", (PyCFunction)Sbk_ParamFunc_setViewerUILayoutType, METH_O},
     {"setViewerUIVisible", (PyCFunction)Sbk_ParamFunc_setViewerUIVisible, METH_O},
     {"setVisible", (PyCFunction)Sbk_ParamFunc_setVisible, METH_O},
+    {"slaveTo", (PyCFunction)Sbk_ParamFunc_slaveTo, METH_VARARGS|METH_KEYWORDS},
     {"unlink", (PyCFunction)Sbk_ParamFunc_unlink, METH_VARARGS|METH_KEYWORDS},
 
     {0} // Sentinel

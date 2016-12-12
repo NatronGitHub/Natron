@@ -95,13 +95,11 @@ UserPages:
             DisplayMin: 1
             DisplayMax: 10
           - Name: Bloomfilter
-            DefaultString: Quasi-Gaussian
+            DefaultString: ""
             NDims: 1
             TypeName: Choice
             Label: Filter
             Hint: "Bluring filter. The quasi-Gaussian filter should be appropriate in most cases. The Gaussian filter is more isotropic (its impulse response has rotational symmetry), but slower.\nQuadratic might also look a bit better, but it is slower, too."
-            Entries: [Quasi-Gaussian, Gaussian, Box, Triangle, Quadratic]
-            Hints: ["Quasi-Gaussian filter (0-order recursive Deriche filter, faster) - IIR (infinite support / impulsional response).", "Gaussian filter (Van Vliet recursive Gaussian filter, more isotropic, slower) - IIR (infinite support / impulsional response).", Box filter - FIR (finite support / impulsional response)., Triangle/tent filter - FIR (finite support / impulsional response)., Quadratic filter - FIR (finite support / impulsional response).]
           - Name: stretch
             DefaultFloat: 0
             NDims: 1
@@ -417,12 +415,6 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
-      - Name: MasterSaturation
-        Props: [MasterIsAlias]
-      - Name: MasterGamma
-        Props: [MasterIsAlias]
-      - Name: MasterGain
-        Props: [MasterIsAlias]
       - Name: premultChanged
         Bool: true
     Pos: [1141, 1073]
@@ -475,8 +467,8 @@ Children:
     Params:
       - Name: bottomLeft
         Float: [960, 540]
-      - Name: srcColor
-        Props: [MasterIsAlias]
+      - Name: size
+        Float: [960, 540]
       - Name: hueRangeRolloff
         Float: 50
       - Name: saturationRangeRolloff
@@ -495,14 +487,10 @@ Children:
         Bool: {Expr: thisGroup.alpha.get()}
       - Name: size
         Float: {Expr: thisGroup.size.get()}
-      - Name: bloomRatio
-        Props: [MasterIsAlias]
       - Name: bloomCount
         Int: {Expr: thisGroup.iterations.get()}
       - Name: boundary
         String: Black
-      - Name: filter
-        Props: [MasterIsAlias]
       - Name: expandRoD
         Bool: {Expr: thisGroup.expRoD.get()}
       - Name: premultChanged

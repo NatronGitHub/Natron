@@ -82,8 +82,6 @@ Children:
         String: B.b
       - Name: outputAChoice
         String: A.a
-      - Name: disableNode
-        Props: [MasterIsAlias]
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform2
@@ -115,8 +113,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: value
-        Float: 0.5
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: shadowOpacity, D: r}
       - Name: premult
         Bool: true
       - Name: premultChanged
@@ -129,8 +126,6 @@ Children:
         String: PC_Video 640x480
       - Name: size
         Float: [960, 540]
-      - Name: color
-        Props: [MasterIsAlias]
     Pos: [584, 87]
   - PluginID: fr.inria.built-in.Input
     Name: InputSource
@@ -147,8 +142,6 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: size
-        Props: [MasterIsAlias]
     Pos: [759, 260]
   - PluginID: net.sf.openfx.MergePlugin
     Name: Merge1
@@ -156,6 +149,4 @@ Children:
     Params:
       - Name: maskInvert
         Bool: true
-      - Name: disableNode
-        Props: [MasterIsAlias]
     Pos: [1000, 329]

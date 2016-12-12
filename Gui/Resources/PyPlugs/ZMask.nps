@@ -76,11 +76,11 @@ UserPages:
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
       - Name: channels
-        DefaultString: Backward.Motion
+        DefaultString: Color.RGB
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [Backward.Motion, Color.RGB, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin
@@ -89,19 +89,20 @@ Children:
     Params:
       - Name: operation
         String: difference
+      - Name: AChannelsA
+        Bool: false
       - Name: userTextArea
         String: <Natron>(difference)</Natron>
-      - Name: B_channels
-        Props: [MasterIsAlias]
     Pos: [764, 248]
   - PluginID: net.sf.openfx.Solid
     Name: Solid1
     Params:
       - Name: NatronParamFormatChoice
         String: PC_Video 640x480
+      - Name: size
+        Float: [1920, 1080]
       - Name: color
-        Float: 1
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: centerValue, D: r}
     Pos: [776, 134]
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
@@ -111,10 +112,7 @@ Children:
       - Name: premultChanged
         Bool: true
       - Name: channels
-        String: Backward.Motion
-        Props: [MasterIsAlias]
-      - Name: disableNode
-        Props: [MasterIsAlias]
+        String: {N: "@thisGroup", K: channels}
     Pos: [764, 546]
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp1
@@ -129,14 +127,6 @@ Children:
     Version: [2, 0]
     Inputs: Merge1
     Params:
-      - Name: MasterContrast
-        Props: [MasterIsAlias]
-      - Name: MasterGamma
-        Props: [MasterIsAlias]
-      - Name: MasterGain
-        Props: [MasterIsAlias]
-      - Name: MasterOffset
-        Props: [MasterIsAlias]
       - Name: premultChanged
         Bool: true
     Pos: [764, 344]

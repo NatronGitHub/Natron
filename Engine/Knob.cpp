@@ -888,7 +888,6 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
 {
 
     KnobHolderPtr holder = getHolder();
-    assert(holder);
     if (!holder) {
         return false;
     }
@@ -3111,10 +3110,6 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
 
         if (knob->getSharingMaster(dimension, view, &sharedMaster)) {
             masterKnob = sharedMaster.knob.lock();
-            // Don't save the knob slave state if it is slaved because the user folded the dimensions
-            if (dimension > 0 && !knob->getAllDimensionsVisible(view)) {
-                masterKnob.reset();
-            }
         }
 
         // Only serialize master link if:
@@ -3125,6 +3120,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             if (masterKnob->getNDimensions() > 1) {
                 serialization->_slaveMasterLink.masterDimensionName = masterKnob->getDimensionName(sharedMaster.dimension);
             }
+
             serialization->_slaveMasterLink.hasLink = true;
             gotValue = true;
             if (masterKnob != knob) {
@@ -3944,7 +3940,12 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
     }
 
     ///we need to cycle through all the nodes of the project to find the real master
-    NodePtr masterNode = findMasterNode(thisKnobNode->getGroup(), 0, masterNodeName);
+    NodePtr masterNode;
+    if (masterNodeName.empty()) {
+        masterNode = thisKnobNode;
+    } else {
+        masterNode = findMasterNode(thisKnobNode->getGroup(), 0, masterNodeName);
+    }
     if (!masterNode) {
         qDebug() << "Link slave/master for " << getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
 
@@ -4036,6 +4037,8 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                     if (it->second[i]._slaveMasterLink.masterNodeName.empty()) {
                         // Node name empty, assume this is the same node
                         masterNodeName = thisKnobNode->getScriptName_mt_safe();
+                    } else {
+                        masterNodeName = it->second[i]._slaveMasterLink.masterNodeName;
                     }
 
                     if (it->second[i]._slaveMasterLink.masterKnobName.empty()) {
@@ -4044,6 +4047,8 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                             continue;
                         }
                         masterKnobName = getName();
+                    } else {
+                        masterKnobName = it->second[i]._slaveMasterLink.masterKnobName;
                     }
 
                     masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
@@ -4071,7 +4076,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                         Project::getViewIndex(projectViews, it->second[i]._slaveMasterLink.masterViewName, &otherView);
 
                         if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
-                            linkTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
+                            (void)linkTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
                         } else {
                             throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
                         }

@@ -381,8 +381,6 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: size
-        Props: [MasterIsAlias]
       - Name: expandRoD
         Bool: false
     Pos: [752, 316]
@@ -394,8 +392,7 @@ Children:
       - Name: size
         Float: [960, 540]
       - Name: color
-        Float: 1
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: constantcolor, D: r}
       - Name: NatronOfxParamProcessA
         Bool: false
     Pos: [968, 185]
@@ -463,10 +460,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: 1
-        Props: [MasterIsAlias]
-      - Name: boundary
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: fgblur, D: x}
       - Name: expandRoD
         Bool: false
     Pos: [434, 433]
@@ -506,8 +500,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: 15
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: diffuse, D: x}
       - Name: expandRoD
         Bool: false
     Pos: [758, 633]
@@ -526,8 +519,6 @@ Children:
     Version: [2, 0]
     Inputs: Intensity
     Params:
-      - Name: saturation
-        Props: [MasterIsAlias]
       - Name: clampBlack
         Bool: false
     Pos: [758, 761]
@@ -538,52 +529,6 @@ Children:
     Params:
       - Name: NatronOfxParamProcessA
         Bool: true
-      - Name: MasterSaturation
-        Props: [MasterIsAlias]
-      - Name: MasterContrast
-        Props: [MasterIsAlias]
-      - Name: MasterGamma
-        Props: [MasterIsAlias]
-      - Name: MasterGain
-        Props: [MasterIsAlias]
-      - Name: MasterOffset
-        Props: [MasterIsAlias]
-      - Name: ShadowsEnable
-        Props: [MasterIsAlias]
-      - Name: ShadowsSaturation
-        Props: [MasterIsAlias]
-      - Name: ShadowsContrast
-        Props: [MasterIsAlias]
-      - Name: ShadowsGamma
-        Props: [MasterIsAlias]
-      - Name: ShadowsGain
-        Props: [MasterIsAlias]
-      - Name: ShadowsOffset
-        Props: [MasterIsAlias]
-      - Name: MidtonesEnable
-        Props: [MasterIsAlias]
-      - Name: MidtonesSaturation
-        Props: [MasterIsAlias]
-      - Name: MidtonesContrast
-        Props: [MasterIsAlias]
-      - Name: MidtonesGamma
-        Props: [MasterIsAlias]
-      - Name: MidtonesGain
-        Props: [MasterIsAlias]
-      - Name: MidtonesOffset
-        Props: [MasterIsAlias]
-      - Name: HighlightsEnable
-        Props: [MasterIsAlias]
-      - Name: HighlightsSaturation
-        Props: [MasterIsAlias]
-      - Name: HighlightsContrast
-        Props: [MasterIsAlias]
-      - Name: HighlightsGamma
-        Props: [MasterIsAlias]
-      - Name: HighlightsGain
-        Props: [MasterIsAlias]
-      - Name: HighlightsOffset
-        Props: [MasterIsAlias]
       - Name: clampBlack
         Bool: false
     Pos: [758, 825]
@@ -593,8 +538,6 @@ Children:
     Params:
       - Name: operation
         String: mask
-      - Name: disableNode
-        Props: [MasterIsAlias]
     Pos: [761, 909]
   - PluginID: net.sf.openfx.ShufflePlugin
     Name: Shuffle1
@@ -617,10 +560,7 @@ Children:
     Inputs: {A: Dot2, B: Shuffle1}
     Params:
       - Name: operation
-        String: plus
-        Props: [MasterIsAlias]
-      - Name: disableNode
-        Props: [MasterIsAlias]
+        String: {N: "@thisGroup", K: highlightmerge}
     Pos: [761, 1108]
   - PluginID: fr.inria.built-in.Dot
     Name: Dot4

@@ -600,21 +600,28 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
                 dimVec[i]._expression = dimNode["Expr"].as<std::string>();
             } else {
                 // This is most likely a regular slavr/master link
+                bool gotLink = false;
                 if (dimNode["N"]) {
                     dimVec[i]._slaveMasterLink.masterNodeName = dimNode["N"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["T"]) {
                     dimVec[i]._slaveMasterLink.masterTableItemName = dimNode["T"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["K"]) {
                     dimVec[i]._slaveMasterLink.masterKnobName = dimNode["K"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["D"]) {
                     dimVec[i]._slaveMasterLink.masterDimensionName = dimNode["D"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["V"]) {
                     dimVec[i]._slaveMasterLink.masterViewName = dimNode["V"].as<std::string>();
+                    gotLink = true;
                 }
+                dimVec[i]._slaveMasterLink.hasLink = gotLink;
             }
 
         } // isMap
