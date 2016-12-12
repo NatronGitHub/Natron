@@ -204,7 +204,6 @@ NodeGui::NodeGui(QGraphicsItem *parent)
 
 NodeGui::~NodeGui()
 {
-    qDebug() << "dest";
 }
 
 void
