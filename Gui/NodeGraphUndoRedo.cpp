@@ -1544,6 +1544,10 @@ GroupFromSelectionCommand::redo()
     std::list<Project::NodesTree> trees;
     Project::extractTreesFromNodes(originalNodes, trees);
     int inputNb = 0;
+
+    // The output node position is the average of all trees root
+    QPointF outputNodePosition = QPointF(0,0);
+
     for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
 
         // For each input node of each tree branch within the group, add a Input node in input of that branch
@@ -1596,30 +1600,17 @@ GroupFromSelectionCommand::redo()
                     ++inputNb;
                 }
             } // for all node's inputs
-        } // for all inputs in the tree
 
-        //Create only a single output
-
-        {
-            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, containerGroup));
-            args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-            args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            NodePtr output = containerNode->getApp()->createNode(args);
-
-            assert(output);
 
             double thisNodeX, thisNodeY;
             it->output.node->getPosition(&thisNodeX, &thisNodeY);
             double thisNodeW, thisNodeH;
             it->output.node->getSize(&thisNodeW, &thisNodeH);
-
             thisNodeY += thisNodeH * 2;
+            outputNodePosition.rx() += thisNodeX;
+            outputNodePosition.ry() += thisNodeY;
 
-            output->setPosition(thisNodeX, thisNodeY);
-
-            output->connectInput(it->output.node, 0);
-        }
+        } // for all inputs in the tree
 
         // Connect all outputs of the original node to the new Group
         NodesWList originalOutputs;
@@ -1633,6 +1624,31 @@ GroupFromSelectionCommand::redo()
 
         }
     } // for all trees
+
+    //Create only a single output
+
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, containerGroup));
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        NodePtr output = containerNode->getApp()->createNode(args);
+
+        assert(output);
+
+        if (trees.size() > 0) {
+            outputNodePosition.rx() /= trees.size();
+            outputNodePosition.ry() /= trees.size();
+            output->setPosition(outputNodePosition.x(), outputNodePosition.y());
+        }
+
+        // If only a single tree, connect the output node to the bottom of the tree
+        if (trees.size() == 1) {
+
+            output->swapInput(trees.front().output.node, 0);
+        }
+    }
+
 
     // Select the group node in the old graph
     std::list<NodeGuiPtr> nodesToSelect;
