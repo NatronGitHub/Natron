@@ -76,8 +76,7 @@ Timer::printAsTime(const double timeInSeconds,
     if (timeRemain >= day) {
         double daysRemaining = timeInSeconds / day;
         double floorDays = std::floor(daysRemaining);
-        daysRemaining -= floorDays;
-        if (daysRemaining > 0) {
+        if (floorDays > 0) {
             ret.append( ( floorDays > 1 ? tr("%1 days") : tr("%1 day") ).arg( QString::number(floorDays) ) );
             timeRemain -= floorDays * day;
         }
@@ -91,8 +90,7 @@ Timer::printAsTime(const double timeInSeconds,
         }
         double hourRemaining = timeInSeconds / hour;
         double floorHour = std::floor(hourRemaining);
-        hourRemaining -= floorHour;
-        if (hourRemaining > 0) {
+        if (floorHour > 0) {
             ret.append( ( (floorHour > 1) ? tr("%1 hours") : tr("%1 hour") ).arg( QString::number(floorHour) ) );
             timeRemain -= floorHour * hour;
         }
@@ -106,8 +104,7 @@ Timer::printAsTime(const double timeInSeconds,
         }
         double minRemaining = timeInSeconds / min;
         double floorMin = std::floor(minRemaining);
-        minRemaining -= floorMin;
-        if (minRemaining > 0) {
+        if (floorMin > 0) {
             ret.append( ( (floorMin > 1) ? tr("%1 minutes") : tr("%1 minute") ).arg( QString::number(floorMin) ) );
             timeRemain -= floorMin * min;
         }
