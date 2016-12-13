@@ -14,6 +14,8 @@
 - PIKColor: do not expand region of definition
 - Shadertoy: support iDate, add presets, fix CPU rendering #1526
 - Transform & CornerPin: additional "Amount" parameter to control the amount of transform to apply.
+- ColorLookup: fix a bug where output was always clamped to (0,1) #1533
+- Grade: fix a bug where negative values were clamped even when gamma=1 #1533
 
 ## Version 2.1.9
 

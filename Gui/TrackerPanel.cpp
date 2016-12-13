@@ -383,7 +383,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     _imp->currentKeyframe = new SpinBox(trackContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->currentKeyframe->setEnabled(false);
-    _imp->currentKeyframe->setReadOnly(true);
+    _imp->currentKeyframe->setReadOnly_NoFocusRect(true);
     _imp->currentKeyframe->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The current keyframe of the pattern for the selected track(s)."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     trackLayout->addWidget(_imp->currentKeyframe);
 
@@ -392,7 +392,7 @@ TrackerPanel::TrackerPanel(const NodeGuiPtr& n,
 
     _imp->totalKeyframes = new SpinBox(trackContainer, SpinBox::eSpinBoxTypeInt);
     _imp->totalKeyframes->setEnabled(false);
-    _imp->totalKeyframes->setReadOnly(true);
+    _imp->totalKeyframes->setReadOnly_NoFocusRect(true);
     _imp->totalKeyframes->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("The pattern keyframe count for all the selected tracks."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     trackLayout->addWidget(_imp->totalKeyframes);
 
