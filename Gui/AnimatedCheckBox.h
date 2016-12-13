@@ -51,6 +51,7 @@ class AnimatedCheckBox
     
     bool readOnly;
     bool checked;
+    bool _linked;
 
 public:
 
@@ -74,6 +75,7 @@ public:
         return readOnly;
     }
 
+    void setLinked(bool linked);
 
     virtual QSize minimumSizeHint() const OVERRIDE FINAL;
     virtual QSize sizeHint() const OVERRIDE FINAL;

@@ -182,8 +182,7 @@ public:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time,
-                             bool originatedFromMainThread) OVERRIDE;
+                             double time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isIdentity(double time,

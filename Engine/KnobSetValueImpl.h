@@ -147,16 +147,16 @@ AddToUndoRedoStackHelper<T>::addSetValueToUndoRedoStackIfNeeded(const T& value, 
 
 template <typename T>
 bool
-Knob<T>::checkIfValueChanged(const T& a, DimIdx dimension, ViewIdx view) const
+ValueKnobDimView<T>::setValueAndCheckIfChanged(const T& v)
 {
-    assert(dimension >= 0 && dimension < (int)_values.size());
-    typename PerViewValueMap::const_iterator foundView = _values[dimension].find(view);
-    if (foundView == _values[dimension].end()) {
-        // Unexistant view, say yes!
+    QMutexLocker k(&valueMutex);
+    if (value != v) {
+        value = v;
         return true;
     }
-    return foundView->second != a;
+    return false;
 }
+
 
 template <typename T>
 ValueChangedReturnCodeEnum
@@ -185,8 +185,6 @@ Knob<T>::setValue(const T & v,
     // Apply changes
     bool hasChanged = forceHandlerEvenIfNoChange;
 
-    int nDims = getNDimensions();
-
     double time = getCurrentTime();
 
     // Check if we can add automatically a new keyframe
@@ -194,80 +192,49 @@ Knob<T>::setValue(const T & v,
         return setValueAtTime(time, v, view, dimension, reason, newKey);
     }
 
+    // Check if we need to use the undo/redo stack
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
     if (undoRedoStackHelperRAII.canAddValueToUndoStack()) {
         undoRedoStackHelperRAII.prepareOldValueToUndoRedoStack(view, dimension, time, reason, false /*setKeyframe*/);
     }
 
+    // Actually push the value to the data for each dimension/view requested
     {
-        QMutexLocker l(&_valueMutex);
-        if (dimension.isAll()) {
-
-            if (view.isAll()) {
-                std::list<ViewIdx> availableView = getViewsList();
-
-                for (int i = 0; i < nDims; ++i) {
-                    for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
-                        _values[i][*it] = v;
-                        if (checkIfValueChanged(v, DimIdx(i), *it)) {
-                            hasChanged = true;
-                            // If dimensions are folded but a setValue call is made on one of them, expand them
-                            if (i == nDims - 1 && nDims > 1) {
-                                autoExpandDimensions(*it);
-                            }
-                        }
-                    }
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-                for (int i = 0; i < nDims; ++i) {
-                    _values[i][view_i] = v;
-                    if (checkIfValueChanged(v, DimIdx(i), view_i)) {
-                        hasChanged = true;
-
-                        // If dimensions are folded but a setValue call is made on one of them, expand them
-                        if (i == nDims - 1 && nDims > 1) {
-                            autoExpandDimensions(view_i);
-                        }
-                    }
-                }
-            }
-
-        } else {
-            // Check for a valid dimension
-            if ( (dimension < 0) || ( dimension >= (int)_values.size() ) ) {
-                throw std::invalid_argument("Knob::setValue: dimension out of range");
-            }
-
-            if (view.isAll()) {
-                std::list<ViewIdx> availableView = getViewsList();
-                for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!= availableView.end(); ++it) {
-                    _values[dimension][*it] = v;
-                    if (checkIfValueChanged(v, DimIdx(dimension), *it)) {
-                        hasChanged = true;
-                        // If dimensions are folded but a setValue call is made on one of them, expand them
-                        if (nDims > 1) {
-                            autoExpandDimensions(*it);
-                        }
-                    }
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-                _values[dimension][view_i] = v;
-                if (checkIfValueChanged(v, DimIdx(dimension), view_i)) {
-                    hasChanged = true;
-                    // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (nDims > 1) {
-                        autoExpandDimensions(view_i);
-                    }
-                }
-            }
-
+        std::list<ViewIdx> views = getViewsList();
+        int nDims = getNDimensions();
+        ViewIdx view_i;
+        if (!view.isAll()) {
+            view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
         }
-    } // QMutexLocker
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            if (!view.isAll()) {
+                if (view_i != *it) {
+                    continue;
+                }
+            }
+            for (int i = 0; i < nDims; ++i) {
+                if (!dimension.isAll() && dimension != i) {
+                    continue;
+                }
 
-    // Call the virtual portion to maintain any internal value of the derived implementations in sync with the values
-    onInternalValueChanged(dimension, time, view);
+
+                ValueKnobDimView<T>* data = dynamic_cast<ValueKnobDimView<T>*>(getDataForDimView(DimIdx(i), *it).get());
+                if (data) {
+                    hasChanged |= data->setValueAndCheckIfChanged(v);
+                }
+                // Auto-expand the parameter dimensions if needed
+                if (hasChanged) {
+                    // If dimensions are folded but a setValue call is made on one of them, expand them
+                    if (((dimension.isAll() && i == nDims - 1) || (!dimension.isAll() && i == dimension)) && nDims > 1) {
+                        autoAdjustFoldExpandDimensions(*it);
+                    }
+                }
+
+            }
+        }
+
+    }
+
 
     ValueChangedReturnCodeEnum ret;
     if (hasChanged) {
@@ -310,26 +277,33 @@ Knob<T>::setValueAcrossDimensions(const std::vector<T>& values,
     
     KnobHolderPtr holder = getHolder();
 
+    // Group value changes under the same undo/redo command if possible
     AddToUndoRedoStackHelper<T> undoRedoStackHelperRAII(this);
 
     KeyFrame newKey;
     ValueChangedReturnCodeEnum ret;
     bool hasChanged = false;
     if (values.size() > 1) {
+
+        // Make sure we evaluate once
         beginChanges();
 
-        // Prevent multiple calls to knobChanged
+        // Make sure we call knobChanged handler and refresh the GUI once
         blockValueChanges();
-        setCanAutoExpandDimensions(false);
+
+        // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+        setAdjustFoldExpandStateAutomatically(false);
     }
+
     if (retCodes) {
         retCodes->resize(values.size());
     }
+
     for (std::size_t i = 0; i < values.size(); ++i) {
         if (i == values.size() - 1 && values.size() > 1) {
-            // Make sure the last setValue call triggers a knobChanged call
+            // Make sure the last setValue call triggers a knobChanged call and refreshes the gui
             unblockValueChanges();
-            setCanAutoExpandDimensions(true);
+            setAdjustFoldExpandStateAutomatically(true);
         }
         ret = setValue(values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
@@ -355,29 +329,24 @@ Knob<T>::setValueOnCurveInternal(double time, const T& v, DimIdx dimension, View
         *newKey = key;
     }
 
+    KnobDimViewBasePtr data = getDataForDimView(dimension, view);
+    assert(data);
+
     // Get the curve for the given view/dimension
-    CurvePtr curve = getCurve(view, dimension, true);
+    CurvePtr curve = data->animationCurve;
     assert(curve);
     ValueChangedReturnCodeEnum addKeyRet = curve->setOrAddKeyframe(key);
     if (addKeyRet == eValueChangedReturnCodeKeyframeAdded) {
         *ret = addKeyRet;
-        // Notify animation changed
-        std::list<double> keysAdded, keysRemoved;
-        keysAdded.push_back(time);
-        _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
-
     } else if (addKeyRet == eValueChangedReturnCodeKeyframeModified) {
-
-        // At least redraw the curve if we did not add/remove keyframes
-        std::list<double> keysAdded, keysRemoved;
-        _signalSlotHandler->s_curveAnimationChanged(keysAdded, keysRemoved, view, dimension);
-
         if (*ret == eValueChangedReturnCodeNothingChanged) {
             *ret = eValueChangedReturnCodeKeyframeModified;
         }
     }
 
+    // At least redraw the curve if we did not add/remove keyframes
 
+    data->notifyCurveChanged();
 
 }
 
@@ -419,50 +388,34 @@ Knob<T>::setValueAtTime(double time,
 
     ValueChangedReturnCodeEnum ret = !forceHandlerEvenIfNoChange ? eValueChangedReturnCodeNothingChanged : eValueChangedReturnCodeKeyframeModified;
 
-    int nDims = getNDimensions();
-
-    if (dimension.isAll()) {
-        if (view.isAll()) {
-            std::list<ViewIdx> availableView = getViewsList();
-            for (int i = 0; i < nDims; ++i) {
-                for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
-                    // If dimensions are folded but a setValue call is made on one of them, expand them
-                    if (i == nDims - 1 && nDims > 1) {
-                        autoExpandDimensions(*it);
-                    }
-                    setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
+    {
+        std::list<ViewIdx> views = getViewsList();
+        int nDims = getNDimensions();
+        ViewIdx view_i;
+        if (!view.isAll()) {
+            view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        }
+        for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+            if (!view.isAll()) {
+                if (view_i != *it) {
+                    continue;
                 }
             }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+
             for (int i = 0; i < nDims; ++i) {
-                setValueOnCurveInternal(time, v, DimIdx(i), view_i, newKey, &ret);
-                // If dimensions are folded but a setValue call is made on one of them, expand them
-                if (i == nDims - 1 && nDims > 1) {
-                    autoExpandDimensions(view_i);
+                if (!dimension.isAll() && dimension != i) {
+                    continue;
+                }
+
+                setValueOnCurveInternal(time, v, DimIdx(i), *it, newKey, &ret);
+
+                // If dimensions are folded but a setValue call is made on one of them, auto-compute fold/expand
+                if (((dimension.isAll() && i == nDims - 1) || (!dimension.isAll() && i == dimension)) && nDims > 1) {
+                    autoAdjustFoldExpandDimensions(*it);
                 }
             }
         }
-
-    } else {
-        if (view.isAll()) {
-            std::list<ViewIdx> availableView = getViewsList();
-            for (std::list<ViewIdx>::const_iterator it = availableView.begin(); it!=availableView.end(); ++it) {
-                setValueOnCurveInternal(time, v, DimIdx(dimension), *it, newKey, &ret);
-                // If dimensions are folded but a setValue call is made on one of them, expand them
-                if (nDims > 1) {
-                    autoExpandDimensions(*it);
-                }
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-
-            setValueOnCurveInternal(time, v, DimIdx(dimension), view_i, newKey, &ret);
-            // If dimensions are folded but a setValue call is made on one of them, expand them
-            if (nDims > 1) {
-                autoExpandDimensions(view_i);
-            }
-        }
+        
     }
 
 
@@ -494,11 +447,14 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
     }
 
     if (keys.size() > 1) {
+        // Make sure we evaluate once
         beginChanges();
 
-        // Prevent multiple calls to knobChanged
+        // Make sure we call knobChanged handler and refresh the GUI once
         blockValueChanges();
-        setCanAutoExpandDimensions(false);
+
+        // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+        setAdjustFoldExpandStateAutomatically(false);
     }
 
     // Group changes under the same undo/redo action if possible
@@ -516,7 +472,9 @@ Knob<T>::setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSe
         if (next == keys.end() && keys.size() > 1) {
             // Make sure the last setValue call triggers a knobChanged call
             unblockValueChanges();
-            setCanAutoExpandDimensions(true);
+
+            setAdjustFoldExpandStateAutomatically(true);
+            
         }
         ret = setValueAtTime(it->time, it->value, view, dimension, reason, newKeys ? &k : 0, hasChanged);
         hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
@@ -560,9 +518,15 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     bool hasChanged = false;
 
     if (values.size() > 1) {
+        // Make sure we evaluate once
         beginChanges();
+
+        // Make sure we call knobChanged handler and refresh the GUI once
         blockValueChanges();
-        setCanAutoExpandDimensions(false);
+
+        // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+        setAdjustFoldExpandStateAutomatically(false);
+
     }
     if (retCodes) {
         retCodes->resize(values.size());
@@ -570,7 +534,7 @@ Knob<T>::setValueAtTimeAcrossDimensions(double time,
     for (std::size_t i = 0; i < values.size(); ++i) {
         if (i == values.size() - 1 && values.size() > 1) {
             unblockValueChanges();
-            setCanAutoExpandDimensions(true);
+            setAdjustFoldExpandStateAutomatically(true);
         }
         ret = setValueAtTime(time, values[i], view, DimSpec(dimensionStartOffset + i), reason, &newKey, hasChanged);
         if (retCodes) {
@@ -601,8 +565,8 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
 
     beginChanges();
     blockValueChanges();
-    setCanAutoExpandDimensions(false);
-
+    // Since we are about to set multiple values, disable auto-expand/fold until we set the last value
+    setAdjustFoldExpandStateAutomatically(false);
 
     for (std::size_t i = 0; i < keysPerDimension.size(); ++i) {
 
@@ -620,7 +584,7 @@ Knob<T>::setMultipleValueAtTimeAcrossDimensions(const std::vector<std::pair<Dime
         for (typename std::list<TimeValuePair<T> >::const_iterator it = keysPerDimension[i].second.begin(); it!=keysPerDimension[i].second.end(); ++it) {
             if (i == keysPerDimension.size() - 1 && next == keysPerDimension[i].second.end()) {
                 unblockValueChanges();
-                setCanAutoExpandDimensions(true);
+                setAdjustFoldExpandStateAutomatically(true);
             }
             ret = setValueAtTime(it->time, it->value, view, dimension, reason, 0 /*outKey*/, hasChanged);
             hasChanged |= (ret != eValueChangedReturnCodeNothingChanged);
@@ -653,7 +617,7 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     int nDims = getNDimensions();
     std::vector<T> defValues(nDims);
     {
-        QMutexLocker l(&_valueMutex);
+        QMutexLocker l(&_defaultValueMutex);
         for (int i = 0; i < nDims; ++i) {
             if (dimension.isAll() || i == dimension) {
                 defValues[i] = _defaultValues[i].value;
@@ -704,7 +668,7 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     for (int i = 0; i < nDims; ++i) {
         if (dimension.isAll() || i == dimension) {
             {
-                QMutexLocker l(&_valueMutex);
+                QMutexLocker l(&_defaultValueMutex);
                 defValues[i] = _defaultValues[i].value;
             }
 

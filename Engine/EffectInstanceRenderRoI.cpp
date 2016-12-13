@@ -1607,11 +1607,6 @@ EffectInstance::Implementation::renderRoIAllocateOutputPlanes(const RenderRoIArg
                                &it->second.fullscaleImage,
                                &it->second.downscaleImage);
 
-            // Set the accumulation buffer for this node if needed
-            if (_publicInterface->isPaintingOverItselfEnabled()) {
-                _publicInterface->getNode()->setLastRenderedImage(it->second.downscaleImage);
-            }
-            
     
         } else {
             /*

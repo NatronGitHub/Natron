@@ -1372,8 +1372,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
                     break;
                 }
             }
-            ///The input must have been tracked before
-            assert(false);
+        
         }
         GroupOutputPtr isOutput = toGroupOutput( node->getEffectInstance() );
         if (isOutput) {
@@ -1600,7 +1599,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
 
         assert(pyPlugSerialization);
         // This will create internal nodes and restore their links.
-        Project::restoreGroupFromSerialization(pyPlugSerialization->_children, toNodeGroup(shared_from_this()));
+        Project::restoreGroupFromSerialization(pyPlugSerialization->_children, toNodeGroup(shared_from_this()), true /*loadLinks*/);
 
         // For PyPlugs, the graph s not editable anyway
         setSubGraphEditedByUser(false);
@@ -1614,9 +1613,13 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
         //Clear any node created already in setupInitialSubGraphState()
         clearNodesBlocking();
         
-        // This will create internal nodes and restore their links
-        Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()));
+        // This will create internal nodes.
+        // Links are restored once all groups in the project are loaded
+        Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()), false /*loadLinks*/);
 
+        // A group always appear edited
+        setSubGraphEditedByUser(true);
+    } else {
         // A group always appear edited
         setSubGraphEditedByUser(true);
     }

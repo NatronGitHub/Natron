@@ -185,23 +185,13 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
     const int numTracks = (int)tracks.size();
     std::vector<int> trackIndexes( tracks.size() );
 
-    // The tracker UI "enabled" knob
-    KnobBoolPtr contextEnabledKnob;
+
 
     // For all tracks, notify tracking is starting and unslave the 'enabled' knob if it is
     // slaved to the UI "enabled" knob.
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         trackIndexes[i] = i;
         tracks[i]->natronMarker->notifyTrackingStarted();
-        // unslave the enabled knob, since it is slaved to the gui but we may modify it
-        KnobBoolPtr enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
-        if (enabledKnob) {
-            MasterKnobLink linkData;
-            if (enabledKnob->getMaster(DimIdx(0), ViewIdx(0), &linkData)) {
-                contextEnabledKnob = toKnobBool(linkData.masterKnob.lock());
-                enabledKnob->unSlave(DimSpec::all(), ViewSetSpec::all(), false);
-            }
-        }
     }
 
     // Beyond TRACKER_MAX_TRACKS_FOR_PARTIAL_VIEWER_UPDATE it becomes more expensive to render all partial rectangles
@@ -311,21 +301,10 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     appPTR->getAppTLS()->cleanupTLSForThread();
 
-    // Re-slave the knobs to the gui
-    if (contextEnabledKnob) {
-#pragma message WARN("Check this")
-        for (std::size_t i = 0; i < tracks.size(); ++i) {
-            // unslave the enabled knob, since it is slaved to the gui but we may modify it
-            KnobBoolPtr enabledKnob = tracks[i]->natronMarker->getEnabledKnob();
-
-            tracks[i]->natronMarker->notifyTrackingEnded();
-            contextEnabledKnob->blockListenersNotification();
-            contextEnabledKnob->copyKnob( enabledKnob );
-            contextEnabledKnob->unblockListenersNotification();
-            enabledKnob->slaveTo(contextEnabledKnob);
-        }
-        contextEnabledKnob->setKnobSelectedMultipleTimes(tracks.size() > 1);
+    for (std::size_t i = 0; i < tracks.size(); ++i) {
+        tracks[i]->natronMarker->notifyTrackingEnded();
     }
+
 
 
     //Now that tracking is done update viewer once to refresh the whole visible portion

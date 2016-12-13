@@ -283,10 +283,10 @@ public:
     virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
     
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
     
     
@@ -429,11 +429,6 @@ protected:
         Q_UNUSED(time);
         Q_UNUSED(view);
     }
-
-    /**
-     * @brief Reimplemented from KnobHolder.
-     **/
-    virtual void onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view) OVERRIDE FINAL;
 
     /**
      * @brief Reimplemented from KnobHolder.

@@ -234,7 +234,10 @@ public:
     std::map<ActionWithShortcut*, std::string> pythonCommands;
     RenderStatsDialog* statsDialog;
     PanelWidget* currentPanelFocus;
-    
+
+    // Used to concatenate requests to refresh keyframes
+    int nKeysRefreshRequests;
+
     // List of keyframes that should be visible on all timeline GUI
     TimeLineKeysSet keyframesVisibleOnTimeline;
 

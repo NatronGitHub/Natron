@@ -259,18 +259,16 @@ public Q_SLOTS:
 
     void onProjectViewsChanged();
 
-    void onRemoveAliasLinkActionTriggered();
-
     void onUnlinkActionTriggered();
 
     void onDimensionNameChanged(DimIdx dimension);
 
+    void onInternalKnobLinksChanged();
+
     void onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view);
 
-    void onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
-                                           const std::list<double>& keysRemoved,
-                                           ViewIdx view,
-                                           DimIdx dimension);
+    void onCurveAnimationChangedInternally(ViewSetSpec view,
+                                           DimSpec dimension);
 
     /**
      * @brief Called when the internal value held by the knob is changed. It calls updateGUI().
@@ -319,8 +317,6 @@ public Q_SLOTS:
 
     void onKnobMultipleSelectionChanged(bool d);
 
-    void onInternalKnobAnimationLevelChanged(ViewSetSpec view, DimSpec dimension);
-
     void onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   ValueChangedReturnCodeEnum setValueRetCode,
                                   const PerDimViewVariantMap& oldValue,
@@ -352,8 +348,6 @@ public Q_SLOTS:
 
     void onDoUpdateGuiLaterReceived();
 
-    void onDoUpdateAnimationLevelLaterReceived();
-
     void onSplitViewActionTriggered();
 
     void onUnSplitViewActionTriggered();
@@ -371,8 +365,6 @@ Q_SIGNALS:
 
     void s_doUpdateGuiLater();
 
-    void s_updateAnimationLevelLater();
-
     void s_updateModificationsStateLater();
 
     void s_refreshDimensionsVisibilityLater();
@@ -386,8 +378,6 @@ private:
     void refreshModificationsStateNow();
 
     void refreshGuiNow();
-
-    void refreshAnimationLevelNow();
 
     void createViewContainers(ViewIdx view);
 

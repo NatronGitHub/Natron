@@ -179,8 +179,19 @@ public:
 
     virtual QIcon getIcon() const OVERRIDE FINAL;
 
+    bool isNodeCloneLinked(const NodePtr& node);
+
+    void refreshNodeLinksNow();
+
+Q_SIGNALS:
+
+    void mustRefreshNodeLinksLater();
 
 public Q_SLOTS:
+
+    void onMustRefreshNodeLinksLaterReceived();
+
+    void refreshNodeLinksLater();
     
     bool pasteClipboard(const QPointF& pos = QPointF(INT_MIN, INT_MIN));
 

@@ -748,7 +748,7 @@ createDuplicateKnob( const std::string& knobName,
     if (otherNode) {
         KnobIPtr otherNodeKnob = otherNode->getKnobByName(knobName);
         assert(otherNodeKnob);
-        otherNodeKnob->slaveTo(duplicateKnob);
+        otherNodeKnob->linkTo(duplicateKnob);
     }
 
     return boost::dynamic_pointer_cast<KNOBTYPE>(duplicateKnob);
@@ -1409,8 +1409,7 @@ bool
 TrackerNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
                          ViewSetSpec /*view*/,
-                         double /*time*/,
-                         bool /*originatedFromMainThread*/)
+                         double /*time*/)
 {
 
 

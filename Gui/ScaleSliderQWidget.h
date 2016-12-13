@@ -92,9 +92,6 @@ public:
     // the size of a pixel increment (used to round the value)
     double increment();
 
-    void setUseLineColor(bool use, const QColor& color);
-
-
 Q_SIGNALS:
     void editingFinished(bool hasMovedOnce);
     void positionChanged(double);

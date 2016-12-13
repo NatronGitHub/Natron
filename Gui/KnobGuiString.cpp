@@ -103,6 +103,13 @@ AnimatingTextEdit::~AnimatingTextEdit()
 }
 
 void
+AnimatingTextEdit::setLinkedAppearanceEnabled(bool linked)
+{
+    _appearLinked = linked;
+    refreshStylesheet();
+}
+
+void
 AnimatingTextEdit::refreshStylesheet()
 {
 
@@ -139,6 +146,11 @@ AnimatingTextEdit::refreshStylesheet()
     bool fgColorSet = false;
     if (!isEnabled() || isReadOnly() || (AnimationLevelEnum)animation == eAnimationLevelExpression) {
         fgColor[0] = fgColor[1] = fgColor[2] = 0.;
+        fgColorSet = true;
+    }
+
+    if (_appearLinked) {
+        appPTR->getCurrentSettings()->getExprColor(&fgColor[0], &fgColor[1], &fgColor[2]);
         fgColorSet = true;
     }
 
@@ -194,7 +206,11 @@ AnimatingTextEdit::keyPressEvent(QKeyEvent* e)
             Q_EMIT editingFinished();
         }
     }
-    _hasChanged = true;
+    if (e->key() != Qt::Key_Control &&
+        e->key() != Qt::Key_Shift &&
+        e->key() != Qt::Key_Alt) {
+        _hasChanged = true;
+    }
     QTextEdit::keyPressEvent(e);
 }
 
@@ -729,7 +745,6 @@ KnobGuiString::updateGUI()
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);
-        _textEdit->blockSignals(true);
         QTextCursor cursor = _textEdit->textCursor();
         int pos = cursor.position();
         int selectionStart = cursor.selectionStart();
@@ -742,12 +757,14 @@ KnobGuiString::updateGUI()
             if (oldText == txt) {
                 return;
             }
+            _textEdit->blockSignals(true);
             _textEdit->setHtml(txt);
         } else {
             QString oldText = _textEdit->toPlainText();
             if (oldText == txt) {
                 return;
             }
+            _textEdit->blockSignals(true);
             _textEdit->setPlainText(txt);
         }
 
@@ -829,11 +846,31 @@ KnobGuiString::setEnabled(const std::vector<bool>& perDimEnabled)
 }
 
 void
+KnobGuiString::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    if (_lineEdit) {
+        QColor c;
+        if (linked) {
+            double r,g,b;
+            appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+            c.setRgbF(Image::clamp(r, 0., 1.),
+                      Image::clamp(g, 0., 1.),
+                      Image::clamp(b, 0., 1.));
+            _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, true, c);
+        } else {
+            _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, false);
+        }
+    } else if (_textEdit) {
+        _textEdit->setLinkedAppearanceEnabled(linked);
+    }
+}
+
+void
 KnobGuiString::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
     KnobStringPtr knob = _knob.lock();
-    bool isEnabled = knob->isEnabled(DimIdx(0), getView());
+    bool isEnabled = knob->isEnabled();
 
     if ( knob->isMultiLine() ) {
         assert(_textEdit);

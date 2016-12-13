@@ -147,8 +147,7 @@ NodeGraph::refreshAllKnobsGui()
                 KnobIPtr knob = it2->first.lock();
                 if ( !knob->getIsSecret() ) {
                     if (knob->hasAnimation()) {
-                        knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonNatronInternalEdited);
-                        knob->refreshAnimationLevel(ViewSetSpec::all(), DimSpec::all());
+                        knob->getSignalSlotHandler()->s_mustRefreshKnobGui(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
                     }
                 }
             }
@@ -557,22 +556,26 @@ void
 NodeGraph::createGroupFromSelection()
 {
     if ( !_imp->_selection.empty() ) {
-        pushUndoCommand( new GroupFromSelectionCommand(this, _imp->_selection) );
+        NodesList selection;
+        for (NodesGuiList::const_iterator it = _imp->_selection.begin(); it!=_imp->_selection.end(); ++it) {
+            selection.push_back((*it)->getNode());
+        }
+        pushUndoCommand( new GroupFromSelectionCommand(selection) );
     }
 }
 
 void
 NodeGraph::expandSelectedGroups()
 {
-    NodesGuiList nodes;
+    NodesList nodes;
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         NodeGroupPtr isGroup = (*it)->getNode()->isEffectNodeGroup();
         if ( isGroup && (isGroup->getNode()->getPluginID() == PLUGINID_NATRON_GROUP) ) {
-            nodes.push_back(*it);
+            nodes.push_back((*it)->getNode());
         }
     }
     if ( !nodes.empty() ) {
-        pushUndoCommand( new InlineGroupCommand(this, nodes) );
+        pushUndoCommand( new InlineGroupCommand(getGroup(), nodes) );
     } else {
         Dialogs::warningDialog( tr("Expand group").toStdString(), tr("You must select a group to expand first").toStdString() );
     }

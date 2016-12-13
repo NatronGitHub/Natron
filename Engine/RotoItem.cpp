@@ -295,8 +295,7 @@ bool
 RotoItem::onKnobValueChanged(const KnobIPtr& knob,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
-                             ViewSetSpec /*view*/,
-                             bool /*originatedFromMainThread*/)
+                             ViewSetSpec /*view*/)
 {
 #pragma message WARN("check this")
     if (knob == _imp->lockedKnob.lock()) {
@@ -304,7 +303,7 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
         const KnobsVec& knobs = getKnobs();
         for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
             if (*it != knob) {
-                knob->setEnabled(!_imp->lockedKnob.lock()->getValue());
+                (*it)->setEnabled(!_imp->lockedKnob.lock()->getValue());
             }
         }
         return true;

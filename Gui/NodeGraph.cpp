@@ -88,6 +88,9 @@ NodeGraph::NodeGraph(Gui* gui,
     , PanelWidget(scriptName, this, gui)
     , _imp( new NodeGraphPrivate(this, group) )
 {
+
+    QObject::connect(this, SIGNAL(mustRefreshNodeLinksLater()), this, SLOT(onMustRefreshNodeLinksLaterReceived()), Qt::QueuedConnection);
+
     group->setNodeGraphPointer(this);
 
     setAttribute(Qt::WA_MacShowFocusRect, 0);
@@ -385,14 +388,7 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     // This will create the node GUI across all Natron
     node_ui->initialize(this, node, args);
 
-
-    // For groups do it in GuiAppInstance::onGroupCreationFinished once all internal nodes
-    // have been created
-    NodeGroupPtr isGroup = node->isEffectNodeGroup();
-    if (!isGroup) {
-    #pragma message WARN("Check this")
-        setNodeToDefaultPosition(node_ui, selectedNodes, args);
-    }
+    setNodeToDefaultPosition(node_ui, selectedNodes, args);
 
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     bool addUndoRedo = args.getProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
@@ -400,11 +396,8 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
         pushUndoCommand( new AddMultipleNodesCommand(this, node_ui) );
     } else if (!serialization ) {
 
-        // For groups don't select the nodes otherwise we cannot retrieve the old selection
-        // in GuiAppInstance::onGroupCreationFinished
-        if (!isGroup) {
-            selectNode(node_ui, false);
-        }
+        selectNode(node_ui, false);
+
 
         getGui()->getApp()->triggerAutoSave();
     }

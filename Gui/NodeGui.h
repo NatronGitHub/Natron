@@ -54,6 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGuiI.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/TimeLineKeys.h"
 
 #include "Gui/GuiFwd.h"
@@ -310,8 +311,6 @@ public:
     KnobItemsTableGuiPtr getKnobItemsTable() const;
 
 
-    void setKnobLinksVisible(bool visible);
-
     void setMergeHintActive(bool active);
 
 
@@ -376,8 +375,6 @@ public:
 
     void copyPreviewImageBuffer(const std::vector<unsigned int>& data, int width, int height);
 
-    void onKnobExpressionChanged(const KnobGui* knob);
-
     virtual void pushUndoCommand(const UndoCommandPtr& command) OVERRIDE FINAL;
 
     /**
@@ -389,11 +386,11 @@ public:
     virtual bool setCurrentCursor(const QString& customCursorFilePath) OVERRIDE FINAL;
     virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) OVERRIDE FINAL;
 
-    void onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& keysAdded, const std::list<double>& keysRemoved);
-
-    void onKnobSecretChanged(const KnobIPtr& knob, bool isSecret);
-
     void getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const;
+
+    virtual bool addComponentsWithDialog(const KnobChoicePtr& knob) OVERRIDE FINAL;
+
+    void refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links);
 
 protected:
 
@@ -471,8 +468,6 @@ public Q_SLOTS:
      **/
     void refreshDashedStateOfEdges();
 
-    void refreshKnobLinks();
-
     void refreshAnimationIcon();
 
     /*initialises the input edges*/
@@ -498,10 +493,6 @@ public Q_SLOTS:
     void beginEditKnobs();
 
     void centerGraphOnIt();
-
-    void onAllKnobsSlaved(bool b);
-
-    void onKnobsLinksChanged();
 
     void refreshOutputEdgeVisibility();
 
@@ -611,40 +602,10 @@ private:
 
     //True when the settings panel has been  created
     bool _panelCreated;
-    QColor _clonedColor;
     bool _wasBeginEditCalled;
 
-    ///This is the garphical red line displayed when the node is a clone
-    boost::scoped_ptr<LinkArrow> _slaveMasterLink;
-    boost::weak_ptr<NodeGui> _masterNodeGui;
-
-    ///For each knob that has a link to another parameter, display an arrow
-    struct LinkedKnob
-    {
-        KnobIWPtr master;
-        KnobIWPtr slave;
-
-        // Is this link valid (counter for all dimensions)
-        bool linkInValid;
-
-
-        LinkedKnob()
-            : master()
-            , slave()
-            , linkInValid(false)
-        {
-        }
-    };
-
-    struct LinkedDim
-    {
-        std::list<LinkedKnob> knobs;
-        LinkArrow* arrow;
-    };
-
-    typedef std::map<NodeWPtr, LinkedDim> KnobGuiLinks;
-    KnobGuiLinks _knobsLinks;
     boost::shared_ptr<NodeGuiIndicator> _expressionIndicator;
+    boost::shared_ptr<NodeGuiIndicator> _cloneIndicator;
     boost::shared_ptr<NodeGuiIndicator> _animationIndicator;
     QPoint _magnecEnabled; //<enabled in X or/and Y
     QPointF _magnecDistance; //for x and for  y
@@ -662,15 +623,7 @@ private:
     boost::shared_ptr<NodeGuiIndicator> _passThroughIndicator;
     NodeWPtr _identityInput;
     bool identityStateSet;
-    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::PyModalDialog> _activeNodeCustomModalDialog;
-
-    struct KnobKeyFramesData
-    {
-        std::set<int> keyframes, userKeyframes;
-    };
-    typedef std::map<KnobIWPtr, KnobKeyFramesData > KnobsKeyFramesDataMap;
-    // All keyframes that should be display for the node on the timeline
-    KnobsKeyFramesDataMap _knobsWithKeyframesDisplayed;
+    boost::shared_ptr<GroupKnobDialog> _activeNodeCustomModalDialog;
 
 };
 
@@ -679,6 +632,31 @@ toNodeGui(const NodeGuiIPtr& nodeGuiI)
 {
     return boost::dynamic_pointer_cast<NodeGui>(nodeGuiI);
 }
+
+struct GroupKnobDialogPrivate;
+class GroupKnobDialog : public QDialog
+{
+
+    GCC_DIAG_SUGGEST_OVERRIDE_OFF
+    Q_OBJECT
+    GCC_DIAG_SUGGEST_OVERRIDE_ON
+
+public:
+
+
+    GroupKnobDialog(Gui* gui,
+                    const KnobGroupConstPtr& group);
+
+    virtual ~GroupKnobDialog();
+
+public Q_SLOTS:
+
+    void onDialogBoxButtonClicked(QAbstractButton* button);
+    
+private:
+
+    boost::scoped_ptr<GroupKnobDialogPrivate> _imp;
+};
 
 NATRON_NAMESPACE_EXIT;
 

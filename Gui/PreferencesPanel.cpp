@@ -1091,7 +1091,7 @@ PreferencesPanel::onPageLabelChanged(const KnobPageGuiPtr& page)
 void
 PreferencesPanel::onSettingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason)
 {
-    if (reason != eValueChangedReasonUserEdited && reason != eValueChangedReasonNatronGuiEdited && reason != eValueChangedReasonRestoreDefault) {
+    if (reason != eValueChangedReasonUserEdited && reason != eValueChangedReasonUserEdited && reason != eValueChangedReasonRestoreDefault) {
         return;
     }
     if (appPTR->getCurrentSettings()->doesKnobChangeRequiresRestart(knob)) {

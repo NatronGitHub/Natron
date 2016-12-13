@@ -40,6 +40,7 @@ UserPages:
         DisplayMin: 0
         DisplayMax: 100
       - Name: shadowOpacity
+        Float: [{N: Multiply1, K: value, D: r}, {N: Multiply1, K: value, D: g}, {N: Multiply1, K: value, D: b}, {N: Multiply1, K: value, D: a}]
         DefaultFloat: [0.5, 0.5, 0.5, 0.5]
         NDims: 4
         TypeName: Color
@@ -83,7 +84,7 @@ Children:
       - Name: outputAChoice
         String: A.a
       - Name: disableNode
-        Props: [MasterIsAlias]
+        Bool: {N: "@thisGroup", K: shadowCFS}
     Pos: [759, 87]
   - PluginID: net.sf.openfx.TransformPlugin
     Name: Transform2
@@ -116,7 +117,6 @@ Children:
         Bool: true
       - Name: value
         Float: 0.5
-        Props: [MasterIsAlias]
       - Name: premult
         Bool: true
       - Name: premultChanged
@@ -130,7 +130,7 @@ Children:
       - Name: size
         Float: [960, 540]
       - Name: color
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: shadowColor, D: r}, {N: "@thisGroup", K: shadowColor, D: g}, {N: "@thisGroup", K: shadowColor, D: b}]
     Pos: [584, 87]
   - PluginID: fr.inria.built-in.Input
     Name: InputSource
@@ -148,7 +148,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: shadowBlur, D: x}, {N: "@thisGroup", K: shadowBlur, D: y}]
     Pos: [759, 260]
   - PluginID: net.sf.openfx.MergePlugin
     Name: Merge1
@@ -157,5 +157,5 @@ Children:
       - Name: maskInvert
         Bool: true
       - Name: disableNode
-        Props: [MasterIsAlias]
+        Bool: {N: "@thisGroup", K: shadowOnly}
     Pos: [1000, 329]

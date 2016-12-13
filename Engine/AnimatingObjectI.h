@@ -196,7 +196,10 @@ public:
     /**
      * @brief For an object that supports animating strings, this is should return a pointer to it
      **/
-    virtual StringAnimationManagerPtr getStringAnimation() const { return StringAnimationManagerPtr(); };
+    virtual StringAnimationManagerPtr getStringAnimation(ViewIdx view) const {
+        Q_UNUSED(view);
+        return StringAnimationManagerPtr();
+    }
 
 
     /**
@@ -264,7 +267,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type int.
@@ -275,7 +278,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
+    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type int.
@@ -287,14 +290,14 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type int.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
+    virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
     ////////////////////////// Double based animating objects
 
@@ -302,7 +305,7 @@ public:
      * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type double.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type double.
@@ -313,7 +316,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type double.
@@ -325,14 +328,14 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type double.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
+    virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
     ////////////////////////// Bool based animating objects
 
@@ -346,7 +349,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type bool.
@@ -357,7 +360,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
+    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type bool.
@@ -369,14 +372,14 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type bool.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
+    virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
 
     ////////////////////////// String based animating objects
@@ -390,7 +393,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type string.
@@ -401,7 +404,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<KeyFrame>* newKey = 0);
+    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
 
     /**
      * @brief Set a keyframe across multiple dimensions at once. This is only relevant on curves of type string.
@@ -413,14 +416,14 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type string.
      * Note: as multiple keyframes are set across multiple dimensions this makes it hard to return all status codes so if the caller
      * really needs the status code then another function giving that result should be considered.
      **/
-    virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonNatronInternalEdited);
+    virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited);
 
     ///////////////////////// Curve manipulation
 

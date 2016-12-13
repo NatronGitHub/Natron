@@ -40,6 +40,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QTextCursor>
 #include <QGridLayout>
 #include <QCursor>
+#include <QDialogButtonBox>
 #include <QtCore/QFile>
 #include <QApplication>
 CLANG_DIAG_ON(deprecated)
@@ -90,6 +91,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Label.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Menu.h"
+#include "Gui/NewLayerDialog.h"
 #include "Gui/NodeGraph.h"
 #include "Gui/NodeGraphUndoRedo.h"
 #include "Gui/NodeGraphTextItem.h"
@@ -182,12 +184,9 @@ NodeGui::NodeGui(QGraphicsItem *parent)
     , _settingsPanel(NULL)
     , _mainInstancePanel(NULL)
     , _panelCreated(false)
-    , _clonedColor()
     , _wasBeginEditCalled(false)
-    , _slaveMasterLink()
-    , _masterNodeGui()
-    , _knobsLinks()
     , _expressionIndicator()
+    , _cloneIndicator()
     , _magnecEnabled()
     , _magnecDistance()
     , _updateDistanceSinceLastMagnec()
@@ -230,8 +229,6 @@ NodeGui::initialize(NodeGraph* dag,
     QObject::connect( internalNode.get(), SIGNAL(activated(bool)), this, SLOT(activate(bool)) );
     QObject::connect( internalNode.get(), SIGNAL(inputChanged(int)), this, SLOT(connectEdge(int)) );
     QObject::connect( internalNode.get(), SIGNAL(persistentMessageChanged()), this, SLOT(onPersistentMessageChanged()) );
-    QObject::connect( internalNode.get(), SIGNAL(allKnobsSlaved(bool)), this, SLOT(onAllKnobsSlaved(bool)) );
-    QObject::connect( internalNode.get(), SIGNAL(knobsLinksChanged()), this, SLOT(onKnobsLinksChanged()) );
     QObject::connect( internalNode.get(), SIGNAL(outputsChanged()), this, SLOT(refreshOutputEdgeVisibility()) );
     QObject::connect( internalNode.get(), SIGNAL(previewKnobToggled()), this, SLOT(onPreviewKnobToggled()) );
     QObject::connect( internalNode.get(), SIGNAL(disabledKnobToggled(bool)), this, SLOT(onDisabledKnobToggled(bool)) );
@@ -290,8 +287,6 @@ NodeGui::initialize(NodeGraph* dag,
         resize(w, h);
     }
 
-
-    _clonedColor.setRgb(200, 70, 100);
 
 
     ///Make the output edge
@@ -363,10 +358,7 @@ NodeGui::restoreStateAfterCreation()
     internalNode->refreshIdentityState();
     onPersistentMessageChanged();
 
-    if (internalNode->getMasterNode()) {
-        onAllKnobsSlaved(true);
-    }
-    onKnobsLinksChanged();
+    getDagGui()->refreshNodeLinksLater();
 }
 
 void
@@ -409,11 +401,9 @@ NodeGui::ensurePanelCreated()
         QObject::connect( _settingsPanel, SIGNAL(colorChanged(QColor)), this, SLOT(onSettingsPanelColorChanged(QColor)) );
 
         _graph->getGui()->setNodeViewerInterface(thisShared);
+        gui->addNodeGuiToAnimationModuleEditor(thisShared);
+
     }
-
-    gui->addNodeGuiToAnimationModuleEditor(thisShared);
-
-    //Ensure panel for all children if multi-instance
 
 
     const std::list<ViewerTab*>& viewers = getDagGui()->getGui()->getViewersList();
@@ -451,6 +441,7 @@ NodeGui::createPanel(QVBoxLayout* container,
         panel = new NodeSettingsPanel(_graph->getGui(), thisAsShared, container, container->parentWidget() );
 
         if (panel) {
+            node->getEffectInstance()->setPanelPointer(panel);
             if (!node->getApp()->isTopLevelNodeBeingCreated(node)) {
                 panel->setClosed(true);
             } else {
@@ -597,9 +588,11 @@ NodeGui::createGui()
     exprGrad.push_back( qMakePair( 0.3, QColor(Qt::green) ) );
     exprGrad.push_back( qMakePair( 1., QColor(69, 96, 63) ) );
     _expressionIndicator.reset( new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("E"), bbox.topRight(), ellipseDiam, ellipseDiam, exprGrad, QColor(255, 255, 255), this) );
-    _expressionIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or several expression(s) involving values of parameters of other "
-                                                                        "nodes in the project. Hover the mouse on the green connections to see what are the effective links."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
     _expressionIndicator->setActive(false);
+
+    _cloneIndicator.reset( new NodeGuiIndicator(getDagGui(), depth + 2, QString::fromUtf8("C"), bbox.topRight(), ellipseDiam, ellipseDiam, exprGrad, QColor(255, 255, 255), this) );
+    _cloneIndicator->setActive(false);
 
     QGradientStops animGrad;
     animGrad.push_back( qMakePair( 0., QColor(Qt::white) ) );
@@ -929,6 +922,9 @@ NodeGui::resize(int width,
     if (_expressionIndicator) {
         _expressionIndicator->refreshPosition(topRight);
     }
+    if (_cloneIndicator) {
+        _cloneIndicator->refreshPosition(topRight);
+    }
     if (_animationIndicator) {
         _animationIndicator->refreshPosition(bottomLeft);
     }
@@ -1225,16 +1221,6 @@ NodeGui::refreshEdges()
     }
 }
 
-void
-NodeGui::refreshKnobLinks()
-{
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->refreshPosition();
-    }
-    if (_slaveMasterLink) {
-        _slaveMasterLink->refreshPosition();
-    }
-}
 
 void
 NodeGui::markInputNull(Edge* e)
@@ -1690,8 +1676,17 @@ NodeGui::applyBrush(const QBrush & brush)
 void
 NodeGui::refreshCurrentBrush()
 {
-    if (_slaveMasterLink) {
-        applyBrush(_clonedColor);
+    bool isCloneLinked = getDagGui()->isNodeCloneLinked(getNode());
+    if (isCloneLinked) {
+        QColor cloneLinkColor;
+        {
+            double  cloneColor[3];
+            appPTR->getCurrentSettings()->getCloneColor(&cloneColor[0], &cloneColor[1], &cloneColor[2]);
+            cloneLinkColor.setRgbF(Image::clamp(cloneColor[0], 0., 1.),
+                                   Image::clamp(cloneColor[1], 0., 1.),
+                                   Image::clamp(cloneColor[2], 0., 1.));
+        }
+        applyBrush(cloneLinkColor);
     } else {
         applyBrush(getCurrentColor());
     }
@@ -1901,16 +1896,8 @@ NodeGui::showGui()
         }
     }
 
-    if (_slaveMasterLink) {
-        if ( !node->getMasterNode() ) {
-            onAllKnobsSlaved(false);
-        } else {
-            _slaveMasterLink->show();
-        }
-    }
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->show();
-    }
+    getDagGui()->refreshNodeLinksLater();
+
 } // NodeGui::showGui
 
 void
@@ -1954,12 +1941,8 @@ NodeGui::hideGui()
         _outputEdge->setActive(false);
     }
 
-    if (_slaveMasterLink) {
-        _slaveMasterLink->hide();
-    }
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->hide();
-    }
+    getDagGui()->refreshNodeLinksLater();
+    
     NodePtr node = getNode();
     ViewerNodePtr isViewer = node->isEffectViewerNode();
     if (isViewer) {
@@ -2269,235 +2252,6 @@ NodeGui::centerGraphOnIt()
 }
 
 void
-NodeGui::onAllKnobsSlaved(bool b)
-{
-    NodePtr node = getNode();
-
-    if (b) {
-        NodePtr masterNode = node->getMasterNode();
-        assert(masterNode);
-        NodeGuiIPtr masterNodeGui_i = masterNode->getNodeGui();
-        assert(masterNodeGui_i);
-        NodeGuiPtr masterNodeGui = boost::dynamic_pointer_cast<NodeGui>(masterNodeGui_i);
-        _masterNodeGui = masterNodeGui;
-        assert(!_slaveMasterLink);
-
-        if ( masterNode->getGroup() == node->getGroup() ) {
-            _slaveMasterLink.reset(new LinkArrow( masterNodeGui, shared_from_this(), parentItem() ));
-            _slaveMasterLink->setColor( QColor(200, 100, 100) );
-            _slaveMasterLink->setArrowHeadColor( QColor(243, 137, 20) );
-            _slaveMasterLink->setWidth(3);
-        }
-        if ( !node->getDisabledKnobValue() ) {
-            if ( !isSelected() ) {
-                applyBrush(_clonedColor);
-            }
-        }
-    } else {
-        if (_slaveMasterLink) {
-            _slaveMasterLink.reset();
-        }
-        _masterNodeGui.reset();
-        if ( !node->getDisabledKnobValue() ) {
-            if ( !isSelected() ) {
-                applyBrush(getCurrentColor());
-            }
-        }
-    }
-
-    // Also refresh links
-    onKnobsLinksChanged();
-    
-    update();
-}
-
-static QString
-makeLinkString(const NodePtr& masterNode,
-               const KnobIPtr& master,
-               const NodePtr& slaveNode,
-               const KnobIPtr& slave)
-{
-    QString tt = QString::fromUtf8("<p>");
-
-    tt.append( QString::fromUtf8( masterNode->getLabel().c_str() ) );
-    tt.append( QLatin1Char('.') );
-    tt.append( QString::fromUtf8( master->getName().c_str() ) );
-
-
-    tt.append( QString::fromUtf8(" (master) ") );
-
-    tt.append( QString::fromUtf8("------->") );
-
-    tt.append( QString::fromUtf8( slaveNode->getLabel().c_str() ) );
-    tt.append( QString::fromUtf8(".") );
-    tt.append( QString::fromUtf8( slave->getName().c_str() ) );
-
-
-    tt.append( QString::fromUtf8(" (slave)</p>") );
-
-    return tt;
-}
-
-void
-NodeGui::onKnobExpressionChanged(const KnobGui* knob)
-{
-    KnobIPtr internalKnob = knob->getKnob();
-
-    // Find the knob
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-
-        for (std::list<LinkedKnob>::iterator it2 = it->second.knobs.begin(); it2 != it->second.knobs.end(); ++it2) {
-            KnobIPtr slave = it2->slave.lock();
-            if (slave != internalKnob) {
-                continue;
-            }
-
-            // Ok found, now refresh the valid flag
-
-            int ndims = slave->getNDimensions();
-            std::list<ViewIdx> views = slave->getViewsList();
-
-            int invalid = false;
-            for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
-                for (int i = 0; i < ndims; ++i) {
-                    if ( !slave->getExpression(DimIdx(i), *it3).empty() && !slave->isExpressionValid(DimIdx(i), *it3, 0) ) {
-                        invalid = true;
-                        break;
-                    }
-                }
-            }
-            it2->linkInValid = invalid;
-
-            // Now cycle through all links against the node, if there are all invalids, hide the link
-            bool hasAtLeastOneLinkValid = false;
-            for (std::list<LinkedKnob>::iterator it3 = it->second.knobs.begin(); it3 != it->second.knobs.end(); ++it3) {
-                if (!it3->linkInValid) {
-                    hasAtLeastOneLinkValid = true;
-                    break;
-                }
-            }
-            it->second.arrow->setVisible(hasAtLeastOneLinkValid);
-
-            return;
-        }
-
-    }
-}
-
-void
-NodeGui::onKnobsLinksChanged()
-{
-    if (!_expressionIndicator) {
-        return;
-    }
-    NodePtr node = getNode();
-
-    typedef std::list<Node::KnobLink> InternalLinks;
-    InternalLinks links;
-    node->getKnobsLinks(links);
-
-    // When the node is cloned, don't consider links
-    NodePtr nodeIsCloned = node->getMasterNode();
-
-    ///1st pass: remove the no longer needed links
-    KnobGuiLinks newLinks;
-    if (nodeIsCloned) {
-        links.clear();
-    } else {
-        for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-            bool found = false;
-            for (InternalLinks::iterator it2 = links.begin(); it2 != links.end(); ++it2) {
-                if ( it2->masterNode.lock() == it->first.lock() ) {
-                    found = true;
-                    break;
-                }
-            }
-            if (!found) {
-                delete it->second.arrow;
-            } else {
-                newLinks.insert(*it);
-            }
-        }
-    }
-    _knobsLinks = newLinks;
-
-    ///2nd pass: create the new links
-
-    NodeGuiPtr thisShared = shared_from_this();
-
-    int nbVisibleLinks = 0;
-    for (InternalLinks::iterator it = links.begin(); it != links.end(); ++it) {
-        if (it->masterKnob.lock()->getIsSecret() || it->slaveKnob.lock()->getIsSecret()) {
-            continue;
-        }
-
-        ++nbVisibleLinks;
-
-        NodePtr masterNode = it->masterNode.lock();
-        KnobGuiLinks::iterator foundGuiLink = masterNode ? _knobsLinks.find(it->masterNode) : _knobsLinks.end();
-        if ( foundGuiLink != _knobsLinks.end() ) {
-            //We already have a link to the master node
-            std::list<LinkedKnob>::iterator found = foundGuiLink->second.knobs.end();
-
-            for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                if ( ( it2->slave.lock() == it->slaveKnob.lock() ) && ( it2->slave.lock() == it->masterKnob.lock() ) ) {
-                    found = it2;
-                    break;
-                }
-            }
-            if ( found == foundGuiLink->second.knobs.end() ) {
-                ///There's no link for this knob, add info to the tooltip of the link arrow
-                LinkedKnob k;
-                k.slave = it->slaveKnob;
-                k.master = it->masterKnob;
-                k.linkInValid = false;
-                foundGuiLink->second.knobs.push_back(k);
-                QString fullToolTip;
-                for (std::list<LinkedKnob>::iterator it2 = foundGuiLink->second.knobs.begin(); it2 != foundGuiLink->second.knobs.end(); ++it2) {
-                    QString tt = makeLinkString( masterNode, it2->master.lock(), node, it2->slave.lock() );
-                    fullToolTip.append(tt);
-                }
-            }
-        } else {
-            ///There's no link to the master node yet
-            if ( masterNode && (masterNode->getNodeGui().get() != this) && ( masterNode->getGroup() == getNode()->getGroup() ) ) {
-                NodeGuiIPtr master_i = masterNode->getNodeGui();
-                NodeGuiPtr master = boost::dynamic_pointer_cast<NodeGui>(master_i);
-                assert(master);
-
-                LinkArrow* arrow = new LinkArrow( master, thisShared, parentItem() );
-                arrow->setWidth(2);
-                arrow->setColor( QColor(143, 201, 103) );
-                arrow->setArrowHeadColor( QColor(200, 255, 200) );
-
-                QString tt = makeLinkString( masterNode, it->masterKnob.lock(), node, it->slaveKnob.lock() );
-                arrow->setToolTip(tt);
-                if ( !getDagGui()->areKnobLinksVisible() ) {
-                    arrow->setVisible(false);
-                }
-                LinkedDim& guilink = _knobsLinks[it->masterNode];
-                guilink.arrow = arrow;
-                LinkedKnob k;
-                k.slave = it->slaveKnob;
-                k.master = it->masterKnob;
-                k.linkInValid = false;
-                guilink.knobs.push_back(k);
-            }
-        }
-    }
-
-    if (nbVisibleLinks > 0) {
-        if ( !_expressionIndicator->isActive() ) {
-            _expressionIndicator->setActive(true);
-        }
-    } else {
-        if ( _expressionIndicator->isActive() ) {
-            _expressionIndicator->setActive(false);
-        }
-    }
-} // onKnobsLinksChanged
-
-void
 NodeGui::refreshOutputEdgeVisibility()
 {
     if (_outputEdge) {
@@ -2540,7 +2294,7 @@ NodeGui::destroyGui()
 
 
     //Remove from animation module
-    guiObj->getAnimationModuleEditor()->removeNode( shared_from_this() );
+    guiObj->getAnimationModuleEditor()->removeNode( thisShared );
 
 
     //Remove nodegraph if group
@@ -2597,6 +2351,9 @@ NodeGui::destroyGui()
     //Delete settings panel
     delete _settingsPanel;
     _settingsPanel = 0;
+
+    _graph->refreshNodeLinksLater();
+    
 } // NodeGui::destroyGui
 
 QSize
@@ -3239,14 +2996,6 @@ NodeGui::setParentMultiInstance(const NodeGuiPtr & node)
 }
 
 void
-NodeGui::setKnobLinksVisible(bool visible)
-{
-    for (KnobGuiLinks::iterator it = _knobsLinks.begin(); it != _knobsLinks.end(); ++it) {
-        it->second.arrow->setVisible(visible);
-    }
-}
-
-void
 NodeGui::onParentMultiInstancePositionChanged(int x,
                                               int y)
 {
@@ -3817,34 +3566,199 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     return true;
 }
 
-class GroupKnobDialog
-    : public NATRON_PYTHON_NAMESPACE::PyModalDialog
+struct GroupKnobDialogPrivate
 {
-public:
-
-
-    GroupKnobDialog(Gui* gui,
-                    const KnobGroupConstPtr& group);
-
-    virtual ~GroupKnobDialog()
+    QVBoxLayout* mainLayout;
+    QDialogButtonBox* buttonBox;
+    DockablePanel* panel;
+    KnobGroupPtr knob;
+    
+    GroupKnobDialogPrivate()
+    : mainLayout(0)
+    , buttonBox(0)
+    , panel(0)
+    , knob()
     {
+        
     }
 };
 
-GroupKnobDialog::GroupKnobDialog(Gui* gui,
-                                 const KnobGroupConstPtr& group)
-    : NATRON_PYTHON_NAMESPACE::PyModalDialog(gui, eStandardButtonNoButton)
+
+GroupKnobDialog::GroupKnobDialog(Gui* gui, const KnobGroupConstPtr& group)
+: QDialog(gui)
+, _imp(new GroupKnobDialogPrivate())
 {
+    _imp->knob = boost::const_pointer_cast<KnobGroup>(group);
+
     setWindowTitle( QString::fromUtf8( group->getLabel().c_str() ) );
-    KnobPagePtr page = AppManager::createKnob<KnobPage>(getKnobsHolder(), tr("Page"));
-    KnobsVec children = group->getChildren();
-    for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobIPtr duplicate = children[i]->createDuplicateOnHolder(getKnobsHolder(), page, KnobGroupPtr(), i, KnobI::eDuplicateKnobTypeAlias, children[i]->getName(), children[i]->getLabel(), children[i]->getHintToolTip(), false, true);
-        duplicate->setAddNewLine( children[i]->isNewLineActivated() );
+
+    _imp->mainLayout = new QVBoxLayout(this);
+
+    _imp->panel = new DockablePanel(gui,
+                                    group->getHolder(),
+                                    _imp->mainLayout,
+                                    DockablePanel::eHeaderModeNoHeader,
+                                    false,
+                                    boost::shared_ptr<QUndoStack>(),
+                                    QString(), QString(),
+                                    this);
+    _imp->panel->setAsDialogForGroup(_imp->knob);
+
+    _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    _imp->panel->initializeKnobs();
+
+    _imp->mainLayout->addWidget(_imp->panel);
+
+    // If the group contains knob buttons, try to match them to standard button and use
+    // the standard dialog button box instead of knob buttons if possible.
+    KnobsVec knobs = group->getChildren();
+    QDialogButtonBox::StandardButtons buttons;
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobButtonPtr isButton = toKnobButton(*it);
+        if (!isButton || isButton->getIsCheckable()) {
+            continue;
+        }
+        std::string label =  (*it)->getLabel();
+        bool gotIt = true;
+        if (label == "Ok") {
+            buttons |= QDialogButtonBox::Ok;
+        } else if (label == "Save") {
+            buttons |= QDialogButtonBox::Save;
+        } else if (label == "SaveAll") {
+            buttons |= QDialogButtonBox::SaveAll;
+        } else if (label == "Open") {
+            buttons |= QDialogButtonBox::Open;
+        } else if (label == "Yes") {
+            buttons |= QDialogButtonBox::Yes;
+        } else if (label == "YesToAll") {
+            buttons |= QDialogButtonBox::YesToAll;
+        } else if (label == "No") {
+            buttons |= QDialogButtonBox::No;
+        } else if (label == "NoToAll") {
+            buttons |= QDialogButtonBox::NoToAll;
+        } else if (label == "Abort") {
+            buttons |= QDialogButtonBox::Abort;
+        } else if (label == "Retry") {
+            buttons |= QDialogButtonBox::Retry;
+        } else if (label == "Ignore") {
+            buttons |= QDialogButtonBox::Ignore;
+        } else if (label == "Close") {
+            buttons |= QDialogButtonBox::Close;
+        } else if (label == "Cancel") {
+            buttons |= QDialogButtonBox::Cancel;
+        } else if (label == "Discard") {
+            buttons |= QDialogButtonBox::Discard;
+        } else if (label == "Help") {
+            buttons |= QDialogButtonBox::Help;
+        } else if (label == "Apply") {
+            buttons |= QDialogButtonBox::Apply;
+        } else if (label == "Reset") {
+            buttons |= QDialogButtonBox::Reset;
+        } else if (label == "RestoreDefaults") {
+            buttons |= QDialogButtonBox::RestoreDefaults;
+        } else {
+            gotIt = false;
+        }
+        (*it)->setSecret(gotIt);
     }
 
-    refreshUserParamsGUI();
+    if (buttons != QDialogButtonBox::NoButton) {
+        _imp->buttonBox = new QDialogButtonBox(buttons, Qt::Horizontal, this);
+        connect(_imp->buttonBox, SIGNAL(clicked(QAbstractButton*)), this, SLOT(onDialogBoxButtonClicked(QAbstractButton*)));
+        _imp->mainLayout->addWidget(_imp->buttonBox);
+    }
+
+
+    
 }
+
+GroupKnobDialog::~GroupKnobDialog()
+{
+}
+
+void
+GroupKnobDialog::onDialogBoxButtonClicked(QAbstractButton* button)
+{
+    if (!_imp->buttonBox || !button) {
+        return;
+    }
+    QDialogButtonBox::StandardButton type = _imp->buttonBox->standardButton(button);
+    std::string knobLabel;
+    switch (type) {
+        case QDialogButtonBox::Ok:
+            knobLabel = "Ok";
+            break;
+        case QDialogButtonBox::Save:
+            knobLabel = "Save";
+            break;
+        case QDialogButtonBox::SaveAll:
+            knobLabel = "SaveAll";
+            break;
+        case QDialogButtonBox::Open:
+            knobLabel = "Open";
+            break;
+        case QDialogButtonBox::Yes:
+            knobLabel = "Yes";
+            break;
+        case QDialogButtonBox::YesToAll:
+            knobLabel = "YesToAll";
+            break;
+        case QDialogButtonBox::No:
+            knobLabel = "No";
+            break;
+        case QDialogButtonBox::NoToAll:
+            knobLabel = "NoToAll";
+            break;
+        case QDialogButtonBox::Abort:
+            knobLabel = "Abort";
+            break;
+        case QDialogButtonBox::Retry:
+            knobLabel = "Retry";
+            break;
+        case QDialogButtonBox::Ignore:
+            knobLabel = "Ignore";
+            break;
+        case QDialogButtonBox::Close:
+            knobLabel = "Close";
+            break;
+        case QDialogButtonBox::Cancel:
+            knobLabel = "Cancel";
+            break;
+        case QDialogButtonBox::Discard:
+            knobLabel = "Discard";
+            break;
+        case QDialogButtonBox::Help:
+            knobLabel = "Help";
+            break;
+        case QDialogButtonBox::Apply:
+            knobLabel = "Apply";
+            break;
+        case QDialogButtonBox::Reset:
+            knobLabel = "Reset";
+            break;
+        case QDialogButtonBox::RestoreDefaults:
+            knobLabel = "RestoreDefaults";
+            break;
+        case QDialogButtonBox::NoButton:
+            break;
+    }
+
+
+    // Find a corresponding knob by label
+    KnobsVec knobs = _imp->knob->getChildren();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        KnobButtonPtr isButton = toKnobButton(*it);
+        if (!isButton) {
+            continue;
+        }
+        std::string label =  (*it)->getLabel();
+        if (label == knobLabel) {
+            isButton->trigger();
+            break;
+        }
+
+    }
+} // onDialogBoxButtonClicked
 
 void
 NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
@@ -4003,60 +3917,77 @@ NodeGui::onInputVisibilityChanged(int /*inputNb*/)
     refreshEdgesVisility();
 }
 
-
-
-void
-NodeGui::onKnobKeyFramesChanged(const KnobIPtr& knob, const std::list<double>& keysAdded, const std::list<double>& keysRemoved)
+static void addAnimatingItemKeys(const AnimatingObjectIPtr& obj, bool isUserKey, TimeLineKeysSet* keys)
 {
-
-    KnobKeyFramesData& data = _knobsWithKeyframesDisplayed[knob];
-
-    for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
-        data.keyframes.insert((int)*it);
-    }
-    for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
-        std::set<int>::iterator found = data.keyframes.find((int)*it);
-        if (found != data.keyframes.end()) {
-            data.keyframes.erase(found);
+    std::list<ViewIdx> views = obj->getViewsList();
+    int nDims = obj->getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+            CurvePtr curve = obj->getAnimationCurve(*it, DimIdx(i));
+            if (!curve) {
+                continue;
+            }
+            KeyFrameSet keysSet = curve->getKeyFrames_mt_safe();
+            for (KeyFrameSet::const_iterator it2 = keysSet.begin(); it2!=keysSet.end(); ++it2) {
+                TimeLineKey k((int)it2->getTime());
+                k.isUserKey = isUserKey;
+                insertTimelineKey(k, keys);
+            }
         }
-    }
-
-    if (_settingsPanel && !_settingsPanel->isClosed()) {
-        getDagGui()->getGui()->refreshTimelineGuiKeyframes();
     }
 }
 
-void
-NodeGui::onKnobSecretChanged(const KnobIPtr& knob, bool /*isSecret*/)
+static void addKnobsKeys(const KnobsVec& knobs, TimeLineKeysSet* keys)
 {
-    // If the knob has keyframes, we must redraw the timeline
-    KnobsKeyFramesDataMap::iterator foundKnob = _knobsWithKeyframesDisplayed.find(knob);
-    if (foundKnob != _knobsWithKeyframesDisplayed.end()) {
-        getDagGui()->getGui()->refreshTimelineGuiKeyframes();
-    }
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
 
+        if ((*it)->getIsSecret()) {
+            continue;
+        }
+
+        if (!(*it)->isAnimationEnabled()) {
+            continue;
+        }
+
+        if (!(*it)->isKeyFrameTrackingEnabled()) {
+            continue;
+        }
+
+        addAnimatingItemKeys(*it, false /*isUserKey*/, keys);
+    }
+}
+
+static void addKnobTableItemKeysRecursive(const KnobTableItemPtr& item, TimeLineKeysSet* keys)
+{
+    // Add the master keyframes
+    addAnimatingItemKeys(item, true /*isUserKey*/, keys);
+
+    // Add knobs keyframes
+    const KnobsVec& knobs = item->getKnobs();
+    addKnobsKeys(knobs, keys);
+
+    // Recurse on children
+    std::vector<KnobTableItemPtr> children = item->getChildren();
+    for (std::size_t i = 0; i < children.size(); ++i) {
+        addKnobTableItemKeysRecursive(children[i], keys);
+    }
 }
 
 void
 NodeGui::getAllVisibleKnobsKeyframes(TimeLineKeysSet* keys) const
 {
-    for (KnobsKeyFramesDataMap::const_iterator it = _knobsWithKeyframesDisplayed.begin(); it!= _knobsWithKeyframesDisplayed.end(); ++it) {
-        KnobIPtr knob = it->first.lock();
-        if (!knob) {
-            continue;
-        }
-        if (knob->getIsSecret()) {
-            continue;
-        }
-        for (std::set<int>::const_iterator it2 = it->second.userKeyframes.begin(); it2 != it->second.userKeyframes.end(); ++it2) {
-            TimeLineKey k(*it2);
-            k.isUserKey = true;
-            insertTimelineKey(k, keys);
-        }
-        for (std::set<int>::const_iterator it2 = it->second.keyframes.begin(); it2 != it->second.keyframes.end(); ++it2) {
-            TimeLineKey k(*it2);
-            k.isUserKey = false;
-            insertTimelineKey(k, keys);
+    EffectInstancePtr effect = getNode()->getEffectInstance();
+    if (!effect) {
+        return;
+    }
+    const KnobsVec& knobs = effect->getKnobs();
+    addKnobsKeys(knobs, keys);
+
+    KnobItemsTablePtr table = effect->getItemsTable();
+    if (table) {
+        std::vector<KnobTableItemPtr> items = table->getTopLevelItems();
+        for (std::size_t i = 0; i < items.size(); ++i) {
+            addKnobTableItemKeysRecursive(items[i], keys);
         }
     }
 }
@@ -4122,8 +4053,69 @@ NodeGui::onNodePresetsChanged()
             }
         }
     }
+} // onNodePresetsChanged
+
+bool
+NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
+{
+
+    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getDagGui()->getGui() );
+
+    if ( dialog.exec() ) {
+        ImageComponents comps = dialog.getComponents();
+        if ( comps == ImageComponents::getNoneComponents() ) {
+            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
+                                                                "Python compliant.").toStdString() );
+
+            return false;
+        }
+        assert(knob->getHolder() == getNode()->getEffectInstance());
+
+        if ( !getNode()->addUserComponents(comps) ) {
+            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
+            return false;
+        }
+        return true;
+    }
+    return false;
 }
 
+void
+NodeGui::refreshLinkIndicators(const std::list<std::pair<NodePtr, bool> >& links)
+{
+
+    enum LinkType
+    {
+        eLinkTypeNone,
+        eLinkTypeSimple,
+        eLinkTypeClone
+    };
+    LinkType type = eLinkTypeNone;
+    std::string cloneNodeName;
+    for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
+        if (it->second) {
+            type = eLinkTypeClone;
+            cloneNodeName = it->first->getFullyQualifiedName();
+            break;
+        } else if (it->first != getNode()) {
+            type = eLinkTypeSimple;
+        }
+    }
+    if (_cloneIndicator) {
+        _cloneIndicator->setActive(type == eLinkTypeClone);
+    }
+    if (_expressionIndicator) {
+        _expressionIndicator->setActive(type == eLinkTypeSimple);
+    }
+
+    if (type == eLinkTypeClone) {
+        NodePtr cloneNode = links.front().first;
+        QString tooltip = tr("This node is a clone of %1").arg(QString::fromUtf8(cloneNodeName.c_str()));
+        _cloneIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tooltip, NATRON_NAMESPACE::WhiteSpaceNormal) );
+    } else if (type == eLinkTypeSimple) {
+        _expressionIndicator->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This node has one or multiple link(s) or expression(s) involving values of parameters of other nodes in the project."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    }
+}
 
 NATRON_NAMESPACE_EXIT;
 

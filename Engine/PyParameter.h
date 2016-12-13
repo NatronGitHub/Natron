@@ -165,12 +165,12 @@ public:
     /**
      * @brief Returns whether the given dimension is enabled, i.e: whether the user can interact with it or not.
      **/
-    bool getIsEnabled(int dimension = 0) const;
+    bool getIsEnabled() const;
 
     /**
      * @brief Set the given dimension enabledness
      **/
-    void setEnabled(bool enabled, int dimension = 0);
+    void setEnabled(bool enabled);
 
     /**
      * @brief Returns whether this parameter is persistent or not. A persistent parameter will be saved into the project.
@@ -260,13 +260,19 @@ public:
               const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
               const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
-    bool slaveTo(Param* other,
-                 int thisDimension = kPyParamDimSpecAll,
-                 int otherDimension = kPyParamDimSpecAll,
-                 const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
-                 const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
+    bool linkTo(Param* other,
+                int thisDimension = kPyParamDimSpecAll,
+                int otherDimension = kPyParamDimSpecAll,
+                const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+                const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
 
-    void unslave(int dimension = kPyParamDimSpecAll, const QString& thisView = QLatin1String(kPyParamViewSetSpecAll));
+    bool slaveTo(Param* other,
+                int thisDimension = kPyParamDimSpecAll,
+                int otherDimension = kPyParamDimSpecAll,
+                const QString& thisView = QLatin1String(kPyParamViewSetSpecAll),
+                const QString& otherView = QLatin1String(kPyParamViewSetSpecAll));
+
+    void unlink(int dimension = kPyParamDimSpecAll, const QString& thisView = QLatin1String(kPyParamViewSetSpecAll));
 
     /**
      * @brief Returns a pseudo-random number. This will always be the same for the same time on the timeline.

@@ -991,7 +991,7 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
         return;
     }
 
-    StringAnimationManagerPtr stringAnim = knob->getInternalAnimItem()->getStringAnimation();
+    StringAnimationManagerPtr stringAnim = knob->getInternalAnimItem()->getStringAnimation(view);
 
     AnimItemDimViewIndexID id(knob, view, dimension);
 
@@ -1005,7 +1005,7 @@ AnimationModuleViewPrivate::checkAnimItemInRectInternal(const RectD& canonicalRe
             KeyFrameWithString k;
             k.key = *it2;
             if (stringAnim) {
-                stringAnim->stringFromInterpolatedIndex(it2->getValue(), view, &k.string);
+                stringAnim->stringFromInterpolatedIndex(it2->getValue(), &k.string);
             }
             outKeys.insert(k);
         }
@@ -1224,7 +1224,9 @@ void
 AnimationModuleViewPrivate::drawDopeSheetView()
 {
     drawDopeSheetScale();
+    glCheckError(GL_GPU);
     drawDopeSheetRows();
+    glCheckError(GL_GPU);
 
     if (state == eEventStateSelectionRectDopeSheet) {
         drawSelectionRect();

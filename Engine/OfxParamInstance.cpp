@@ -114,7 +114,7 @@ getOfxKeyFrames(const KnobIPtr& knob,
                     keyframes.insert(0);
                     keyframes.insert(1);
                 } else {
-                    CurvePtr curve = knob->getCurve(*it, DimIdx(i));
+                    CurvePtr curve = knob->getAnimationCurve(*it, DimIdx(i));
                     if (curve) {
                         KeyFrameSet dimKeys = curve->getKeyFrames_mt_safe();
                         for (KeyFrameSet::iterator it2 = dimKeys.begin(); it2 != dimKeys.end(); ++it2) {
@@ -125,8 +125,8 @@ getOfxKeyFrames(const KnobIPtr& knob,
             }
         }
     }
-    
-}
+
+} // getOfxKeyFrames
 
 ///anonymous namespace to handle keyframes communication support for Ofx plugins
 /// in a generalized manner
@@ -377,12 +377,32 @@ OfxParamToKnob::connectDynamicProperties()
     QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHintTooltipChanged()) );
     QObject::connect( handler, SIGNAL(inViewerContextLabelChanged()), this, SLOT(onInViewportLabelChanged()) );
     QObject::connect( handler, SIGNAL(viewerContextSecretChanged()), this, SLOT(onInViewportSecretChanged()) );
+
+    QObject::connect( this, SIGNAL(mustRefreshAnimationLevelLater()), this, SLOT(onMustRefreshAutoKeyingPropsLaterReceived()), Qt::QueuedConnection );
 }
 
 void
-OfxParamToKnob::onKnobAnimationLevelChanged(ViewSetSpec /*view*/,
-                                            DimSpec /*dimension*/)
+OfxParamToKnob::refreshAutoKeyingPropsLater()
 {
+    ++_nRefreshAutoKeyingRequests;
+    Q_EMIT mustRefreshAnimationLevelLater();
+
+}
+
+void
+OfxParamToKnob::onMustRefreshAutoKeyingPropsLaterReceived()
+{
+    if (!_nRefreshAutoKeyingRequests) {
+        return;
+    }
+    _nRefreshAutoKeyingRequests = 0;
+    refreshAutoKeyingPropsNow();
+}
+
+void
+OfxParamToKnob::refreshAutoKeyingPropsNow()
+{
+    
     OFX::Host::Param::Instance* param = getOfxParam();
     assert(param);
     KnobIPtr knob = getKnob();
@@ -406,6 +426,12 @@ OfxParamToKnob::onKnobAnimationLevelChanged(ViewSetSpec /*view*/,
 
     param->getProperties().setIntProperty(kOfxParamPropIsAnimating, level != eAnimationLevelNone);
     param->getProperties().setIntProperty(kOfxParamPropIsAutoKeying, level == eAnimationLevelInterpolatedValue);
+}
+
+void
+OfxParamToKnob::onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum)
+{
+    refreshAutoKeyingPropsLater();
 }
 
 void
@@ -722,9 +748,7 @@ OfxIntegerInstance::OfxIntegerInstance(const OfxEffectInstancePtr& node,
     int def = properties.getIntProperty(kOfxParamPropDefault);
 
     k->setIncrement(1); // kOfxParamPropIncrement only exists for Double
-    k->blockValueChanges();
     k->setDefaultValue(def);
-    k->unblockValueChanges();
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, 0);
     k->setDimensionName(DimIdx(0), dimensionName);
 }
@@ -969,9 +993,7 @@ OfxDoubleInstance::OfxDoubleInstance(const OfxEffectInstancePtr& node,
                                            doubleType ==  kOfxParamDoubleTypeNormalisedYAbsolute ||
                                            doubleType ==  kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType ==  kOfxParamDoubleTypeNormalisedXYAbsolute);
-    dblKnob->blockValueChanges();
     dblKnob->setDefaultValue(def);
-    dblKnob->unblockValueChanges();
     std::string dimensionName = properties.getStringProperty(kOfxParamPropDimensionLabel, 0);
     dblKnob->setDimensionName(DimIdx(0), dimensionName);
 }
@@ -1190,9 +1212,7 @@ OfxBooleanInstance::OfxBooleanInstance(const OfxEffectInstancePtr& node,
 
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    b->blockValueChanges();
     b->setDefaultValue( (bool)def);
-    b->unblockValueChanges();
 }
 
 OfxStatus
@@ -1348,6 +1368,7 @@ OfxBooleanInstance::copyFrom(const OFX::Host::Param::Instance &instance,
 
 ////////////////////////// OfxChoiceInstance /////////////////////////////////////////////////
 
+
 OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
                                      OFX::Host::Param::Descriptor & descriptor)
     : OfxParamToKnob(node)
@@ -1382,15 +1403,17 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
     choice->populateChoices(entires, helpStrings);
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
-    choice->blockValueChanges();
     choice->setDefaultValue(def);
-    choice->unblockValueChanges();
     bool cascading = properties.getIntProperty(kNatronOfxParamPropChoiceCascading) != 0;
     choice->setCascading(cascading);
 
     bool canAddOptions = (int)properties.getIntProperty(kNatronOfxParamPropChoiceHostCanAddOptions);
     if (canAddOptions) {
-        choice->setHostCanAddOptions(true);
+        // Currently the extension does not provide a way to specify a callback function pointer so only use
+        // it for the shuffle node to add new layers.
+        if ((descriptor.getName() == kNatronOfxParamOutputChannels)) {
+            choice->setNewOptionCallback(&Node::choiceParamAddLayerCallback);
+        }
     }
     QObject::connect( choice.get(), SIGNAL(populated()), this, SLOT(onChoiceMenuPopulated()) );
     QObject::connect( choice.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onChoiceMenuEntryAppended(QString,QString)) );
@@ -2276,9 +2299,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
     dblKnob->setDefaultValuesAreNormalized(coordSystem == kOfxParamCoordinatesNormalised ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXY ||
                                            doubleType == kOfxParamDoubleTypeNormalisedXYAbsolute);
-    dblKnob->blockValueChanges();
     dblKnob->setDefaultValues(def, DimIdx(_startIndex));
-    dblKnob->unblockValueChanges();
 }
 
 OfxStatus
@@ -2825,9 +2846,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(const OfxEffectInstancePtr& node,
         knob->setDecimals(decimals[i], DimIdx(_startIndex + i));
     }
 
-    knob->blockValueChanges();
     knob->setDefaultValues(def, DimIdx(_startIndex));
-    knob->unblockValueChanges();
 }
 
 OfxStatus
@@ -3334,9 +3353,7 @@ OfxGroupInstance::OfxGroupInstance(const OfxEffectInstancePtr& node,
         group->setAsTab();
     }
 
-    group->blockValueChanges();
     group->setDefaultValue(opened);
-    group->unblockValueChanges();
 }
 
 void
@@ -3551,20 +3568,14 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
         if (fileKnob) {
             projectEnvVar_setProxy(defaultVal);
             KnobFilePtr k = _imp->fileKnob.lock();
-            k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
-            k->unblockValueChanges();
         } else if (stringKnob) {
             KnobStringPtr k = _imp->stringKnob.lock();
-            k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
-            k->unblockValueChanges();
         } else if (pathKnob) {
             projectEnvVar_setProxy(defaultVal);
             KnobPathPtr k = _imp->pathKnob.lock();
-            k->blockValueChanges();
             k->setDefaultValue(defaultVal, DimIdx(0));
-            k->unblockValueChanges();
         }
     }
 }
@@ -4064,9 +4075,7 @@ OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
     _imp->knob = knob;
 
     knob->setAsCustom();
-    knob->blockValueChanges();
     knob->setDefaultValue(properties.getStringProperty(kOfxParamPropDefault));
-    knob->unblockValueChanges();
     _imp->customParamInterpolationV1Entry = (customParamInterpolationV1Entry_t)properties.getPointerProperty(kOfxParamPropCustomInterpCallbackV1);
     if (_imp->customParamInterpolationV1Entry) {
         knob->setCustomInterpolation( _imp->customParamInterpolationV1Entry, (void*)getHandle() );
@@ -4441,7 +4450,7 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getValue(DimIdx(curveIndex), parametricPosition, returnValue);
+    StatusEnum stat = _knob.lock()->getValue(DimIdx(curveIndex), ViewGetSpec::current(), parametricPosition, returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4455,7 +4464,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getNControlPoints(DimIdx(curveIndex), returnValue);
+    StatusEnum stat = _knob.lock()->getNControlPoints(DimIdx(curveIndex), ViewGetSpec::current(), returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4471,7 +4480,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    StatusEnum stat = _knob.lock()->getNthControlPoint(DimIdx(curveIndex), nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->getNthControlPoint(DimIdx(curveIndex), ViewGetSpec::current(), nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4489,7 +4498,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current(), nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4543,7 +4552,7 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), nthCtl);
+    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current(), nthCtl);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4555,7 +4564,7 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
-    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex));
+    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current());
 
     if (stat == eStatusOK) {
         return kOfxStatOK;

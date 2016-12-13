@@ -418,11 +418,11 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
       - Name: MasterSaturation
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: PostGradeMasterSaturation, D: r}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: g}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: b}, {N: "@thisGroup", K: PostGradeMasterSaturation, D: a}]
       - Name: MasterGamma
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: PostGradeMasterGamma, D: r}, {N: "@thisGroup", K: PostGradeMasterGamma, D: g}, {N: "@thisGroup", K: PostGradeMasterGamma, D: b}, {N: "@thisGroup", K: PostGradeMasterGamma, D: a}]
       - Name: MasterGain
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: PostGradeMasterGain, D: r}, {N: "@thisGroup", K: PostGradeMasterGain, D: g}, {N: "@thisGroup", K: PostGradeMasterGain, D: b}, {N: "@thisGroup", K: PostGradeMasterGain, D: a}]
       - Name: premultChanged
         Bool: true
     Pos: [1141, 1073]
@@ -475,8 +475,10 @@ Children:
     Params:
       - Name: bottomLeft
         Float: [960, 540]
+      - Name: size
+        Float: [960, 540]
       - Name: srcColor
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: HSVTool1srcColor, D: r}, {N: "@thisGroup", K: HSVTool1srcColor, D: g}, {N: "@thisGroup", K: HSVTool1srcColor, D: b}]
       - Name: hueRangeRolloff
         Float: 50
       - Name: saturationRangeRolloff
@@ -494,15 +496,15 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: {Expr: thisGroup.alpha.get()}
       - Name: size
-        Float: {Expr: thisGroup.size.get()}
+        Float: [{Expr: thisGroup.size.get()}, {Expr: thisGroup.size.get()*(1-thisGroup.stretch.get())}]
       - Name: bloomRatio
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: BloombloomRatio}
       - Name: bloomCount
         Int: {Expr: thisGroup.iterations.get()}
       - Name: boundary
         String: Black
       - Name: filter
-        Props: [MasterIsAlias]
+        String: {N: "@thisGroup", K: Bloomfilter}
       - Name: expandRoD
         Bool: {Expr: thisGroup.expRoD.get()}
       - Name: premultChanged

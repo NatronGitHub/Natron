@@ -73,23 +73,6 @@ static QString
 createTextForKnob(const KnobIPtr& knob)
 {
     QString text = QString::fromUtf8( knob->getName().c_str() );
-    KnobI::ListenerDimsMap listeners;
-
-    knob->getListeners(listeners);
-    if ( !listeners.empty() ) {
-        KnobIPtr listener = listeners.begin()->first.lock();
-        if ( listener && (listener->getAliasMaster() == knob) ) {
-            text += QString::fromUtf8(" (alias of ");
-            EffectInstancePtr effect = toEffectInstance( listener->getHolder() );
-            if (effect) {
-                text += QString::fromUtf8( effect->getScriptName_mt_safe().c_str() );
-                text += QLatin1Char('.');
-            }
-            text += QString::fromUtf8( listener->getName().c_str() );
-            text += QLatin1Char(')');
-        }
-    }
-
     return text;
 }
 

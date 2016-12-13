@@ -85,7 +85,6 @@ CLANG_DIAG_ON(uninitialized)
 #define SBK_INTPARAM_IDX                                             27
 #define SBK_INT2DPARAM_IDX                                           22
 #define SBK_INT3DPARAM_IDX                                           24
-#define SBK_STRINGPARAMBASE_IDX                                      57
 #define SBK_BOOLEANPARAM_IDX                                         5
 #define SBK_CHOICEPARAM_IDX                                          7
 #define SBK_COLORPARAM_IDX                                           8
@@ -93,8 +92,8 @@ CLANG_DIAG_ON(uninitialized)
 #define SBK_IMAGELAYER_IDX                                           21
 #define SBK_STROKEPOINT_IDX                                          59
 #define SBK_ITEMSTABLE_IDX                                           29
-#define SBK_ROTO_IDX                                                 52
 #define SBK_TRACKER_IDX                                              61
+#define SBK_ROTO_IDX                                                 52
 #define SBK_ITEMBASE_IDX                                             28
 #define SBK_STROKEITEM_IDX                                           58
 #define SBK_BEZIERCURVE_IDX                                          3
@@ -117,6 +116,7 @@ CLANG_DIAG_ON(uninitialized)
 #define SBK_GROUPPARAM_IDX                                           20
 #define SBK_SEPARATORPARAM_IDX                                       53
 #define SBK_BUTTONPARAM_IDX                                          6
+#define SBK_STRINGPARAMBASE_IDX                                      57
 #define SBK_PATHPARAM_IDX                                            47
 #define SBK_FILEPARAM_IDX                                            17
 #define SBK_STRINGPARAM_IDX                                          55
@@ -187,7 +187,6 @@ template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPAC
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::IntParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INTPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Int2DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT2DPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Int3DParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_INT3DPARAM_IDX]); }
-template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::StringParamBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::BooleanParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BOOLEANPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ChoiceParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ColorParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_COLORPARAM_IDX]); }
@@ -195,8 +194,8 @@ template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPAC
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ImageLayer >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::StrokePoint >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STROKEPOINT_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ItemsTable >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ITEMSTABLE_IDX]); }
-template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Roto >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ROTO_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Tracker >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_TRACKER_IDX]); }
+template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::Roto >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ROTO_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ItemBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_ITEMBASE_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::StrokeItem >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STROKEITEM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::BezierCurve >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BEZIERCURVE_IDX]); }
@@ -219,6 +218,7 @@ template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPAC
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::GroupParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_GROUPPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::SeparatorParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_SEPARATORPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::ButtonParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_BUTTONPARAM_IDX]); }
+template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::StringParamBase >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_STRINGPARAMBASE_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::PathParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_PATHPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::FileParam >() { return reinterpret_cast<PyTypeObject*>(SbkNatronEngineTypes[SBK_FILEPARAM_IDX]); }
 template<> inline PyTypeObject* SbkType<NATRON_NAMESPACE::NATRON_PYTHON_NAMESPACE::StringParam::TypeEnum >() { return SbkNatronEngineTypes[SBK_STRINGPARAM_TYPEENUM_IDX]; }

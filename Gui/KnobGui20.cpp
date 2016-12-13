@@ -34,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ViewIdx.h"
+#include "Engine/KnobItemsTable.h"
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/AnimationModuleEditor.h"
@@ -41,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/NodeAnim.h"
 #include "Gui/KnobAnim.h"
 #include "Gui/Gui.h"
+#include "Gui/NodeGraph.h"
 #include "Gui/KnobGuiContainerHelper.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/KnobUndoCommand.h" // SetExpressionCommand...
@@ -71,9 +73,22 @@ void
 KnobGui::refreshGuiNow()
 {
 
+    if (getGui()) {
+        if (getGui()->isGUIFrozen()) {
+            return;
+        }
+    }
     if (!_imp->customInteract) {
+        KnobIPtr knob = getKnob();
+        if (!knob) {
+            return;
+        }
+        int nDims = knob->getNDimensions();
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             it->second.widgets->updateGUI();
+            for (int i = 0; i < nDims; ++i) {
+                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first));
+            }
         }
     } else {
         _imp->customInteract->update();
@@ -81,30 +96,18 @@ KnobGui::refreshGuiNow()
 }
 
 void
-KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
-                                           const std::list<double>& keysRemoved,
-                                           ViewIdx /*view*/,
-                                           DimIdx /*dimension*/)
+KnobGui::onCurveAnimationChangedInternally(ViewSetSpec /*view*/,
+                                           DimSpec /*dimension*/)
 {
     if (!getGui()) {
-        return;
-    }
-    if (!getGui()->getAnimationModuleEditor()) {
-        return;
-    }
-    AnimationModulePtr model = getGui()->getAnimationModuleEditor()->getModel();
-    if (!model) {
         return;
     }
     KnobIPtr internalKnob = getKnob();
     if (!internalKnob) {
         return;
     }
-
-    NodeGuiPtr nodeUI = getContainer()->getNodeGui();
-
-    if (nodeUI && (!keysAdded.empty() || !keysRemoved.empty())) {
-        nodeUI->onKnobKeyFramesChanged(internalKnob, keysAdded, keysRemoved);
+    if (internalKnob->isKeyFrameTrackingEnabled()) {
+        getGui()->refreshTimelineGuiKeyframesLater();
     }
 
     // Refresh the knob anim visibility in a queued connection
@@ -112,8 +115,6 @@ KnobGui::onCurveAnimationChangedInternally(const std::list<double>& keysAdded,
     if (knobAnim) {
         knobAnim->emit_s_refreshKnobVisibilityLater();
     }
-
-
 }
 
 
@@ -190,7 +191,7 @@ KnobGui::copyToClipBoard(KnobClipBoardType type,
 
 
 bool
-KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec /*fromView*/, DimSpec /*targetDimensionIn*/, ViewSetSpec /*targetViewIn*/, bool showErrorDialog)
+KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimensionIn, ViewSetSpec targetViewIn, bool showErrorDialog)
 {
     KnobIPtr knob = getKnob();
 
@@ -211,7 +212,7 @@ KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec 
         }
     }
 
-    // If target knob does not support animation, cancel
+    // If pasting animation and target knob does not support animation, cancel
     if ( !knob->isAnimationEnabled() && (type == eKnobClipBoardTypeCopyAnim) ) {
         if (showErrorDialog) {
             Dialogs::errorDialog( tr("Paste").toStdString(), tr("%1 parameter does not support animation").arg(QString::fromUtf8(knob->getLabel().c_str())).toStdString() );
@@ -220,27 +221,34 @@ KnobGui::canPasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec 
         return false;
     }
 
-    // If types are incompatible, cancel
-    if ( !fromKnob->isTypeCompatible(knob) ) {
-        if (showErrorDialog) {
-            Dialogs::errorDialog( tr("Paste").toStdString(), tr("You can only copy/paste between parameters of the same type. To overcome this, use an expression instead.").toStdString() );
-        }
-
-        return false;
-    }
 
     // If drag & dropping all source dimensions and destination does not have the same amounto of dimensions, fail
     if ( fromDim.isAll() && ( fromKnob->getNDimensions() != knob->getNDimensions() ) ) {
         if (showErrorDialog) {
-            Dialogs::errorDialog( tr("Paste").toStdString(), tr("When copy/pasting on all dimensions, original and target parameters must have the same dimension.").toStdString() );
+            Dialogs::errorDialog( tr("Paste").toStdString(), tr("All dimensions of the original parameter were copied but the target parameter does not have the same amount of dimensions. To overcome this copy them one by one.").toStdString() );
         }
-        
+
         return false;
     }
 
 
+    // If pasting links and types are incompatible, cancel
+    {
+        DimIdx thisDimToCheck = targetDimensionIn.isAll() ? DimIdx(0) : DimIdx(targetDimensionIn);
+        ViewIdx thisViewToCheck = targetViewIn.isAll() ? ViewIdx(0): ViewIdx(targetViewIn);
+        DimIdx otherDimToCheck = fromDim.isAll() ? DimIdx(0) : DimIdx(fromDim);
+        ViewIdx otherViewToCheck = fromView.isAll() ? ViewIdx(0): ViewIdx(fromView);
+        std::string error;
+        if ( !knob->canLinkWith(fromKnob, thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
+            if (showErrorDialog && !error.empty()) {
+                Dialogs::errorDialog( tr("Paste").toStdString(), error );
+            }
+            return false;
+        }
+    }
+
     return true;
-}
+} // canPasteKnob
 
 bool
 KnobGui::pasteKnob(const KnobIPtr& fromKnob, KnobClipBoardType type, DimSpec fromDim, ViewSetSpec fromView, DimSpec targetDimension, ViewSetSpec targetView)
@@ -548,36 +556,6 @@ KnobGui::setKnobGuiPointer()
     getKnob()->setKnobGuiPointer( shared_from_this() );
 }
 
-void
-KnobGui::onDoUpdateAnimationLevelLaterReceived()
-{
-    if (_imp->customInteract || !_imp->refreshAnimationLevelRequests) {
-        return;
-    }
-    _imp->refreshAnimationLevelRequests = 0;
-    refreshAnimationLevelNow();
-}
-
-void
-KnobGui::refreshAnimationLevelNow()
-{
-    KnobIPtr knob = getKnob();
-    int nDim = knob->getNDimensions();
-    for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
-        for (int i = 0; i < nDim; ++i) {
-            if (it->second.widgets) {
-                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first) );
-            }
-        }
-    }
-}
-
-void
-KnobGui::onInternalKnobAnimationLevelChanged(ViewSetSpec /*view*/, DimSpec /*dimension*/)
-{
-    ++_imp->refreshAnimationLevelRequests;
-    Q_EMIT s_updateAnimationLevelLater();
-}
 
 void
 KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
@@ -653,14 +631,6 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, view) );
     if ( !exp.empty() ) {
 
-        NodeSettingsPanel* isNodeSettings = dynamic_cast<NodeSettingsPanel*>(_imp->container);
-        if (isNodeSettings) {
-            NodeGuiPtr node = isNodeSettings->getNodeGui();
-            if (node) {
-                node->onKnobExpressionChanged(this);
-            }
-        }
-
         if (_imp->warningIndicator) {
             bool invalid = false;
             QString fullErrToolTip;
@@ -697,7 +667,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
 
 
     // Refresh the animation curve
-    onCurveAnimationChangedInternally(std::list<double>(), std::list<double>(), view, dimension);
+    onCurveAnimationChangedInternally(view, dimension);
 
 } // KnobGui::onExprChanged
 
@@ -839,5 +809,92 @@ KnobGui::onInternalKnobDimensionsVisibilityChanged(ViewSetSpec view)
     Q_EMIT s_refreshDimensionsVisibilityLater();
 
 }
+
+void
+KnobGui::onInternalKnobLinksChanged()
+{
+    KnobIPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+
+    // Refresh help tooltip
+    onHelpChanged();
+
+    KnobHolderPtr holder = knob->getHolder();
+    EffectInstancePtr holderIsEffect = toEffectInstance(holder);
+    KnobTableItemPtr holderIsItem = toKnobTableItem(holder);
+    if (holderIsItem) {
+        holderIsEffect = holderIsItem->getModel()->getNode()->getEffectInstance();
+    }
+
+    NodePtr holderNode;
+    if (holderIsEffect) {
+        holderNode = holderIsEffect->getNode();
+    }
+    NodeGroupPtr holderIsGroup;
+    NodesList groupNodes;
+    if (holderNode) {
+        holderIsGroup = toNodeGroup(holderIsEffect);
+        if (holderIsGroup) {
+            groupNodes = holderIsGroup->getNodes();
+        }
+    }
+
+    if (!_imp->customInteract) {
+
+
+        // Refresh the linked state of the KnobGui.
+        // We cycle through each view and dimension and check the shared knobs.
+        // Appear linked if there's at least one shared knob. For Groups, since a PyPlug may have by default some parameters linked,
+        // we do not count the links to internal nodes to figure out if we need to appear linked or not.
+        int nDims = knob->getNDimensions();
+        for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
+            for (int i = 0;i < nDims; ++i) {
+                KnobDimViewKeySet sharedKnobs;
+                knob->getSharedValues(DimIdx(i), it->first, &sharedKnobs);
+
+                bool appearLinked = false;
+                for (KnobDimViewKeySet::const_iterator it2 = sharedKnobs.begin(); it2 != sharedKnobs.end(); ++it2) {
+                    KnobIPtr sharedK = it2->knob.lock();
+                    if (!sharedK) {
+                        continue;
+                    }
+
+                    KnobHolderPtr sharedHolder = sharedK->getHolder();
+                    EffectInstancePtr sharedHolderIsEffect = toEffectInstance(sharedHolder);
+                    KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(sharedHolder);
+                    if (sharedHolderIsItem) {
+                        sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
+                    }
+                    if (!sharedHolderIsEffect) {
+                        continue;
+                    }
+
+                    // If the shared knob holder is a child node of a Group, don't count it
+                    NodePtr sharedHolderNode = sharedHolderIsEffect->getNode();
+                    if (!sharedHolderNode) {
+                        continue;
+                    }
+                    if (std::find(groupNodes.begin(), groupNodes.end(), sharedHolderNode) != groupNodes.end()) {
+                        continue;
+                    }
+
+                    appearLinked = true;
+                }
+                it->second.widgets->reflectLinkedState(DimIdx(i), appearLinked);
+            }
+        }
+    }
+    
+    if (!holderNode) {
+        return;
+    }
+    NodeGuiPtr node = toNodeGui(holderNode->getNodeGui());
+    if (!node) {
+        return;
+    }
+    node->getDagGui()->refreshNodeLinksLater();
+} // onInternalKnobLinksChanged
 
 NATRON_NAMESPACE_EXIT;

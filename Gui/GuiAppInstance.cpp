@@ -1042,30 +1042,6 @@ GuiAppInstance::createGroupGui(const NodePtr & group, const CreateNodeArgs& args
     _imp->_gui->createGroupGui(group, args);
 }
 
-void
-GuiAppInstance::onGroupCreationFinished(const NodePtr& node,
-                                        const CreateNodeArgs& args)
-{
-#pragma message WARN("Check this")
-    NodeGuiPtr nodeGui;
-    {
-        NodeGuiIPtr node_gui_i = node->getNodeGui();
-        nodeGui = boost::dynamic_pointer_cast<NodeGui>(node_gui_i);
-    }
-    if (nodeGui) {
-        NodeGraph* graph;
-        {
-            NodeGraphI* graph_i = node->getGroup()->getNodeGraph();
-            assert(graph_i);
-            graph = dynamic_cast<NodeGraph*>(graph_i);
-        }
-        if (graph) {
-            graph->setNodeToDefaultPosition(nodeGui, graph->getSelectedNodes(), args);
-        }
-    }
-    AppInstance::onGroupCreationFinished(node, args);
-
-}
 
 bool
 GuiAppInstance::isDraftRenderEnabled() const

@@ -707,7 +707,7 @@ Node::isDuringPaintStrokeCreation() const
     if (!attachedStroke) {
         return false;
     }
-    return attachedStroke->isPaintBuffersEnabled();
+    return attachedStroke->isCurrentlyDrawing();
 }
 
 
@@ -837,6 +837,7 @@ Node::declareTablePythonFields()
 NodeCollectionPtr
 Node::getGroup() const
 {
+    QMutexLocker k(&_imp->groupMutex);
     return _imp->group.lock();
 }
 
@@ -913,199 +914,6 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
     
 }
 
-
-
-static KnobIPtr
-findMasterKnob(const KnobIPtr & knob,
-           const NodesList & allNodes,
-           const std::string& masterKnobName,
-           const std::string& masterNodeName,
-           const std::string& masterItemName)
-{
-    ///we need to cycle through all the nodes of the project to find the real master
-    NodePtr masterNode;
-
-    if (masterNodeName == kKnobMasterNodeIsGroup) {
-        EffectInstancePtr thisEffect = toEffectInstance(knob->getHolder());
-        if (thisEffect) {
-            NodeGroupPtr thisGroup = toNodeGroup(thisEffect->getNode()->getGroup());
-            if (thisGroup) {
-                masterNode = thisGroup->getNode();
-            }
-        }
-        assert(masterNode);
-    } else {
-
-        for (NodesList::const_iterator it2 = allNodes.begin(); it2 != allNodes.end(); ++it2) {
-            if ( (*it2)->getScriptName() == masterNodeName ) {
-                masterNode = *it2;
-                break;
-            }
-        }
-    }
-    if (!masterNode) {
-        qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
-
-        return KnobIPtr();
-    }
-
-    if ( !masterItemName.empty() ) {
-        KnobItemsTablePtr table = masterNode->getEffectInstance()->getItemsTable();
-        if (table) {
-            KnobTableItemPtr item = table->getItemByFullyQualifiedScriptName(masterItemName);
-            if (item) {
-                return item->getKnobByName(masterKnobName);
-            }
-        }
-    } else {
-        ///now that we have the master node, find the corresponding knob
-        const std::vector< KnobIPtr > & otherKnobs = masterNode->getKnobs();
-        for (std::size_t j = 0; j < otherKnobs.size(); ++j) {
-            if ( (otherKnobs[j]->getName() == masterKnobName) ) {
-                return otherKnobs[j];
-            }
-        }
-    }
-
-    qDebug() << "Link slave/master for " << knob->getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
-
-    return KnobIPtr();
-}
-
-
-void
-Node::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
-                       const NodesList & allNodes)
-{
-
-    SERIALIZATION_NAMESPACE::KnobSerialization* isKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::KnobSerialization*>(serialization.get());
-    SERIALIZATION_NAMESPACE::GroupKnobSerialization* isGroupKnobSerialization = dynamic_cast<SERIALIZATION_NAMESPACE::GroupKnobSerialization*>(serialization.get());
-
-    if (isGroupKnobSerialization) {
-        for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
-            try {
-                restoreKnobLinks(*it, allNodes);
-            } catch (const std::exception& e) {
-                LogEntry::LogEntryColor c;
-                if (getColor(&c.r, &c.g, &c.b)) {
-                    c.colorSet = true;
-                }
-                appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(getScriptName_mt_safe().c_str() ), QDateTime::currentDateTime(), QString::fromUtf8(e.what()), false, c);
-
-
-            }
-        }
-    } else if (isKnobSerialization) {
-        KnobIPtr knob =  getKnobByName(isKnobSerialization->_scriptName);
-        if (!knob) {
-            throw std::invalid_argument(tr("Could not find a parameter named \"%1\"").arg( QString::fromUtf8( isKnobSerialization->_scriptName.c_str() ) ).toStdString());
-
-            return;
-        }
-
-
-        // Restore slave/master links first
-        {
-            if (isKnobSerialization->_masterIsAlias) {
-                if (!isKnobSerialization->_values.empty()) {
-                    const SERIALIZATION_NAMESPACE::ValueSerialization value = isKnobSerialization->_values.begin()->second[0];
-                    const std::string& aliasKnobName = value._slaveMasterLink.masterKnobName;
-                    const std::string& aliasNodeName = value._slaveMasterLink.masterNodeName;
-                    const std::string& masterTableItemName  = value._slaveMasterLink.masterTableItemName;
-                    KnobIPtr alias = findMasterKnob(knob, allNodes, aliasKnobName, aliasNodeName, masterTableItemName);
-                    if (alias) {
-                        knob->setKnobAsAliasOfThis(alias, true);
-                    }
-                }
-            } else {
-                const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
-                for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
-                     it != isKnobSerialization->_values.end(); ++it) {
-
-                    // Find a matching view name
-                    ViewIdx view_i(0);
-                    Project::getViewIndex(projectViews, it->first, &view_i);
-
-                    for (std::size_t i = 0; i < it->second.size(); ++i) {
-                        if (!it->second[i]._slaveMasterLink.hasLink) {
-                            continue;
-                        }
-
-                        std::string masterKnobName, masterNodeName, masterTableItemName;
-                        if (it->second[i]._slaveMasterLink.masterNodeName.empty()) {
-                            // Node name empty, assume this is the same node
-                            masterNodeName = getScriptName_mt_safe();
-                        }
-
-                        if (it->second[i]._slaveMasterLink.masterKnobName.empty()) {
-                            // Knob name empty, assume this is the same knob unless it has a single dimension
-                            if (knob->getNDimensions() == 1) {
-                                continue;
-                            }
-                            masterKnobName = knob->getName();
-                        }
-
-                        masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
-                        KnobIPtr master = findMasterKnob(knob,
-                                                         allNodes,
-                                                         masterKnobName,
-                                                         masterNodeName,
-                                                         masterTableItemName);
-                        if (master) {
-                            // Find dimension in master by name
-                            int otherDimIndex = -1;
-                            if (master->getNDimensions() == 1) {
-                                otherDimIndex = 0;
-                            } else {
-                                for (int d = 0; d < master->getNDimensions(); ++d) {
-                                    if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[i]._slaveMasterLink.masterDimensionName) ) {
-                                        otherDimIndex = d;
-                                        break;
-                                    }
-                                }
-                                if (otherDimIndex == -1) {
-                                    // Before Natron 2.2 we serialized the dimension index. Try converting to an int
-                                    otherDimIndex = QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
-                                }
-                            }
-                            ViewIdx otherView(0);
-                            Project::getViewIndex(projectViews, it->second[i]._slaveMasterLink.masterViewName, &otherView);
-
-                            if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
-                                knob->slaveTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
-                            } else {
-                                throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
-                            }
-                        }
-
-                    } // for each dimensions
-                } // for each view
-            } // isAlias
-        }
-
-        // Restore expressions
-        {
-            const std::vector<std::string>& projectViews = getApp()->getProject()->getProjectViewNames();
-            for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
-                 it != isKnobSerialization->_values.end(); ++it) {
-                // Find a matching view name
-                ViewIdx view_i(0);
-                Project::getViewIndex(projectViews, it->first, &view_i);
-                
-                for (std::size_t i = 0; i < it->second.size(); ++i) {
-                    try {
-                        if ( !it->second[i]._expression.empty() ) {
-                            knob->restoreExpression(DimIdx(it->second[i]._dimension), view_i,  it->second[i]._expression, it->second[i]._expresionHasReturnVariable);
-                        }
-                    } catch (const std::exception& e) {
-                        QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
-                        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8( knob->getName().c_str() ), QDateTime::currentDateTime(), err);
-                    }
-                } // for all dimensions
-            } // for all views
-        }
-    }
-}
 
 
 void
@@ -1346,8 +1154,8 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
                         hasExpr = true;
                         break;
                     }
-                    MasterKnobLink linkData;
-                    if (knobs[i]->getMaster(DimIdx(d), *itV, &linkData)) {
+                    KnobDimViewKey linkData;
+                    if (knobs[i]->getSharingMaster(DimIdx(d), *itV, &linkData)) {
                         hasExpr = true;
                         break;
                     }
@@ -1372,7 +1180,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (!isFullSaveMode && !knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged()) {
+        if (!isFullSaveMode && !knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged() && !hasExpr) {
             // This knob was not modified by the user, don't serialize it
             continue;
         }
@@ -1426,11 +1234,6 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
         getInputNames(serialization->_inputs, serialization->_masks);
     }
 
-
-    NodePtr masterNode = getMasterNode();
-    if (masterNode) {
-        serialization->_masterNodecriptName = masterNode->getScriptName_mt_safe();
-    }
 
     KnobItemsTablePtr table = _imp->effect->getItemsTable();
     if (table && table->getNumTopLevelItems() > 0) {
@@ -1577,6 +1380,10 @@ Node::loadInternalNodeGraph(bool initialSetupAllowed,
 
     // Call the nodegroup derivative that is the only one to know what to do
     isGrp->loadSubGraph(projectSerialization, pyPlugSerialization);
+
+    // Ensure meta-datas are propagated on the subgraph
+    isGrp->forceComputeInputDependentDataOnAllTrees();
+
 
 }
 
@@ -2088,7 +1895,16 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
         {
             const KnobsVec& knobs = getKnobs();
             for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
-                _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0), true);
+                if (!(*it)->getEvaluateOnChange()) {
+                    continue;
+                }
+                // Don't call instanceChanged action on buttons otherwise it could popup a menu for some plug-ins
+                KnobButtonPtr isButton = toKnobButton(*it);
+                if (isButton) {
+                    continue;
+                }
+                _imp->effect->onKnobValueChanged_public(*it, eValueChangedReasonRestoreDefault, time, ViewIdx(0));
+
             }
         }
     }
@@ -2139,15 +1955,199 @@ Node::loadKnob(const KnobIPtr & knob,
 
 } // Node::loadKnob
 
+bool
+Node::linkToNode(const NodePtr& other)
+{
+    // Only link same plug-in
+    if (!other || other->getPluginID() != getPluginID()) {
+        return false;
+    }
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
+        {
+            KnobButtonPtr isButton = toKnobButton(*it);
+            if (isButton && !isButton->getIsCheckable()) {
+                // Don't link trigger buttons
+                continue;
+            }
+        }
+       
+        KnobIPtr masterKnob = other->getKnobByName((*it)->getName());
+        if (!masterKnob) {
+            continue;
+        }
+        (*it)->linkTo(masterKnob);
+    }
+    return true;
+}
 
 void
-Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                        const NodesList & allNodes)
+Node::unlinkAllKnobs()
+{
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        (*it)->unlink(DimSpec::all(), ViewSetSpec::all(), true);
+    }
+}
+
+void
+Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
+{
+    // For each knob we keep track of the master nodes we find.
+    // If the number of knobs refering the node is equal to the number of knobs dimension/view pairs
+    // then the node is considered a clone.
+    std::map<NodePtr, int> masterNodes;
+    int nVisitedKnobDimensionView = 0;
+    const KnobsVec& knobs = getKnobs();
+
+    // For Groups, since a PyPlug may have by default some parameters linked,
+    // we do not count the links to internal nodes to figure out if we need to appear linked or not.
+    NodeGroupPtr isNodeGroup = isEffectNodeGroup();
+    NodesList groupNodes;
+    if (isNodeGroup) {
+        groupNodes = isNodeGroup->getNodes();
+    }
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+
+        // Should we consider this knob to determine if the node is a clone or not ?
+        bool countKnobAmongstVisited = true;
+        {
+            KnobButtonPtr isButton = toKnobButton(*it);
+            if (isButton && !isButton->getIsCheckable()) {
+                // Ignore trigger buttons
+                countKnobAmongstVisited = false;
+            }
+        }
+
+        if (!(*it)->getEvaluateOnChange()) {
+            countKnobAmongstVisited = false;
+        }
+
+        int nDims = (*it)->getNDimensions();
+        std::list<ViewIdx> views = (*it)->getViewsList();
+        for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
+            for (int i = 0; i < nDims; ++i) {
+
+                if (countKnobAmongstVisited) {
+                    ++nVisitedKnobDimensionView;
+                }
+
+
+                KnobDimViewKeySet dimViewSharedKnobs;
+                (*it)->getSharedValues(DimIdx(i), *it2, &dimViewSharedKnobs);
+                // insert all shared knobs for this dimension/view to the global sharedKnobs set
+                for (KnobDimViewKeySet::const_iterator it3 = dimViewSharedKnobs.begin(); it3 != dimViewSharedKnobs.end() ;++it3) {
+                    KnobIPtr sharedKnob = it3->knob.lock();
+                    if (!sharedKnob) {
+                        continue;
+                    }
+
+                    // Appear linked if there's at least one shared knob.
+                    EffectInstancePtr sharedHolderIsEffect = toEffectInstance(sharedKnob->getHolder());
+                    KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(sharedKnob->getHolder());
+                    if (sharedHolderIsItem) {
+                        sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
+                    }
+                    if (!sharedHolderIsEffect) {
+                        continue;
+                    }
+
+                    // Increment the number of references to that node
+                    NodePtr sharedNode = sharedHolderIsEffect->getNode();
+
+                    // If the shared node is a child of this group, don't count as link
+                    if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
+                        continue;
+                    }
+                    if (sharedNode.get() != this) {
+                        std::map<NodePtr, int>::iterator found = masterNodes.find(sharedNode);
+                        if (found == masterNodes.end()) {
+                            if (countKnobAmongstVisited) {
+                                masterNodes[sharedNode] = 1;
+                            } else {
+                                masterNodes[sharedNode] = 0;
+                            }
+                        } else {
+                            if (countKnobAmongstVisited) {
+                                ++found->second;
+                            }
+                        }
+                    }
+                } // for all shared knobs
+            } // for all dimensions
+        } // for all views
+
+        // Also add expression links
+        KnobI::ListenerDimsMap listeners;
+        (*it)->getListeners(listeners);
+        for (KnobI::ListenerDimsMap::const_iterator it2 = listeners.begin(); it2!= listeners.end(); ++it2) {
+            KnobIPtr listenerKnob = it2->first.lock();
+            if (!listenerKnob) {
+                continue;
+            }
+
+            EffectInstancePtr sharedHolderIsEffect = toEffectInstance(listenerKnob->getHolder());
+            KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(listenerKnob->getHolder());
+            if (sharedHolderIsItem) {
+                sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
+            }
+            if (!sharedHolderIsEffect) {
+                continue;
+            }
+
+            // Increment the number of references to that node
+            NodePtr sharedNode = sharedHolderIsEffect->getNode();
+
+            // If the shared node is a child of this group, don't count as link
+            if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
+                continue;
+            }
+            if (sharedNode.get() != this) {
+                std::map<NodePtr, int>::iterator found = masterNodes.find(sharedNode);
+                if (found == masterNodes.end()) {
+                    if (countKnobAmongstVisited) {
+                        masterNodes[sharedNode] = 1;
+                    } else {
+                        masterNodes[sharedNode] = 0;
+                    }
+                } else {
+                    if (countKnobAmongstVisited) {
+                        ++found->second;
+                    }
+                }
+            }
+
+        }
+
+    } // for all knobs
+
+    for (std::map<NodePtr, int>::const_iterator it = masterNodes.begin(); it!=masterNodes.end(); ++it) {
+        bool isCloneLink = it->second >= nVisitedKnobDimensionView;
+        nodes->push_back(std::make_pair(it->first, isCloneLink));
+
+    }
+
+} // getLinkedNodes
+
+void
+Node::getCloneLinkedNodes(std::list<NodePtr>* clones) const
+{
+    std::list<std::pair<NodePtr, bool> > links;
+    getLinkedNodes(&links);
+    for (std::list<std::pair<NodePtr, bool> >::const_iterator it = links.begin(); it!=links.end(); ++it) {
+        if (it->second) {
+            clones->push_back(it->first);
+        }
+    }
+}
+
+void
+Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
 
-
+    // In Natron 2.1.x and older we serialized the name of the master node
     const std::string & masterNodeName = serialization._masterNodecriptName;
     if ( !masterNodeName.empty() ) {
 
@@ -2175,7 +2175,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
                                             .arg( QString::fromUtf8( serialization._nodeScriptName.c_str() ) )
                                             .arg( QString::fromUtf8( masterNodeName.c_str() ) ) );
         } else {
-            _imp->effect->slaveAllKnobs( masterNode->getEffectInstance() );
+            linkToNode( masterNode );
         }
         return;
     }
@@ -2184,8 +2184,12 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
     const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues = serialization._knobsValues;
     ///try to find a serialized value for this knob
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+        KnobIPtr knob = getKnobByName((*it)->_scriptName);
+        if (!knob) {
+            continue;
+        }
         try {
-            restoreKnobLinks(*it, allNodes);
+            knob->restoreKnobLinks(*it);
         } catch (const std::exception& e) {
             // For stub nodes don't report errors
             if (!isEffectStubNode()) {
@@ -2200,8 +2204,12 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
 
     const std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization> >& userKnobs = serialization._userPages;
     for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::GroupKnobSerialization > >::const_iterator it = userKnobs.begin(); it != userKnobs.end(); ++it) {
+        KnobIPtr knob = getKnobByName((*it)->_name);
+        if (!knob) {
+            continue;
+        }
         try {
-            restoreKnobLinks(*it, allNodes);
+            knob->restoreKnobLinks(*it);
         } catch (const std::exception& e) {
             LogEntry::LogEntryColor c;
             if (getColor(&c.r, &c.g, &c.b)) {
@@ -2212,6 +2220,69 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
         }
     }
 }
+
+void
+Node::moveToGroup(const NodeCollectionPtr& group)
+{
+    NodeCollectionPtr currentGroup = getGroup();
+    assert(currentGroup);
+
+    if (currentGroup == group) {
+        return;
+    }
+
+
+    bool settingsPanelVisible = isSettingsPanelVisible();
+
+    // Destroy the node gui
+    {
+        NodeGuiIPtr oldNodeGui = getNodeGui();
+        if (oldNodeGui) {
+            oldNodeGui->destroyGui();
+        }
+        _imp->guiPointer.reset();
+    }
+
+    // Remove this node from the group
+    // Hold a shared_ptr to the node to ensure one is still valid and the node does not get destroyed
+    NodePtr thisShared = shared_from_this();
+    currentGroup->removeNode(thisShared);
+
+
+
+    // Remove the old Python attribute
+    {
+        std::string currentFullName = getFullyQualifiedName();
+        deleteNodeVariableToPython(currentFullName);
+    }
+    std::string currentScriptName = getScriptName_mt_safe();
+
+    {
+        QMutexLocker k(&_imp->groupMutex);
+        _imp->group = group;
+        group->addNode(thisShared);
+    }
+
+
+    // Refresh the script-name, this will automatically re-declare the attribute to Python
+    setScriptName(currentScriptName);
+    
+    // Create the new node gui
+    NodeGraphI* newGraph = group->getNodeGraph();
+    if (newGraph) {
+        double position[2];
+        getPosition(&position[0], &position[1]);
+        CreateNodeArgsPtr args(CreateNodeArgs::create(getPluginID(), group));
+        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
+        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
+        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, settingsPanelVisible);
+        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position[0], 0);
+        args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position[1], 1);
+
+        newGraph->createNodeGui(shared_from_this(), *args);
+    }
+
+} // moveToGroup
 
 void
 Node::setPagesOrder(const std::list<std::string>& pages)
@@ -2867,11 +2938,6 @@ Node::setNameInternal(const std::string& name,
     }
 
 
-    if (oldName == newName) {
-        return;
-    }
-
-
     if ( !newName.empty() ) {
         bool isAttrDefined = false;
         std::string newPotentialQualifiedName = getApp()->getAppIDString() + "." + getFullyQualifiedNameInternal(newName);
@@ -2909,7 +2975,6 @@ Node::setNameInternal(const std::string& name,
     }
     std::string fullySpecifiedName = getFullyQualifiedName();
 
-
     if (collection) {
         if ( !oldName.empty() ) {
             if (fullOldName != fullySpecifiedName) {
@@ -2933,9 +2998,7 @@ Node::setNameInternal(const std::string& name,
                     continue;
                 }
                 for (std::list<KnobI::ListenerLink>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    if (it2->isExpr) {
-                        listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
-                    }
+                    listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
                 }
             }
         }
@@ -3406,7 +3469,6 @@ Node::createPyPlugExportGroup()
         KnobGroupPtr param = AppManager::createKnob<KnobGroup>( _imp->effect, tr(kNatronNodeKnobExportPyPlugGroupLabel), 1, false );
         group = param;
         param->setName(kNatronNodeKnobExportPyPlugGroup);
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setDefaultValue(false);
         param->setIsPersistent(false);
@@ -3435,7 +3497,6 @@ Node::createPyPlugExportGroup()
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( _imp->effect, tr(kNatronNodeKnobExportDialogOkButtonLabel), 1, false );
         param->setName(kNatronNodeKnobExportDialogOkButton);
-        param->setSecret(true);
         param->setAddNewLine(false);
         param->setEvaluateOnChange(false);
         param->setSpacingBetweenItems(3);
@@ -3446,7 +3507,6 @@ Node::createPyPlugExportGroup()
     {
         KnobButtonPtr param = AppManager::createKnob<KnobButton>( _imp->effect, tr(kNatronNodeKnobExportDialogCancelButtonLabel), 1, false );
         param->setName(kNatronNodeKnobExportDialogCancelButton);
-        param->setSecret(true);
         param->setEvaluateOnChange(false);
         param->setSpacingBetweenItems(3);
         param->setIsPersistent(false);
@@ -5726,11 +5786,11 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
                 std::list<ViewIdx> views = listener->getViewsList();
                 for (int dim = 0; dim < listener->getNDimensions(); ++dim) {
                     for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
-                        MasterKnobLink linkData;
-                        if (listener->getMaster(DimIdx(dim), *it2, &linkData)) {
-                            KnobIPtr masterKnob = linkData.masterKnob.lock();
+                        KnobDimViewKey linkData;
+                        if (listener->getSharingMaster(DimIdx(dim), *it2, &linkData)) {
+                            KnobIPtr masterKnob = linkData.knob.lock();
                             if (masterKnob == knobs[i]) {
-                                listener->unSlave(DimIdx(dim), *it2, true);
+                                listener->unlink(DimIdx(dim), *it2, true);
                             }
                         }
 
@@ -7100,141 +7160,11 @@ Node::refreshPreviewsRecursivelyDownstream(double time)
     refreshPreviewsRecursivelyDownstreamInternal(time, shared_from_this(), marked);
 }
 
-void
-Node::onAllKnobsSlaved(bool isSlave,
-                       const KnobHolderPtr& master)
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-
-    if (isSlave) {
-        EffectInstancePtr effect = toEffectInstance(master);
-        assert(effect);
-        if (effect) {
-            NodePtr masterNode = effect->getNode();
-            {
-                QMutexLocker l(&_imp->masterNodeMutex);
-                _imp->masterNode = masterNode;
-            }
-            QObject::connect( masterNode.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-            QObject::connect( masterNode.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
-        }
-    } else {
-        NodePtr master = getMasterNode();
-        QObject::disconnect( master.get(), SIGNAL(deactivated(bool)), this, SLOT(onMasterNodeDeactivated()) );
-        QObject::disconnect( master.get(), SIGNAL(previewImageChanged(double)), this, SLOT(refreshPreviewImage(double)) );
-        {
-            QMutexLocker l(&_imp->masterNodeMutex);
-            _imp->masterNode.reset();
-        }
-    }
-
-    Q_EMIT allKnobsSlaved(isSlave);
-}
-
-void
-Node::onKnobSlaved(const KnobIPtr& slave,
-                   const KnobIPtr& master,
-                   DimIdx /*dimension*/,
-                   ViewIdx /*view*/,
-                   bool isSlave)
-{
-    // If this is a unslave action, remove the clone state
-    if (!isSlave) {
-        NodePtr masterNode = getMasterNode();
-        if ( masterNode ) {
-            onAllKnobsSlaved(false, KnobHolderPtr());
-        }
-    }
-
-    if (slave == master) {
-        return;
-    }
-
-    ///If the holder isn't an effect, ignore it too
-    EffectInstancePtr isEffect = toEffectInstance( master->getHolder() );
-    NodePtr parentNode;
-    if (!isEffect) {
-        KnobTableItemPtr isItem = toKnobTableItem(master->getHolder());
-        if (isItem) {
-            parentNode = isItem->getModel()->getNode();
-        }
-    } else {
-        parentNode = isEffect->getNode();
-    }
-
-    bool changed = false;
-    {
-        QMutexLocker l(&_imp->masterNodeMutex);
-        KnobLinkList::iterator found = _imp->nodeLinks.end();
-        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            if (it->slaveKnob.lock() == slave) {
-                found = it;
-                break;
-            }
-        }
-
-        if ( found == _imp->nodeLinks.end() ) {
-            if (!isSlave) {
-                ///We want to unslave from the given node but the link didn't existed, just return
-                return;
-            } else {
-                ///Add a new link
-                KnobLink link;
-                link.masterNode = parentNode;
-                link.slaveKnob = slave;
-                link.masterKnob = master;
-                _imp->nodeLinks.push_back(link);
-                changed = true;
-            }
-        } else if ( found != _imp->nodeLinks.end() ) {
-            if (isSlave) {
-                ///We want to slave to the given node but it already has a link on another parameter, just return
-                return;
-            } else {
-                ///Remove the given link
-                _imp->nodeLinks.erase(found);
-                changed = true;
-            }
-        }
-    }
-    if (changed) {
-        Q_EMIT knobsLinksChanged();
-    }
-} // onKnobSlaved
-
-void
-Node::getKnobsLinks(std::list<KnobLink> & links) const
-{
-    QMutexLocker l(&_imp->masterNodeMutex);
-
-    links = _imp->nodeLinks;
-}
-
-void
-Node::onMasterNodeDeactivated()
-{
-    ///Only called by the main-thread
-    assert( QThread::currentThread() == qApp->thread() );
-    if (!_imp->effect) {
-        return;
-    }
-    _imp->effect->unslaveAllKnobs();
-}
 
 NodePtr
 Node::getIOContainer() const
 {
     return _imp->ioContainer.lock();
-}
-
-
-NodePtr
-Node::getMasterNode() const
-{
-    QMutexLocker l(&_imp->masterNodeMutex);
-
-    return _imp->masterNode.lock();
 }
 
 bool
@@ -8317,7 +8247,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     bool ret = true;
     if ( what == _imp->previewEnabledKnob.lock() ) {
-        if ( (reason == eValueChangedReasonUserEdited) || (reason == eValueChangedReasonSlaveRefresh) ) {
+        if (reason == eValueChangedReasonUserEdited ) {
             Q_EMIT previewKnobToggled();
         }
     } else if ( what == _imp->renderButton.lock() ) {
@@ -8456,7 +8386,7 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
 
     if (!ret) {
         KnobGroupPtr isGroup = toKnobGroup(what);
-        if ( isGroup && isGroup->getIsDialog() && reason == eValueChangedReasonNatronInternalEdited) {
+        if ( isGroup && isGroup->getIsDialog() && reason == eValueChangedReasonUserEdited) {
             NodeGuiIPtr gui = getNodeGui();
             if (gui) {
                 gui->showGroupKnobAsDialog(isGroup);
@@ -9833,23 +9763,11 @@ Node::isSettingsPanelVisibleInternal(std::set<NodeConstPtr>& recursionList) cons
         return false;
     }
 
-    if ( recursionList.find(shared_from_this()) != recursionList.end() ) {
+    NodeConstPtr thisShared = shared_from_this();
+    if ( recursionList.find(thisShared) != recursionList.end() ) {
         return false;
     }
-    recursionList.insert(shared_from_this());
-
-    {
-        NodePtr master = getMasterNode();
-        if (master) {
-            return master->isSettingsPanelVisible();
-        }
-        for (KnobLinkList::iterator it = _imp->nodeLinks.begin(); it != _imp->nodeLinks.end(); ++it) {
-            NodePtr masterNode = it->masterNode.lock();
-            if ( masterNode && (masterNode.get() != this) && masterNode->isSettingsPanelVisibleInternal(recursionList) ) {
-                return true;
-            }
-        }
-    }
+    recursionList.insert(thisShared);
 
     return gui->isSettingsPanelVisible();
 }

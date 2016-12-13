@@ -1002,7 +1002,7 @@ ViewerNode::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* proje
             clearGroupWithoutViewerProcess();
 
             // Restore group
-            Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(thisShared));
+            Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(thisShared), false /*restoreLinks*/);
 
             setSubGraphEditedByUser(true);
         } else {
@@ -1158,7 +1158,31 @@ ViewerNode::initializeKnobs()
         param->setTextToFitHorizontally("Luminance");
         page->addKnob(param);
         param->setDefaultValue(1);
-        param->setIsDisplayChannelsKnob(true);
+        {
+            // Luminance
+            RGBAColourD color = {0.398979, 0.398979, 0.398979, 1.};
+            param->setColorForIndex(0, color);
+        }
+        {
+            // Red
+            RGBAColourD color = {0.851643, 0.196936, 0.196936, 1.};
+            param->setColorForIndex(2, color);
+        }
+        {
+            // Green
+            RGBAColourD color = {0., 0.654707, 0., 1.};
+            param->setColorForIndex(3, color);
+        }
+        {
+            // Blue
+            RGBAColourD color = {0.345293, 0.345293, 1., 1.};
+            param->setColorForIndex(4, color);
+        }
+        {
+            // Alpha
+            RGBAColourD color = {1., 1., 1., 1.};
+            param->setColorForIndex(5, color);
+        }
         param->setSecret(true);
         _imp->displayChannelsKnob[0] = param;
     }
@@ -2537,9 +2561,8 @@ ViewerNode::isInfoBarVisible() const
 
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
-                        ViewSetSpec /*view*/,
-                        double /*time*/,
-                        bool /*originatedFromMainThread*/)
+                        ViewSetSpec view,
+                        double /*time*/)
 {
     if (!k || reason == eValueChangedReasonRestoreDefault) {
         return false;
@@ -2646,7 +2669,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->gainSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGainButtonKnob.lock();
         if (reason == eValueChangedReasonUserEdited) {
-            enableKnob->setValue(true);
+            enableKnob->setValue(true, view, DimIdx(0), eValueChangedReasonPluginEdited);
             _imp->lastFstopValue =  _imp->gainSliderKnob.lock()->getValue();
         }
     } else if (k == _imp->enableGammaButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
@@ -2657,12 +2680,12 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         } else {
             value = 1;
         }
-        _imp->gammaSliderKnob.lock()->setValue(value);
+        _imp->gammaSliderKnob.lock()->setValue(value, view, DimIdx(0), eValueChangedReasonPluginEdited);
 
     } else if (k == _imp->gammaSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGammaButtonKnob.lock();
         if (reason == eValueChangedReasonUserEdited) {
-            enableKnob->setValue(true);
+            enableKnob->setValue(true, view, DimIdx(0), eValueChangedReasonPluginEdited);
             _imp->lastGammaValue =  _imp->gammaSliderKnob.lock()->getValue();
         }
 
@@ -2723,12 +2746,12 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         KnobChoicePtr wipeChoiceKnob = _imp->blendingModeChoiceKnob.lock();
         int value = wipeChoiceKnob->getValue();
         if (value != 0) {
-            wipeChoiceKnob->setValue(0);
+            wipeChoiceKnob->setValue(0, view, DimIdx(0), eValueChangedReasonPluginEdited);
         } else {
             if (_imp->lastWipeIndex == 0) {
                 _imp->lastWipeIndex = 1;
             }
-            wipeChoiceKnob->setValue(_imp->lastWipeIndex);
+            wipeChoiceKnob->setValue(_imp->lastWipeIndex, view, DimIdx(0), eValueChangedReasonPluginEdited);
         }
     } else if (k == _imp->blendingModeChoiceKnob.lock() && reason == eValueChangedReasonUserEdited) {
         KnobChoicePtr wipeChoice = _imp->blendingModeChoiceKnob.lock();
@@ -2741,7 +2764,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         std::vector<double> values(2);
         values[0] = _imp->lastMousePos.x();
         values[1] = _imp->lastMousePos.y();
-        knob->setValueAcrossDimensions(values);
+        knob->setValueAcrossDimensions(values, DimIdx(0), view, eValueChangedReasonPluginEdited);
     } else if (k == _imp->rightClickNextLayer.lock()) {
 
     } else if (k == _imp->rightClickPreviousLayer.lock()) {
@@ -4167,7 +4190,7 @@ ViewerNode::setRefreshButtonDown(bool down)
 {
     KnobButtonPtr knob = _imp->refreshButtonKnob.lock();
     beginChanges();
-    knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
+    knob->setValue(down, ViewIdx(0), DimIdx(0), eValueChangedReasonTimeChanged);
 
     // Ignore evaluation
     endChanges(true);

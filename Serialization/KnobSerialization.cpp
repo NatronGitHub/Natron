@@ -96,10 +96,6 @@ KnobSerialization::encode(YAML::Emitter& em) const
     // if they are here, their value is true otherwise it goes to default
     std::list<std::string> propNames;
 
-    if (_masterIsAlias) {
-        propNames.push_back("MasterIsAlias");
-    }
-
     int nDimsToSerialize = 0;
     int nDimsWithValue = 0;
     int nDimsWithDefValue = 0;
@@ -286,11 +282,31 @@ KnobSerialization::encode(YAML::Emitter& em) const
         if (parametricData) {
             if (!parametricData->parametricCurves.empty()) {
                 em << YAML::Key << "ParametricCurves" << YAML::Value;
-                em << YAML::BeginSeq;
-                for (std::list<CurveSerialization>::const_iterator it = parametricData->parametricCurves.begin(); it!=parametricData->parametricCurves.end(); ++it) {
-                    it->encode(em);
+                if (parametricData->parametricCurves.size() > 1) {
+                    // Multi-view
+                    em << YAML::BeginMap;
                 }
-                em << YAML::EndSeq;
+                for (std::map<std::string,std::list<CurveSerialization> >::const_iterator it = parametricData->parametricCurves.begin(); it!= parametricData->parametricCurves.end(); ++it) {
+                    if (parametricData->parametricCurves.size() > 1) {
+                        // Multi-view
+                        em << YAML::Key << it->first << YAML::Value;
+                    }
+
+
+                    em << YAML::BeginSeq;
+                    for (std::list<CurveSerialization>::const_iterator it2 = it->second.begin(); it2!=it->second.end(); ++it2) {
+                        it2->encode(em);
+                    }
+                    em << YAML::EndSeq;
+
+
+                }
+                if (parametricData->parametricCurves.size() > 1) {
+                    // Multi-view
+                    em << YAML::EndMap;
+                }
+
+
             }
         } else if (textData) {
             if (!textData->keyframes.empty()) {
@@ -584,21 +600,28 @@ KnobSerialization::decodeValueNode(const std::string& viewName, const YAML::Node
                 dimVec[i]._expression = dimNode["Expr"].as<std::string>();
             } else {
                 // This is most likely a regular slavr/master link
+                bool gotLink = false;
                 if (dimNode["N"]) {
                     dimVec[i]._slaveMasterLink.masterNodeName = dimNode["N"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["T"]) {
                     dimVec[i]._slaveMasterLink.masterTableItemName = dimNode["T"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["K"]) {
                     dimVec[i]._slaveMasterLink.masterKnobName = dimNode["K"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["D"]) {
                     dimVec[i]._slaveMasterLink.masterDimensionName = dimNode["D"].as<std::string>();
+                    gotLink = true;
                 }
                 if (dimNode["V"]) {
                     dimVec[i]._slaveMasterLink.masterViewName = dimNode["V"].as<std::string>();
+                    gotLink = true;
                 }
+                dimVec[i]._slaveMasterLink.hasLink = gotLink;
             }
 
         } // isMap
@@ -702,11 +725,28 @@ KnobSerialization::decode(const YAML::Node& node)
     if (node["ParametricCurves"]) {
         YAML::Node curveNode = node["ParametricCurves"];
         ParametricExtraData *data = getOrCreateExtraData<ParametricExtraData>(_extraData);
-        for (std::size_t i = 0; i < curveNode.size(); ++i) {
-            CurveSerialization s;
-            s.decode(curveNode[i]);
-            data->parametricCurves.push_back(s);
+        if (curveNode.IsMap()) {
+            for (YAML::const_iterator it = curveNode.begin(); it!=curveNode.end(); ++it) {
+                std::string viewName = it->first.as<std::string>();
+                YAML::Node curvesViewNode = it->second;
+
+                std::list<CurveSerialization>& curvesList = data->parametricCurves[viewName];
+                for (std::size_t i = 0; i < curvesViewNode.size(); ++i) {
+                    CurveSerialization s;
+                    s.decode(curvesViewNode[i]);
+                    curvesList.push_back(s);
+                }
+
+            }
+        } else {
+            std::list<CurveSerialization>& curvesList = data->parametricCurves["Main"];
+            for (std::size_t i = 0; i < curveNode.size(); ++i) {
+                CurveSerialization s;
+                s.decode(curveNode[i]);
+                curvesList.push_back(s);
+            }
         }
+
     }
     if (node["TextAnim"]) {
         YAML::Node curveNode = node["TextAnim"];
@@ -875,9 +915,7 @@ KnobSerialization::decode(const YAML::Node& node)
         YAML::Node propsNode = node["Props"];
         for (std::size_t i = 0; i < propsNode.size(); ++i) {
             std::string prop = propsNode[i].as<std::string>();
-            if (prop == "MasterIsAlias") {
-                _masterIsAlias = true;
-            } else if (prop == "Secret") {
+            if (prop == "Secret") {
                 _isSecret = true;
             } else if (prop == "Disabled") {
                 _disabled = true;

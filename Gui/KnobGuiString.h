@@ -74,6 +74,7 @@ public:
 
     virtual ~AnimatingTextEdit();
 
+    void setLinkedAppearanceEnabled(bool linked);
 
 Q_SIGNALS:
 
@@ -99,6 +100,7 @@ private:
 
 private:
     bool _hasChanged;
+    bool _appearLinked;
     boost::shared_ptr<KnobWidgetDnD> _dnd;
 };
 
@@ -149,6 +151,8 @@ public:
     KnobGuiString(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiString() OVERRIDE;
+
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
     virtual std::string getDescriptionLabel() const OVERRIDE FINAL WARN_UNUSED_RETURN;

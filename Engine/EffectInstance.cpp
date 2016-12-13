@@ -2081,6 +2081,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                     }
                     im.newInputEffect = input;
                 }
+                input = inputToTransform;
             } else {
                 assert(false);
             }
@@ -2887,6 +2888,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
                     return eRenderingFunctorRetAborted;
             }
         } // if (st != eStatusOK || renderAborted) {
+        
     } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
     
     assert(!renderAborted);
@@ -2934,6 +2936,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
     if ( ( foundMaskInput != rectToRender.imgs.end() ) && !foundMaskInput->second.empty() ) {
         maskImage = foundMaskInput->second.front();
     }
+
+    // A node that is part of a stroke render implementation needs to accumulate so set the last rendered image pointer
+    RotoStrokeItemPtr attachedItem = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
 
     bool unPremultIfNeeded = planes.outputPremult == eImagePremultiplicationPremultiplied;
     bool useMaskMix = hostMasking || _publicInterface->isHostMixingEnabled();
@@ -3093,6 +3098,13 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
         if ( frameArgs->stats && frameArgs->stats->isInDepthProfilingEnabled() ) {
             frameArgs->stats->addRenderInfosForNode( _publicInterface->getNode(),  NodePtr(), it->first.getComponentsGlobalName(), actionArgs.roi, timeRecorder->getTimeSinceCreation() );
         }
+
+
+        // Set the accumulation buffer for this node if needed
+        if (attachedItem) {
+            _publicInterface->getNode()->setLastRenderedImage(renderFullScaleThenDownscale ?  it->second.fullscaleImage : it->second.downscaleImage);
+        }
+
     } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
 
 } // EffectInstance::Implementation::renderHandlerPostProcess
@@ -3254,43 +3266,28 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
 } // allocateImagePlaneAndSetInThreadLocalStorage
 
 
-
-void
-EffectInstance::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum /*reason*/, DimSpec /*dimension*/, double /*time*/, ViewSetSpec /*view*/)
-{
-    //We changed, abort any ongoing current render to refresh them with a newer version
-    abortAnyEvaluation();
-
-    NodePtr node = getNode();
-    if ( !node->isNodeCreated() ) {
-        return;
-    }
-
-    bool isMT = QThread::currentThread() == qApp->thread();
-
-    if ( isMT && ( !knob || knob->getEvaluateOnChange() ) ) {
-        getApp()->triggerAutoSave();
-    }
-
-
-    node->refreshIdentityState();
-    if (knob) {
-        knob->invalidateHashCache();
-    } else {
-        invalidateHashCache();
-    }
-
-}
-
 void
 EffectInstance::evaluate(bool isSignificant,
                          bool refreshMetadatas)
 {
+
+    // We changed, abort any ongoing current render to refresh them with a newer version
+    if (isSignificant) {
+        abortAnyEvaluation();
+    }
+
     NodePtr node = getNode();
 
     if ( refreshMetadatas && node && node->isNodeCreated() ) {
         refreshMetaDatas_public(true);
     }
+
+    if (isSignificant) {
+        getApp()->triggerAutoSave();
+    }
+
+    node->refreshIdentityState();
+
 
     double time = getCurrentTime();
 
@@ -3512,22 +3509,6 @@ EffectInstance::unregisterPluginMemory(size_t nBytes)
     getNode()->unregisterPluginMemory(nBytes);
 }
 
-void
-EffectInstance::onAllKnobsSlaved(bool isSlave,
-                                 const KnobHolderPtr& master)
-{
-    getNode()->onAllKnobsSlaved(isSlave, master);
-}
-
-void
-EffectInstance::onKnobSlaved(const KnobIPtr& slave,
-                             const KnobIPtr& master,
-                             DimIdx dimension,
-                             ViewIdx view,
-                             bool isSlave)
-{
-    getNode()->onKnobSlaved(slave, master, dimension, view, isSlave);
-}
 
 void
 EffectInstance::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
@@ -5162,8 +5143,7 @@ bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
                                    double /*time*/,
-                                   ViewSetSpec /*view*/,
-                                   bool /*originatedFromMainThread*/)
+                                   ViewSetSpec /*view*/)
 {
     return false;
 }
@@ -5278,8 +5258,7 @@ bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           ValueChangedReasonEnum reason,
                                           double time,
-                                          ViewSetSpec view,
-                                          bool originatedFromMainThread)
+                                          ViewSetSpec view)
 {
     NodePtr node = getNode();
     if (!node->isNodeCreated()) {
@@ -5308,15 +5287,14 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             RECURSIVE_ACTION();
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
             // Map to a plug-in known reason
-            if (reason == eValueChangedReasonNatronGuiEdited) {
+            if (reason == eValueChangedReasonUserEdited) {
                 reason = eValueChangedReasonUserEdited;
             } 
-            ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
+            ret |= knobChanged(k, reason, view, time);
         }
     }
 
-    if ( kh && ( QThread::currentThread() == qApp->thread() ) &&
-         originatedFromMainThread && ( reason != eValueChangedReasonTimeChanged) ) {
+    if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
         ///Run the following only in the main-thread
         if ( hasOverlay() && node->shouldDrawOverlay(time, ViewIdx(0)) && !node->hasHostOverlayForParam(k) ) {
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
@@ -5341,7 +5319,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     ///If there's a knobChanged Python callback, run it
     {
-        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        bool userEdited = reason == eValueChangedReasonUserEdited ||
         reason == eValueChangedReasonUserEdited;
         getNode()->runChangedParamCallback(k, userEdited);
     }

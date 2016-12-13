@@ -67,6 +67,8 @@ public:
 
     bool checkFileModificationAndWarn(SequenceTime time, bool errorAndAbortRender);
 
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
+
 public Q_SLOTS:
 
     void onTextEdited();
@@ -139,6 +141,8 @@ public:
     KnobGuiPath(const KnobGuiPtr& knob, ViewIdx view);
 
     virtual ~KnobGuiPath() OVERRIDE;
+
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
 

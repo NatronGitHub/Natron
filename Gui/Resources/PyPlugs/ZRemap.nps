@@ -62,6 +62,7 @@ UserPages:
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
       - Name: channels
+        String: Color.RGBA
         DefaultString: Backward.Motion
         NDims: 1
         TypeName: Choice
@@ -75,19 +76,18 @@ Children:
     Inputs: InputSource
     Params:
       - Name: blackPoint
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
       - Name: whitePoint
-        Float: 100
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
       - Name: gamma
-        Props: [MasterIsAlias]
+        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
       - Name: clampBlack
         Bool: true
         DefaultBool: false
       - Name: premultChanged
         Bool: true
       - Name: Source_channels
-        Props: [MasterIsAlias]
+        String: {N: "@thisGroup", K: Source_channels}
       - Name: enableMask_Mask
         Bool: true
     Pos: [726, 92]
@@ -99,10 +99,9 @@ Children:
       - Name: premultChanged
         Bool: true
       - Name: channels
-        String: Backward.Motion
-        Props: [MasterIsAlias]
+        String: {N: "@thisGroup", K: channels}
       - Name: disableNode
-        Props: [MasterIsAlias]
+        Bool: {N: "@thisGroup", K: invertGradient}
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     Name: Output

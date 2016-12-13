@@ -998,9 +998,8 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
     }
 
     if (version >= KNOB_SERIALIZATION_INTRODUCES_ALIAS) {
-        ar & ::boost::serialization::make_nvp("MasterIsAlias", _masterIsAlias);
-    } else {
-        _masterIsAlias = false;
+        bool masterIsAlias;
+        ar & ::boost::serialization::make_nvp("MasterIsAlias", masterIsAlias);
     }
 
     bool isFile = _typeName == NATRON_NAMESPACE::KnobFile::typeNameStatic();
@@ -1127,10 +1126,12 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         ParametricExtraData* extraData = dynamic_cast<ParametricExtraData*>(_extraData.get());
         std::list<NATRON_NAMESPACE::Curve> curves;
         ar & ::boost::serialization::make_nvp("ParametricCurves", curves);
+
+        std::list<SERIALIZATION_NAMESPACE::CurveSerialization>& mainViewCurves = extraData->parametricCurves["Main"];
         for (std::list<NATRON_NAMESPACE::Curve>::iterator it = curves.begin(); it!=curves.end(); ++it) {
             CurveSerialization c;
             it->toSerialization(&c);
-            extraData->parametricCurves.push_back(c);
+            mainViewCurves.push_back(c);
         }
 
         //isParametric->loadParametricCurves(extraData->parametricCurves);

@@ -87,8 +87,7 @@ bool
 Backdrop::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum /*reason*/,
                       ViewSetSpec /*view*/,
-                      double /*time*/,
-                      bool /*originatedFromMainThread*/)
+                      double /*time*/)
 {
     if ( k == _imp->knobLabel.lock() ) {
         QString text = QString::fromUtf8( _imp->knobLabel.lock()->getValue().c_str() );

@@ -137,10 +137,6 @@ NodeSerialization::encode(YAML::Emitter& em) const
         _tableModel->encode(em);
     }
 
-     // Only serialize clone stuff for non pyplug/non presets
-    if (_encodeType == eNodeSerializationTypeRegular && !_masterNodecriptName.empty()) {
-        em << YAML::Key << "CloneMaster" << YAML::Value << _masterNodecriptName;
-    }
 
     if (!_presetInstanceLabel.empty()) {
         em << YAML::Key << "Preset" << YAML::Value << _presetInstanceLabel;
@@ -278,10 +274,6 @@ NodeSerialization::decode(const YAML::Node& node)
     if (node["TableItems"]) {
         _tableModel.reset(new KnobItemsTableSerialization);
         _tableModel->decode(node["TableItems"]);
-    }
-
-    if (node["CloneMaster"]) {
-        _masterNodecriptName = node["CloneMaster"].as<std::string>();
     }
     
     if (node["Preset"]) {

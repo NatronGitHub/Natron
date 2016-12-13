@@ -292,7 +292,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     _imp->keyframeLeftSlopeLabel->setCustomTextColor(slopeColor);
 
     _imp->keyframeLeftSlopeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeDouble);
-    _imp->keyframeLeftSlopeSpinBox->setUseLineColor(true, slopeColor);
+    _imp->keyframeLeftSlopeSpinBox->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, true, slopeColor);
     _imp->keyframeLeftSlopeSpinBox->setToolTip(leftSlopeTT);
     QObject::connect(_imp->keyframeLeftSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onLeftSlopeSpinBoxValueChanged(double)));
 
@@ -330,7 +330,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
     _imp->keyframeRightSlopeSpinBox = new SpinBox(_imp->buttonsContainer, SpinBox::eSpinBoxTypeDouble);
     _imp->keyframeRightSlopeSpinBox->setToolTip(rightSlopeTT);
-    _imp->keyframeRightSlopeSpinBox->setUseLineColor(true, slopeColor);
+    _imp->keyframeRightSlopeSpinBox->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredUnderlinedText, true, slopeColor);
     QObject::connect(_imp->keyframeRightSlopeSpinBox, SIGNAL(valueChanged(double)), this, SLOT(onRightSlopeSpinBoxValueChanged(double)));
 
     QString interpTT = convertFromPlainText(tr("Interpolation of the curve between the currently selected keyframe and the next keyframe"), WhiteSpaceNormal);

@@ -42,7 +42,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
-
+#include "Engine/RectD.h"
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -72,7 +72,7 @@ private:
     void move(double dx, double dy);
 
     bool _firstRedoCalled;
-    NodesGuiList _nodes;
+    std::list<NodeGuiWPtr> _nodes;
     double _dx, _dy;
 };
 
@@ -222,7 +222,7 @@ public:
 
 private:
 
-    NodeGuiPtr _bd;
+    NodeGuiWPtr _bd;
     int _w, _h;
     int _oldW, _oldH;
 };
@@ -236,7 +236,7 @@ class DecloneMultipleNodesCommand
 public:
 
     DecloneMultipleNodesCommand(NodeGraph* graph,
-                                const NodesGuiList & nodes,
+                                const  std::map<NodeGuiPtr, NodePtr> & nodes,
                                 QUndoCommand *parent = 0);
 
 
@@ -249,7 +249,7 @@ private:
 
     struct NodeToDeclone
     {
-        boost::weak_ptr<NodeGui> node;
+        NodeGuiWPtr node;
         NodeWPtr master;
     };
 
@@ -267,7 +267,7 @@ public:
 
     struct NodeToRearrange
     {
-        NodeGuiPtr node;
+        NodeGuiWPtr node;
         QPointF oldPos, newPos;
     };
 
@@ -386,8 +386,7 @@ class GroupFromSelectionCommand
 
 public:
 
-    GroupFromSelectionCommand(NodeGraph* graph,
-                              const NodesGuiList & nodes);
+    GroupFromSelectionCommand(const NodesList & nodes);
 
     virtual ~GroupFromSelectionCommand();
 
@@ -396,18 +395,15 @@ public:
 
 private:
 
-    NodeGraph* _graph;
-    std::list<boost::weak_ptr<NodeGui> > _originalNodes;
-    struct OutputLink
-    {
-        int inputIdx;
-        NodeWPtr inputNode;
-    };
-    typedef std::map<NodeWPtr, OutputLink> OutputLinksMap;
-    OutputLinksMap _outputLinks;
-    boost::weak_ptr<NodeGui> _group;
-    bool _firstRedoCalled;
-    bool _isRedone;
+    NodesWList _originalNodes;
+
+
+    // save for each node the inputs that it was connected to
+    typedef std::map<NodeWPtr, std::vector<NodeWPtr> > LinksMap;
+    LinksMap _savedLinks;
+
+    NodeCollectionWPtr _oldGroup;
+    NodeWPtr _newGroup;
 };
 
 class InlineGroupCommand
@@ -417,8 +413,7 @@ class InlineGroupCommand
 
 public:
 
-    InlineGroupCommand(NodeGraph* graph,
-                       const NodesGuiList & nodes);
+    InlineGroupCommand(const NodeCollectionPtr& newGroup, const NodesList & groupNodes);
 
     virtual ~InlineGroupCommand();
 
@@ -427,22 +422,63 @@ public:
 
 private:
 
-    struct NodeToConnect
-    {
-        boost::weak_ptr<NodeGui> input;
-        std::map<boost::weak_ptr<NodeGui>, int> outputs;
-    };
-
     struct InlinedGroup
     {
-        boost::weak_ptr<NodeGui> group;
-        std::list<boost::weak_ptr<NodeGui> > inlinedNodes;
-        std::map<int, NodeToConnect> connections;
+        boost::weak_ptr<NodeGroup> oldGroupNode;
+
+        // For each output of the GroupInput node, the inputs vector
+        struct InputOutput
+        {
+            // The GroupInput index
+            int inputIndex;
+
+            // The input index connceting output to the GroupInput node
+            int outputInputIndex;
+
+            // output node of the input node
+            NodeWPtr output;
+
+            // The inputs of the output node
+            std::vector<NodeWPtr> inputNodes;
+        };
+        std::vector<InputOutput> inputsMap;
+
+        // A vector of the nodes the Group node is linked to in input (not the GroupInput nodes but
+        // the actual nodes upstream)
+        std::vector<NodeWPtr> groupInputs;
+
+        // Each node connected to the group node itself along with it's inputs.
+        struct GroupNodeOutput
+        {
+            NodeWPtr output;
+            int inputIndex;
+            std::vector<NodeWPtr> outputNodeInputs;
+            double position[2];
+        };
+        std::list<GroupNodeOutput> groupOutputs;
+
+        // The actual nodes that were inlined along with their old position
+        struct MovedNode
+        {
+            NodeWPtr node;
+            double position[2];
+        };
+        std::list<MovedNode> movedNodes;
+
+        RectD movedNodesBbox;
+
+        double groupNodePos[2];
+
+        // The GroupOutput node input
+        NodeWPtr outputNodeInput;
     };
 
-    NodeGraph* _graph;
-    std::list<InlinedGroup> _groupNodes;
-    bool _firstRedoCalled;
+
+
+
+    
+    NodeCollectionWPtr _newGroup;
+    std::list<InlinedGroup> _oldGroups;
 };
 
 class RestoreNodeToDefaultCommand

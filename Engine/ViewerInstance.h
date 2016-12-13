@@ -197,7 +197,6 @@ public:
                                      bool singleThreaded,
                                      bool isSequentialRender,
                                      const RotoStrokeItemPtr& activeStrokeItem,
-                                     bool isDoingRotoNeatRender,
                                      boost::shared_ptr<ViewerArgs> args[2],
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                      const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
@@ -318,7 +317,6 @@ private:
                                               bool singleThreaded,
                                               bool isSequentialRender,
                                               const RotoStrokeItemPtr& activeStrokeItem,
-                                              bool isDoingRotoNeatRender,
                                               const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                               const RenderStatsPtr& stats,
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;

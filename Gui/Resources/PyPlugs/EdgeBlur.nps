@@ -78,12 +78,11 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: filter
-        Props: [MasterIsAlias]
+        String: {N: "@thisGroup", K: filter}
       - Name: multiChannel
         String: Separate
       - Name: blurSize
-        Float: 3
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: size}
     Pos: [908, 181]
   - PluginID: net.sf.openfx.GammaPlugin
     Name: Gamma1
@@ -108,11 +107,11 @@ Children:
     Masks: Merge1
     Params:
       - Name: size
-        Float: {N: EdgeDetect1, K: blurSize}
+        Float: {N: "@thisGroup", K: size}
       - Name: cropToFormat
-        Props: [MasterIsAlias]
+        Bool: {N: "@thisGroup", K: cropToFormat}
       - Name: mix
-        Props: [MasterIsAlias]
+        Float: {N: "@thisGroup", K: Blur1mix}
       - Name: enableMask_Mask
         Bool: true
     Pos: [676, 349]
@@ -164,5 +163,5 @@ Children:
       - Name: bbox
         String: A
       - Name: maskInvert
-        Props: [MasterIsAlias]
+        Bool: {N: "@thisGroup", K: Merge1maskInvert}
     Pos: [895, 341]

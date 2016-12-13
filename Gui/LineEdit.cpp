@@ -36,6 +36,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QDragLeaveEvent>
 #include <QDragMoveEvent>
 #include <QDropEvent>
+#include <QPainter>
 #include <QKeySequence>
 #include <QtCore/QUrl>
 #include <QtCore/QMimeData>
@@ -255,6 +256,21 @@ LineEdit::setCustomTextColor(const QColor& color)
 
 
 void
+LineEdit::disableAllDecorations()
+{
+    decorationType.clear();
+    update();
+}
+
+void
+LineEdit::setAdditionalDecorationTypeEnabled(AdditionalDecorationType type, bool enabled, const QColor& color) {
+    AdditionalDecoration& deco = decorationType[type];
+    deco.enabled = enabled;
+    deco.color = color;
+    update();
+}
+
+void
 LineEdit::setBorderDisabled(bool disabled)
 {
     borderDisabled = disabled;
@@ -267,6 +283,34 @@ LineEdit::getBorderDisabled() const
     return borderDisabled;
 }
 
+void
+LineEdit::paintEvent(QPaintEvent *e)
+{
+    QLineEdit::paintEvent(e);
+
+    for (AdditionalDecorationsMap::iterator it = decorationType.begin(); it!=decorationType.end(); ++it) {
+        if (!it->second.enabled) {
+            continue;
+        }
+        switch (it->first) {
+            case eAdditionalDecorationColoredFrame:
+            {
+                QPainter p(this);
+                p.setPen(it->second.color);
+                QRect bRect = rect();
+                bRect.adjust(0, 0, -1, -1);
+                p.drawRect(bRect);
+            }   break;
+            case eAdditionalDecorationColoredUnderlinedText:
+            {
+                QPainter p(this);
+                p.setPen(it->second.color);
+                int h = height() - 1;
+                p.drawLine(0, h - 1, width() - 1, h - 1);
+            }   break;
+        }
+    }
+}
 
 void
 LineEdit::keyPressEvent(QKeyEvent* e)

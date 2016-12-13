@@ -79,8 +79,7 @@ struct ScaleSliderQWidgetPrivate
     bool shiftDown;
     double currentZoom;
     ScaleSliderQWidget::DataTypeEnum dataType;
-    bool useLineColor;
-    QColor lineColor;
+
     bool allowDraftModeSetting;
 
     ScaleSliderQWidgetPrivate(QWidget* parent,
@@ -108,8 +107,6 @@ struct ScaleSliderQWidgetPrivate
         , shiftDown(false)
         , currentZoom(1.)
         , dataType(dataType)
-        , useLineColor(false)
-        , lineColor(Qt::black)
         , allowDraftModeSetting(allowDraftModeSetting)
     {
         font.setPointSize( (font.pointSize() * NATRON_FONT_SIZE_10) / NATRON_FONT_SIZE_13 );
@@ -464,11 +461,8 @@ ScaleSliderQWidget::paintEvent(QPaintEvent* /*e*/)
 
     QFontMetrics fontM(_imp->font, 0);
 
-    if (!_imp->useLineColor) {
-        p.setPen(scaleColor);
-    } else {
-        p.setPen(_imp->lineColor);
-    }
+    p.setPen(scaleColor);
+
 
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0, height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
@@ -634,14 +628,7 @@ ScaleSliderQWidget::setReadOnly(bool ro)
     update();
 }
 
-void
-ScaleSliderQWidget::setUseLineColor(bool use,
-                                    const QColor& color)
-{
-    _imp->useLineColor = use;
-    _imp->lineColor = color;
-    update();
-}
+
 
 NATRON_NAMESPACE_EXIT;
 

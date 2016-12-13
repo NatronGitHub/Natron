@@ -292,7 +292,7 @@ Gui::putSettingsPanelFirst(DockablePanel* panel)
     }
 
     // Refresh timeline's keyframes
-    refreshTimelineGuiKeyframes();
+    refreshTimelineGuiKeyframesLater();
 
 
 }
@@ -373,7 +373,7 @@ Gui::addVisibleDockablePanel(DockablePanel* panel)
         getApp()->registerSettingsPanel(panel);
 
         // Refresh timeline's keyframes, this is also done in putSettingsPanelFirst
-        refreshTimelineGuiKeyframes();
+        refreshTimelineGuiKeyframesLater();
     }
 
 
@@ -386,7 +386,7 @@ Gui::removeVisibleDockablePanel(DockablePanel* panel)
 
     getApp()->unregisterSettingsPanel(panel);
     // Refresh timeline's keyframes
-    refreshTimelineGuiKeyframes();
+    refreshTimelineGuiKeyframesLater();
 }
 
 

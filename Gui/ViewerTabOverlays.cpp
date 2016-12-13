@@ -878,7 +878,7 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
                     if ( isButton->getIsCheckable() ) {
 
                         // Refresh the button state
-                        isButton->setValue(!isButton->getValue(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonNatronGuiEdited, 0 /*keyframe*/, true /*forceHandlerEvenIfNoChange*/);
+                        isButton->setValue(!isButton->getValue(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited, 0 /*keyframe*/, true /*forceHandlerEvenIfNoChange*/);
 
                         ret = true;
                     } else {

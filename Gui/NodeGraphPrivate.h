@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/weak_ptr.hpp>
@@ -206,6 +207,27 @@ public:
     QTimer autoScrollTimer;
     QTimer refreshRenderStateTimer;
 
+    struct LinkedNodes
+    {
+        NodeWPtr nodes[2];
+        bool isCloneLink;
+        LinkArrow* arrow;
+
+        LinkedNodes()
+        : nodes()
+        , isCloneLink(false)
+        , arrow(0)
+        {
+
+        }
+    };
+
+    typedef std::list<LinkedNodes> LinkedNodesList;
+
+    LinkedNodesList linkedNodes;
+
+    // used to concatenate refreshing of links
+    int refreshNodesLinkRequest;
 
     NodeGraphPrivate(NodeGraph* p,
                      const NodeCollectionPtr& group);

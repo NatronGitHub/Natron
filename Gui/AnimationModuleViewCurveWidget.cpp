@@ -26,6 +26,7 @@
 
 #include <cmath> // floor
 #include <stdexcept>
+#include <cfloat>
 
 GCC_DIAG_UNUSED_PRIVATE_FIELD_OFF
 // /opt/local/include/QtGui/qmime.h:119:10: warning: private field 'type' is not used [-Wunused-private-field]
@@ -142,12 +143,16 @@ AnimationModuleView::getCurvesDisplayRangesBbox(const std::vector<CurveGuiPtr> &
         // Ignore unset ranges
         if (thisCurveRange.min == -std::numeric_limits<double>::infinity() ||
             thisCurveRange.min == INT_MIN ||
+            thisCurveRange.min == -DBL_MAX ||
             thisCurveRange.max == std::numeric_limits<double>::infinity() ||
             thisCurveRange.max == INT_MAX ||
+            thisCurveRange.max == DBL_MAX ||
             thisXRange.first == -std::numeric_limits<double>::infinity() ||
             thisXRange.first == INT_MIN ||
+            thisXRange.first == -DBL_MAX ||
             thisXRange.second == std::numeric_limits<double>::infinity() ||
-            thisXRange.second == INT_MAX) {
+            thisXRange.second == INT_MAX ||
+            thisXRange.second == DBL_MAX) {
             continue;
         }
 
@@ -233,6 +238,7 @@ AnimationModuleViewPrivate::drawCurveEditorView()
     }
 
     drawCurves();
+    glCheckError(GL_GPU);
 
     if ( state == eEventStateSelectionRectCurveEditor ) {
         drawSelectionRectangle();

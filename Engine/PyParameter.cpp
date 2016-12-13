@@ -253,7 +253,7 @@ Param::setVisible(bool visible)
 }
 
 bool
-Param::getIsEnabled(int dimension) const
+Param::getIsEnabled() const
 {
 
     KnobIPtr knob = getInternalKnob();
@@ -261,27 +261,19 @@ Param::getIsEnabled(int dimension) const
         PythonSetNullError();
         return false;
     }
-    if (dimension < 0 || dimension >= knob->getNDimensions()) {
-        PythonSetInvalidDimensionError(dimension);
-        return false;
-    }
-    return knob->isEnabled(DimIdx(dimension));
+    return knob->isEnabled();
 }
 
 void
-Param::setEnabled(bool enabled,
-                  int dimension)
+Param::setEnabled(bool enabled)
 {
     KnobIPtr knob = getInternalKnob();
     if (!knob) {
         PythonSetNullError();
         return;
     }
-    if (dimension < 0 || dimension >= knob->getNDimensions()) {
-        PythonSetInvalidDimensionError(dimension);
-        return;
-    }
-    knob->setEnabled(enabled, DimIdx(dimension));
+
+    knob->setEnabled(enabled);
 }
 
 bool
@@ -644,10 +636,7 @@ Param::copy(Param* other,
         PythonSetNullError();
         return false;
     }
-    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot copy from a parameter with an incompatible type").toStdString().c_str());
-        return false;
-    }
+
     if ((thisDimension == kPyParamDimSpecAll && otherDimension != kPyParamDimSpecAll) ||
         (thisDimension != kPyParamDimSpecAll && otherDimension == kPyParamDimSpecAll)) {
         PyErr_SetString(PyExc_ValueError, tr("thisDimension and otherDimension arguments must be either -1 for both or a valid index").toStdString().c_str());
@@ -678,13 +667,37 @@ Param::copy(Param* other,
     DimSpec thisDimSpec = getDimSpecFromDimensionIndex(thisDimension);
     DimSpec otherDimSpec = getDimSpecFromDimensionIndex(otherDimension);
 
-    thisKnob->copyKnob(otherKnob, thisViewSpec, thisDimSpec, otherViewSpec, otherDimSpec, /*range*/ 0, /*offset*/ 0);
+    {
+        DimIdx thisDimToCheck = thisDimSpec.isAll() ? DimIdx(0) : DimIdx(thisDimSpec);
+        ViewIdx thisViewToCheck = thisDimSpec.isAll() ? ViewIdx(0): ViewIdx(thisDimSpec);
+        DimIdx otherDimToCheck = otherDimSpec.isAll() ? DimIdx(0) : DimIdx(otherDimSpec);
+        ViewIdx otherViewToCheck = otherViewSpec.isAll() ? ViewIdx(0): ViewIdx(otherViewSpec);
+        std::string error;
+        if ( !thisKnob->canLinkWith(otherKnob, thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
+            if (!error.empty()) {
+                PyErr_SetString(PyExc_ValueError, error.c_str());
+            }
+            return false;
+        }
+    }
 
+    thisKnob->copyKnob(otherKnob, thisViewSpec, thisDimSpec, otherViewSpec, otherDimSpec, /*range*/ 0, /*offset*/ 0);
+    
     return true;
 }
 
 bool
 Param::slaveTo(Param* other,
+              int thisDimension,
+              int otherDimension,
+              const QString& thisView,
+              const QString& otherView)
+{
+    return linkTo(other, thisDimension, otherDimension, thisView, otherView);
+}
+
+bool
+Param::linkTo(Param* other,
                int thisDimension,
                int otherDimension,
                const QString& thisView,
@@ -696,10 +709,7 @@ Param::slaveTo(Param* other,
         PythonSetNullError();
         return false;
     }
-    if ( !thisKnob->isTypeCompatible(otherKnob) ) {
-        PyErr_SetString(PyExc_ValueError, tr("Cannot slave to a parameter with an incompatible type").toStdString().c_str());
-        return false;
-    }
+
     if ((thisDimension == kPyParamDimSpecAll && otherDimension != kPyParamDimSpecAll) ||
         (thisDimension != kPyParamDimSpecAll && otherDimension == kPyParamDimSpecAll)) {
         PyErr_SetString(PyExc_ValueError, tr("thisDimension and otherDimension arguments must be either -1 for both or a valid index").toStdString().c_str());
@@ -730,12 +740,24 @@ Param::slaveTo(Param* other,
     DimSpec thisDimSpec = getDimSpecFromDimensionIndex(thisDimension);
     DimSpec otherDimSpec = getDimSpecFromDimensionIndex(otherDimension);
 
-
-    return thisKnob->slaveTo(otherKnob, thisDimSpec, otherDimSpec, thisViewSpec, otherViewSpec);
+    {
+        DimIdx thisDimToCheck = thisDimSpec.isAll() ? DimIdx(0) : DimIdx(thisDimSpec);
+        ViewIdx thisViewToCheck = thisDimSpec.isAll() ? ViewIdx(0): ViewIdx(thisDimSpec);
+        DimIdx otherDimToCheck = otherDimSpec.isAll() ? DimIdx(0) : DimIdx(otherDimSpec);
+        ViewIdx otherViewToCheck = otherViewSpec.isAll() ? ViewIdx(0): ViewIdx(otherViewSpec);
+        std::string error;
+        if ( !thisKnob->canLinkWith(otherKnob, thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
+            if (!error.empty()) {
+                PyErr_SetString(PyExc_ValueError, error.c_str());
+            }
+            return false;
+        }
+    }
+    return thisKnob->linkTo(otherKnob, thisDimSpec, otherDimSpec, thisViewSpec, otherViewSpec);
 }
 
 void
-Param::unslave(int dimension, const QString& viewName)
+Param::unlink(int dimension, const QString& viewName)
 {
     KnobIPtr thisKnob = _knob.lock();
 
@@ -755,7 +777,7 @@ Param::unslave(int dimension, const QString& viewName)
     }
 
     DimSpec thisDimSpec = getDimSpecFromDimensionIndex(dimension);
-    thisKnob->unSlave(thisDimSpec, thisViewSpec, false);
+    thisKnob->unlink(thisDimSpec, thisViewSpec, false);
 }
 
 double
@@ -849,8 +871,14 @@ Param::setAsAlias(Param* other)
         PyErr_SetString(PyExc_ValueError, tr("Cannot alias a parameter with a different number of dimensions").toStdString().c_str());
         return false;
     }
-    return otherKnob->setKnobAsAliasOfThis(thisKnob, true);
+    // First copy the original knob
+    bool ok = thisKnob->copyKnob(otherKnob);
+
+    // Now link the original knob to this knob
+    ok |= otherKnob->linkTo(thisKnob);
+    return ok;
 }
+
 
 void
 Param::setIconFilePath(const QString& icon, bool checked)
@@ -1051,7 +1079,7 @@ AnimatedParam::deleteValueAtTime(double time,
     }
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
 
-    knob->deleteValueAtTime(time, thisViewSpec, dim, eValueChangedReasonNatronInternalEdited);
+    knob->deleteValueAtTime(time, thisViewSpec, dim, eValueChangedReasonUserEdited);
 
 }
 
@@ -1076,7 +1104,7 @@ AnimatedParam::removeAnimation(int dimension, const QString& view)
 
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
 
-    knob->removeAnimation(thisViewSpec, dim, eValueChangedReasonNatronInternalEdited);
+    knob->removeAnimation(thisViewSpec, dim, eValueChangedReasonUserEdited);
 
 }
 
@@ -1203,12 +1231,12 @@ Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension
         return;
     }
 
-    if (thisDimension == -1) {
+    if (thisDimension == kPyParamDimSpecAll) {
         for (int i = 0; i < getValueCallerKnob->getNDimensions(); ++i) {
-            getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+            getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(i), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
         }
     } else {
-        getValueCallerKnob->addListener(true /*isExpression*/, DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
+        getValueCallerKnob->addListener(DimIdx(fromExprDimension), DimIdx(thisDimension), ViewIdx(fromExprViewSpec.value()), ViewIdx(thisViewSpec.value()), expressionKnob);
     }
 }
 
@@ -3859,7 +3887,7 @@ ParametricParam::addControlPoint(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return knob->addControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), key, value, interpolation);
+    return knob->addControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), key, value, interpolation);
 }
 
 StatusEnum
@@ -3879,7 +3907,7 @@ ParametricParam::addControlPoint(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return knob->addControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), key, value, leftDerivative, rightDerivative, interpolation);
+    return knob->addControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), key, value, leftDerivative, rightDerivative, interpolation);
 }
 
 double
@@ -3896,7 +3924,7 @@ ParametricParam::getValue(int dimension,
         return 0.;
     }
     double ret;
-    StatusEnum stat =  knob->getValue(DimIdx(dimension), parametricPosition, &ret);
+    StatusEnum stat =  knob->getValue(DimIdx(dimension), ViewIdx(0), parametricPosition, &ret);
 
     if (stat == eStatusFailed) {
         ret =  0.;
@@ -3918,7 +3946,7 @@ ParametricParam::getNControlPoints(int dimension) const
         return 0;
     }
     int ret;
-    StatusEnum stat =  knob->getNControlPoints(DimIdx(dimension), &ret);
+    StatusEnum stat =  knob->getNControlPoints(DimIdx(dimension), ViewIdx(0), &ret);
 
     if (stat == eStatusFailed) {
         ret = 0;
@@ -3944,7 +3972,7 @@ ParametricParam::getNthControlPoint(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return knob->getNthControlPoint(DimIdx(dimension), nthCtl, key, value, leftDerivative, rightDerivative);
+    return knob->getNthControlPoint(DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
 StatusEnum
@@ -3964,7 +3992,7 @@ ParametricParam::setNthControlPoint(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return knob->setNthControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), nthCtl, key, value, leftDerivative, rightDerivative);
+    return knob->setNthControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
 }
 
 StatusEnum
@@ -3981,7 +4009,7 @@ ParametricParam::setNthControlPointInterpolation(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return knob->setNthControlPointInterpolation(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), nThCtl, interpolation);
+    return knob->setNthControlPointInterpolation(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nThCtl, interpolation);
 }
 
 StatusEnum
@@ -3997,7 +4025,7 @@ ParametricParam::deleteControlPoint(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return knob->deleteControlPoint(eValueChangedReasonNatronInternalEdited, DimIdx(dimension), nthCtl);
+    return knob->deleteControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl);
 }
 
 StatusEnum
@@ -4012,7 +4040,7 @@ ParametricParam::deleteAllControlPoints(int dimension)
         PythonSetInvalidDimensionError(dimension);
         return eStatusFailed;
     }
-    return _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonNatronInternalEdited, DimIdx(dimension));
+    return _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonUserEdited, DimIdx(dimension),ViewIdx(0));
 }
 
 void

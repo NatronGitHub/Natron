@@ -2378,8 +2378,7 @@ bool
 RotoPaint::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSetSpec view,
-                       double time,
-                       bool /*originatedFromMainThread*/)
+                       double time)
 {
     if (!k) {
         return false;
@@ -2796,7 +2795,7 @@ RotoPaintPrivate::resetTransformInternal(const KnobDoublePtr& translate,
     if (extraMatrix) {
         knobs.push_back(extraMatrix);
     }
-    bool wasEnabled = translate->isEnabled(DimIdx(0));
+    bool wasEnabled = translate->isEnabled();
     for (std::list<KnobIPtr>::iterator it = knobs.begin(); it != knobs.end(); ++it) {
         (*it)->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
         (*it)->setEnabled(wasEnabled);
@@ -2852,64 +2851,6 @@ RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelectio
     redrawOverlayInteract();
 }
 
-
-
-void
-RotoPaint::evaluateNeatStrokeRender()
-{
-    {
-        QMutexLocker k(&_imp->doingNeatRenderMutex);
-        _imp->mustDoNeatRender = true;
-    }
-
-    invalidateCacheHashAndEvaluate(true, false);
-
-}
-
-
-bool
-RotoPaint::isDoingNeatRender() const
-{
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    return _imp->doingNeatRender;
-}
-
-bool
-RotoPaint::mustDoNeatRender() const
-{
-    QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-    return _imp->mustDoNeatRender;
-}
-
-void
-RotoPaint::setIsDoingNeatRender(bool doing)
-{
-    bool setUserPaintingOff = false;
-    {
-#pragma message WARN("move this to RotoStrokeItem")
-        QMutexLocker k(&_imp->doingNeatRenderMutex);
-
-        if (doing && _imp->mustDoNeatRender) {
-            assert(!_imp->doingNeatRender);
-            _imp->doingNeatRender = true;
-            _imp->mustDoNeatRender = false;
-        } else if (_imp->doingNeatRender) {
-            _imp->doingNeatRender = false;
-            _imp->mustDoNeatRender = false;
-            setUserPaintingOff = true;
-        }
-    }
-    if (setUserPaintingOff) {
-        RotoStrokeItemPtr activeStroke = getApp()->getActiveRotoDrawingStroke();
-        assert(activeStroke);
-        if (activeStroke) {
-            activeStroke->endSubStroke();
-        }
-        getApp()->setUserIsPainting(RotoStrokeItemPtr());
-    }
-}
 
 
 KnobTableItemPtr
@@ -3102,10 +3043,10 @@ RotoPaintPrivate::getOrCreateGlobalTimeBlurNode()
             assert(false);
         }
     }
-    divisionsKnob->slaveTo(globalMotionBlurKnob.lock());
-    shutterKnob->slaveTo(globalShutterKnob.lock());
-    shutterTypeKnob->slaveTo(globalShutterTypeKnob.lock());
-    shutterCustomOffsetKnob->slaveTo(globalCustomOffsetKnob.lock());
+    divisionsKnob->linkTo(globalMotionBlurKnob.lock());
+    shutterKnob->linkTo(globalShutterKnob.lock());
+    shutterTypeKnob->linkTo(globalShutterTypeKnob.lock());
+    shutterCustomOffsetKnob->linkTo(globalCustomOffsetKnob.lock());
     return globalTimeBlurNode;
 }
 
@@ -3171,7 +3112,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         if (glRenderKnob) {
             KnobChoicePtr rotoPaintGLRenderKnob = node->getOrCreateOpenGLEnabledKnob();
             assert(rotoPaintGLRenderKnob);
-            glRenderKnob->slaveTo(rotoPaintGLRenderKnob);
+            bool ok = glRenderKnob->linkTo(rotoPaintGLRenderKnob);
+            assert(ok);
+            (void)ok;
         }
     }
     *availableInputIndex = 1;
@@ -3189,7 +3132,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         mergeRGBA[2] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsB));
         mergeRGBA[3] = toKnobBool(mergeNode->getKnobByName(kMergeParamOutputChannelsA));
         for (int i = 0; i < 4; ++i) {
-            mergeRGBA[i]->slaveTo(rotoPaintRGBA[i]);
+            bool ok = mergeRGBA[i]->linkTo(rotoPaintRGBA[i]);
+            assert(ok);
+            (void)ok;
         }
 
         // Link mix
@@ -3197,7 +3142,9 @@ RotoPaintPrivate::getOrCreateGlobalMergeNode(int blendingOperator, int *availabl
         if (nodeType != RotoPaint::eRotoPaintTypeComp) {
             rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
             KnobIPtr mergeMix = mergeNode->getKnobByName(kMergeOFXParamMix);
-            mergeMix->slaveTo(rotoPaintMix);
+            bool ok = mergeMix->linkTo(rotoPaintMix);
+            assert(ok);
+            (void)ok;
         }
 
 

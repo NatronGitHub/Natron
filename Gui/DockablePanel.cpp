@@ -109,8 +109,6 @@ DockablePanel::DockablePanel(Gui* gui,
 {
     setContainerWidget(this);
 
-    assert(holder);
-    holder->setPanelPointer(this);
 
     _imp->_mainLayout = new QVBoxLayout(this);
     _imp->_mainLayout->setSpacing(0);
@@ -422,12 +420,6 @@ DockablePanel::~DockablePanel()
 }
 
 bool
-DockablePanel::isPagingEnabled() const
-{
-    return _imp->_pagesEnabled;
-}
-
-bool
 DockablePanel::useScrollAreaForTabs() const
 {
     return _imp->_useScrollAreasForTabs;
@@ -456,9 +448,9 @@ DockablePanel::getPagesContainer() const
 {
     if (_imp->_tabWidget) {
         return _imp->_tabWidget;
+    } else {
+        return (QWidget*)_imp->_horizContainer;
     }
-
-    return (QWidget*)_imp->_publicInterface;
 }
 
 QWidget*
@@ -592,12 +584,13 @@ DockablePanel::onPageActivated(const KnobPageGuiPtr& page)
 }
 
 void
-DockablePanel::turnOffPages()
+DockablePanel::onPagingTurnedOff()
 {
-    _imp->_pagesEnabled = false;
+    setFrameShape(QFrame::NoFrame);
     delete _imp->_tabWidget;
     _imp->_tabWidget = 0;
-    setFrameShape(QFrame::NoFrame);
+    delete _imp->_verticalColorBar;
+    _imp->_verticalColorBar = 0;
 
 }
 
@@ -726,8 +719,9 @@ DockablePanel::onLineEditNameEditingFinished()
 void
 DockablePanel::onKnobsInitialized()
 {
-    assert(_imp->_tabWidget);
-    _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
+    if (_imp->_tabWidget) {
+        _imp->_rightContainerLayout->addWidget(_imp->_tabWidget);
+    }
 } // DockablePanel::initializeKnobsInternal
 
 
@@ -1324,7 +1318,6 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
 
     EffectInstancePtr isEffect = toEffectInstance(_imp->_holder.lock());
     if (isEffect) {
-        NodePtr master = isEffect->getNode()->getMasterNode();
         Menu menu(this);
         //menu.setFont( QFont(appFont,appFontSize) );
         QAction* userParams = new QAction(tr("Manage user parameters..."), &menu);
@@ -1338,7 +1331,7 @@ DockablePanel::onRightClickMenuRequested(const QPoint & pos)
         menu.addAction(removeAnimation);
 
         KnobHolderPtr holder = _imp->_holder.lock();
-        if ( master || !holder || !holder->getApp() || holder->getApp()->isGuiFrozen() ) {
+        if ( !holder || !holder->getApp() || holder->getApp()->isGuiFrozen() ) {
             setKeys->setEnabled(false);
             removeAnimation->setEnabled(false);
         }

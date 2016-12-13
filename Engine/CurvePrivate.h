@@ -34,6 +34,7 @@
 #include <QtCore/QMutex>
 
 #include "Engine/Variant.h"
+#include "Engine/Curve.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
@@ -45,15 +46,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct CurvePrivate
 {
-    enum CurveTypeEnum
-    {
-        eCurveTypeDouble = 0, //< the values held by the keyframes can be any real
-        eCurveTypeInt, //< the values held by the keyframes can only be integers
-        eCurveTypeIntConstantInterp, //< same as eCurveTypeInt but interpolation is restricted to eKeyframeTypeConstant
-        eCurveTypeBool, //< the values held by the keyframes can be either 0 or 1
-        eCurveTypeString //< the values held by the keyframes can only be integers and keyframes are ordered by increasing values
-        // and times
-    };
+   
 
     KeyFrameSet keyFrames;
 
@@ -61,34 +54,29 @@ struct CurvePrivate
     std::map<double, double> resultCache; //< a cache for interpolations
 #endif
 
-    KnobIWPtr owner;
-    DimIdx dimensionInOwner;
-    ViewIdx viewInOwner;
-    CurveTypeEnum type;
+    Curve::CurveTypeEnum type;
     double xMin, xMax;
     double yMin, yMax;
+    double displayMin, displayMax;
     mutable QMutex _lock; //< the plug-ins can call getValueAt at any moment and we must make sure the user is not playing around
-    bool isParametric;
     bool isPeriodic;
     bool canMoveY;
 
     CurvePrivate()
-        : keyFrames()
+    : keyFrames()
 #ifdef NATRON_CURVE_USE_CACHE
-        , resultCache()
+    , resultCache()
 #endif
-        , owner()
-        , dimensionInOwner(0)
-        , viewInOwner(0)
-        , type(eCurveTypeDouble)
-        , xMin(-std::numeric_limits<double>::infinity())
-        , xMax(std::numeric_limits<double>::infinity())
-        , yMin(-std::numeric_limits<double>::infinity())
-        , yMax(std::numeric_limits<double>::infinity())
-        , _lock(QMutex::Recursive)
-        , isParametric(false)
-        , isPeriodic(false)
-        , canMoveY(true)
+    , type(Curve::eCurveTypeDouble)
+    , xMin(-std::numeric_limits<double>::infinity())
+    , xMax(std::numeric_limits<double>::infinity())
+    , yMin(-std::numeric_limits<double>::infinity())
+    , yMax(std::numeric_limits<double>::infinity())
+    , displayMin(-std::numeric_limits<double>::infinity())
+    , displayMax(std::numeric_limits<double>::infinity())
+    , _lock(QMutex::Recursive)
+    , isPeriodic(false)
+    , canMoveY(true)
     {
     }
 
@@ -101,15 +89,13 @@ struct CurvePrivate
     void operator=(const CurvePrivate & other)
     {
         keyFrames = other.keyFrames;
-        owner = other.owner;
-        dimensionInOwner = other.dimensionInOwner;
-        viewInOwner = other.viewInOwner;
-        isParametric = other.isParametric;
         type = other.type;
         xMin = other.xMin;
         xMax = other.xMax;
         yMin = other.yMin;
         yMax = other.yMax;
+        displayMin = other.displayMin;
+        displayMax = other.displayMax;
         isPeriodic = other.isPeriodic;
         canMoveY = other.canMoveY;
     }

@@ -150,14 +150,16 @@ struct BezierPrivate
     BezierPrivate(const BezierPrivate& other)
     : itemMutex()
     , viewShapes()
-    , autoRecomputeOrientation(other.autoRecomputeOrientation)
-    , isOpenBezier(other.isOpenBezier)
-    , baseName(other.baseName)
-    , feather(other.feather)
-    , featherFallOff(other.featherFallOff)
-    , fallOffRampType(other.fallOffRampType)
     {
         QMutexLocker k(&other.itemMutex);
+
+        autoRecomputeOrientation = other.autoRecomputeOrientation;
+        isOpenBezier = other.isOpenBezier;
+        baseName = other.baseName;
+        feather = other.feather;
+        featherFallOff = other.featherFallOff;
+        fallOffRampType = other.fallOffRampType;
+
         for (PerViewBezierShapeMap::const_iterator it = other.viewShapes.begin(); it != other.viewShapes.end(); ++it) {
             BezierShape& thisShape = viewShapes[it->first];
             thisShape.isClockwiseOriented = it->second.isClockwiseOriented;
@@ -1221,7 +1223,7 @@ bezierSegmenEqual(double time,
 void
 Bezier::clearAllPoints()
 {
-    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+    removeAnimation(ViewSetSpec::all(), DimSpec::all(), eValueChangedReasonUserEdited);
     QMutexLocker k(&_imp->itemMutex);
     for (PerViewBezierShapeMap::iterator it = _imp->viewShapes.begin(); it != _imp->viewShapes.end(); ++it) {
         it->second.points.clear();

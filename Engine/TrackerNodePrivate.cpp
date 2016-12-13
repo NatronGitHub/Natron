@@ -2045,9 +2045,9 @@ TrackerNode::drawOverlay(double time,
                     name += tr("(disabled)").toStdString();
                 }
                 CenterPointsMap centerPoints;
-                CurvePtr xCurve = centerKnob->getCurve(ViewGetSpec::current(), DimIdx(0));
-                CurvePtr yCurve = centerKnob->getCurve(ViewGetSpec::current(), DimIdx(1));
-                CurvePtr errorCurve = errorKnob->getCurve(ViewGetSpec::current(), DimIdx(0));
+                CurvePtr xCurve = centerKnob->getAnimationCurve(ViewGetSpec::current(), DimIdx(0));
+                CurvePtr yCurve = centerKnob->getAnimationCurve(ViewGetSpec::current(), DimIdx(1));
+                CurvePtr errorCurve = errorKnob->getAnimationCurve(ViewGetSpec::current(), DimIdx(0));
 
                 {
                     KeyFrameSet xKeyframes = xCurve->getKeyFrames_mt_safe();

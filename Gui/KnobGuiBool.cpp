@@ -252,7 +252,7 @@ KnobGuiBool::reflectAnimationLevel(DimIdx /*dimension*/,
 {
     int value = (int)level;
     if ( value != _checkBox->getAnimation() ) {
-        bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+        bool isEnabled = _knob.lock()->isEnabled();
         _checkBox->setReadOnly(level == eAnimationLevelExpression || !isEnabled);
         _checkBox->setAnimation(value);
     }
@@ -327,6 +327,12 @@ void
 KnobGuiBool::reflectSelectionState(bool selected)
 {
     _checkBox->setIsSelected(selected);
+}
+
+void
+KnobGuiBool::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    _checkBox->setLinked(linked);
 }
 
 void

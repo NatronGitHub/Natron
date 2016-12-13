@@ -96,8 +96,7 @@ bool
 DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
                                       double time,
-                                      ViewSetSpec view,
-                                      bool originatedFromMainThread)
+                                      ViewSetSpec view)
 {
     std::string callback;
     {
@@ -106,7 +105,7 @@ DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
     }
 
     if ( !callback.empty() ) {
-        bool userEdited = reason == eValueChangedReasonNatronGuiEdited ||
+        bool userEdited = reason == eValueChangedReasonUserEdited ||
                           reason == eValueChangedReasonUserEdited;
         std::vector<std::string> args;
         std::string error;
@@ -162,7 +161,7 @@ DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
 
         return true;
     }
-    _imp->widget->onKnobValueChanged(k, reason, time, view, originatedFromMainThread);
+    _imp->widget->onKnobValueChanged(k, reason, time, view);
 
     return false;
 } // DialogParamHolder::onKnobValueChanged
@@ -215,6 +214,7 @@ PyModalDialog::PyModalDialog(Gui* gui,
                                     QString(), QString(),
                                     _imp->centerContainer);
     _imp->panel->turnOffPages();
+    _imp->holder->setPanelPointer(_imp->panel);
     _imp->panel->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     _imp->centerLayout->insertWidget(0, _imp->panel);
 
@@ -399,6 +399,7 @@ PyPanel::PyPanel(const QString& scriptName,
                                         boost::shared_ptr<QUndoStack>(),
                                         QString(), QString(),
                                         _imp->centerContainer);
+        _imp->holder->setPanelPointer(_imp->panel);
         _imp->panel->turnOffPages();
         _imp->centerLayout->insertWidget(0, _imp->panel);
 

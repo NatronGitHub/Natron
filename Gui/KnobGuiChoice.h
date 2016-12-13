@@ -67,6 +67,8 @@ public:
 
     virtual ~KnobComboBox();
 
+    void setLinkedFrameEnabled(bool enabled);
+
 private:
 
     virtual void wheelEvent(QWheelEvent *e) OVERRIDE FINAL;
@@ -82,26 +84,14 @@ private:
     virtual void dropEvent(QDropEvent* e) OVERRIDE FINAL;
     virtual void focusInEvent(QFocusEvent* e) OVERRIDE FINAL;
     virtual void focusOutEvent(QFocusEvent* e) OVERRIDE FINAL;
-
-private:
-    boost::shared_ptr<KnobWidgetDnD> _dnd;
-};
-
-class ChannelsComboBox
-: public KnobComboBox
-{
-public:
-
-    ChannelsComboBox(const KnobGuiPtr& knob,
-                     DimSpec dimension,
-                     ViewIdx view,
-                     QWidget* parent = 0)
-    : KnobComboBox(knob, dimension, view, parent) {}
-
-private:
-
     virtual void paintEvent(QPaintEvent* event) OVERRIDE FINAL;
+
+private:
+    KnobChoiceWPtr _knob;
+    boost::shared_ptr<KnobWidgetDnD> _dnd;
+    bool _drawLinkedFrame;
 };
+
 
 class KnobGuiChoice
     : public QObject, public KnobGuiWidgets
@@ -125,6 +115,8 @@ public:
     static QString getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath);
 
     ComboBox* getCombobox() const;
+
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
 
 public Q_SLOTS:
 

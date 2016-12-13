@@ -80,11 +80,11 @@ AnimItemBasePrivate::addKeyFramesForDimView(DimIdx dimension, ViewIdx view, KeyF
     }
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
     AnimatingObjectIPtr animObject = publicInterface->getInternalAnimItem();
-    StringAnimationManagerPtr stringAnim = animObject->getStringAnimation();
+    StringAnimationManagerPtr stringAnim = animObject->getStringAnimation(view);
     for (KeyFrameSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         KeyFrameWithString k;
         if (stringAnim) {
-            stringAnim->stringFromInterpolatedIndex(it->getValue(), view, &k.string);
+            stringAnim->stringFromInterpolatedIndex(it->getValue(), &k.string);
         }
         k.key = *it;
         result->insert(k);

@@ -182,12 +182,6 @@ public:
 
     RectI getMarkerImageRoI(double time) const;
 
-    /*virtual void onKnobSlaved(const KnobIPtr& slave,
-                              const KnobIPtr& master,
-                              DimIdx dimension,
-                              ViewIdx view,
-                              bool isSlave) OVERRIDE FINAL;*/
-
     void notifyTrackingStarted();
     void notifyTrackingEnded();
 

@@ -181,9 +181,9 @@ OfxStatus ParametricInstance::defaultInitializeFromDescriptor(int curveIndex,con
             v[i] = 1.;
         }
         if (n) {
-            _properties.getDoublePropertyN(kOfxParamPropDisplayMax, &v[0], n);
+            _properties.getDoublePropertyN(kOfxParamPropParametricUIColour, &v[0], n);
         }
-        _properties.setDoublePropertyN(kOfxParamPropDisplayMax, &v[0], dim * 3);
+        _properties.setDoublePropertyN(kOfxParamPropParametricUIColour, &v[0], dim * 3);
     }
 
     std::string name = kOfxParamPropControlPoints "_" + unsignedToString(curveIndex);

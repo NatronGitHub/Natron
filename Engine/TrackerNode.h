@@ -171,8 +171,7 @@ private:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time,
-                             bool originatedFromMainThread) OVERRIDE FINAL;
+                             double time) OVERRIDE FINAL;
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE FINAL;
 

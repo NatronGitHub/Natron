@@ -371,7 +371,8 @@ public:
 
 
     static bool restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
-                                          const NodeCollectionPtr& group);
+                                              const NodeCollectionPtr& group,
+                                              bool loadLinks);
 
 public Q_SLOTS:
 
@@ -402,6 +403,19 @@ Q_SIGNALS:
 private:
 
 
+    static void restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes);
+
+    static void restoreInputs(const NodePtr& node,
+                              const std::map<std::string, std::string>& inputsMap,
+                              bool isMaskInputs);
+
+    static void restoreInput(const NodePtr& node,
+                             const std::string& inputLabel,
+                             const std::string& inputNodeScriptName,
+                             bool isMaskInput);
+
+
+
     /*Returns the index of the format*/
     int tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool* existed);
 
@@ -430,8 +444,7 @@ private:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSetSpec view,
-                                    bool originatedFromMainThread)  OVERRIDE FINAL;
+                                    ViewSetSpec view)  OVERRIDE FINAL;
 
     bool load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj, const QString& name, const QString& path);
 

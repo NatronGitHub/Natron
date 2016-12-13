@@ -235,6 +235,8 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
     , pythonCommands()
     , statsDialog(0)
     , currentPanelFocus(0)
+    , nKeysRefreshRequests(0)
+    , keyframesVisibleOnTimeline()
     , currentPanelFocusEventRecursion(0)
     , keyPressEventHasVisitedFocusWidget(false)
     , keyUpEventHasVisitedFocusWidget(false)

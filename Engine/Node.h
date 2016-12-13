@@ -207,20 +207,42 @@ public:
 
     void loadKnob(const KnobIPtr & knob, const std::list<SERIALIZATION_NAMESPACE::KnobSerializationPtr> & serialization);
 
+    /**
+     * @brief Links all the evaluateOnChange knobs to the other one except
+     * trigger buttons. The other node must be the same plug-in
+     **/
+    bool linkToNode(const NodePtr& other);
+
+    /**
+     * @brief Unlink all knobs of the node.
+     **/
+    void unlinkAllKnobs();
+
+    /**
+     * @brief Get a list of all nodes that are linked to this one.
+     * For each node in return a boolean indicates whether the link is a clone link
+     * or a just a regular link.
+     * A node is considered clone if all its evaluate on change knobs are linked.
+     **/
+    void getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const;
+
+    /**
+     * @brief Wrapper around getLinkedNodes() that returns cloned nodes
+     **/
+    void getCloneLinkedNodes(std::list<NodePtr>* clones) const;
+
+    /**
+     * @brief Move this node to the given group
+     **/
+    void moveToGroup(const NodeCollectionPtr& group);
+
 private:
 
     void initNodeNameFallbackOnPluginDefault();
 
     void createNodeGuiInternal(const CreateNodeArgsPtr& args);
 
-    /**
-     * @brief Restores all links for the given knob if it has masters or expressions.
-     * This function cannot be called until all knobs of the node group have been created because it needs to reference other knobs
-     * from other nodes.
-     * This function throws an exception if no serialization is valid in the object
-     **/
-    void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
-                          const NodesList & allNodes);
+  
 
     void restoreUserKnob(const KnobGroupPtr& group,
                          const KnobPagePtr& page,
@@ -308,8 +330,7 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
-                           const NodesList & allNodes);
+    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization);
 
     void setPagesOrder(const std::list<std::string>& pages);
 
@@ -992,15 +1013,7 @@ public:
 
 public:
 
-    void onAllKnobsSlaved(bool isSlave, const KnobHolderPtr& master);
-
-    void onKnobSlaved(const KnobIPtr& slave,
-                      const KnobIPtr& master,
-                      DimIdx dimension,
-                      ViewIdx view,
-                      bool isSlave);
-
-    NodePtr getMasterNode() const;
+    static void choiceParamAddLayerCallback(const KnobChoicePtr& knob);
 
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;
@@ -1100,8 +1113,6 @@ public:
         // The master node to which the knob is slaved to
         NodeWPtr masterNode;
     };
-
-    void getKnobsLinks(std::list<KnobLink> & links) const;
 
     /*Initialises inputs*/
     void initializeInputs();
@@ -1492,8 +1503,6 @@ public Q_SLOTS:
         Q_EMIT previewImageChanged(time);
     }
 
-    void onMasterNodeDeactivated();
-
     void onInputLabelChanged(const QString& oldName, const QString& newName);
 
     void notifySettingsPanelClosed(bool closed )
@@ -1565,11 +1574,6 @@ Q_SIGNALS:
     ///how much has just changed, this not the new value but the difference between the new value
     ///and the old value
     void pluginMemoryUsageChanged(qint64 mem);
-
-    void allKnobsSlaved(bool b);
-
-    ///Called when a knob is either slaved or unslaved
-    void knobsLinksChanged();
 
     void knobSlaved();
 

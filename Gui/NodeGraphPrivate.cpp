@@ -92,6 +92,8 @@ NodeGraphPrivate::NodeGraphPrivate(NodeGraph* p,
     , lastSelectedViewer(0)
     , isDoingPreviewRender(false)
     , autoScrollTimer()
+    , linkedNodes()
+    , refreshNodesLinkRequest(0)
 {
     appPTR->getIcon(NATRON_PIXMAP_LOCKED, &unlockIcon);
 }

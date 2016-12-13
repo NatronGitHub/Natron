@@ -387,7 +387,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
         }
     }
 
-    bool mustHide = isTableItemMasterKnob || knob->getIsSecret();
+    bool mustHide = isTableItemMasterKnob || knob->getIsSecret() || !knob->isEnabled();
     {
         for (PerDimViewItemMap::const_iterator it = _imp->dimViewItems.begin(); it!=_imp->dimViewItems.end(); ++it) {
             CurvePtr curve = it->second.curve->getInternalCurve();
@@ -395,8 +395,7 @@ KnobAnim::refreshVisibilityConditional(bool refreshHolder)
                 continue;
             }
             bool curveIsAnimated = (curve && curve->isAnimated()) || !knob->getExpression(it->first.dimension, it->first.view).empty();
-            bool enabled = knob->isEnabled(it->first.dimension, it->first.view);
-            it->second.treeItem->setHidden((!curveIsAnimated && onlyShowIfAnimated) || !enabled || mustHide);
+            it->second.treeItem->setHidden((!curveIsAnimated && onlyShowIfAnimated) || mustHide);
             it->second.treeItem->setData(0, QT_ROLE_CONTEXT_IS_ANIMATED, curveIsAnimated);
         }
         // Now refresh view items visibility

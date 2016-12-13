@@ -42,6 +42,7 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
+#include "Engine/Image.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewIdx.h"
@@ -459,10 +460,26 @@ KnobGuiFile::onSimplifyTriggered()
 }
 
 void
+KnobGuiFile::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    QColor c;
+    if (linked) {
+        double r,g,b;
+        appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+        c.setRgbF(Image::clamp(r, 0., 1.),
+                  Image::clamp(g, 0., 1.),
+                  Image::clamp(b, 0., 1.));
+        _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, true, c);
+    } else {
+        _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, false);
+    }
+}
+
+void
 KnobGuiFile::reflectAnimationLevel(DimIdx /*dimension*/,
                                    AnimationLevelEnum level)
 {
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+    bool isEnabled = _knob.lock()->isEnabled();
     _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
     _openFileButton->setEnabled(level != eAnimationLevelExpression && isEnabled);
     _lineEdit->setAnimation(level);
@@ -500,6 +517,25 @@ KnobGuiPath::removeSpecificGui()
         _mainContainer->deleteLater();
     }
     KnobGuiTable::removeSpecificGui();
+}
+
+void
+KnobGuiPath::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    if (!_lineEdit) {
+        return;
+    }
+    QColor c;
+    if (linked) {
+        double r,g,b;
+        appPTR->getCurrentSettings()->getExprColor(&r, &g, &b);
+        c.setRgbF(Image::clamp(r, 0., 1.),
+                  Image::clamp(g, 0., 1.),
+                  Image::clamp(b, 0., 1.));
+        _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, true, c);
+    } else {
+        _lineEdit->setAdditionalDecorationTypeEnabled(LineEdit::eAdditionalDecorationColoredFrame, false);
+    }
 }
 
 void
@@ -855,7 +891,7 @@ KnobGuiPath::reflectAnimationLevel(DimIdx /*dimension*/,
 
     if ( !knob->isMultiPath() ) {
         _lineEdit->setAnimation(level);
-        bool isEnabled = knob->isEnabled(DimIdx(0), getView());
+        bool isEnabled = knob->isEnabled();
         _lineEdit->setReadOnly_NoFocusRect(level == eAnimationLevelExpression || !isEnabled);
         _openFileButton->setEnabled(level != eAnimationLevelExpression && isEnabled);
     }

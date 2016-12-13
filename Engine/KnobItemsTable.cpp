@@ -663,43 +663,6 @@ KnobTableItem::onItemInsertedInModel_recursive()
 }
 
 void
-KnobTableItem::onSignificantEvaluateAboutToBeCalled(const KnobIPtr& knob, ValueChangedReasonEnum reason, DimSpec dimension, double time, ViewSetSpec view)
-{
-
-    // If the item is not part of the model, do nothing
-    if (getIndexInParent() == -1) {
-        return;
-    }
-    KnobItemsTablePtr model = getModel();
-    if (model) {
-        NodePtr node = model->getNode();
-        if ( !node || !node->isNodeCreated() ) {
-            return;
-        }
-        node->getEffectInstance()->abortAnyEvaluation();
-    }
-    
-    
-    if (knob) {
-        // This will also invalidate this hash cache
-        knob->invalidateHashCache();
-    } else {
-        invalidateHashCache();
-    }
-
-    bool isMT = QThread::currentThread() == qApp->thread();
-    if ( isMT && ( !knob || knob->getEvaluateOnChange() ) ) {
-        getApp()->triggerAutoSave();
-    }
-
-    Q_UNUSED(reason);
-    Q_UNUSED(dimension);
-    Q_UNUSED(time);
-    Q_UNUSED(view);
-
-}
-
-void
 KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
 {
     // If the item is not part of the model, do nothing
@@ -714,6 +677,8 @@ KnobTableItem::evaluate(bool isSignificant, bool refreshMetadatas)
     if (!node) {
         return;
     }
+
+    // Evaluate the node itself
     node->getEffectInstance()->evaluate(isSignificant, refreshMetadatas);
 }
 
@@ -1262,8 +1227,8 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
                         hasExpr = true;
                         break;
                     }
-                    MasterKnobLink linkData;
-                    if (knobs[i]->getMaster(DimIdx(d), *itV, &linkData)) {
+                    KnobDimViewKey linkData;
+                    if (knobs[i]->getSharingMaster(DimIdx(d), *itV, &linkData)) {
                         hasExpr = true;
                         break;
                     }
@@ -1283,7 +1248,7 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
             continue;
         }
 
-        if (!knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged()) {
+        if (!knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged() && !hasExpr) {
             continue;
         }
 
@@ -1652,7 +1617,7 @@ KnobItemsTable::onMasterKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonE
     if (!masterKnob) {
         return;
     }
-    if (reason != eValueChangedReasonTimeChanged && reason != eValueChangedReasonNatronInternalEdited) {
+    if (reason != eValueChangedReasonTimeChanged) {
         QMutexLocker k(&_imp->selectionLock);
 
         // We may be in endSelection() when we  copy the masterKnob from the selection. In that case we don't want to recurse
@@ -1666,7 +1631,7 @@ KnobItemsTable::onMasterKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonE
                 continue;
             }
             KnobIPtr foundItemKnob = item->getKnobByName(masterKnob->getName());
-            if (foundItemKnob) {
+            if (foundItemKnob && foundItemKnob->isEnabled()) {
                 foundItemKnob->copyKnob(masterKnob);
             }
         }
@@ -1685,7 +1650,7 @@ KnobItemsTable::onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReas
         return;
     }
 
-    if (reason == eValueChangedReasonTimeChanged || reason == eValueChangedReasonNatronInternalEdited) {
+    if (reason == eValueChangedReasonTimeChanged) {
         return;
     }
 
@@ -1770,7 +1735,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
                     continue;
                 }
                 KnobIPtr itemKnob = item->getKnobByName(masterKnob->getName());
-                if (itemKnob) {
+                if (itemKnob && itemKnob->isEnabled()) {
                     ++nItemsWithKnob;
                 }
             }
@@ -2453,7 +2418,7 @@ KnobItemsTable::setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view)
 static void removeKeyFrameRecursively(const KnobTableItemPtr& item, double time, ViewSetSpec view)
 {
     if (item->getCanAnimateUserKeyframes()) {
-        item->deleteValueAtTime(time, view, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+        item->deleteValueAtTime(time, view, DimSpec::all(), eValueChangedReasonUserEdited);
     }
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();
@@ -2475,7 +2440,7 @@ KnobItemsTable::removeMasterKeyframeOnSelectedItems(double time, ViewSetSpec vie
 static void removeAnimationRecursively(const KnobTableItemPtr& item, ViewSetSpec view)
 {
     if (item->getCanAnimateUserKeyframes()) {
-        item->removeAnimation(view, DimSpec::all(), eValueChangedReasonNatronInternalEdited);
+        item->removeAnimation(view, DimSpec::all(), eValueChangedReasonUserEdited);
     }
     if (item->isItemContainer()) {
         std::vector<KnobTableItemPtr> children = item->getChildren();

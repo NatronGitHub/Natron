@@ -866,15 +866,6 @@ public:
         }
 
 
-        // Now that the group is created and all nodes loaded, autoconnect the group like other nodes.
-        // We can only do it now because the group needs to create the internal GroupInput nodes before
-        // having its actual inputs.
-        
-        NodeGroupPtr isGrp = toNodeGroup(_item->node->getEffectInstance());
-        if (isGrp) {
-            _imp->_publicInterface->onGroupCreationFinished(_item->node, *_item->args);
-        }
-
         if (_item == _imp->createNodeStack.root) {
             _imp->createNodeStack.root.reset();
         }
@@ -2026,22 +2017,6 @@ AppInstance::getAppIDString() const
         QString appID =  QString( QString::fromUtf8("app%1") ).arg(getAppID() + 1);
 
         return appID.toStdString();
-    }
-}
-
-void
-AppInstance::onGroupCreationFinished(const NodePtr& node, const CreateNodeArgs& args)
-{
-
-    assert(node);
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
-        NodeGroupPtr isGrp = node->isEffectNodeGroup();
-        assert(isGrp);
-        if (!isGrp) {
-            return;
-        }
-        isGrp->forceComputeInputDependentDataOnAllTrees();
     }
 }
 

@@ -115,8 +115,7 @@ public:
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
                                     double time,
-                                    ViewSetSpec view,
-                                    bool originatedFromMainThread) OVERRIDE FINAL;
+                                    ViewSetSpec view) OVERRIDE FINAL;
 
     double getRamMaximumPercent() const;
 
@@ -308,6 +307,7 @@ public:
     void getKeyframeColor(double* r, double* g, double* b) const;
     void getTrackerKeyframeColor(double* r, double* g, double* b) const;
     void getExprColor(double* r, double* g, double* b) const;
+    void getCloneColor(double* r, double* g, double* b) const;
     void getTextColor(double* r, double* g, double* b) const;
     void getAltTextColor(double* r, double* g, double* b) const;
     void getTimelinePlayheadColor(double* r, double* g, double* b) const;

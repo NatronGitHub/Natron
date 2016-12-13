@@ -96,7 +96,9 @@ KnobComboBox::KnobComboBox(const KnobGuiPtr& knob,
                            ViewIdx view,
                            QWidget* parent)
     : ComboBox(parent)
+    , _knob(toKnobChoice(knob->getKnob()))
     , _dnd( KnobWidgetDnD::create(knob, dimension, view, this) )
+    , _drawLinkedFrame(false)
 {
 }
 
@@ -209,51 +211,51 @@ KnobComboBox::focusOutEvent(QFocusEvent* e)
 }
 
 void
-ChannelsComboBox::paintEvent(QPaintEvent* event)
+KnobComboBox::setLinkedFrameEnabled(bool enabled)
+{
+    _drawLinkedFrame = enabled;
+    update();
+}
+
+void
+KnobComboBox::paintEvent(QPaintEvent* event)
 {
     ComboBox::paintEvent(event);
-    int idx = activeIndex();
-
-    if (idx != 1) {
-        QColor color;
-        QPainter p(this);
-        QPen pen;
-
-        switch (idx) {
-            case 0:
-                //luminance
-                color.setRgbF(0.5, 0.5, 0.5);
-                break;
-            case 2:
-                //r
-                color.setRgbF(1., 0, 0);
-                break;
-            case 3:
-                //g
-                color.setRgbF(0., 1., 0.);
-                break;
-            case 4:
-                //b
-                color.setRgbF(0., 0., 1.);
-                break;
-            case 5:
-                //a
-                color.setRgbF(1., 1., 1.);
-                break;
-        }
-
-        pen.setColor(color);
-        p.setPen(pen);
-
-
-        QRectF bRect = rect();
-        QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
-        double roundPixels = 3;
-        QPainterPath path;
-        path.addRoundedRect(roundedRect, roundPixels, roundPixels);
-        p.drawPath(path);
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
     }
-}
+
+    RGBAColourD color;
+    if (_drawLinkedFrame) {
+        appPTR->getCurrentSettings()->getExprColor(&color.r, &color.g, &color.b);
+        color.a = 1.;
+    } else {
+        int idx = activeIndex();
+        if (!knob->getColorForIndex(idx, &color)) {
+            return;
+        }
+    }
+
+    QPainter p(this);
+    QPen pen;
+    QColor c;
+    c.setRgbF(Image::clamp(color.r,0.,1.),
+              Image::clamp(color.g,0.,1.),
+              Image::clamp(color.b,0.,1.));
+    c.setAlphaF(Image::clamp(color.a,0.,1.));
+
+    pen.setColor(c);
+    p.setPen(pen);
+
+    QRectF bRect = rect();
+    QRectF roundedRect = bRect.adjusted(1., 1., -2., -2.);
+    double roundPixels = 3;
+    QPainterPath path;
+    path.addRoundedRect(roundedRect, roundPixels, roundPixels);
+    p.drawPath(path);
+    
+} // paintEvent
 
 KnobGuiChoice::KnobGuiChoice(const KnobGuiPtr& knob, ViewIdx view)
     : KnobGuiWidgets(knob, view)
@@ -282,11 +284,10 @@ KnobGuiChoice::createWidget(QHBoxLayout* layout)
 {
     KnobChoicePtr knob = _knob.lock();
     KnobGuiPtr knobUI = getKnobGui();
-    if (knob->isDisplayChannelsKnob()) {
-        _comboBox = new ChannelsComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
-    } else {
-        _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
-    }
+
+
+    _comboBox = new KnobComboBox( knobUI, DimIdx(0), getView(), layout->parentWidget() );
+
 
 
     _comboBox->setCascading( _knob.lock()->isCascading() );
@@ -326,8 +327,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
     }
     std::string activeEntry = knob->getActiveEntryText();
 
-    if ( knob->getHostCanAddOptions() &&
-         ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
+    if ( knob->getNewOptionCallback()) {
         _comboBox->insertItem(_comboBox->count() - 1, entry, QIcon(), QKeySequence(), help);
     } else {
         _comboBox->addItem(entry, QIcon(), QKeySequence(), help);
@@ -341,7 +341,7 @@ KnobGuiChoice::onEntryAppended(const QString& entry,
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
@@ -468,8 +468,7 @@ KnobGuiChoice::onEntriesPopulated()
     }
 
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
-    if ( knob->getHostCanAddOptions() &&
-         ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
+    if (knob->getNewOptionCallback()) {
         _comboBox->addItemNew();
     }
     ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
@@ -484,7 +483,7 @@ KnobGuiChoice::onEntriesPopulated()
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
@@ -495,27 +494,16 @@ KnobGuiChoice::onEntriesPopulated()
 void
 KnobGuiChoice::onItemNewSelected()
 {
-    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getKnobGui()->getGui() );
-
-    if ( dialog.exec() ) {
-        ImageComponents comps = dialog.getComponents();
-        if ( comps == ImageComponents::getNoneComponents() ) {
-            Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
-                                                                "Python compliant.").toStdString() );
-
-            return;
-        }
-        KnobHolderPtr holder = _knob.lock()->getHolder();
-        assert(holder);
-        EffectInstancePtr effect = toEffectInstance(holder);
-        assert(effect);
-        if (effect) {
-            assert( effect->getNode() );
-            if ( !effect->getNode()->addUserComponents(comps) ) {
-                Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
-            }
-        }
+    KnobChoicePtr knob = _knob.lock();
+    if (!knob) {
+        return;
     }
+    ChoiceKnobDimView::KnobChoiceNewItemCallback callback = knob->getNewOptionCallback();
+    if (!callback) {
+        return;
+    }
+    callback(knob);
+  
 }
 
 void
@@ -541,7 +529,7 @@ KnobGuiChoice::updateGUI()
     if ( !activeEntry.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
@@ -559,7 +547,7 @@ KnobGuiChoice::reflectAnimationLevel(DimIdx /*dimension*/,
                                      AnimationLevelEnum level)
 {
 
-    bool isEnabled = _knob.lock()->isEnabled(DimIdx(0), getView());
+    bool isEnabled = _knob.lock()->isEnabled();
     _comboBox->setEnabled_natron(level != eAnimationLevelExpression && isEnabled);
 
     if ( level != (AnimationLevelEnum)_comboBox->getAnimation() ) {
@@ -594,6 +582,11 @@ KnobGuiChoice::reflectSelectionState(bool selected)
     _comboBox->setIsSelected(selected);
 }
 
+void
+KnobGuiChoice::reflectLinkedState(DimIdx /*dimension*/, bool linked)
+{
+    _comboBox->setLinkedFrameEnabled(linked);
+}
 
 void
 KnobGuiChoice::reflectModificationsState()

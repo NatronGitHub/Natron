@@ -422,6 +422,9 @@ drawLineStrip(const std::vector<float>& vertices,
               const QPointF& btmLeft,
               const QPointF& topRight)
 {
+    if (vertices.empty()) {
+        return;
+    }
     GL_GPU::Begin(GL_LINE_STRIP);
 
     bool prevVisible = true;

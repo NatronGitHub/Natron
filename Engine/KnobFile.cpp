@@ -77,7 +77,7 @@ KnobFile::reloadFile()
         effect->purgeCaches();
         effect->clearPersistentMessage(false);
     }
-    evaluateValueChange(DimSpec(0), getCurrentTime(), ViewSetSpec(0), eValueChangedReasonNatronInternalEdited);
+    evaluateValueChange(DimSpec(0), getCurrentTime(), ViewSetSpec(0), eValueChangedReasonUserEdited);
 }
 
 bool

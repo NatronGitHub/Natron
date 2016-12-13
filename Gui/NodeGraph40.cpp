@@ -38,12 +38,15 @@
 
 #include "Engine/Node.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/Image.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/Project.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/Settings.h"
 
 #include "Gui/BackdropGui.h"
+#include "Gui/Edge.h"
 #include "Gui/Gui.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/ScriptEditor.h"
@@ -268,11 +271,7 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
     double ymax = INT_MIN;
     NodesGuiList nodesToCopy = _imp->_selection;
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-        if ( (*it)->getNode()->getMasterNode() ) {
-            Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
 
-            return;
-        }
         QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
         if ( ( bbox.x() + bbox.width() ) > xmax ) {
             xmax = ( bbox.x() + bbox.width() );
@@ -301,20 +300,6 @@ NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
         }
     }
 
-    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        if ( (*it)->getNode()->getEffectInstance()->isSlave() ) {
-            Dialogs::errorDialog( tr("Clone").toStdString(), tr("You cannot clone a node which is already a clone.").toStdString() );
-
-            return;
-        }
-        ViewerInstancePtr isViewer = (*it)->getNode()->isEffectViewerInstance();
-        if (isViewer) {
-            Dialogs::errorDialog( tr("Clone").toStdString(), tr("Cloning a viewer is not a valid operation.").toStdString() );
-
-            return;
-        }
-
-    }
 
     QPointF offset((xmax + xmin) / 2.,(ymax + ymin) / 2.);
 
@@ -351,23 +336,30 @@ NodeGraph::decloneSelectedNodes()
 
         return;
     }
-    NodesGuiList nodesToDeclone;
+    std::map<NodeGuiPtr, NodePtr> nodesToDeclone;
 
 
     for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
         BackdropGuiPtr isBd = toBackdropGui(*it);
         if (isBd) {
-            ///Also copy all nodes within the backdrop
+            // Also clone all nodes within the backdrop
             NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
             for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodesGuiList::iterator found = std::find(nodesToDeclone.begin(), nodesToDeclone.end(), *it2);
+                std::map<NodeGuiPtr, NodePtr>::iterator found = nodesToDeclone.find(*it2);
                 if ( found == nodesToDeclone.end() ) {
-                    nodesToDeclone.push_back(*it2);
+                    std::list<NodePtr> linkedNodes;
+                    (*it2)->getNode()->getCloneLinkedNodes(&linkedNodes);
+                    if (!linkedNodes.empty()) {
+                        nodesToDeclone[*it2] = linkedNodes.front();
+                    }
+
                 }
             }
         }
-        if ( (*it)->getNode()->getEffectInstance()->isSlave() ) {
-            nodesToDeclone.push_back(*it);
+        std::list<NodePtr> linkedNodes;
+        (*it)->getNode()->getCloneLinkedNodes(&linkedNodes);
+        if (!linkedNodes.empty()) {
+            nodesToDeclone[*it] = linkedNodes.front();
         }
     }
 
@@ -474,5 +466,126 @@ NodeGraph::centerOnAllNodes()
     _imp->_refreshOverlays = true;
     update();
 } // NodeGraph::centerOnAllNodes
+
+void
+NodeGraph::onMustRefreshNodeLinksLaterReceived()
+{
+    if (_imp->refreshNodesLinkRequest == 0) {
+        return;
+    }
+    _imp->refreshNodesLinkRequest = 0;
+    refreshNodeLinksNow();
+}
+
+void
+NodeGraph::refreshNodeLinksLater()
+{
+    ++_imp->refreshNodesLinkRequest;
+    Q_EMIT mustRefreshNodeLinksLater();
+}
+
+bool
+NodeGraph::isNodeCloneLinked(const NodePtr& node)
+{
+    for (NodeGraphPrivate::LinkedNodesList::const_iterator it = _imp->linkedNodes.begin(); it!=_imp->linkedNodes.end(); ++it) {
+        if (it->isCloneLink && (it->nodes[0].lock() == node || it->nodes[1].lock() == node)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void
+NodeGraph::refreshNodeLinksNow()
+{
+    // First clear all previous links
+    for (NodeGraphPrivate::LinkedNodesList::const_iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
+        delete it->arrow;
+    }
+    _imp->linkedNodes.clear();
+
+    if (!_imp->_knobLinksVisible) {
+        return;
+    }
+
+    NodesGuiList nodes;
+    {
+        QMutexLocker k(&_imp->_nodesMutex);
+        nodes = _imp->_nodes;
+    }
+
+    QColor simpleLinkColor, cloneLinkColor;
+    {
+        double exprColor[3], cloneColor[3];
+        appPTR->getCurrentSettings()->getExprColor(&exprColor[0], &exprColor[1], &exprColor[2]);
+        appPTR->getCurrentSettings()->getCloneColor(&cloneColor[0], &cloneColor[1], &cloneColor[2]);
+        simpleLinkColor.setRgbF(Image::clamp(exprColor[0], 0., 1.),
+                                Image::clamp(exprColor[1], 0., 1.),
+                                Image::clamp(exprColor[2], 0., 1.));
+        cloneLinkColor.setRgbF(Image::clamp(cloneColor[0], 0., 1.),
+                                Image::clamp(cloneColor[1], 0., 1.),
+                                Image::clamp(cloneColor[2], 0., 1.));
+    }
+    
+    
+    for (NodesGuiList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodePtr thisNode = (*it)->getNode();
+
+        std::list<std::pair<NodePtr, bool> > linkedNodes;
+        thisNode->getLinkedNodes(&linkedNodes);
+
+        for (std::list<std::pair<NodePtr, bool> >::const_iterator it2 = linkedNodes.begin(); it2 != linkedNodes.end(); ++it2) {
+
+            // If the linked node doesn't have a gui or it is not part of this nodegraph don't create a link at all
+            NodeGuiPtr otherNodeGui = toNodeGui(it2->first->getNodeGui());
+            if (!otherNodeGui || otherNodeGui->getDagGui() != this) {
+                continue;
+            }
+
+            // Try to find an existing link
+            NodeGraphPrivate::LinkedNodes link;
+            link.nodes[0] = thisNode;
+            link.nodes[1] = it2->first;
+            link.isCloneLink = it2->second;
+
+            NodeGraphPrivate::LinkedNodesList::iterator foundExistingLink = _imp->linkedNodes.end();
+            {
+                for (NodeGraphPrivate::LinkedNodesList::iterator it = _imp->linkedNodes.begin(); it != _imp->linkedNodes.end(); ++it) {
+                    NodePtr a1 = it->nodes[0].lock();
+                    NodePtr a2 = it->nodes[1].lock();
+                    NodePtr b1 = link.nodes[0].lock();
+                    NodePtr b2 = link.nodes[1].lock();
+                    if ((a1 == b1 || a1 == b2) &&
+                        (a2 == b1 || a2 == b2)) {
+                        foundExistingLink = it;
+                        break;
+                    }
+                }
+            }
+
+            if (foundExistingLink == _imp->linkedNodes.end()) {
+                // A link did not exist, create it
+                link.arrow = new LinkArrow( otherNodeGui, *it, (*it)->parentItem() );
+                link.arrow->setWidth(2);
+                link.arrow->setArrowHeadVisible(false);
+                if (link.isCloneLink) {
+                    link.arrow->setColor(cloneLinkColor);
+                } else {
+                    link.arrow->setColor(simpleLinkColor);
+                }
+                _imp->linkedNodes.push_back(link);
+            } else {
+                // A link existed, if this is a clone link and it was not before, upgrade it
+                if (!foundExistingLink->isCloneLink && link.isCloneLink) {
+                    foundExistingLink->arrow->setColor(cloneLinkColor);
+                }
+            }
+
+        }
+
+        (*it)->refreshLinkIndicators(linkedNodes);
+    }
+
+} // refreshNodeLinksNow
 
 NATRON_NAMESPACE_EXIT;

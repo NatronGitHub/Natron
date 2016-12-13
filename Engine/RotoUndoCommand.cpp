@@ -648,8 +648,9 @@ AddStrokeUndoCommand::redo()
 
     if (_firstRedoCalled) {
         roto->p->knobsTable->insertItem(_indexInLayer, _item, _layer, eTableChangeReasonViewer);
+        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     }
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
+
     _firstRedoCalled = true;
 }
 
@@ -707,8 +708,8 @@ AddMultiStrokeUndoCommand::redo()
         if (isRemoved) {
             roto->p->knobsTable->insertItem(_indexInLayer, _item, _layer, eTableChangeReasonViewer);
         }
+        roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
     }
-    roto->p->publicInterface->invalidateCacheHashAndEvaluate(true, false);
 
     _firstRedoCalled = true;
 }

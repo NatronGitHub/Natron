@@ -129,11 +129,6 @@ public:
     void floatPanelInWindow(FloatingWidget* window);
 
 
-    /**
-     * @brief When called, all knobs will go into the same page which will appear as a plain Widget and not as a tab
-     **/
-    void turnOffPages();
-
     void setPluginIcon(const QPixmap& pix);
 
     void setPluginIDAndVersion(const std::string& pluginLabel,
@@ -144,12 +139,12 @@ public:
 
     virtual NodeGuiPtr getNodeGui() const OVERRIDE ;
     virtual void refreshTabWidgetMaxHeight() OVERRIDE FINAL;
-    virtual bool isPagingEnabled() const OVERRIDE FINAL;
     virtual bool useScrollAreaForTabs() const OVERRIDE FINAL;
     virtual void onKnobsInitialized() OVERRIDE FINAL;
     virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL;
 private:
 
+    virtual void onPagingTurnedOff() OVERRIDE FINAL;
     virtual KnobItemsTableGuiPtr createKnobItemsTable(QWidget* parent) OVERRIDE FINAL;
     virtual void refreshUndoRedoButtonsEnabledNess(bool canUndo, bool canRedo) OVERRIDE FINAL;
     virtual QWidget* createKnobHorizontalFieldContainer(QWidget* parent) const OVERRIDE FINAL;

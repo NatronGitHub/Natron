@@ -118,6 +118,9 @@ public:
 
     virtual void removeSpecificGui() OVERRIDE FINAL;
 
+    virtual void reflectLinkedState(DimIdx dimension, bool linked) OVERRIDE;
+
+
 public Q_SLOTS:
 
     void onCheckBoxStateChanged(bool);

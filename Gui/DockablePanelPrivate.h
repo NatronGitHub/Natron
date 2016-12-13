@@ -75,7 +75,10 @@ struct DockablePanelPrivate
     /*Tab related*/
     QWidget* _rightContainer;
     QVBoxLayout* _rightContainerLayout;
+
+    // Used when pages are enabled
     QTabWidget* _tabWidget;
+
     Button* _centerNodeButton;
     Button* _enterInGroupButton;
     Button* _helpButton;
@@ -103,7 +106,6 @@ struct DockablePanelPrivate
     QString _helpToolTip;
     QString _pluginID;
     unsigned _pluginVersionMajor, _pluginVersionMinor;
-    bool _pagesEnabled;
     Label* _iconLabel;
 
 

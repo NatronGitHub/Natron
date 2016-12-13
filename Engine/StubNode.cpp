@@ -165,8 +165,7 @@ bool
 StubNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum /*reason*/,
                          ViewSetSpec /*view*/,
-                         double /*time*/,
-                         bool /*originatedFromMainThread*/)
+                         double /*time*/)
 {
     if (k == _imp->serializationKnob.lock()) {
         try {

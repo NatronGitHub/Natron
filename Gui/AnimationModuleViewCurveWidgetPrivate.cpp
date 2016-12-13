@@ -240,9 +240,9 @@ AnimationModuleViewPrivate::isNearbyKeyFrame(const ZoomContext& ctx, const QPoin
                 (std::abs( pt.x() - keyFramewidgetPos.x() ) < TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
                 
                 ret.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation((*it)->getView());
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), &ret.key.string);
                 }
                 ret.id = (*it)->getCurveID();
                 
@@ -286,9 +286,9 @@ AnimationModuleViewPrivate::isNearbyKeyFrameText(const QPoint& pt) const
     if ( (pt.x() >= topLeftWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRightWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
         ( pt.y() >= topLeftWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRightWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
         ret.key.key = key.key;
-        StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation();
+        StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation(curveIT->first.view);
         if (stringAnim) {
-            stringAnim->stringFromInterpolatedIndex(key.key.getValue(), curveIT->first.view, &ret.key.string);
+            stringAnim->stringFromInterpolatedIndex(key.key.getValue(), &ret.key.string);
         }
         ret.id = curveIT->first;
 
@@ -324,9 +324,9 @@ AnimationModuleViewPrivate::isNearbyTangent(const QPoint & pt) const
                 ( pt.y() >= (leftTanPt.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) ) {
                 
                 ret.second.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation((*it)->getView());
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.second.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), &ret.second.key.string);
                 }
                 ret.second.id = (*it)->getCurveID();
                 ret.first = MoveTangentCommand::eSelectedTangentLeft;
@@ -336,9 +336,9 @@ AnimationModuleViewPrivate::isNearbyTangent(const QPoint & pt) const
                        ( pt.y() <= (rightTanPt.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) &&
                        ( pt.y() >= (rightTanPt.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) ) {
                 ret.second.key.key = *it2;
-                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation();
+                StringAnimationManagerPtr stringAnim = (*it)->getItem()->getInternalAnimItem()->getStringAnimation((*it)->getView());
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), (*it)->getView(), &ret.second.key.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), &ret.second.key.string);
                 }
                 ret.second.id = (*it)->getCurveID();
                 ret.first = MoveTangentCommand::eSelectedTangentRight;
@@ -402,18 +402,18 @@ AnimationModuleViewPrivate::isNearbySelectedTangentText(const QPoint & pt) const
         if ( (pt.x() >= topLeft_LeftTanWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRight_LeftTanWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
             ( pt.y() >= topLeft_LeftTanWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRight_LeftTanWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
             ret.second.key.key = key.key;
-            StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation();
+            StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation(curveIT->first.view);
             if (stringAnim) {
-                stringAnim->stringFromInterpolatedIndex(key.key.getValue(), curveIT->first.view, &ret.second.key.string);
+                stringAnim->stringFromInterpolatedIndex(key.key.getValue(), &ret.second.key.string);
             }
             ret.second.id = curveIT->first;
             ret.first = MoveTangentCommand::eSelectedTangentLeft;
         } else if ( (pt.x() >= topLeft_RightTanWidget.x() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && (pt.x() <= btmRight_RightTanWidget.x() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) &&
                    ( pt.y() >= topLeft_RightTanWidget.y() - TO_DPIX(CLICK_DISTANCE_TOLERANCE)) && ( pt.y() <= btmRight_RightTanWidget.y() + TO_DPIX(CLICK_DISTANCE_TOLERANCE)) ) {
             ret.second.key.key = key.key;
-            StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation();
+            StringAnimationManagerPtr stringAnim = curveIT->first.item->getInternalAnimItem()->getStringAnimation(curveIT->first.view);
             if (stringAnim) {
-                stringAnim->stringFromInterpolatedIndex(key.key.getValue(), curveIT->first.view, &ret.second.key.string);
+                stringAnim->stringFromInterpolatedIndex(key.key.getValue(), &ret.second.key.string);
             }
             ret.second.id = curveIT->first;
             ret.first = MoveTangentCommand::eSelectedTangentRight;
@@ -447,7 +447,7 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
         }
 
         AnimItemDimViewIndexID curveID = (*it)->getCurveID();
-        StringAnimationManagerPtr stringAnim = curveID.item->getInternalAnimItem()->getStringAnimation();
+        StringAnimationManagerPtr stringAnim = curveID.item->getInternalAnimItem()->getStringAnimation((*it)->getView());
 
 
         KeyFrameWithStringSet outKeys;
@@ -460,7 +460,7 @@ AnimationModuleViewPrivate::keyFramesWithinRect(const RectD& canonicalRect, Anim
                 KeyFrameWithString k;
                 k.key = *it2;
                 if (stringAnim) {
-                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), curveID.view, &k.string);
+                    stringAnim->stringFromInterpolatedIndex(it2->getValue(), &k.string);
                 }
                 outKeys.insert(k);
             }

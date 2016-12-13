@@ -26,6 +26,7 @@
 
 #include <cfloat>
 #include <cmath>
+#include <set>
 #include <algorithm> // min, max
 #include <stdexcept>
 
@@ -39,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QApplication>
 #include <QtCore/QDebug>
 #include <QMenu>
+#include <QFlags>
 #include <QPainter>
 
 #include "Engine/Variant.h"
@@ -56,7 +58,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #define SPINBOX_MIN_WIDTH 35
 
 NATRON_NAMESPACE_ENTER;
-
 
 struct SpinBoxPrivate
 {
@@ -82,8 +83,7 @@ struct SpinBoxPrivate
     bool hasChangedSinceLastValidation;
     double valueAfterLastValidation;
     bool valueInitialized; //< false when setValue has never been called yet.
-    bool useLineColor;
-    QColor lineColor;
+
     SpinBoxValidator* customValidator;
     QPoint lastMousePos;
 
@@ -102,8 +102,6 @@ struct SpinBoxPrivate
         , hasChangedSinceLastValidation(false)
         , valueAfterLastValidation(0)
         , valueInitialized(false)
-        , useLineColor(false)
-        , lineColor(Qt::black)
         , customValidator(0)
     {
     }
@@ -935,22 +933,9 @@ SpinBox::paintEvent(QPaintEvent* e)
 {
     LineEdit::paintEvent(e);
 
-    if (_imp->useLineColor) {
-        QPainter p(this);
-        p.setPen(_imp->lineColor);
-        int h = height() - 1;
-        p.drawLine(0, h - 1, width() - 1, h - 1);
-    }
 }
 
-void
-SpinBox::setUseLineColor(bool use,
-                         const QColor& color)
-{
-    _imp->useLineColor = use;
-    _imp->lineColor = color;
-    update();
-}
+
 
 KnobSpinBox::KnobSpinBox(QWidget* parent,
                          SpinBoxTypeEnum type,

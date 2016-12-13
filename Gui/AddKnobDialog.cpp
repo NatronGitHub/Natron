@@ -59,7 +59,6 @@ struct AddKnobDialogPrivate
 {
     KnobIPtr knob;
     SERIALIZATION_NAMESPACE::KnobSerializationPtr originalKnobSerialization;
-    KnobIPtr isKnobAlias;
     DockablePanel* panel;
     QVBoxLayout* vLayout;
     QWidget* mainContainer;
@@ -129,7 +128,6 @@ struct AddKnobDialogPrivate
     AddKnobDialogPrivate(DockablePanel* panel)
         : knob()
         , originalKnobSerialization()
-        , isKnobAlias()
         , panel(panel)
         , vLayout(0)
         , mainContainer(0)
@@ -454,25 +452,6 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
     _imp->mainLayout->setContentsMargins(0, 0, TO_DPIX(15), 0);
 
     _imp->vLayout->addWidget(_imp->mainContainer);
-
-    {
-        KnobIPtr isAlias;
-        KnobIPtr listener;
-        if (knob) {
-            KnobI::ListenerDimsMap listeners;
-            knob->getListeners(listeners);
-            if ( !listeners.empty() ) {
-                listener = listeners.begin()->first.lock();
-                if (listener) {
-                    isAlias = listener->getAliasMaster();
-                }
-                if (isAlias != knob) {
-                    listener.reset();
-                }
-            }
-        }
-        _imp->isKnobAlias = listener;
-    }
 
 
     {
@@ -1312,24 +1291,6 @@ AddKnobDialog::onTypeCurrentIndexChanged(int index)
         break;
     } // switch
 
-    if (_imp->isKnobAlias) {
-        _imp->setVisibleToolTipEdit(true);
-        _imp->setVisibleAnimates(false);
-        _imp->setVisibleEvaluate(false);
-        _imp->setVisibleHide(true);
-        _imp->setVisibleMenuItems(false);
-        //_imp->setVisibleMinMax(false);
-        _imp->setVisibleStartNewLine(true);
-        _imp->setVisibleMultiLine(false);
-        _imp->setVisibleViewerUi(true);
-        _imp->setVisibleMultiPath(false);
-        _imp->setVisibleRichText(false);
-        _imp->setVisibleFileStuff(false);
-        _imp->setVisibleGrpAsTab(false);
-        _imp->setVisibleParent(true);
-        // _imp->setVisibleDefaultValues(false, AddKnobDialogPrivate::eDefaultValueTypeInt, d);
-        _imp->setVisiblePage(true);
-    }
 } // AddKnobDialog::onTypeCurrentIndexChanged
 
 AddKnobDialog::~AddKnobDialog()
@@ -1717,7 +1678,6 @@ AddKnobDialog::onOkClicked()
     int oldIndexInParent = -1;
     int oldViewerIndex = -1;
     std::string oldKnobScriptName;
-    std::vector<std::pair<std::string, bool> > expressions;
     std::map<KnobIPtr, std::vector<std::pair<std::string, bool> > > listenersExpressions;
     KnobPagePtr oldKnobIsPage;
     bool wasNewLineActivated = true;
@@ -1760,12 +1720,6 @@ AddKnobDialog::onOkClicked()
                 }
             }
         }
-        expressions.resize( _imp->knob->getNDimensions() );
-        for (std::size_t i = 0; i < expressions.size(); ++i) {
-            std::string expr = _imp->knob->getExpression(DimIdx(i), ViewIdx(0));
-            bool useRetVar = _imp->knob->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(i));
-            expressions[i] = std::make_pair(expr, useRetVar);
-        }
 
         //Since removing this knob will also remove all expressions from listeners, conserve them and try
         //to recover them afterwards
@@ -1788,10 +1742,8 @@ AddKnobDialog::onOkClicked()
 
         if (!oldKnobIsPage) {
             _imp->panel->getHolder()->deleteKnob(_imp->knob, true);
+            _imp->knob.reset();
 
-            if (!_imp->isKnobAlias) {
-                _imp->knob.reset();
-            }
         }
     } //if (!_imp->knob) {
 
@@ -1805,7 +1757,7 @@ AddKnobDialog::onOkClicked()
 
             return;
         }
-    } else if (!_imp->isKnobAlias) {
+    } else {
         try {
             _imp->createKnobFromSelection(t, oldIndexInParent );
         }   catch (const std::exception& e) {
@@ -1823,84 +1775,12 @@ AddKnobDialog::onOkClicked()
 
         KnobStringPtr isLabelKnob = toKnobString(_imp->knob);
         if ( isLabelKnob && isLabelKnob->isLabel() ) {
-            ///Label knob only has a default value, but the "clone" function call above will keep the previous value,
+            ///Label knob only has a default value, but the "fromSerialization" function call above will keep the previous value,
             ///so we have to force a reset to the default value.
             isLabelKnob->resetToDefaultValue();
         }
 
-        //Recover expressions
-        try {
-            for (std::size_t i = 0; i < expressions.size(); ++i) {
-                if ( !expressions[i].first.empty() ) {
-                    _imp->knob->setExpression(DimIdx(i), ViewSetSpec::all(), expressions[i].first, expressions[i].second, false);
-                }
-            }
-        } catch (...) {
-        }
-    } // if (!_imp->isKnobAlias) {
-    else {
-        //Alias knobs can only have these properties changed
-        assert(effect);
 
-        KnobPagePtr page = _imp->getSelectedPage();
-        assert(page);
-        _imp->panel->setPageActiveIndex(page);
-        KnobGroupPtr group = _imp->getSelectedGroup();
-
-        try {
-            _imp->knob = _imp->isKnobAlias->createDuplicateOnHolder(effect,
-                                                                    page,
-                                                                    group,
-                                                                    oldIndexInParent,
-                                                                    KnobI::eDuplicateKnobTypeAlias,
-                                                                    stdName,
-                                                                    _imp->labelLineEdit->text().toStdString(),
-                                                                    _imp->tooltipArea->toPlainText().toStdString(),
-                                                                    false,
-                                                                    true);
-        } catch (const std::exception& e) {
-            Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), e.what() );
-
-            return;
-        }
-
-        KnobColorPtr isColor = toKnobColor(_imp->knob);
-        KnobDoublePtr isDbl = boost::dynamic_pointer_cast<KnobDouble>(_imp->knob);
-        KnobIntPtr isInt = toKnobInt(_imp->knob);
-        KnobStringBasePtr isStr = toKnobStringBase(_imp->knob);
-        KnobGroupPtr isGrp = toKnobGroup(_imp->knob);
-        KnobBoolPtr isBool = toKnobBool(_imp->knob);
-        KnobChoicePtr isChoice = toKnobChoice(_imp->knob);
-        if (isColor || isDbl) {
-            _imp->setKnobMinMax<double>(_imp->knob);
-        } else if (isInt) {
-            _imp->setKnobMinMax<int>(_imp->knob);
-        } else if (isStr) {
-            isStr->setDefaultValue( _imp->defaultStr->text().toStdString() );
-        } else if (isGrp) {
-            isGrp->setDefaultValue(true);
-        } else if (isBool) {
-            isBool->setDefaultValue( _imp->defaultBool->isChecked() );
-        } else if (isChoice) {
-            std::string defValue = _imp->defaultStr->text().toStdString();
-            int defIndex = -1;
-            std::vector<std::string> entries = isChoice->getEntries();
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                if (entries[i] == defValue) {
-                    defIndex = i;
-                    break;
-                }
-            }
-            if (defIndex == -1) {
-                QString s = tr("The default value \"%1\" does not exist in the defined menu items.").arg( _imp->defaultStr->text() );
-                Dialogs::errorDialog( tr("Error while creating parameter").toStdString(), s.toStdString() );
-
-                return;
-            }
-            if ( ( defIndex < (int)entries.size() ) && (defIndex >= 0) ) {
-                isChoice->setDefaultValue(defIndex);
-            }
-        }
     }
 
     //If startsNewLine is false, set the flag on the previous knob

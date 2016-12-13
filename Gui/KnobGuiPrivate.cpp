@@ -59,7 +59,6 @@ KnobGuiPrivate::KnobGuiPrivate(KnobGui* publicInterface, const KnobIPtr& knob, K
 , tabGroup(0)
 , refreshGuiRequests(0)
 , refreshModifStateRequests(0)
-, refreshAnimationLevelRequests(0)
 , refreshDimensionVisibilityRequests()
 , layoutType(layoutType)
 {

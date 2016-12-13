@@ -53,7 +53,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TabGroup.h"
 #include "Gui/TableModelView.h"
 
-#define NATRON_FORM_LAYOUT_LINES_SPACING 0
 
 
 NATRON_NAMESPACE_ENTER;
@@ -67,6 +66,11 @@ struct KnobGuiContainerHelperPrivate
     KnobsGuiMapping knobsMap;
     KnobPageGuiWPtr currentPage;
     PagesMap pages;
+    KnobPageGuiPtr unPagedContainer; // used when container is not paged
+
+    // When set as a dialog, this is a pointer to the group knob representing the dialog
+    KnobGroupWPtr dialogKnob;
+
     boost::shared_ptr<QUndoStack> undoStack; /*!< undo/redo stack*/
     QUndoCommand* cmdBeingPushed;
     bool clearedStackDuringPush;
@@ -78,16 +82,18 @@ struct KnobGuiContainerHelperPrivate
     KnobGuiContainerHelperPrivate(KnobGuiContainerHelper* p,
                                   const KnobHolderPtr& holder,
                                   const boost::shared_ptr<QUndoStack>& stack)
-        : _p(p)
-        , holder(holder)
-        , knobsMap()
-        , currentPage()
-        , pages()
-        , undoStack()
-        , cmdBeingPushed(0)
-        , clearedStackDuringPush(false)
-        , signals( new KnobGuiContainerSignalsHandler(p) )
-        , knobsTable()
+    : _p(p)
+    , holder(holder)
+    , knobsMap()
+    , currentPage()
+    , pages()
+    , unPagedContainer()
+    , dialogKnob()
+    , undoStack()
+    , cmdBeingPushed(0)
+    , clearedStackDuringPush(false)
+    , signals( new KnobGuiContainerSignalsHandler(p) )
+    , knobsTable()
     {
         if (stack) {
             undoStack = stack;
@@ -226,8 +232,8 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
     if (!page || page->getIsToolBar()) {
         return KnobPageGuiPtr();
     }
-    if ( !isPagingEnabled() && (_imp->pages.size() > 0) ) {
-        return _imp->pages.begin()->second;
+    if ( !isPagingEnabled()) {
+        return _imp->unPagedContainer;
     }
 
     // If the page is already created, return it
@@ -261,7 +267,6 @@ KnobGuiContainerHelper::getOrCreatePage(const KnobPagePtr& page)
 
     // The container layout is always a grid layout
     QGridLayout *tabLayout = new QGridLayout(layoutContainer);
-    tabLayout->setObjectName( QString::fromUtf8("formLayout") );
     layoutContainer->setLayout(tabLayout);
     tabLayout->setColumnStretch(1, 1);
     tabLayout->setSpacing( TO_DPIY(NATRON_FORM_LAYOUT_LINES_SPACING) );
@@ -386,19 +391,9 @@ KnobGuiContainerHelper::initializeKnobVectorInternal(const KnobsVec& siblingsVec
     // Hold a pointer to the previous child if the previous child did not want to create a new line
     for (KnobsVec::const_iterator it2 = siblingsVec.begin(); it2 != siblingsVec.end(); ++it2) {
 
-        KnobGroupPtr isGroup = toKnobGroup(*it2);
-
-        // A vector of all other knobs on the same line
-        KnobsVec knobsOnSameLine;
-
-        // If the knob is dynamic (i:e created after the initial creation of knobs)
-        // it can be added as part of a group defined earlier hence we have to insert it at the proper index.
-        KnobIPtr parentKnob = (*it2)->getParentKnob();
-        KnobGroupPtr isParentGroup = toKnobGroup(parentKnob);
-
         // Create this knob
         KnobGuiPtr newGui = findKnobGuiOrCreate(*it2);
-
+        (void)newGui;
 
         // Remove it from the "regularKnobs" to mark it as created as we will use them later
         if (regularKnobsVec) {
@@ -521,6 +516,88 @@ KnobGuiContainerHelper::setLabelFromTextAndIcon(KnobClickableLabel* widget, cons
 
 }
 
+void
+KnobGuiContainerHelper::createTabedGroupGui(const KnobGroupPtr& knob)
+{
+    KnobIPtr parentKnob = knob->getParentKnob();
+    assert(parentKnob);
+
+    KnobPagePtr parentIsPage = toKnobPage(parentKnob);
+    if (parentIsPage) {
+
+        KnobPageGuiPtr page;
+        if (isPagingEnabled()) {
+            page = getOrCreatePage(parentIsPage);
+        } else {
+            page = _imp->unPagedContainer;
+        }
+
+        // Create the frame for the group that are set as tabs within this tab
+        bool existed = true;
+        if (!page->groupAsTab) {
+            existed = false;
+            page->groupAsTab = new TabGroup( getPagesContainer() );
+        }
+        page->groupAsTab->addTab( knob, QString::fromUtf8( knob->getLabel().c_str() ) );
+        if (!existed) {
+            page->gridLayout->addWidget(page->groupAsTab, page->gridLayout->rowCount(), 0, 1, 2);
+        }
+
+        page->groupAsTab->refreshTabSecretNess( knob );
+    } else {
+
+        boost::shared_ptr<KnobGuiGroup> parentGroupGui;
+        KnobGuiPtr parentKnobGui;
+        KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
+        // If this knob is within a group, make sure the group is created so far
+        if (parentIsGroup) {
+            parentKnobGui = findKnobGuiOrCreate(parentKnob);
+            if (parentKnobGui) {
+                parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
+            }
+        }
+
+        // This is a group inside a group
+        if (parentKnobGui) {
+            TabGroup* groupAsTab = parentKnobGui->getOrCreateTabWidget();
+            assert(groupAsTab);
+            groupAsTab->addTab( knob, QString::fromUtf8( knob->getLabel().c_str() ) );
+            if ( parentIsGroup && parentIsGroup->isTab() ) {
+                // Insert the tab in the layout of the parent
+                // Find the page in the parentParent group
+
+                KnobIPtr parentParent = parentKnob->getParentKnob();
+                assert(parentParent);
+                KnobGroupPtr parentParentIsGroup = toKnobGroup(parentParent);
+                KnobPagePtr parentParentIsPage = toKnobPage(parentParent);
+                assert(parentParentIsGroup || parentParentIsPage);
+                TabGroup* parentTabGroup = 0;
+                if (parentParentIsPage) {
+                    KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
+                    assert(page);
+                    parentTabGroup = page->groupAsTab;
+                } else {
+                    KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
+                    assert( it != _imp->knobsMap.end() );
+                    if (it != _imp->knobsMap.end() && it->second) {
+                        parentTabGroup = it->second->getOrCreateTabWidget();
+                    }
+                }
+
+                QGridLayout* layout = parentTabGroup->addTab( parentIsGroup, QString::fromUtf8( parentIsGroup->getLabel().c_str() ) );
+                assert(layout);
+                layout->addWidget(groupAsTab, 0, 0, 1, 2);
+            } else {
+                KnobPagePtr topLevelPage = knob->getTopLevelPage();
+                KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
+                assert(page);
+                page->gridLayout->addWidget(groupAsTab, page->gridLayout->rowCount(), 0, 1, 2);
+            }
+            groupAsTab->refreshTabSecretNess(knob);
+        }
+    } // parentIsPage
+} // createTabedGroupGui
+
 KnobGuiPtr
 KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 {
@@ -558,10 +635,17 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
         return KnobGuiPtr();
     }
 
-    // Create the actual knob gui object
-    KnobGuiPtr ret = _imp->createKnobGui(knob);
-    if (!ret) {
+    // A group knob that is as a dialog should never be created as a knob.
+    if (isGroup && isGroup->getIsDialog()) {
         return KnobGuiPtr();
+    }
+
+    // If setup to display the content of a group as a dialog, only create the knobs within that group.
+    KnobGroupPtr thisContainerIsGroupDialog = _imp->dialogKnob.lock();
+    if (thisContainerIsGroupDialog) {
+        if (knob->getParentKnob() != thisContainerIsGroupDialog) {
+            return KnobGuiPtr();
+        }
     }
 
     KnobIPtr parentKnob = knob->getParentKnob();
@@ -571,15 +655,20 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
     KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
 
-    boost::shared_ptr<KnobGuiGroup> parentGroupGui;
-    KnobGuiPtr parentKnobGui;
-    // If this knob is within a group, make sure the group is created so far
-    if (parentIsGroup) {
-        parentKnobGui = findKnobGuiOrCreate(parentKnob);
-        if (parentKnobGui) {
-            parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
-        }
+    // If the parent group is a dialog, never create the knob unless we are creating this container specifically to display
+    // the content of the group
+    if (parentIsGroup && parentIsGroup->getIsDialog() && parentIsGroup != thisContainerIsGroupDialog) {
+        return KnobGuiPtr();
     }
+
+
+    // Create the actual knob gui object
+    KnobGuiPtr ret = _imp->createKnobGui(knob);
+    if (!ret) {
+        return KnobGuiPtr();
+    }
+    assert(!ret->hasWidgetBeenCreated());
+
 
     // So far the knob could have no parent, in which case we force it to be in the default page.
     if (!parentKnob) {
@@ -592,64 +681,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
     // For group only create the widgets if it is not a tab, otherwise do a special case
     if ( isGroup  && isGroup->isTab() ) {
-        KnobPagePtr parentIsPage = toKnobPage(parentKnob);
-        if (!parentKnob || parentIsPage) {
-            KnobPageGuiPtr page = getOrCreatePage(parentIsPage);
-
-            // Create the frame for the group that are set as tabs within this tab
-            bool existed = true;
-            if (!page->groupAsTab) {
-                existed = false;
-                page->groupAsTab = new TabGroup( getPagesContainer() );
-            }
-            page->groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
-            if (!existed) {
-                page->gridLayout->addWidget(page->groupAsTab, page->gridLayout->rowCount(), 0, 1, 2);
-            }
-
-            page->groupAsTab->refreshTabSecretNess( isGroup );
-        } else {
-            // This is a group inside a group
-            assert(parentKnobGui);
-            TabGroup* groupAsTab = parentKnobGui->getOrCreateTabWidget();
-            assert(groupAsTab);
-            groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
-
-            if ( parentIsGroup && parentIsGroup->isTab() ) {
-                // Insert the tab in the layout of the parent
-                // Find the page in the parentParent group
-                KnobIPtr parentParent = parentKnob->getParentKnob();
-                assert(parentParent);
-                KnobGroupPtr parentParentIsGroup = toKnobGroup(parentParent);
-                KnobPagePtr parentParentIsPage = toKnobPage(parentParent);
-                assert(parentParentIsGroup || parentParentIsPage);
-                TabGroup* parentTabGroup = 0;
-                if (parentParentIsPage) {
-                    KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
-                    assert(page);
-                    parentTabGroup = page->groupAsTab;
-                } else {
-                    KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
-                    assert( it != _imp->knobsMap.end() );
-                    if (it != _imp->knobsMap.end() && it->second) {
-                        parentTabGroup = it->second->getOrCreateTabWidget();
-                    }
-                }
-
-                QGridLayout* layout = parentTabGroup->addTab( parentIsGroup, QString::fromUtf8( parentIsGroup->getLabel().c_str() ) );
-                assert(layout);
-                layout->addWidget(groupAsTab, 0, 0, 1, 2);
-            } else {
-                KnobPagePtr topLevelPage = knob->getTopLevelPage();
-                KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
-                assert(page);
-                page->gridLayout->addWidget(groupAsTab, page->gridLayout->rowCount(), 0, 1, 2);
-            }
-            groupAsTab->refreshTabSecretNess(isGroup);
-        }
-    }
-    // If widgets for the KnobGui have already been created, don't do the following
-    else if ( !ret->hasWidgetBeenCreated() ) {
+        createTabedGroupGui(isGroup);
+    } else {
         // Get the top level parent
         KnobPagePtr isTopLevelParentAPage = toKnobPage(parentKnob);
         KnobIPtr parentKnobTmp = parentKnob;
@@ -662,8 +695,8 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
         // Find in which page the knob should be
         assert(isTopLevelParentAPage);
-
         KnobPageGuiPtr page = getOrCreatePage(isTopLevelParentAPage);
+
         if (!page) {
             return ret;
         }
@@ -757,6 +790,16 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobIPtr &knob)
 
         }  // makeNewLine
 
+        boost::shared_ptr<KnobGuiGroup> parentGroupGui;
+        KnobGuiPtr parentKnobGui;
+        KnobGroupPtr parentIsGroup = toKnobGroup(parentKnob);
+        // If this knob is within a group, make sure the group is created so far
+        if (parentIsGroup) {
+            parentKnobGui = findKnobGuiOrCreate(parentKnob);
+            if (parentKnobGui) {
+                parentGroupGui = boost::dynamic_pointer_cast<KnobGuiGroup>(parentKnobGui->getWidgetsForView(ViewIdx(0)));
+            }
+        }
         if (parentGroupGui) {
             parentGroupGui->addKnob(ret);
         }
@@ -1199,6 +1242,45 @@ KnobGuiContainerHelper::refreshPageVisibility(const KnobPagePtr& page)
 
     KnobPageGuiPtr curPage = getCurrentPage();
     setPagesOrder(pagesToDisplay, curPage, true);
+}
+
+void
+KnobGuiContainerHelper::setAsDialogForGroup(const KnobGroupPtr& groupKnobDialog)
+{
+    assert(groupKnobDialog->getIsDialog());
+    turnOffPages();
+    _imp->dialogKnob = groupKnobDialog;
+}
+
+KnobGroupPtr
+KnobGuiContainerHelper::isDialogForGroup() const
+{
+    return _imp->dialogKnob.lock();
+}
+
+void
+KnobGuiContainerHelper::turnOffPages()
+{
+    if (_imp->unPagedContainer) {
+        // turnOffPages() was already called.
+        return;
+    }
+    onPagingTurnedOff();
+
+    _imp->unPagedContainer.reset(new KnobPageGui);
+    _imp->unPagedContainer->tab = new QWidget(getPagesContainer());
+    _imp->unPagedContainer->gridLayout = new QGridLayout(_imp->unPagedContainer->tab);
+    _imp->unPagedContainer->gridLayout->setColumnStretch(1, 1);
+    _imp->unPagedContainer->gridLayout->setSpacing( TO_DPIY(NATRON_FORM_LAYOUT_LINES_SPACING) );
+
+
+    addPageToPagesContainer(_imp->unPagedContainer);
+}
+
+bool
+KnobGuiContainerHelper::isPagingEnabled() const
+{
+    return _imp->unPagedContainer.get() == 0;
 }
 
 NATRON_NAMESPACE_EXIT;

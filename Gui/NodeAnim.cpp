@@ -809,7 +809,7 @@ NodeAnimPrivate::computeGroupRange()
                 std::list<ViewIdx> views = (*it2)->getViewsList();
                 for (std::list<ViewIdx>::const_iterator it3 = views.begin(); it3 != views.end(); ++it3) {
                     for (int i = 0; i < nDims; ++i) {
-                        CurvePtr curve = (*it2)->getCurve(*it3, DimIdx(i));
+                        CurvePtr curve = (*it2)->getAnimationCurve(*it3, DimIdx(i));
                         if (!curve) {
                             continue;
                         }

@@ -207,22 +207,32 @@ LinkToKnobDialog::onNodeComboEditingFinished()
             KnobButtonPtr isButton = toKnobButton(knobs[j]);
             KnobPagePtr isPage = toKnobPage(knobs[j]);
             KnobGroupPtr isGroup = toKnobGroup(knobs[j]);
-            if (from->isTypeCompatible(knobs[j]) && !isButton && !isPage && !isGroup) {
-                QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
-                bool canInsertKnob = true;
-                for (int k = 0; k < knobs[j]->getNDimensions(); ++k) {
-                    if ( knobs[j]->isSlave(DimIdx(k), ViewIdx(0)) || !knobs[j]->isEnabled(DimIdx(k)) || name.isEmpty() ) {
-                        canInsertKnob = false;
-                    }
-                }
-                if (canInsertKnob) {
-                    _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
-                    _imp->knobSelectionCombo->addItem(name);
+            if ((isButton && !isButton->getIsCheckable()) || isPage || !isGroup) {
+                continue;
+            }
+            {
+                DimIdx thisDimToCheck = DimIdx(0);
+                ViewIdx thisViewToCheck = ViewIdx(0);
+                DimIdx otherDimToCheck = DimIdx(0);
+                ViewIdx otherViewToCheck = ViewIdx(0);
+                std::string error;
+                if ( !from->canLinkWith(knobs[j], thisDimToCheck, thisViewToCheck, otherDimToCheck, otherViewToCheck,&error ) ) {
+                    continue;
                 }
             }
+
+
+            QString name = QString::fromUtf8( knobs[j]->getName().c_str() );
+            bool canInsertKnob = knobs[j]->isEnabled() && !name.isEmpty();
+        
+            if (canInsertKnob) {
+                _imp->allKnobs.insert( std::make_pair( name, knobs[j]) );
+                _imp->knobSelectionCombo->addItem(name);
+            }
+
         }
     }
-}
+} // 
 
 KnobIPtr
 LinkToKnobDialog::getSelectedKnobs() const

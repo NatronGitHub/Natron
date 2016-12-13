@@ -284,6 +284,7 @@ public:
 
     // Appearance/Node Graph
     KnobPagePtr _nodegraphColorsTab;
+    KnobColorPtr _cloneColor;
     KnobColorPtr _defaultNodeColor;
     KnobColorPtr _defaultBackdropColor;
     KnobColorPtr _defaultGeneratorColor;
@@ -1223,6 +1224,15 @@ SettingsPrivate::initializeKnobsNodeGraphColors()
     _nodegraphColorsTab->addKnob(_defaultNodeColor);
 
 
+    _cloneColor = AppManager::createKnob<KnobColor>(thisShared, tr("Clone Color"), 3);
+    _cloneColor->setName("cloneColor");
+    _cloneColor->setSimplified(true);
+    _cloneColor->setHintToolTip( tr("The default color used for clone nodes.") );
+
+    _nodegraphColorsTab->addKnob(_cloneColor);
+
+
+
     _defaultBackdropColor =  AppManager::createKnob<KnobColor>(thisShared, tr("Default backdrop color"), 3);
     _defaultBackdropColor->setName("backdropColor");
     _defaultBackdropColor->setSimplified(true);
@@ -1823,6 +1833,9 @@ SettingsPrivate::setDefaultValues()
     _defaultNodeColor->setDefaultValue(0.7, DimIdx(0));
     _defaultNodeColor->setDefaultValue(0.7, DimIdx(1));
     _defaultNodeColor->setDefaultValue(0.7, DimIdx(2));
+    _cloneColor->setDefaultValue(0.78, DimIdx(0));
+    _cloneColor->setDefaultValue(0.27, DimIdx(1));
+    _cloneColor->setDefaultValue(0.39, DimIdx(2));
     _defaultBackdropColor->setDefaultValue(0.45, DimIdx(0));
     _defaultBackdropColor->setDefaultValue(0.45, DimIdx(1));
     _defaultBackdropColor->setDefaultValue(0.45, DimIdx(2));
@@ -2362,7 +2375,7 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
     QString configFile;
 
 
-    if ( _customOcioConfigFile->isEnabled(DimIdx(0)) ) {
+    if ( _customOcioConfigFile->isEnabled() ) {
         ///try to load from the file
         std::string file;
         try {
@@ -2456,8 +2469,7 @@ bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              double /*time*/,
-                             ViewSetSpec /*view*/,
-                             bool /*originatedFromMainThread*/)
+                             ViewSetSpec /*view*/)
 {
 
     Q_EMIT settingChanged(k, reason);
@@ -2504,7 +2516,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         bool useTP = _imp->_useThreadPool->getValue();
         appPTR->setUseThreadPool(useTP);
     } else if ( k == _imp->_customOcioConfigFile ) {
-        if ( _imp->_customOcioConfigFile->isEnabled(DimIdx(0)) ) {
+        if ( _imp->_customOcioConfigFile->isEnabled() ) {
             _imp->tryLoadOpenColorIOConfig();
         }
     } else if ( k == _imp->_maxUndoRedoNodeGraph ) {
@@ -3495,6 +3507,17 @@ Settings::getExprColor(double* r,
     *r = _imp->_exprColor->getValue(DimIdx(0));
     *g = _imp->_exprColor->getValue(DimIdx(1));
     *b = _imp->_exprColor->getValue(DimIdx(2));
+}
+
+
+void
+Settings::getCloneColor(double* r,
+                       double* g,
+                       double* b) const
+{
+    *r = _imp->_cloneColor->getValue(DimIdx(0));
+    *g = _imp->_cloneColor->getValue(DimIdx(1));
+    *b = _imp->_cloneColor->getValue(DimIdx(2));
 }
 
 void
