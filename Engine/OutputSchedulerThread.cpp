@@ -1192,6 +1192,11 @@ OutputSchedulerThread::stopRender()
 
     onRenderStopped(wasAborted);
 
+    // When playing once disable auto-restart
+    if (!wasAborted && _imp->engine->getPlaybackMode() == ePlaybackModeOnce) {
+        _imp->engine->setPlaybackAutoRestartEnabled(false);
+    }
+
 
     {
         QMutexLocker k(&_imp->bufMutex);
