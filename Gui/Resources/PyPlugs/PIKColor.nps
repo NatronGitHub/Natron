@@ -110,7 +110,7 @@ Children:
       - Name: multiply
         Float: [{Expr: thisGroup.mult.get().r}, {Expr: thisGroup.mult.get().g}, {Expr: thisGroup.mult.get().b}, 0]
       - Name: offset
-        Float: {Expr: thisGroup.off.get().r}
+        Float: [{Expr: thisGroup.off.get().r}, {Expr: thisGroup.off.get().g}, {Expr: thisGroup.off.get().b}, 0]
       - Name: clampBlack
         Bool: true
         DefaultBool: false

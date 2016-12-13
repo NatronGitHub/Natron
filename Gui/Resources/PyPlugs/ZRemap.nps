@@ -62,11 +62,12 @@ UserPages:
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
       - Name: channels
-        DefaultString: Color.RGBA
+        String: Color.RGBA
+        DefaultString: Backward.Motion
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [Backward.Motion, Color.RGBA, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.GradePlugin
@@ -75,7 +76,7 @@ Children:
     Inputs: InputSource
     Params:
       - Name: whitePoint
-        Float: {N: "@thisGroup", K: farLimit, D: r}
+        Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
       - Name: clampBlack
         Bool: true
         DefaultBool: false
@@ -91,8 +92,6 @@ Children:
     Params:
       - Name: premultChanged
         Bool: true
-      - Name: channels
-        String: {N: "@thisGroup", K: channels}
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     Name: Output

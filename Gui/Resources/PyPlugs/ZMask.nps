@@ -22,6 +22,7 @@ UserPages:
         TypeName: Bool
         Label: Z picking
       - Name: centerValue
+        Float: [{N: Solid1, K: color, D: r}, {N: Solid1, K: color, D: g}, {N: Solid1, K: color, D: b}]
         DefaultFloat: [1, 1, 1]
         NDims: 3
         TypeName: Color
@@ -76,11 +77,12 @@ UserPages:
         Label: Source Layer
         Entries: [None, Color.RGBA, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
       - Name: channels
-        DefaultString: Color.RGB
+        String: Color.RGB
+        DefaultString: Backward.Motion
         NDims: 1
         TypeName: Choice
         Label: Output Layer
-        Entries: [Backward.Motion, Color.RGB, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
+        Entries: [Color.RGB, Backward.Motion, DisparityLeft.Disparity, DisparityRight.Disparity, Forward.Motion]
 PagesOrder: [controls, nodePage]
 Children:
   - PluginID: net.sf.openfx.MergePlugin
@@ -102,7 +104,7 @@ Children:
       - Name: size
         Float: [1920, 1080]
       - Name: color
-        Float: {N: "@thisGroup", K: centerValue, D: r}
+        Float: 1
     Pos: [776, 134]
   - PluginID: net.sf.openfx.Invert
     Name: Invert1
@@ -111,8 +113,6 @@ Children:
     Params:
       - Name: premultChanged
         Bool: true
-      - Name: channels
-        String: {N: "@thisGroup", K: channels}
     Pos: [764, 546]
   - PluginID: net.sf.openfx.Clamp
     Name: Clamp1

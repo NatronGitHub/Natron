@@ -119,6 +119,7 @@ UserPages:
         Hint: When checked, use a constant color (specified by the Constant parameter) instead of the background for the LightWrap effect.
         Props: [AnimatesChanged]
       - Name: constantcolor
+        Float: [{N: Constant1, K: color, D: r}, {N: Constant1, K: color, D: g}, {N: Constant1, K: color, D: b}, {N: Constant1, K: color, D: a}]
         DefaultFloat: [1, 1, 1, 1]
         NDims: 4
         TypeName: Color
@@ -256,6 +257,7 @@ UserPages:
             DisplayMin: 0
             DisplayMax: 4
           - Name: ColorCorrect1MidtonesContrast
+            Float: [{N: ColorCorrect1, K: MidtonesContrast, D: r}, {N: ColorCorrect1, K: MidtonesContrast, D: g}, {N: ColorCorrect1, K: MidtonesContrast, D: b}, {N: ColorCorrect1, K: MidtonesContrast, D: a}]
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -265,6 +267,7 @@ UserPages:
             DisplayMin: 0
             DisplayMax: 4
           - Name: ColorCorrect1MidtonesGamma
+            Float: [{N: ColorCorrect1, K: MidtonesGamma, D: r}, {N: ColorCorrect1, K: MidtonesGamma, D: g}, {N: ColorCorrect1, K: MidtonesGamma, D: b}, {N: ColorCorrect1, K: MidtonesGamma, D: a}]
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -274,6 +277,7 @@ UserPages:
             DisplayMin: 0.2
             DisplayMax: 5
           - Name: ColorCorrect1MidtonesGain
+            Float: [{N: ColorCorrect1, K: MidtonesGain, D: r}, {N: ColorCorrect1, K: MidtonesGain, D: g}, {N: ColorCorrect1, K: MidtonesGain, D: b}, {N: ColorCorrect1, K: MidtonesGain, D: a}]
             DefaultFloat: [1, 1, 1, 1]
             NDims: 4
             TypeName: Color
@@ -283,6 +287,7 @@ UserPages:
             DisplayMin: 0
             DisplayMax: 4
           - Name: ColorCorrect1MidtonesOffset
+            Float: [{N: ColorCorrect1, K: MidtonesOffset, D: r}, {N: ColorCorrect1, K: MidtonesOffset, D: g}, {N: ColorCorrect1, K: MidtonesOffset, D: b}, {N: ColorCorrect1, K: MidtonesOffset, D: a}]
             DefaultFloat: [0, 0, 0, 0]
             NDims: 4
             TypeName: Color
@@ -392,7 +397,7 @@ Children:
       - Name: size
         Float: [960, 540]
       - Name: color
-        Float: {N: "@thisGroup", K: constantcolor, D: r}
+        Float: 1
       - Name: NatronOfxParamProcessA
         Bool: false
     Pos: [968, 185]
@@ -460,7 +465,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: {N: "@thisGroup", K: fgblur, D: x}
+        Float: [{N: "@thisGroup", K: fgblur, D: x}, {N: "@thisGroup", K: fgblur, D: y}]
       - Name: expandRoD
         Bool: false
     Pos: [434, 433]
@@ -500,7 +505,7 @@ Children:
       - Name: NatronOfxParamProcessA
         Bool: true
       - Name: size
-        Float: {N: "@thisGroup", K: diffuse, D: x}
+        Float: [{N: "@thisGroup", K: diffuse, D: x}, {N: "@thisGroup", K: diffuse, D: y}]
       - Name: expandRoD
         Bool: false
     Pos: [758, 633]
