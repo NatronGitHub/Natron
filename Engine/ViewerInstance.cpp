@@ -2360,8 +2360,12 @@ ViewerInstance::markAllOnGoingRendersAsAborted(bool keepOldestRender)
 
         //Do not abort the oldest render, let it finish
         OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin();
+
         if (keepOldest) {
-            ++it;
+            // Only keep the oldest render active if it is worth displaying!
+            if ((*it)->getRenderAge() >= _imp->displayAge[i]) {
+                ++it;
+            }
         }
 
         for (; it != _imp->currentRenderAges[i].end(); ++it) {
