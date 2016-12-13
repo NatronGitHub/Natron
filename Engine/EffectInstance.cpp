@@ -2461,13 +2461,16 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const std::bitset<4>& processChannels,
                                                       const ImagePlanesToRenderPtr & planes) // when MT, planes is a copy so there's is no data race
 {
-    ///There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
-#ifdef DEBUG
+    // There cannot be the same thread running 2 concurrent instances of renderRoI on the same effect.
+    // The code below was commented-out: Since in the tiledRenderingFunctor() function calling this one we do a deep copy of the thread local storage of the spawning thread,
+    // we also copy the currentRenderArgs which may already have their validArgs flag set to true, so remove the assert.
+/*#ifdef DEBUG
     {
         EffectDataTLSPtr tls = tlsData->getTLSData();
         assert(!tls || !tls->currentRenderArgs.validArgs);
     }
-#endif
+#endif*/
+
     EffectDataTLSPtr tls = tlsData->getOrCreateTLSData();
 
     assert( !rectToRender.rect.isNull() );
