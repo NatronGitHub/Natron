@@ -1492,7 +1492,7 @@ class KnobHelper
 
     // friends
     friend class KnobHolder;
-
+    friend class ExprRecursionLevel_RAII;
 
 protected: // derives from KnobI, parent of Knob
     // TODO: enable_shared_from_this
@@ -1516,17 +1516,6 @@ private:
 
 public:
 
-    struct KnobTLSData
-    {
-        int expressionRecursionLevel;
-
-        KnobTLSData()
-            : expressionRecursionLevel(0)
-        {
-        }
-    };
-
-    typedef boost::shared_ptr<KnobTLSData> KnobDataTLSPtr;
 
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1866,29 +1855,20 @@ public:
     virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
     virtual void clearExpressionsResults(DimSpec /*dimension*/, ViewSetSpec /*view*/) OVERRIDE {}
 
+private:
+
     void incrementExpressionRecursionLevel() const;
 
     void decrementExpressionRecursionLevel() const;
 
+protected:
+
+
     int getExpressionRecursionLevel() const;
 
-    class ExprRecursionLevel_RAII
-    {
-        const KnobHelper* _k;
+
 
 public:
-
-        ExprRecursionLevel_RAII(const KnobHelper* k)
-            : _k(k)
-        {
-            k->incrementExpressionRecursionLevel();
-        }
-
-        ~ExprRecursionLevel_RAII()
-        {
-            _k->decrementExpressionRecursionLevel();
-        }
-    };
 
     /**
      * @brief Implement to save the content of the object to the serialization object
@@ -2412,6 +2392,26 @@ private:
     mutable QMutex _minMaxMutex;
     std::vector<T>  _minimums, _maximums, _displayMins, _displayMaxs;
 
+};
+
+
+
+class ExprRecursionLevel_RAII
+{
+    const KnobHelper* _k;
+
+public:
+
+    ExprRecursionLevel_RAII(const KnobHelper* k)
+    : _k(k)
+    {
+        k->incrementExpressionRecursionLevel();
+    }
+
+    ~ExprRecursionLevel_RAII()
+    {
+        _k->decrementExpressionRecursionLevel();
+    }
 };
 
 /**

@@ -99,6 +99,13 @@ KnobFile::typeName() const
     return typeNameStatic();
 }
 
+
+std::string
+KnobFile::getRawFileName(DimIdx dimension, ViewGetSpec view)
+{
+    return Knob<std::string>::getValue(dimension, view);
+}
+
 std::string
 KnobFile::getValue(DimIdx dimension, ViewGetSpec view, bool clampToMinMax)
 {

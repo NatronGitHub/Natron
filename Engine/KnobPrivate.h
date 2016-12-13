@@ -71,7 +71,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
-#define EXPR_RECURSION_LEVEL() KnobHelper::ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
+#define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
 
 NATRON_NAMESPACE_ENTER
@@ -237,6 +237,15 @@ struct KnobHelperPrivate
     // For each dimension its expression
     ExprPerDimensionVec expressions;
 
+    // Used to prevent expressions from creating infinite loops
+    // It doesn't have to be thread-local even if getValue can be called on multiple threads:
+    // the evaluation of expressions is locking-out all other threads anyway, so really a single
+    // thread is using this variable at a time anyway.
+    int expressionRecursionLevel;
+
+    // Protects expressionRecursionLevel
+    mutable QMutex expressionRecursionLevelMutex;
+
     // For each dimension, the label displayed on the interface (e.g: "R" "G" "B" "A")
     std::vector<std::string> dimensionNames;
 
@@ -245,9 +254,6 @@ struct KnobHelperPrivate
 
     // The last return value of random to preserve its state
     mutable U32 lastRandomHash;
-
-    // TLS data for the knob
-    boost::shared_ptr<TLSHolder<KnobHelper::KnobTLSData> > tlsData;
 
     // Protects hasModifications
     mutable QMutex hasModificationsMutex;
@@ -319,9 +325,10 @@ struct KnobHelperPrivate
     , ofxParamHandle(0)
     , expressionMutex()
     , expressions()
+    , expressionRecursionLevel(0)
+    , expressionRecursionLevelMutex(QMutex::Recursive)
     , dimensionNames()
     , lastRandomHash(0)
-    , tlsData( new TLSHolder<KnobHelper::KnobTLSData>() )
     , hasModificationsMutex()
     , hasModifications()
     , valueChangedBlockedMutex()

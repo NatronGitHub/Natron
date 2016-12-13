@@ -217,7 +217,6 @@ AppTLS::cleanupTLSForThread()
 
 template class TLSHolder<EffectInstance::EffectTLSData>;
 template class TLSHolder<NATRON_NAMESPACE::OfxHost::OfxHostTLSData>;
-template class TLSHolder<KnobHelper::KnobTLSData>;
 template class TLSHolder<Project::ProjectTLSData>;
 template class TLSHolder<OfxClipInstance::ClipTLSData>;
 template class TLSHolder<OfxParamToKnob::OfxParamTLSData>;

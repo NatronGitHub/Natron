@@ -7589,7 +7589,7 @@ Node::computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange)
                 frameRange[1] = INT_MAX;
                 originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
             } else {
-                std::string pattern = isFile->getValue();
+                std::string pattern = isFile->getRawFileName();
                 getApp()->getProject()->canonicalizePath(pattern);
                 SequenceParsing::SequenceFromPattern seq;
                 FileSystemModel::filesListFromPattern(pattern, &seq);

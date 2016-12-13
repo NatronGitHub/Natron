@@ -103,32 +103,22 @@ KnobHelper::setHolder(const KnobHolderPtr& holder)
 void
 KnobHelper::incrementExpressionRecursionLevel() const
 {
-    KnobDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    assert(tls);
-    ++tls->expressionRecursionLevel;
+    _imp->expressionRecursionLevelMutex.lock();
+    ++_imp->expressionRecursionLevel;
 }
 
 void
 KnobHelper::decrementExpressionRecursionLevel() const
 {
-    KnobDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    assert(tls);
-    assert(tls->expressionRecursionLevel > 0);
-    --tls->expressionRecursionLevel;
+    _imp->expressionRecursionLevelMutex.unlock();
+    --_imp->expressionRecursionLevel;
 }
 
 int
 KnobHelper::getExpressionRecursionLevel() const
 {
-    KnobDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return 0;
-    }
-
-    return tls->expressionRecursionLevel;
+    QMutexLocker k(&_imp->expressionRecursionLevelMutex);
+    return _imp->expressionRecursionLevel;
 }
 
 void

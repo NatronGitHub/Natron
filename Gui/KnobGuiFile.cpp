@@ -226,7 +226,7 @@ KnobGuiFile::updateGUI()
 {
     KnobFilePtr knob = _knob.lock();
 
-    QString filePath = QString::fromUtf8( knob->getValue().c_str() );
+    QString filePath = QString::fromUtf8( knob->getRawFileName().c_str() );
     if (_lineEdit->text() == filePath) {
         return;
     }
