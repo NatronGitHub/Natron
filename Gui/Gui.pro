@@ -285,6 +285,7 @@ HEADERS += \
     KnobAnim.h \
     KnobItemsTableGui.h \
     KnobGui.h \
+    KnobGuiPrivate.h \
     KnobGuiContainerI.h \
     KnobGuiContainerHelper.h \
     KnobGuiFactory.h \
