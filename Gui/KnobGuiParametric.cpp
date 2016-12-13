@@ -108,6 +108,7 @@ struct KnobGuiParametricPrivate
     boost::shared_ptr<AnimationModuleBase> model;
     CurveGuis curves;
     KnobParametricWPtr knob;
+    int nRefreshRequests;
 
     KnobGuiParametricPrivate(KnobGuiParametric* publicInterface)
     : _publicInterface(publicInterface)
@@ -120,6 +121,7 @@ struct KnobGuiParametricPrivate
     , model()
     , curves()
     , knob()
+    , nRefreshRequests(0)
     {
 
     }
@@ -166,6 +168,7 @@ KnobGuiParametric::KnobGuiParametric(const KnobGuiPtr& knob, ViewIdx view)
 {
     _imp->knob = toKnobParametric(knob->getKnob());
     QObject::connect( _imp->knob.lock().get(), SIGNAL(curveColorChanged(DimSpec)), this, SLOT(onColorChanged(DimSpec)) );
+    QObject::connect(this, SIGNAL(mustUpdateCurveWidgetLater()), this, SLOT(onUpdateCurveWidgetLaterReceived()), Qt::QueuedConnection);
 }
 
 KnobGuiParametric::~KnobGuiParametric()
@@ -204,7 +207,7 @@ KnobGuiParametric::createWidget(QHBoxLayout* layout)
     }
     treeColumnLayout->addWidget(_imp->tree);
 
-    _imp->resetButton = new Button(QString::fromUtf8("Reset"), _imp->treeColumn);
+    _imp->resetButton = new Button(tr("Reset"), _imp->treeColumn);
     _imp->resetButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Reset the selected curves in the tree to their default shape."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     QObject::connect( _imp->resetButton, SIGNAL(clicked()), this, SLOT(resetSelectedCurves()) );
     treeColumnLayout->addWidget(_imp->resetButton);
@@ -361,10 +364,21 @@ KnobGuiParametric::updateGUI()
 }
 
 void
+KnobGuiParametric::onUpdateCurveWidgetLaterReceived()
+{
+    if (!_imp->nRefreshRequests) {
+        return;
+    }
+    _imp->nRefreshRequests = 0;
+    _imp->curveWidget->update();
+
+}
+
+void
 KnobGuiParametric::onCurveChanged(DimSpec /*dimension*/)
 {
-
-    _imp->curveWidget->update();
+    ++_imp->nRefreshRequests;
+    Q_EMIT mustUpdateCurveWidgetLater();
 }
 
 void

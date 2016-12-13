@@ -1566,6 +1566,10 @@ Q_SIGNALS:
 
 private:
 
+    CurvePtr getParametricCurveInternal(DimIdx dimension, ViewGetSpec view, ParametricKnobDimViewPtr* data) const;
+
+    void signalCurveChanged(DimSpec dimension, const KnobDimViewBasePtr& data);
+
     virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
 
     ValueChangedReturnCodeEnum setKeyFrameInternal(double time,

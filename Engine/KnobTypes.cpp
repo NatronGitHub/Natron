@@ -821,12 +821,13 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
 {
     assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
     bool hasChanged = false;
+    KnobDimViewKeySet sharedKnobs;
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
 
         QMutexLocker k(&data->valueMutex);
-
+        sharedKnobs = data->sharedKnobs;
         if (!mergingFunctor) {
             // No merging functor, replace
             data->menuOptions = entries;
@@ -867,10 +868,18 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
         //  Try to restore the last choice.
         findAndSetOldChoice(mergingFunctor, mergingData);
 
-        // Notify tooltip changed because we changed the menu entries
-        _signalSlotHandler->s_helpChanged();
+        for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
+            KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
+            assert(sharedKnob);
+            if (!sharedKnob) {
+                continue;
+            }
+            // Notify tooltip changed because we changed the menu entries
+            sharedKnob->_signalSlotHandler->s_helpChanged();
 
-        Q_EMIT populated();
+            Q_EMIT sharedKnob->populated();
+        }
+
     }
 
     return hasChanged;
@@ -944,19 +953,39 @@ KnobChoice::resetChoices(ViewSetSpec view)
                 continue;
             }
         }
+
+
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         if (!data) {
             continue;
         }
-        QMutexLocker k(&data->valueMutex);
-        data->menuOptions.clear();
-        data->menuOptionTooltips.clear();
+        KnobDimViewKeySet sharedKnobs;
+        {
+            QMutexLocker k(&data->valueMutex);
+            sharedKnobs = data->sharedKnobs;
+            data->menuOptions.clear();
+            data->menuOptionTooltips.clear();
+
+        }
+
+        for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
+            KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
+            assert(sharedKnob);
+            if (!sharedKnob) {
+                continue;
+            }
+            // Notify tooltip changed because we changed the menu entries
+            sharedKnob->_signalSlotHandler->s_helpChanged();
+
+            Q_EMIT sharedKnob->entriesReset();
+        }
+
     }
 
     // Refresh active entry state
     findAndSetOldChoice();
-    _signalSlotHandler->s_helpChanged();
-    Q_EMIT entriesReset();
+
+
 }
 
 void
@@ -977,15 +1006,27 @@ KnobChoice::appendChoice(const std::string& entry,
         if (!data) {
             continue;
         }
-        QMutexLocker k(&data->valueMutex);
-        data->menuOptions.push_back(entry);
-        data->menuOptionTooltips.push_back(help);
+        KnobDimViewKeySet sharedKnobs;
+        {
+            QMutexLocker k(&data->valueMutex);
+            data->menuOptions.push_back(entry);
+            data->menuOptionTooltips.push_back(help);
+        }
+        for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
+            KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
+            assert(sharedKnob);
+            if (!sharedKnob) {
+                continue;
+            }
+            // Notify tooltip changed because we changed the menu entries
+            sharedKnob->_signalSlotHandler->s_helpChanged();
+
+            Q_EMIT sharedKnob->entryAppended( QString::fromUtf8( entry.c_str() ), QString::fromUtf8( help.c_str() ) );
+        }
     }
 
     // Refresh active entry state
     findAndSetOldChoice();
-    _signalSlotHandler->s_helpChanged();
-    Q_EMIT entryAppended( QString::fromUtf8( entry.c_str() ), QString::fromUtf8( help.c_str() ) );
 }
 
 std::vector<std::string>
@@ -1087,10 +1128,22 @@ KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
         if (!data) {
             continue;
         }
-        QMutexLocker k(&data->valueMutex);
-        data->activeEntry = entry;
+        KnobDimViewKeySet sharedKnobs;
+        {
+            QMutexLocker k(&data->valueMutex);
+            data->activeEntry = entry;
+        }
+        for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
+            KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
+            assert(sharedKnob);
+            if (!sharedKnob) {
+                continue;
+            }
+
+            Q_EMIT sharedKnob->populated();
+        }
+
     }
-    Q_EMIT populated();
 }
 
 std::string
@@ -2194,7 +2247,8 @@ KnobParametric::getDefaultParametricCurve(DimIdx dimension) const
 
 }
 
-CurvePtr KnobParametric::getParametricCurve(DimIdx dimension, ViewGetSpec view) const
+CurvePtr
+KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewGetSpec view, ParametricKnobDimViewPtr* outData) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
     if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
@@ -2204,6 +2258,9 @@ CurvePtr KnobParametric::getParametricCurve(DimIdx dimension, ViewGetSpec view) 
     ParametricKnobDimViewPtr data = toParametricKnobDimView(getDataForDimView(dimension, view_i));
     if (!data) {
         return CurvePtr();
+    }
+    if (outData) {
+        *outData = data;
     }
 
     EffectInstancePtr holder = toEffectInstance(getHolder());
@@ -2215,7 +2272,30 @@ CurvePtr KnobParametric::getParametricCurve(DimIdx dimension, ViewGetSpec view) 
         }
     }
     return data->parametricCurve;
+}
 
+CurvePtr KnobParametric::getParametricCurve(DimIdx dimension, ViewGetSpec view) const
+{
+    return getParametricCurveInternal(dimension, view, 0);
+}
+
+void
+KnobParametric::signalCurveChanged(DimSpec dimension, const KnobDimViewBasePtr& data)
+{
+    KnobDimViewKeySet sharedKnobs;
+    {
+        QMutexLocker k(&data->valueMutex);
+        sharedKnobs = data->sharedKnobs;
+    }
+    for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
+        KnobParametricPtr sharedKnob = toKnobParametric(it->knob.lock());
+        assert(sharedKnob);
+        if (!sharedKnob) {
+            continue;
+        }
+
+        Q_EMIT sharedKnob->curveChanged(dimension);
+    }
 }
 
 StatusEnum
@@ -2237,12 +2317,12 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     KeyFrame k(key, value);
     k.setInterpolation(interpolation);
 
-    CurvePtr curve = getParametricCurve(dimension, ViewIdx(0));
+    ParametricKnobDimViewPtr data;
+    CurvePtr curve = getParametricCurveInternal(dimension, ViewIdx(0), &data);
     assert(curve);
     curve->addKeyFrame(k);
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
-
+    signalCurveChanged(dimension, data);
     return eStatusOK;
 }
 
@@ -2266,10 +2346,11 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 
     KeyFrame k(key, value, leftDerivative, rightDerivative);
     k.setInterpolation(interpolation);
-    CurvePtr curve = getParametricCurve(dimension, ViewIdx(0));
+    ParametricKnobDimViewPtr data;
+    CurvePtr curve = getParametricCurveInternal(dimension, ViewIdx(0), &data);
     assert(curve);
     curve->addKeyFrame(k);
-    Q_EMIT curveChanged(dimension);
+    signalCurveChanged(dimension, data);
     evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
 
     return eStatusOK;
@@ -2391,19 +2472,23 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
                 continue;
             }
         }
-        CurvePtr curve = getParametricCurve(dimension, *it);
+        ParametricKnobDimViewPtr data;
+        CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
             return eStatusFailed;
         }
+
         try {
             curve->setKeyFrameInterpolation(interpolation, nThCtl);
         } catch (...) {
             return eStatusFailed;
         }
+        signalCurveChanged(dimension, data);
+
     }
 
 
-    Q_EMIT curveChanged(dimension);
+
     evaluateValueChange(dimension, getCurrentTime(), view, reason);
 
     return eStatusOK;
@@ -2432,7 +2517,8 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                 continue;
             }
         }
-        CurvePtr curve = getParametricCurve(dimension, *it);
+        ParametricKnobDimViewPtr data;
+        CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
             return eStatusFailed;
         }
@@ -2441,10 +2527,10 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         } catch (...) {
             return eStatusFailed;
         }
+        signalCurveChanged(dimension, data);
     }
 
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, reason);
 
     return eStatusOK;
@@ -2474,7 +2560,8 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                 continue;
             }
         }
-        CurvePtr curve = getParametricCurve(dimension, *it);
+        ParametricKnobDimViewPtr data;
+        CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
             return eStatusFailed;
         }
@@ -2485,10 +2572,9 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
             return eStatusFailed;
         }
         curve->setKeyFrameDerivatives(leftDerivative, rightDerivative, newIdx);
+        signalCurveChanged(dimension, data);
     }
 
-
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, reason);
 
     return eStatusOK;
@@ -2514,7 +2600,8 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
                 continue;
             }
         }
-        CurvePtr curve = getParametricCurve(dimension, *it);
+        ParametricKnobDimViewPtr data;
+        CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
             return eStatusFailed;
         }
@@ -2523,9 +2610,9 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
         } catch (...) {
             return eStatusFailed;
         }
+        signalCurveChanged(dimension, data);
     }
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, reason);
 
     return eStatusOK;
@@ -2550,15 +2637,16 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
                 continue;
             }
         }
-        CurvePtr curve = getParametricCurve(dimension, *it);
+        ParametricKnobDimViewPtr data;
+        CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
             return eStatusFailed;
         }
         curve->clearKeyFrames();
+        signalCurveChanged(dimension, data);
 
     }
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
 
     return eStatusOK;
@@ -2634,17 +2722,18 @@ KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
 
             curve->clone(*_defaultCurves[DimIdx(i)]);
+            signalCurveChanged(dimension, data);
 
         }
 
     }
-    Q_EMIT curveChanged(dimension);
 }
 
 void
@@ -2706,13 +2795,15 @@ KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, d
     if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric: dimension out of range");
     }
-    CurvePtr thisCurve = getParametricCurve(dimension, view);
+    ParametricKnobDimViewPtr data;
+    CurvePtr thisCurve = getParametricCurveInternal(dimension, view, &data);
     if (!thisCurve) {
         return false;
     }
+
     bool ret = thisCurve->cloneAndCheckIfChanged(curve, offset, range);
     if (ret) {
-        Q_EMIT curveChanged(dimension);
+        signalCurveChanged(dimension, data);
         evaluateValueChange(dimension, getCurrentTime(), ViewSetSpec(view), eValueChangedReasonUserEdited);
     }
     return ret;
@@ -2738,7 +2829,8 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
@@ -2746,13 +2838,13 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
             for (std::list<double>::const_iterator it2 = times.begin(); it2!=times.end(); ++it2) {
                 curve->removeKeyFrameWithTime(*it2);
             }
+            signalCurveChanged(dimension, data);
 
         }
         
     }
 
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, reason);
 }
 
@@ -2778,20 +2870,20 @@ KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec vie
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
 
             ok |= curve->transformKeyframesValueAndTime(times, warp, keyframes);
-
+            signalCurveChanged(dimension, data);
         }
 
     }
 
 
     if (ok) {
-        Q_EMIT curveChanged(dimension);
         evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
         return true;
     }
@@ -2818,19 +2910,19 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReaso
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
 
             curve->clearKeyFrames();
-            
+            signalCurveChanged(dim, data);
         }
         
     }
 
 
-    Q_EMIT curveChanged(dim);
     evaluateValueChange(dim, getCurrentTime(), view, reason);
 
 }
@@ -2855,18 +2947,18 @@ KnobParametric::deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
 
             curve->removeKeyFramesAfterTime(time, 0);
-            
+            signalCurveChanged(dimension, data);
         }
         
     }
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
 
 }
@@ -2891,19 +2983,18 @@ KnobParametric::deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec 
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
-
             curve->removeKeyFramesAfterTime(time, 0);
-            
+            signalCurveChanged(dimension, data);
         }
         
     }
 
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
 }
 
@@ -2928,11 +3019,11 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
-
             for (std::list<double>::const_iterator it2 = times.begin(); it2!=times.end(); ++it2) {
                 KeyFrame k;
                 if (curve->setKeyFrameInterpolation(interpolation, *it2, &k)) {
@@ -2941,10 +3032,10 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
                     }
                 }
             }
+            signalCurveChanged(dimension, data);
         }
     }
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
 }
 
@@ -2968,7 +3059,8 @@ KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimen
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
@@ -2981,11 +3073,11 @@ KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimen
             curve->setKeyFrameInterpolation(eKeyframeTypeFree, keyIndex);
             curve->setKeyFrameDerivatives(left, right, keyIndex);
 
+            signalCurveChanged(dimension, data);
         }
         
     }
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
     return true;
 }
@@ -3011,7 +3103,8 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double 
                 continue;
             }
 
-            CurvePtr curve = getParametricCurve(DimIdx(i), *it);
+            ParametricKnobDimViewPtr data;
+            CurvePtr curve = getParametricCurveInternal(DimIdx(i), *it, &data);
             if (!curve) {
                 continue;
             }
@@ -3028,9 +3121,10 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double 
                 curve->setKeyFrameRightDerivative(derivative, keyIndex);
             }
 
+            signalCurveChanged(dimension, data);
+
         }
     }
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
     return true;
 }
@@ -3038,14 +3132,17 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double 
 ValueChangedReturnCodeEnum
 KnobParametric::setKeyFrameInternal(double time, double value, DimIdx dimension, ViewIdx view, KeyFrame* newKey)
 {
-    CurvePtr curve = getParametricCurve(dimension, view);
+    ParametricKnobDimViewPtr data;
+    CurvePtr curve = getParametricCurveInternal(dimension, view, &data);
     if (!curve) {
         return eValueChangedReturnCodeNothingChanged;
     }
+
     ValueChangedReturnCodeEnum ret = curve->setOrAddKeyframe(KeyFrame(time, value));
     if (newKey) {
         (void)curve->getKeyFrameWithTime(time, newKey);
     }
+    signalCurveChanged(dimension, data);
     return ret;
 }
 
@@ -3076,7 +3173,6 @@ KnobParametric::setDoubleValueAtTime(double time, double value, ViewSetSpec view
     }
 
     if (ret != eValueChangedReturnCodeNothingChanged) {
-        Q_EMIT curveChanged(dimension);
         evaluateValueChange(dimension, getCurrentTime(), view, reason);
     }
     return ret;
@@ -3119,7 +3215,6 @@ KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair
         }
     }
 
-    Q_EMIT curveChanged(dimension);
     evaluateValueChange(dimension, getCurrentTime(), view, reason);
 }
 
@@ -3152,7 +3247,6 @@ KnobParametric::setDoubleValueAtTimeAcrossDimensions(double time, const std::vec
         }
     }
 
-    Q_EMIT curveChanged(DimSpec::all());
     evaluateValueChange(DimSpec::all(), getCurrentTime(), view, reason);
 
 }
@@ -3172,7 +3266,6 @@ KnobParametric::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubl
         }
 
     }
-    Q_EMIT curveChanged(DimSpec::all());
 
     evaluateValueChange(DimSpec::all(), getCurrentTime(), ViewSetSpec(0), reason);
 }

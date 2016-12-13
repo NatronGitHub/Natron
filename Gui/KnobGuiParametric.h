@@ -104,8 +104,13 @@ public:
     virtual int getWidgetFontHeight() const OVERRIDE FINAL;
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL;
 
+Q_SIGNALS:
+
+    void mustUpdateCurveWidgetLater();
+
 public Q_SLOTS:
 
+    void onUpdateCurveWidgetLaterReceived();
 
     void onCurveChanged(DimSpec dimension);
 
