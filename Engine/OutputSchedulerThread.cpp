@@ -3545,7 +3545,10 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
                 //_imp->producedFrames.clear();
                 break;
             }
-            _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex);
+            // Wait at most 100ms and re-check, so that we can resolveState() again:
+            // Imagine we launched 1 render (very long) that is not being aborted (the viewer always keeps 1 thread running)
+            // then this thread would be stuck here and would never launch a new render.
+            _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex, 100);
             for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
                 if (it->age == args->age) {
                     found = it;
