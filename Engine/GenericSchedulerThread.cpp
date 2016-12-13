@@ -327,19 +327,10 @@ GenericSchedulerThread::abortThreadedTask(bool keepOldestRender)
     }
 
     ThreadStateEnum state = getThreadState();
-    bool shouldRequestAbort = state != eThreadStateAborted && state != eThreadStateIdle;
-    if ( keepOldestRender && !shouldRequestAbort ) {
-        return false;
-    }
+    bool shouldRequestAbort = state != eThreadStateIdle;
 
     {
         QMutexLocker l(&_imp->abortRequestedMutex);
-
-
-        // We are already aborting
-        if (_imp->abortRequested > 0 && keepOldestRender) {
-            return false;
-        }
 
 #ifdef TRACE_GENERIC_SCHEDULER_THREAD
         qDebug() << QThread::currentThread() << ": Aborting task on" <<  getThreadName().c_str();
