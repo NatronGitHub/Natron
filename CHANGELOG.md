@@ -6,10 +6,13 @@
 
 ## Version 2.1.10
 
+- Roto & RotoPaint: ellipses and circles are more accurate #1524
+
 ### Plugins
 
+- SeNoise: fix bugs in the Transform parameters #1527
 - PIKColor: do not expand region of definition
-- Shadertoy: support iDate, add presets
+- Shadertoy: support iDate, add presets, fix CPU rendering #1526
 - Transform & CornerPin: additional "Amount" parameter to control the amount of transform to apply.
 
 ## Version 2.1.9
