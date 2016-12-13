@@ -1952,6 +1952,7 @@ KnobHelper::linkToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, Dim
             }
             sharedKnob->_signalSlotHandler->s_curveAnimationChanged(thisView, thisDimension);
             sharedKnob->_signalSlotHandler->s_linkChanged();
+            sharedKnob->onLinkChanged();
 
         }
     }
@@ -2105,6 +2106,7 @@ KnobHelper::unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState)
         sharedKnob->_signalSlotHandler->s_curveAnimationChanged(view, dimension);
 
         sharedKnob->_signalSlotHandler->s_linkChanged();
+        sharedKnob->onLinkChanged();
     }
 
 
@@ -3107,7 +3109,6 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
 
         KnobIPtr masterKnob;
         KnobDimViewKey sharedMaster;
-
         if (knob->getSharingMaster(dimension, view, &sharedMaster)) {
             masterKnob = sharedMaster.knob.lock();
         }
@@ -3399,7 +3400,6 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
             }
         }
     } else {
-
 
         KnobIPtr thisShared = shared_from_this();
 

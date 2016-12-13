@@ -871,7 +871,12 @@ Param::setAsAlias(Param* other)
         PyErr_SetString(PyExc_ValueError, tr("Cannot alias a parameter with a different number of dimensions").toStdString().c_str());
         return false;
     }
-    return thisKnob->linkTo(otherKnob);
+    // First copy the original knob
+    bool ok = thisKnob->copyKnob(otherKnob);
+
+    // Now link the original knob to this knob
+    ok |= otherKnob->linkTo(thisKnob);
+    return ok;
 }
 
 

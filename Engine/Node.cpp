@@ -1180,7 +1180,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             continue;
         }
 
-        if (!isFullSaveMode && !knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged()) {
+        if (!isFullSaveMode && !knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged() && !hasExpr) {
             // This knob was not modified by the user, don't serialize it
             continue;
         }

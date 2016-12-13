@@ -810,6 +810,8 @@ public:
 
     virtual bool canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView, DimIdx otherDim, ViewIdx otherView, std::string* error) const OVERRIDE WARN_UNUSED_RETURN;
 
+    virtual void onLinkChanged() OVERRIDE FINAL;
+
 Q_SIGNALS:
 
     void populated();
@@ -1468,10 +1470,9 @@ public:
     }
 
     // Don't allow other knobs to slave to this one
-    virtual bool canLinkWith(const KnobIPtr & /*other*/, DimIdx /*thisDimension*/, ViewIdx /*thisView*/,  DimIdx /*otherDim*/, ViewIdx /*otherView*/, std::string* /*error*/) const OVERRIDE FINAL
-    {
-        return false;
-    }
+    virtual bool canLinkWith(const KnobIPtr & /*other*/, DimIdx /*thisDimension*/, ViewIdx /*thisView*/,  DimIdx /*otherDim*/, ViewIdx /*otherView*/, std::string* /*error*/) const OVERRIDE FINAL;
+
+    virtual void onLinkChanged() OVERRIDE FINAL;
 
     void setCurveColor(DimIdx dimension, double r, double g, double b);
 

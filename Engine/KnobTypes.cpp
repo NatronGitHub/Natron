@@ -658,6 +658,13 @@ KnobChoice::isCascading() const
     return data->isCascading;
 }
 
+void
+KnobChoice::onLinkChanged()
+{
+    // We changed data, refresh the menu
+    Q_EMIT populated();
+}
+
 bool
 KnobChoice::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView, DimIdx otherDim, ViewIdx otherView, std::string* error) const
 {
@@ -3168,6 +3175,25 @@ KnobParametric::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubl
     Q_EMIT curveChanged(DimSpec::all());
 
     evaluateValueChange(DimSpec::all(), getCurrentTime(), ViewSetSpec(0), reason);
+}
+
+bool
+KnobParametric::canLinkWith(const KnobIPtr & other, DimIdx /*thisDimension*/, ViewIdx /*thisView*/,  DimIdx /*otherDim*/, ViewIdx /*otherView*/, std::string* error) const
+{
+    KnobParametric* otherIsParametric = dynamic_cast<KnobParametric*>(other.get());
+    if (!otherIsParametric) {
+        if (error) {
+            *error = tr("Can only link with another parametric curve").toStdString();
+        }
+        return false;
+    }
+    return true;
+}
+
+void
+KnobParametric::onLinkChanged()
+{
+    Q_EMIT curveChanged(DimSpec::all());
 }
 
 /******************************KnobTable**************************************/

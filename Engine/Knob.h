@@ -1704,7 +1704,14 @@ public:
     virtual void unlink(DimSpec dimension, ViewSetSpec view, bool copyState) OVERRIDE FINAL;
 
 protected:
-    
+
+    /*
+     * @brief Callback called when linked or unlinked to refresh extra state
+     */
+    virtual void onLinkChanged() {
+
+    }
+
     void unlinkInternal(DimIdx dimension, ViewIdx view, bool copyState);
 
     bool linkToInternal(const KnobIPtr & otherKnob, DimIdx thisDimension, DimIdx otherDimension, ViewIdx view, ViewIdx otherView) WARN_UNUSED_RETURN;

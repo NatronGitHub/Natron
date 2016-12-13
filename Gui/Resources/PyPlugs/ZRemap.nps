@@ -75,13 +75,19 @@ Children:
     Version: [2, 0]
     Inputs: InputSource
     Params:
+      - Name: blackPoint
+        Float: [{N: "@thisGroup", K: closeLimit, D: r}, {N: "@thisGroup", K: closeLimit, D: g}, {N: "@thisGroup", K: closeLimit, D: b}, {N: "@thisGroup", K: closeLimit, D: a}]
       - Name: whitePoint
         Float: [{N: "@thisGroup", K: farLimit, D: r}, {N: "@thisGroup", K: farLimit, D: g}, {N: "@thisGroup", K: farLimit, D: b}, {N: "@thisGroup", K: farLimit, D: a}]
+      - Name: gamma
+        Float: [{N: "@thisGroup", K: gamma, D: r}, {N: "@thisGroup", K: gamma, D: g}, {N: "@thisGroup", K: gamma, D: b}, {N: "@thisGroup", K: gamma, D: a}]
       - Name: clampBlack
         Bool: true
         DefaultBool: false
       - Name: premultChanged
         Bool: true
+      - Name: Source_channels
+        String: {N: "@thisGroup", K: Source_channels}
       - Name: enableMask_Mask
         Bool: true
     Pos: [726, 92]
@@ -92,6 +98,10 @@ Children:
     Params:
       - Name: premultChanged
         Bool: true
+      - Name: channels
+        String: {N: "@thisGroup", K: channels}
+      - Name: disableNode
+        Bool: {N: "@thisGroup", K: invertGradient}
     Pos: [726, 230]
   - PluginID: fr.inria.built-in.Output
     Name: Output

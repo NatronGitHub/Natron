@@ -185,7 +185,7 @@ NodePrivate::createChannelSelector(int inputNb,
     if (isOutput) {
         layer->setHintToolTip( tr("Select here the layer onto which the processing should occur.") );
     } else {
-        layer->setHintToolTip( tr("Select here the layer that will be used in input by %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
+        layer->setHintToolTip( tr("Select here the layer that will be used in input %1.").arg( QString::fromUtf8( inputName.c_str() ) ) );
     }
     layer->setAnimationEnabled(false);
     layer->setSecret(!isOutput);

@@ -1248,7 +1248,7 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
             continue;
         }
 
-        if (!knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged()) {
+        if (!knobs[i]->hasModifications() && !knobs[i]->hasDefaultValueChanged() && !hasExpr) {
             continue;
         }
 
