@@ -478,6 +478,12 @@ EffectInstance::Implementation::determineRectsToRender(ImagePtr& isPlaneCached,
         if (safety == eRenderSafetyFullySafeFrame && rectsLeftToRender.size() == 1 && frameArgs->tilesSupported) {
             QThreadPool* tp = QThreadPool::globalInstance();
             int nThreads = (tp->maxThreadCount() - tp->activeThreadCount());
+
+            // If the current thread is a thread-pool thread, make it also do an iteration instead
+            // of waiting for other threads
+            if (isRunningInThreadPoolThread()) {
+                ++nThreads;
+            }
             const RectI& mainRect = rectsLeftToRender.front();
             std::vector<RectI> splits;
             if (!mainRect.isNull()) {
@@ -2454,18 +2460,37 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
 
 #else
 
+            std::list<RectToRender> rectsToRenderList = planesToRender->rectsToRender;
 
-            QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped( planesToRender->rectsToRender,
-                                                                         boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
-                                                                                     self->_imp.get(),
-                                                                                     *tiledArgs,
-                                                                                     _1,
-                                                                                     currentThread) );
+            RectToRender lastRectToRender = rectsToRenderList.back();
+
+            bool isThreadPoolThread = isRunningInThreadPoolThread();
+
+            // If the current thread is a thread-pool thread, make it also do an iteration instead
+            // of waiting for other threads
+            if (isThreadPoolThread) {
+                rectsToRenderList.pop_back();
+            }
+            std::vector<RenderingFunctorRetEnum> threadReturnCodes;
+            QFuture<RenderingFunctorRetEnum> ret = QtConcurrent::mapped( rectsToRenderList,
+                                       boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
+                                                   self->_imp.get(),
+                                                   *tiledArgs,
+                                                   _1,
+                                                   currentThread) );
+            if (isThreadPoolThread) {
+                EffectInstance::RenderingFunctorRetEnum retCode = self->_imp->tiledRenderingFunctor(*tiledArgs, lastRectToRender, currentThread);
+                threadReturnCodes.push_back(retCode);
+            }
+
+            // Wait for other threads to be finished
             ret.waitForFinished();
-            QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator it2;
 
 #endif
-            for (it2 = ret.begin(); it2 != ret.end(); ++it2) {
+            for (QFuture<EffectInstance::RenderingFunctorRetEnum>::const_iterator  it2 = ret.begin(); it2 != ret.end(); ++it2) {
+                threadReturnCodes.push_back(*it2);
+            }
+            for (std::vector<RenderingFunctorRetEnum>::const_iterator it2 = threadReturnCodes.begin(); it2 != threadReturnCodes.end(); ++it2) {
                 if ( (*it2) == EffectInstance::eRenderingFunctorRetFailed ) {
                     renderStatus = eRenderingFunctorRetFailed;
                     break;

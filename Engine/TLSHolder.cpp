@@ -126,20 +126,40 @@ AppTLS::cleanupTLSForThread()
         isAbortableThread->clearAbortInfo();
     }
 
-    //Cleanup any cached data on the TLSHolder
+    // Clean-up any thread data on the TLSHolder
+
+    // If this thread was spawned, but TLS not used, do not bother to clean-up
     {
-        QWriteLocker l(&_spawnsMutex);
+        // Try to find first with a read-lock so we still allow other threads to run
+        bool threadIsInSpawnList = false;
+        {
+            QReadLocker l(&_spawnsMutex);
+            ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+            if ( foundSpawned != _spawns.end() ) {
+                threadIsInSpawnList = true;
+            }
+        }
 
-        //This thread was spawned, but TLS not used, do not bother to clean-up
-        ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
-        if ( foundSpawned != _spawns.end() ) {
-            _spawns.erase(foundSpawned);
+        if (threadIsInSpawnList) {
+            // The thread is in the spawns list, lock out other threads and remove it from the list
+            QWriteLocker l(&_spawnsMutex);
+            ThreadSpawnMap::iterator foundSpawned = _spawns.find(curThread);
+            if ( foundSpawned != _spawns.end() ) {
+                _spawns.erase(foundSpawned);
 
-            return;
+                return;
+            }
         }
     }
+
+    // First determine if this thread has objects to clean. Do it under
+    // a read locker so we don't lock out other threads
     std::list<boost::shared_ptr<const TLSHolderBase> > objectsToClean;
     {
+        // Cycle through each TLS object that had TLS set on it
+        // and check if there's data for this thread.
+        // Note that the list may be extremely long (several thousands of items) so avoid copying it
+        // since we don't lock out other threads.
         QReadLocker k (&_objectMutex);
         const TLSObjects& objectsCRef = _object->objects;
         for (TLSObjects::iterator it = objectsCRef.begin();
@@ -148,11 +168,18 @@ AppTLS::cleanupTLSForThread()
             boost::shared_ptr<const TLSHolderBase> p = (*it).lock();
             if (p) {
                 if ( p->canCleanupPerThreadData(curThread) ) {
+                    // This object has data for this thread, add it to the clean up list
                     objectsToClean.push_back(p);
                 }
             }
         }
     }
+
+    // Clean objects that need it
+    // We can only do so under the write-lock, which will lock out other threads
+    // Note that the _object->objects set may be composed of multiple thousands of items
+    // and this operation is expensive.
+    // However since we are in the clean-up stage for this thread
     if ( !objectsToClean.empty() ) {
 #if 1
         // version from 1a0712b

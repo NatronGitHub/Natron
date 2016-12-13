@@ -105,6 +105,18 @@ private:
     boost::scoped_ptr<AbortableThreadPrivate> _imp;
 };
 
+/**
+ * @brief Returns true if the current thread belongs to the global thread pool
+ **/
+inline bool isRunningInThreadPoolThread()
+{
+    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>(QThread::currentThread());
+    if (!isAbortable || !isAbortable->isThreadPoolThread()) {
+        return false;
+    }
+    return true;
+}
+
 #define REPORT_CURRENT_THREAD_ACTION(actionName, node) \
     { \
         QThread* thread = QThread::currentThread(); \

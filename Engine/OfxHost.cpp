@@ -1298,9 +1298,26 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
             threadIndexes[i] = i;
         }
 
+        // If the current thread is a thread-pool thread, make it also do an iteration instead
+        // of waiting for other threads
+        bool isThreadPoolThread = isRunningInThreadPoolThread();
+        if (isThreadPoolThread) {
+            threadIndexes.pop_back();
+        }
         /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
         //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
         QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, func, _1, nThreads, spawnerThread, customArg) );
+
+        // Do one iteration in this thread
+        if (isThreadPoolThread) {
+            OfxStatus stat = threadFunctionWrapper(func, nThreads - 1, nThreads, spawnerThread, customArg);
+            if (stat != kOfxStatOK) {
+                future.waitForFinished();
+                return stat;
+            }
+        }
+
+        // Wait for other threads
         future.waitForFinished();
         ///DON'T reset back to the original value the maximum thread count
         //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());

@@ -1086,21 +1086,29 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
     QString findId = argsPluginID;
 
+    // In Natron 1.0.0 plug-in IDs were serialized lower case.
+    // To ensure we load properly these projects we need to perform a case insensitive search on the plug-in ID.
     bool caseSensitivePluginSearch = true;
+
     {
-        // In Natron 1.0.0 plug-in IDs were serialized lower case.
-        // To ensure we load properly these projects we need to perform a case insensitive search on the plug-in ID.
+
         SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo pInfo;
         if (getProject()->getProjectLoadedVersionInfo(&pInfo)) {
             if (pInfo.vMajor == 1 && pInfo.vMinor == 0 && pInfo.vRev == 0) {
                 caseSensitivePluginSearch = false;
             }
+            if (pInfo.vMajor <= 2 && pInfo.vMinor < 1) {
+                // In Natron 1.x the Roto node was implemented as a OpenFX plug-in. Now it is built-in, so convert plug-in ID.
+                if (findId.compare(QString::fromUtf8(PLUGINID_OFX_ROTO).toLower(), Qt::CaseInsensitive) == 0) {
+                    findId = QString::fromUtf8(PLUGINID_NATRON_ROTO);
+                }
+            }
         }
 
     }
 
+    // If it is a reader or writer, create a ReadNode or WriteNode instead that will contain this plug-in
     NodePtr argsIOContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
-    //If it is a reader or writer, create a ReadNode or WriteNode
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString() ) ) {
             args->addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());

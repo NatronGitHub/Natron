@@ -585,6 +585,7 @@ EffectInstance::Implementation::aborted(bool isRenderResponseToUserInteraction,
 
         if ( !abortInfo || !abortInfo->canAbort() ) {
             // We do not have any abortInfo set or this render is not abortable. This should be avoided as much as possible!
+            qDebug() << "abort() called on an unabortable render, this is very likely to be a bug, please investigate!";
             return false;
         }
 
