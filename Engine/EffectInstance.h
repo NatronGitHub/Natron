@@ -1828,6 +1828,19 @@ public:
             , viewerTextureIndex(0)
         {
         }
+
+        EffectTLSData(const EffectTLSData& other)
+        : beginEndRenderCount(other.beginEndRenderCount)
+        , actionRecursionLevel(other.actionRecursionLevel)
+#ifdef DEBUG
+        , canSetValue(other.canSetValue)
+#endif
+        , frameArgs(other.frameArgs)
+        , currentRenderArgs(other.currentRenderArgs)
+        , viewerTextureIndex(other.viewerTextureIndex)
+        {
+
+        }
     };
 
     typedef boost::shared_ptr<EffectTLSData> EffectDataTLSPtr;
