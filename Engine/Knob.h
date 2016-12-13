@@ -2026,7 +2026,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    T getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
+    virtual T getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
 
 
     /**
@@ -2041,7 +2041,7 @@ public:
      * but this should be the only knob which should ever need to overload it.
      *
      **/
-    T getValueAtTime(double time, DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
+    virtual T getValueAtTime(double time, DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as getValueAtTime excepts that it ignores expression, hard-links (slave/master) and doesn't clamp to min/max.

@@ -542,7 +542,7 @@ ReadNodePrivate::checkDecoderCreated(double time,
     if (!fileKnob) {
         return false;
     }
-    std::string pattern = fileKnob->getFileName(std::floor(time + 0.5), view);
+    std::string pattern = fileKnob->getValueAtTime(std::floor(time + 0.5));
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
 

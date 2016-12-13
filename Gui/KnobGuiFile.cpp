@@ -234,7 +234,7 @@ KnobGuiFile::updateGUI()
 
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if ( useNotifications && knob->getHolder() && knob->getEvaluateOnChange() ) {
-        std::string newValue = knob->getFileName( knob->getCurrentTime(), getView() );
+        std::string newValue = knob->getValueAtTime( knob->getCurrentTime(), DimIdx(0), getView() );
         if ( knob->getHolder()->getApp() ) {
             knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         }
@@ -287,7 +287,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
 
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
-    std::string filepath = knob->getFileName( time, knob->getCurrentView() );
+    std::string filepath = knob->getValueAtTime( time, DimIdx(0), knob->getCurrentView() );
     if ( !filepath.empty() && knob->getHolder() && knob->getHolder()->getApp() ) {
         knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
     }
@@ -390,6 +390,17 @@ KnobGuiFile::reflectSelectionState(bool selected)
 {
     _lineEdit->setIsSelected(selected);
 }
+
+void
+KnobGuiFile::reflectModificationsState()
+{
+    bool hasModif = _knob.lock()->hasModifications();
+
+    if (_lineEdit) {
+        _lineEdit->setIsModified(hasModif);
+    }
+}
+
 
 
 void
@@ -813,6 +824,16 @@ KnobGuiPath::reflectSelectionState(bool selected)
 {
     if (_lineEdit) {
         _lineEdit->setIsSelected(selected);
+    }
+}
+
+void
+KnobGuiPath::reflectModificationsState()
+{
+    bool hasModif = _knob.lock()->hasModifications();
+
+    if (_lineEdit) {
+        _lineEdit->setIsModified(hasModif);
     }
 }
 

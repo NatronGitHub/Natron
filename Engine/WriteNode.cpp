@@ -510,7 +510,7 @@ WriteNodePrivate::checkEncoderCreated(double time,
     KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string pattern = fileKnob->getFileName( std::floor(time + 0.5), ViewGetSpec( view.value() ) );
+    std::string pattern = fileKnob->getValueAtTime( std::floor(time + 0.5), DimIdx(0), ViewGetSpec( view.value() ) );
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 

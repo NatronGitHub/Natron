@@ -100,25 +100,28 @@ KnobFile::typeName() const
 }
 
 std::string
-KnobFile::getFileName(int frame,
-                      ViewGetSpec view)
+KnobFile::getValue(DimIdx dimension, ViewGetSpec view, bool clampToMinMax)
 {
-    if ( view.isCurrent() ) {
-        view = getCurrentView();
-    }
-   if (_dialogType == eKnobFileDialogTypeOpenFileSequences ||
-       _dialogType == eKnobFileDialogTypeSaveFileSequences) {
+    return getValueAtTime(getCurrentTime(), dimension, view, clampToMinMax);
+}
+
+std::string
+KnobFile::getValueAtTime(double time, DimIdx dimension, ViewGetSpec view, bool /*clampToMinMax*/)
+{
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    if (_dialogType == eKnobFileDialogTypeOpenFileSequences ||
+        _dialogType == eKnobFileDialogTypeSaveFileSequences) {
         ///try to interpret the pattern and generate a filename if indexes are found
         std::vector<std::string> views;
         if ( getHolder() && getHolder()->getApp() ) {
             views = getHolder()->getApp()->getProject()->getProjectViewNames();
         }
-
-        return SequenceParsing::generateFileNameFromPattern(getValue(DimIdx(0), view), views, frame, view);
+        std::string pattern = Knob<std::string>::getValue(dimension, view);
+        return SequenceParsing::generateFileNameFromPattern(pattern, views, time, view_i);
     }
-    return getValue(DimIdx(0), view);
+    return Knob<std::string>::getValue(dimension, view);
 }
-
 
 /***********************************KnobPath*****************************************/
 

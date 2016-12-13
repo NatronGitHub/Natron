@@ -127,11 +127,8 @@ public:
 
     void reloadFile();
 
-    /**
-     * @brief getRandomFrameName
-     * @param f The index of the frame.
-     */
-    std::string getFileName(int frame, ViewGetSpec view);
+    virtual std::string getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getValueAtTime(double time, DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 Q_SIGNALS:
 

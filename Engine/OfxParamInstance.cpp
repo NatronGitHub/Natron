@@ -3620,7 +3620,7 @@ OfxStringInstance::get(std::string &str)
     KnobPathPtr pathKnob = _imp->pathKnob.lock();
 
     if (fileKnob) {
-        str = fileKnob->getFileName( fileKnob->getCurrentTime(), fileKnob->getCurrentView() );
+        str = fileKnob->getValue();
         projectEnvVar_getProxy(str);
     } else if (strknob) {
         str = strknob->getValue();
@@ -3641,7 +3641,7 @@ OfxStringInstance::get(OfxTime time,
     KnobPathPtr pathKnob = _imp->pathKnob.lock();
 
     if (fileKnob) {
-        str = fileKnob->getFileName( std::floor(time + 0.5), fileKnob->getCurrentView() );
+        str = fileKnob->getValueAtTime( std::floor(time + 0.5) );
         projectEnvVar_getProxy(str);
     } else if (strknob) {
         str = strknob->getValueAtTime( std::floor(time + 0.5) );
