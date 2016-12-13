@@ -1999,6 +1999,14 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
     std::map<NodePtr, int> masterNodes;
     int nVisitedKnobDimensionView = 0;
     const KnobsVec& knobs = getKnobs();
+
+    // For Groups, since a PyPlug may have by default some parameters linked,
+    // we do not count the links to internal nodes to figure out if we need to appear linked or not.
+    NodeGroupPtr isNodeGroup = isEffectNodeGroup();
+    NodesList groupNodes;
+    if (isNodeGroup) {
+        groupNodes = isNodeGroup->getNodes();
+    }
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
 
         // Should we consider this knob to determine if the node is a clone or not ?
@@ -2033,20 +2041,31 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
                     if (!sharedKnob) {
                         continue;
                     }
-                    EffectInstancePtr holder = toEffectInstance(sharedKnob->getHolder());
-                    if (!holder) {
+
+                    // Appear linked if there's at least one shared knob.
+                    EffectInstancePtr sharedHolderIsEffect = toEffectInstance(sharedKnob->getHolder());
+                    KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(sharedKnob->getHolder());
+                    if (sharedHolderIsItem) {
+                        sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
+                    }
+                    if (!sharedHolderIsEffect) {
                         continue;
                     }
 
                     // Increment the number of references to that node
-                    NodePtr masterNode = holder->getNode();
-                    if (masterNode.get() != this) {
-                        std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
+                    NodePtr sharedNode = sharedHolderIsEffect->getNode();
+
+                    // If the shared node is a child of this group, don't count as link
+                    if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
+                        continue;
+                    }
+                    if (sharedNode.get() != this) {
+                        std::map<NodePtr, int>::iterator found = masterNodes.find(sharedNode);
                         if (found == masterNodes.end()) {
                             if (countKnobAmongstVisited) {
-                                masterNodes[masterNode] = 1;
+                                masterNodes[sharedNode] = 1;
                             } else {
-                                masterNodes[masterNode] = 0;
+                                masterNodes[sharedNode] = 0;
                             }
                         } else {
                             if (countKnobAmongstVisited) {
@@ -2067,20 +2086,29 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
                 continue;
             }
 
-            EffectInstancePtr holder = toEffectInstance(listenerKnob->getHolder());
-            if (!holder) {
+            EffectInstancePtr sharedHolderIsEffect = toEffectInstance(listenerKnob->getHolder());
+            KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(listenerKnob->getHolder());
+            if (sharedHolderIsItem) {
+                sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
+            }
+            if (!sharedHolderIsEffect) {
                 continue;
             }
 
             // Increment the number of references to that node
-            NodePtr masterNode = holder->getNode();
-            if (masterNode.get() != this) {
-                std::map<NodePtr, int>::iterator found = masterNodes.find(masterNode);
+            NodePtr sharedNode = sharedHolderIsEffect->getNode();
+
+            // If the shared node is a child of this group, don't count as link
+            if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
+                continue;
+            }
+            if (sharedNode.get() != this) {
+                std::map<NodePtr, int>::iterator found = masterNodes.find(sharedNode);
                 if (found == masterNodes.end()) {
                     if (countKnobAmongstVisited) {
-                        masterNodes[masterNode] = 1;
+                        masterNodes[sharedNode] = 1;
                     } else {
-                        masterNodes[masterNode] = 0;
+                        masterNodes[sharedNode] = 0;
                     }
                 } else {
                     if (countKnobAmongstVisited) {

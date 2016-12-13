@@ -34,6 +34,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ViewIdx.h"
+#include "Engine/KnobItemsTable.h"
 
 #include "Gui/KnobGuiPrivate.h"
 #include "Gui/AnimationModuleEditor.h"
@@ -820,26 +821,80 @@ KnobGui::onInternalKnobLinksChanged()
     // Refresh help tooltip
     onHelpChanged();
 
+    KnobHolderPtr holder = knob->getHolder();
+    EffectInstancePtr holderIsEffect = toEffectInstance(holder);
+    KnobTableItemPtr holderIsItem = toKnobTableItem(holder);
+    if (holderIsItem) {
+        holderIsEffect = holderIsItem->getModel()->getNode()->getEffectInstance();
+    }
+
+    NodePtr holderNode;
+    if (holderIsEffect) {
+        holderNode = holderIsEffect->getNode();
+    }
+    NodeGroupPtr holderIsGroup;
+    NodesList groupNodes;
+    if (holderNode) {
+        holderIsGroup = toNodeGroup(holderIsEffect);
+        if (holderIsGroup) {
+            groupNodes = holderIsGroup->getNodes();
+        }
+    }
+
     if (!_imp->customInteract) {
+
+
+        // Refresh the linked state of the KnobGui.
+        // We cycle through each view and dimension and check the shared knobs.
+        // Appear linked if there's at least one shared knob. For Groups, since a PyPlug may have by default some parameters linked,
+        // we do not count the links to internal nodes to figure out if we need to appear linked or not.
         int nDims = knob->getNDimensions();
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             for (int i = 0;i < nDims; ++i) {
                 KnobDimViewKeySet sharedKnobs;
                 knob->getSharedValues(DimIdx(i), it->first, &sharedKnobs);
-                it->second.widgets->reflectLinkedState(DimIdx(i), !sharedKnobs.empty());
+
+                bool appearLinked = false;
+                for (KnobDimViewKeySet::const_iterator it2 = sharedKnobs.begin(); it2 != sharedKnobs.end(); ++it2) {
+                    KnobIPtr sharedK = it2->knob.lock();
+                    if (!sharedK) {
+                        continue;
+                    }
+
+                    KnobHolderPtr sharedHolder = sharedK->getHolder();
+                    EffectInstancePtr sharedHolderIsEffect = toEffectInstance(sharedHolder);
+                    KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(sharedHolder);
+                    if (sharedHolderIsItem) {
+                        sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
+                    }
+                    if (!sharedHolderIsEffect) {
+                        continue;
+                    }
+
+                    // If the shared knob holder is a child node of a Group, don't count it
+                    NodePtr sharedHolderNode = sharedHolderIsEffect->getNode();
+                    if (!sharedHolderNode) {
+                        continue;
+                    }
+                    if (std::find(groupNodes.begin(), groupNodes.end(), sharedHolderNode) != groupNodes.end()) {
+                        continue;
+                    }
+
+                    appearLinked = true;
+                }
+                it->second.widgets->reflectLinkedState(DimIdx(i), appearLinked);
             }
         }
     }
     
-    EffectInstancePtr effect = toEffectInstance(knob->getHolder());
-    if (!effect) {
+    if (!holderNode) {
         return;
     }
-    NodeGuiPtr node = toNodeGui(effect->getNode()->getNodeGui());
+    NodeGuiPtr node = toNodeGui(holderNode->getNodeGui());
     if (!node) {
         return;
     }
     node->getDagGui()->refreshNodeLinksLater();
-}
+} // onInternalKnobLinksChanged
 
 NATRON_NAMESPACE_EXIT;

@@ -2081,6 +2081,7 @@ EffectInstance::tryConcatenateTransforms(double time,
                     }
                     im.newInputEffect = input;
                 }
+                input = inputToTransform;
             } else {
                 assert(false);
             }

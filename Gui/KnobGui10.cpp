@@ -565,6 +565,14 @@ KnobGui::getScriptNameHtml() const
     return QString::fromUtf8("<font size = 4><b>%1</b></font>").arg( QString::fromUtf8( getKnob()->getName().c_str() ) );
 }
 
+enum DimensionLinkTypeEnum
+{
+    eDimensionLinkTypeNone,
+    eDimensionLinkTypeSimpleLink,
+    eDimensionLinkTypeExpressionLink
+
+};
+
 QString
 KnobGui::toolTip(QWidget* w, ViewIdx view) const
 {
@@ -590,8 +598,10 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
 
 
     int nDims = knob->getNDimensions();
-    // For each dimension, a string indicating the link + a boolean indicating if it is an expression or a regular link
-    std::vector<std::pair<std::string,bool> > linkString(nDims);
+
+
+    // For each dimension, a string indicating the link + a flag indicating if it is an expression or a regular link or nothing
+    std::vector<std::pair<std::string, DimensionLinkTypeEnum> > linkString(nDims);
     bool exprAllSame = true;
     bool hasLink = false;
     for (int i = 0; i < nDims; ++i) {
@@ -599,7 +609,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
         linkString[i].first =  knob->getExpression(DimIdx(i), view);
 
         if (!linkString[i].first.empty()) {
-            linkString[i].second = true;
+            linkString[i].second = eDimensionLinkTypeExpressionLink;
         } else {
 
             KnobDimViewKeySet sharedKnobs;
@@ -620,7 +630,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                     }
                     knobName += sharingMasterKnob->getName();
                     linkString[i].first = knobName;
-                    linkString[i].second = false;
+                    linkString[i].second = eDimensionLinkTypeSimpleLink;
                 }
             }
         }
@@ -628,6 +638,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
             hasLink = true;
         } else {
             linkString[i].first = "curve(frame,dimension,view)";
+            linkString[i].second = eDimensionLinkTypeNone;
         }
         if ( (i > 0) && (linkString[i] != linkString[0]) ) {
             exprAllSame = false;
@@ -640,11 +651,18 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
         if (exprAllSame) {
             if ( !linkString[0].first.empty() ) {
                 QString prefix;
-                if (linkString[0].second) {
-                    prefix = QString::fromUtf8("ret =");
-                } else {
-                    prefix = tr("Linked to");
+                switch (linkString[0].second) {
+                    case eDimensionLinkTypeExpressionLink:
+                        prefix = QString::fromUtf8("ret =");
+                        break;
+                    case eDimensionLinkTypeNone:
+                        prefix = tr("Value returned is this parameter animation, Python code:");
+                        break;
+                    case eDimensionLinkTypeSimpleLink:
+                        prefix = tr("Linked to");
+                        break;
                 }
+
                 if (isMarkdown) {
                     exprTt = QString::fromUtf8("%1 **%2**\n\n").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ) );
                 } else {
@@ -655,11 +673,18 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
             for (int i = 0; i < nDims; ++i) {
                 std::string dimName = knob->getDimensionName(DimIdx(i));
                 QString toAppend,prefix;
-                if (linkString[i].second) {
-                    prefix = QString::fromUtf8("%1 =").arg(QString::fromUtf8( dimName.c_str() ));
-                } else {
-                    prefix = tr("%1 linked to").arg(QString::fromUtf8( dimName.c_str() ));
+                switch (linkString[i].second) {
+                    case eDimensionLinkTypeExpressionLink:
+                        prefix = QString::fromUtf8("%1 =").arg(QString::fromUtf8( dimName.c_str() ));
+                        break;
+                    case eDimensionLinkTypeNone:
+                        prefix = tr("%1: Value returned is this parameter animation, Python code:").arg(QString::fromUtf8( dimName.c_str() ));
+                        break;
+                    case eDimensionLinkTypeSimpleLink:
+                        prefix = tr("%1 linked to").arg(QString::fromUtf8( dimName.c_str() ));
+                        break;
                 }
+             
                 if (isMarkdown) {
                     toAppend = QString::fromUtf8("%1 **%2**\n\n").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ) );
                 } else {

@@ -3430,14 +3430,8 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
                 view = viewNames[*it];
             }
             KnobSerialization::PerDimensionValueSerializationVec& dimValues = serialization->_values[view];
+            dimValues.resize(serialization->_dimension);
 
-            bool allDimensionsVisible = getAllDimensionsVisible(*it);
-            bool allDimensionsEqual = areDimensionsEqual(*it);
-            if (allDimensionsVisible && !allDimensionsEqual) {
-                dimValues.resize(serialization->_dimension);
-            } else {
-                dimValues.resize(1);
-            }
             for (std::size_t i = 0; i < dimValues.size(); ++i) {
                 dimValues[i]._serialization = serialization;
                 dimValues[i]._dimension = (int)i;
@@ -3448,9 +3442,36 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
                     serialization->_defaultValues[i].serializeDefaultValue = true;
                     dimValues[i]._mustSerialize = true;
                 }
+            } // for each dimension
+
+            // If dimensions are equal do not serialize them all, just saved the first.
+            // Note that the areDimensionsEqual() funtion will return true even if multiple dimensions are linked to different values.
+            // E.g: imagine a Blur.size parameter linked to another Blur.size parameter, each dimension would be respectively linked to x and y
+            // and links would be different, even though they appear equal on the interface we have to serialize the 2 different links
+            bool allDimensionsEqual = areDimensionsEqual(*it);
+            
+            if (serialization->_dimension > 1) {
+                bool linksEqual = true;
+                for (std::size_t i = 1; i < dimValues.size(); ++i) {
+                    if (dimValues[i]._slaveMasterLink.masterDimensionName != dimValues[0]._slaveMasterLink.masterDimensionName ||
+                        dimValues[i]._slaveMasterLink.masterViewName != dimValues[0]._slaveMasterLink.masterViewName ||
+                        dimValues[i]._slaveMasterLink.masterKnobName != dimValues[0]._slaveMasterLink.masterKnobName ||
+                        dimValues[i]._slaveMasterLink.masterTableItemName != dimValues[0]._slaveMasterLink.masterTableItemName ||
+                        dimValues[i]._slaveMasterLink.masterNodeName != dimValues[0]._slaveMasterLink.masterNodeName) {
+                        linksEqual = false;
+                        break;
+                    }
+                }
+                if (!linksEqual) {
+                    allDimensionsEqual = false;
+                }
             }
 
-        }
+            if (allDimensionsEqual) {
+                dimValues.resize(1);
+            }
+
+        } // for each view
 
         // User knobs bits
         if (serialization->_isUserKnob) {
@@ -3805,7 +3826,7 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         for (int i = 0; i < _imp->dimension; ++i) {
 
             // Not all dimensions are necessarily saved since they may be folded.
-            // In that case replicate the last dimenion
+            // In that case replicate the last dimension
             int d = i >= (int)it->second.size() ? it->second.size() - 1 : i;
 
             DimIdx dimensionIndex(i);
@@ -4024,34 +4045,42 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
             for (SERIALIZATION_NAMESPACE::KnobSerialization::PerViewValueSerializationMap::const_iterator it = isKnobSerialization->_values.begin();
                  it != isKnobSerialization->_values.end(); ++it) {
 
+
                 // Find a matching view name
                 ViewIdx view_i(0);
                 Project::getViewIndex(projectViews, it->first, &view_i);
 
-                for (std::size_t i = 0; i < it->second.size(); ++i) {
-                    if (!it->second[i]._slaveMasterLink.hasLink) {
+                for (int dimIndex = 0; dimIndex < _imp->dimension; ++dimIndex) {
+
+
+                    // Not all dimensions are necessarily saved since they may be folded.
+                    // In that case replicate the last dimension
+                    int d = dimIndex >= (int)it->second.size() ? it->second.size() - 1 : dimIndex;
+
+
+                    if (!it->second[d]._slaveMasterLink.hasLink) {
                         continue;
                     }
 
                     std::string masterKnobName, masterNodeName, masterTableItemName;
-                    if (it->second[i]._slaveMasterLink.masterNodeName.empty()) {
+                    if (it->second[d]._slaveMasterLink.masterNodeName.empty()) {
                         // Node name empty, assume this is the same node
                         masterNodeName = thisKnobNode->getScriptName_mt_safe();
                     } else {
-                        masterNodeName = it->second[i]._slaveMasterLink.masterNodeName;
+                        masterNodeName = it->second[d]._slaveMasterLink.masterNodeName;
                     }
 
-                    if (it->second[i]._slaveMasterLink.masterKnobName.empty()) {
+                    if (it->second[d]._slaveMasterLink.masterKnobName.empty()) {
                         // Knob name empty, assume this is the same knob unless it has a single dimension
                         if (getNDimensions() == 1) {
                             continue;
                         }
                         masterKnobName = getName();
                     } else {
-                        masterKnobName = it->second[i]._slaveMasterLink.masterKnobName;
+                        masterKnobName = it->second[d]._slaveMasterLink.masterKnobName;
                     }
 
-                    masterTableItemName = it->second[i]._slaveMasterLink.masterTableItemName;
+                    masterTableItemName = it->second[d]._slaveMasterLink.masterTableItemName;
                     KnobIPtr master = findMasterKnob(masterKnobName,
                                                      masterNodeName,
                                                      masterTableItemName);
@@ -4062,23 +4091,23 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                             otherDimIndex = 0;
                         } else {
                             for (int d = 0; d < master->getNDimensions(); ++d) {
-                                if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[i]._slaveMasterLink.masterDimensionName) ) {
+                                if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[d]._slaveMasterLink.masterDimensionName) ) {
                                     otherDimIndex = d;
                                     break;
                                 }
                             }
                             if (otherDimIndex == -1) {
                                 // Before Natron 2.2 we serialized the dimension index. Try converting to an int
-                                otherDimIndex = QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str()).toInt();
+                                otherDimIndex = QString::fromUtf8(it->second[d]._slaveMasterLink.masterDimensionName.c_str()).toInt();
                             }
                         }
                         ViewIdx otherView(0);
-                        Project::getViewIndex(projectViews, it->second[i]._slaveMasterLink.masterViewName, &otherView);
+                        Project::getViewIndex(projectViews, it->second[d]._slaveMasterLink.masterViewName, &otherView);
 
                         if (otherDimIndex >=0 && otherDimIndex < master->getNDimensions()) {
-                            (void)linkTo(master, DimIdx(it->second[i]._dimension), DimIdx(otherDimIndex), view_i, otherView);
+                            (void)linkTo(master, DimIdx(dimIndex), DimIdx(otherDimIndex), view_i, otherView);
                         } else {
-                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[i]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[i]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
+                            throw std::invalid_argument(tr("Could not find a dimension named \"%1\" in \"%2\"").arg(QString::fromUtf8(it->second[d]._slaveMasterLink.masterDimensionName.c_str())).arg( QString::fromUtf8( it->second[d]._slaveMasterLink.masterKnobName.c_str() ) ).toStdString());
                         }
                     }
 
@@ -4095,10 +4124,17 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                 ViewIdx view_i(0);
                 Project::getViewIndex(projectViews, it->first, &view_i);
 
-                for (std::size_t i = 0; i < it->second.size(); ++i) {
+
+                for (int dimIndex = 0; dimIndex < _imp->dimension; ++dimIndex) {
+
+
+                    // Not all dimensions are necessarily saved since they may be folded.
+                    // In that case replicate the last dimension
+                    int d = dimIndex >= (int)it->second.size() ? it->second.size() - 1 : dimIndex;
+
                     try {
-                        if ( !it->second[i]._expression.empty() ) {
-                            restoreExpression(DimIdx(it->second[i]._dimension), view_i,  it->second[i]._expression, it->second[i]._expresionHasReturnVariable);
+                        if ( !it->second[d]._expression.empty() ) {
+                            restoreExpression(DimIdx(dimIndex), view_i,  it->second[d]._expression, it->second[d]._expresionHasReturnVariable);
                         }
                     } catch (const std::exception& e) {
                         QString err = QString::fromUtf8("Failed to restore expression: %1").arg( QString::fromUtf8( e.what() ) );
