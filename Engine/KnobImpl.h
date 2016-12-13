@@ -912,7 +912,6 @@ Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
         return;
     }
 
-    QMutexLocker k(&_defaultValueMutex);
     std::list<ViewIdx> views = other->getViewsList();
     if (dimension.isAll()) {
         int dimMin = std::min( getNDimensions(), other->getNDimensions() );
@@ -921,11 +920,13 @@ Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
                 for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
                     FrameValueMap results;
                     otherKnob->getExpressionResults(DimIdx(i), *it, results);
+                    QMutexLocker k(&_defaultValueMutex);
                     _exprRes[i][*it] = results;
                 }
             } else {
                 FrameValueMap results;
                 otherKnob->getExpressionResults(DimIdx(i), ViewIdx(otherView), results);
+                QMutexLocker k(&_defaultValueMutex);
                 _exprRes[i][ViewIdx(view)] = results;
             }
         }
@@ -934,11 +935,13 @@ Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
             for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
                 FrameValueMap results;
                 otherKnob->getExpressionResults(DimIdx(otherDimension), *it, results);
+                QMutexLocker k(&_defaultValueMutex);
                 _exprRes[dimension][*it] = results;
             }
         } else {
             FrameValueMap results;
             otherKnob->getExpressionResults(DimIdx(otherDimension), ViewIdx(otherView), results);
+            QMutexLocker k(&_defaultValueMutex);
             _exprRes[dimension][ViewIdx(view)] = results;
         }
 
