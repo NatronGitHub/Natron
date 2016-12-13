@@ -1011,6 +1011,7 @@ KnobChoice::appendChoice(const std::string& entry,
             QMutexLocker k(&data->valueMutex);
             data->menuOptions.push_back(entry);
             data->menuOptionTooltips.push_back(help);
+            sharedKnobs = data->sharedKnobs;
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
             KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
@@ -1131,6 +1132,7 @@ KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
         KnobDimViewKeySet sharedKnobs;
         {
             QMutexLocker k(&data->valueMutex);
+            sharedKnobs = data->sharedKnobs;
             data->activeEntry = entry;
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {

@@ -3162,6 +3162,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
     KnobColorPtr isColor = toKnobColor(knob);
     KnobChoicePtr isChoice = toKnobChoice(knob);
     KnobStringBasePtr isStringBase = toKnobStringBase(knob);
+    KnobFilePtr isFile = toKnobFile(knob);
     KnobParametricPtr isParametric = toKnobParametric(knob);
     KnobPagePtr isPage = toKnobPage(knob);
     KnobGroupPtr isGrp = toKnobGroup(knob);
@@ -3183,7 +3184,11 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_value.isDouble = isDoubleBase->getValue(dimension, view);
             serialization->_serializeValue = (serialization->_value.isDouble != defValue.value.isDouble);
         } else if (isStringBase) {
-            serialization->_value.isString = isStringBase->getValue(dimension, view);
+            if (isFile) {
+                serialization->_value.isString = isFile->getRawFileName(dimension, view);
+            } else {
+                serialization->_value.isString = isStringBase->getValue(dimension, view);
+            }
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
 
         } else if (isChoice) {

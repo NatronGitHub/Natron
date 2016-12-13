@@ -116,7 +116,7 @@ void
 Compat::RotoContextSerialization::convertRotoContext(SERIALIZATION_NAMESPACE::KnobItemsTableSerialization* outSerialization)
 {
     SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr layer(new SERIALIZATION_NAMESPACE::KnobTableItemSerialization);
-    _baseLayer.convertRotoItemSerialization(layer.get());
+    _baseLayer.convertRotoLayerSerialization(layer.get());
     outSerialization->items.push_back(layer);
     
 } // convertRotoContext
