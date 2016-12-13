@@ -4258,7 +4258,6 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
                 // rod is not valid
                 //if (!isDuringStrokeCreation) {
                 _imp->actionsCache->invalidateAll(hash);
-                _imp->actionsCache->setRoDResult( hash, time, view, mipMapLevel, RectD() );
 
                 // }
                 return ret;
