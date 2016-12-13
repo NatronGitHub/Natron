@@ -16,6 +16,7 @@
 - Transform & CornerPin: additional "Amount" parameter to control the amount of transform to apply.
 - ColorLookup: fix a bug where output was always clamped to (0,1) #1533
 - Grade: fix a bug where negative values were clamped even when gamma=1 #1533
+- STMap, IDistort, LensDistortion, Transform, CornerPin: reduce supersampling to avoid artifacts
 
 ## Version 2.1.9
 
