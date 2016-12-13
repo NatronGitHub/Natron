@@ -215,8 +215,6 @@ public:
     // the unique ID of this instance
     int _appID;
 
-    // Backward compat flag for Natron 1
-    bool _projectCreatedWithLowerCaseIDs;
 
     // Protects creatingGroupMutex and _creatingTree
     mutable QMutex creatingGroupMutex;
@@ -236,8 +234,6 @@ public:
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobIWPtr> invalidExprKnobs;
 
-    SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectBeingLoaded;
-
     mutable QMutex uiInfoMutex;
 
     SerializableWindow* mainWindow;
@@ -253,7 +249,6 @@ public:
         : _publicInterface(app)
         , _currentProject()
         , _appID(appID)
-        , _projectCreatedWithLowerCaseIDs(false)
         , creatingGroupMutex()
         , createNodeStack()
         , _creatingTree(0)
@@ -262,7 +257,6 @@ public:
         , activeRenders()
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
-        , projectBeingLoaded()
         , mainWindow(0)
         , floatingWindows()
         , tabWidgets()
@@ -298,21 +292,6 @@ AppInstance::~AppInstance()
 {
     _imp->_currentProject->clearNodesBlocking();
 }
-
-const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo&
-AppInstance::getProjectBeingLoadedInfo() const
-{
-    assert(QThread::currentThread() == qApp->thread());
-    return _imp->projectBeingLoaded;
-}
-
-void
-AppInstance::setProjectBeingLoadedInfo(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& info)
-{
-    assert(QThread::currentThread() == qApp->thread());
-    _imp->projectBeingLoaded = info;
-}
-
 
 bool
 AppInstance::isTopLevelNodeBeingCreated(const NodePtr& node) const
@@ -1107,24 +1086,37 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
     QString findId = argsPluginID;
 
+    bool caseSensitivePluginSearch = true;
+    {
+        // In Natron 1.0.0 plug-in IDs were serialized lower case.
+        // To ensure we load properly these projects we need to perform a case insensitive search on the plug-in ID.
+        SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo pInfo;
+        if (getProject()->getProjectLoadedVersionInfo(&pInfo)) {
+            if (pInfo.vMajor == 1 && pInfo.vMinor == 0 && pInfo.vRev == 0) {
+                caseSensitivePluginSearch = false;
+            }
+        }
+
+    }
+
     NodePtr argsIOContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     //If it is a reader or writer, create a ReadNode or WriteNode
     if (!argsIOContainer) {
-        if ( ReadNode::isBundledReader( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
+        if ( ReadNode::isBundledReader( argsPluginID.toStdString() ) ) {
             args->addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
             findId = QString::fromUtf8(PLUGINID_NATRON_READ);
-        } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString(), wasProjectCreatedWithLowerCaseIDs() ) ) {
+        } else if ( WriteNode::isBundledWriter( argsPluginID.toStdString() ) ) {
             args->addParamDefaultValue(kNatronWriteNodeParamEncodingPluginID, argsPluginID.toStdString());
             findId = QString::fromUtf8(PLUGINID_NATRON_WRITE);
         }
     }
 
     try {
-        plugin = appPTR->getPluginBinary(findId, versionMajor, versionMinor, _imp->_projectCreatedWithLowerCaseIDs && serialization);
+        plugin = appPTR->getPluginBinary(findId, versionMajor, versionMinor, caseSensitivePluginSearch);
     } catch (const std::exception & e1) {
         ///Ok try with the old Ids we had in Natron prior to 1.0
         try {
-            plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, _imp->_projectCreatedWithLowerCaseIDs, versionMajor, versionMinor);
+            plugin = appPTR->getPluginBinaryFromOldID(argsPluginID, versionMajor, versionMinor, caseSensitivePluginSearch);
         } catch (const std::exception& e2) {
             if (!isSilentCreation) {
                 Dialogs::errorDialog(tr("Plugin error").toStdString(),
@@ -1920,18 +1912,6 @@ double
 AppInstance::getProjectFrameRate() const
 {
     return _imp->_currentProject->getProjectFrameRate();
-}
-
-void
-AppInstance::setProjectWasCreatedWithLowerCaseIDs(bool b)
-{
-    _imp->_projectCreatedWithLowerCaseIDs = b;
-}
-
-bool
-AppInstance::wasProjectCreatedWithLowerCaseIDs() const
-{
-    return _imp->_projectCreatedWithLowerCaseIDs;
 }
 
 bool

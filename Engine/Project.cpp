@@ -259,7 +259,16 @@ Project::loadProject(const QString & path,
     return true;
 } // loadProject
 
-
+bool
+Project::getProjectLoadedVersionInfo(SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo* info) const
+{
+    assert(info);
+    if (_imp->lastProjectLoaded) {
+        *info = _imp->lastProjectLoaded->_projectLoadedInfo;
+        return true;
+    }
+    return false;
+}
 
 bool
 Project::loadProjectInternal(const QString & pathIn,
@@ -290,27 +299,6 @@ Project::loadProjectInternal(const QString & pathIn,
     }
 
 
-    if ( (NATRON_VERSION_MAJOR == 1) && (NATRON_VERSION_MINOR == 0) && (NATRON_VERSION_REVISION == 0) ) {
-        ///Try to determine if the project was made during Natron v1.0.0 - RC2 or RC3 to detect a bug we introduced at that time
-        ///in the BezierCP class serialisation
-        bool foundV = false;
-        QFile f(filePathOut);
-        f.open(QIODevice::ReadOnly);
-        QTextStream fs(&f);
-        while ( !fs.atEnd() ) {
-            QString line = fs.readLine();
-
-            if ( (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC2") ) != -1) || (line.indexOf( QString::fromUtf8("Natron v1.0.0 RC3") ) != -1) ) {
-                appPTR->setProjectCreatedDuringRC2Or3(true);
-                foundV = true;
-                break;
-            }
-        }
-        if (!foundV) {
-            appPTR->setProjectCreatedDuringRC2Or3(false);
-        }
-    }
-
 
     try {
         // We must keep this boolean for bakcward compatilbility, versinioning cannot help us in that case...
@@ -326,7 +314,7 @@ Project::loadProjectInternal(const QString & pathIn,
             getApp()->loadProjectGui(isAutoSave, _imp->lastProjectLoaded);
         }
     } catch (...) {
-        const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& pInfo = getApp()->getProjectBeingLoadedInfo();
+        const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& pInfo = _imp->lastProjectLoaded->_projectLoadedInfo;
         if (pInfo.vMajor > NATRON_VERSION_MAJOR ||
             (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor > NATRON_VERSION_MINOR) ||
             (pInfo.vMajor == NATRON_VERSION_MAJOR && pInfo.vMinor == NATRON_VERSION_MINOR && pInfo.vRev > NATRON_VERSION_REVISION)) {
@@ -949,6 +937,8 @@ Project::initializeKnobs()
     _imp->natronVersion->setEvaluateOnChange(false);
     _imp->natronVersion->setAnimationEnabled(false);
 
+    // No need to save it, just use it for Gui purpose, this is saved as a separate field anyway
+    _imp->natronVersion->setIsPersistent(false);
     _imp->natronVersion->setDefaultValue( generateUserFriendlyNatronVersionName() );
     infoPage->addKnob(_imp->natronVersion);
 
@@ -960,7 +950,7 @@ Project::initializeKnobs()
     _imp->originalAuthorName->setEvaluateOnChange(false);
     _imp->originalAuthorName->setAnimationEnabled(false);
     std::string authorName = generateGUIUserName();
-    _imp->originalAuthorName->setDefaultValue(authorName);
+    _imp->originalAuthorName->setValue(authorName);
     infoPage->addKnob(_imp->originalAuthorName);
 
     _imp->lastAuthorName = AppManager::createKnob<KnobString>( shared_from_this(), tr("Last Author") );
@@ -970,7 +960,7 @@ Project::initializeKnobs()
     _imp->lastAuthorName->setEnabled(false);
     _imp->lastAuthorName->setEvaluateOnChange(false);
     _imp->lastAuthorName->setAnimationEnabled(false);
-    _imp->lastAuthorName->setDefaultValue(authorName);
+    _imp->lastAuthorName->setValue(authorName);
     infoPage->addKnob(_imp->lastAuthorName);
 
 
@@ -981,7 +971,7 @@ Project::initializeKnobs()
     _imp->projectCreationDate->setEnabled(false);
     _imp->projectCreationDate->setEvaluateOnChange(false);
     _imp->projectCreationDate->setAnimationEnabled(false);
-    _imp->projectCreationDate->setDefaultValue( QDateTime::currentDateTime().toString().toStdString() );
+    _imp->projectCreationDate->setValue( QDateTime::currentDateTime().toString().toStdString() );
     infoPage->addKnob(_imp->projectCreationDate);
 
     _imp->saveDate = AppManager::createKnob<KnobString>( shared_from_this(), tr("Last Saved On") );
@@ -1526,8 +1516,6 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
 
     _imp->projectName->setValue( name.toStdString());
     _imp->projectPath->setValue( path.toStdString());
-
-    getApp()->setProjectBeingLoadedInfo(obj._projectLoadedInfo);
 
     if (NATRON_VERSION_ENCODE(obj._projectLoadedInfo.vMajor, obj._projectLoadedInfo.vMinor, obj._projectLoadedInfo.vRev) > NATRON_VERSION_ENCODED) {
         appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), tr("The project %1 was saved on a more recent version of %2 (%3.%4.%5). This version of %2 may fail to recover it thoroughly.").arg(name).arg(QLatin1String(NATRON_APPLICATION_NAME)).arg(obj._projectLoadedInfo.vMajor).arg(obj._projectLoadedInfo.vMinor).arg(obj._projectLoadedInfo.vRev));;
@@ -2990,11 +2978,6 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
                 _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
             }
 
-            // Check for old Natron 1 bug
-            std::string v = _imp->natronVersion->getValue();
-            if (v == "Natron v1.0.0") {
-                getApp()->setProjectWasCreatedWithLowerCaseIDs(true);
-            }
         }
 
         // Restore the timeline
@@ -3016,7 +2999,6 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     _imp->hasProjectBeenSavedByUser = true;
     _imp->ageSinceLastSave = time;
     _imp->lastAutoSave = time;
-    getApp()->setProjectWasCreatedWithLowerCaseIDs(false);
 
     if (!foundFrameRangeKnob) {
         recomputeFrameRangeFromReaders();

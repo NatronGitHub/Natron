@@ -153,28 +153,14 @@ isGenericKnob(const std::string& knobName,
     return false;
 }
 
-bool
-WriteNode::isBundledWriter(const std::string& pluginID,
-                           bool wasProjectCreatedWithLowerCaseIDs)
-{
-    if (wasProjectCreatedWithLowerCaseIDs) {
-        // Natron 1.x has plugin ids stored in lowercase
-        return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-        boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-        boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
-        boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG);
-    }
-
-    return pluginID == PLUGINID_OFX_WRITEOIIO ||
-    pluginID == PLUGINID_OFX_WRITEFFMPEG ||
-    pluginID == PLUGINID_OFX_WRITEPFM ||
-    pluginID == PLUGINID_OFX_WRITEPNG;
-}
 
 bool
 WriteNode::isBundledWriter(const std::string& pluginID)
 {
-    return isBundledWriter( pluginID, getApp()->wasProjectCreatedWithLowerCaseIDs() );
+    return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
+    boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
+    boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
+    boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG);
 }
 
 PluginPtr

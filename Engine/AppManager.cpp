@@ -2272,8 +2272,8 @@ AppManager::registerPlugin(const PluginPtr& plugin)
 {
 
     std::string pluginID = plugin->getPluginID();
-    if ( ReadNode::isBundledReader( pluginID, false ) ||
-         WriteNode::isBundledWriter( pluginID, false ) ) {
+    if ( ReadNode::isBundledReader( pluginID ) ||
+         WriteNode::isBundledWriter( pluginID ) ) {
         plugin->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     }
 
@@ -2360,9 +2360,9 @@ AppManager::getKnobFactory() const
 
 PluginPtr
 AppManager::getPluginBinaryFromOldID(const QString & pluginId,
-                                     bool projectIsLowerCase,
                                      int majorVersion,
-                                     int minorVersion) const
+                                     int minorVersion,
+                                     bool caseSensitive) const
 {
     std::map<int, PluginPtr> matches;
 
@@ -2376,7 +2376,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
         return _imp->findPluginById(PLUGINID_NATRON_BACKDROP, majorVersion, minorVersion);
     } else if ( pluginId == QString::fromUtf8("RotoOFX  [Draw]") ) {
         return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
-    } else if ( ( !projectIsLowerCase && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( projectIsLowerCase && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) )  {
+    } else if ( ( caseSensitive && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO) ) ) || ( !caseSensitive && ( pluginId == QString::fromUtf8(PLUGINID_OFX_ROTO).toLower() ) ) )  {
         return _imp->findPluginById(PLUGINID_NATRON_ROTO, majorVersion, minorVersion);
     }
 
@@ -2413,13 +2413,13 @@ PluginPtr
 AppManager::getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int /*minorVersion*/,
-                            bool convertToLowerCase) const
+                            bool caseSensitivePluginSearch) const
 {
     PluginsMap::const_iterator foundID = _imp->_plugins.end();
 
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
         QString pID = QString::fromUtf8( it->first.c_str() );
-        if ( convertToLowerCase &&
+        if ( !caseSensitivePluginSearch &&
              !pluginId.startsWith( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB ".built-in.") ) ) {
             QString lowerCase = pID.toLower();
             if (lowerCase == pluginId) {
@@ -3552,19 +3552,6 @@ AppManager::initBuiltinPythonModules()
     if (ret == -1) {
         throw std::runtime_error("Failed to initialize built-in Python module.");
     }
-}
-
-void
-AppManager::setProjectCreatedDuringRC2Or3(bool b)
-{
-    _imp->lastProjectLoadedCreatedDuringRC2Or3 = b;
-}
-
-//To by-pass a bug introduced in RC3 with the serialization of bezier curves
-bool
-AppManager::wasProjectCreatedDuringRC2Or3() const
-{
-    return _imp->lastProjectLoadedCreatedDuringRC2Or3;
 }
 
 void

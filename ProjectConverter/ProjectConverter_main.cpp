@@ -231,6 +231,11 @@ convertToProjectSerialization(const SERIALIZATION_NAMESPACE::ProjectGuiSerializa
 
 class ConverterAppManager : public AppManager
 {
+
+    // Retain a copy of the loaded project before it was saved so that we can make a few properties pertain in the converted project such
+    // as the software version, creation date etc...
+    SERIALIZATION_NAMESPACE::ProjectSerialization _lastProjectLoadedCopy;
+
 public:
 
     ConverterAppManager()
@@ -311,6 +316,14 @@ private:
             throw std::invalid_argument("Invalid project file");
         }
 
+        _lastProjectLoadedCopy = *obj;
+
+    } // loadProjectFromFileFunction
+
+    virtual void aboutToSaveProject(SERIALIZATION_NAMESPACE::ProjectSerialization* serialization) OVERRIDE FINAL
+    {
+        // Hi-hack the version of the project to preserve the one written in the project originally
+        serialization->_projectLoadedInfo = _lastProjectLoadedCopy._projectLoadedInfo;
     }
 };
 

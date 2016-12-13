@@ -1489,7 +1489,7 @@ public:
     CurvePtr getDefaultParametricCurve(DimIdx dimension) const;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum getValue(DimIdx dimension, ViewGetSpec view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum evaluateCurve(DimIdx dimension, ViewGetSpec view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNControlPoints(DimIdx dimension, ViewGetSpec view, int *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(DimIdx dimension,
                                   ViewGetSpec view,

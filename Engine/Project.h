@@ -138,6 +138,8 @@ public:
 
     bool isLoadingProjectInternal() const;
 
+    bool getProjectLoadedVersionInfo(SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo* info) const;
+
     QString getProjectFilename() const WARN_UNUSED_RETURN;
 
     QString getLastAutoSaveFilePath() const;
@@ -149,10 +151,6 @@ public:
     bool hasProjectBeenSavedByUser() const WARN_UNUSED_RETURN;
 
     bool isSaveUpToDate() const WARN_UNUSED_RETURN;
-
-    //QDateTime getProjectAgeSinceLastSave() const WARN_UNUSED_RETURN ;
-
-    //QDateTime getProjectAgeSinceLastAutosave() const WARN_UNUSED_RETURN;
 
     void getProjectDefaultFormat(Format *f) const;
 

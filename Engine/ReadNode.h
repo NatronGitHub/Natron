@@ -61,8 +61,7 @@ public:
      * @brief Returns if the given plug-in is compatible with this ReadNode container.
      * by default all nodes which inherits GenericReader in OpenFX are.
      **/
-    static bool isBundledReader(const std::string& pluginID, bool wasProjectCreatedWithLowerCaseIDs);
-    bool isBundledReader(const std::string& pluginID);
+    static bool isBundledReader(const std::string& pluginID);
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>

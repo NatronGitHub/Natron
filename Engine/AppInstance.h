@@ -330,13 +330,6 @@ public:
 
     virtual void toggleAutoHideGraphInputs() {}
 
-    /**
-     * @brief In Natron v1.0.0 plug-in IDs were lower case only due to a bug in OpenFX host support.
-     * To be able to load projects created in Natron v1.0.0 we must identity that the project was created in this version
-     * and try to load plug-ins with their lower case ID instead.
-     **/
-    void setProjectWasCreatedWithLowerCaseIDs(bool b);
-    bool wasProjectCreatedWithLowerCaseIDs() const;
 
     /**
      * @brief Returns true if the project is currently in the process of creating a node
@@ -420,9 +413,6 @@ public:
     void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
 
     virtual void reloadScriptEditorFonts() {}
-
-    const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& getProjectBeingLoadedInfo() const;
-    void setProjectBeingLoadedInfo(const SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo& info);
 
     SerializableWindow* getMainWindowSerialization() const;
 

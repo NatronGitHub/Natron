@@ -416,9 +416,8 @@ template<class Archive>
 void
 NATRON_NAMESPACE::BezierCP::serialize(Archive &ar, const unsigned int version)
 {
-    bool createdDuringToRC2Or3 = appPTR->wasProjectCreatedDuringRC2Or3();
 
-    if ( (version >= BEZIER_CP_FIX_BUG_CURVE_POINTER) || !createdDuringToRC2Or3 ) {
+    if ( (version >= BEZIER_CP_FIX_BUG_CURVE_POINTER) ) {
         ar & ::boost::serialization::make_nvp("X", _imp->x);
         NATRON_NAMESPACE::Curve xCurve;
         ar & ::boost::serialization::make_nvp("X_animation", xCurve);
@@ -449,30 +448,6 @@ NATRON_NAMESPACE::BezierCP::serialize(Archive &ar, const unsigned int version)
         _imp->curveLeftBezierY->clone(leftCurveY);
         _imp->curveRightBezierX->clone(rightCurveX);
         _imp->curveRightBezierY->clone(rightCurveY);
-    } else {
-        ar & ::boost::serialization::make_nvp("X", _imp->x);
-        NATRON_NAMESPACE::CurvePtr xCurve, yCurve, leftCurveX, leftCurveY, rightCurveX, rightCurveY;
-        ar & ::boost::serialization::make_nvp("X_animation", xCurve);
-        _imp->curveX->clone(*xCurve);
-
-        NATRON_NAMESPACE::CurvePtr curveBug;
-        ar & ::boost::serialization::make_nvp("Y", curveBug);
-        ar & ::boost::serialization::make_nvp("Y_animation", yCurve);
-        _imp->curveY->clone(*yCurve);
-
-        ar & ::boost::serialization::make_nvp("Left_X", _imp->leftX);
-        ar & ::boost::serialization::make_nvp("Left_X_animation", leftCurveX);
-        ar & ::boost::serialization::make_nvp("Left_Y", _imp->leftY);
-        ar & ::boost::serialization::make_nvp("Left_Y_animation", leftCurveY);
-        ar & ::boost::serialization::make_nvp("Right_X", _imp->rightX);
-        ar & ::boost::serialization::make_nvp("Right_X_animation", rightCurveX);
-        ar & ::boost::serialization::make_nvp("Right_Y", _imp->rightY);
-        ar & ::boost::serialization::make_nvp("Right_Y_animation", rightCurveY);
-
-        _imp->curveLeftBezierX->clone(*leftCurveX);
-        _imp->curveLeftBezierY->clone(*leftCurveY);
-        _imp->curveRightBezierX->clone(*rightCurveX);
-        _imp->curveRightBezierY->clone(*rightCurveY);
     }
     if ( (version >= BEZIER_CP_INTRODUCES_OFFSET) && (version < BEZIER_CP_REMOVE_OFFSET) ) {
         int offsetTime;

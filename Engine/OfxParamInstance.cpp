@@ -344,9 +344,7 @@ OfxParamToKnob::getKnobHolder() const
     /*
        For readers and writers
      */
-    bool wasProjectCreatedWithLowerCaseIDs = node->getApp()->wasProjectCreatedWithLowerCaseIDs();
-    if ( ReadNode::isBundledReader(pluginID, wasProjectCreatedWithLowerCaseIDs) ||
-         WriteNode::isBundledWriter(pluginID, wasProjectCreatedWithLowerCaseIDs) ) {
+    if ( ReadNode::isBundledReader(pluginID) || WriteNode::isBundledWriter(pluginID) ) {
         NodePtr iocontainer = node->getIOContainer();
         assert(iocontainer);
 
@@ -4450,7 +4448,7 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getValue(DimIdx(curveIndex), ViewGetSpec::current(), parametricPosition, returnValue);
+    StatusEnum stat = _knob.lock()->evaluateCurve(DimIdx(curveIndex), ViewGetSpec::current(), parametricPosition, returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;

@@ -2357,7 +2357,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
 }
 
 StatusEnum
-KnobParametric::getValue(DimIdx dimension,
+KnobParametric::evaluateCurve(DimIdx dimension,
                          ViewGetSpec view,
                          double parametricPosition,
                          double *returnValue) const

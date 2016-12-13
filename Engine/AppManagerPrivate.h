@@ -127,9 +127,6 @@ public:
     // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
     QAtomicInt runningThreadsCount;
 
-    //To by-pass a bug introduced in RC2 / RC3 with the serialization of bezier curves
-    bool lastProjectLoadedCreatedDuringRC2Or3;
-
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3
     // Python 3

@@ -3924,7 +3924,7 @@ ParametricParam::getValue(int dimension,
         return 0.;
     }
     double ret;
-    StatusEnum stat =  knob->getValue(DimIdx(dimension), ViewIdx(0), parametricPosition, &ret);
+    StatusEnum stat =  knob->evaluateCurve(DimIdx(dimension), ViewIdx(0), parametricPosition, &ret);
 
     if (stat == eStatusFailed) {
         ret =  0.;

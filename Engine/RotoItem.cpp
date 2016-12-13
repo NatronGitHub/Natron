@@ -297,7 +297,6 @@ RotoItem::onKnobValueChanged(const KnobIPtr& knob,
                              double /*time*/,
                              ViewSetSpec /*view*/)
 {
-#pragma message WARN("check this")
     if (knob == _imp->lockedKnob.lock()) {
 
         const KnobsVec& knobs = getKnobs();

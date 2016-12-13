@@ -184,41 +184,19 @@ isGenericKnob(const std::string& knobName,
 }
 
 bool
-ReadNode::isBundledReader(const std::string& pluginID,
-                          bool wasProjectCreatedWithLowerCaseIDs)
-{
-    if (wasProjectCreatedWithLowerCaseIDs) {
-        // Natron 1.x has plugin ids stored in lowercase
-        return boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPDF);
-    }
-
-    return pluginID == PLUGINID_OFX_READOIIO ||
-           pluginID == PLUGINID_OFX_READFFMPEG ||
-           pluginID == PLUGINID_OFX_READPFM ||
-           pluginID == PLUGINID_OFX_READPSD ||
-           pluginID == PLUGINID_OFX_READKRITA ||
-           pluginID == PLUGINID_OFX_READSVG ||
-           pluginID == PLUGINID_OFX_READMISC ||
-           pluginID == PLUGINID_OFX_READORA ||
-           pluginID == PLUGINID_OFX_READCDR ||
-           pluginID == PLUGINID_OFX_READPNG ||
-           pluginID == PLUGINID_OFX_READPDF;
-}
-
-bool
 ReadNode::isBundledReader(const std::string& pluginID)
 {
-    return isBundledReader( pluginID, getApp()->wasProjectCreatedWithLowerCaseIDs() );
+    return boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
+    boost::iequals(pluginID, PLUGINID_OFX_READPDF);
 }
 
 struct ReadNodePrivate
@@ -542,7 +520,7 @@ ReadNodePrivate::checkDecoderCreated(double time,
     if (!fileKnob) {
         return false;
     }
-    std::string pattern = fileKnob->getValueAtTime(std::floor(time + 0.5));
+    std::string pattern = fileKnob->getValueAtTime(std::floor(time + 0.5), DimIdx(0), view);
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
 
@@ -634,7 +612,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     }
 
-    if ( !defaultFallback && !ReadNode::isBundledReader(readerPluginID, false) ) {
+    if ( !defaultFallback && !ReadNode::isBundledReader(readerPluginID) ) {
         if (throwErrors) {
             QString message = tr("%1 is not a bundled reader, please create it from the Image->Readers menu or with the tab menu in the Nodegraph")
                               .arg( QString::fromUtf8( readerPluginID.c_str() ) );

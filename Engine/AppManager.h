@@ -178,8 +178,8 @@ public:
     PluginPtr getPluginBinary(const QString & pluginId,
                             int majorVersion,
                             int minorVersion,
-                            bool convertToLowerCase) const WARN_UNUSED_RETURN;
-    PluginPtr getPluginBinaryFromOldID(const QString & pluginId, bool projectIsLowerCase, int majorVersion, int minorVersion) const WARN_UNUSED_RETURN;
+                            bool caseSensitive = true) const WARN_UNUSED_RETURN;
+    PluginPtr getPluginBinaryFromOldID(const QString & pluginId, int majorVersion, int minorVersion, bool caseSensitive) const WARN_UNUSED_RETURN;
 
     /*Find a builtin format with the same resolution and aspect ratio*/
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
@@ -468,10 +468,6 @@ public:
         return y * getLogicalDPIYRATIO();
     }
 
-    void setProjectCreatedDuringRC2Or3(bool b);
-
-    //To by-pass a bug introduced in RC3 with the serialization of bezier curves
-    bool wasProjectCreatedDuringRC2Or3() const;
 
     bool isNodeCacheAlmostFull() const;
 
