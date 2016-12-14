@@ -2499,7 +2499,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                 time,
                                                 view,
                                                 compsNeeded,
-                                                rectToRender.imgs,
+                                                planes->inputImages,
                                                 firstFrame,
                                                 lastFrame);
 
@@ -2507,7 +2507,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     TimeLapsePtr timeRecorder;
     RenderActionArgs actionArgs;
     boost::shared_ptr<OSGLContextAttacher> glContextAttacher;
-    setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, rectToRender.imgs, actionArgs, &glContextAttacher, &timeRecorder);
+    setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, planes->inputImages, actionArgs, &glContextAttacher, &timeRecorder);
 
     // If this tile is identity, copy input image instead
     if (rectToRender.isIdentity) {
@@ -2526,7 +2526,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
     // Apply post-processing
-    renderHandlerPostProcess(tls, rectToRender, preferredInput, glContext, actionArgs, *planes, downscaledRectToRender, timeRecorder, renderFullScaleThenDownscale, mipMapLevel, outputPlanes, processChannels);
+    renderHandlerPostProcess(tls, preferredInput, glContext, actionArgs, *planes, downscaledRectToRender, timeRecorder, renderFullScaleThenDownscale, mipMapLevel, outputPlanes, processChannels);
 
     if (isBeingRenderedElseWhere) {
         return eRenderingFunctorRetTakeImageLock;
@@ -2906,7 +2906,6 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
 
 void
 EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr& tls,
-                                                         const RectToRender & rectToRender,
                                                          int preferredInput,
                                                          const OSGLContextPtr& glContext,
                                                          const EffectInstance::RenderActionArgs &actionArgs,
@@ -2923,14 +2922,14 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
 
     ImagePtr originalInputImage, maskImage;
     ImagePremultiplicationEnum originalImagePremultiplication;
-    EffectInstance::InputImagesMap::const_iterator foundPrefInput = rectToRender.imgs.find(preferredInput);
-    EffectInstance::InputImagesMap::const_iterator foundMaskInput = rectToRender.imgs.end();
+    EffectInstance::InputImagesMap::const_iterator foundPrefInput = planes.inputImages.find(preferredInput);
+    EffectInstance::InputImagesMap::const_iterator foundMaskInput = planes.inputImages.end();
 
     bool hostMasking = _publicInterface->isHostMaskingEnabled();
     if ( hostMasking ) {
-        foundMaskInput = rectToRender.imgs.find(_publicInterface->getMaxInputCount() - 1);
+        foundMaskInput = planes.inputImages.find(_publicInterface->getMaxInputCount() - 1);
     }
-    if ( ( foundPrefInput != rectToRender.imgs.end() ) && !foundPrefInput->second.empty() ) {
+    if ( ( foundPrefInput != planes.inputImages.end() ) && !foundPrefInput->second.empty() ) {
         originalInputImage = foundPrefInput->second.front();
     }
     std::map<int, ImagePremultiplicationEnum>::const_iterator foundPrefPremult = planes.inputPremult.find(preferredInput);
@@ -2941,7 +2940,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
     }
 
 
-    if ( ( foundMaskInput != rectToRender.imgs.end() ) && !foundMaskInput->second.empty() ) {
+    if ( ( foundMaskInput != planes.inputImages.end() ) && !foundMaskInput->second.empty() ) {
         maskImage = foundMaskInput->second.front();
     }
 

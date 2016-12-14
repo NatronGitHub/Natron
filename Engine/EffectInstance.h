@@ -1327,7 +1327,6 @@ public:
     {
         EffectInstancePtr identityInput;
         RectI rect;
-        EffectInstance::InputImagesMap imgs;
         double identityTime;
         bool isIdentity;
         ViewIdx identityView;
@@ -1336,6 +1335,7 @@ public:
     struct ImagePlanesToRender
     {
         std::list<RectToRender> rectsToRender;
+        EffectInstance::InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> planes;
         std::map<int, ImagePremultiplicationEnum> inputPremult;
         ImagePremultiplicationEnum outputPremult;

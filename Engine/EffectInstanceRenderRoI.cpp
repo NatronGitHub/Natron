@@ -1306,9 +1306,6 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
                                                            StorageModeEnum storage,
                                                            const std::vector<ImageComponents>& outputComponents,
                                                            ImagePremultiplicationEnum thisEffectOutputPremult,
-                                                           const RectD& rod,
-                                                           double par,
-                                                           bool renderFullScaleThenDownscale,
                                                            bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                            boost::shared_ptr<FramesNeededMap>* framesNeeded)
 {
@@ -1329,51 +1326,37 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
             planesToRender->outputPremult = eImagePremultiplicationOpaque;
         }
     }
-    for (std::list<RectToRender>::iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
-        if (it->isIdentity) {
-            continue;
-        }
-        RenderRoIRetCode inputCode;
-        {
-            RectD canonicalRoI;
-            if (renderFullScaleThenDownscale) {
-                it->rect.toCanonical(0, par, rod, &canonicalRoI);
-            } else {
-                it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-            }
 
-            inputCode = _publicInterface->renderInputImagesForRoI(useTransforms,
-                                                                  storage,
-                                                                  args.time,
-                                                                  args.view,
-                                                                  tls->currentRenderArgs.transformRedirections,
-                                                                  args.mipMapLevel,
-                                                                  renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                                  args.byPassCache,
-                                                                  **framesNeeded,
-                                                                  *neededComps,
-                                                                  &it->imgs);
-        }
-        if ( planesToRender->inputPremult.empty() ) {
-            for (InputImagesMap::iterator it2 = it->imgs.begin(); it2 != it->imgs.end(); ++it2) {
-                EffectInstancePtr input = _publicInterface->getInput(it2->first);
-                if (input) {
-                    ImagePremultiplicationEnum inputPremult = input->getPremult();
-                    if ( !it2->second.empty() ) {
-                        const ImageComponents & comps = it2->second.front()->getComponents();
-                        if ( !comps.isColorPlane() ) {
-                            inputPremult = eImagePremultiplicationOpaque;
-                        }
-                    }
 
-                    planesToRender->inputPremult[it2->first] = inputPremult;
+    RenderRoIRetCode inputCode = _publicInterface->renderInputImagesForRoI(useTransforms,
+                                                          storage,
+                                                          args.time,
+                                                          args.view,
+                                                          tls->currentRenderArgs.transformRedirections,
+                                                          args.mipMapLevel,
+                                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                          args.byPassCache,
+                                                          **framesNeeded,
+                                                          *neededComps,
+                                                          &planesToRender->inputImages);
+
+    // Render was aborted
+    if (inputCode != eRenderRoIRetCodeOk) {
+        return inputCode;
+    }
+
+    for (InputImagesMap::iterator it2 = planesToRender->inputImages.begin(); it2 != planesToRender->inputImages.end(); ++it2) {
+        EffectInstancePtr input = _publicInterface->getInput(it2->first);
+        if (input) {
+            ImagePremultiplicationEnum inputPremult = input->getPremult();
+            if ( !it2->second.empty() ) {
+                const ImageComponents & comps = it2->second.front()->getComponents();
+                if ( !comps.isColorPlane() ) {
+                    inputPremult = eImagePremultiplicationOpaque;
                 }
             }
-        }
 
-        // Render was aborted
-        if (inputCode != eRenderRoIRetCodeOk) {
-            return inputCode;
+            planesToRender->inputPremult[it2->first] = inputPremult;
         }
     }
 
@@ -1382,14 +1365,11 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
 
 RenderRoIRetCode
 EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs & args,
-                                                           const EffectDataTLSPtr& tls,
                                                            const ParallelRenderArgsPtr& frameArgs,
-                                                           const ComponentsNeededMapPtr& neededComps,
                                                            const ImagePlanesToRenderPtr &planesToRender,
                                                            const OSGLContextAttacherPtr& glContextLocker,
                                                            bool isDuringPaintStrokeDrawing,
                                                            RenderSafetyEnum safety,
-                                                           bool useTransforms,
                                                            StorageModeEnum storage,
                                                            const std::vector<ImageComponents>& outputComponents,
                                                            const RectD& rod,
@@ -1398,13 +1378,10 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
                                                            const RectI& downscaledImageBounds,
                                                            const RectI& inputsRoDIntersectionPixel,
                                                            bool tryIdentityOptim,
-                                                           double par,
                                                            bool renderFullScaleThenDownscale,
                                                            bool createInCache,
                                                            unsigned int renderMappedMipMapLevel,
                                                            const RenderScale& renderMappedScale,
-                                                           bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                           const boost::shared_ptr<FramesNeededMap>& framesNeeded,
                                                            const boost::scoped_ptr<ImageKey>& key,
                                                            ImagePtr *isPlaneCached)
 {
@@ -1510,37 +1487,7 @@ EffectInstance::Implementation::renderRoISecondCacheLookup(const RenderRoIArgs &
             }
             
         }
-        
-        ///We must re-copute input images because we might not have rendered what's needed
-        for (std::list<RectToRender>::iterator it = planesToRender->rectsToRender.begin();
-             it != planesToRender->rectsToRender.end(); ++it) {
-            if (it->isIdentity) {
-                continue;
-            }
 
-            RectD canonicalRoI;
-            if (renderFullScaleThenDownscale) {
-                it->rect.toCanonical(0, par, rod, &canonicalRoI);
-            } else {
-                it->rect.toCanonical(args.mipMapLevel, par, rod, &canonicalRoI);
-            }
-
-            RenderRoIRetCode inputRetCode = _publicInterface->renderInputImagesForRoI(useTransforms,
-                                                                                      storage,
-                                                                                      args.time,
-                                                                                      args.view,
-                                                                                      tls->currentRenderArgs.transformRedirections,
-                                                                                      args.mipMapLevel,
-                                                                                      renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                                                      args.byPassCache,
-                                                                                      *framesNeeded,
-                                                                                      *neededComps,
-                                                                                      &it->imgs);
-            //Render was aborted
-            if (inputRetCode != eRenderRoIRetCodeOk) {
-                return inputRetCode;
-            }
-        }
     }
     return eRenderRoIRetCodeOk;
 } // EffectInstance::Implementation::renderRoISecondCacheLookup
@@ -2258,7 +2205,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             glContextLocker->dettach();
         }
 
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, rod, par, renderFullScaleThenDownscale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2267,7 +2214,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Redo - cache lookup if memory almost full //////////////////////////////////////////////
     if (redoCacheLookup) {
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, tls, frameArgs, neededComps, planesToRender, glContextLocker, isDuringPaintStrokeDrawing, safety, useTransforms, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, par, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, renderScaleOneUpstreamIfRenderScaleSupportDisabled, framesNeeded, key, &isPlaneCached);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoISecondCacheLookup(args, frameArgs, planesToRender, glContextLocker, isDuringPaintStrokeDrawing, safety, storage, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, inputsRoDIntersectionPixel, tryIdentityOptim, renderFullScaleThenDownscale, createInCache, renderMappedMipMapLevel, renderMappedScale, key, &isPlaneCached);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }

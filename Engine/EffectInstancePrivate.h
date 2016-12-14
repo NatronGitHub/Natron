@@ -415,21 +415,15 @@ public:
                                                                 StorageModeEnum storage,
                                                                 const std::vector<ImageComponents>& outputComponents,
                                                                 ImagePremultiplicationEnum thisEffectOutputPremult,
-                                                                const RectD& rod,
-                                                                double par,
-                                                                bool renderFullScaleThenDownscale,
                                                                 bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
                                                                 boost::shared_ptr<FramesNeededMap>* framesNeeded);
 
     RenderRoIRetCode renderRoISecondCacheLookup(const RenderRoIArgs & args,
-                                                                const EffectDataTLSPtr& tls,
                                                                 const ParallelRenderArgsPtr& frameArgs,
-                                                                const ComponentsNeededMapPtr& neededComps,
                                                                 const ImagePlanesToRenderPtr &planesToRender,
                                                                 const OSGLContextAttacherPtr& glContextLocker,
                                                                 bool isDuringPaintStrokeDrawing,
                                                                 RenderSafetyEnum safety,
-                                                                bool useTransforms,
                                                                 StorageModeEnum storage,
                                                                 const std::vector<ImageComponents>& outputComponents,
                                                                 const RectD& rod,
@@ -438,13 +432,10 @@ public:
                                                                 const RectI& downscaledImageBounds,
                                                                 const RectI& inputsRoDIntersectionPixel,
                                                                 bool tryIdentityOptim,
-                                                                double par,
                                                                 bool renderFullScaleThenDownscale,
                                                                 bool createInCache,
                                                                 unsigned int renderMappedMipMapLevel,
                                                                 const RenderScale& renderMappedScale,
-                                                                bool renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                                const boost::shared_ptr<FramesNeededMap>& framesNeeded,
                                                                 const boost::scoped_ptr<ImageKey>& key,
                                                                 ImagePtr *isPlaneCached);
 
@@ -628,7 +619,6 @@ public:
                          TimeLapsePtr *timeRecorder);
 
     void renderHandlerPostProcess(const EffectDataTLSPtr& tls,
-                                  const RectToRender & rectToRender,
                                   int preferredInput,
                                   const OSGLContextPtr& glContext,
                                   const EffectInstance::RenderActionArgs &actionArgs,
