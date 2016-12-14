@@ -518,7 +518,7 @@ NodeGui::createGui()
 
 
     BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
-    {
+    if (!isBd) {
 
         _pluginIcon = new NodeGraphPixmapItem(getDagGui(), this);
         _pluginIcon->setZValue(depth + 1);

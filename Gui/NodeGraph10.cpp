@@ -124,20 +124,19 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
             nodes.insert(n);
         }
     }
-
+    NodeGuiPtr nearbyBackdrop;
+    NodeGraph::NearbyItemEnum nearbyBackdropType = NodeGraph::eNearbyItemNone;
     for (std::set<NodeGuiPtr>::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isVisible() && (*it)->isActive() ) {
             QPointF localPoint = (*it)->mapFromScene( mapToScene(mousePosViewport) );
             BackdropGuiPtr isBd = toBackdropGui(*it);
             if (isBd) {
-                if ( isBd->isNearbyNameFrame(localPoint) ) {
-                    *node = *it;
-
-                    return eNearbyItemBackdropFrame;
-                } else if ( isBd->isNearbyResizeHandle(localPoint) ) {
-                    *node = *it;
-
-                    return eNearbyItemBackdropResizeHandle;
+                if ( !nearbyBackdrop && isBd->isNearbyNameFrame(localPoint) ) {
+                    nearbyBackdrop = *it;
+                    nearbyBackdropType = eNearbyItemBackdropFrame;
+                } else if ( !nearbyBackdrop && isBd->isNearbyResizeHandle(localPoint) ) {
+                    nearbyBackdrop = *it;
+                    nearbyBackdropType = eNearbyItemBackdropResizeHandle;
                 }
             } else {
                 *node = *it;
@@ -145,6 +144,10 @@ NodeGraph::hasItemNearbyMouse(const QPoint& mousePosViewport,
                 return eNearbyItemNode;
             }
         }
+    }
+    if (nearbyBackdrop) {
+        *node = nearbyBackdrop;
+        return nearbyBackdropType;
     }
     if ( !edges.empty() ) {
         *edge = *edges.begin();
