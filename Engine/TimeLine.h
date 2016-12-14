@@ -71,6 +71,8 @@ public:
 
     void decrementCurrentFrame();
 
+    TimelineChangeReasonEnum getLastSeekReason() const;
+
 public Q_SLOTS:
 
 
@@ -89,6 +91,7 @@ private:
     mutable QMutex _lock; // protects the following SequenceTime members
     Project* _project;
     SequenceTime _currentFrame;
+    TimelineChangeReasonEnum _lastSeekReason;
 };
 
 NATRON_NAMESPACE_EXIT;

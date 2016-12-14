@@ -326,36 +326,6 @@ ActionsCache::setTimeDomainResult(U64 hash,
     cache._timeDomain.max = last;
 }
 
-EffectInstance::RenderArgs::RenderArgs()
-    : rod()
-    , renderWindowPixel()
-    , time(0)
-    , view(0)
-    , validArgs(false)
-    , inputImages()
-    , outputPlanes()
-    , outputPlaneBeingRendered()
-    , firstFrame(0)
-    , lastFrame(0)
-    , transformRedirections()
-{
-}
-
-EffectInstance::RenderArgs::RenderArgs(const RenderArgs & o)
-    : rod(o.rod)
-    , renderWindowPixel(o.renderWindowPixel)
-    , time(o.time)
-    , view(o.view)
-    , validArgs(o.validArgs)
-    , inputImages(o.inputImages)
-    , outputPlanes(o.outputPlanes)
-    , outputPlaneBeingRendered(o.outputPlaneBeingRendered)
-    , firstFrame(o.firstFrame)
-    , lastFrame(o.lastFrame)
-    , transformRedirections(o.transformRedirections)
-{
-}
-
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
     : _publicInterface(publicInterface)
     , tlsData( new TLSHolder<EffectTLSData>() )
@@ -526,28 +496,13 @@ EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectD
                                                                    double time,
                                                                    ViewIdx view,
                                                                    const ComponentsNeededMapPtr& compsNeeded,
-                                                                   const EffectInstance::InputImagesMap& inputImages,
+                                                                   const InputImagesMap& inputImages,
                                                                    int firstFrame,
                                                                    int lastFrame)
     : tlsData(tlsData)
 {
-    tlsData->currentRenderArgs.rod = rod;
-    tlsData->currentRenderArgs.renderWindowPixel = renderWindow;
-    tlsData->currentRenderArgs.time = time;
-    tlsData->currentRenderArgs.view = view;
-    tlsData->currentRenderArgs.compsNeeded = compsNeeded;
-    tlsData->currentRenderArgs.inputImages.insert( inputImages.begin(), inputImages.end() );
-    tlsData->currentRenderArgs.firstFrame = firstFrame;
-    tlsData->currentRenderArgs.lastFrame = lastFrame;
 
     tlsData->currentRenderArgs.validArgs = true;
-}
-
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                                                                   const EffectDataTLSPtr& otherThreadData)
-    : tlsData(tlsData)
-{
-    tlsData->currentRenderArgs = otherThreadData->currentRenderArgs;
 }
 
 EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()

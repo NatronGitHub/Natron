@@ -438,7 +438,9 @@ typedef std::list<NodePtr> NodesList;
 typedef std::list<NodeWPtr> NodesWList;
 typedef std::vector<KnobIPtr> KnobsVec;
 typedef std::list< BezierCPPtr > BezierCPs;
-
+typedef std::map<int, std::list< ImagePtr > > InputImagesMap;
+typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
+typedef boost::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
 
 NATRON_PYTHON_NAMESPACE_ENTER;
 class App;

@@ -2278,7 +2278,7 @@ private:
                 std::list<ImageComponents> components;
 
                 //Use needed components to figure out what we need to render
-                EffectInstance::ComponentsNeededMap neededComps;
+                ComponentsNeededMap neededComps;
                 bool processAll;
                 SequenceTime ptTime;
                 int ptView;
@@ -2287,7 +2287,7 @@ private:
                 activeInputToRender->getComponentsNeededAndProduced_public(true, true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
                 components.clear();
 
-                EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+                ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
                 if ( foundOutput != neededComps.end() ) {
                     for (std::size_t j = 0; j < foundOutput->second.size(); ++j) {
                         components.push_back(foundOutput->second[j]);

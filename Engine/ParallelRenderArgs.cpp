@@ -128,8 +128,8 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    double time,
                                    ViewIdx /*view*/,
                                    const NodePtr& treeRoot,
-                                   EffectInstance::InputImagesMap* inputImages, // render functor specific
-                                   const EffectInstance::ComponentsNeededMap* neededComps, // render functor specific
+                                   InputImagesMap* inputImages, // render functor specific
+                                   const ComponentsNeededMap* neededComps, // render functor specific
                                    bool useScaleOneInputs, // render functor specific
                                    bool byPassCache) // render functor specific
 {
@@ -168,7 +168,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 
         ImageList* inputImagesList = 0;
         if (isRenderFunctor) {
-            EffectInstance::InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
+            InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
             if ( foundInputImages == inputImages->end() ) {
                 std::pair<InputImagesMap::iterator, bool> ret = inputImages->insert( std::make_pair( inputNb, ImageList() ) );
                 inputImagesList = &ret.first->second;
@@ -208,7 +208,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         const std::vector<ImageComponents>* compsNeeded = 0;
 
         if (neededComps) {
-            EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
+            ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
             if ( foundCompsNeeded == neededComps->end() ) {
                 continue;
             } else {

@@ -123,6 +123,45 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct PlaneToRender
+{
+    //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
+    ImagePtr fullscaleImage;
+
+    //Points to the image to be rendered
+    ImagePtr downscaleImage;
+
+    //Points to the image that the plug-in can render (either fullScale or downscale)
+    ImagePtr renderMappedImage;
+
+    //Points to a temporary image that the plug-in will render
+    ImagePtr tmpImage;
+
+    /*
+     In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
+     if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
+     */
+    ImagePtr cacheSwapImage;
+    void* originalCachedImage;
+
+    /**
+     * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
+     **/
+    bool isAllocatedOnTheFly;
+
+    PlaneToRender()
+    : fullscaleImage()
+    , downscaleImage()
+    , renderMappedImage()
+    , tmpImage()
+    , cacheSwapImage()
+    , originalCachedImage(0)
+    , isAllocatedOnTheFly(false)
+    {
+    }
+};
+
+
 /**
  * @brief This is the base class for visual effects.
  * A live instance is always living throughout the lifetime of a Node and other copies are
@@ -139,9 +178,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 public:
     typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
     typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
-    typedef std::map<int, std::list< ImagePtr > > InputImagesMap;
-    typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
-    typedef boost::shared_ptr<ComponentsNeededMap> ComponentsNeededMapPtr;
+
 
     struct RenderRoIArgs
     {
@@ -157,7 +194,7 @@ public:
 
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
-        EffectInstance::InputImagesMap inputImagesList;
+        InputImagesMap inputImagesList;
         EffectInstancePtr caller;
         ImageBitDepthEnum bitdepth; //< the requested bit depth
         bool byPassCache;
@@ -202,7 +239,7 @@ public:
                        EffectInstancePtr caller,
                        StorageModeEnum returnStorage,
                        double callerRenderTime,
-                       const EffectInstance::InputImagesMap & inputImages = EffectInstance::InputImagesMap() )
+                       const InputImagesMap & inputImages = InputImagesMap() )
             : time(time_)
             , scale(scale_)
             , mipMapLevel(mipMapLevel_)
@@ -541,7 +578,7 @@ public:
                                              const RectI& roi,
                                              ImageBitDepthEnum bitdepth,
                                              const ImageComponents & components,
-                                             const EffectInstance::InputImagesMap & inputImages,
+                                             const InputImagesMap & inputImages,
                                              const RenderStatsPtr & stats,
                                              const OSGLContextAttacherPtr& glContextAttacher,
                                              ImagePtr* image);
@@ -682,8 +719,8 @@ public:
                                                                double time,
                                                                ViewIdx view,
                                                                const NodePtr & treeRoot,
-                                                               EffectInstance::InputImagesMap* inputImages,         // render functor specific
-                                                               const EffectInstance::ComponentsNeededMap* neededComps,         // render functor specific
+                                                               InputImagesMap* inputImages,         // render functor specific
+                                                               const ComponentsNeededMap* neededComps,         // render functor specific
                                                                bool useScaleOneInputs,         // render functor specific
                                                                bool byPassCache);         // render functor specific
 
@@ -868,7 +905,7 @@ public:
         RenderScale mappedScale;
         RectI roi;
         std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
-        EffectInstance::InputImagesMap inputImages;
+        InputImagesMap inputImages;
         ViewIdx view;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
@@ -1285,43 +1322,7 @@ public:
     virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
 
 
-    struct PlaneToRender
-    {
-        //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
-        ImagePtr fullscaleImage;
 
-        //Points to the image to be rendered
-        ImagePtr downscaleImage;
-
-        //Points to the image that the plug-in can render (either fullScale or downscale)
-        ImagePtr renderMappedImage;
-
-        //Points to a temporary image that the plug-in will render
-        ImagePtr tmpImage;
-
-        /*
-           In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
-           if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
-         */
-        ImagePtr cacheSwapImage;
-        void* originalCachedImage;
-
-        /**
-         * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
-         **/
-        bool isAllocatedOnTheFly;
-
-        PlaneToRender()
-            : fullscaleImage()
-            , downscaleImage()
-            , renderMappedImage()
-            , tmpImage()
-            , cacheSwapImage()
-            , originalCachedImage(0)
-            , isAllocatedOnTheFly(false)
-        {
-        }
-    };
 
     struct RectToRender
     {
@@ -1335,7 +1336,7 @@ public:
     struct ImagePlanesToRender
     {
         std::list<RectToRender> rectsToRender;
-        EffectInstance::InputImagesMap inputImages;
+        InputImagesMap inputImages;
         std::map<ImageComponents, PlaneToRender> planes;
         std::map<int, ImagePremultiplicationEnum> inputPremult;
         ImagePremultiplicationEnum outputPremult;
@@ -1365,8 +1366,7 @@ public:
      *
      * WARNING: This call isexpensive and this function should not be called many times.
      **/
-    bool getThreadLocalRenderedPlanes(std::map<ImageComponents, EffectInstance::PlaneToRender >*  planes,
-                                      ImageComponents* planeBeingRendered,
+    bool getThreadLocalRenderedPlanes(std::map<ImageComponents, PlaneToRender >*  planes,
                                       RectI* renderWindow) const;
 
     bool getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const;
@@ -1717,7 +1717,7 @@ public:
     void getComponentsNeededAndProduced_public(bool useLayerChoice,
                                                bool useThisNodeComponentsNeeded,
                                                double time, ViewIdx view,
-                                               EffectInstance::ComponentsNeededMap* comps,
+                                               ComponentsNeededMap* comps,
                                                bool* processAllRequested,
                                                SequenceTime* passThroughTime,
                                                int* passThroughView,
@@ -1743,107 +1743,8 @@ public:
                                    const RenderScale & scale,
                                    RoIMap* inputRois,
                                    const ReRoutesMapPtr& reroutesMap);
-    struct RenderArgs
-    {
-        RectD rod; //!< the effect's RoD in CANONICAL coordinates
-        RectI renderWindowPixel; //< the current renderWindow in PIXEL coordinates
-        double time; //< the time to render
-        ViewIdx view; //< the view to render
-        bool validArgs; //< are the args valid ?
-
-        // Input images that were pre-fetched in renderRoI so that they can
-        // be accessed from getImage()
-        EffectInstance::InputImagesMap inputImages;
-        std::map<ImageComponents, PlaneToRender> outputPlanes;
-
-        //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
-        ImageComponents outputPlaneBeingRendered;
-        ComponentsNeededMapPtr  compsNeeded;
-        double firstFrame, lastFrame;
-        InputMatrixMapPtr transformRedirections;
-
-        RenderArgs();
-
-        RenderArgs(const RenderArgs & o);
-    };
-
-    //these are per-node thread-local data
-    struct EffectTLSData
-    {
-        //Used to count the begin/endRenderAction recursion
-        int beginEndRenderCount;
 
 
-        ///Used to count the recursion in the function calls
-        /* The image effect actions which may trigger a recursive action call on a single instance are...
-
-           kOfxActionBeginInstanceChanged
-           kOfxActionInstanceChanged
-           kOfxActionEndInstanceChanged
-           The interact actions which may trigger a recursive action to be called on the associated plugin instance are...
-
-           kOfxInteractActionGainFocus
-           kOfxInteractActionKeyDown
-           kOfxInteractActionKeyRepeat
-           kOfxInteractActionKeyUp
-           kOfxInteractActionLoseFocus
-           kOfxInteractActionPenDown
-           kOfxInteractActionPenMotion
-           kOfxInteractActionPenUp
-
-           The image effect actions which may be called recursively are...
-
-           kOfxActionBeginInstanceChanged
-           kOfxActionInstanceChanged
-           kOfxActionEndInstanceChanged
-           kOfxImageEffectActionGetClipPreferences
-           The interact actions which may be called recursively are...
-
-           kOfxInteractActionDraw
-
-         */
-        int actionRecursionLevel;
-#ifdef DEBUG
-        std::list<bool> canSetValue;
-#endif
-
-        ///Recursive because it may be set recursively in such situation:
-        ///knobChanged : set ParallelRenderArgs TLS for analysis
-        ///timelineGoTo calls getRenderviewerArgs on the MT which overrides this TLS
-        std::list<ParallelRenderArgsPtr > frameArgs;
-        EffectInstance::RenderArgs currentRenderArgs;
-
-        // When rendering with the viewer, to compute the frame/view hash we need to call getFramesNeeded.
-        // But for the viewer the frames needed depend on the index we are rendering (i.e: A or B).
-        int viewerTextureIndex;
-
-        EffectTLSData()
-            : beginEndRenderCount(0)
-            , actionRecursionLevel(0)
-#ifdef DEBUG
-            , canSetValue()
-#endif
-            , frameArgs()
-            , currentRenderArgs()
-            , viewerTextureIndex(0)
-        {
-        }
-
-        EffectTLSData(const EffectTLSData& other)
-        : beginEndRenderCount(other.beginEndRenderCount)
-        , actionRecursionLevel(other.actionRecursionLevel)
-#ifdef DEBUG
-        , canSetValue(other.canSetValue)
-#endif
-        , frameArgs(other.frameArgs)
-        , currentRenderArgs(other.currentRenderArgs)
-        , viewerTextureIndex(other.viewerTextureIndex)
-        {
-
-        }
-    };
-
-    typedef boost::shared_ptr<EffectTLSData> EffectDataTLSPtr;
 
 protected:
 
@@ -1896,7 +1797,7 @@ protected:
      * passThroughInput to fetch the components needed.
      **/
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                EffectInstance::ComponentsNeededMap* comps,
+                                                ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
                                                 NodePtr* passThroughInput);
@@ -2082,8 +1983,8 @@ private:
                                              bool useScaleOneInputImages,
                                              bool byPassCache,
                                              const FramesNeededMap & framesNeeded,
-                                             const EffectInstance::ComponentsNeededMap & compsNeeded,
-                                             EffectInstance::InputImagesMap *inputImages);
+                                             const ComponentsNeededMap & compsNeeded,
+                                             InputImagesMap *inputImages);
 
     static ImagePtr convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
                                                                  const ImagePtr& inputImage,

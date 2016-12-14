@@ -545,14 +545,18 @@ Q_SIGNALS:
 
     void s_showLogOnMainThread();
 
+    void mustRefreshViewersAndKnobsLater();
+
 public Q_SLOTS:
+
+    void onMustRefreshViewersAndKnobsLaterReceived();
 
     void onMustRefreshTimelineGuiKeyframesLaterReceived();
 
     void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline
-    void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time, int reason);
+    void onTimelineTimeChanged(SequenceTime time, int reason);
 
     void onTimelineTimeAboutToChange();
 

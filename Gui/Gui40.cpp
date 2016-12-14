@@ -816,18 +816,21 @@ Gui::onTimelineTimeAboutToChange()
 }
 
 void
-Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
-                                                         int reason)
+Gui::onMustRefreshViewersAndKnobsLaterReceived()
 {
-    TimeLine* timeline = qobject_cast<TimeLine*>( sender() );
-
-    if ( timeline != getApp()->getTimeLine().get() ) {
+    if (!_imp->nKnobsRefreshAfterTimeChangeRequests) {
         return;
     }
+    _imp->nKnobsRefreshAfterTimeChangeRequests = 0;
+
+    TimeLinePtr timeline = getApp()->getTimeLine();
+
+    TimelineChangeReasonEnum reason = timeline->getLastSeekReason();
+    int frame = timeline->currentFrame();
 
     assert( QThread::currentThread() == qApp->thread() );
     if ( (reason == eTimelineChangeReasonUserSeek) ||
-         ( reason == eTimelineChangeReasonAnimationModuleSeek) ) {
+        ( reason == eTimelineChangeReasonAnimationModuleSeek) ) {
         if ( getApp()->checkAllReadersModificationDate(true) ) {
             return;
         }
@@ -843,7 +846,7 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
             NodeSettingsPanel* nodePanel = dynamic_cast<NodeSettingsPanel*>(*it);
             if (nodePanel) {
                 NodePtr node = nodePanel->getNodeGui()->getNode();
-                node->getEffectInstance()->refreshAfterTimeChange(isPlayback, time);
+                node->getEffectInstance()->refreshAfterTimeChange(isPlayback, frame);
             }
         }
     }
@@ -864,7 +867,14 @@ Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time,
         }
         instance->renderCurrentFrame(!isPlayback);
     }
-} // Gui::renderViewersAndRefreshKnobsAfterTimelineTimeChange
+} // onMustRefreshViewersAndKnobsLaterReceived
+
+void
+Gui::onTimelineTimeChanged(SequenceTime /*time*/,int /*reason*/)
+{
+    ++_imp->nKnobsRefreshAfterTimeChangeRequests;
+    Q_EMIT mustRefreshViewersAndKnobsLater();
+}
 
 void
 Gui::refreshTimelineGuiKeyframesLater()

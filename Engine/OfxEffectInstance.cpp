@@ -143,7 +143,7 @@ public:
                               ViewIdx view,
                               unsigned int mipmapLevel,
                               const ImageComponents& currentPlane,
-                              const EffectInstance::InputImagesMap& inputImages)
+                              const InputImagesMap& inputImages)
         : effect(effect)
     {
         const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
@@ -156,7 +156,7 @@ public:
                     clip->setClipTLS(view, mipmapLevel, currentPlane);
                 } else {
                     int inputNb = clip->getInputNb();
-                    EffectInstance::InputImagesMap::const_iterator foundClip = inputImages.find(inputNb);
+                    InputImagesMap::const_iterator foundClip = inputImages.find(inputNb);
 
                     if ( ( foundClip != inputImages.end() ) && !foundClip->second.empty() ) {
                         const ImagePtr& img = foundClip->second.front();
@@ -2642,7 +2642,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 void
 OfxEffectInstance::getComponentsNeededAndProduced(double time,
                                                   ViewIdx view,
-                                                  EffectInstance::ComponentsNeededMap* comps,
+                                                  ComponentsNeededMap* comps,
                                                   SequenceTime* passThroughTime,
                                                   int* passThroughView,
                                                   NodePtr* passThroughInput)

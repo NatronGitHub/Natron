@@ -53,6 +53,13 @@ TimeLine::currentFrame() const
     return _currentFrame;
 }
 
+TimelineChangeReasonEnum
+TimeLine::getLastSeekReason() const
+{
+    QMutexLocker l(&_lock);
+    return _lastSeekReason;
+}
+
 void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
@@ -69,6 +76,7 @@ TimeLine::seekFrame(SequenceTime frame,
             _currentFrame = frame;
             changed = true;
         }
+        _lastSeekReason = reason;
     }
 
     if (_project && updateLastCaller) {
@@ -87,6 +95,7 @@ TimeLine::incrementCurrentFrame()
         QMutexLocker l(&_lock);
         ++_currentFrame;
         frame = _currentFrame;
+        _lastSeekReason = eTimelineChangeReasonPlaybackSeek;
     }
     Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
@@ -99,6 +108,7 @@ TimeLine::decrementCurrentFrame()
         QMutexLocker l(&_lock);
         --_currentFrame;
         frame = _currentFrame;
+        _lastSeekReason = eTimelineChangeReasonPlaybackSeek;
     }
     Q_EMIT frameChanged(frame, (int)eTimelineChangeReasonPlaybackSeek);
 }
@@ -114,6 +124,7 @@ TimeLine::onFrameChanged(SequenceTime frame)
             _currentFrame = frame;
             changed = true;
         }
+        _lastSeekReason = eTimelineChangeReasonUserSeek;
     }
 
     if (changed) {

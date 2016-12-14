@@ -169,6 +169,8 @@ public:
 
     AnimationModulePtr model;
 
+    int nRefreshExpressionResultRequests;
+
     QTreeWidgetItem* rightClickedItem;
 
     // If there's a single selected keyframe, get it,otherwise return false;
@@ -204,6 +206,7 @@ AnimationModuleEditorPrivate::AnimationModuleEditorPrivate(AnimationModuleEditor
 , treeView(0)
 , view(0)
 , model()
+, nRefreshExpressionResultRequests(0)
 , rightClickedItem(0)
 {
 }
@@ -510,6 +513,9 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     refreshKeyFrameWidgetsEnabledNess();
 
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineTimeChanged(SequenceTime,int)) );
+
+
+    QObject::connect( timeline.get(), SIGNAL(mustRefreshExpressionResultsLater()), this, SLOT(onMustRefreshExpressionResultsLaterReceived()), Qt::QueuedConnection );
 }
 
 AnimationModuleEditor::~AnimationModuleEditor()
@@ -852,9 +858,20 @@ AnimationModuleEditorPrivate::refreshExpressionResult()
 } // refreshExpressionResult
 
 void
+AnimationModuleEditor::onMustRefreshExpressionResultsLaterReceived()
+{
+    if (!_imp->nRefreshExpressionResultRequests) {
+        return;
+    }
+    _imp->nRefreshExpressionResultRequests = 0;
+    _imp->refreshExpressionResult();
+}
+
+void
 AnimationModuleEditor::onTimelineTimeChanged(SequenceTime /*time*/, int /*reason*/)
 {
-    _imp->refreshExpressionResult();
+    ++_imp->nRefreshExpressionResultRequests;
+    Q_EMIT mustRefreshExpressionResultsLater();
 }
 
 

@@ -1184,7 +1184,7 @@ ReadNode::getFrameRange(double *first,
 void
 ReadNode::getComponentsNeededAndProduced(double time,
                                          ViewIdx view,
-                                         EffectInstance::ComponentsNeededMap* comps,
+                                         ComponentsNeededMap* comps,
                                          SequenceTime* passThroughTime,
                                          int* passThroughView,
                                          NodePtr* passThroughInput)

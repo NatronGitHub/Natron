@@ -290,12 +290,8 @@ public:
                          double time,
                          ViewIdx view,
                          const ComponentsNeededMapPtr& compsNeeded,
-                         const EffectInstance::InputImagesMap& inputImages,
-                         int firstFrame,
-                         int lastFrame);
+                         const InputImagesMap& inputImages);
 
-        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                         const EffectDataTLSPtr& otherThreadData);
 
         ~ScopedRenderArgs();
     };
@@ -522,7 +518,7 @@ public:
 
     void tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
                                const EffectInstance::RectToRender & rectToRender,
-                               const EffectInstance::PlaneToRender & firstPlaneToRender,
+                               const PlaneToRender & firstPlaneToRender,
                                bool renderFullScaleThenDownscale,
                                unsigned int renderMappedMipMapLevel,
                                unsigned int mipMapLevel,
@@ -601,7 +597,7 @@ public:
                                                   bool bitmapMarkedForRendering,
                                                   const ImageComponents & outputClipPrefsComps,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
-                                                  std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
+                                                  std::map<ImageComponents, PlaneToRender>& outputPlanes,
                                                   boost::shared_ptr<OSGLContextAttacher>* glContextAttacher);
 
     void setupRenderArgs(const EffectDataTLSPtr& tls,
@@ -613,7 +609,7 @@ public:
                          const ImagePlanesToRender & planes,
                          const RectI & renderMappedRectToRender,
                          const std::bitset<4>& processChannels,
-                         const EffectInstance::InputImagesMap& inputImages,
+                         const InputImagesMap& inputImages,
                          EffectInstance::RenderActionArgs &actionArgs,
                          boost::shared_ptr<OSGLContextAttacher>* glContextAttacher,
                          TimeLapsePtr *timeRecorder);
@@ -627,7 +623,7 @@ public:
                                   const TimeLapsePtr& timeRecorder,
                                   bool renderFullScaleThenDownscale,
                                   unsigned int mipMapLevel,
-                                  const std::map<ImageComponents, EffectInstance::PlaneToRender>& outputPlanes,
+                                  const std::map<ImageComponents, PlaneToRender>& outputPlanes,
                                   const std::bitset<4>& processChannels);
 
 

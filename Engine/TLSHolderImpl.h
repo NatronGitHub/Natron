@@ -134,7 +134,6 @@ TLSHolder<T>::getTLSData() const
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
     boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
-
     if (ret) {
         return ret;
     }
@@ -189,6 +188,9 @@ TLSHolder<T>::getOrCreateTLSData() const
         perThreadData.insert( std::make_pair(curThread, data) );
     }
     assert(data.value);
+
+    // Ensure the type inherits PerThreadDataBase
+    assert(dynamic_cast<PerThreadDataBase*>(data.value.get());
 
     return data.value;
 }

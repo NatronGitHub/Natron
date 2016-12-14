@@ -238,6 +238,9 @@ public:
     // Used to concatenate requests to refresh keyframes
     int nKeysRefreshRequests;
 
+    // Used to concatenate frameChanged signal reception
+    int nKnobsRefreshAfterTimeChangeRequests;
+
     // List of keyframes that should be visible on all timeline GUI
     TimeLineKeysSet keyframesVisibleOnTimeline;
 

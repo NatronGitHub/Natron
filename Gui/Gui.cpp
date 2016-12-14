@@ -104,6 +104,8 @@ Gui::Gui(const GuiAppInstancePtr& app,
     QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
     QObject::connect (this, SIGNAL(s_showLogOnMainThread()), this, SLOT(onShowLogOnMainThreadReceived()));
     QObject::connect (this, SIGNAL(mustRefreshTimelineGuiKeyframesLater()), this, SLOT(onMustRefreshTimelineGuiKeyframesLaterReceived()), Qt::QueuedConnection);
+    QObject::connect (this, SIGNAL(mustRefreshTimelineGuiKeyframesLater()), this, SLOT(onMustRefreshTimelineGuiKeyframesLaterReceived()), Qt::QueuedConnection);
+    QObject::connect (this, SIGNAL(mustRefreshViewersAndKnobsLater()), this, SLOT(onMustRefreshViewersAndKnobsLaterReceived()), Qt::QueuedConnection);
 
     setAcceptDrops(true);
 

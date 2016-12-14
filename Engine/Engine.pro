@@ -92,6 +92,7 @@ SOURCES += \
     DiskCacheNode.cpp \
     Dot.cpp \
     EffectInstance.cpp \
+    EffectInstanceTLSData.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
     EffectOpenGLContextData.cpp \
@@ -306,6 +307,7 @@ HEADERS += \
     Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
+    EffectInstanceTLSData.h \
     EffectInstancePrivate.h \
     EffectOpenGLContextData.h \
     ExistenceCheckThread.h \

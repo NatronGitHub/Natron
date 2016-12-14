@@ -801,14 +801,13 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     //If components param is not set (i.e: the plug-in uses regular clipGetImage call) then figure out the plane from the TLS set in OfxEffectInstance::render
     //otherwise use the param sent by the plug-in call of clipGetImagePlane
 
-    //bool isMultiplanar = effect->isMultiPlanar();
     ImageComponents comp;
     if (!ofxPlane) {
-        boost::shared_ptr<EffectInstance::ComponentsNeededMap> neededComps;
+        ComponentsNeededMapPtr neededComps;
         effect->getThreadLocalNeededComponents(&neededComps);
         bool foundCompsInTLS = false;
         if (neededComps) {
-            EffectInstance::ComponentsNeededMap::iterator found = neededComps->find(inputnb);
+            ComponentsNeededMap::iterator found = neededComps->find(inputnb);
             if ( found != neededComps->end() ) {
                 if ( found->second.empty() ) {
                     ///We are in the case of a multi-plane effect who did not specify correctly the needed components for an input
@@ -1040,10 +1039,9 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
 
     //Look into TLS what planes are being rendered in the render action currently and the render window
-    std::map<ImageComponents, EffectInstance::PlaneToRender> outputPlanes;
+    std::map<ImageComponents, PlaneToRender> outputPlanes;
     RectI renderWindow;
-    ImageComponents planeBeingRendered;
-    bool ok = effect->getThreadLocalRenderedPlanes(&outputPlanes, &planeBeingRendered, &renderWindow);
+    bool ok = effect->getThreadLocalRenderedPlanes(&outputPlanes, &renderWindow);
     if (!ok) {
         return false;
     }
@@ -1054,9 +1052,9 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
        If the plugin is multiplanar return exactly what it requested.
        Otherwise, hack the clipGetImage and return the plane requested by the user via the interface instead of the colour plane.
      */
-    const std::string& layerName = /*multiPlanar ?*/ natronPlane.getLayerName(); // : planeBeingRendered.getLayerName();
+    const std::string& layerName = natronPlane.getLayerName(); 
 
-    for (std::map<ImageComponents, EffectInstance::PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+    for (std::map<ImageComponents, PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getLayerName() == layerName) {
             outputImage = it->second.tmpImage;
             break;
