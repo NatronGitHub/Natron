@@ -331,34 +331,6 @@ protected:
 
 public:
 
-    struct ListenerLink
-    {
-
-        
-        // The view of the listener that is listening
-        ViewIdx listenerView;
-
-        // The dimension of the listener that is listening
-        DimIdx listenerDimension;
-
-        // The dimension of the knob listened to
-        DimIdx targetDim;
-
-        // The view of the knob listened to
-        ViewIdx targetView;
-
-        ListenerLink()
-        : listenerView()
-        , listenerDimension()
-        , targetDim()
-        , targetView()
-        {}
-    };
-
-    typedef std::list<ListenerLink> ListenerLinkList;
-    typedef std::map<KnobIWPtr, ListenerLinkList> ListenerDimsMap;
-
-
     struct Expr
     {
         std::string expression; //< the one modified by Natron
@@ -366,14 +338,11 @@ public:
         std::string exprInvalid;
         bool hasRet;
 
-        ///The list of pair<knob, dimension> dpendencies for an expression
-        struct Dependency
-        {
-            KnobIWPtr knob;
-            DimIdx dimension;
-            ViewIdx view;
-        };
-        std::list<Dependency> dependencies;
+        // The knobs/dimension/view we depend on in the expression
+        KnobDimViewKeySet dependencies;
+
+        // The other knobs/dimension/view that have expressions referencing us
+        KnobDimViewKeySet listeners;
 
         //PyObject* code;
 
@@ -808,7 +777,7 @@ public:
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<KnobI::Expr::Dependency>& dependencies) const = 0;
+    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, KnobDimViewKeySet& dependencies) const = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
@@ -1268,10 +1237,6 @@ public:
                                                       bool applyDefaultValue,
                                                       DimIdx targetDimension) = 0;
 
-private:
-
-    virtual void removeListener(const KnobIPtr& listener, DimIdx listenerDimension, ViewIdx listenerView) = 0;
-
 public:
 
     virtual bool useHostOverlayHandle() const { return false; }
@@ -1330,11 +1295,17 @@ public:
                                             bool isUserKnob) = 0;
 
 
-
+    enum ListenersTypeEnum
+    {
+        eListenersTypeAll = 0x0,
+        eListenersTypeExpression = 0x1,
+        eListenersTypeSharedValue = 0x2
+    };
+    typedef QFlags<ListenersTypeEnum> ListenersTypeFlags;
     /**
      * @brief Returns a list of all the knobs whose value depends upon this knob.
      **/
-    virtual void getListeners(ListenerDimsMap & listeners) const = 0;
+    virtual void getListeners(KnobDimViewKeySet &listeners, ListenersTypeFlags flags = ListenersTypeFlags(eListenersTypeAll)) const = 0;
 
     /**
      * @brief If the value is shared for the given dimension/view, returns the original owner of the value.
@@ -1718,7 +1689,7 @@ protected:
 public:
 
     virtual bool isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, std::list<KnobI::Expr::Dependency>& dependencies) const OVERRIDE FINAL;
+    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, KnobDimViewKeySet& dependencies) const OVERRIDE FINAL;
     virtual std::string getExpression(DimIdx dimension, ViewGetSpec view = ViewGetSpec::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1853,9 +1824,8 @@ public:
                              DimIdx thisDimension,
                              const ViewIdx listenerView,
                              const ViewIdx listenedToView, const KnobIPtr& knob) OVERRIDE FINAL;
-    virtual void removeListener(const KnobIPtr& listener, DimIdx listenerDimension, ViewIdx listenerView) OVERRIDE FINAL;
     virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
-    virtual void getListeners(KnobI::ListenerDimsMap& listeners) const OVERRIDE FINAL;
+    virtual void getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags = ListenersTypeFlags(eListenersTypeExpression | eListenersTypeSharedValue)) const OVERRIDE FINAL;
     virtual void clearExpressionsResults(DimSpec /*dimension*/, ViewSetSpec /*view*/) OVERRIDE {}
 
 private:

@@ -139,14 +139,20 @@ KnobHelper::deleteKnob()
     // Prevent any signal 
     blockValueChanges();
 
-    KnobI::ListenerDimsMap listenersCpy = _imp->listeners;
-
-    for (ListenerDimsMap::iterator it = listenersCpy.begin(); it != listenersCpy.end(); ++it) {
-        KnobIPtr knob = it->first.lock();
+    // Invalidate the expression of all listeners
+    KnobDimViewKeySet listeners;
+    for (KnobDimViewKeySet::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+        KnobIPtr knob = it->knob.lock();
         if (!knob) {
             continue;
         }
-        knob->setExpressionInvalid( DimSpec::all(), ViewSetSpec::all(), false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
+
+        // Check if the other knob listens to with an expression
+        std::string expression = knob->getExpression(it->dimension, it->view);
+        if (expression.empty()) {
+            continue;
+        }
+        knob->setExpressionInvalid( it->dimension, it->view, false, tr("%1: parameter does not exist").arg( QString::fromUtf8( getName().c_str() ) ).toStdString() );
         if (knob.get() != this) {
             knob->unlink(DimSpec::all(), ViewSetSpec::all(), false);
         }
@@ -948,8 +954,22 @@ KnobHelper::refreshListenersAfterValueChangeInternal(double time, ViewIdx view, 
         return;
     }
 
-    // Refresh all knobs sharing the value. If there are already in the evaluatedKnobs set nothing happens
-    for (KnobDimViewKeySet::const_iterator it = data->sharedKnobs.begin(); it != data->sharedKnobs.end(); ++it) {
+    KnobDimViewKeySet allListeners;
+
+    // Get all listeners via expressions
+    {
+        QMutexLocker l(&_imp->expressionMutex);
+        KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->expressions[dimension][view].listeners;
+        allListeners.insert(thisDimViewExpressionListeners.begin(), thisDimViewExpressionListeners.end());
+    }
+
+    // Get all listeners via shared values
+    {
+        QMutexLocker k(&data->valueMutex);
+        allListeners.insert(data->sharedKnobs.begin(), data->sharedKnobs.end());
+    }
+
+    for (KnobDimViewKeySet::const_iterator it = allListeners.begin(); it != allListeners.end(); ++it) {
         KnobHelperPtr sharedKnob = toKnobHelper(it->knob.lock());
         if (sharedKnob) {
             sharedKnob->evaluateValueChangeInternal(it->dimension, time, it->view, reason, evaluatedKnobs);
@@ -962,78 +982,24 @@ void
 KnobHelper::refreshListenersAfterValueChange(double time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs)
 {
 
-    if (view.isAll()) {
-        std::list<ViewIdx> views = getViewsList();
-        if (dimension.isAll()) {
-            int nDims = getNDimensions();
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                for (int i = 0; i < nDims; ++i) {
-                    refreshListenersAfterValueChangeInternal(time, *it, reason, DimIdx(i), evaluatedKnobs);
-                }
-            }
-        } else {
-            for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
-                refreshListenersAfterValueChangeInternal(time, *it, reason, DimIdx(dimension), evaluatedKnobs);
-            }
+    std::list<ViewIdx> views = getViewsList();
+    ViewIdx view_i;
+    if (!view.isAll()) {
+        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+    }
+    int nDims = getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
+        if (!view.isAll() && *it != view_i) {
+            continue;
         }
-    } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-        if (dimension.isAll()) {
-            int nDims = getNDimensions();
-            for (int i = 0; i < nDims; ++i) {
-                refreshListenersAfterValueChangeInternal(time, view_i, reason, DimIdx(i), evaluatedKnobs);
+        for (int i = 0; i < nDims; ++i) {
+            if (!dimension.isAll() && i != dimension) {
+                continue;
+                refreshListenersAfterValueChangeInternal(time, *it, reason, DimIdx(i), evaluatedKnobs);
             }
-
-        } else {
-            refreshListenersAfterValueChangeInternal(time, view_i, reason, DimIdx(dimension), evaluatedKnobs);
         }
     }
 
-    // For expressions: call evaluateValueChangeInternal on every knob that is listening to this view/dimension
-    ListenerDimsMap listeners;
-    getListeners(listeners);
-    for (ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-
-        KnobHelper* listenerKnob = dynamic_cast<KnobHelper*>( it->first.lock().get() );
-        if (!listenerKnob || listenerKnob == this) {
-            continue;
-        }
-
-        if (it->second.empty()) {
-            continue;
-        }
-
-        // List of dimension and views listening to the given view/dimension in argument
-        DimensionViewPairSet dimViewPairToEvaluate;
-        for (ListenerLinkList::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ((dimension.isAll() || it2->targetDim == dimension) && (view.isAll() || (view.isViewIdx() && it2->targetView == view) || (view.isCurrent() && it2->targetView == getCurrentView()))) {
-                DimensionViewPair p;
-                p.view = it2->targetView;
-                p.dimension = it2->targetDim;
-                dimViewPairToEvaluate.insert(p);
-            }
-        }
-
-
-        if ( dimViewPairToEvaluate.empty() ) {
-            continue;
-        }
-
-        // If multiple dimensions are listening to this knob at the given view/dimension, then assume all dimensions have changed in evaluateValueChange
-        DimSpec listenerDim;
-        ViewSetSpec listenerView;
-        if (dimViewPairToEvaluate.size() > 1) {
-            listenerDim = DimSpec::all();
-            listenerView = ViewSetSpec::all();
-        } else {
-            DimensionViewPairSet::iterator first = dimViewPairToEvaluate.begin();
-            listenerDim = first->dimension;
-            listenerView = first->view;
-        }
-
-        listenerKnob->evaluateValueChangeInternal(listenerDim, time, listenerView, reason, evaluatedKnobs);
-
-    } // for all listeners
 } // KnobHelper::refreshListenersAfterValueChange
 
 void
@@ -2473,61 +2439,50 @@ KnobHelper::addListener(const DimIdx listenerDimension,
 
     // Add the listener to the list
     {
-        QMutexLocker l(&_imp->listenersMutex);
-        ListenerLinkList& linksList = _imp->listeners[listener];
-        ListenerLink link;
-        link.listenerDimension = listenerDimension;
-        link.listenerView = listenerView;
-        link.targetDim = listenedToDimension;
-        link.targetView = listenedToView;
-        linksList.push_back(link);
+        QMutexLocker l(&_imp->expressionMutex);
+        Expr& expr = _imp->expressions[listenedToDimension][listenedToView];
+        KnobDimViewKey d(listener, listenerDimension, listenerView);
+        expr.listeners.insert(d);
     }
 
     // Add this knob as a dependency of the expression
     {
         QMutexLocker k(&listenerIsHelper->_imp->expressionMutex);
         Expr& expr = listenerIsHelper->_imp->expressions[listenerDimension][listenerView];
-        Expr::Dependency d;
-        d.knob = thisShared;
-        d.dimension = listenedToDimension;
-        d.view = listenedToView;
-        expr.dependencies.push_back(d);
+        KnobDimViewKey d(thisShared, listenedToDimension, listenedToView);
+        expr.dependencies.insert(d);
     }
 
     _signalSlotHandler->s_linkChanged();
 } // addListener
 
-void
-KnobHelper::removeListener(const KnobIPtr& listener,
-                           DimIdx listenerDimension,
-                           ViewIdx listenerView)
-{
-    KnobHelperPtr listenerHelper = boost::dynamic_pointer_cast<KnobHelper>(listener);
-    assert(listenerHelper);
-    {
-        QMutexLocker l(&_imp->listenersMutex);
-        ListenerDimsMap::iterator foundListener = _imp->listeners.find(listener);
-        if (foundListener != _imp->listeners.end()) {
 
-            for (ListenerLinkList::iterator it = foundListener->second.begin(); it != foundListener->second.end(); ++it) {
-                if (it->listenerDimension == listenerDimension && it->listenerView == listenerView) {
-                    foundListener->second.erase(it);
-                    break;
-                }
+void
+KnobHelper::getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags) const
+{
+    std::list<ViewIdx> views = getViewsList();
+    int nDims = getNDimensions();
+    for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
+        for (int i = 0; i < nDims; ++i) {
+
+            if ((flags & eListenersTypeExpression) || (flags & eListenersTypeAll)) {
+                QMutexLocker l(&_imp->expressionMutex);
+                const KnobDimViewKeySet& thisDimViewExpressionListeners = _imp->expressions[i][*it].listeners;
+                listeners.insert(thisDimViewExpressionListeners.begin(), thisDimViewExpressionListeners.end());
             }
-            if (foundListener->second.empty()) {
-                _imp->listeners.erase(foundListener);
+
+            if ((flags & eListenersTypeSharedValue) || (flags & eListenersTypeAll)) {
+                KnobDimViewBasePtr data = getDataForDimView(DimIdx(i), *it);
+                if (!data) {
+                    continue;
+                }
+                KnobDimViewKeySet sharedKnobs;
+                getSharedValues(DimIdx(i), *it, &sharedKnobs);
+                listeners.insert(sharedKnobs.begin(), sharedKnobs.end());
             }
         }
     }
-}
 
-void
-KnobHelper::getListeners(KnobI::ListenerDimsMap & listeners) const
-{
-    QMutexLocker l(&_imp->listenersMutex);
-
-    listeners = _imp->listeners;
 }
 
 double
@@ -2982,7 +2937,7 @@ KnobHelper::getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) con
         QMutexLocker k(&_imp->expressionMutex);
         for (int i = 0; i < _imp->dimension; ++i) {
             for (ExprPerViewMap::const_iterator it = _imp->expressions[i].begin(); it != _imp->expressions[i].end(); ++it) {
-                for (std::list<Expr::Dependency>::const_iterator it2 = it->second.dependencies.begin();
+                for (KnobDimViewKeySet::const_iterator it2 = it->second.dependencies.begin();
                      it2 != it->second.dependencies.end(); ++it2) {
                     KnobIPtr knob = it2->knob.lock();
                     if (knob && knob.get() != this) {

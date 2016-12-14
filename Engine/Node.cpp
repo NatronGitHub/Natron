@@ -2035,6 +2035,15 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
 
                 KnobDimViewKeySet dimViewSharedKnobs;
                 (*it)->getSharedValues(DimIdx(i), *it2, &dimViewSharedKnobs);
+
+                {
+                    KnobDimViewKeySet expressionDependencies;
+                    if ((*it)->getExpressionDependencies(DimIdx(i), *it2, expressionDependencies)) {
+
+                    }
+                    dimViewSharedKnobs.insert(expressionDependencies.begin(), expressionDependencies.end());
+                }
+
                 // insert all shared knobs for this dimension/view to the global sharedKnobs set
                 for (KnobDimViewKeySet::const_iterator it3 = dimViewSharedKnobs.begin(); it3 != dimViewSharedKnobs.end() ;++it3) {
                     KnobIPtr sharedKnob = it3->knob.lock();
@@ -2076,48 +2085,6 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
                 } // for all shared knobs
             } // for all dimensions
         } // for all views
-
-        // Also add expression links
-        KnobI::ListenerDimsMap listeners;
-        (*it)->getListeners(listeners);
-        for (KnobI::ListenerDimsMap::const_iterator it2 = listeners.begin(); it2!= listeners.end(); ++it2) {
-            KnobIPtr listenerKnob = it2->first.lock();
-            if (!listenerKnob) {
-                continue;
-            }
-
-            EffectInstancePtr sharedHolderIsEffect = toEffectInstance(listenerKnob->getHolder());
-            KnobTableItemPtr sharedHolderIsItem = toKnobTableItem(listenerKnob->getHolder());
-            if (sharedHolderIsItem) {
-                sharedHolderIsEffect = sharedHolderIsItem->getModel()->getNode()->getEffectInstance();
-            }
-            if (!sharedHolderIsEffect) {
-                continue;
-            }
-
-            // Increment the number of references to that node
-            NodePtr sharedNode = sharedHolderIsEffect->getNode();
-
-            // If the shared node is a child of this group, don't count as link
-            if (std::find(groupNodes.begin(), groupNodes.end(), sharedNode) != groupNodes.end()) {
-                continue;
-            }
-            if (sharedNode.get() != this) {
-                std::map<NodePtr, int>::iterator found = masterNodes.find(sharedNode);
-                if (found == masterNodes.end()) {
-                    if (countKnobAmongstVisited) {
-                        masterNodes[sharedNode] = 1;
-                    } else {
-                        masterNodes[sharedNode] = 0;
-                    }
-                } else {
-                    if (countKnobAmongstVisited) {
-                        ++found->second;
-                    }
-                }
-            }
-
-        }
 
     } // for all knobs
 
@@ -2866,14 +2833,14 @@ Node::setScriptName_no_error_check(const std::string & name)
 
 static void
 insertDependenciesRecursive(Node* node,
-                            KnobI::ListenerDimsMap* dependencies)
+                            KnobDimViewKeySet* dependencies)
 {
     const KnobsVec & knobs = node->getKnobs();
 
     for (std::size_t i = 0; i < knobs.size(); ++i) {
-        KnobI::ListenerDimsMap dimDeps;
-        knobs[i]->getListeners(dimDeps);
-        for (KnobI::ListenerDimsMap::iterator it = dimDeps.begin(); it != dimDeps.end(); ++it) {
+        KnobDimViewKeySet dimDeps;
+        knobs[i]->getListeners(dimDeps, KnobI::eListenersTypeExpression);
+        for (KnobDimViewKeySet::iterator it = dimDeps.begin(); it != dimDeps.end(); ++it) {
             dependencies->insert(*it);
         }
     }
@@ -2991,16 +2958,15 @@ Node::setNameInternal(const std::string& name,
 
         if (_imp->nodeCreated) {
             ///For all knobs that have listeners, change in the expressions of listeners this knob script-name
-            KnobI::ListenerDimsMap dependencies;
+            KnobDimViewKeySet dependencies;
             insertDependenciesRecursive(this, &dependencies);
-            for (KnobI::ListenerDimsMap::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
-                KnobIPtr listener = it->first.lock();
+            for (KnobDimViewKeySet::iterator it = dependencies.begin(); it != dependencies.end(); ++it) {
+                KnobIPtr listener = it->knob.lock();
                 if (!listener) {
                     continue;
                 }
-                for (std::list<KnobI::ListenerLink>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                    listener->replaceNodeNameInExpression(it2->listenerDimension, it2->listenerView, oldName, newName);
-                }
+                listener->replaceNodeNameInExpression(it->dimension, it->view, oldName, newName);
+
             }
         }
     }
@@ -5747,69 +5713,56 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     if (unslaveKnobs) {
         ///For all knobs that have listeners, invalidate expressions
         NodeGroupPtr isParentGroup = toNodeGroup(parentCol);
+
+        KnobDimViewKeySet globalListenersSet;
         KnobsVec knobs = _imp->effect->getKnobs_mt_safe();
         for (U32 i = 0; i < knobs.size(); ++i) {
-            KnobI::ListenerDimsMap listeners;
-            knobs[i]->getListeners(listeners);
-            for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-                KnobIPtr listener = it->first.lock();
-                if (!listener) {
-                    continue;
-                }
-                KnobHolderPtr holder = listener->getHolder();
-                if (!holder) {
-                    continue;
-                }
-                if ( ( holder == _imp->effect ) || (holder == isParentGroup) ) {
-                    continue;
-                }
-
-                EffectInstancePtr isEffect = toEffectInstance(holder);
-                if (!isEffect) {
-                    continue;
-                }
-
-                NodePtr effectNode = isEffect->getNode();
-                if (!effectNode) {
-                    continue;
-                }
-                NodeCollectionPtr effectParent = effectNode->getGroup();
-                if (!effectParent) {
-                    continue;
-                }
-                NodeGroupPtr isEffectParentGroup = toNodeGroup(effectParent);
-                if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
-                    continue;
-                }
-
-                isEffect->beginChanges();
-                std::list<ViewIdx> views = listener->getViewsList();
-                for (int dim = 0; dim < listener->getNDimensions(); ++dim) {
-                    for (std::list<ViewIdx>::const_iterator it2 = views.begin(); it2 != views.end(); ++it2) {
-                        KnobDimViewKey linkData;
-                        if (listener->getSharingMaster(DimIdx(dim), *it2, &linkData)) {
-                            KnobIPtr masterKnob = linkData.knob.lock();
-                            if (masterKnob == knobs[i]) {
-                                listener->unlink(DimIdx(dim), *it2, true);
-                            }
-                        }
-
-                        std::string hasExpr = listener->getExpression(DimIdx(dim), *it2);
-                        if ( !hasExpr.empty() ) {
-                            std::stringstream ss;
-                            ss << tr("Missing node ").toStdString();
-                            ss << getFullyQualifiedName();
-                            ss << ' ';
-                            ss << tr("in expression.").toStdString();
-                            listener->setExpressionInvalid( DimIdx(dim), *it2, false, ss.str() );
-                        }
-
-                    }
-
-                }
-                isEffect->endChanges(true);
-            }
+            KnobDimViewKeySet listeners;
+            knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
+            globalListenersSet.insert(listeners.begin(), listeners.end());
         }
+        for (KnobDimViewKeySet::iterator it = globalListenersSet.begin(); it != globalListenersSet.end(); ++it) {
+            KnobIPtr listener = it->knob.lock();
+            if (!listener) {
+                continue;
+            }
+            KnobHolderPtr holder = listener->getHolder();
+            if (!holder) {
+                continue;
+            }
+            if ( ( holder == _imp->effect ) || (holder == isParentGroup) ) {
+                continue;
+            }
+
+            EffectInstancePtr isEffect = toEffectInstance(holder);
+            if (!isEffect) {
+                continue;
+            }
+
+            NodePtr effectNode = isEffect->getNode();
+            if (!effectNode) {
+                continue;
+            }
+            NodeCollectionPtr effectParent = effectNode->getGroup();
+            if (!effectParent) {
+                continue;
+            }
+            NodeGroupPtr isEffectParentGroup = toNodeGroup(effectParent);
+            if ( isEffectParentGroup && (isEffectParentGroup == _imp->effect) ) {
+                continue;
+            }
+            std::string hasExpr = listener->getExpression(it->dimension, it->view);
+            if ( !hasExpr.empty() ) {
+                std::stringstream ss;
+                ss << tr("Missing node ").toStdString();
+                ss << getFullyQualifiedName();
+                ss << ' ';
+                ss << tr("in expression.").toStdString();
+                listener->setExpressionInvalid( it->dimension, it->view, false, ss.str() );
+            }
+
+        }
+
     }
 
     ///if the node has 1 non-optional input, attempt to connect the outputs to the input of the current node

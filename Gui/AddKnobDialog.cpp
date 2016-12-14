@@ -1723,19 +1723,20 @@ AddKnobDialog::onOkClicked()
 
         //Since removing this knob will also remove all expressions from listeners, conserve them and try
         //to recover them afterwards
-        KnobI::ListenerDimsMap listeners;
-        _imp->knob->getListeners(listeners);
-        for (KnobI::ListenerDimsMap::iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            KnobIPtr listener = it->first.lock();
+        KnobDimViewKeySet listeners;
+        _imp->knob->getListeners(listeners, KnobI::eListenersTypeExpression);
+        for (KnobDimViewKeySet::iterator it = listeners.begin(); it != listeners.end(); ++it) {
+            KnobIPtr listener = it->knob.lock();
             if (!listener) {
                 continue;
             }
-            std::vector<std::pair<std::string, bool> > exprs;
-            for (std::size_t i = 0; i < it->second.size(); ++i) {
+            int nDims = listener->getNDimensions();
+            std::vector<std::pair<std::string, bool> > exprs(nDims);
+            for (int d = 0; d < nDims; ++d) {
                 std::pair<std::string, bool> e;
-                e.first = listener->getExpression(DimIdx(i), ViewIdx(0));
-                e.second = listener->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(i));
-                exprs.push_back(e);
+                e.first = listener->getExpression(DimIdx(d), ViewIdx(0));
+                e.second = listener->isExpressionUsingRetVariable(ViewIdx(0), DimIdx(d));
+                exprs[d] = e;
             }
             listenersExpressions[listener] = exprs;
         }

@@ -1008,7 +1008,7 @@ KnobHelper::isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) con
 bool
 KnobHelper::getExpressionDependencies(DimIdx dimension,
                                       ViewGetSpec view,
-                                      std::list<KnobI::Expr::Dependency>& dependencies) const
+                                      KnobDimViewKeySet& dependencies) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
         throw std::invalid_argument("KnobHelper::getExpressionDependencies(): Dimension out of range");
@@ -1028,7 +1028,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
 {
     PythonGILLocker pgl;
     bool hadExpression = false;
-    std::list<KnobI::Expr::Dependency> dependencies;
+    KnobDimViewKeySet dependencies;
     {
         QMutexLocker k(&_imp->expressionMutex);
         ExprPerViewMap::iterator foundView = _imp->expressions[dimension].find(view);
@@ -1046,7 +1046,8 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
     {
 
         // Notify all dependencies of the expression that they no longer listen to this knob
-        for (std::list<KnobI::Expr::Dependency>::iterator it = dependencies.begin();
+        KnobDimViewKey listenerToRemoveKey(thisShared, dimension, view);
+        for (KnobDimViewKeySet::iterator it = dependencies.begin();
              it != dependencies.end(); ++it) {
 
             KnobIPtr otherKnob = it->knob.lock();
@@ -1055,34 +1056,14 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
                 continue;
             }
 
-            ListenerDimsMap otherListeners;
             {
-                QMutexLocker otherMastersLocker(&other->_imp->listenersMutex);
-                otherListeners = other->_imp->listeners;
-            }
+                QMutexLocker otherMastersLocker(&other->_imp->expressionMutex);
 
-            // Remove this knob/view/dimension from the listener map
-            for (ListenerDimsMap::iterator it = otherListeners.begin(); it != otherListeners.end(); ++it) {
-                KnobIPtr knob = it->first.lock();
-                if (knob.get() == this) {
-
-                    for (std::list<KnobI::ListenerLink>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                        if (it2->targetView == view && it2->targetDim == dimension) {
-                            it->second.erase(it2);
-                            break;
-                        }
-                    }
-                    if (it->second.empty()) {
-                        otherListeners.erase(it);
-                    }
-
-                    break;
+                KnobDimViewKeySet& otherListeners = other->_imp->expressions[it->dimension][it->view].listeners;
+                KnobDimViewKeySet::iterator foundListener = otherListeners.find(listenerToRemoveKey);
+                if (foundListener != otherListeners.end()) {
+                    otherListeners.erase(foundListener);
                 }
-            }
-
-            {
-                QMutexLocker otherMastersLocker(&other->_imp->listenersMutex);
-                other->_imp->listeners = otherListeners;
             }
         }
     }

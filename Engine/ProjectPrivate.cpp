@@ -169,24 +169,16 @@ Project::restoreInput(const NodePtr& node,
     // If we find a match, make sure we use the new node script-name to restore the input.
     NodePtr foundNode = findNodeWithScriptName(inputNodeScriptName, allCreatedNodesInGroup);
     if (!foundNode) {
-        // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
-        // and find an exact match, hoping the script-name of the node did not change.
-        foundNode = nodeGroup->getNodeByName(inputNodeScriptName);
+        return;
+
+
+        // Commented-out: Do not attempt to get the node in the nodes list: all nodes within a sub-graph should be connected to nodes at this level.
+        // If it cannot be found in the allCreatedNodesInGroup then this is likely the user does not want the input to connect.
+        //foundNode = nodeGroup->getNodeByName(inputNodeScriptName);
     }
-    
-    if (!foundNode) {
-        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
-                                        tr("Failed to connect node %1 to %2")
-                                        .arg( QString::fromUtf8( node->getScriptName().c_str() ) )
-                                        .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ));
-    }
-    
-    if (!node->getGroup()->connectNodes(index, foundNode, node)) {
-        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
-                                        tr("Failed to connect node %1 to %2")
-                                        .arg( QString::fromUtf8( node->getScriptName().c_str() ) )
-                                        .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ));
-    }
+
+    bool ok = node->getGroup()->connectNodes(index, foundNode, node);
+    (void)ok;
 
 
 } //restoreInput

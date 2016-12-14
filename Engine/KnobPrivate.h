@@ -209,12 +209,6 @@ struct KnobHelperPrivate
     // further on
     PerDimensionSavedDataVec perDimViewSavedData;
 
-    mutable QMutex listenersMutex;
-
-    // This is a list of all the knobs that have expressions refering to this knob.
-    // For each knob, a ListenerDim struct associated to each of its dimension informs as to the nature of the link (i.e: slave/master link or expression link)
-    KnobI::ListenerDimsMap listeners;
-
     // Was the knob declared by a plug-in or added by Natron?
     bool declaredByPlugin;
 
@@ -316,8 +310,6 @@ struct KnobHelperPrivate
     , perDimViewDataMutex()
     , perDimViewData()
     , perDimViewSavedData()
-    , listenersMutex()
-    , listeners()
     , declaredByPlugin(declaredByPlugin_)
     , userKnob(false)
     , customInteract()

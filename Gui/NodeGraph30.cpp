@@ -226,12 +226,12 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
 
 
     for (U32 i = 0; i < knobs.size(); ++i) {
-        KnobI::ListenerDimsMap listeners;
-        knobs[i]->getListeners(listeners);
+        KnobDimViewKeySet listeners;
+        knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
         ///For all listeners make sure they belong to a node
         std::string foundLinkedErrorMessage;
-        for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-            KnobIPtr listener = it2->first.lock();
+        for (KnobDimViewKeySet::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+            KnobIPtr listener = it2->knob.lock();
             if (!listener) {
                 continue;
             }
@@ -247,7 +247,7 @@ NodeGraph::removeNode(const NodeGuiPtr & node)
                 std::string masterNodeName = node->getNode()->getFullyQualifiedName();
                 std::string master = masterNodeName + "." + knobs[i]->getName();
                 std::string slave = isEffect->getNode()->getFullyQualifiedName() + "." + listener->getName();
-                foundLinkedErrorMessage = tr("%1 is linked to %2 through a link or expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
+                foundLinkedErrorMessage = tr("%1 is linked to %2 with an expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
                 break;
             }
 
@@ -300,13 +300,13 @@ NodeGraph::deleteSelection()
             NodeGroupPtr isGrp = (*it)->getNode()->isEffectNodeGroup();
 
             for (U32 i = 0; i < knobs.size(); ++i) {
-                KnobI::ListenerDimsMap listeners;
-                knobs[i]->getListeners(listeners);
+                KnobDimViewKeySet listeners;
+                knobs[i]->getListeners(listeners, KnobI::eListenersTypeExpression);
 
                 ///For all listeners make sure they belong to a node
                 std::string foundLinkedErrorMessage;
-                for (KnobI::ListenerDimsMap::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
-                    KnobIPtr listener = it2->first.lock();
+                for (KnobDimViewKeySet::iterator it2 = listeners.begin(); it2 != listeners.end(); ++it2) {
+                    KnobIPtr listener = it2->knob.lock();
                     if (!listener) {
                         continue;
                     }
@@ -331,7 +331,7 @@ NodeGraph::deleteSelection()
                             std::string masterNodeName = (*it)->getNode()->getFullyQualifiedName();
                             std::string master = masterNodeName + "." + knobs[i]->getName();
                             std::string slave = isEffect->getNode()->getFullyQualifiedName() + "." + listener->getName();
-                            foundLinkedErrorMessage = tr("%1 is linked to %2 through a link or expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
+                            foundLinkedErrorMessage = tr("%1 is linked to %2 with an expression. Deleting %3 may break this link.\nContinue anyway?").arg(QString::fromUtf8(slave.c_str())).arg(QString::fromUtf8(master.c_str())).arg(QString::fromUtf8(masterNodeName.c_str())).toStdString();
                             break;
                         }
                     }
