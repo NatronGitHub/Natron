@@ -263,6 +263,13 @@ public:
             return false;
         }
         displayAge[texIndex] = age;
+        
+        // Now that we increment the display age, check if ongoing renders are still useful, otherwise abort them
+        for (OnGoingRenders::iterator it = currentRenderAges[texIndex].begin(); it != currentRenderAges[texIndex].end(); ++it) {
+            if ( (*it)->getRenderAge() < displayAge[texIndex] ) {
+                (*it)->setAborted();                
+            }
+        }
 
         return true;
     }
