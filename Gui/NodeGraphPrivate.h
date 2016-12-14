@@ -256,12 +256,13 @@ public:
     
     /**
      * @brief This is called once all nodes of a clipboard have been pasted to try to restore connections between them
-     * WARNING: The 2 lists must be ordered the same: each item in serializations corresponds to the same item in the newNodes
-     * list. We're not using 2 lists to avoid a copy from the paste function.
+     * The new nodes are mapped against their old script-name
      **/
-    static void restoreConnections(const SERIALIZATION_NAMESPACE::NodeSerializationList& serializations,
-                            const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
-                            const std::map<std::string, std::string>& oldNewScriptNamesMap);
+    struct ConnectionToRestore
+    {
+        NodePtr newNode;
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr nodeSerialization;
+    };
 
     void editSelectionFromSelectionRectangle(bool addToSelection);
 

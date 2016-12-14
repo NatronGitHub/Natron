@@ -2142,7 +2142,8 @@ Node::getCloneLinkedNodes(std::list<NodePtr>* clones) const
 }
 
 void
-Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization)
+Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
+                        const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
 {
     ////Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -2189,7 +2190,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
             continue;
         }
         try {
-            knob->restoreKnobLinks(*it);
+            knob->restoreKnobLinks(*it, allCreatedNodesInGroup);
         } catch (const std::exception& e) {
             // For stub nodes don't report errors
             if (!isEffectStubNode()) {
@@ -2209,7 +2210,7 @@ Node::restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & seria
             continue;
         }
         try {
-            knob->restoreKnobLinks(*it);
+            knob->restoreKnobLinks(*it, allCreatedNodesInGroup);
         } catch (const std::exception& e) {
             LogEntry::LogEntryColor c;
             if (getColor(&c.r, &c.g, &c.b)) {

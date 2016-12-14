@@ -2900,7 +2900,10 @@ Project::restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATI
         if (!node) {
             continue;
         }
-        node->restoreKnobsLinks(**it);
+        // We give an empty list for the created nodes list because we do not need to know the mapping between the serialization
+        // and the new node: we are sure that the script-name of the node did not change when it was created because we are anyway
+        // creating all nodes at once when loading the project.
+        node->restoreKnobsLinks(**it, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >());
         NodeGroupPtr isGroup = toNodeGroup(node->getEffectInstance());
         if (isGroup) {
             restoreLinksRecursive(isGroup, (*it)->_children);

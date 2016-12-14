@@ -330,7 +330,8 @@ public:
 
     ///This cannot be done in loadKnobs as to call this all the nodes in the project must have
     ///been loaded first.
-    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization);
+    void restoreKnobsLinks(const SERIALIZATION_NAMESPACE::NodeSerialization & serialization,
+                           const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
 
     void setPagesOrder(const std::list<std::string>& pages);
 

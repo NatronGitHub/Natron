@@ -86,6 +86,7 @@ NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializ
     
     NodesGuiList newNodesList;
 
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > allCreatedNodes;
     {
         CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
         for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
@@ -100,11 +101,14 @@ NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializ
                 newNodes->push_back( std::make_pair(oldScriptName, node) );
             }
             newNodesList.push_back(node);
-
+            allCreatedNodes.push_back(std::make_pair(node->getNode(), *it));
         }
 
     }
     
+    // Restore connections
+#pragma message WARN("Todo: set the position of the node in serialization")
+    Project::restoreGroupFromSerialization(clipboard, group.lock(), true /*restoreLinks*/);
 
     if (useUndoCommand) {
         _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
@@ -160,50 +164,6 @@ NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr 
 
     return duplicateNodeUI;
 } // NodeGraphPrivate::pasteNode
-
-void
-NodeGraphPrivate::restoreConnections(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializations,
-                                     const std::list<std::pair<std::string, NodeGuiPtr > > & newNodes,
-                                     const std::map<std::string, std::string> &oldNewScriptNamesMap)
-{
-    ///For all nodes restore its connections
-    SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator itSer = serializations.begin();
-
-    assert( serializations.size() == newNodes.size() );
-    for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it = newNodes.begin();
-         it != newNodes.end(); ++it, ++itSer) {
-        const std::map<std::string, std::string> & inputNames = (*itSer)->_inputs;
-        ///Restore each input
-        for (std::map<std::string, std::string>::const_iterator it2 = inputNames.begin(); it2 != inputNames.end(); ++it2) {
-            std::string inputScriptName = it2->second;
-            std::map<std::string, std::string>::const_iterator foundMapping = oldNewScriptNamesMap.find(it2->second);
-            if ( foundMapping != oldNewScriptNamesMap.end() ) {
-                inputScriptName = foundMapping->second;
-            }
-
-            if ( inputScriptName.empty() ) {
-                continue;
-            }
-
-            int index = it->second->getNode()->getInputNumberFromLabel(it2->first);
-            if (index == -1) {
-                qDebug() << "Could not find an input named " << it2->first.c_str();
-                continue;
-            }
-
-
-            ///find a node  containing the same name. It should not match exactly because there's already
-            /// the "-copy" that was added to its name
-            for (std::list<std::pair<std::string, NodeGuiPtr > >::const_iterator it3 = newNodes.begin();
-                 it3 != newNodes.end(); ++it3) {
-                if (it3->second->getNode()->getScriptName() == inputScriptName) {
-                    NodeCollection::connectNodes( index, it3->second->getNode(), it->second->getNode() );
-                    break;
-                }
-            }
-        }
-    }
-}
 
 void
 NodeGraphPrivate::toggleSelectedNodesEnabled()

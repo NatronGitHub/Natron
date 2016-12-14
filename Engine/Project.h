@@ -372,6 +372,21 @@ public:
                                               const NodeCollectionPtr& group,
                                               bool loadLinks);
 
+
+    static NodePtr findNodeWithScriptName(const std::string& nodeScriptName, const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
+
+    static void restoreInputs(const NodePtr& node,
+                          const std::map<std::string, std::string>& inputsMap,
+                          const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup,
+                          bool isMaskInputs);
+
+    static void restoreInput(const NodePtr& node,
+                         const std::string& inputLabel,
+                         const std::string& inputNodeScriptName,
+                         const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup,
+                         bool isMaskInput);
+
+
 public Q_SLOTS:
 
     void onQuitAnyProcessingWatcherTaskFinished(int taskID, const WatcherCallerArgsPtr& args);
@@ -402,15 +417,6 @@ private:
 
 
     static void restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes);
-
-    static void restoreInputs(const NodePtr& node,
-                              const std::map<std::string, std::string>& inputsMap,
-                              bool isMaskInputs);
-
-    static void restoreInput(const NodePtr& node,
-                             const std::string& inputLabel,
-                             const std::string& inputNodeScriptName,
-                             bool isMaskInput);
 
 
 

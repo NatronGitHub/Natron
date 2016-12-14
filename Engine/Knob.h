@@ -763,7 +763,8 @@ public:
      * from other nodes.
      * This function throws an exception if no serialization is valid in the object
      **/
-    virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization) = 0;
+    virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
+                                  const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup) = 0;
 
     /**
      * @brief Tries to re-apply invalid expressions, returns true if they are all valid
@@ -1670,13 +1671,15 @@ public:
 
     virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) OVERRIDE FINAL;
 
-    virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization) OVERRIDE FINAL;
+    virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
+                                  const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup) OVERRIDE FINAL;
 
 private:
 
     KnobIPtr findMasterKnob(const std::string& masterKnobName,
                             const std::string& masterNodeName,
-                            const std::string& masterItemName);
+                            const std::string& masterItemName,
+                            const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
 
 
 public:

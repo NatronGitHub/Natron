@@ -100,10 +100,25 @@ ProjectPrivate::ProjectPrivate(Project* project)
     autoSaveTimer->setSingleShot(true);
 }
 
+NodePtr
+Project::findNodeWithScriptName(const std::string& nodeScriptName, const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
+{
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = allCreatedNodesInGroup.begin(); it!=allCreatedNodesInGroup.end(); ++it) {
+        if (!it->second) {
+            continue;
+        }
+        if (it->second->_nodeScriptName == nodeScriptName) {
+            return it->first;
+        }
+    }
+    return NodePtr();
+}
+
 void
 Project::restoreInput(const NodePtr& node,
                       const std::string& inputLabel,
                       const std::string& inputNodeScriptName,
+                      const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup,
                       bool isMaskInput)
 {
     if ( inputNodeScriptName.empty() ) {
@@ -143,7 +158,30 @@ Project::restoreInput(const NodePtr& node,
             }
         }
     }
-    if (!node->getGroup()->connectNodes(index, inputNodeScriptName, node)) {
+    
+    NodeCollectionPtr nodeGroup = node->getGroup();
+    if (!nodeGroup) {
+        return;
+    }
+    // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+    // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+    // and the corresponding created node (with its new script-name).
+    // If we find a match, make sure we use the new node script-name to restore the input.
+    NodePtr foundNode = findNodeWithScriptName(inputNodeScriptName, allCreatedNodesInGroup);
+    if (!foundNode) {
+        // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
+        // and find an exact match, hoping the script-name of the node did not change.
+        foundNode = nodeGroup->getNodeByName(inputNodeScriptName);
+    }
+    
+    if (!foundNode) {
+        appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
+                                        tr("Failed to connect node %1 to %2")
+                                        .arg( QString::fromUtf8( node->getScriptName().c_str() ) )
+                                        .arg( QString::fromUtf8( inputNodeScriptName.c_str() ) ));
+    }
+    
+    if (!node->getGroup()->connectNodes(index, foundNode, node)) {
         appPTR->writeToErrorLog_mt_safe(QString::fromUtf8(node->getScriptName().c_str()), QDateTime::currentDateTime(),
                                         tr("Failed to connect node %1 to %2")
                                         .arg( QString::fromUtf8( node->getScriptName().c_str() ) )
@@ -156,10 +194,11 @@ Project::restoreInput(const NodePtr& node,
 void
 Project::restoreInputs(const NodePtr& node,
                        const std::map<std::string, std::string>& inputsMap,
+                       const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup,
                        bool isMaskInputs)
 {
     for (std::map<std::string, std::string>::const_iterator it = inputsMap.begin(); it != inputsMap.end(); ++it) {
-        restoreInput(node, it->first, it->second, isMaskInputs);
+        restoreInput(node, it->first, it->second, allCreatedNodesInGroup, isMaskInputs);
     }
 } // restoreInputs
 
@@ -182,7 +221,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
 
     // Loop over all node serialization and create them first
-    std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > createdNodes;
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > createdNodes;
     for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
         NodePtr node = appPTR->createNodeForProjectLoading(*it, group);
@@ -224,7 +263,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
         assert(node);
 
-        createdNodes[node] = *it;
+        createdNodes.push_back(std::make_pair(node, *it));
 
     } // for all node serialization
 
@@ -233,7 +272,7 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
 
 
     // Connect the nodes together
-    for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
 
 
         // Loop over the inputs map
@@ -242,17 +281,17 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
         // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
         //
 
-        restoreInputs(it->first, it->second->_inputs, false /*isMasks*/);
+        restoreInputs(it->first, it->second->_inputs, createdNodes, false /*isMasks*/);
 
         // After Natron 2.2, masks are saved separatly
-        restoreInputs(it->first, it->second->_masks, true /*isMasks*/);
+        restoreInputs(it->first, it->second->_masks, createdNodes, true /*isMasks*/);
 
     } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
     if (loadLinks) {
-        for (std::map<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
 
-            it->first->restoreKnobsLinks(*it->second);
+            it->first->restoreKnobsLinks(*it->second, createdNodes);
         }
     }
 

@@ -3879,7 +3879,10 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 //              size
 // to reference app.Blur1.size from app.Group1.Blur2.size you would use
 // "@thisGroup.@thisGroup.Blur1" for the masterNodeName
-static NodePtr findMasterNode(const NodeCollectionPtr& group, int recursionLevel, const std::string& masterNodeName)
+static NodePtr findMasterNode(const NodeCollectionPtr& group,
+                              int recursionLevel,
+                              const std::string& masterNodeName,
+                              const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
 {
     assert(group);
 
@@ -3899,16 +3902,27 @@ static NodePtr findMasterNode(const NodeCollectionPtr& group, int recursionLevel
 
     if (token != kKnobMasterNodeIsGroup) {
         // Return the node-name in the group
-        NodePtr node = group->getNodeByName(masterNodeName);
+        
+        // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+        // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+        // and the corresponding created node (with its new script-name).
+        // If we find a match, make sure we use the new node script-name to restore the input.
+        NodePtr foundNode = Project::findNodeWithScriptName(masterNodeName, allCreatedNodesInGroup);
+        if (!foundNode) {
+            // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
+            // and find an exact match, hoping the script-name of the node did not change.
+            foundNode = group->getNodeByName(masterNodeName);
+        }
+
         if (remainingString.empty()) {
-            return node;
+            return foundNode;
         } else {
             // There's stuff left to recurse, this node must be a group otherwise fail
-            NodeGroupPtr nodeIsGroup = toNodeGroup(node->getEffectInstance());
+            NodeGroupPtr nodeIsGroup = toNodeGroup(foundNode->getEffectInstance());
             if (!nodeIsGroup) {
                 return NodePtr();
             }
-            return findMasterNode(nodeIsGroup, recursionLevel + 1, masterNodeName);
+            return findMasterNode(nodeIsGroup, recursionLevel + 1, masterNodeName, allCreatedNodesInGroup);
         }
     } else {
         // If there's nothing else to recurse on, the container must a be a Group node
@@ -3924,10 +3938,10 @@ static NodePtr findMasterNode(const NodeCollectionPtr& group, int recursionLevel
             // of the original node in parameter, call this function again with the same group
             // Otherwise, recurse up
             if (recursionLevel == 0) {
-                return findMasterNode(group, recursionLevel + 1, masterNodeName);
+                return findMasterNode(group, recursionLevel + 1, masterNodeName, allCreatedNodesInGroup);
             } else {
                 if (isGroup) {
-                    return findMasterNode(isGroup->getNode()->getGroup(), recursionLevel + 1, masterNodeName);
+                    return findMasterNode(isGroup->getNode()->getGroup(), recursionLevel + 1, masterNodeName, allCreatedNodesInGroup);
                 } else {
                     return NodePtr();
                 }
@@ -3940,7 +3954,8 @@ static NodePtr findMasterNode(const NodeCollectionPtr& group, int recursionLevel
 KnobIPtr
 KnobHelper::findMasterKnob(const std::string& masterKnobName,
                            const std::string& masterNodeName,
-                           const std::string& masterItemName)
+                           const std::string& masterItemName,
+                           const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
 {
     KnobTableItemPtr tableItem = toKnobTableItem(getHolder());
     EffectInstancePtr effect = toEffectInstance(getHolder());
@@ -3960,7 +3975,7 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
     if (masterNodeName.empty()) {
         masterNode = thisKnobNode;
     } else {
-        masterNode = findMasterNode(thisKnobNode->getGroup(), 0, masterNodeName);
+        masterNode = findMasterNode(thisKnobNode->getGroup(), 0, masterNodeName, allCreatedNodesInGroup);
     }
     if (!masterNode) {
         qDebug() << "Link slave/master for " << getName().c_str() <<   " failed to restore the following linkage: " << masterNodeName.c_str();
@@ -3993,7 +4008,8 @@ KnobHelper::findMasterKnob(const std::string& masterKnobName,
 
 
 void
-KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization)
+KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase>& serialization,
+                             const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup)
 {
 
 
@@ -4005,7 +4021,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
     if (isGroupKnobSerialization) {
         for (std::list <boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = isGroupKnobSerialization->_children.begin(); it != isGroupKnobSerialization->_children.end(); ++it) {
             try {
-                restoreKnobLinks(*it);
+                restoreKnobLinks(*it, allCreatedNodesInGroup);
             } catch (const std::exception& e) {
                 LogEntry::LogEntryColor c;
                 EffectInstancePtr effect = toEffectInstance(getHolder());
@@ -4078,7 +4094,7 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                     masterTableItemName = it->second[d]._slaveMasterLink.masterTableItemName;
                     KnobIPtr master = findMasterKnob(masterKnobName,
                                                      masterNodeName,
-                                                     masterTableItemName);
+                                                     masterTableItemName, allCreatedNodesInGroup);
                     if (master) {
                         // Find dimension in master by name
                         int otherDimIndex = -1;
