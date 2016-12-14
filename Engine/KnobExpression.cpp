@@ -171,8 +171,8 @@ parseTokenFrom(int fromDim,
     extractParameters(pos, endingParenthesis, str, &params);
 
 
-    bool gotViewParam = viewParamPos != -1 && (viewParamPos >= (int)params.size() && !params.empty());
-    bool gotDimensionParam = dimensionParamPos != -1 && (dimensionParamPos >= (int)params.size() && !params.empty());
+    bool gotViewParam = viewParamPos != -1 && (viewParamPos < (int)params.size() && !params.empty());
+    bool gotDimensionParam = dimensionParamPos != -1 && (dimensionParamPos < (int)params.size() && !params.empty());
 
 
     if (!returnsTuple) {
@@ -462,22 +462,27 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     // Extract parameters that call the following functions
     std::string listenersRegistrationScript;
     if  ( !extractAllOcurrences(expressionCopy, "getValue", false, 0, 1, dimension, viewName, &listenersRegistrationScript) ) {
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "getValueAtTime", false, 1, 2, dimension, viewName, &listenersRegistrationScript) ) {
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "getDerivativeAtTime", false, 1, 2, dimension, viewName, &listenersRegistrationScript) ) {
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "getIntegrateFromTimeToTime", false, 2, 3, dimension, viewName, &listenersRegistrationScript) ) {
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
         return;
     }
 
     if ( !extractAllOcurrences(expressionCopy, "get", true, -1, 0, dimension, viewName, &listenersRegistrationScript) ) {
+        throw std::runtime_error("KnobHelperPrivate::parseListenersFromExpression(): failed!");
         return;
     }
 
@@ -712,7 +717,7 @@ KnobHelper::isExpressionValid(DimIdx dimension,
             ExprPerViewMap::const_iterator foundView = _imp->expressions[dimension].find(view_i);
             if (foundView != _imp->expressions[dimension].end()) {
                 *error = foundView->second.exprInvalid;
-                return false;
+                return error->empty();
             }
         }
     }
