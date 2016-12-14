@@ -626,29 +626,7 @@ NodeGraph::onGroupScriptNameChanged(const QString& /*name*/)
   
 }
 
-void
-NodeGraph::copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                     const NodeCollectionPtr& group,
-                                     std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes)
-{
-    {
-        CreatingNodeTreeFlag_RAII createNodeTree( getGui()->getApp() );
-        SERIALIZATION_NAMESPACE::NodeClipBoard clipboard;
-        _imp->copyNodesInternal(nodes, clipboard);
 
-        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.nodes.begin();
-             it != clipboard.nodes.end(); ++it) {
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, QPointF(0, 0), QPointF(INT_MIN, INT_MIN), group, NodePtr());
-            assert(node);
-            if (node) {
-                createdNodes.push_back( std::make_pair( (*it)->_nodeScriptName, node ) );
-            }
-        }
-
-
-    }
-
-}
 
 QPointF
 NodeGraph::getRootPos() const

@@ -310,8 +310,6 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         NodeGuiPtr dotNodeGui = boost::dynamic_pointer_cast<NodeGui>(dotNodeGui_i);
         assert(dotNodeGui);
 
-        NodesGuiList nodesList;
-        nodesList.push_back(dotNodeGui);
 
 
         assert( getGui() );
@@ -340,6 +338,10 @@ NodeGraph::mousePressEvent(QMouseEvent* e)
         if ( !dotNodeGui->getIsSelected() ) {
             selectNode( dotNodeGui, modCASIsShift(e) );
         }
+
+        NodesList nodesList;
+        nodesList.push_back(dotNode);
+
         pushUndoCommand( new AddMultipleNodesCommand( this, nodesList) );
 
 

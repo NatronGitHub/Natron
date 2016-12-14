@@ -34,6 +34,8 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QAction>
 #include <QFileSystemModel>
 #include <QMenu>
+#include <QApplication>
+#include <QClipboard>
 GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
@@ -338,7 +340,15 @@ NodeGraph::showMenu(const QPoint & pos)
 
     QAction* pasteAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste,
                                                   kShortcutDescActionGraphPaste, editMenu);
-    pasteAction->setEnabled( !appPTR->isNodeClipBoardEmpty() );
+    bool cbEnabled = false;
+    {
+        QClipboard* clipboard = QApplication::clipboard();
+        const QMimeData* data = clipboard->mimeData();
+        if (data && data->hasFormat(QLatin1String("text/plain"))) {
+            cbEnabled = true;
+        }
+    }
+    pasteAction->setEnabled(cbEnabled);
     editMenu->addAction(pasteAction);
 
     QAction* deleteAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes,

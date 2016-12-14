@@ -2892,24 +2892,7 @@ Project::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* seria
     
 } // Project::toSerialization
 
-void
-Project::restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes)
-{
-    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        NodePtr node = group->getNodeByName((*it)->_nodeScriptName);
-        if (!node) {
-            continue;
-        }
-        // We give an empty list for the created nodes list because we do not need to know the mapping between the serialization
-        // and the new node: we are sure that the script-name of the node did not change when it was created because we are anyway
-        // creating all nodes at once when loading the project.
-        node->restoreKnobsLinks(**it, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >());
-        NodeGroupPtr isGroup = toNodeGroup(node->getEffectInstance());
-        if (isGroup) {
-            restoreLinksRecursive(isGroup, (*it)->_children);
-        }
-    }
-}
+
 
 void
 Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
@@ -2924,76 +2907,72 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 
     // In Natron 1.0 we did not have a project frame range knob, hence we need to recompute it
     bool foundFrameRangeKnob = false;
+
+
+    getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
+
+    // Restore project formats
+    // We must restore the entries in the combobox before restoring the value
+    std::vector<std::string> entries;
+    for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+        QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
+        entries.push_back( formatStr.toStdString() );
+    }
+
     {
-        CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(getApp());
-
-        getApp()->updateProjectLoadStatus( tr("Restoring project settings...") );
-
-        // Restore project formats
-        // We must restore the entries in the combobox before restoring the value
-        std::vector<std::string> entries;
-        for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
+        _imp->additionalFormats.clear();
+        for (std::list<SERIALIZATION_NAMESPACE::FormatSerialization>::const_iterator it = serialization->_additionalFormats.begin(); it != serialization->_additionalFormats.end(); ++it) {
+            Format f;
+            f.setName(it->name);
+            f.setPixelAspectRatio(it->par);
+            f.x1 = it->x1;
+            f.y1 = it->y1;
+            f.x2 = it->x2;
+            f.y2 = it->y2;
+            _imp->additionalFormats.push_back(f);
+        }
+        for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
             entries.push_back( formatStr.toStdString() );
         }
+    }
 
-        {
-            _imp->additionalFormats.clear();
-            for (std::list<SERIALIZATION_NAMESPACE::FormatSerialization>::const_iterator it = serialization->_additionalFormats.begin(); it != serialization->_additionalFormats.end(); ++it) {
-                Format f;
-                f.setName(it->name);
-                f.setPixelAspectRatio(it->par);
-                f.x1 = it->x1;
-                f.y1 = it->y1;
-                f.x2 = it->x2;
-                f.y2 = it->y2;
-                _imp->additionalFormats.push_back(f);
-            }
-            for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
-                QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-                entries.push_back( formatStr.toStdString() );
-            }
+    _imp->formatKnob->populateChoices(entries);
+    _imp->autoSetProjectFormat = false;
+
+    // Restore project's knobs
+    for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
+        KnobIPtr foundKnob = getKnobByName((*it)->getName());
+        if (!foundKnob) {
+            continue;
+        }
+        foundKnob->fromSerialization(**it);
+        if (foundKnob == _imp->frameRange) {
+            foundFrameRangeKnob = true;
+        }
+    }
+
+    {
+        // Refresh OCIO path
+        onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
+
+        // Refresh project path
+        // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
+        // by the main GUI process
+        if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
+            _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
         }
 
-        _imp->formatKnob->populateChoices(entries);
-        _imp->autoSetProjectFormat = false;
+    }
 
-        // Restore project's knobs
-        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization->_projectKnobs.begin(); it != serialization->_projectKnobs.end(); ++it) {
-            KnobIPtr foundKnob = getKnobByName((*it)->getName());
-            if (!foundKnob) {
-                continue;
-            }
-            foundKnob->fromSerialization(**it);
-            if (foundKnob == _imp->frameRange) {
-                foundFrameRangeKnob = true;
-            }
-        }
-
-        {
-            // Refresh OCIO path
-            onOCIOConfigPathChanged(appPTR->getOCIOConfigPath(), false);
-
-            // Refresh project path
-            // For eAppTypeBackgroundAutoRunLaunchedFromGui don't change the project path since it is controlled
-            // by the main GUI process
-            if (appPTR->getAppType() != AppManager::eAppTypeBackgroundAutoRunLaunchedFromGui) {
-                _imp->autoSetProjectDirectory(QString::fromUtf8(_imp->projectPath->getValue().c_str()));
-            }
-
-        }
-
-        // Restore the timeline
-        _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+    // Restore the timeline
+    _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
 
-        // Restore the nodes
-        Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(), false /*restoreLinks*/);
-        getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
-    } // CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(_publicInterface->getApp());
+    // Restore the nodes
+    Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(),  0);
+    getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
 
-    // Restore links and expressions
-    restoreLinksRecursive(shared_from_this(), serialization->_nodes);
 
     // Recompute all meta-datas and stuff depending on the trees now
     forceComputeInputDependentDataOnAllTrees();

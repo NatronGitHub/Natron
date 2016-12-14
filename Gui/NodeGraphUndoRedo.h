@@ -91,11 +91,11 @@ class AddMultipleNodesCommand
 public:
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const NodesGuiList & nodes,
+                            const NodesList & nodes,
                             QUndoCommand *parent = 0);
 
     AddMultipleNodesCommand(NodeGraph* graph,
-                            const NodeGuiPtr & node,
+                            const NodePtr & node,
                             QUndoCommand* parent = 0);
 
 
@@ -106,7 +106,7 @@ public:
 
 private:
 
-    std::list<boost::weak_ptr<NodeGui> > _nodes;
+    NodesWList _nodes;
     NodeGraph* _graph;
     bool _firstRedoCalled;
     bool _isUndone;

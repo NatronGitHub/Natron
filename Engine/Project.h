@@ -370,7 +370,7 @@ public:
 
     static bool restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
                                               const NodeCollectionPtr& group,
-                                              bool loadLinks);
+                                              std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* createdNodes);
 
 
     static NodePtr findNodeWithScriptName(const std::string& nodeScriptName, const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup);
@@ -414,10 +414,6 @@ Q_SIGNALS:
     void projectViewsChanged();
 
 private:
-
-
-    static void restoreLinksRecursive(const NodeCollectionPtr& group, const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes);
-
 
 
     /*Returns the index of the format*/

@@ -42,6 +42,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QPainter>
 #include <QtCore/QPointF>
 #include <QColor>
+#include <QFlags>
 #include <QPen>
 #include <QStyleOptionGraphicsItem>
 CLANG_DIAG_ON(deprecated)
@@ -234,24 +235,40 @@ public:
 
     QPoint getPyPlugUnlockPos() const;
 
-    void resetAllClipboards();
-
     QRectF calcNodesBoundingRect();
 
-    void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard);
-    void pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializationList & clipboard, const QPointF& scenPos,
-                            bool useUndoCommand,
-                            std::list<std::pair<std::string, NodeGuiPtr > > *newNodes = 0);
+    /**
+     * @brief Serialize the given node list 
+     **/
+    void copyNodesInternal(const NodesGuiList& selection, SERIALIZATION_NAMESPACE::NodeSerializationList* clipboard);
+    void copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* clipboard);
+
+    enum PasteNodesFlagEnum
+    {
+        // Used to specify none of the operations below
+        ePasteNodesFlagNone = 0x0,
+
+        // The newly created nodes will be offset relative to their new centroid where the offset
+        // is computed from the old centroid of the node positions in the serialization
+        ePasteNodesFlagRelativeToCentroid = 0x1,
+
+        // If set this function will push and undo/redo command to create the nodes
+        ePasteNodesFlagUseUndoCommand = 0x2,
+
+        // If set each original node in the list must contain a pointer to the original node as well as its serialization:
+        // In this mode the newly created node is then linked to the original node.
+        // If not specified, the node pointer of the original is not necessary and can be left to NULL.
+        ePasteNodesFlagCloneNodes = 0x4
+    };
+    typedef QFlags<PasteNodesFlagEnum> PasteNodesFlags;
 
     /**
-     * @brief Create a new node given the serialization of another one
-     * @param distanceFromCopyPosition[in] The offset applied to the new node position relative to the serialized node's position.
+     * @brief Paste the given nodes with flags. This will create new copies of the nodes
      **/
-    static NodeGuiPtr pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr & internalSerialization,
-                                const QPointF& averageNodesPosition,
-                                const QPointF& position,
-                                const NodeCollectionPtr& group,
-                                const NodePtr& cloneMaster);
+    void pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& originalNodes,
+                            const QPointF& newCentroidScenePos,
+                            PasteNodesFlags flags);
+
     
     
     /**

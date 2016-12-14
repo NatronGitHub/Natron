@@ -83,7 +83,6 @@ struct GuiApplicationManagerPrivate
     bool _shortcutsChangedVersion;
     QString _fontFamily;
     int _fontSize;
-    SERIALIZATION_NAMESPACE::NodeClipBoard _nodeCB;
     std::list<PythonUserCommand> pythonCommands;
 
     ///Used temporarily to store startup args while we load fonts

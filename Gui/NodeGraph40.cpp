@@ -111,7 +111,7 @@ void
 NodeGraph::copyNodes(const NodesGuiList& nodes,
                      SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard)
 {
-    _imp->copyNodesInternal(nodes, clipboard);
+    _imp->copyNodesInternal(nodes, &clipboard.nodes);
 }
 
 void
@@ -123,8 +123,8 @@ NodeGraph::copySelectedNodes()
         return;
     }
 
-    SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
-    _imp->copyNodesInternal(_imp->_selection, cb);
+    SERIALIZATION_NAMESPACE::NodeClipBoard cb;
+    _imp->copyNodesInternal(_imp->_selection, &cb.nodes);
 
     std::ostringstream ss;
 
@@ -155,14 +155,6 @@ NodeGraph::cutSelectedNodes()
     deleteSelection();
 }
 
-void
-NodeGraph::pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard,
-                         std::list<std::pair<std::string, NodeGuiPtr > >* newNodes)
-{
-    QPointF position =  mapToScene( mapFromGlobal( QCursor::pos() ) );
-
-    _imp->pasteNodesInternal(clipboard.nodes, position, false, newNodes);
-}
 
 bool
 NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
@@ -172,17 +164,14 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
     // Check if this is a regular clipboard
     // This will also check if this is a single node
     try {
-        SERIALIZATION_NAMESPACE::NodeClipBoard& cb = appPTR->getNodeClipBoard();
+        SERIALIZATION_NAMESPACE::NodeClipBoard cb;
         SERIALIZATION_NAMESPACE::read(std::string(), ss, &cb);
 
-        /*for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it!=cb.nodes.end(); ++it) {
-            // This is a pyplug, convert it to a group
-            if ((*it)->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug) {
-                (*it)->_pluginID = PLUGINID_NATRON_GROUP;
-            }
-        }*/
-
-        _imp->pasteNodesInternal(cb.nodes, pos, true);
+        std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = cb.nodes.begin(); it != cb.nodes.end(); ++it) {
+            nodesToPaste.push_back(std::make_pair(NodePtr(), *it));
+        }
+        _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
     } catch (...) {
         
         // Check if this was copy/pasted from a project directly
@@ -190,7 +179,13 @@ NodeGraph::tryReadClipboard(const QPointF& pos, std::istream& ss)
             ss.seekg(0);
             SERIALIZATION_NAMESPACE::ProjectSerialization isProject;
             SERIALIZATION_NAMESPACE::read(std::string(), ss, &isProject);
-            _imp->pasteNodesInternal(isProject._nodes, pos, true);
+
+            std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+            for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = isProject._nodes.begin(); it != isProject._nodes.end(); ++it) {
+                nodesToPaste.push_back(std::make_pair(NodePtr(), *it));
+            }
+
+            _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
         } catch (...) {
             
             return false;
@@ -242,10 +237,11 @@ NodeGraph::duplicateSelectedNodes(const QPointF& pos)
         return;
     }
 
-    ///Don't use the member clipboard as the user might have something copied
-    SERIALIZATION_NAMESPACE::NodeClipBoard tmpClipboard;
-    _imp->copyNodesInternal(_imp->_selection, tmpClipboard);
-    _imp->pasteNodesInternal(tmpClipboard.nodes, pos, true);
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+    _imp->copyNodesInternal(_imp->_selection, &nodesToPaste);
+
+
+    _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
 }
 
 void
@@ -257,67 +253,17 @@ NodeGraph::duplicateSelectedNodes()
 }
 
 void
-NodeGraph::cloneSelectedNodes(const QPointF& scenePos)
+NodeGraph::cloneSelectedNodes(const QPointF& pos)
 {
     if ( _imp->_selection.empty() ) {
         Dialogs::warningDialog( tr("Clone").toStdString(), tr("You must select at least a node to clone first.").toStdString() );
 
         return;
     }
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > nodesToPaste;
+    _imp->copyNodesInternal(_imp->_selection, &nodesToPaste);
 
-    double xmax = INT_MIN;
-    double xmin = INT_MAX;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
-    NodesGuiList nodesToCopy = _imp->_selection;
-    for (NodesGuiList::iterator it = _imp->_selection.begin(); it != _imp->_selection.end(); ++it) {
-
-        QRectF bbox = (*it)->mapToScene( (*it)->boundingRect() ).boundingRect();
-        if ( ( bbox.x() + bbox.width() ) > xmax ) {
-            xmax = ( bbox.x() + bbox.width() );
-        }
-        if (bbox.x() < xmin) {
-            xmin = bbox.x();
-        }
-
-        if ( ( bbox.y() + bbox.height() ) > ymax ) {
-            ymax = ( bbox.y() + bbox.height() );
-        }
-        if (bbox.y() < ymin) {
-            ymin = bbox.y();
-        }
-
-        ///Also copy all nodes within the backdrop
-        BackdropGuiPtr isBd =toBackdropGui(*it);
-        if (isBd) {
-            NodesGuiList nodesWithinBD = getNodesWithinBackdrop(*it);
-            for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
-                NodesGuiList::iterator found = std::find(nodesToCopy.begin(), nodesToCopy.end(), *it2);
-                if ( found == nodesToCopy.end() ) {
-                    nodesToCopy.push_back(*it2);
-                }
-            }
-        }
-    }
-
-
-    QPointF offset((xmax + xmin) / 2.,(ymax + ymin) / 2.);
-
-    NodesGuiList newNodesList;
-    for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        SERIALIZATION_NAMESPACE::NodeSerializationPtr  internalSerialization( new SERIALIZATION_NAMESPACE::NodeSerialization );
-        (*it)->getNode()->toSerialization(internalSerialization.get());
-        NodeGuiPtr clone = NodeGraphPrivate::pasteNode(internalSerialization, offset, scenePos,
-                                           _imp->group.lock(), (*it)->getNode());
-
-        if (clone) {
-            newNodesList.push_back(clone);
-        }
-
-    }
-
-
-    pushUndoCommand( new AddMultipleNodesCommand(this, newNodesList) );
+    _imp->pasteNodesInternal(nodesToPaste, pos, NodeGraphPrivate::PasteNodesFlags(NodeGraphPrivate::ePasteNodesFlagCloneNodes | NodeGraphPrivate::ePasteNodesFlagRelativeToCentroid | NodeGraphPrivate::ePasteNodesFlagUseUndoCommand));
 } // NodeGraph::cloneSelectedNodes
 
 void

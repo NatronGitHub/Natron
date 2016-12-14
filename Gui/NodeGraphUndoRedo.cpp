@@ -105,7 +105,7 @@ MoveMultipleNodesCommand::redo()
 }
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
-                                                 const std::list<NodeGuiPtr > & nodes,
+                                                 const NodesList& nodes,
                                                  QUndoCommand *parent)
     : QUndoCommand(parent)
     , _nodes()
@@ -113,13 +113,15 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
     , _firstRedoCalled(false)
     , _isUndone(false)
 {
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         _nodes.push_back(*it);
     }
+    setText( tr("Add node") );
+
 }
 
 AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
-                                                 const NodeGuiPtr & node,
+                                                 const NodePtr & node,
                                                  QUndoCommand* parent)
     : QUndoCommand(parent)
     , _nodes()
@@ -128,15 +130,18 @@ AddMultipleNodesCommand::AddMultipleNodesCommand(NodeGraph* graph,
     , _isUndone(false)
 {
     _nodes.push_back(node);
+    setText( tr("Add node") );
+
 }
 
 AddMultipleNodesCommand::~AddMultipleNodesCommand()
 {
+    // If the nodes we removed due to a undo, destroy them
     if (_isUndone) {
-        for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-            NodeGuiPtr node = it->lock();
+        for (NodesWList::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+            NodePtr node = it->lock();
             if (node) {
-                node->getNode()->destroyNode(false, false);
+                node->destroyNode(false, false);
             }
         }
     }
@@ -149,81 +154,61 @@ AddMultipleNodesCommand::undo()
     std::list<ViewerInstancePtr> viewersToRefresh;
 
 
-    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        NodeGuiPtr node = it->lock();
-        std::list<ViewerInstancePtr> viewers;
-        node->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
-            if ( foundViewer == viewersToRefresh.end() ) {
-                viewersToRefresh.push_back(*it2);
-            }
+    for (NodesWList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        NodePtr node = it->lock();
+        if (!node) {
+            continue;
         }
-        node->getNode()->deactivate(NodesList(), //outputs to disconnect
-                                    true, //disconnect all nodes, disregarding the first parameter.
-                                    true, //reconnect outputs to inputs of this node?
-                                    true, //hide nodeGui?
-                                    false); // triggerRender
+
+        node->deactivate(NodesList(), //outputs to disconnect
+                         true, //disconnect all nodes, disregarding the first parameter.
+                         true, //reconnect outputs to inputs of this node?
+                         true, //hide nodeGui?
+                         false); // triggerRender
     }
 
     _graph->clearSelection();
 
     _graph->getGui()->getApp()->triggerAutoSave();
-
-    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
+    _graph->getGui()->getApp()->renderAllViewers(true);
 
 
-    setText( tr("Add node") );
 }
 
 void
 AddMultipleNodesCommand::redo()
 {
     _isUndone = false;
-    std::list<ViewerInstancePtr> viewersToRefresh;
-    std::list<NodeGuiPtr > nodes;
-    for (std::list<boost::weak_ptr<NodeGui> >::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        nodes.push_back( it->lock() );
+    NodesList nodes;
+    for (NodesWList::const_iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
+        NodePtr n = it->lock();
+        if (!n) {
+            continue;
+        }
+        nodes.push_back(n);
+    }
+    if (nodes.empty()) {
+        return;
     }
     if (_firstRedoCalled) {
-        for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            (*it)->getNode()->activate(NodesList(), //inputs to restore
-                                       true, //restore all inputs ?
-                                       false); //triggerRender
+        for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+            (*it)->activate(NodesList(), //inputs to restore
+                            true, //restore all inputs ?
+                            false); //triggerRender
         }
     }
 
 
-    if ( (nodes.size() != 1) || !nodes.front()->getNode()->isEffectNodeGroup() ) {
+    if ( (nodes.size() != 1) || !nodes.front()->isEffectNodeGroup() ) {
         _graph->setSelection(nodes);
     }
 
     _graph->getGui()->getApp()->recheckInvalidExpressions();
     _graph->getGui()->getApp()->triggerAutoSave();
-
-    for (std::list<NodeGuiPtr >::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        std::list<ViewerInstancePtr> viewers;
-        (*it)->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
-            if ( foundViewer == viewersToRefresh.end() ) {
-                viewersToRefresh.push_back(*it2);
-            }
-        }
-    }
-
-
-    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        if ( (*it)->getUiContext() ) {
-            (*it)->renderCurrentFrame(true);
-        }
-    }
+    _graph->getGui()->getApp()->renderAllViewers(true);
 
 
     _firstRedoCalled = true;
-    setText( tr("Add node") );
 }
 
 RemoveMultipleNodesCommand::RemoveMultipleNodesCommand(NodeGraph* graph,

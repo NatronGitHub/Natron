@@ -2314,19 +2314,6 @@ NodeGui::destroyGui()
     }
 
 
-    // remove from clipboard if existing
-    if (internalNode) {
-        ///remove the node from the clipboard if it is
-        SERIALIZATION_NAMESPACE::NodeClipBoard &cb = appPTR->getNodeClipBoard();
-        for (SERIALIZATION_NAMESPACE::NodeSerializationList::iterator it = cb.nodes.begin();
-             it != cb.nodes.end(); ++it) {
-            if ( (*it)->_nodeScriptName == internalNode->getScriptName()  && (*it)->_groupFullyQualifiedScriptName == internalNode->getContainerGroupFullyQualifiedName()) {
-                cb.nodes.erase(it);
-                break;
-            }
-        }
-    }
-
     //Delete edges
     for (InputEdges::const_iterator it = _inputEdges.begin(); it != _inputEdges.end(); ++it) {
         QGraphicsScene* scene = (*it)->scene();

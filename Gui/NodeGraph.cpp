@@ -393,7 +393,7 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
     SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     bool addUndoRedo = args.getProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
     if (addUndoRedo) {
-        pushUndoCommand( new AddMultipleNodesCommand(this, node_ui) );
+        pushUndoCommand( new AddMultipleNodesCommand(this, node) );
     } else if (!serialization ) {
 
         selectNode(node_ui, false);

@@ -202,10 +202,51 @@ Project::restoreInputs(const NodePtr& node,
     }
 } // restoreInputs
 
+static void
+restoreLinksRecursive(const NodeCollectionPtr& group,
+                      const SERIALIZATION_NAMESPACE::NodeSerializationList& nodes,
+                      const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* allCreatedNodes)
+{
+    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        // The nodes created from the serialization may have changed name if another node with the same script-name already existed.
+        // By chance since we created all nodes within the same Group at the same time, we have a list of the old node serialization
+        // and the corresponding created node (with its new script-name).
+        // If we find a match, make sure we use the new node script-name to restore the input.
+        NodePtr foundNode;
+        if (allCreatedNodes) {
+            foundNode = Project::findNodeWithScriptName((*it)->_nodeScriptName, *allCreatedNodes);
+        }
+        if (!foundNode) {
+            // We did not find the node in the serialized nodes list, the last resort is to look into already created nodes
+            // and find an exact match, hoping the script-name of the node did not change.
+            foundNode = group->getNodeByName((*it)->_nodeScriptName);
+        }
+        if (!foundNode) {
+            continue;
+        }
+
+        // The allCreatedNodes list is useful if the nodes that we created had their script-name changed from what was inside the node serialization object.
+        // It may have changed if a node would already exist in the group with the same script-name.
+        // This kind of conflict may only occur in the top-level graph that we are restoring: sub-graphs are created entirely so script-names should remain
+        // the same between the serilization object and the created node.
+        foundNode->restoreKnobsLinks(**it, allCreatedNodes ? *allCreatedNodes : std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >());
+
+        NodeGroupPtr isGroup = toNodeGroup(foundNode->getEffectInstance());
+        if (isGroup) {
+
+            // For sub-groupe, we don't have the list of created nodes, and their serialization list, but we should not need it:
+            // It's only the top-level group that we create that may have conflicts with script-names, sub-groups are conflict free since
+            // we just created them.
+            restoreLinksRecursive(isGroup, (*it)->_children, 0);
+        }
+    }
+}
+
 bool
 Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializationList & serializedNodes,
                                        const NodeCollectionPtr& group,
-                                       bool loadLinks)
+                                       std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* createdNodesOut)
 {
     bool mustShowErrorsLog = false;
 
@@ -220,79 +261,90 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
     group->getApplication()->updateProjectLoadStatus( tr("Creating nodes in group: %1").arg(groupName) );
 
 
-    // Loop over all node serialization and create them first
     std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > createdNodes;
-    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
 
-        NodePtr node = appPTR->createNodeForProjectLoading(*it, group);
-        if (!node) {
-            QString text( tr("ERROR: The node %1 version %2.%3"
-                             " was found in the script but does not"
-                             " exist in the loaded plug-ins.")
-                         .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
-                         .arg((*it)->_pluginMajorVersion).arg((*it)->_pluginMinorVersion) );
-            appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
-            mustShowErrorsLog = true;
-            continue;
-        } else {
-            if (node->getPluginID() == PLUGINID_NATRON_STUB) {
-                // If the node could not be created and we made a stub instead, warn the user
-                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
-                                 "was found in the script but the plug-in could not be found. It has been replaced by a pass-through node instead.")
-                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+    {
+        CreatingNodeTreeFlag_RAII creatingNodeTreeFlag(group->getApplication());
+
+
+        // Loop over all node serialization and create them first
+        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+
+            NodePtr node = appPTR->createNodeForProjectLoading(*it, group);
+            if (!node) {
+                QString text( tr("ERROR: The node %1 version %2.%3"
+                                 " was found in the script but does not"
+                                 " exist in the loaded plug-ins.")
                              .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
-                             .arg((*it)->_pluginMajorVersion)
-                             .arg((*it)->_pluginMinorVersion));
+                             .arg((*it)->_pluginMajorVersion).arg((*it)->_pluginMinorVersion) );
                 appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
                 mustShowErrorsLog = true;
-            } else if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
-                // If the node has a IOContainer don't do this check: when loading older projects that had a
-                // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
-                QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
-                                 "was found in the script but was loaded "
-                                 "with version %5.%6 instead.")
-                             .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
-                             .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
-                             .arg((*it)->_pluginMajorVersion)
-                             .arg((*it)->_pluginMinorVersion)
-                             .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 0) )
-                             .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 1) ) );
-                appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+                continue;
+            } else {
+                if (node->getPluginID() == PLUGINID_NATRON_STUB) {
+                    // If the node could not be created and we made a stub instead, warn the user
+                    QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                     "was found in the script but the plug-in could not be found. It has been replaced by a pass-through node instead.")
+                                 .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                                 .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                                 .arg((*it)->_pluginMajorVersion)
+                                 .arg((*it)->_pluginMinorVersion));
+                    appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+                    mustShowErrorsLog = true;
+                } else if ( (*it)->_pluginMajorVersion != -1 && (node->getMajorVersion() != (int)(*it)->_pluginMajorVersion) ) {
+                    // If the node has a IOContainer don't do this check: when loading older projects that had a
+                    // ReadOIIO node for example in version 2, we would now create a new Read meta-node with version 1 instead
+                    QString text( tr("WARNING: The node %1 (%2 version %3.%4) "
+                                     "was found in the script but was loaded "
+                                     "with version %5.%6 instead.")
+                                 .arg( QString::fromUtf8( (*it)->_nodeScriptName.c_str() ) )
+                                 .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
+                                 .arg((*it)->_pluginMajorVersion)
+                                 .arg((*it)->_pluginMinorVersion)
+                                 .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 0) )
+                                 .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 1) ) );
+                    appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
+                }
             }
-        }
 
-        assert(node);
+            assert(node);
 
-        createdNodes.push_back(std::make_pair(node, *it));
+            createdNodes.push_back(std::make_pair(node, *it));
 
-    } // for all node serialization
-
-
-    group->getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupName) );
+        } // for all node serialization
 
 
-    // Connect the nodes together
-    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
+        group->getApplication()->updateProjectLoadStatus( tr("Restoring graph links in group: %1").arg(groupName) );
 
 
-        // Loop over the inputs map
-        // This is a map <input label, input node name>
-        //
-        // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
-        //
-
-        restoreInputs(it->first, it->second->_inputs, createdNodes, false /*isMasks*/);
-
-        // After Natron 2.2, masks are saved separatly
-        restoreInputs(it->first, it->second->_masks, createdNodes, true /*isMasks*/);
-
-    } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
-
-    if (loadLinks) {
+        // Connect the nodes together
         for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it != createdNodes.end(); ++it) {
 
-            it->first->restoreKnobsLinks(*it->second, createdNodes);
-        }
+
+            // Loop over the inputs map
+            // This is a map <input label, input node name>
+            //
+            // When loading projects before Natron 2.2, the inputs contain both masks and inputs.
+            //
+
+            restoreInputs(it->first, it->second->_inputs, createdNodes, false /*isMasks*/);
+            
+            // After Natron 2.2, masks are saved separatly
+            restoreInputs(it->first, it->second->_masks, createdNodes, true /*isMasks*/);
+            
+        } // for (std::list< NodeSerializationPtr >::const_iterator it = serializedNodes.begin(); it != serializedNodes.end(); ++it) {
+    } // creating node tree
+
+
+    if (createdNodesOut) {
+        *createdNodesOut = createdNodes;
+    }
+    // If we created all sub-groups recursively, then we are in the top-level group. We may now restore all links
+    if (!group->getApplication()->isCreatingNodeTree()) {
+
+        // Now that we created all nodes, even though each recursive call to restoreGroupFromSerialization has restored links in its own sub-graph, there
+        // may be link that were cross-graph and that can only be truely restored now.
+        restoreLinksRecursive(group, serializedNodes, createdNodesOut);
     }
 
 

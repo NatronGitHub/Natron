@@ -119,7 +119,9 @@ NodeGraph::connectCurrentViewerToSelection(int inputNB,
     }
 
     NodeGuiPtr selected = _imp->_selection.front();
-
+    if (!selected->getNode()) {
+        return;
+    }
 
     if ( !selected->getNode()->canOthersConnectToThisNode() ) {
         return;
@@ -443,6 +445,20 @@ NodeGraph::setSelection(const NodesGuiList& nodes)
     for (NodesGuiList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
         selectNode(*it, true);
     }
+}
+
+void
+NodeGraph::setSelection(const NodesList& nodes)
+{
+    NodesGuiList nodeUIs;
+    for (NodesList::const_iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        NodeGuiPtr n = toNodeGui((*it)->getNodeGui());
+        if (!n || n->getDagGui() != this) {
+            continue;
+        }
+        nodeUIs.push_back(n);
+    }
+    setSelection(nodeUIs);
 }
 
 void

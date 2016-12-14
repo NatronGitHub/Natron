@@ -5544,12 +5544,11 @@ Node::switchInput0And1()
     onInputChanged(inputAIndex, input0, input1);
     onInputChanged(inputBIndex, input1, input0);
 
-    bool creatingNodeTree = getApp()->isCreatingNodeTree();
-    if (!creatingNodeTree) {
-        // Notify cache
-        _imp->effect->invalidateHashCache();
 
-    }
+    // Notify cache
+    _imp->effect->invalidateHashCache();
+
+
 
     std::string inputChangedCB = getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {

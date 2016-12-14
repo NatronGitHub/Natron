@@ -171,13 +171,8 @@ public:
     ///Closes the application, asking the user to save each opened project that has unsaved changes
     virtual void exitApp(bool warnUserForSave) OVERRIDE FINAL;
 
-    bool isNodeClipBoardEmpty() const;
-
-    SERIALIZATION_NAMESPACE::NodeClipBoard& getNodeClipBoard();
     virtual void reloadStylesheets() OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
-
-    void clearNodeClipBoard();
 
     virtual void addCommand(const QString& grouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers) OVERRIDE;
     const std::list<PythonUserCommand>& getUserPythonCommands() const;

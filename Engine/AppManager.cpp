@@ -2468,10 +2468,7 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
 
     NodePtr retNode = group->getNodeByName(serialization->_nodeScriptName);
 
-    // When loading a group, if a node with the same name and plug-in ID already exists, return it
-    if (retNode && retNode->getPluginID() == serialization->_pluginID) {
-        return retNode;
-    }
+
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(serialization->_pluginID, group));
         args->setProperty<int>(kCreateNodeArgsPropPluginVersion, serialization->_pluginMajorVersion, 0);

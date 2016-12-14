@@ -1599,7 +1599,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
 
         assert(pyPlugSerialization);
         // This will create internal nodes and restore their links.
-        Project::restoreGroupFromSerialization(pyPlugSerialization->_children, toNodeGroup(shared_from_this()), true /*loadLinks*/);
+        Project::restoreGroupFromSerialization(pyPlugSerialization->_children, toNodeGroup(shared_from_this()), 0);
 
         // For PyPlugs, the graph s not editable anyway
         setSubGraphEditedByUser(false);
@@ -1614,8 +1614,7 @@ NodeGroup::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projec
         clearNodesBlocking();
         
         // This will create internal nodes.
-        // Links are restored once all groups in the project are loaded
-        Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()), false /*loadLinks*/);
+        Project::restoreGroupFromSerialization(projectSerialization->_children, toNodeGroup(shared_from_this()),  0);
 
         // A group always appear edited
         setSubGraphEditedByUser(true);

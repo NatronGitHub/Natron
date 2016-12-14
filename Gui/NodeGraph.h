@@ -87,6 +87,8 @@ public:
 
     void setSelection(const NodesGuiList& nodes);
 
+    void setSelection(const NodesList& nodes);
+
     void clearSelection();
 
     ///The visible portion of the graph, in scene coordinates.
@@ -142,9 +144,6 @@ public:
 
     bool areOptionalInputsAutoHidden() const;
 
-    void copyNodesAndCreateInGroup(const NodesGuiList& nodes,
-                                   const NodeCollectionPtr& group,
-                                   std::list<std::pair<std::string, NodeGuiPtr > >& createdNodes);
 
     virtual void onNodesCleared() OVERRIDE FINAL;
 
@@ -165,8 +164,6 @@ public:
     void setNodeToDefaultPosition(const NodeGuiPtr& n, const NodesGuiList& selectedNodes, const CreateNodeArgs& args);
 
     void copyNodes(const NodesGuiList& nodes, SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard);
-
-    void pasteCliboard(const SERIALIZATION_NAMESPACE::NodeClipBoard& clipboard, std::list<std::pair<std::string, NodeGuiPtr > >* newNodes = 0);
 
     void duplicateSelectedNodes(const QPointF& pos);
     void cloneSelectedNodes(const QPointF& pos);

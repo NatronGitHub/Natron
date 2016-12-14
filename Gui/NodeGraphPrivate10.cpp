@@ -51,119 +51,122 @@ NATRON_NAMESPACE_ENTER;
 
 
 void
-NodeGraphPrivate::pasteNodesInternal(const SERIALIZATION_NAMESPACE::NodeSerializationList & clipboard,
-                                     const QPointF& scenePos,
-                                     bool useUndoCommand,
-                                     std::list<std::pair<std::string, NodeGuiPtr > > *newNodes)
+NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& originalNodes,
+                                     const QPointF& newCentroidScenePos,
+                                     PasteNodesFlags flags)
 {
-    if (clipboard.empty()) {
+    if (originalNodes.empty()) {
         return;
     }
-    double xmax = INT_MIN;
-    double xmin = INT_MAX;
-    double ymin = INT_MAX;
-    double ymax = INT_MIN;
-    
-    for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
-         it != clipboard.end(); ++it) {
-        
-        if ( ((*it)->_nodePositionCoords[0] + (*it)->_nodeSize[0]) > xmax ) {
-            xmax = (*it)->_nodePositionCoords[0];
-        }
-        if ((*it)->_nodePositionCoords[0] < xmin) {
-            xmin = (*it)->_nodePositionCoords[0];
-        }
-        if ( ((*it)->_nodePositionCoords[1] + (*it)->_nodeSize[1]) > ymax ) {
-            ymax = (*it)->_nodePositionCoords[1];
-        }
-        if ((*it)->_nodePositionCoords[1] < ymin) {
-            ymin = (*it)->_nodePositionCoords[1];
-        }
-    }
-    
-    
-    QPointF avgNodesPosition((xmin + xmax) / 2., (ymin + ymax) / 2.);
-    
-    NodesGuiList newNodesList;
 
-    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > allCreatedNodes;
-    {
-        CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
-        for (SERIALIZATION_NAMESPACE::NodeSerializationList::const_iterator it = clipboard.begin();
-             it != clipboard.end(); ++it) {
-            const std::string& oldScriptName = (*it)->_nodeScriptName;
-            NodeGuiPtr node = NodeGraphPrivate::pasteNode(*it, avgNodesPosition, scenePos, group.lock(), NodePtr());
-            
-            if (!node) {
+    if (flags & ePasteNodesFlagRelativeToCentroid) {
+
+        assert(newCentroidScenePos.x() != INT_MIN && newCentroidScenePos.x() != INT_MAX &&
+               newCentroidScenePos.y() != INT_MIN && newCentroidScenePos.y() != INT_MAX);
+
+        // Compute the centroid of the selected node so that we can place duplicates exactly at the same position relative to new centroid
+        double xmax = INT_MIN;
+        double xmin = INT_MAX;
+        double ymin = INT_MAX;
+        double ymax = INT_MIN;
+
+
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+             it != originalNodes.end(); ++it) {
+
+            if (it->second->_nodePositionCoords[0] == INT_MIN || it->second->_nodePositionCoords[1] == INT_MIN) {
                 continue;
             }
-            if (newNodes) {
-                newNodes->push_back( std::make_pair(oldScriptName, node) );
+            
+            if ( (it->second->_nodePositionCoords[0] + it->second->_nodeSize[0]) > xmax ) {
+                xmax = it->second->_nodePositionCoords[0];
             }
-            newNodesList.push_back(node);
-            allCreatedNodes.push_back(std::make_pair(node->getNode(), *it));
+            if (it->second->_nodePositionCoords[0] < xmin) {
+                xmin = it->second->_nodePositionCoords[0];
+            }
+            if ( (it->second->_nodePositionCoords[1] + it->second->_nodeSize[1]) > ymax ) {
+                ymax = it->second->_nodePositionCoords[1];
+            }
+            if (it->second->_nodePositionCoords[1] < ymin) {
+                ymin = it->second->_nodePositionCoords[1];
+            }
         }
 
+        // Adjust the serialization of all nodes so that it contains the new position relative to the centroid
+        QPointF originalCentroidScenePos((xmin + xmax) / 2., (ymin + ymax) / 2.);
+
+        {
+            CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
+            for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+                 it != originalNodes.end(); ++it) {
+
+                // If the position was not serialized, do not attempt to position the node.
+                if (it->second->_nodePositionCoords[0] == INT_MIN || it->second->_nodePositionCoords[1] == INT_MIN) {
+                    continue;
+                }
+
+                QPointF originalNodePos(it->second->_nodePositionCoords[0], it->second->_nodePositionCoords[1]);
+
+                // Compute the distance from the original
+                QPointF offset = originalNodePos - originalCentroidScenePos;
+
+                // New pos is relative to the centroid with the same delta
+                QPointF newPos = newCentroidScenePos + offset;
+
+                it->second->_nodePositionCoords[0] = newPos.x();
+                it->second->_nodePositionCoords[1] = newPos.y();
+            }
+
+        }
+    }
+
+    SERIALIZATION_NAMESPACE::NodeSerializationList serializationList;
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+         it != originalNodes.end(); ++it) {
+        serializationList.push_back(it->second);
     }
     
-    // Restore connections
-#pragma message WARN("Todo: set the position of the node in serialization")
-    Project::restoreGroupFromSerialization(clipboard, group.lock(), true /*restoreLinks*/);
 
-    if (useUndoCommand) {
-        _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
+    // Create nodes
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > createdNodes;
+    Project::restoreGroupFromSerialization(serializationList, group.lock(), &createdNodes);
+
+    // Link the created node to the original node if needed
+    if (flags & ePasteNodesFlagCloneNodes) {
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
+            NodePtr createdNode = it->first;
+            NodePtr originalNode;
+            // Find the original node with the serialization object
+            for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it2 = originalNodes.begin();
+                      it2 != originalNodes.end(); ++it2) {
+                if (it2->second == it->second) {
+                    originalNode = it2->first;
+                    break;
+                }
+            };
+
+            if (!createdNode || !originalNode) {
+                continue;
+            }
+            
+            createdNode->linkToNode(originalNode);
+
+        }
+    }
+
+    // Add an undo command if we need to
+    if (flags & ePasteNodesFlagUseUndoCommand) {
+        NodesList newNodesList;
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = createdNodes.begin(); it!=createdNodes.end(); ++it) {
+            newNodesList.push_back(it->first);
+        }
+        if (!newNodesList.empty()) {
+            _publicInterface->pushUndoCommand( new AddMultipleNodesCommand(_publicInterface, newNodesList) );
+        }
     }
 } // pasteNodesInternal
 
-NodeGuiPtr
-NodeGraphPrivate::pasteNode(const SERIALIZATION_NAMESPACE::NodeSerializationPtr & internalSerialization,
-                            const QPointF& averageNodesPosition,
-                            const QPointF& position,
-                            const NodeCollectionPtr& groupContainer,
-                            const NodePtr& cloneMaster)
-{
-    assert(groupContainer && internalSerialization);
 
-    // Create the duplicate node
-    NodePtr duplicateNode;
-    {
-        CreateNodeArgsPtr args(CreateNodeArgs::create(internalSerialization->_pluginID, groupContainer));
-        args->setProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization, internalSerialization);
-        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMajorVersion, 0);
-        args->setProperty<int>(kCreateNodeArgsPropPluginVersion, internalSerialization->_pluginMinorVersion, 1);
-        args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-        args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-        args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-        //args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, false);
-
-        duplicateNode = groupContainer->getApplication()->createNode(args);
-
-        if (!duplicateNode) {
-            return NodeGuiPtr();
-        }
-    }
-
-    // This is the node gui of the duplicate node
-    NodeGuiPtr duplicateNodeUI = boost::dynamic_pointer_cast<NodeGui>(duplicateNode->getNodeGui());
-    assert(duplicateNodeUI);
-
-    // Position the node to the indicated position with the same offset of the selection center than the original node
-    if (position.x() != INT_MIN && position.y() != INT_MIN) {
-        QPointF duplicatedNodeInitialPos = duplicateNodeUI->scenePos();
-        QPointF offset = duplicatedNodeInitialPos - averageNodesPosition;
-        QPointF newPos = position + offset;
-        newPos = duplicateNodeUI->mapToParent(duplicateNodeUI->mapFromScene(newPos));
-        duplicateNodeUI->setPosition( newPos.x(), newPos.y() );
-    }
-
-    if (cloneMaster) {
-        duplicateNode->linkToNode(cloneMaster);
-    }
-
-
-
-    return duplicateNodeUI;
-} // NodeGraphPrivate::pasteNode
 
 void
 NodeGraphPrivate::toggleSelectedNodesEnabled()

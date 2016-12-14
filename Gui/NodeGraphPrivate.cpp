@@ -185,22 +185,28 @@ NodeGraphPrivate::calcNodesBoundingRect()
     return ret;
 }
 
-void
-NodeGraphPrivate::resetAllClipboards()
-{
-    appPTR->clearNodeClipBoard();
-}
 
 void
 NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
-                                   SERIALIZATION_NAMESPACE::NodeClipBoard & clipboard)
+                                   SERIALIZATION_NAMESPACE::NodeSerializationList* clipboard)
 {
-    ///Clear clipboard
-    clipboard.nodes.clear();
+    clipboard->clear();
+    std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > > tmp;
+    copyNodesInternal(selection, &tmp);
+    for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = tmp.begin(); it!=tmp.end(); ++it) {
+        clipboard->push_back(it->second);
+    }
+}
+
+void
+NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection, std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >* clipboard)
+{
+    // Clear the list
+    clipboard->clear();
 
     NodesGuiList nodesToCopy = selection;
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
-        ///Also copy all nodes within the backdrop
+        // Also copy all nodes within the backdrop
         NodesGuiList nodesWithinBD = _publicInterface->getNodesWithinBackdrop(*it);
         for (NodesGuiList::iterator it2 = nodesWithinBD.begin(); it2 != nodesWithinBD.end(); ++it2) {
             NodesGuiList::iterator found = std::find(nodesToCopy.begin(), nodesToCopy.end(), *it2);
@@ -212,9 +218,10 @@ NodeGraphPrivate::copyNodesInternal(const NodesGuiList& selection,
 
     for (NodesGuiList::iterator it = nodesToCopy.begin(); it != nodesToCopy.end(); ++it) {
         if ( (*it)->isVisible() ) {
+            NodePtr internalNode = (*it)->getNode();
             SERIALIZATION_NAMESPACE::NodeSerializationPtr ns( new SERIALIZATION_NAMESPACE::NodeSerialization);
-            (*it)->getNode()->toSerialization(ns.get());
-            clipboard.nodes.push_back(ns);
+            internalNode->toSerialization(ns.get());
+            clipboard->push_back(std::make_pair(internalNode, ns));
         }
     }
 }

@@ -56,7 +56,6 @@ GuiApplicationManagerPrivate::GuiApplicationManagerPrivate(GuiApplicationManager
     , _shortcutsChangedVersion(false)
     , _fontFamily()
     , _fontSize(0)
-    , _nodeCB()
     , pythonCommands()
     , startupArgs()
     , fontconfigUpdateWatcher()

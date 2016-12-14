@@ -524,6 +524,8 @@ private:
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
+
+#pragma message WARN("Remove this class: this and the AppInstance::isCreatingNodeTree() function should not exist anymore. We still need it until results of getclippreferences are cached.")
 /**
  * @brief Small RAII style class that flags the project is currently creating a tree with potentially a lot of nodes and 
  * that each node itself shouldn't try to refresh their meta-data whilst the tree is undergoing big changes.
