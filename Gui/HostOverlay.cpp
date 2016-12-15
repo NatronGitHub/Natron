@@ -835,7 +835,7 @@ struct HostOverlayPrivate
 
     void requestRedraw()
     {
-        node.lock()->getNode()->getApp()->queueRedrawForAllViewers();
+        node.lock()->getNode()->getEffectInstance()->requestOverlayInteractRefresh();
     }
 };
 

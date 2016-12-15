@@ -184,9 +184,6 @@ public:
     /// Is this render sequential ? True for Viewer playback or a sequential writer such as WriteFFMPEG
     bool isSequentialRender : 1;
 
-    ///Was the render started in the instanceChangedAction (knobChanged)
-    bool isAnalysis : 1;
-
     ///When true, all NaNs will be converted to 1
     bool doNansHandling : 1;
 
@@ -216,11 +213,6 @@ struct FrameViewRequest
 
     // Final roi. Each request led from different branches has it's roi merged into the finalRoI
     RectD finalRoi;
-
-    // Global datas for this frame/view set upon first request
-    // The transforms associated to each input branch, set on first request
-    InputMatrixMapPtr transforms;
-    ReRoutesMapPtr reroutesMap;
 
     // The required frame/views in input, set on first request
     FramesNeededMap frameViewsNeeded;
@@ -346,9 +338,6 @@ public:
 
         // When painting with a roto item, this points to the item used to render
         RotoDrawableItemPtr activeRotoDrawableItem;
-
-        // True if the render is triggered from an analysis
-        bool isAnalysis;
 
         // True if the render should be draft (i.e: low res) because user is anyway
         // scrubbing timeline or a slider

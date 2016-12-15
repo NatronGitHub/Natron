@@ -29,6 +29,7 @@
 
 #include <list>
 #include <vector>
+#include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
@@ -126,6 +127,7 @@ class DiskCacheNode;
 class DockablePanelI;
 class Dot;
 class EffectInstance;
+class EffectTLSData;
 class EffectOpenGLContextData;
 class ExistenceCheckerThread;
 class FileSystemItem;
@@ -138,6 +140,7 @@ class FramebufferConfig;
 class GLRendererID;
 class GLShaderBase;
 class GPUContextPool;
+class GenericActionTLSArgs;
 class GenericAccess;
 class GenericSchedulerThread;
 class GenericSchedulerThreadWatcher;
@@ -197,6 +200,7 @@ class OSGLContextAttacher;
 class OfxClipInstance;
 class OfxEffectInstance;
 class OfxHost;
+class OfxImageCommon;
 class OfxImage;
 class OfxImageEffectInstance;
 class OfxOverlayInteract;
@@ -225,6 +229,7 @@ class RectI;
 class RenderEngine;
 class RenderStats;
 class RenderValuesCache;
+class RenderActionTLSData;
 class RotoDrawableItem;
 class RotoItem;
 class RotoLayer;
@@ -291,11 +296,13 @@ typedef boost::shared_ptr<DiskCacheNode> DiskCacheNodePtr;
 typedef boost::shared_ptr<Dot> DotPtr;
 typedef boost::shared_ptr<EffectInstance> EffectInstancePtr;
 typedef boost::shared_ptr<EffectInstance const> EffectInstanceConstPtr;
+typedef boost::shared_ptr<EffectTLSData> EffectTLSDataPtr;
 typedef boost::shared_ptr<EffectOpenGLContextData> EffectOpenGLContextDataPtr;
 typedef boost::shared_ptr<FileSystemItem> FileSystemItemPtr;
 typedef boost::shared_ptr<FileSystemModel> FileSystemModelPtr;
 typedef boost::shared_ptr<FrameEntry> FrameEntryPtr;
 typedef boost::shared_ptr<GenericWatcherCallerArgs> WatcherCallerArgsPtr;
+typedef boost::shared_ptr<GenericActionTLSArgs> GenericActionTLSArgsPtr;
 typedef boost::shared_ptr<GLShaderBase> GLShaderBasePtr;
 typedef boost::shared_ptr<GroupInput> GroupInputPtr;
 typedef boost::shared_ptr<GroupOutput> GroupOutputPtr;
@@ -423,6 +430,7 @@ typedef boost::weak_ptr<PluginGroupNode> PluginGroupNodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;
 typedef boost::weak_ptr<OSGLContextAttacher> OSGLContextAttacherWPtr;
 typedef boost::weak_ptr<PluginMemory> PluginMemoryWPtr;
+typedef boost::shared_ptr<RenderActionTLSData> RenderActionTLSDataPtr;
 typedef boost::weak_ptr<RotoPaintInteract> RotoPaintInteractWPtr;
 typedef boost::weak_ptr<RotoPaint> RotoPaintWPtr;
 typedef boost::weak_ptr<RotoDrawableItem> RotoDrawableItemWPtr;

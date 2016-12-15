@@ -185,9 +185,7 @@ public:
     virtual void abortAllViewers() OVERRIDE FINAL;
     virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
 
-    int getOverlayRedrawRequestsCount() const;
-
-    void clearOverlayRedrawRequests();
+    virtual void dequeueRedrawsOnViewers() OVERRIDE FINAL;
 
     void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewSetSpec view);
     void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewSetSpec* view) const;

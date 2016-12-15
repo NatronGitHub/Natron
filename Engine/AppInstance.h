@@ -357,6 +357,8 @@ public:
 
     virtual void queueRedrawForAllViewers() {}
 
+    virtual void dequeueRedrawsOnViewers() {}
+
     virtual void renderAllViewers(bool /* canAbort*/) {}
 
     virtual void abortAllViewers() {}

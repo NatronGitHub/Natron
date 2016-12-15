@@ -178,7 +178,7 @@ public:
     EffectInstance* _publicInterface; // can not be a smart ptr
 
     ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
-    boost::shared_ptr<TLSHolder<EffectInstance::EffectTLSData> > tlsData;
+    boost::shared_ptr<TLSHolder<EffectTLSData> > tlsData;
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
@@ -247,54 +247,6 @@ public:
     void unmarkImageAsBeingRendered(const ImagePtr & img, bool renderFailed);
 #endif
 
-    /**
-     * @brief This function sets on the thread storage given in parameter all the arguments which
-     * are used to render an image.
-     * This is used exclusively on the render thread in the renderRoI function or renderRoIInternal function.
-     * The reason we use thread-storage is because the OpenFX API doesn't give all the parameters to the
-     * ImageEffect suite functions except the desired time. That is the Host has to maintain an internal state to "guess" what are the
-     * expected parameters in order to respond correctly to the function call. This state is maintained throughout the render thread work
-     * for all these actions:
-     *
-       - getRegionsOfInterest
-       - getFrameRange
-       - render
-       - beginRender
-       - endRender
-       - isIdentity
-     *
-     * The object that will need to know these datas is OfxClipInstance, more precisely in the following functions:
-       - OfxClipInstance::getRegionOfDefinition
-       - OfxClipInstance::getImage
-     *
-     * We don't provide these datas for the getRegionOfDefinition with these render args because this action can be called way
-     * prior we have all the other parameters. getRegionOfDefinition only needs the current render view and mipMapLevel if it is
-     * called on a render thread or during an analysis. We provide it by setting those 2 parameters directly on a thread-storage
-     * object local to the clip.
-     *
-     * For getImage, all the ScopedRenderArgs are active (except for analysis). The view and mipMapLevel parameters will be retrieved
-     * on the clip that needs the image. All the other parameters will be retrieved in EffectInstance::getImage on the ScopedRenderArgs.
-     *
-     * During an analysis effect we don't set any ScopedRenderArgs and call some actions recursively if needed.
-     * WARNING: analysis effect's are set the current view and mipmapLevel to 0 in the OfxEffectInstance::knobChanged function
-     * If we were to have analysis that perform on different views we would have to change that.
-     **/
-    class ScopedRenderArgs
-    {
-        EffectDataTLSPtr tlsData;
-
-public:
-        ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                         const RectD & rod,
-                         const RectI & renderWindow,
-                         double time,
-                         ViewIdx view,
-                         const ComponentsNeededMapPtr& compsNeeded,
-                         const InputImagesMap& inputImages);
-
-
-        ~ScopedRenderArgs();
-    };
 
     void
     determineRectsToRender(ImagePtr& isPlaneCached,
@@ -343,7 +295,7 @@ public:
                                                           bool *isIdentity);
 
     bool setupRenderRoIParams(const RenderRoIArgs & args,
-                              EffectDataTLSPtr* tls,
+                              EffectTLSDataPtr* tls,
                               U64 *frameViewHash,
                               AbortableRenderInfoPtr *abortInfo,
                               ParallelRenderArgsPtr* frameArgs,
@@ -402,12 +354,10 @@ public:
 
 
     RenderRoIRetCode renderRoIRenderInputImages(const RenderRoIArgs & args,
-                                                                const EffectDataTLSPtr& tls,
                                                                 const U64 frameViewHash,
                                                                 const ComponentsNeededMapPtr& neededComps,
                                                                 const FrameViewRequest* requestPassData,
                                                                 const ImagePlanesToRenderPtr &planesToRender,
-                                                                bool useTransforms,
                                                                 StorageModeEnum storage,
                                                                 const std::vector<ImageComponents>& outputComponents,
                                                                 ImagePremultiplicationEnum thisEffectOutputPremult,
@@ -498,8 +448,6 @@ public:
         bool renderFullScaleThenDownscale;
         bool isSequentialRender;
         bool isRenderResponseToUserInteraction;
-        int firstFrame;
-        int lastFrame;
         int preferredInput;
         unsigned int mipMapLevel;
         unsigned int renderMappedMipMapLevel;
@@ -516,7 +464,7 @@ public:
         OSGLContextPtr glContext;
     };
 
-    void tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
+    void tryShrinkRenderWindow(const EffectTLSDataPtr &tls,
                                const EffectInstance::RectToRender & rectToRender,
                                const PlaneToRender & firstPlaneToRender,
                                bool renderFullScaleThenDownscale,
@@ -560,7 +508,6 @@ public:
                                                   const bool renderFullScaleThenDownscale,
                                                   const bool isSequentialRender,
                                                   const bool isRenderResponseToUserInteraction,
-                                                  const int firstFrame, const int lastFrame,
                                                   const int preferredInput,
                                                   const unsigned int mipMapLevel,
                                                   const unsigned int renderMappedMipMapLevel,
@@ -576,7 +523,7 @@ public:
                                                   const ImagePlanesToRenderPtr & planes);
 
 
-    RenderingFunctorRetEnum renderHandlerIdentity(const EffectDataTLSPtr& tls,
+    RenderingFunctorRetEnum renderHandlerIdentity(const EffectTLSDataPtr& tls,
                                                   const RectToRender & rectToRender,
                                                   const OSGLContextPtr& glContext,
                                                   const bool renderFullScaleThenDownscale,
@@ -589,19 +536,22 @@ public:
                                                   const TimeLapsePtr& timeRecorder,
                                                   ImagePlanesToRender & planes);
 
-    RenderingFunctorRetEnum renderHandlerInternal(const EffectDataTLSPtr& tls,
+    RenderingFunctorRetEnum renderHandlerInternal(const EffectTLSDataPtr& tls,
                                                   const OSGLContextPtr& glContext,
                                                   EffectInstance::RenderActionArgs &actionArgs,
-                                                  const ImagePlanesToRender & planes,
+                                                  const ImagePlanesToRenderPtr & planes,
                                                   bool multiPlanar,
                                                   bool bitmapMarkedForRendering,
                                                   const ImageComponents & outputClipPrefsComps,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
+                                                  const ComponentsNeededMapPtr & compsNeeded,
                                                   std::map<ImageComponents, PlaneToRender>& outputPlanes,
                                                   boost::shared_ptr<OSGLContextAttacher>* glContextAttacher);
 
-    void setupRenderArgs(const EffectDataTLSPtr& tls,
+    void setupRenderArgs(const EffectTLSDataPtr& tls,
                          const OSGLContextPtr& glContext,
+                         const double time,
+                         const ViewIdx view,
                          unsigned int mipMapLevel,
                          bool isSequentialRender,
                          bool isRenderResponseToUserInteraction,
@@ -614,7 +564,7 @@ public:
                          boost::shared_ptr<OSGLContextAttacher>* glContextAttacher,
                          TimeLapsePtr *timeRecorder);
 
-    void renderHandlerPostProcess(const EffectDataTLSPtr& tls,
+    void renderHandlerPostProcess(const EffectTLSDataPtr& tls,
                                   int preferredInput,
                                   const OSGLContextPtr& glContext,
                                   const EffectInstance::RenderActionArgs &actionArgs,

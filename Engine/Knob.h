@@ -2602,8 +2602,9 @@ public:
 
     bool isOverlaySlaveParam(const KnobIConstPtr& knob) const;
 
-    virtual void redrawOverlayInteract();
-    
+    void requestOverlayInteractRefresh();
+
+    void checkAndRedrawOverlayInteractsIfNeeded();
 
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(const KnobIPtr& knob);
@@ -2732,8 +2733,6 @@ public:
     virtual void abortAnyEvaluation(bool keepOldestRender = true) { Q_UNUSED(keepOldestRender); }
 
 
-    bool isDequeueingValuesSet() const;
-
     /**
      * @brief Returns true if at least a parameter is animated
      **/
@@ -2805,39 +2804,8 @@ protected:
 
     void onUserKnobCreated(const KnobIPtr& knob, bool isUserKnob);
 
-    //////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-    /**
-     * @brief Equivalent to assert(actionsRecursionLevel == 0).
-     * In release mode an exception is thrown instead.
-     * This should be called in all actions except in the following recursive actions...
-     *
-     * kOfxActionBeginInstanceChanged
-     * kOfxActionInstanceChanged
-     * kOfxActionEndInstanceChanged
-     * kOfxImageEffectActionGetClipPreferences
-     * kOfxInteractActionDraw
-     *
-     * We also allow recursion in some other actions such as getRegionOfDefinition or isIdentity
-     **/
-    virtual void assertActionIsNotRecursive() const {}
-
-    /**
-     * @brief Should be called in the begining of an action.
-     * Right after assertActionIsNotRecursive() for non recursive actions.
-     **/
-    virtual void incrementRecursionLevel() {}
-
-    /**
-     * @brief Should be called at the end of an action.
-     **/
-    virtual void decrementRecursionLevel() {}
-
 public:
 
-    virtual int getRecursionLevel() const { return 0; }
 
 
     /**
@@ -2848,20 +2816,24 @@ public:
 
     void endChanges(bool discardEverything = false);
 
+    virtual bool getActionsRecursionLevel() const
+    {
+        return 0;
+    }
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to prepare yourself to a lot of value changes.
      **/
-    void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason);
+    virtual void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason);
 
     /**
      * @brief The virtual portion of notifyProjectEndKnobsValuesChanged(). This is called by the project
      * You should NEVER CALL THIS YOURSELF as it would break the bracketing system.
      * You can overload this to finish a serie of value changes, thus limiting the amount of changes to do.
      **/
-    void endKnobsValuesChanged_public(ValueChangedReasonEnum reason);
+    virtual void endKnobsValuesChanged_public(ValueChangedReasonEnum reason);
 
     /**
      * @brief The virtual portion of notifyProjectEvaluationRequested(). This is called by the project
@@ -2871,25 +2843,6 @@ public:
      **/
     virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSetSpec view);
 
-
-    /**
-     * @brief To be called after each function that modifies actionsRecursionLevel that is not
-     * onKnobChanged or begin/endKnobValueChange.
-     * If actionsRecursionLevel drops to 1 and there was some evaluate requested, it
-     * will call evaluate_public
-     **/
-    void checkIfRenderNeeded();
-
-    /**
-     * Call this if getRecursionLevel > 1 to compress overlay redraws
-     **/
-    void incrementRedrawNeededCounter();
-
-    /**
-     * @brief Returns true if the overlay should be redrawn. This should be called once the recursion level reaches 0
-     * This will reset the overlay redraw needed counter to 0.
-     **/
-    bool checkIfOverlayRedrawNeeded();
 
 
     /*Add a knob to the vector. This is called by the
@@ -2982,51 +2935,6 @@ private:
      **/
     virtual void initializeKnobs() = 0;
 };
-
-
-/**
- * @brief A small class to help managing the recursion level
- * that can also that an action is not recursive.
- **/
-class RecursionLevelRAII
-{
-    KnobHolderPtr effect;
-
-public:
-
-    RecursionLevelRAII(const KnobHolderPtr& effect,
-                       bool assertNotRecursive)
-        : effect(effect)
-    {
-        if (assertNotRecursive) {
-            effect->assertActionIsNotRecursive();
-        }
-        effect->incrementRecursionLevel();
-    }
-
-    ~RecursionLevelRAII()
-    {
-        effect->decrementRecursionLevel();
-    }
-};
-
-/**
- * @macro This special macro creates an object that will increment the recursion level in the constructor and decrement it in the
- * destructor.
- * @param assertNonRecursive If true then it will check that the recursion level is 0 and otherwise print a warning indicating that
- * this action was called recursively.
- **/
-#define MANAGE_RECURSION(assertNonRecursive) RecursionLevelRAII actionRecursionManager(shared_from_this(), assertNonRecursive)
-
-/**
- * @brief Should be called in the begining of any action that cannot be called recursively.
- **/
-#define NON_RECURSIVE_ACTION() MANAGE_RECURSION(true)
-
-/**
- * @brief Should be called in the begining of any action that can be called recursively
- **/
-#define RECURSIVE_ACTION() MANAGE_RECURSION(false)
 
 
 class InitializeKnobsFlag_RAII

@@ -797,23 +797,6 @@ ViewerInstance::fillGammaLut(double gamma)
     _imp->fillGammaLut(gamma);
 }
 
-void
-ViewerInstance::getRegionsOfInterest(double /*time*/,
-                                     const RenderScale & /*scale*/,
-                                     const RectD & /*outputRoD*/,   //!< the RoD of the effect, in canonical coordinates
-                                     const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
-                                     ViewIdx /*view*/,
-                                     RoIMap* ret)
-{
-    int texIndex = getViewerIndexThreadLocal();
-    assert(texIndex == 0 || texIndex == 1);
-    EffectInstancePtr input = getInput(texIndex);
-    if (input) {
-        ret->insert( std::make_pair(input, renderWindow) );
-    }
-
-}
-
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                                        const bool isDraftMode,
@@ -1156,8 +1139,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
 {
-    // Flag to the TLS that we are rendering this index. It needs it to compute properly the hash, see getFramesNeeded_public
-    setViewerIndexThreadLocal(inArgs.params->textureIndex);
 
     // We are in the render thread, we may not have computed the RoD and lookup the cache yet
     {
@@ -1171,7 +1152,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         tlsArgs->textureIndex = inArgs.params->textureIndex;
         tlsArgs->timeline = getTimeline();
         tlsArgs->activeRotoDrawableItem = activeStrokeItem;
-        tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = inArgs.draftModeEnabled;
         tlsArgs->stats = stats;
         try {
@@ -2940,12 +2920,6 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
 
     return std::log(closestPowerOf2) / M_LN2;
-}
-
-double
-ViewerInstance::getCurrentTime() const
-{
-    return getFrameRenderArgsCurrentTime();
 }
 
 ViewIdx

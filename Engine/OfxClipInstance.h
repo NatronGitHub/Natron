@@ -203,21 +203,13 @@ public:
     virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string &getComponents() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    /// override this to set the view to be returned by getImage()
-    /// This is called by Instance::renderAction() for each clip, before calling
-    /// kOfxImageEffectActionRender on the Instance.
-    /// The view number has to be stored in the Clip, so this is typically not thread-safe,
-    /// except if thread-local storage is used
+
     //// EDIT: We don't use this function anymore, instead we handle thread storage ourselves in OfxEffectInstance
     //// via the ClipsThreadStorageSetter, this way we can be sure actions are not called recursively and do other checks.
     virtual void setView(int /*view*/) OVERRIDE
     {
     }
 
-    void setClipTLS(ViewIdx view,
-                    unsigned int mipmapLevel,
-                    const ImageComponents& components);
-    void invalidateClipTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
@@ -246,68 +238,21 @@ public:
     static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
     static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
     static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
-    struct RenderActionData
-    {
-        //We keep track of the images being rendered (on the output clip) so that we return the same pointer
-        //if this is the same image
-        std::list<OfxImageCommon*> imagesBeingRendered;
 
-        //Used to determine the plane to render in a call to getOutputImageInternal()
-        ImageComponents clipComponents;
-
-        RenderActionData()
-            : imagesBeingRendered()
-            , clipComponents()
-        {
-        }
-    };
 
     //These are per-clip thread-local data
     struct ClipTLSData
     {
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-        ///////These data are valid only throughout a recursive action
 
-        //View may be involved in a recursive action
-        std::list<ViewIdx> view;
-        //mipmaplevel may be involved in a recursive action
-        std::list<unsigned int> mipMapLevel;
-
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-        /// Valid only throughought a render action
-        std::list< boost::shared_ptr<RenderActionData> > renderData;
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-
-
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-        //The following data are always valid and do not necessitate a valid flag
+        // The following data are always valid and do not necessitate a valid flag.
+        // They are used to implement suite functions that return strings
         std::vector<std::string> componentsPresent;
         std::string unmappedComponents;
 
         ClipTLSData()
-            : view()
-            , mipMapLevel()
-            , componentsPresent()
+            : componentsPresent()
             , unmappedComponents()
         {
-        }
-
-        ClipTLSData(const ClipTLSData& other)
-            : view(other.view)
-            , mipMapLevel(other.mipMapLevel)
-            , renderData()
-            , componentsPresent(other.componentsPresent)
-            , unmappedComponents(other.unmappedComponents)
-        {
-            for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
-                 it != other.renderData.end(); ++it) {
-                boost::shared_ptr<RenderActionData> d( new RenderActionData(**it) );
-                renderData.push_back(d);
-            }
         }
     };
 
@@ -332,7 +277,6 @@ class OfxImageCommon
 {
 public:
     explicit OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
-                            const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
                             const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
                             bool isSrcImage,
                             const RectI& renderWindow,
@@ -356,8 +300,7 @@ class OfxImage
       , public OfxImageCommon
 {
 public:
-    explicit OfxImage( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                       const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+    explicit OfxImage( const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
                        bool isSrcImage,
                        const RectI& renderWindow,
                        const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -365,7 +308,7 @@ public:
                        int nComps,
                       double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(this, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
     {
     }
 };
@@ -375,8 +318,7 @@ class OfxTexture
       , public OfxImageCommon
 {
 public:
-    explicit OfxTexture( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                         const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
+    explicit OfxTexture( const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
                          bool isSrcImage,
                          const RectI& renderWindow,
                          const boost::shared_ptr<Transform::Matrix3x3>& mat,
@@ -384,7 +326,7 @@ public:
                          int nComps,
                         double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(this, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
     {
     }
 };

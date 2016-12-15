@@ -84,109 +84,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_ENTER;
 
-using std::cout; using std::endl;
-
-
-namespace  {
-/**
- * @class This class is helpful to set thread-storage data on the clips of an effect
- * When destroyed, it is removed from the clips, ensuring they are removed.
- * It is to be instantiated right before calling the action that will need the per thread-storage
- * This way even if exceptions are thrown, clip thread-storage will be purged.
- *
- * All the info set on clip thread-storage are "cached" data that might be needed by a call of the OpenFX API which would
- * otherwise require a recursive action call, which is forbidden by the specification.
- * The more you pass parameters, the safer you are that the plug-in will not attempt recursive action calls but the more expensive
- * it is.
- **/
-class ClipsThreadStorageSetter
-{
-public:
-    ClipsThreadStorageSetter(OfxImageEffectInstance* effect,
-                             ViewIdx view,
-                             unsigned mipmapLevel)
-        : effect(effect)
-    {
-        const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
-
-        for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (clip) {
-                clip->setClipTLS( view, mipmapLevel, ImageComponents::getNoneComponents() );
-            }
-        }
-    }
-
-    virtual ~ClipsThreadStorageSetter()
-    {
-        const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
-
-        for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (clip) {
-                clip->invalidateClipTLS();
-            }
-        }
-    }
-
-private:
-    OfxImageEffectInstance* effect;
-};
-
-class RenderThreadStorageSetter
-{
-public:
-
-    RenderThreadStorageSetter(OfxImageEffectInstance* effect,
-                              ViewIdx view,
-                              unsigned int mipmapLevel,
-                              const ImageComponents& currentPlane,
-                              const InputImagesMap& inputImages)
-        : effect(effect)
-    {
-        const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
-
-        for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (clip) {
-                if ( clip->isOutput() ) {
-                    clip->setClipTLS(view, mipmapLevel, currentPlane);
-                } else {
-                    int inputNb = clip->getInputNb();
-                    InputImagesMap::const_iterator foundClip = inputImages.find(inputNb);
-
-                    if ( ( foundClip != inputImages.end() ) && !foundClip->second.empty() ) {
-                        const ImagePtr& img = foundClip->second.front();
-                        assert(img);
-                        clip->setClipTLS( view, mipmapLevel, img->getComponents() );
-                    } else {
-                        clip->setClipTLS( view, mipmapLevel, ImageComponents::getNoneComponents() );
-                    }
-                }
-            }
-        }
-    }
-
-    virtual ~RenderThreadStorageSetter()
-    {
-        const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
-
-        for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin(); it != clips.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (clip) {
-                clip->invalidateClipTLS();
-            }
-        }
-    }
-
-private:
-    OfxImageEffectInstance* effect;
-};
-} // anon namespace
 
 struct OfxEffectInstancePrivate
 {
@@ -196,7 +93,6 @@ struct OfxEffectInstancePrivate
     KnobIntWPtr selectionRectangleStateKnob;
     KnobStringWPtr undoRedoTextKnob;
     KnobBoolWPtr undoRedoStateKnob;
-    mutable QReadWriteLock preferencesLock;;
     ContextEnum context;
     struct ClipsInfo
     {
@@ -246,7 +142,6 @@ struct OfxEffectInstancePrivate
         , selectionRectangleStateKnob()
         , undoRedoTextKnob()
         , undoRedoStateKnob()
-        , preferencesLock(QReadWriteLock::Recursive)
         , context(eContextNone)
         , clipsInfos()
         , outputClip(0)
@@ -268,7 +163,6 @@ struct OfxEffectInstancePrivate
     OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
         : effect()
         , overlayInteract()
-        , preferencesLock(QReadWriteLock::Recursive)
         , context(other.context)
         , clipsInfos(other.clipsInfos)
         , outputClip(other.outputClip)
@@ -398,8 +292,6 @@ OfxEffectInstance::initializeDataAfterCreate()
             break;
     }
 
-    SET_CAN_SET_VALUE(true);
-
     ///Create clips & parameters
     OfxStatus stat = _imp->effect->populate();
     if (stat != kOfxStatOK) {
@@ -474,12 +366,10 @@ OfxEffectInstance::initializeDataAfterCreate()
 void
 OfxEffectInstance::createInstanceAction()
 {
+
     OfxStatus stat;
-    {
-        // Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
-        stat = _imp->effect->createInstanceAction();
-    }
+    stat = _imp->effect->createInstanceAction();
+
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         QString message;
         int type;
@@ -537,11 +427,8 @@ OfxEffectInstance::createRenderClone()
     clone->_imp->effect->setOfxEffectInstance(clone);
 
     OfxStatus stat;
-    {
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&clone->_imp->preferencesLock);
-        stat = clone->_imp->effect->createInstanceAction();
-    }
+    stat = clone->_imp->effect->createInstanceAction();
+
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         // Failed to create clone...
@@ -585,19 +472,9 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         effectInstance()->getRenderScaleRecursive(sx, sy);
         RenderScale s(sx, sy);
 
-        {
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                ViewIdx(0),
-                                                0);
 
+        _imp->overlayInteract->createInstanceAction();
 
-            {
-                SET_CAN_SET_VALUE(true);
-                ///Take the preferences lock so that it cannot be modified throughout the action.
-                QReadLocker preferencesLocker(&_imp->preferencesLock);
-                _imp->overlayInteract->createInstanceAction();
-            }
-        }
 
         ///Fetch all parameters that are overlay slave
         std::vector<std::string> slaveParams;
@@ -1038,20 +915,12 @@ OfxEffectInstance::onInputChanged(int inputNo, const NodePtr& /*oldNode*/, const
     double time = getApp()->getTimeLine()->currentFrame();
     RenderScale s(1.);
 
+    assert(_imp->effect);
 
-    {
-        RECURSIVE_ACTION();
-        REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
-        SET_CAN_SET_VALUE(true);
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            ViewIdx(0),
-                                            0);
-        assert(_imp->effect);
+    _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _imp->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+    _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
-        _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
-        _imp->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
-        _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
-    }
 }
 
 /** @brief map a std::string to a context */
@@ -1131,35 +1000,33 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
 void
 OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
 {
-    //////////////// Actually push to the clips the preferences and set the flags on the effect, protected by a write lock.
+    //Actually push to the clips the preferences and set the flags on the effect
 
-    {
-        QWriteLocker l(&_imp->preferencesLock);
-        if (!_imp->effect) {
-            return;
-        }
-        const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = _imp->effect->getClips();
-        for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
-             ; it != clips.end(); ++it) {
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (!clip) {
-                continue;
-            }
-            int inputNb = clip->getInputNb();
-            const ImageComponents& components = metadata.getImageComponents(inputNb);
-
-            clip->setComponents( OfxClipInstance::natronsComponentsToOfxComponents(components) );
-            clip->setPixelDepth( OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) ) );
-            clip->setAspectRatio( metadata.getPixelAspectRatio(inputNb) );
-        }
-
-        effectInstance()->updatePreferences_safe( metadata.getOutputFrameRate(),
-                                                  OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ),
-                                                  OfxClipInstance::natronsPremultToOfxPremult( metadata.getOutputPremult() ),
-                                                  metadata.getIsContinuous(),
-                                                  metadata.getIsFrameVarying() );
+    if (!_imp->effect) {
+        return;
     }
+    const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = _imp->effect->getClips();
+    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
+         ; it != clips.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
+        assert(clip);
+        if (!clip) {
+            continue;
+        }
+        int inputNb = clip->getInputNb();
+        const ImageComponents& components = metadata.getImageComponents(inputNb);
+
+        clip->setComponents( OfxClipInstance::natronsComponentsToOfxComponents(components) );
+        clip->setPixelDepth( OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) ) );
+        clip->setAspectRatio( metadata.getPixelAspectRatio(inputNb) );
+    }
+
+    effectInstance()->updatePreferences_safe( metadata.getOutputFrameRate(),
+                                             OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ),
+                                             OfxClipInstance::natronsPremultToOfxPremult( metadata.getOutputPremult() ),
+                                             metadata.getIsContinuous(),
+                                             metadata.getIsFrameVarying() );
+
 }
 
 StatusEnum
@@ -1169,30 +1036,13 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
         return eStatusFailed;
     }
     assert(_imp->context != eContextNone);
-    assert( QThread::currentThread() == qApp->thread() );
 
-    StatusEnum stat;
-    ////////////////////////////////////////////////////////////////
-    ///////////////////////////////////
-    ////////////////  Get plug-in render preferences
-    {
-        RECURSIVE_ACTION();
-        /*
-           We allow parameters values changes within the getClipPreference action because some parameters may only be updated
-           reliably in this action. For example a choice parameter tracking all available components upstream in each clip needs
-           to be refreshed in getClipPreferences since it may change due to a param change in a plug-in upstream.
-           It is then up to the plug-in to avoid infinite recursions in getClipPreference.
-         */
-        SET_CAN_SET_VALUE(true);
+    ///First push the "default" meta-datas to the clips so that they get proper values
+    onMetaDatasRefreshed(metadata);
 
-        ///First push the "default" meta-datas to the clips so that they get proper values
-        onMetaDatasRefreshed(metadata);
-
-        ///It has been overriden and no data is actually set on the clip, everything will be set into the
-        ///metadata object
-        stat = _imp->effect->getClipPreferences_safe(metadata);
-    }
-
+    ///It has been overriden and no data is actually set on the clip, everything will be set into the
+    ///metadata object
+    StatusEnum stat = _imp->effect->getClipPreferences_safe(metadata);
     return stat;
 }
 
@@ -1209,8 +1059,6 @@ OfxEffectInstance::getRegionOfDefinition(double time,
 
     assert(_imp->effect);
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-
     // getRegionOfDefinition may be the first action with renderscale called on any effect.
     // it may have to check for render scale support.
     SupportsEnum supportsRS = supportsRenderScaleMaybe();
@@ -1224,83 +1072,61 @@ OfxEffectInstance::getRegionOfDefinition(double time,
     OfxRectD ofxRod;
     OfxStatus stat;
 
-    {
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
-                                            mipMapLevel);
 
-        assert(_imp->effect);
-        if (getRecursionLevel() > 1) {
-            stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
-        } else {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(&_imp->preferencesLock);
-            stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
-        }
-        if (supportsRS == eSupportsMaybe) {
-            OfxRectD tmpRod;
-            if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                if (!scaleIsOne) {
-                    // we got at least one success with RS != 1
+    assert(_imp->effect);
+    stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
+
+    if (supportsRS == eSupportsMaybe) {
+        OfxRectD tmpRod;
+        if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
+            if (!scaleIsOne) {
+                // we got at least one success with RS != 1
+                setSupportsRenderScaleMaybe(eSupportsYes);
+            } else {
+                //try with scale != 1
+                // maybe the effect does not support renderscale
+                // try again with scale one
+                OfxPointD halfScale;
+                halfScale.x = halfScale.y = .5;
+
+                assert(_imp->effect);
+
+                stat = _imp->effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
+
+
+                if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
                     setSupportsRenderScaleMaybe(eSupportsYes);
                 } else {
-                    //try with scale != 1
-                    // maybe the effect does not support renderscale
-                    // try again with scale one
-                    OfxPointD halfScale;
-                    halfScale.x = halfScale.y = .5;
-
-                    {
-                        SET_CAN_SET_VALUE(false);
-                        assert(_imp->effect);
-
-                        if (getRecursionLevel() > 1) {
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
-                        } else {
-                            ///Take the preferences lock so that it cannot be modified throughout the action.
-                            QReadLocker preferencesLocker(&_imp->preferencesLock);
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
-                        }
-                    }
-                    if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                        setSupportsRenderScaleMaybe(eSupportsYes);
-                    } else {
-                        setSupportsRenderScaleMaybe(eSupportsNo);
-                    }
+                    setSupportsRenderScaleMaybe(eSupportsNo);
                 }
-            } else if (stat == kOfxStatFailed) {
-                if (scaleIsOne) {
-                    //scale one failed, we can't say anything
-                    return eStatusFailed;
+            }
+        } else if (stat == kOfxStatFailed) {
+            if (scaleIsOne) {
+                //scale one failed, we can't say anything
+                return eStatusFailed;
+            } else {
+                // maybe the effect does not support renderscale
+                // try again with scale one
+                OfxPointD scaleOne;
+                scaleOne.x = scaleOne.y = 1.;
+
+
+                assert(_imp->effect);
+
+                stat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
+
+
+
+                if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
+                    // we got success with scale = 1, which means it doesn't support renderscale after all
+                    setSupportsRenderScaleMaybe(eSupportsNo);
                 } else {
-                    // maybe the effect does not support renderscale
-                    // try again with scale one
-                    OfxPointD scaleOne;
-                    scaleOne.x = scaleOne.y = 1.;
-
-                    {
-                        SET_CAN_SET_VALUE(false);
-                        assert(_imp->effect);
-
-                        if (getRecursionLevel() > 1) {
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
-                        } else {
-                            ///Take the preferences lock so that it cannot be modified throughout the action.
-                            QReadLocker preferencesLocker(&_imp->preferencesLock);
-                            stat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
-                        }
-                    }
-
-                    if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                        // we got success with scale = 1, which means it doesn't support renderscale after all
-                        setSupportsRenderScaleMaybe(eSupportsNo);
-                    } else {
-                        // if both actions failed, we can't say anything
-                        return eStatusFailed;
-                    }
+                    // if both actions failed, we can't say anything
+                    return eStatusFailed;
                 }
             }
         }
+
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
             return eStatusFailed;
         }
@@ -1340,7 +1166,7 @@ OfxEffectInstance::getRegionOfDefinition(double time,
 void
 OfxEffectInstance::calcDefaultRegionOfDefinition(double time,
                                                  const RenderScale & scale,
-                                                 ViewIdx view,
+                                                 ViewIdx /*view*/,
                                                  RectD *rod)
 {
     assert(_imp->context != eContextNone);
@@ -1348,34 +1174,26 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(double time,
         throw std::runtime_error("OfxEffectInstance not initialized");
     }
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxRectD ofxRod;
 
-    {
-        SET_CAN_SET_VALUE(false);
-        assert(_imp->effect);
 
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        if (getRecursionLevel() == 0) {
-            ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                                view,
-                                                mipMapLevel);
+    assert(_imp->effect);
+
+    ///Take the preferences lock so that it cannot be modified throughout the action.
 
 
-            // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
-            // generator context - defaults to the project window,
-            // filter and paint contexts - defaults to the RoD of the 'Source' input clip at the given time,
-            // transition context - defaults to the union of the RoDs of the 'SourceFrom' and 'SourceTo' input clips at the given time,
-            // general context - defaults to the union of the RoDs of all the effect non optional input clips at the given time, if none exist, then it is the project window
-            // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
+    // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
+    // generator context - defaults to the project window,
+    // filter and paint contexts - defaults to the RoD of the 'Source' input clip at the given time,
+    // transition context - defaults to the union of the RoDs of the 'SourceFrom' and 'SourceTo' input clips at the given time,
+    // general context - defaults to the union of the RoDs of all the effect non optional input clips at the given time, if none exist, then it is the project window
+    // retimer context - defaults to the union of the RoD of the 'Source' input clip at the frame directly preceding the value of the 'SourceTime' double parameter and the frame directly after it
 
-            // the following ofxh function does the job
-            QReadLocker preferencesLocker(&_imp->preferencesLock);
-            ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale);
-        } else {
-            ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale);
-        }
-    }
+    // the following ofxh function does the job
+
+    ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale);
+
+
     rod->x1 = ofxRod.x1;
     rod->x2 = ofxRod.x2;
     rod->y1 = ofxRod.y1;
@@ -1417,19 +1235,11 @@ OfxEffectInstance::getRegionsOfInterest(double time,
 
     OfxStatus stat;
 
-    ///before calling getRoIaction set the relevant info on the clips
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
-        SET_CAN_SET_VALUE(false);
 
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
-                                            mipMapLevel);
         OfxRectD roi;
         rectToOfxRectD(renderWindow, &roi);
 
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
         assert(_imp->effect);
         stat = _imp->effect->getRegionOfInterestAction( (OfxTime)time, scale, view,
                                                         roi, inputRois );
@@ -1482,11 +1292,9 @@ OfxEffectInstance::getFramesNeeded(double time,
     if ( isViewAware() ) {
         OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
         {
-            SET_CAN_SET_VALUE(false);
             assert(_imp->effect);
 
             ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(&_imp->preferencesLock);
             stat = _imp->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
         }
 
@@ -1513,11 +1321,9 @@ OfxEffectInstance::getFramesNeeded(double time,
     } else {
         OFX::Host::ImageEffect::RangeMap inputRanges;
         {
-            SET_CAN_SET_VALUE(false);
             assert(_imp->effect);
 
             ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(&_imp->preferencesLock);
             stat = _imp->effect->getFrameNeededAction( (OfxTime)time, inputRanges );
         }
         if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1563,11 +1369,9 @@ OfxEffectInstance::getFrameRange(double *first,
          ( _imp->context == eContextReader) ||
          ( _imp->context == eContextWriter) ||
          ( _imp->context == eContextGenerator) ) {
-        SET_CAN_SET_VALUE(false);
         assert(_imp->effect);
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
         st = _imp->effect->getTimeDomainAction(range);
     }
     if (st == kOfxStatOK) {
@@ -1650,16 +1454,10 @@ OfxEffectInstance::isIdentity(double time,
         throw std::logic_error("isIdentity called with render scale != 1, but effect does not support render scale!");
     }
 
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     OfxStatus stat;
 
     {
-        SET_CAN_SET_VALUE(false);
 
-
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
-                                            mipMapLevel);
         OfxRectI ofxRoI;
         ofxRoI.x1 = renderWindow.left();
         ofxRoI.x2 = renderWindow.right();
@@ -1668,13 +1466,8 @@ OfxEffectInstance::isIdentity(double time,
 
         assert(_imp->effect);
 
-        if (getRecursionLevel() > 1) {
-            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
-        } else {
-            ///Take the preferences lock so that it cannot be modified throughout the action.
-            QReadLocker preferencesLocker(&_imp->preferencesLock);
-            stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
-        }
+        stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
+
     }
 
     assert(_imp->effect);
@@ -1757,19 +1550,10 @@ OfxEffectInstance::beginSequenceRender(double first,
     }
 
     OfxStatus stat;
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
-                                            mipMapLevel);
-
-        SET_CAN_SET_VALUE(false);
-
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
@@ -1803,18 +1587,12 @@ OfxEffectInstance::endSequenceRender(double first,
     }
 
     OfxStatus stat;
-    unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     {
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
-                                            mipMapLevel);
-        SET_CAN_SET_VALUE(false);
+
 
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
                                                  isSequentialRender, isRenderResponseToUserInteraction,
@@ -1888,19 +1666,11 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     }
 # endif // DEBUG
     {
-        SET_CAN_SET_VALUE(false);
         assert(_imp->effect);
 
-        RenderThreadStorageSetter clipSetter(effectInstance(),
-                                             args.view,
-                                             Image::getLevelFromScale(args.originalScale.x),
-                                             firstPlane.first,
-                                             args.inputImages);
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( args.glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
-        ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
         stat = _imp->effect->renderAction( (OfxTime)args.time,
                                            field,
                                            ofxRoI,
@@ -2019,7 +1789,6 @@ OfxEffectInstance::drawOverlay(double time,
         return;
     }
     if (_imp->overlayInteract) {
-        SET_CAN_SET_VALUE(false);
         _imp->overlayInteract->drawAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
     }
 }
@@ -2053,16 +1822,7 @@ OfxEffectInstance::onOverlayPenDown(double time,
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
 
-        SET_CAN_SET_VALUE(true);
-
         OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
-
-
-        if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
-            OfxStatus redrawstat = _imp->overlayInteract->redraw();
-            assert(redrawstat == kOfxStatOK || redrawstat == kOfxStatReplyDefault);
-            Q_UNUSED(redrawstat);
-        }
 
         if (stat == kOfxStatOK) {
             _imp->penDown = true;
@@ -2095,13 +1855,7 @@ OfxEffectInstance::onOverlayPenMotion(double time,
         penPosViewport.y = viewportPos.y();
         OfxStatus stat;
 
-        SET_CAN_SET_VALUE(true);
         stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
-
-        if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
-            stat = _imp->overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        }
 
         if (stat == kOfxStatOK) {
             return true;
@@ -2131,14 +1885,7 @@ OfxEffectInstance::onOverlayPenUp(double time,
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
 
-        SET_CAN_SET_VALUE(true);
         OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
-
-        if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
-            stat = _imp->overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        }
-
         if (stat == kOfxStatOK) {
             _imp->penDown = false;
 
@@ -2161,13 +1908,7 @@ OfxEffectInstance::onOverlayKeyDown(double time,
     }
     if (_imp->overlayInteract) {
         QByteArray keyStr;
-        SET_CAN_SET_VALUE(true);
         OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view,_imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
-
-        if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
-            stat = _imp->overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        }
 
         if (stat == kOfxStatOK) {
             return true;
@@ -2189,19 +1930,12 @@ OfxEffectInstance::onOverlayKeyUp(double time,
     }
     if (_imp->overlayInteract) {
         QByteArray keyStr;
-        SET_CAN_SET_VALUE(true);
         OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
-        if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
-            stat = _imp->overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        }
-
-        //assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
         if (stat == kOfxStatOK) {
             return true;
         }
-        ;
+
     }
 
     return false;
@@ -2219,14 +1953,7 @@ OfxEffectInstance::onOverlayKeyRepeat(double time,
     }
     if (_imp->overlayInteract) {
         QByteArray keyStr;
-
-        SET_CAN_SET_VALUE(true);
         OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
-
-        if ( (getRecursionLevel() == 1) && checkIfOverlayRedrawNeeded() ) {
-            stat = _imp->overlayInteract->redraw();
-            assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
-        }
 
         if (stat == kOfxStatOK) {
             return true;
@@ -2246,7 +1973,6 @@ OfxEffectInstance::onOverlayFocusGained(double time,
     }
     if (_imp->overlayInteract) {
         OfxStatus stat;
-        SET_CAN_SET_VALUE(true);
         stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
@@ -2266,7 +1992,6 @@ OfxEffectInstance::onOverlayFocusLost(double time,
     }
     if (_imp->overlayInteract) {
         OfxStatus stat;
-        SET_CAN_SET_VALUE(true);
         stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
@@ -2282,13 +2007,6 @@ OfxEffectInstance::hasOverlay() const
     return _imp->overlayInteract != NULL;
 }
 
-void
-OfxEffectInstance::redrawOverlayInteract()
-{
-    assert(_imp->overlayInteract);
-    OfxStatus st = _imp->overlayInteract->redraw();
-    Q_UNUSED(st);
-}
 
 std::string
 OfxEffectInstance::natronValueChangedReasonToOfxValueChangedReason(ValueChangedReasonEnum reason)
@@ -2364,7 +2082,7 @@ public:
 bool
 OfxEffectInstance::knobChanged(const KnobIPtr& k,
                                ValueChangedReasonEnum reason,
-                               ViewSetSpec view,
+                               ViewSetSpec /*view*/,
                                double time)
 {
     if (!_imp->initialized) {
@@ -2401,28 +2119,8 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     RenderScale renderScale  = getOverlayInteractRenderScale();
     OfxStatus stat = kOfxStatOK;
-    int recursionLevel = getRecursionLevel();
+    stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
 
-    if (recursionLevel == 1) {
-        SET_CAN_SET_VALUE(true);
-        // assert(!view.isAll() && !view.isCurrent());
-        ViewIdx v = ( view.isAll() || view.isCurrent() ) ? ViewIdx(0) : ViewIdx(view);
-        ClipsThreadStorageSetter clipSetter( effectInstance(),
-                                             v,
-                                             Image::getLevelFromScale(renderScale.x) );
-
-        ///This action as all the overlay interacts actions can trigger recursive actions, such as
-        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-        ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
-    } else {
-        ///This action as all the overlay interacts actions can trigger recursive actions, such as
-        ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-        ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-        ///the clip preferences to stay the same throughout the action.
-        stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
-    }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         return false;
@@ -2439,7 +2137,6 @@ OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
         return;
     }
 
-    SET_CAN_SET_VALUE(true);
     ///This action as all the overlay interacts actions can trigger recursive actions, such as
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
@@ -2454,7 +2151,6 @@ OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
         return;
     }
 
-    SET_CAN_SET_VALUE(true);
     ///This action as all the overlay interacts actions can trigger recursive actions, such as
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
     ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
@@ -2471,11 +2167,9 @@ OfxEffectInstance::purgeCaches()
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat;
     {
-        SET_CAN_SET_VALUE(false);
         assert(_imp->effect);
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
-        QReadLocker preferencesLocker(&_imp->preferencesLock);
         assert(_imp->effect);
         stat =  _imp->effect->purgeCachesAction();
 
@@ -2484,9 +2178,6 @@ OfxEffectInstance::purgeCaches()
     // The kOfxActionSyncPrivateData action is called when a plugin should synchronise any private data structures to its parameter set. This generally occurs when an effect is about to be saved or copied, but it could occur in other situations as well. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionSyncPrivateData
 
     {
-        RECURSIVE_ACTION();
-        SET_CAN_SET_VALUE(true);
-        assert(_imp->effect);
 
         ///This action as all the overlay interacts actions can trigger recursive actions, such as
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
@@ -2555,8 +2246,6 @@ void
 OfxEffectInstance::beginEditKnobs()
 {
     ///Take the preferences lock so that it cannot be modified throughout the action.
-    QReadLocker preferencesLocker(&_imp->preferencesLock);
-
     effectInstance()->beginInstanceEditAction();
 }
 
@@ -2581,13 +2270,7 @@ OfxEffectInstance::onSyncPrivateDataRequested()
     ///Can only be called in the main thread
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION();
 
-    ///This action as all the overlay interacts actions can trigger recursive actions, such as
-    ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
-    ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
-    ///the clip preferences to stay the same throughout the action.
-    SET_CAN_SET_VALUE(true);
     effectInstance()->syncPrivateDataAction();
 }
 
@@ -2649,12 +2332,7 @@ OfxEffectInstance::getComponentsNeededAndProduced(double time,
 {
     OfxStatus stat;
     {
-        SET_CAN_SET_VALUE(false);
 
-
-        ClipsThreadStorageSetter clipSetter(effectInstance(),
-                                            view,
-                                            0);
         OFX::Host::ImageEffect::ComponentsMap compMap;
         OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
         OfxTime ptTime;
@@ -2774,13 +2452,6 @@ OfxEffectInstance::getTransform(double time,
     double tmpTransform[9];
     OfxStatus stat;
     {
-        SET_CAN_SET_VALUE(false);
-
-
-        ClipsThreadStorageSetter clipSetter( effectInstance(),
-                                             view,
-                                             Image::getLevelFromScale(renderScale.x) );
-
         try {
             stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform );
         } catch (...) {

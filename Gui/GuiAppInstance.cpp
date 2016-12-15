@@ -1021,20 +1021,17 @@ GuiAppInstance::queueRedrawForAllViewers()
     ++_imp->overlayRedrawRequests;
 }
 
-int
-GuiAppInstance::getOverlayRedrawRequestsCount() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->overlayRedrawRequests;
-}
-
 void
-GuiAppInstance::clearOverlayRedrawRequests()
+GuiAppInstance::dequeueRedrawsOnViewers()
 {
-    assert( QThread::currentThread() == qApp->thread() );
+    if (_imp->overlayRedrawRequests == 0) {
+        return;
+    }
     _imp->overlayRedrawRequests = 0;
+    redrawAllViewers();
 }
+
+
 
 void
 GuiAppInstance::createGroupGui(const NodePtr & group, const CreateNodeArgs& args)

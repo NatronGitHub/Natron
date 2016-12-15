@@ -47,8 +47,6 @@ NATRON_NAMESPACE_ENTER;
 // clipGetRegionOfDefinition: it does not pass-us back the render-scale
 // paramGetValue: it does not pass-us back the current action time and view
 
-class GenericActionTLSArgs;
-typedef boost::shared_ptr<GenericActionTLSArgs> GenericActionTLSArgsPtr;
 
 class GenericActionTLSArgs
 {
@@ -58,7 +56,9 @@ public:
     : time(0)
     , view()
     , scale()
-    , validArgs(false)
+#ifdef DEBUG
+    , canSetValue(true)
+#endif
     {
 
     }
@@ -75,9 +75,10 @@ public:
     // the scale parameter passed to an OpenFX action
     RenderScale scale;
 
-    // whether or not the data members of this struct are valid
-    bool validArgs;
-
+#ifdef DEBUG
+    // whether or not this action can set value
+    bool canSetValue;
+#endif
 
     virtual GenericActionTLSArgsPtr createCopy()
     {
@@ -85,17 +86,16 @@ public:
         ret->time = time;
         ret->scale = scale;
         ret->view = view;
-        ret->validArgs = validArgs;
+#ifdef DEBUG
+        ret->canSetValue = canSetValue;
+#endif
         return ret;
     }
 };
 
-typedef boost::shared_ptr<GenericActionTLSArgs> GenericActionTLSArgsPtr;
 
 // The render action requires extra data that are valid throughout a single call
 // of a render action
-class RenderActionTLSData;
-typedef boost::shared_ptr<RenderActionTLSData> RenderActionTLSDataPtr;
 class RenderActionTLSData : public GenericActionTLSArgs
 {
 public:
@@ -106,7 +106,6 @@ public:
     , inputImages()
     , outputPlanes()
     , compsNeeded()
-    , transformRedirections()
     {
 
     }
@@ -140,9 +139,6 @@ public:
     // other action
     ComponentsNeededMapPtr compsNeeded;
 
-    // The result of the tryConcatenateTransforms function: it is used in the getImage function to concatenate the tree
-    // and return the Transform Matrix
-    InputMatrixMapPtr transformRedirections;
 
     virtual GenericActionTLSArgsPtr createCopy() OVERRIDE FINAL
     {
@@ -150,14 +146,16 @@ public:
         ret->time = time;
         ret->scale = scale;
         ret->view = view;
-        ret->validArgs = validArgs;
+#ifdef DEBUG
+        ret->canSetValue = canSetValue;
+#endif
         ret->renderWindowPixel = renderWindowPixel;
         ret->inputImages = inputImages;
         ret->outputPlanes  = outputPlanes;
         ret->compsNeeded = compsNeeded;
-        ret->transformRedirections = transformRedirections;
         return ret;
     }
+
 
 
 };
@@ -173,6 +171,88 @@ public:
 
     EffectTLSData(const EffectTLSData& other);
 
+    /**
+     * @brief Push TLS for an action that is not the render action. Mainly this will be needed by OfxClipInstance::getRegionOfDefinition and OfxClipInstance::getImage
+     * This should only be needed for OpenFX plug-ins, as the Natron A.P.I already pass all required arguments in parameter.
+     **/
+    void pushActionArgs(double time, ViewIdx view, const RenderScale& scale
+#ifdef DEBUG
+                        , bool canSetValue
+                        , bool canBeCalledRecursively
+#endif
+                        );
+
+    /**
+     * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
+     **/
+    void pushRenderActionArgs(double time, ViewIdx view, RenderScale& scale,
+                              const RectI& renderWindowPixel,
+                              const InputImagesMap& preRenderedInputImages,
+                              const std::map<ImageComponents, PlaneToRender>& outputPlanes,
+                              const ComponentsNeededMapPtr& compsNeeded);
+
+    /**
+     * @brief Pop the current action TLS. This call must match a call to one of the push functions above.
+     * The push/pop functions should be encapsulated in a RAII style class to ensure the TLS is correctly popped
+     * in all cases.
+     **/
+    void popArgs();
+
+    /**
+     * @brief Get the recursion level in plug-in actions. 1 indicates that we are currently in a single action.
+     **/
+    int getActionsRecursionLevel() const;
+
+#ifdef DEBUG
+    /**
+     * @brief Returns true if the action cannot have its knobs calling setValue
+     **/
+    bool isDuringActionThatCannotSetValue() const;
+#endif
+
+    /**
+     * @brief Retrieve the current thread action args. This will return true on success, false if we are not
+     * between a push/pop bracket.
+     **/
+    bool getCurrentActionArgs(double* time, ViewIdx* view, RenderScale* scale) const;
+
+    /**
+     * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
+     **/
+    bool getCurrentRenderActionArgs(double* time, ViewIdx* view, RenderScale* scale,
+                                    RectI* renderWindowPixel,
+                                    InputImagesMap* preRenderedInputImages,
+                                    std::map<ImageComponents, PlaneToRender>* outputPlanes,
+                                    ComponentsNeededMapPtr* compsNeeded) const;
+
+    /**
+     * @brief If the current action is the render action, this sets the output planes.
+     **/
+    void updateCurrentRenderActionOutputPlanes(const std::map<ImageComponents, PlaneToRender>& outputPlanes);
+
+    /**
+     * @brief This function pops the last action arguments of the stack if it is the render action.
+     * The reason for this function is when we do host frame threading:
+     * The original thread might already have TLS set for the render action when we copy TLS onto the new thread.
+     * But the new thread does not want the render action TLS, so we pop it.
+     **/
+    void ensureLastActionInStackIsNotRender();
+
+    /**
+     * @brief Returns the parallel render args TLS
+     **/
+    ParallelRenderArgsPtr getParallelRenderArgs() const;
+
+    /**
+     * @brief Creates the parallel render args TLS
+     **/
+    ParallelRenderArgsPtr getOrCreateParallelRenderArgs();
+
+    /**
+     * @brief Clear the parallel render args pointer
+     **/
+    void invalidateParallelRenderArgs();
+    
 private:
     
     boost::scoped_ptr<EffectTLSDataPrivate> _imp;
@@ -180,7 +260,64 @@ private:
         
 };
 
-typedef boost::shared_ptr<EffectTLSData> EffectDataTLSPtr;
+class EffectActionArgsSetter_RAII
+{
+    EffectTLSDataPtr tls;
+    EffectInstancePtr effect;
+public:
+
+    EffectActionArgsSetter_RAII(const EffectTLSDataPtr& tls,
+                                const EffectInstancePtr& effect,
+                                double time, ViewIdx view, const RenderScale& scale
+#ifdef DEBUG
+                                , bool canSetValue
+                                , bool canBeCalledRecursively
+#endif
+    )
+    : tls(tls)
+    , effect(effect)
+    {
+        tls->pushActionArgs(time, view, scale
+#ifdef DEBUG
+                            , canSetValue
+                            , canBeCalledRecursively
+#endif
+                            );
+    }
+
+    ~EffectActionArgsSetter_RAII()
+    {
+        tls->popArgs();
+
+        // An action might have requested overlay interacts refresh, check it now at the end of the action.
+        effect->checkAndRedrawOverlayInteractsIfNeeded();
+    }
+
+};
+
+class RenderActionArgsSetter_RAII
+{
+    EffectTLSDataPtr tls;
+public:
+
+    RenderActionArgsSetter_RAII(const EffectTLSDataPtr& tls,
+                                double time, ViewIdx view, RenderScale& scale,
+                                const RectI& renderWindowPixel,
+                                const InputImagesMap& preRenderedInputImages,
+                                const std::map<ImageComponents, PlaneToRender>& outputPlanes,
+                                const ComponentsNeededMapPtr& compsNeeded)
+    : tls(tls)
+    {
+        tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, preRenderedInputImages, outputPlanes, compsNeeded);
+    }
+
+    ~RenderActionArgsSetter_RAII()
+    {
+        tls->popArgs();
+    }
+    
+};
+
 
 NATRON_NAMESPACE_EXIT;
 

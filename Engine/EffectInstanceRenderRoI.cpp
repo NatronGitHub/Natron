@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/DiskCacheNode.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Cache.h"
 #include "Engine/Image.h"
@@ -771,7 +772,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
 
 bool
 EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
-                                                     EffectDataTLSPtr* tls,
+                                                     EffectTLSDataPtr* tls,
                                                      U64 *frameViewHash,
                                                      AbortableRenderInfoPtr *abortInfo,
                                                      ParallelRenderArgsPtr* frameArgs,
@@ -804,13 +805,13 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
     }
 
     *tls = tlsData->getOrCreateTLSData();
-    assert(*tls && !(*tls)->frameArgs.empty());
-    if (!*tls || (*tls)->frameArgs.empty()) {
+    assert(*tls);
+    if (!*tls) {
         // TLS must have been set via ParallelRenderArgsSetter! Calling renderRoI without this is a bug.
         return false;
     }
 
-    (*frameArgs) = (*tls)->frameArgs.back();
+    *frameArgs = (*tls)->getParallelRenderArgs();
     *glGpuContext = (*frameArgs)->openGLContext.lock();
     *glCpuContext = (*frameArgs)->cpuOpenGLContext.lock();
     *abortInfo = (*frameArgs)->abortInfo.lock();
@@ -1039,7 +1040,7 @@ EffectInstance::Implementation::resolveRenderDevice(const RenderRoIArgs & args,
             }
 
             // If a node has multiple outputs, do not render it on OpenGL since we do not use the cache. We could end-up with this render being executed multiple times.
-            // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could computed this render multiple times.
+            // Also, if the render time is different from the caller render time, don't render using OpenGL otherwise we could compute this render multiple times.
 
             if (*storage == eStorageModeGLTex) {
                 if ( (frameArgs->visitsCount > 1) ||
@@ -1131,8 +1132,12 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
     if (storage == eStorageModeGLTex && glRenderContext->isGPUContext()) {
         *createInCache = false;
     } else {
-        // in Analysis, the node upstream of the analysis node should always cache
-        *createInCache = (frameArgs->isAnalysis && frameArgs->treeRoot->getEffectInstance() == args.caller) ? true : _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
+        if (args.caller == frameArgs->treeRoot || frameArgs->treeRoot->getEffectInstance().get() == _publicInterface)  {
+            // Always cache the root node
+            *createInCache = true;
+        } else {
+            *createInCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, frameArgs->visitsCount);
+        }
     }
 
     // Do we want to render the graph upstream at scale 1 or at the requested render scale ? (user setting)
@@ -1297,12 +1302,10 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
 
 RenderRoIRetCode
 EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs & args,
-                                                           const EffectDataTLSPtr& tls,
                                                            const U64 /*frameViewHash*/,
                                                            const ComponentsNeededMapPtr& neededComps,
                                                            const FrameViewRequest* requestPassData,
                                                            const ImagePlanesToRenderPtr &planesToRender,
-                                                           bool useTransforms,
                                                            StorageModeEnum storage,
                                                            const std::vector<ImageComponents>& outputComponents,
                                                            ImagePremultiplicationEnum thisEffectOutputPremult,
@@ -1328,18 +1331,16 @@ EffectInstance::Implementation::renderRoIRenderInputImages(const RenderRoIArgs &
     }
 
 
-    RenderRoIRetCode inputCode = _publicInterface->renderInputImagesForRoI(useTransforms,
-                                                          storage,
-                                                          args.time,
-                                                          args.view,
-                                                          tls->currentRenderArgs.transformRedirections,
-                                                          args.mipMapLevel,
-                                                          renderScaleOneUpstreamIfRenderScaleSupportDisabled,
-                                                          args.byPassCache,
-                                                          **framesNeeded,
-                                                          *neededComps,
-                                                          &planesToRender->inputImages);
-
+    RenderRoIRetCode inputCode = _publicInterface->renderInputImagesForRoI(storage,
+                                                                           args.time,
+                                                                           args.view,
+                                                                           args.mipMapLevel,
+                                                                           renderScaleOneUpstreamIfRenderScaleSupportDisabled,
+                                                                           args.byPassCache,
+                                                                           **framesNeeded,
+                                                                           *neededComps,
+                                                                           &planesToRender->inputImages);
+    
     // Render was aborted
     if (inputCode != eRenderRoIRetCodeOk) {
         return inputCode;
@@ -2055,7 +2056,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
     // Setup args for the render
     const FrameViewRequest* requestPassData;
-    EffectDataTLSPtr tls;
+    EffectTLSDataPtr tls;
     OSGLContextPtr glGpuContext, glCpuContext;
     AbortableRenderInfoPtr abortInfo;
     ParallelRenderArgsPtr  frameArgs;
@@ -2107,11 +2108,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
-    bool useTransforms;
     {
-        useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-        if (useTransforms) {
-            tls->currentRenderArgs.transformRedirections.reset(new InputMatrixMap);
+        bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+        if (useTransforms && args.caller.get() != this) {
+            
             tryConcatenateTransforms( args.time, args.view, args.scale, frameViewHash, tls->currentRenderArgs.transformRedirections.get() );
         }
     }
@@ -2198,7 +2198,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             glContextLocker->dettach();
         }
 
-        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, tls, frameViewHash, neededComps, requestPassData, planesToRender, useTransforms, storage, *outputComponents, thisEffectOutputPremult, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
+        RenderRoIRetCode upstreamRetCode = _imp->renderRoIRenderInputImages(args, frameViewHash, neededComps, requestPassData, planesToRender, storage, *outputComponents, thisEffectOutputPremult, renderScaleOneUpstreamIfRenderScaleSupportDisabled, &framesNeeded);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2370,8 +2370,6 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
             boost::scoped_ptr<Implementation::TiledRenderingFunctorArgs> tiledArgs(new Implementation::TiledRenderingFunctorArgs);
             tiledArgs->renderFullScaleThenDownscale = renderFullScaleThenDownscale;
             tiledArgs->isRenderResponseToUserInteraction = isRenderMadeInResponseToUserInteraction;
-            tiledArgs->firstFrame = firstFrame;
-            tiledArgs->lastFrame = lastFrame;
             tiledArgs->preferredInput = preferredInput;
             tiledArgs->mipMapLevel = mipMapLevel;
             tiledArgs->renderMappedMipMapLevel = renderMappedMipMapLevel;
@@ -2450,7 +2448,7 @@ EffectInstance::renderRoIInternal(const EffectInstancePtr& self,
             }
         } else {
             for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
-                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it, glContext, renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, firstFrame, lastFrame, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
+                RenderingFunctorRetEnum functorRet = self->_imp->tiledRenderingFunctor(*it, glContext, renderFullScaleThenDownscale, isSequentialRender, isRenderMadeInResponseToUserInteraction, preferredInput, mipMapLevel, renderMappedMipMapLevel, rod, time, view, par, byPassCache, outputClipPrefDepth, outputClipPrefsComps, compsNeeded, processChannels, planesToRender);
 
                 if ( (functorRet == eRenderingFunctorRetFailed) || (functorRet == eRenderingFunctorRetAborted) || (functorRet == eRenderingFunctorRetOutOfGPUMemory) ) {
                     renderStatus = functorRet;

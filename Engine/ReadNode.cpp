@@ -943,7 +943,7 @@ ReadNode::purgeCaches()
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->purgeCaches();
+        p->getEffectInstance()->purgeCaches_public();
     }
 }
 

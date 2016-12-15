@@ -4131,9 +4131,6 @@ struct KnobHolder::KnobHolderPrivate
 
     ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
     ///to just redraw it once when the recursion level is back to 0
-    QMutex overlayRedrawStackMutex;
-    int overlayRedrawStack;
-    bool isDequeingValuesSet;
     mutable QMutex paramsEditLevelMutex;
 
     struct MultipleParamsEditData {
@@ -4186,9 +4183,6 @@ struct KnobHolder::KnobHolderPrivate
         , knobs()
         , knobsInitialized(false)
         , isInitializingKnobs(false)
-        , overlayRedrawStackMutex()
-        , overlayRedrawStack(0)
-        , isDequeingValuesSet(false)
         , evaluationBlockedMutex(QMutex::Recursive)
         , evaluationBlocked(0)
         , nbSignificantChangesDuringEvaluationBlock(0)
@@ -4526,13 +4520,20 @@ KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob) const
 }
 
 void
-KnobHolder::redrawOverlayInteract()
+KnobHolder::requestOverlayInteractRefresh()
 {
-    if ( isDoingInteractAction() ) {
+    if ( getActionsRecursionLevel() > 0 ) {
         getApp()->queueRedrawForAllViewers();
     } else {
         getApp()->redrawAllViewers();
     }
+}
+
+void
+KnobHolder::checkAndRedrawOverlayInteractsIfNeeded()
+{
+    getApp()->dequeueRedrawsOnViewers();
+
 }
 
 
@@ -5298,7 +5299,6 @@ KnobHolder::beginKnobsValuesChanged_public(ValueChangedReasonEnum reason)
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION();
     beginKnobsValuesChanged(reason);
 }
 
@@ -5308,7 +5308,6 @@ KnobHolder::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION();
     endKnobsValuesChanged(reason);
 }
 
@@ -5323,7 +5322,6 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
     if (!_imp->knobsInitialized) {
         return false;
     }
-    RECURSIVE_ACTION();
 
     bool ret = onKnobValueChanged(k, reason, time, view);
     if (ret) {
@@ -5334,37 +5332,6 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
         }
     }
     return ret;
-}
-
-void
-KnobHolder::checkIfRenderNeeded()
-{
-    ///cannot run in another thread.
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( (getRecursionLevel() == 0) ) {
-        endChanges();
-    }
-}
-
-void
-KnobHolder::incrementRedrawNeededCounter()
-{
-    {
-        QMutexLocker k(&_imp->overlayRedrawStackMutex);
-        ++_imp->overlayRedrawStack;
-    }
-}
-
-bool
-KnobHolder::checkIfOverlayRedrawNeeded()
-{
-    {
-        QMutexLocker k(&_imp->overlayRedrawStackMutex);
-        bool ret = _imp->overlayRedrawStack > 0;
-        _imp->overlayRedrawStack = 0;
-
-        return ret;
-    }
 }
 
 
@@ -5391,16 +5358,6 @@ KnobHolder::areKnobsFrozen() const
     QMutexLocker l(&_imp->knobsFrozenMutex);
 
     return _imp->knobsFrozen;
-}
-
-bool
-KnobHolder::isDequeueingValuesSet() const
-{
-    {
-        QMutexLocker k(&_imp->overlayRedrawStackMutex);
-
-        return _imp->isDequeingValuesSet;
-    }
 }
 
 

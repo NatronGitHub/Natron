@@ -490,30 +490,6 @@ EffectInstance::Implementation::unmarkImageAsBeingRendered(const ImagePtr & img,
     // if NATRON_ENABLE_TRIMAP
 
 
-EffectInstance::Implementation::ScopedRenderArgs::ScopedRenderArgs(const EffectDataTLSPtr& tlsData,
-                                                                   const RectD & rod,
-                                                                   const RectI & renderWindow,
-                                                                   double time,
-                                                                   ViewIdx view,
-                                                                   const ComponentsNeededMapPtr& compsNeeded,
-                                                                   const InputImagesMap& inputImages,
-                                                                   int firstFrame,
-                                                                   int lastFrame)
-    : tlsData(tlsData)
-{
-
-    tlsData->currentRenderArgs.validArgs = true;
-}
-
-EffectInstance::Implementation::ScopedRenderArgs::~ScopedRenderArgs()
-{
-    assert(tlsData);
-    tlsData->currentRenderArgs.outputPlanes.clear();
-    tlsData->currentRenderArgs.inputImages.clear();
-    tlsData->currentRenderArgs.validArgs = false;
-}
-
-
 
 
 NATRON_NAMESPACE_EXIT;

@@ -375,10 +375,6 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
         }
     }
 
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     return false;
 }
@@ -643,12 +639,6 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
 
-    if ( !didSomething && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
-
-
     return didSomething;
 }
 
@@ -771,11 +761,6 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         }
     }
 
-
-    if ( !mustTriggerRender && !didSomething && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     if (mustTriggerRender) {
         //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
@@ -1002,6 +987,11 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
 
+    if (isModifier) {
+        // Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->queueRedrawForAllViewers();
+    }
+
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -1034,15 +1024,8 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
         }
     }
 
-    if (isModifier) {
-        //Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->queueRedrawForAllViewers();
-    }
 
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
+
 
     return didSomething;
 } // ViewerTab::notifyOverlaysKeyDown
@@ -1070,6 +1053,19 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
+
+    /*
+     Do not catch the event if this is a modifier, let it propagate to the Gui
+     */
+    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
+    e->key() == Qt::Key_Meta;
+
+    if (isModifier) {
+        //Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->queueRedrawForAllViewers();
+    }
+
+
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -1104,22 +1100,6 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         }
     }
 
-    /*
-       Do not catch the event if this is a modifier, let it propagate to the Gui
-     */
-    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
-                      e->key() == Qt::Key_Meta;
-
-    if (isModifier) {
-        //Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->queueRedrawForAllViewers();
-    }
-
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-
-    app->clearOverlayRedrawRequests();
 
 
     return didSomething;
@@ -1236,10 +1216,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
         }
     }
 
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
+
 
     return false;
 }
@@ -1302,11 +1279,6 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
             }
         }
     }
-
-    if ( !ret && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusGained
@@ -1372,11 +1344,6 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         }
     }
 
-
-    if ( !ret && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusLost

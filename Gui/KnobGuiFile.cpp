@@ -312,7 +312,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
                 effect->setPersistentMessage( eMessageTypeError, warn.toStdString() );
                 effect->abortAnyEvaluation();
             }
-            effect->purgeCaches();
+            effect->purgeCaches_public();
             effect->getNode()->removeAllImagesFromCache();
             _lastModificationDates.clear();
             ret = true;

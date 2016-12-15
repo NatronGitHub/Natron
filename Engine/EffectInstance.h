@@ -149,6 +149,7 @@ struct PlaneToRender
      **/
     bool isAllocatedOnTheFly;
 
+
     PlaneToRender()
     : fullscaleImage()
     , downscaleImage()
@@ -210,20 +211,20 @@ public:
         double callerRenderTime;
 
         RenderRoIArgs()
-            : time(0)
-            , scale(1.)
-            , mipMapLevel(0)
-            , view(0)
-            , roi()
-            , components()
-            , inputImagesList()
-            , caller()
-            , bitdepth(eImageBitDepthFloat)
-            , byPassCache(false)
-            , calledFromGetImage(false)
-            , returnStorage(eStorageModeRAM)
-            , allowGPURendering(true)
-            , callerRenderTime(0.)
+        : time(0)
+        , scale(1.)
+        , mipMapLevel(0)
+        , view(0)
+        , roi()
+        , components()
+        , inputImagesList()
+        , caller()
+        , bitdepth(eImageBitDepthFloat)
+        , byPassCache(false)
+        , calledFromGetImage(false)
+        , returnStorage(eStorageModeRAM)
+        , allowGPURendering(true)
+        , callerRenderTime(0.)
         {
         }
 
@@ -648,7 +649,6 @@ public:
         OSGLContextPtr cpuGlContext;
         int textureIndex;
         TimeLinePtr timeline;
-        bool isAnalysis;
         RenderSafetyEnum currentThreadSafety;
         PluginOpenGLRenderSupport currentOpenGLSupport;
         bool doNanHandling;
@@ -666,26 +666,24 @@ public:
 
     ParallelRenderArgsPtr createFrameRenderTLS(const AbortableRenderInfoPtr& renderID);
 
-    void setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args);
 
 private:
     void initRenderValuesCache(const RenderValuesCachePtr& cache);
 
 public:
 
-    void setViewerIndexThreadLocal(int viewerIndex);
-
-    int getViewerIndexThreadLocal() const;
+    virtual bool getActionsRecursionLevel() const OVERRIDE FINAL;
 
     void invalidateParallelRenderArgsTLS();
+
+    EffectTLSDataPtr getTLSObject() const;
 
     ParallelRenderArgsPtr getParallelRenderArgsTLS() const;
 
     RenderValuesCachePtr getRenderValuesCacheTLS(double* currentRenderTime = 0, ViewIdx* currentRenderView = 0) const;
 
     //Implem in ParallelRenderArgs.cpp
-    static StatusEnum getInputsRoIsFunctor(bool useTransforms,
-                                           double time,
+    static StatusEnum getInputsRoIsFunctor(double time,
                                            ViewIdx view,
                                            unsigned originalMipMapLevel,
                                            const NodePtr & node,
@@ -704,7 +702,7 @@ public:
                                          const RectD & renderWindow,
                                          const NodePtr & treeRoot);
 
-    static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect, const InputMatrixMapPtr& reroutesMap);
+    static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect);
 
 
     // Implem is in ParallelRenderArgs.cpp
@@ -712,8 +710,6 @@ public:
                                                                const NodePtr & node,
                                                                const FramesNeededMap & framesNeeded,
                                                                const RoIMap* inputRois, // roi functor specific
-                                                               const InputMatrixMapPtr & reroutesMap,
-                                                               bool useTransforms,         // roi functor specific
                                                                StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
                                                                unsigned int originalMipMapLevel,         // roi functor specific
                                                                double time,
@@ -724,6 +720,10 @@ public:
                                                                bool useScaleOneInputs,         // render functor specific
                                                                bool byPassCache);         // render functor specific
 
+
+    virtual void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual void endKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
 
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
@@ -849,10 +849,6 @@ public:
     }
 
     RenderScale getOverlayInteractRenderScale() const;
-
-    SequenceTime getFrameRenderArgsCurrentTime() const;
-
-    ViewIdx getFrameRenderArgsCurrentView() const;
 
     virtual bool getInputsHoldingTransform(std::list<int>* /*inputs*/) const
     {
@@ -1035,6 +1031,8 @@ public:
      **/
     virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) WARN_UNUSED_RETURN;
 
+    void calcDefaultRegionOfDefinition_public(double time, const RenderScale & scale, ViewIdx view, RectD *rod);
+
 protected:
 
 
@@ -1167,6 +1165,7 @@ public:
     {
     }
 
+protected:
     /**
      * @brief Can be overloaded to clear any cache the plugin might be
      * handling on his side.
@@ -1174,6 +1173,11 @@ public:
     virtual void purgeCaches()
     {
     };
+
+public:
+
+    void purgeCaches_public();
+
     virtual void clearLastRenderedImage();
 
     void clearActionsCache();
@@ -1308,18 +1312,6 @@ public:
 
     void clearPluginMemoryChunks();
 
-    /**
-     * @brief Called right away when the user first opens the settings panel of the node.
-     * This is called after each params had its default value set.
-     **/
-    virtual void beginEditKnobs()
-    {
-    }
-
-    /**
-     * @brief Called everytimes an input connection is changed
-     **/
-    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
 
 
 
@@ -1358,18 +1350,6 @@ public:
 
     typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
 
-    /**
-     * @brief If the caller thread is currently rendering an image, it will return a pointer to it
-     * otherwise it will return NULL.
-     * This function also returns the current renderWindow that is being rendered on that image
-     * To be called exclusively on a render thread.
-     *
-     * WARNING: This call isexpensive and this function should not be called many times.
-     **/
-    bool getThreadLocalRenderedPlanes(std::map<ImageComponents, PlaneToRender >*  planes,
-                                      RectI* renderWindow) const;
-
-    bool getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const;
 
     /**
      * @brief Callback called after the static create function has been called to initialize virtual stuff
@@ -1378,69 +1358,38 @@ public:
     {
     }
 
-    virtual void createInstanceAction() {}
 
+    void createInstanceAction_public();
 
 
 #ifdef DEBUG
     void checkCanSetValueAndWarn() const;
 #endif
 
+    void onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
+
+    void beginEditKnobs_public();
+
 protected:
 
-
-#ifdef DEBUG
-
-    /*
-       Debug helper to track plug-in that do setValue calls that are forbidden
-
-       http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#SettingParams
-       Officially, setValue calls are allowed during the following actions:
-
-       The Create Instance Action
-       The The Begin Instance Changed Action
-       The The Instance Changed Action
-       The The End Instance Changed Action
-       The The Sync Private Data Action
-
-
-     */
-
-    void setCanSetValue(bool can);
-
-    void invalidateCanSetValueFlag();
-
-
-    bool isDuringActionThatCanSetValue() const;
-
-    class CanSetSetValueFlag_RAII
+    /**
+    * @brief Called right away when the user first opens the settings panel of the node.
+    * This is called after each params had its default value set.
+    **/
+    virtual void beginEditKnobs()
     {
-        EffectInstance* effect;
-
-public:
-        // no need to use a smart ptr for the EffectInstance, since this is a protected class
-        CanSetSetValueFlag_RAII(EffectInstance* effect,
-                                bool canSetValue)
-            : effect(effect)
-        {
-            effect->setCanSetValue(canSetValue);
-        }
-
-        ~CanSetSetValueFlag_RAII()
-        {
-            effect->invalidateCanSetValueFlag();
-        }
-    };
-
-    bool checkCanSetValue() const
-    {
-        return isDuringActionThatCanSetValue();
     }
 
-#define SET_CAN_SET_VALUE(canSetValue) EffectInstance::CanSetSetValueFlag_RAII canSetValueSetter(this, canSetValue)
-#else
-#define SET_CAN_SET_VALUE(canSetValue) ( (void)0 )
-#endif // DEBUG
+
+    /**
+    * @brief Called everytimes an input connection is changed
+    **/
+    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
+
+
+
+    virtual void createInstanceAction() {}
+
 
     /**
      * @brief Called whenever a param changes. It calls the virtual
@@ -1745,39 +1694,6 @@ public:
                                    const ReRoutesMapPtr& reroutesMap);
 
 
-
-protected:
-
-    /**
-     * @brief Equivalent to assert(actionsRecursionLevel == 0).
-     * In release mode an exception is thrown instead.
-     * This should be called in all actions except in the following recursive actions...
-     *
-     * kOfxActionBeginInstanceChanged
-     * kOfxActionInstanceChanged
-     * kOfxActionEndInstanceChanged
-     * kOfxImageEffectActionGetClipPreferences
-     * kOfxInteractActionDraw
-     *
-     * We also allow recursion in some other actions such as getRegionOfDefinition or isIdentity
-     **/
-    virtual void assertActionIsNotRecursive() const OVERRIDE FINAL;
-
-    /**
-     * @brief Should be called in the begining of an action.
-     * Right after assertActionIsNotRecursive() for non recursive actions.
-     **/
-    virtual void incrementRecursionLevel() OVERRIDE FINAL;
-
-    /**
-     * @brief Should be called at the end of an action.
-     **/
-    virtual void decrementRecursionLevel() OVERRIDE FINAL;
-
-public:
-
-    virtual int getRecursionLevel() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-
 protected:
 
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE;
@@ -1974,11 +1890,9 @@ private:
 
 
     /// \returns false if rendering was aborted
-    RenderRoIRetCode renderInputImagesForRoI( bool useTransforms,
-                                             StorageModeEnum renderStorageMode,
+    RenderRoIRetCode renderInputImagesForRoI(StorageModeEnum renderStorageMode,
                                              double time,
                                              ViewIdx view,
-                                             const InputMatrixMapPtr & transformMatrix,
                                              unsigned int mipMapLevel,
                                              bool useScaleOneInputImages,
                                              bool byPassCache,

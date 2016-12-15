@@ -72,7 +72,7 @@ FrameView_compare_less::operator() (const FrameViewPair & lhs,
 }
 
 EffectInstancePtr
-EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect, const InputMatrixMapPtr& reroutesMap)
+EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect)
 {
     // Check if the input is a mask
     bool inputIsMask = thisEffect->isInputMask(inputNb);
@@ -93,17 +93,8 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const Effect
 
     // Redirect for transforms if needed
     EffectInstancePtr inputEffect;
-    if (reroutesMap) {
-        InputMatrixMap::const_iterator foundReroute = reroutesMap->find(inputNb);
-        if ( foundReroute != reroutesMap->end() ) {
-            inputEffect = foundReroute->second.newInputEffect->getInput(foundReroute->second.newInputNbToFetchFrom);
-        }
-    }
-
-    // We still did not get an effect, then get the real input
-    if (!inputEffect) {
-        inputEffect = thisEffect->getInput(inputNb);
-    }
+    inputEffect = thisEffect->getInput(inputNb);
+    
 
     // Redirect the mask input
     if (maskInput) {
@@ -121,8 +112,6 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const NodePtr& node,
                                    const FramesNeededMap& framesNeeded,
                                    const RoIMap* inputRois, // roi functor specific
-                                   const InputMatrixMapPtr& reroutesMap,
-                                   bool useTransforms, // roi functor specific
                                    StorageModeEnum renderStorageMode, // if the render of this node is in OpenGL
                                    unsigned int originalMipMapLevel, // roi functor specific
                                    double time,
@@ -143,7 +132,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
     //Add frames needed to the frames to render
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         int inputNb = it->first;
-        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect.get(), reroutesMap);
+        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect.get());
         if (inputEffect) {
 
             framesToRender[inputEffect] = std::make_pair(inputNb, it->second);
@@ -250,8 +239,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
                         if (!isRenderFunctor) {
 
-                            StatusEnum stat = EffectInstance::getInputsRoIsFunctor(useTransforms,
-                                                                                   f,
+                            StatusEnum stat = EffectInstance::getInputsRoIsFunctor(f,
                                                                                    viewIt->first,
                                                                                    originalMipMapLevel,
                                                                                    inputNode,
@@ -353,8 +341,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 } // EffectInstance::treeRecurseFunctor
 
 StatusEnum
-EffectInstance::getInputsRoIsFunctor(bool useTransforms,
-                                     double inArgsTime,
+EffectInstance::getInputsRoIsFunctor(double inArgsTime,
                                      ViewIdx view,
                                      unsigned originalMipMapLevel,
                                      const NodePtr& node,
@@ -484,13 +471,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
         fvRequest->frameViewsNeeded = effect->getFramesNeeded_public(time, view, false, AbortableRenderInfoPtr(), &fvRequest->frameViewHash);
 
         fvRequest->hashValid = true;
-        
-        // Concatenate transforms if needed
-        if (useTransforms) {
-            fvRequest->transforms.reset(new InputMatrixMap);
-            effect->tryConcatenateTransforms( time, view, nodeRequest->mappedScale, fvRequest->frameViewHash, fvRequest->transforms.get() );
-        }
-
 
         fvRequest->requestValid = true;
 
@@ -518,8 +498,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             //fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
             ViewIdx inputView = (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
-            StatusEnum stat = getInputsRoIsFunctor(useTransforms,
-                                                   fvRequest->inputIdentityTime,
+            StatusEnum stat = getInputsRoIsFunctor(fvRequest->inputIdentityTime,
                                                    inputView,
                                                    originalMipMapLevel,
                                                    node,
@@ -538,8 +517,7 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
             //fvRequest->requests.push_back( std::make_pair( canonicalRenderWindow, FrameViewPerRequestData() ) );
 
             NodePtr inputIdentityNode = inputEffectIdentity->getNode();
-            StatusEnum stat = getInputsRoIsFunctor(useTransforms,
-                                                   fvRequest->inputIdentityTime,
+            StatusEnum stat = getInputsRoIsFunctor(fvRequest->inputIdentityTime,
                                                    fvRequest->identityView,
                                                    originalMipMapLevel,
                                                    inputIdentityNode,
@@ -561,15 +539,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
     effect->getRegionsOfInterest_public(time, nodeRequest->mappedScale, fvRequest->rod, canonicalRenderWindow, view, &inputsRoi);
 
 
-    // Transform Rois and get the reroutes map
-    if (useTransforms) {
-        if (fvRequest->transforms) {
-            fvRequest->reroutesMap.reset( new ReRoutesMap() );
-            transformInputRois( effect, fvRequest->transforms, par, nodeRequest->mappedScale, &inputsRoi, fvRequest->reroutesMap );
-        }
-    }
-
-
     // Append the request
     //fvRequest->requests.push_back( std::make_pair(canonicalRenderWindow, fvPerRequestData) );
 
@@ -580,8 +549,6 @@ EffectInstance::getInputsRoIsFunctor(bool useTransforms,
                                               node,
                                               fvRequest->frameViewsNeeded,
                                               &inputsRoi,
-                                              fvRequest->transforms,
-                                              useTransforms,
                                               eStorageModeRAM /*returnStorage*/,
                                               originalMipMapLevel,
                                               time,
@@ -605,9 +572,7 @@ EffectInstance::optimizeRoI(double time,
                             const RectD& renderWindow,
                             const NodePtr& treeRoot)
 {
-    bool doTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-    StatusEnum stat = getInputsRoIsFunctor(doTransforms,
-                                           time,
+    StatusEnum stat = getInputsRoIsFunctor(time,
                                            view,
                                            mipMapLevel,
                                            treeRoot,
@@ -813,7 +778,6 @@ ParallelRenderArgsSetterPrivate::setNodeTLSInternal(const ParallelRenderArgsSett
         tlsArgs->cpuGlContext = cpuContext;
         tlsArgs->textureIndex = inArgs->textureIndex;
         tlsArgs->timeline = inArgs->timeline;
-        tlsArgs->isAnalysis = inArgs->isAnalysis;
         tlsArgs->currentThreadSafety = safety;
         tlsArgs->currentOpenGLSupport = glSupport;
         tlsArgs->doNanHandling = doNansHandling;
@@ -955,8 +919,7 @@ ParallelRenderArgsSetterPrivate::getDependenciesRecursive_internal(const Paralle
     // Recurse on frames needed
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
-        // No need to use transform redirections to compute the hash
-        EffectInstancePtr inputEffect = EffectInstance::resolveInputEffectForFrameNeeded(it->first, effect.get(), InputMatrixMapPtr());
+        EffectInstancePtr inputEffect = EffectInstance::resolveInputEffectForFrameNeeded(it->first, effect.get());
         if (!inputEffect) {
             continue;
         }
@@ -1109,7 +1072,6 @@ ParallelRenderArgs::ParallelRenderArgs()
 , currentOpenglSupport(ePluginOpenGLRenderSupportNone)
 , isRenderResponseToUserInteraction(false)
 , isSequentialRender(false)
-, isAnalysis(false)
 , doNansHandling(true)
 , draftMode(false)
 , tilesSupported(false)

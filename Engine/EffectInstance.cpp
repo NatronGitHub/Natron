@@ -56,6 +56,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/BlockingBackgroundRender.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/EffectOpenGLContextData.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
@@ -156,34 +157,17 @@ EffectInstance::clearPluginMemoryChunks()
 
 #ifdef DEBUG
 void
-EffectInstance::setCanSetValue(bool can)
+EffectInstance::checkCanSetValueAndWarn() const
 {
-    _imp->tlsData->getOrCreateTLSData()->canSetValue.push_back(can);
-}
-
-void
-EffectInstance::invalidateCanSetValueFlag()
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    assert(tls);
-    assert( !tls->canSetValue.empty() );
-    tls->canSetValue.pop_back();
-}
-
-bool
-EffectInstance::isDuringActionThatCanSetValue() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
-        return true;
-    }
-    if ( tls->canSetValue.empty() ) {
-        return true;
+        return;
     }
 
-    return tls->canSetValue.back();
+    if (tls->isDuringActionThatCannotSetValue()) {
+        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
+    }
 }
 
 #endif //DEBUG
@@ -212,11 +196,9 @@ EffectInstance::initRenderValuesCache(const RenderValuesCachePtr& cache)
 ParallelRenderArgsPtr
 EffectInstance::createFrameRenderTLS(const AbortableRenderInfoPtr& renderID)
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
-    ParallelRenderArgsPtr args;
-    args.reset(new ParallelRenderArgs);
-    argsList.push_back(args);
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    ParallelRenderArgsPtr args = tls->getOrCreateParallelRenderArgs();
+    assert(args);
 
     assert(renderID);
     args->abortInfo = renderID;
@@ -245,11 +227,9 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
 
     // createTLS should have been called before.
 
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    std::list<ParallelRenderArgsPtr >& argsList = tls->frameArgs;
-    assert(!argsList.empty());
-    ParallelRenderArgsPtr& args = argsList.back();
-
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    ParallelRenderArgsPtr args = tls->getParallelRenderArgs();
+    assert(args);
     args->time = inArgs->time;
     args->timeline = inArgs->timeline;
     args->view = inArgs->view;
@@ -258,10 +238,9 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
     args->treeRoot = inArgs->treeRoot;
     args->visitsCount = inArgs->visitsCount;
     args->textureIndex = inArgs->textureIndex;
-    args->isAnalysis = inArgs->isAnalysis;
     args->currentThreadSafety = inArgs->currentThreadSafety;
     args->currentOpenglSupport = inArgs->currentOpenGLSupport;
-    args->doNansHandling = inArgs->isAnalysis ? false : inArgs->doNanHandling;
+    args->doNansHandling =  inArgs->doNanHandling;
     args->draftMode = inArgs->draftMode;
     args->tilesSupported = getNode()->getCurrentSupportTiles();
     args->stats = inArgs->stats;
@@ -277,50 +256,34 @@ EffectInstance::initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inA
 
 
 void
-EffectInstance::setParallelRenderArgsTLS(const ParallelRenderArgsPtr & args)
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    assert( args->abortInfo.lock() );
-    tls->frameArgs.push_back(args);
-}
-
-void
 EffectInstance::invalidateParallelRenderArgsTLS()
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return;
     }
-
-    assert( !tls->frameArgs.empty() );
-    if (!tls->frameArgs.empty()) {
-        ParallelRenderArgsPtr& args = tls->frameArgs.back();
-
-        // Remove the render clone for the item if needed
-        RotoDrawableItemPtr attachedRotoItem = getNode()->getOriginalAttachedItem();
-        if (attachedRotoItem) {
-            attachedRotoItem->removeCachedDrawable(args->abortInfo.lock());
-        }
-        tls->frameArgs.pop_back();
-    }
+    tls->invalidateParallelRenderArgs();
 }
 
 
 static double
-getCurrentTimeInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs, const AppInstancePtr& app)
+getCurrentTimeInternal(const EffectTLSDataPtr& tlsData, const AppInstancePtr& app)
 {
     if (!app) {
         return 0.;
     }
 
-    if (args.validArgs) {
-        return args.time;
+    // If during an action, return the action time
+    double currentActionTime;
+    if (tlsData->getCurrentActionArgs(&currentActionTime, 0, 0)) {
+        return currentActionTime;
     }
 
-    if ( !frameArgs.empty() ) {
-        return frameArgs.back()->time;
+    // If during a frame render, return the time of the frame to render
+    ParallelRenderArgsPtr frameArgs = tlsData->getParallelRenderArgs();
+    if (frameArgs) {
+        return frameArgs->time;
     }
 
     return app->getTimeLine()->currentFrame();
@@ -330,7 +293,7 @@ getCurrentTimeInternal(const EffectInstance::RenderArgs& args, const std::list<P
 double
 EffectInstance::getCurrentTime() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
     AppInstancePtr app = getApp();
     if (!app) {
         return 0.;
@@ -338,17 +301,22 @@ EffectInstance::getCurrentTime() const
     if (!tls) {
         return app->getTimeLine()->currentFrame();
     }
-    return getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
+    return getCurrentTimeInternal(tls, app);
 }
 
 static ViewIdx
-getCurrentViewInternal(const EffectInstance::RenderArgs& args, const std::list<ParallelRenderArgsPtr >& frameArgs)
+getCurrentViewInternal(const EffectTLSDataPtr& tlsData)
 {
-    if (args.validArgs) {
-        return args.view;
+    // If during an action, return the action time
+    ViewIdx currentActionView;
+    if (tlsData->getCurrentActionArgs(0, &currentActionView, 0)) {
+        return currentActionView;
     }
-    if ( !frameArgs.empty() ) {
-        return frameArgs.back()->view;
+
+    // If during a frame render, return the time of the frame to render
+    ParallelRenderArgsPtr frameArgs = tlsData->getParallelRenderArgs();
+    if (frameArgs) {
+        return frameArgs->view;
     }
     return ViewIdx(0);
 }
@@ -356,83 +324,81 @@ getCurrentViewInternal(const EffectInstance::RenderArgs& args, const std::list<P
 ViewIdx
 EffectInstance::getCurrentView() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     if (!tls) {
         return ViewIdx(0);
     }
-    return getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
+    return getCurrentViewInternal(tls);
 }
 
 void
 EffectInstance::getCurrentTimeView(double* time, ViewIdx* view) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
     AppInstancePtr app = getApp();
     if (!tls) {
         *view = ViewIdx(0);
         *time = app ? app->getTimeLine()->currentFrame() : 0.;
         return;
     }
-    *time = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, app);
-    *view = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
-}
 
-SequenceTime
-EffectInstance::getFrameRenderArgsCurrentTime() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        return getApp()->getTimeLine()->currentFrame();
+    // If during an action, return the action time
+    if (tls->getCurrentActionArgs(time, view, 0)) {
+        return;
     }
 
-    return tls->frameArgs.back()->time;
-}
-
-ViewIdx
-EffectInstance::getFrameRenderArgsCurrentView() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if ( !tls || tls->frameArgs.empty() ) {
-        return ViewIdx(0);
+    // If during a frame render, return the time of the frame to render
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
+    if (frameArgs) {
+        *view = frameArgs->view;
+        *time = frameArgs->time;
+        return;
     }
 
-    return tls->frameArgs.back()->view;
+
+    *view = ViewIdx(0);
+    *time = app ? app->getTimeLine()->currentFrame() : 0.;
+
+}
+
+EffectTLSDataPtr
+EffectInstance::getTLSObject() const
+{
+    return _imp->tlsData->getTLSData();
 }
 
 ParallelRenderArgsPtr
 EffectInstance::getParallelRenderArgsTLS() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
-    if ( !tls || tls->frameArgs.empty() ) {
+    if (!tls) {
         return ParallelRenderArgsPtr();
     }
-
-    return tls->frameArgs.back();
+    return tls->getParallelRenderArgs();
 }
 
 RenderValuesCachePtr
 EffectInstance::getRenderValuesCacheTLS(double* currentRenderTime, ViewIdx* currentRenderView) const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
-    if ( !tls || tls->frameArgs.empty() ) {
+    if (!tls) {
         return RenderValuesCachePtr();
     }
-    ParallelRenderArgsPtr args = tls->frameArgs.back();
-    if (args) {
-        if (currentRenderTime) {
-            *currentRenderTime = getCurrentTimeInternal(tls->currentRenderArgs, tls->frameArgs, getApp());
-        }
-        if (currentRenderView) {
-            *currentRenderView = getCurrentViewInternal(tls->currentRenderArgs, tls->frameArgs);
-        }
-        return args->valuesCache;
+    ParallelRenderArgsPtr args = tls->getParallelRenderArgs();
+    if (!args) {
+        return RenderValuesCachePtr();
     }
-    return RenderValuesCachePtr();
+    
+    if (currentRenderTime) {
+        *currentRenderTime = getCurrentTimeInternal(tls, getApp());
+    }
+    if (currentRenderView) {
+        *currentRenderView = getCurrentViewInternal(tls);
+    }
+    return args->valuesCache;
 }
 
 void
@@ -533,10 +499,9 @@ EffectInstance::getRenderHash(double inArgsTime, ViewIdx view, U64* retHash) con
     }
 
     U64 hash;
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (tls && !tls->frameArgs.empty()) {
-        const ParallelRenderArgsPtr &args = tls->frameArgs.back();
-        assert(args && args->request);
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
+    if (tls) {
+        ParallelRenderArgsPtr args = tls->getParallelRenderArgs();
         if (args && args->request) {
             bool gotIt = args->request->getFrameViewHash(time, view, &hash);
             if (gotIt) {
@@ -631,14 +596,17 @@ EffectInstance::aborted() const
 
     if ( !isAbortableThread || !isAbortableThread->getAbortInfo(&isRenderUserInteraction, &abortInfo, &treeRoot) ) {
         // If this thread is not abortable or we did not set the abort info for this render yet, retrieve them from the TLS of this node.
-        EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+        EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
         if (!tls) {
+            // No tls set, this is probably not a render thread
             return false;
         }
-        if ( tls->frameArgs.empty() ) {
+
+        ParallelRenderArgsPtr args = tls->getParallelRenderArgs();
+        if (!args) {
+            // No tls set, this is probably not a render thread
             return false;
         }
-        const ParallelRenderArgsPtr & args = tls->frameArgs.back();
         isRenderUserInteraction = args->isRenderResponseToUserInteraction;
         abortInfo = args->abortInfo.lock();
         if (args->treeRoot) {
@@ -724,13 +692,16 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 OSGLContextPtr
 EffectInstance::getThreadLocalOpenGLContext() const
 {
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
-    if ( !tls || tls->frameArgs.empty() ) {
+    if ( !tls  ) {
         return OSGLContextPtr();
     }
-
-    return tls->frameArgs.back()->openGLContext.lock();
+    ParallelRenderArgsPtr args = tls->getParallelRenderArgs();
+    if (!args) {
+        return OSGLContextPtr();
+    }
+    return args->openGLContext.lock();
 }
 
 ImagePtr
@@ -760,22 +731,7 @@ EffectInstance::getImage(int inputNb,
     ///The input we want the image from
     EffectInstancePtr inputEffect;
 
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    // Use transform redirections from TLS to find input effect if possible
-    // For a similar code see resolveInputEffectForFrameNeeded
-    if (tls && tls->currentRenderArgs.validArgs) {
-        InputMatrixMapPtr transformRedirections = tls->currentRenderArgs.transformRedirections;
-        if (transformRedirections) {
-            InputMatrixMap::const_iterator foundRedirection = transformRedirections->find(inputNb);
-            if ( ( foundRedirection != transformRedirections->end() ) && foundRedirection->second.newInputEffect ) {
-                inputEffect = foundRedirection->second.newInputEffect->getInput(foundRedirection->second.newInputNbToFetchFrom);
-                if (transform) {
-                    *transform = foundRedirection->second.cat;
-                }
-            }
-        }
-    }
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
     // Get regular input
     if (!inputEffect) {
@@ -815,7 +771,8 @@ EffectInstance::getImage(int inputNb,
     if (!inputEffect) {
         // Disconnected input
 #ifdef DEBUG
-        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the input is not connected";
+        // No need to display a warning, the effect can perfectly call this function even if it did not check isConnected() before
+        //qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the input is not connected";
 #endif
         return ImagePtr();
     }
@@ -838,7 +795,8 @@ EffectInstance::getImage(int inputNb,
      We did not apply any TLS to the node tree, so do it now.
      */
     boost::shared_ptr<ParallelRenderArgsSetter> tlsSetter;
-    if ( !tls || !tls->currentRenderArgs.validArgs || tls->frameArgs.empty() ) {
+
+    if ( !tls || !tls->getParallelRenderArgs() ) {
 
         // We set the thread storage render args so that if the instance changed action
         // tries to call getImage it can render with good parameters.
@@ -863,7 +821,6 @@ EffectInstance::getImage(int inputNb,
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isAnalysis = true;
         tlsArgs->draftMode = false;
         tlsArgs->stats = RenderStatsPtr();
         try {
@@ -923,22 +880,31 @@ EffectInstance::getImage(int inputNb,
         }
         if (!gotRoIFromRequestPass) {
 
-            // If we were in analysis, the ParallelRenderArgsSetter created applied should have  been set correctly
-            assert(tls && tls->currentRenderArgs.validArgs);
-            if (!tls || !tls->currentRenderArgs.validArgs) {
-#ifdef DEBUG
-                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the TLS set via analysis did not work!";
-#endif
-                return ImagePtr();
-            }
-
-
-
-            // We are in the render action:
+            // If we were in analysis, the ParallelRenderArgsSetter that were created just above should have created the request for the exact RoI, so we should never
+            // enter this condition.
+            // This condition can occur only in the render action:
             // This node did not request anything on the input in getFramesNeeded action: it did a raw call to fetchImage without advertising us.
             // Don't fail:
             // If we are in a current render, (tls->currentRenderArgs.validArgs==true)  call getRegionsOfInterest on the current render window
             // If roi is not advertised, well fall back onto rendering the whole image (RoD).
+            assert(tls);
+            double thisEffectRenderTime;
+            ViewIdx thisEffectRenderView;
+            RectI thisEffectRenderWindowPixels;
+
+            {
+                bool gotRenderActionTLSData = false;
+                if (tls) {
+                    gotRenderActionTLSData = tls->getCurrentRenderActionArgs(&thisEffectRenderTime, &thisEffectRenderView, 0, &thisEffectRenderWindowPixels, 0, 0, 0);
+                }
+                assert(gotRenderActionTLSData);
+                if (!gotRenderActionTLSData) {
+#ifdef DEBUG
+                    qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because of a bug in the thread local storage!";
+#endif
+                    return ImagePtr();
+                }
+            }
 
 
             bool gotInputRoI = false;
@@ -950,17 +916,17 @@ EffectInstance::getImage(int inputNb,
             // We are in the render action, the frame/view hash was computed in the ParallelRenderArgs ctor.
             // Get this node rod
             RectD outputRod;
-            StatusEnum stat = getRegionOfDefinition_public(0, tls->currentRenderArgs.time, scale, tls->currentRenderArgs.view, &outputRod);
+            StatusEnum stat = getRegionOfDefinition_public(0, thisEffectRenderTime, scale, thisEffectRenderView, &outputRod);
             if (stat == eStatusFailed) {
                 return ImagePtr();
             }
 
             RectD thisEffectCurrentRenderWindowCanonical;
-            tls->currentRenderArgs.renderWindowPixel.toCanonical(mipMapLevel, getAspectRatio(-1), outputRod, &thisEffectCurrentRenderWindowCanonical);
+            thisEffectRenderWindowPixels.toCanonical(mipMapLevel, getAspectRatio(-1), outputRod, &thisEffectCurrentRenderWindowCanonical);
 
             // Get the roi for the current render window
             RoIMap inputRoisMap;
-            inputEffect->getRegionsOfInterest_public(tls->currentRenderArgs.time, scale, outputRod, thisEffectCurrentRenderWindowCanonical, tls->currentRenderArgs.view, &inputRoisMap);
+            inputEffect->getRegionsOfInterest_public(thisEffectRenderTime, scale, outputRod, thisEffectCurrentRenderWindowCanonical, thisEffectRenderView, &inputRoisMap);
             RoIMap::iterator foundInputEffectRoI = inputRoisMap.find(inputEffect);
             if (foundInputEffectRoI != inputRoisMap.end()) {
                 roiCanonical = foundInputEffectRoI->second;
@@ -1002,11 +968,9 @@ EffectInstance::getImage(int inputNb,
     // If within a render action, the input images have been pre-fetched and set on the currentRenderArgs TLS
     InputImagesMap inputImagesThreadLocal;
 
-    if (tls && tls->currentRenderArgs.validArgs) {
+    if (tls) {
         // When rendering, retrieve the time and input images that were set within the renderRoI call
-        const RenderArgs& renderArgs = tls->currentRenderArgs;
-        thisEffectRenderTime = renderArgs.time;
-        inputImagesThreadLocal = renderArgs.inputImages;
+        tls->getCurrentRenderActionArgs(&thisEffectRenderTime, 0, 0, 0, &inputImagesThreadLocal, 0, 0);
     }
 
 
@@ -1166,6 +1130,19 @@ EffectInstance::getImage(int inputNb,
 } // getImage
 
 void
+EffectInstance::calcDefaultRegionOfDefinition_public(double time, const RenderScale & scale, ViewIdx view, RectD *rod)
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+    return calcDefaultRegionOfDefinition(time, scale, view, rod);
+}
+
+void
 EffectInstance::calcDefaultRegionOfDefinition(double /*time*/,
                                               const RenderScale & scale,
                                               ViewIdx /*view*/,
@@ -1242,7 +1219,7 @@ EffectInstance::ifInfiniteApplyHeuristic(double time,
     ///Do the following only if one coordinate is infinite otherwise we wont need the RoD of the input
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        calcDefaultRegionOfDefinition(time, scale, view, &inputsUnion);
+        calcDefaultRegionOfDefinition_public(time, scale, view, &inputsUnion);
         bool firstInput = true;
         for (int i = 0; i < getMaxInputCount(); ++i) {
             EffectInstancePtr input = getInput(i);
@@ -2237,11 +2214,9 @@ EffectInstance::transformInputRois(const EffectInstancePtr& self,
 }
 
 RenderRoIRetCode
-EffectInstance::renderInputImagesForRoI(bool useTransforms,
-                                        StorageModeEnum renderStorageMode,
+EffectInstance::renderInputImagesForRoI(StorageModeEnum renderStorageMode,
                                         double time,
                                         ViewIdx view,
-                                        const InputMatrixMapPtr& inputTransforms,
                                         unsigned int mipMapLevel,
                                         bool useScaleOneInputImages,
                                         bool byPassCache,
@@ -2256,8 +2231,6 @@ EffectInstance::renderInputImagesForRoI(bool useTransforms,
                               getNode(),
                               framesNeeded,
                               0,
-                              inputTransforms,
-                              useTransforms,
                               renderStorageMode,
                               mipMapLevel,
                               time,
@@ -2290,8 +2263,6 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
                                                                         args.renderFullScaleThenDownscale,
                                                                         args.isSequentialRender,
                                                                         args.isRenderResponseToUserInteraction,
-                                                                        args.firstFrame,
-                                                                        args.lastFrame,
                                                                         args.preferredInput,
                                                                         args.mipMapLevel,
                                                                         args.renderMappedMipMapLevel,
@@ -2315,7 +2286,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
 }
 
 void
-EffectInstance::Implementation::tryShrinkRenderWindow(const EffectInstance::EffectDataTLSPtr &tls,
+EffectInstance::Implementation::tryShrinkRenderWindow(const EffectTLSDataPtr &tls,
                                                     const EffectInstance::RectToRender & rectToRender,
                                                     const PlaneToRender & firstPlaneToRender,
                                                     bool renderFullScaleThenDownscale,
@@ -2359,7 +2330,7 @@ EffectInstance::Implementation::tryShrinkRenderWindow(const EffectInstance::Effe
 
     // check the bitmap!
     *bitmapMarkedForRendering = false;
-    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
     if (frameArgs->tilesSupported) {
         if (renderFullScaleThenDownscale) {
 
@@ -2445,8 +2416,6 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const bool renderFullScaleThenDownscale,
                                                       const bool isSequentialRender,
                                                       const bool isRenderResponseToUserInteraction,
-                                                      const int firstFrame,
-                                                      const int lastFrame,
                                                       const int preferredInput,
                                                       const unsigned int mipMapLevel,
                                                       const unsigned int renderMappedMipMapLevel,
@@ -2466,18 +2435,16 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     // we also copy the currentRenderArgs which may already have their validArgs flag set to true, so remove the assert.
 /*#ifdef DEBUG
     {
-        EffectDataTLSPtr tls = tlsData->getTLSData();
+        EffectTLSDataPtr tls = tlsData->getTLSData();
         assert(!tls || !tls->currentRenderArgs.validArgs);
     }
 #endif*/
 
-    EffectDataTLSPtr tls = tlsData->getOrCreateTLSData();
+    EffectTLSDataPtr tls = tlsData->getOrCreateTLSData();
 
     // We may have copied the TLS from a thread that spawned us. The other thread might have already started the render actino:
     // ensure that we start this thread with a clean state.
-    tls->actionRecursionLevel = 0;
-    tls->canSetValue.clear();
-    tls->currentRenderArgs = RenderArgs();
+    tls->ensureLastActionInStackIsNotRender();
 
     // renderMappedRectToRender is in the mapped mipmap level, i.e the expected mipmap level of the render action of the plug-in
     // downscaledRectToRender is in the mipMapLevel
@@ -2492,22 +2459,13 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     }
 
 
-    ///This RAII struct controls the lifetime of the validArgs Flag in tls->currentRenderArgs
-    Implementation::ScopedRenderArgs scopedArgs(tls,
-                                                rod,
-                                                renderMappedRectToRender,
-                                                time,
-                                                view,
-                                                compsNeeded,
-                                                planes->inputImages,
-                                                firstFrame,
-                                                lastFrame);
-
 
     TimeLapsePtr timeRecorder;
     RenderActionArgs actionArgs;
     boost::shared_ptr<OSGLContextAttacher> glContextAttacher;
-    setupRenderArgs(tls, glContext, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, planes->inputImages, actionArgs, &glContextAttacher, &timeRecorder);
+    setupRenderArgs(tls, glContext, time, view, mipMapLevel, isSequentialRender, isRenderResponseToUserInteraction, byPassCache, *planes, renderMappedRectToRender, processChannels, planes->inputImages, actionArgs, &glContextAttacher, &timeRecorder);
+
+
 
     // If this tile is identity, copy input image instead
     if (rectToRender.isIdentity) {
@@ -2516,10 +2474,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // Call render
     std::map<ImageComponents, PlaneToRender> outputPlanes;
-    tls->currentRenderArgs.outputPlanes = planes->planes;
     bool multiPlanar = _publicInterface->isMultiPlanar();
     {
-        RenderingFunctorRetEnum internalRet = renderHandlerInternal(tls, glContext, actionArgs, *planes, multiPlanar, bitmapMarkedForRendering, outputClipPrefsComps, outputClipPrefDepth, outputPlanes, &glContextAttacher);
+        RenderingFunctorRetEnum internalRet = renderHandlerInternal(tls, glContext, actionArgs, planes, multiPlanar, bitmapMarkedForRendering, outputClipPrefsComps, outputClipPrefDepth, compsNeeded, outputPlanes, &glContextAttacher);
         if (internalRet != eRenderingFunctorRetOK) {
             return internalRet;
         }
@@ -2538,7 +2495,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::EffectDataTLSPtr& tls,
+EffectInstance::Implementation::renderHandlerIdentity(const EffectTLSDataPtr& tls,
                                                       const RectToRender & rectToRender,
                                                       const OSGLContextPtr& glContext,
                                                       const bool renderFullScaleThenDownscale,
@@ -2552,7 +2509,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectInstance::Effe
                                                       EffectInstance::ImagePlanesToRender & planes)
 {
     std::list<ImageComponents> comps;
-    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
     for (std::map<ImageComponents, PlaneToRender>::iterator it = planes.planes.begin(); it != planes.planes.end(); ++it) {
         //If color plane, request the preferred comp of the identity input
         if ( rectToRender.identityInput && it->second.renderMappedImage->getComponents().isColorPlane() ) {
@@ -2760,20 +2717,21 @@ static void finishGLRender()
 }
 
 EffectInstance::RenderingFunctorRetEnum
-EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tls,
+EffectInstance::Implementation::renderHandlerInternal(const EffectTLSDataPtr& tls,
                                                       const OSGLContextPtr& glContext,
                                                       EffectInstance::RenderActionArgs &actionArgs,
-                                                      const ImagePlanesToRender & planes,
+                                                      const ImagePlanesToRenderPtr & planes,
                                                       bool multiPlanar,
                                                       bool bitmapMarkedForRendering,
                                                       const ImageComponents & outputClipPrefsComps,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
+                                                      const ComponentsNeededMapPtr & compsNeeded,
                                                       std::map<ImageComponents, PlaneToRender>& outputPlanes,
                                                       boost::shared_ptr<OSGLContextAttacher>* glContextAttacher)
 {
-    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
     std::list<std::pair<ImageComponents, ImagePtr> > tmpPlanes;
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
+    for (std::map<ImageComponents, PlaneToRender>::iterator it = planes->planes.begin(); it != planes->planes.end(); ++it) {
         /*
          * When using the cache, allocate a local temporary buffer onto which the plug-in will render, and then safely
          * copy this buffer to the shared (among threads) image.
@@ -2788,7 +2746,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
 
         // OpenGL render never use the cache and bitmaps, all images are local to a render.
         if ( ( it->second.renderMappedImage->usesBitMap() || ( prefComp != it->second.renderMappedImage->getComponents() ) ||
-              ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() && !planes.useOpenGL ) {
+              ( outputClipPrefDepth != it->second.renderMappedImage->getBitDepth() ) ) && !_publicInterface->isPaintingOverItselfEnabled() && !planes->useOpenGL ) {
             it->second.tmpImage.reset( new Image(prefComp,
                                                  it->second.renderMappedImage->getRoD(),
                                                  actionArgs.roi,
@@ -2810,7 +2768,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
 
 #if NATRON_ENABLE_TRIMAP
     if ( !bitmapMarkedForRendering && frameArgs->isCurrentFrameRenderNotAbortable() ) {
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = tls->currentRenderArgs.outputPlanes.begin(); it != tls->currentRenderArgs.outputPlanes.end(); ++it) {
+        for (std::map<ImageComponents, PlaneToRender>::iterator it = planes->planes.begin(); it != planes->planes.end(); ++it) {
             it->second.renderMappedImage->markForRendering(actionArgs.roi);
         }
     }
@@ -2833,8 +2791,8 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
    
         actionArgs.outputPlanes = *it;
         const ImagePtr& mainImagePlane = actionArgs.outputPlanes.front().second;
-        if (planes.useOpenGL) {
-            actionArgs.glContextData = planes.glContextData;
+        if (planes->useOpenGL) {
+            actionArgs.glContextData = planes->glContextData;
 
             // Effects that render multiple planes at once are NOT supported by the OpenGL render suite
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
@@ -2845,10 +2803,23 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
                 setupGLForRender<GL_CPU>(mainImagePlane, glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender(), glContextAttacher);
             }
         }
+        StatusEnum st;
+        {
 
-        StatusEnum st = _publicInterface->render_public(actionArgs);
+            ///This RAII struct controls the lifetime of the render action arguments
+            RenderActionArgsSetter_RAII actionArgsTls(tls,
+                                                      actionArgs.time,
+                                                      actionArgs.view,
+                                                      actionArgs.mappedScale,
+                                                      actionArgs.roi,
+                                                      planes->inputImages,
+                                                      planes->planes,
+                                                      compsNeeded);
 
-        if (planes.useOpenGL) {
+             st = _publicInterface->render_public(actionArgs);
+        }
+
+        if (planes->useOpenGL) {
             if (glContext->isGPUContext()) {
                 GL_GPU::BindTexture(mainImagePlane->getGLTextureTarget(), 0);
                 finishGLRender<GL_GPU>();
@@ -2864,7 +2835,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
          * the planes map from the thread local storage once the render action is finished
          */
         if ( it == planesLists.begin() ) {
-            outputPlanes = tls->currentRenderArgs.outputPlanes;
+            tls->getCurrentRenderActionArgs(0, 0, 0, 0, 0, &outputPlanes, 0);
             assert( !outputPlanes.empty() );
         }
 
@@ -2902,7 +2873,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectDataTLSPtr& tl
 
 
 void
-EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr& tls,
+EffectInstance::Implementation::renderHandlerPostProcess(const EffectTLSDataPtr& tls,
                                                          int preferredInput,
                                                          const OSGLContextPtr& glContext,
                                                          const EffectInstance::RenderActionArgs &actionArgs,
@@ -2915,7 +2886,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
                                                          const std::bitset<4>& processChannels)
 {
 
-    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
 
     ImagePtr originalInputImage, maskImage;
     ImagePremultiplicationEnum originalImagePremultiplication;
@@ -3115,8 +3086,10 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectDataTLSPtr&
 
 
 void
-EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
+EffectInstance::Implementation::setupRenderArgs(const EffectTLSDataPtr& tls,
                                                 const OSGLContextPtr& glContext,
+                                                const double time,
+                                                const ViewIdx view,
                                                 unsigned int mipMapLevel,
                                                 bool isSequentialRender,
                                                 bool isRenderResponseToUserInteraction,
@@ -3129,15 +3102,13 @@ EffectInstance::Implementation::setupRenderArgs(const EffectDataTLSPtr& tls,
                                                 boost::shared_ptr<OSGLContextAttacher>* glContextAttacher,
                                                 TimeLapsePtr *timeRecorder)
 {
-    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
 
     if (frameArgs->stats) {
         timeRecorder->reset( new TimeLapse() );
     }
 
     const PlaneToRender & firstPlane = planes.planes.begin()->second;
-    const double time = tls->currentRenderArgs.time;
-    const ViewIdx view = tls->currentRenderArgs.view;
 
     // at this point, it may be unnecessary to call render because it was done a long time ago => check the bitmap here!
 # ifndef NDEBUG
@@ -3202,18 +3173,27 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
      * to render and mark that we're a plane allocated on the fly so that the tiledRenderingFunctor can know this is a plane
      * to handle specifically.
      */
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
+    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
 
-    if (!tls || !tls->currentRenderArgs.validArgs) {
+    if (!tls) {
         return ImagePtr();
     }
 
-    assert( !tls->currentRenderArgs.outputPlanes.empty() );
-    assert(!tls->frameArgs.empty());
+    std::map<ImageComponents, PlaneToRender> curActionOutputPlanes;
+    RectI currentRenderWindowPixel;
+    tls->getCurrentRenderActionArgs(0, 0, 0, &currentRenderWindowPixel, 0, &curActionOutputPlanes, 0);
 
-    const ParallelRenderArgsPtr& frameArgs = tls->frameArgs.back();
+    assert( !curActionOutputPlanes.empty() );
+    if (curActionOutputPlanes.empty()) {
+        return ImagePtr();
+    }
 
-    const PlaneToRender & firstPlane = tls->currentRenderArgs.outputPlanes.begin()->second;
+    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
+    if (!frameArgs) {
+        return ImagePtr();
+    }
+
+    const PlaneToRender & firstPlane = curActionOutputPlanes.begin()->second;
     bool useCache = firstPlane.fullscaleImage->usesBitMap() || firstPlane.downscaleImage->usesBitMap();
     if ( boost::starts_with(getNode()->getPluginID(), "uk.co.thefoundry.furnace") ) {
         //Furnace plug-ins are bugged and do not render properly both planes, just wipe the image.
@@ -3223,9 +3203,9 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
     ImageParamsPtr params = img->getParams();
     PlaneToRender p;
     bool ok = allocateImagePlane(img->getKey(),
-                                 img->getRoD()
-                                 tls->currentRenderArgs.renderWindowPixel,
-                                 tls->currentRenderArgs.renderWindowPixel,
+                                 img->getRoD(),
+                                 currentRenderWindowPixel,
+                                 currentRenderWindowPixel,
                                  plane,
                                  img->getBitDepth(),
                                  img->getPremultiplication(),
@@ -3240,33 +3220,35 @@ EffectInstance::allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponen
                                  &p.downscaleImage);
     if (!ok) {
         return ImagePtr();
-    } else {
-        p.renderMappedImage = p.downscaleImage;
-        p.isAllocatedOnTheFly = true;
-
-        /*
-         * Allocate a temporary image for rendering only if using cache
-         */
-        if (useCache) {
-            p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
-                                        p.renderMappedImage->getRoD(),
-                                        tls->currentRenderArgs.renderWindowPixel,
-                                        p.renderMappedImage->getMipMapLevel(),
-                                        p.renderMappedImage->getPixelAspectRatio(),
-                                        p.renderMappedImage->getBitDepth(),
-                                        p.renderMappedImage->getPremultiplication(),
-                                        p.renderMappedImage->getFieldingOrder(),
-                                        false /*useBitmap*/,
-                                        img->getParams()->getStorageInfo().mode,
-                                        frameArgs->openGLContext.lock(),
-                                        GL_TEXTURE_2D, true) );
-        } else {
-            p.tmpImage = p.renderMappedImage;
-        }
-        tls->currentRenderArgs.outputPlanes.insert( std::make_pair(plane, p) );
-
-        return p.downscaleImage;
     }
+
+    p.renderMappedImage = p.downscaleImage;
+    p.isAllocatedOnTheFly = true;
+
+    /*
+     * Allocate a temporary image for rendering only if using cache
+     */
+    if (useCache) {
+        p.tmpImage.reset( new Image(p.renderMappedImage->getComponents(),
+                                    p.renderMappedImage->getRoD(),
+                                    currentRenderWindowPixel,
+                                    p.renderMappedImage->getMipMapLevel(),
+                                    p.renderMappedImage->getPixelAspectRatio(),
+                                    p.renderMappedImage->getBitDepth(),
+                                    p.renderMappedImage->getPremultiplication(),
+                                    p.renderMappedImage->getFieldingOrder(),
+                                    false /*useBitmap*/,
+                                    img->getParams()->getStorageInfo().mode,
+                                    frameArgs->openGLContext.lock(),
+                                    GL_TEXTURE_2D, true) );
+    } else {
+        p.tmpImage = p.renderMappedImage;
+    }
+    curActionOutputPlanes.insert( std::make_pair(plane, p) );
+    tls->updateCurrentRenderActionOutputPlanes(curActionOutputPlanes);
+
+    return p.downscaleImage;
+
 } // allocateImagePlaneAndSetInThreadLocalStorage
 
 
@@ -3548,7 +3530,6 @@ EffectInstance::drawOverlay_public(double time,
         return;
     }
 
-    RECURSIVE_ACTION();
 
     RenderScale actualScale;
     if ( !canHandleRenderScaleForOverlays() ) {
@@ -3556,6 +3537,15 @@ EffectInstance::drawOverlay_public(double time,
     } else {
         actualScale = renderScale;
     }
+
+
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
     _imp->setDuringInteractAction(true);
     bool drawHostOverlay = shouldDrawHostOverlay();
@@ -3591,7 +3581,14 @@ EffectInstance::onOverlayPenDown_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         _imp->setDuringInteractAction(true);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -3608,7 +3605,6 @@ EffectInstance::onOverlayPenDown_public(double time,
 
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3635,7 +3631,14 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         _imp->setDuringInteractAction(true);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -3652,7 +3655,6 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
 
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3680,7 +3682,14 @@ EffectInstance::onOverlayPenMotion_public(double time,
     }
 
 
-    NON_RECURSIVE_ACTION();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     _imp->setDuringInteractAction(true);
     bool ret;
     bool drawHostOverlay = shouldDrawHostOverlay();
@@ -3697,9 +3706,7 @@ EffectInstance::onOverlayPenMotion_public(double time,
     }
 
     _imp->setDuringInteractAction(false);
-    //Don't chek if render is needed on pen motion, wait for the pen up
 
-    //checkIfRenderNeeded();
     return ret;
 }
 
@@ -3727,7 +3734,13 @@ EffectInstance::onOverlayPenUp_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
         _imp->setDuringInteractAction(true);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -3744,7 +3757,6 @@ EffectInstance::onOverlayPenUp_public(double time,
 
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3772,7 +3784,14 @@ EffectInstance::onOverlayKeyDown_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -3780,7 +3799,6 @@ EffectInstance::onOverlayKeyDown_public(double time,
         }
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3807,7 +3825,13 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
 
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
@@ -3816,7 +3840,6 @@ EffectInstance::onOverlayKeyUp_public(double time,
         }
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3843,7 +3866,14 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -3851,7 +3881,6 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
         }
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3876,7 +3905,14 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
@@ -3885,7 +3921,6 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3911,7 +3946,14 @@ EffectInstance::onOverlayFocusLost_public(double time,
 
     bool ret;
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+        
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
@@ -3920,7 +3962,6 @@ EffectInstance::onOverlayFocusLost_public(double time,
 
         _imp->setDuringInteractAction(false);
     }
-    checkIfRenderNeeded();
 
     return ret;
 }
@@ -3969,7 +4010,7 @@ EffectInstance::isDoingInteractAction() const
 StatusEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
-    NON_RECURSIVE_ACTION();
+
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
     try {
         return render(args);
@@ -4053,7 +4094,13 @@ EffectInstance::getTransform_public(double inArgsTime,
 
     StatusEnum stat;
     {
-        RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
 
         stat = getTransform(time, renderScale, view, &inputToTransformNb, transform);
     }
@@ -4070,6 +4117,22 @@ EffectInstance::getTransform_public(double inArgsTime,
     }
     return stat;
 } // getTransform_public
+
+void
+EffectInstance::createInstanceAction_public()
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+    createInstanceAction();
+
+    // Check if there is any overlay
+    initializeOverlayInteract();
+}
 
 bool
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
@@ -4122,8 +4185,15 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             }
             
 
-            ///EDIT: We now allow isIdentity to be called recursively.
-            RECURSIVE_ACTION();
+            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, scale
+#ifdef DEBUG
+                                                      , /*canSetValue*/ false
+                                                      , /*canBeCalledRecursively*/ true
+#endif
+                                                      );
+
+
             try {
                 *inputView = view;
                 ret = isIdentity(time, scale, renderWindow, view, inputTime, inputView, inputNb);
@@ -4144,6 +4214,37 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     return ret;
 } // EffectInstance::isIdentity_public
+
+void
+EffectInstance::beginEditKnobs_public()
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+    beginEditKnobs();
+}
+
+
+void
+EffectInstance::onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode)
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+    REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
+
+
+    onInputChanged(inputNo, oldNode, newNode);
+}
+
 
 void
 EffectInstance::onInputChanged(int /*inputNo*/, const NodePtr& /*oldNode*/, const NodePtr& /*newNode*/)
@@ -4243,11 +4344,20 @@ EffectInstance::getRegionOfDefinition_public(U64 hash,
 
         StatusEnum ret;
         RenderScale scaleOne(1.);
+
+        RenderScale mappedScale = supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale;
         {
-            RECURSIVE_ACTION();
+            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, mappedScale
+#ifdef DEBUG
+                                                      , /*canSetValue*/ false
+                                                      , /*canBeCalledRecursively*/ true
+#endif
+                                                      );
 
 
-            ret = getRegionOfDefinition(time, supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale, view, rod);
+
+            ret = getRegionOfDefinition(time, mappedScale, view, rod);
 
             if ( (ret != eStatusOK) && (ret != eStatusReplyDefault) ) {
                 // rod is not valid
@@ -4296,10 +4406,17 @@ EffectInstance::getRegionsOfInterest_public(double inArgsTime,
         }
     }
 
-
-    NON_RECURSIVE_ACTION();
     assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
+
+
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
     getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
 }
@@ -4334,24 +4451,6 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, bool ini
     }
 
     
-    // For the viewer add frames needed depending on the input being rendered (this is a special case
-    // For the viewer we cannot compute a hash and cache it because it varies from the branch we choose to render
-    ViewerInstance* isViewer = dynamic_cast<ViewerInstance*>(this);
-    if (isViewer) {
-        int viewerIndex;
-        if (!getParallelRenderArgsTLS()) {
-            viewerIndex = 0;
-        } else {
-            viewerIndex = getViewerIndexThreadLocal();
-        }
-        assert(viewerIndex == 0 || viewerIndex == 1);
-        *retHash = 0;
-        FramesNeededMap ret;
-        FrameRangesMap& rangeMap = ret[viewerIndex];
-        RangeD range = {time, time};
-        rangeMap[view].push_back(range);
-        return ret;
-    }
 
     // Compute the frame/view hash if needed
     FramesNeededMap framesNeeded;
@@ -4376,7 +4475,13 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, bool ini
 
 
     {
-        NON_RECURSIVE_ACTION();
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
 
         try {
             framesNeeded = getFramesNeeded(time, view);
@@ -4479,9 +4584,11 @@ EffectInstance::getFrameRange_public(U64 hash,
     double fFirst = 0., fLast = 0.;
     bool foundInCache = false;
 
+    double time = getCurrentTime();
+    ViewIdx view = getCurrentView();
+
     if (!hash) {
-        double time = getCurrentTime();
-        ViewIdx view = getCurrentView();
+
         bool gotHash = getRenderHash(time, view, &hash);
         if (!gotHash) {
             computeFrameViewHashUsingFramesNeeded(time, view, &hash);
@@ -4495,7 +4602,15 @@ EffectInstance::getFrameRange_public(U64 hash,
         *first = std::floor(fFirst + 0.5);
         *last = std::floor(fLast + 0.5);
     } else {
-        NON_RECURSIVE_ACTION();
+
+        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         getFrameRange(first, last);
         if (hash != 0) {
             _imp->actionsCache->setTimeDomainResult(hash, *first, *last);
@@ -4516,11 +4631,15 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool isOpenGLRender,
                                            const EffectOpenGLContextDataPtr& glContextData)
 {
-    NON_RECURSIVE_ACTION();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),first, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    assert(tls);
-    ++tls->beginEndRenderCount;
 
     return beginSequenceRender(first, last, step, interactive, scale,
                                isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
@@ -4539,12 +4658,16 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool isOpenGLRender,
                                          const EffectOpenGLContextDataPtr& glContextData)
 {
-    NON_RECURSIVE_ACTION();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), first, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    assert(tls);
-    --tls->beginEndRenderCount;
-    assert(tls->beginEndRenderCount >= 0);
+
 
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
 }
@@ -4606,7 +4729,14 @@ StatusEnum
 EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
                                            EffectOpenGLContextDataPtr* data)
 {
-    NON_RECURSIVE_ACTION();
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
     if (concurrentGLRender) {
@@ -4642,6 +4772,15 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
 void
 EffectInstance::dettachAllOpenGLContexts()
 {
+
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     QMutexLocker locker(&_imp->attachedContextsMutex);
 
     for (std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
@@ -4669,7 +4808,15 @@ EffectInstance::dettachAllOpenGLContexts()
 StatusEnum
 EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
 {
-    NON_RECURSIVE_ACTION();
+
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
     if (concurrentGLRender) {
@@ -4984,13 +5131,22 @@ EffectInstance::getComponentsNeededAndProduced_public(bool useLayerChoice,
                                                       NodePtr* passThroughInput)
 
 {
-    RECURSIVE_ACTION();
 
     if ( isMultiPlanar() ) {
+
         for (int i = 0; i < 4; ++i) {
             (*processChannels)[i] = getNode()->getProcessChannel(i);
         }
         if (useThisNodeComponentsNeeded) {
+
+            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, RenderScale(1.)
+#ifdef DEBUG
+                                                      , /*canSetValue*/ false
+                                                      , /*canBeCalledRecursively*/ false
+#endif
+                                                      );
+
             getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
         }
         *processAllRequested = false;
@@ -5131,59 +5287,7 @@ EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
     return false;
 }
 
-void
-EffectInstance::setViewerIndexThreadLocal(int viewerIndex)
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-    if (!tls) {
-        return;
-    }
-    tls->viewerTextureIndex = viewerIndex;
-}
 
-int
-EffectInstance::getViewerIndexThreadLocal() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
-        // Should not happen. setViewerIndexThreadLocal should have been called earlier
-        assert(false);
-        return 0;
-    }
-    return tls->viewerTextureIndex;
-}
-
-bool
-EffectInstance::getThreadLocalRenderedPlanes(std::map<ImageComponents, PlaneToRender> *outputPlanes,
-                                             RectI* renderWindow) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (tls && tls->currentRenderArgs.validArgs) {
-        assert( !tls->currentRenderArgs.outputPlanes.empty() );
-        *outputPlanes = tls->currentRenderArgs.outputPlanes;
-        *renderWindow = tls->currentRenderArgs.renderWindowPixel;
-
-        return true;
-    }
-
-    return false;
-}
-
-bool
-EffectInstance::getThreadLocalNeededComponents(ComponentsNeededMapPtr* neededComps) const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (tls && tls->currentRenderArgs.validArgs) {
-        assert( !tls->currentRenderArgs.outputPlanes.empty() );
-        *neededComps = tls->currentRenderArgs.compsNeeded;
-
-        return true;
-    }
-
-    return false;
-}
 
 
 RenderScale
@@ -5234,6 +5338,49 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
     return getNode()->setCurrentCursor(customCursorFilePath);
 }
 
+void
+EffectInstance::purgeCaches_public()
+{
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+    purgeCaches();
+}
+
+void
+EffectInstance::beginKnobsValuesChanged_public(ValueChangedReasonEnum reason)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
+    beginKnobsValuesChanged(reason);
+}
+
+void
+EffectInstance::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+    endKnobsValuesChanged(reason);
+}
 
 bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
@@ -5265,7 +5412,14 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     assert(kh);
     if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         {
-            RECURSIVE_ACTION();
+            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, viewIdx, RenderScale(1.)
+#ifdef DEBUG
+                                                      , /*canSetValue*/ true
+                                                      , /*canBeCalledRecursively*/ true
+#endif
+                                                      );
+
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
             // Map to a plug-in known reason
             if (reason == eValueChangedReasonUserEdited) {
@@ -5278,13 +5432,10 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
         ///Run the following only in the main-thread
         if ( hasOverlay() && node->shouldDrawOverlay(time, ViewIdx(0)) && !node->hasHostOverlayForParam(k) ) {
+
             // Some plugins (e.g. by digital film tools) forget to set kOfxInteractPropSlaveToParam.
             // Most hosts trigger a redraw if the plugin has an active overlay.
-            incrementRedrawNeededCounter();
-
-            if ( !isDequeueingValuesSet() && (getRecursionLevel() == 0) && checkIfOverlayRedrawNeeded() ) {
-                redrawOverlayInteract();
-            }
+            requestOverlayInteractRefresh();
         }
         if (isOverlaySlaveParam(kh)) {
             kh->redraw();
@@ -5467,17 +5618,6 @@ EffectInstance::abortAnyEvaluation(bool keepOldestRender)
 }
 
 
-#ifdef DEBUG
-void
-EffectInstance::checkCanSetValueAndWarn() const
-{
-    if ( !checkCanSetValue() ) {
-        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
-    }
-}
-
-#endif
-
 
 bool
 EffectInstance::isPaintingOverItselfEnabled() const
@@ -5488,6 +5628,15 @@ EffectInstance::isPaintingOverItselfEnabled() const
 StatusEnum
 EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
 {
+    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+
     StatusEnum stat = getDefaultMetadata(metadata);
 
     if (stat == eStatusFailed) {
@@ -6164,52 +6313,6 @@ EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
     getNode()->refreshIdentityState();
 }
 
-void
-EffectInstance::assertActionIsNotRecursive() const
-{
-# ifdef DEBUG
-    ///Only check recursions which are on a render threads, because we do authorize recursions in getRegionOfDefinition and such
-    if ( QThread::currentThread() != qApp->thread() ) {
-        int recursionLvl = getRecursionLevel();
-        if ( getApp() && getApp()->isShowingDialog() ) {
-            return;
-        }
-        if (recursionLvl != 0) {
-            qDebug() << "A non-recursive action has been called recursively.";
-        }
-    }
-# endif // DEBUG
-}
-
-void
-EffectInstance::incrementRecursionLevel()
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    assert(tls);
-    ++tls->actionRecursionLevel;
-}
-
-void
-EffectInstance::decrementRecursionLevel()
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    assert(tls);
-    --tls->actionRecursionLevel;
-}
-
-int
-EffectInstance::getRecursionLevel() const
-{
-    EffectDataTLSPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return 0;
-    }
-
-    return tls->actionRecursionLevel;
-}
 
 void
 EffectInstance::setClipPreferencesRunning(bool running)

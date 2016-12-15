@@ -68,6 +68,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/Format.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/FStreamsSupport.h"
@@ -462,7 +463,7 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->effect->setDefaultMetadata();
 
     // For OpenFX we create the image effect now
-    _imp->effect->createInstanceAction();
+    _imp->effect->createInstanceAction_public();
 
     // For readers, set their original frame range when creating them
     if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
@@ -472,8 +473,7 @@ Node::load(const CreateNodeArgsPtr& args)
         }
     }
 
-    // Check if there is any overlay
-    _imp->effect->initializeOverlayInteract();
+
 
     // Refresh render scale support
     _imp->effect->refreshRenderScaleSupport();
@@ -1762,7 +1762,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
     bool nodeCreated = isNodeCreated();
     if (nodeCreated) {
         // Purge any cache when reseting to defaults
-        _imp->effect->purgeCaches();
+        _imp->effect->purgeCaches_public();
     }
 
     // Check if there is any serialization from presets/pyplug
@@ -4584,7 +4584,7 @@ Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
 void
 Node::beginEditKnobs()
 {
-    _imp->effect->beginEditKnobs();
+    _imp->effect->beginEditKnobs_public();
 }
 
 
@@ -6306,7 +6306,6 @@ Node::makePreviewImage(SequenceTime time,
         tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-        tlsArgs->isAnalysis = false;
         tlsArgs->draftMode = true;
         tlsArgs->stats = RenderStatsPtr();
 
@@ -6910,7 +6909,7 @@ Node::purgeAllInstancesCaches()
     ///Only called by the main-thread
     assert( QThread::currentThread() == qApp->thread() );
     assert(_imp->effect);
-    _imp->effect->purgeCaches();
+    _imp->effect->purgeCaches_public();
 }
 
 bool
@@ -7344,17 +7343,11 @@ Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode
 
 
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-    _imp->effect->onInputChanged(inputNb, oldNode, newNode);
+    _imp->effect->onInputChanged_public(inputNb, oldNode, newNode);
     _imp->inputsModified.insert(inputNb);
 
     // If the effect has render clones, kill them as the plug-in might have changed its internal state
     _imp->effect->clearRenderInstances();
-
-    //A knob value might have changed recursively, redraw  any overlay
-    if ( !_imp->effect->isDequeueingValuesSet() &&
-        ( _imp->effect->getRecursionLevel() == 0) && _imp->effect->checkIfOverlayRedrawNeeded() ) {
-        _imp->effect->redrawOverlayInteract();
-    }
 
 
     /*
@@ -10803,7 +10796,6 @@ Node::renderFrame(const double time,
     tlsArgs->textureIndex = 0;
     tlsArgs->timeline = getApp()->getTimeLine();
     tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-    tlsArgs->isAnalysis = !isPlayback;
     tlsArgs->draftMode = true;
     tlsArgs->stats = RenderStatsPtr();
     boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
