@@ -26,6 +26,7 @@
 
 #include <cfloat> // floor
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QCheckBox>
 #include <QTextEdit>

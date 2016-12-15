@@ -47,6 +47,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
+#include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
+
 #include "Global/QtCompat.h" // removeFileExtension
 
 #include "Engine/BlockingBackgroundRender.h"
@@ -54,17 +61,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
-//#include "Engine/KnobTypes.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/ProjectSerialization.h"
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
-//#include "Engine/OfxHost.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/ReadNode.h"
-//#include "Engine/RotoLayer.h"
 #include "Engine/Settings.h"
 #include "Engine/WriteNode.h"
 

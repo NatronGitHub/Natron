@@ -75,7 +75,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBox.h"
 #include "Gui/TabGroup.h"
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 NATRON_NAMESPACE_ENTER;
 using std::make_pair;

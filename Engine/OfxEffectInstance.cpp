@@ -38,20 +38,17 @@
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhPluginCache.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhPluginAPICache.h>
-CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhImageEffect.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
+#include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxOpenGLRender.h>
 #include <ofxhHost.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 
 #include <tuttle/ofxReadWrite.h>
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 #include <nuke/fnOfxExtensions.h>
 
 #include "Engine/AppInstance.h"
@@ -1548,9 +1545,9 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(U64 /*hash*/,
 
             // the following ofxh function does the job
             QReadLocker preferencesLocker(&_imp->preferencesLock);
-            ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale);
+            ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale, view);
         } else {
-            ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale);
+            ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale, view);
         }
     }
     rod->x1 = ofxRod.x1;

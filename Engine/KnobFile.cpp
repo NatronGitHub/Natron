@@ -27,6 +27,7 @@
 #include <utility>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QStringList>
 #include <QtCore/QMutexLocker>

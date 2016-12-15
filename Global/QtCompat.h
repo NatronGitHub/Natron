@@ -59,7 +59,6 @@ NATRON_NAMESPACE_EXIT;
 #include <QtCore/QString>
 #include <QtCore/QUrl>
 #include <QtCore/QFileInfo>
-//#include <QtCore/QDebug>
 
 NATRON_NAMESPACE_ENTER;
 

@@ -24,7 +24,7 @@
 
 #include "ImageComponents.h"
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 #include <cassert>
 #include <stdexcept>

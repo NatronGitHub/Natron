@@ -77,7 +77,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/TabGroup.h"
 #include "Gui/PropertiesBinWrapper.h"
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 
 NATRON_NAMESPACE_ENTER;

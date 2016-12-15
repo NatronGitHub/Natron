@@ -24,12 +24,8 @@
 
 #include "DialogButtonBox.h"
 
-//#include <stdexcept>
-
 #include <QApplication>
 #include <QPushButton>
-
-//#include "Gui/GuiApplicationManager.h"
 
 NATRON_NAMESPACE_ENTER;
 

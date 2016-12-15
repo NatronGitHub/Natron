@@ -74,14 +74,14 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhImageEffect.h>
 CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
+#include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxhHost.h>
 #include <ofxhParam.h>
 
 #include <tuttle/ofxReadWrite.h>
-
-//our version of parametric param suite support
-#include "ofxhParametricParam.h"
+#include <ofxhPluginCache.h>
+#include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
 #include "Global/MemoryInfo.h"

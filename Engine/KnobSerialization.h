@@ -46,6 +46,8 @@ GCC_DIAG_ON(sign-compare)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include <ofxImageEffect.h>
+
 #include <SequenceParsing.h>
 
 #include "Engine/Variant.h"

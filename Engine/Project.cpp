@@ -31,6 +31,7 @@
 #include <cerrno> // errno
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

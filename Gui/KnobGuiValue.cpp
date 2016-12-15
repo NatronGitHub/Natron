@@ -78,7 +78,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/SpinBoxValidator.h"
 #include "Gui/TabGroup.h"
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 NATRON_NAMESPACE_ENTER;
 
