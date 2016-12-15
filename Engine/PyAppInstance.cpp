@@ -31,9 +31,13 @@
 #include <QtCore/QDebug>
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+CLANG_DIAG_OFF(mismatched-tags)
+GCC_DIAG_OFF(unused-parameter)
 #include "natronengine_python.h"
 #include <shiboken.h> // produces many warnings
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+CLANG_DIAG_ON(mismatched-tags)
+GCC_DIAG_ON(unused-parameter)
 
 
 #include "Engine/AppInstance.h"

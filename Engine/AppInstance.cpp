@@ -936,6 +936,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         // For newer pyPlugs this is taken care of in the Node::load function when creating
         // the container group
         if (isPyPlugEncodedWithPythonScript) {
+#pragma message WARN("Remove thisCreatingNodeTreeFlag_RAII class: this and the AppInstance::isCreatingNodeTree() function should not exist anymore. We still need it until results of getclippreferences are cached.")
             CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
 
             boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;

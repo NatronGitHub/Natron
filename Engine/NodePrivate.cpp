@@ -24,6 +24,8 @@
 
 #include "NodePrivate.h"
 
+#include <sstream> // stringstream
+
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobItemsTable.h"

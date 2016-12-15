@@ -162,6 +162,7 @@ public:
      **/
     virtual void reflectLinkedState(DimIdx dimension, bool linked)
     {
+        Q_UNUSED(dimension);
         Q_UNUSED(linked);
     }
 
