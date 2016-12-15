@@ -82,7 +82,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/PreferencesPanel.h"
 
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 NATRON_NAMESPACE_ENTER;
 

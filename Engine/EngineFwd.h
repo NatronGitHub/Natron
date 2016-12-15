@@ -81,6 +81,10 @@ typedef struct _cairo_pattern cairo_pattern_t;
 
 // OpenFX
 
+typedef struct OfxImageMemoryStruct *OfxImageMemoryHandle;
+typedef struct OfxImageEffectStruct *OfxImageEffectHandle;
+typedef struct OfxImageClipStruct *OfxImageClipHandle;
+
 namespace OFX {
 namespace Host {
 class Plugin;
@@ -90,6 +94,12 @@ class Set;
 namespace ImageEffect {
 class ImageEffectPlugin;
 class Descriptor;
+class ClipDescriptor;
+class OverlayInteract;
+}
+namespace Interact {
+class Descriptor;
+class Instance;
 }
 }
 }

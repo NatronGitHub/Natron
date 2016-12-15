@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include "Global/GlobalDefines.h"
 #include "Global/QtCompat.h"

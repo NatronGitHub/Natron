@@ -40,12 +40,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
-//ofx
-CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare)
-#include <ofxhImageEffect.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"

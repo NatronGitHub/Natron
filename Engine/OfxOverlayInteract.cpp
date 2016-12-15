@@ -27,7 +27,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"

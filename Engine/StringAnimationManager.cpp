@@ -31,6 +31,9 @@
 
 #include <QtCore/QMutex>
 
+#include <ofxParam.h>
+#include <ofxhPropertySuite.h> // PropSpec
+
 #include "Engine/Knob.h"
 
 NATRON_NAMESPACE_ENTER;

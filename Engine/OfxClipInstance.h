@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
+
 //ofx
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)

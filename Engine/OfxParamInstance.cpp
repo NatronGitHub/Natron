@@ -37,7 +37,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 //ofx extension
 #include <nuke/fnPublicOfxExtensions.h>
 #include <ofxParametricParam.h>
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 
 #include <QtCore/QDebug>
 
