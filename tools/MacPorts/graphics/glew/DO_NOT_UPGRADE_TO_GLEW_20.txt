@@ -1,0 +1,4 @@
+glew 2.0 drops glewmx support, see https://github.com/nigels-com/glew/issues/38
+glewmx is required by bino
+we apply the forward-compatible opengl context patch from https://github.com/Qlex42/docgl/commit/ccdeacd042b1651a90111e47c9079ccb73ee482e
+
