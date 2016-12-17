@@ -25,7 +25,7 @@
 #include "ThreadPool.h"
 
 #include <string>
-#include <sstream>
+#include <sstream> // stringstream
 
 #include <QtCore/QAtomicInt>
 #include <QtCore/QMutex>

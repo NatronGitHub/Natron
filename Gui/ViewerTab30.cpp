@@ -28,6 +28,7 @@
 #include <cassert>
 #include <cmath>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QDebug>
 

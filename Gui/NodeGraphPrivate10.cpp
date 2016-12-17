@@ -26,6 +26,7 @@
 #include "NodeGraph.h"
 
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/NodeSerialization.h"

@@ -31,6 +31,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <cstring> // for std::memcpy, std::memset
+#include <sstream> // stringstream
 
 #include <boost/scoped_ptr.hpp>
 

@@ -28,6 +28,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QDataStream>
 #include <QtCore/QDateTime>

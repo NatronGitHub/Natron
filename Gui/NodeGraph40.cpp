@@ -25,7 +25,7 @@
 #include "NodeGraph.h"
 #include "NodeGraphPrivate.h"
 
-#include <sstream>
+#include <sstream> // stringstream
 #include <stdexcept>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

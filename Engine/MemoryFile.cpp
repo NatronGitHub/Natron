@@ -37,7 +37,7 @@
 #include <cerrno>
 #include <cstdio>
 #endif
-#include <sstream>
+#include <sstream> // stringstream
 #include <iostream>
 #include <cassert>
 #include <stdexcept>

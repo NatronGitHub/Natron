@@ -25,6 +25,7 @@
 #include "TabWidget.h"
 
 #include <stdexcept>
+#include <sstream> // stringstream
 
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThread>

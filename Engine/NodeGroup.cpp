@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTextStream>

@@ -28,7 +28,7 @@
 #include "Global/Macros.h"
 
 #include <vector>
-#include <sstream>
+#include <sstream> // stringstream
 #include <fstream>
 #include <functional>
 #include <list>

@@ -24,6 +24,8 @@
 
 #include "WriteNode.h"
 
+#include <sstream> // stringstream
+
 #include "Global/QtCompat.h"
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)

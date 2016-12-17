@@ -170,13 +170,11 @@ Cache<EntryType>::restore(const CacheTOC & tableOfContents)
     } else {
         for (U32 i = 0x00; i <= 0xF; ++i) {
             for (U32 j = 0x00; j <= 0xF; ++j) {
-                std::ostringstream oss;
-                oss << std::hex <<  i;
-                oss << std::hex << j;
-                std::string str = oss.str();
+                char str[3] = { '0', '0', 0 };
+                str[0] += i;
+                str[1] += j;
 
-
-                QDir cacheFolder(cachePath + QLatin1Char('/') + QString::fromUtf8( str.c_str() ));
+                QDir cacheFolder(cachePath + QLatin1Char('/') + QString::fromUtf8(str));
                 QString absolutePath = cacheFolder.absolutePath();
                 QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
                 for (QStringList::iterator it = etr.begin(); it!=etr.end(); ++it) {

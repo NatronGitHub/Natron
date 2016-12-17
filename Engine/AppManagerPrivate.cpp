@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)

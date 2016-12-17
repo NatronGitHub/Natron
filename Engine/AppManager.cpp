@@ -31,6 +31,7 @@
 #include <cassert>
 #include <stdexcept>
 #include <cstring> // for std::memcpy
+#include <sstream> // stringstream
 
 #if defined(Q_OS_LINUX)
 #include <sys/signal.h>

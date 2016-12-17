@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 #include <limits>
-#include <sstream>
+#include <sstream> // stringstream
 #include <stdexcept>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)

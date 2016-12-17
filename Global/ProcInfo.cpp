@@ -19,10 +19,9 @@
 #include "ProcInfo.h"
 
 #include <cassert>
-#include <sstream>
+#include <sstream> // stringstream
 #include <iostream>
 #include <cstring> // for std::memcpy, std::memset, std::strcmp
-
 
 #if defined(__NATRON_WIN32__)
 #include <windows.h>
@@ -394,7 +393,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     //Not working yet
     return true;
 #if 0
-#ifdef __NATRON_WIN32__
+#if defined(Q_OS_WIN)
     DWORD dwExitCode = 9999;
     //See https://login.live.com/login.srf?wa=wsignin1.0&rpsnv=12&checkda=1&ct=1451385015&rver=6.0.5276.0&wp=MCMBI&wlcxt=msdn%24msdn%24msdn&wreply=https%3a%2f%2fmsdn.microsoft.com%2fen-us%2flibrary%2fwindows%2fdesktop%2fms683189%2528v%3dvs.85%2529.aspx&lc=1033&id=254354&mkt=en-US
     if ( GetExitCodeProcess(pid, &dwExitCode) ) {
@@ -408,7 +407,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
 
         return false;
     }
-#elif defined(__NATRON_LINUX__)
+#elif defined(Q_OS_LINUX)
     std::stringstream ss;
     ss << "/proc/" << (long)pid << "/stat";
     std::string procFile = ss.str();
@@ -446,7 +445,7 @@ ProcInfo::checkIfProcessIsRunning(const char* /*processAbsoluteFilePath*/,
     fclose(fp);
 
     return ret;
-#elif defined(__NATRON_OSX__)
+#elif defined(Q_OS_MAC)
     //See https://developer.apple.com/legacy/library/qa/qa2001/qa1123.html
     static const int name[4] = { CTL_KERN, KERN_PROC, KERN_PROC_PID, (int)pid };
     // Declaring name as const requires us to cast it when passing it to

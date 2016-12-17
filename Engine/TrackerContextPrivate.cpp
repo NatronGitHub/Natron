@@ -24,6 +24,8 @@
 
 #include "TrackerContextPrivate.h"
 
+#include <sstream> // stringstream
+
 #include <QtCore/QThreadPool>
 
 #include "Engine/AppInstance.h"

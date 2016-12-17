@@ -26,6 +26,7 @@
 
 #include <utility>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
