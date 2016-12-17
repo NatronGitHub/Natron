@@ -33,7 +33,10 @@
 #include <cstring> // for std::memcpy
 #include <stdexcept>
 #include <vector>
+#ifndef _WIN32
 #include <fstream>
+#endif
+#include <sstream> // stringstream
 
 #ifdef __NATRON_WIN32__
 #include <windows.h>
