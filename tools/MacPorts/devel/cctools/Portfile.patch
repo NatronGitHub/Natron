@@ -1,0 +1,52 @@
+--- Portfile.orig	2016-12-18 20:40:23.000000000 +0100
++++ Portfile	2016-12-18 20:40:45.000000000 +0100
+@@ -3,10 +3,10 @@
+ PortSystem              1.0
+ 
+ name                    cctools
+-# Xcode 8.1
+-version                 895
+-revision                1
+-set ld64_version        274.1
++# Xcode 7.3.1
++version                 886
++revision                6
++set ld64_version        264.3.102
+ categories              devel
+ platforms               darwin
+ maintainers             jeremyhu openmaintainer
+@@ -23,12 +23,12 @@
+ 
+ distfiles               ld64-${ld64_version}.tar.gz ${name}-${version}.tar.gz
+ 
+-checksums               ld64-274.1.tar.gz \
+-                        rmd160  c86030f9d6d44a6a53d262952d9508b5eff46353 \
+-                        sha256  6cbe886717de833789fa562ec4889ebf9136ae5f7573d17d39836d3f5755b7ab \
+-                        cctools-895.tar.gz \
+-                        rmd160  e46dd79bd87c727f1326c569d0b8e9eadcc57495 \
+-                        sha256  ce66034fa35117f9ae76bbb7dd72d8068c405778fa42e877e8a13237a10c5cb7
++checksums               ld64-264.3.102.tar.gz \
++                        rmd160  c8169a8dd591989abdf45c0834397891ec72b458 \
++                        sha256  307f73678a3e5c9ed4d1bcf77da7399d84efac32916c5df6cd477c3b5c36f953 \
++                        cctools-886.tar.gz \
++                        rmd160  ecd54d8b4ec062909044c003b7e5bd638729cf57 \
++                        sha256  f3a4fa7dad4a54d862b1d9f48e3dfb25fc532c9cf46a041cf8134694328a8878
+ 
+ depends_build           port:libunwind-headers
+ 
+@@ -38,7 +38,6 @@
+     cctools-839-static-dis_info.patch \
+     PR-12400897.patch \
+     cctools-862-prunetrie.patch \
+-    cctools-895-big_endian.patch \
+     not-clang.patch
+ 
+ variant universal {}
+@@ -111,7 +110,6 @@
+ 
+     # Use our chosen version of llvm
+     if {${llvm_version} ne ""} {
+-        reinplace "s:\"llvm-objdump\":\"llvm-objdump-mp-${llvm_version}\":" ${worksrcpath}/otool/main.c
+         reinplace "s:\"llvm-mc\":\"llvm-mc-mp-${llvm_version}\":" ${worksrcpath}/as/driver.c
+         reinplace "s:@@LLVM_LIBDIR@@:${prefix}/libexec/llvm-${llvm_version}/lib:" ${worksrcpath}/libstuff/lto.c
+     }

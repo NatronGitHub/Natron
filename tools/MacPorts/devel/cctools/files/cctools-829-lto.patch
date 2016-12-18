@@ -1,0 +1,39 @@
+--- libstuff/lto.c.orig	1969-12-31 16:00:00.000000000 -0800
++++ libstuff/lto.c	2012-09-04 14:59:31.000000000 -0700
+@@ -112,13 +112,21 @@ void **pmod) /* maybe NULL */
+ 	    lto_path = makestr(prefix, "../lib/libLTO.dylib", NULL);
+ 
+ 	    lto_handle = dlopen(lto_path, RTLD_NOW);
++	    free(lto_path);
++	    lto_path = NULL;
+ 	    if(lto_handle == NULL){
+-		free(lto_path);
+-		lto_path = NULL;
+-		lto_handle = dlopen("/Applications/Xcode.app/Contents/"
+-				    "Developer/Toolchains/XcodeDefault."
+-				    "xctoolchain/usr/lib/libLTO.dylib",
+-				    RTLD_NOW);
++		const char *lto_paths[] = {
++		    "@@LLVM_LIBDIR@@/libLTO.dylib",
++		    "/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/lib/libLTO.dylib",
++		    "/usr/lib/libLTO.dylib",
++		    "/Applications/Xcode.app/usr/lib/libLTO.dylib",
++		    "/Developer/usr/lib/libLTO.dylib",
++		    NULL
++                };
++                const char **p;
++		for(p = lto_paths; *p && !lto_handle ; p++) {
++		    lto_handle = dlopen(*p, RTLD_NOW);
++		}
+ 	    }
+ 	    if(lto_handle == NULL)
+ 		return(0);
+@@ -142,8 +150,6 @@ void **pmod) /* maybe NULL */
+ 	       lto_get_sym_attr == NULL ||
+ 	       lto_get_sym_name == NULL){
+ 		dlclose(lto_handle);
+-		if(lto_path != NULL)
+-		    free(lto_path);
+ 		return(0);
+ 	    }
+ 	}

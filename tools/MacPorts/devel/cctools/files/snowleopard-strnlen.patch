@@ -1,0 +1,21 @@
+--- otool/ofile_print.c.orig	2013-11-10 22:33:14.000000000 -0800
++++ otool/ofile_print.c	2013-11-10 22:34:19.000000000 -0800
+@@ -225,6 +225,18 @@
+ #include "stuff/guess_short_name.h"
+ #include "ofile_print.h"
+ 
++static size_t
++strnlen(const char *s, size_t maxlen)
++{
++	size_t len;
++
++	for (len = 0; len < maxlen; len++, s++) {
++		if (!*s)
++			break;
++	}
++	return (len);
++}
++
+ /* <mach/loader.h> */
+ /* The maximum section alignment allowed to be specified, as a power of two */
+ #define MAXSECTALIGN		15 /* 2**15 or 0x8000 */

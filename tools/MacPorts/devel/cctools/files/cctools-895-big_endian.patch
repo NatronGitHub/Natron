@@ -1,0 +1,12 @@
+--- libstuff/ofile.c-	2016-12-16 11:53:10.000000000 -0500
++++ libstuff/ofile.c	2016-12-16 11:53:41.000000000 -0500
+@@ -3423,7 +3423,7 @@
+ 	    if(size - offset > sizeof(uint32_t)){
+ 		memcpy(&magic, addr + offset, sizeof(uint32_t));
+ #ifdef __BIG_ENDIAN__
+-		if(magic == FAT_MAGIC || (magic == FAT_MAGIC_64)
++		if(magic == FAT_MAGIC || magic == FAT_MAGIC_64)
+ #endif /* __BIG_ENDIAN__ */
+ #ifdef __LITTLE_ENDIAN__
+ 		if(magic == SWAP_INT(FAT_MAGIC) ||
+

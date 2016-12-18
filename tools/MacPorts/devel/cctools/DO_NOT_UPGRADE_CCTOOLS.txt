@@ -1,0 +1,9 @@
+cctools 895 doesn't work with llvm 3.4
+otool -L <binary> gives:
+llvm-objdump: Unknown command line argument '-dylibs-used'.  Try: '/opt/local/libexec/llvm-3.4/bin/llvm-objdump -help'
+llvm-objdump: Did you mean '-mips-os16'?
+llvm-objdump: Unknown command line argument '-non-verbose'.  Try: '/opt/local/libexec/llvm-3.4/bin/llvm-objdump -help'
+llvm-objdump: Did you mean '-asm-verbose'?
+fatal error: otool: internal objdump command failed
+
+see MacPorts ticket https://trac.macports.org/ticket/53099 to check whether it is fixed

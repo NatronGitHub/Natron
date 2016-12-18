@@ -1,0 +1,55 @@
+--- as/ppc.c.orig	2013-01-04 10:39:49.000000000 +0100
++++ as/ppc.c	2013-01-04 10:40:02.000000000 +0100
+@@ -1019,6 +1019,8 @@ char *op)
+ 
+ 	/* if this instruction requires labels mark it for later */
+ 	switch(insn.reloc){
++	case NO_RELOC:
++	    break;
+ 	case PPC_RELOC_HI16:
+ 	case PPC_RELOC_LO16:
+ 	case PPC_RELOC_HA16:
+@@ -1033,6 +1035,7 @@ char *op)
+ 		    insn.reloc);
+ 	    break;
+ 	case PPC_RELOC_BR14:
++	case PPC_RELOC_BR14_predicted:
+ 	    fix_new(frag_now,
+ 		    thisfrag - frag_now->fr_literal,
+ 		    4,
+--- as/m88k.c.orig	1969-12-31 16:00:00.000000000 -0800
++++ as/m88k.c	2013-07-05 10:32:19.000000000 -0700
+@@ -600,6 +600,10 @@ char *op)
+ 
+ 	/* if this instruction requires labels mark it for later */
+ 	switch (insn.reloc) {
++
++		case NO_RELOC:
++				break;
++
+ 		case M88K_RELOC_LO16:
+ 		case M88K_RELOC_HI16:
+ 				fix_new(
+--- as/sparc.c.orig	1969-12-31 16:00:00.000000000 -0800
++++ as/sparc.c	2013-07-05 10:32:14.000000000 -0700
+@@ -851,6 +851,20 @@ sparc_ip (str)
+  		  /* plug absolutes directly into opcode */
+ 
+ 		  switch(the_insn.reloc) {
++		  case SPARC_RELOC_13:
++		    if (the_insn.exp.X_seg == SEG_BIG)
++		      opcode |= (*(int *) generic_bignum) & 0x1fff;
++		    else
++		      opcode |= the_insn.exp.X_add_number & 0x1fff;
++		    the_insn.reloc = SPARC_RELOC_NONE;
++		    break;
++		  case SPARC_RELOC_22:
++		    if (the_insn.exp.X_seg == SEG_BIG)
++		      opcode |= (*(int *) generic_bignum) & 0x3fffff;
++		    else
++		      opcode |= the_insn.exp.X_add_number & 0x3fffff;
++		    the_insn.reloc = SPARC_RELOC_NONE;
++		    break;
+ 		  case SPARC_RELOC_HI22:
+ 		    /* extract upper 22 bits from constant */
+ 		    opcode |= (the_insn.exp.X_add_number >> 10) & 0x3fffff;

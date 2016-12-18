@@ -1,0 +1,12 @@
+--- as/driver.c.orig	2015-11-23 21:01:45.000000000 -0800
++++ as/driver.c	2015-11-23 21:09:24.000000000 -0800
+@@ -280,6 +280,9 @@ char **envp)
+ 	   arch_flag.cputype == CPU_TYPE_ARM)
+ 	    run_clang = 1;
+ 
++        /* MACPORTS: Don't use the clang assembler for now. */
++        run_clang = 0;
++
+ 	/*
+ 	 * Use the clang as the assembler if is the default or asked to with
+ 	 * the -q flag. But don't use it asked to use the system assembler

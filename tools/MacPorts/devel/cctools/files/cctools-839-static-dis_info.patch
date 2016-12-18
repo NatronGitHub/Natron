@@ -1,0 +1,22 @@
+--- otool/arm_disasm.c.orig	2013-08-29 14:23:24.000000000 -0700
++++ otool/arm_disasm.c	2013-08-29 14:23:51.000000000 -0700
+@@ -62,7 +62,7 @@ typedef char bfd_byte;
+ 
+ /* HACKS to avoid pulling in all of FSF binutils include/dis-asm.h */
+ typedef int (*fprintf_ftype) (void *, const char*, ...);
+-struct disassemble_info { /* HACK'ed up for just what we need here */
++static struct disassemble_info { /* HACK'ed up for just what we need here */
+   fprintf_ftype fprintf_func;
+   void *stream;
+ 
+--- otool/i386_disasm.c.orig	2013-08-29 14:23:19.000000000 -0700
++++ otool/i386_disasm.c	2013-08-29 14:24:00.000000000 -0700
+@@ -1600,7 +1600,7 @@ static unsigned int xmm_rm(int r_m, int 
+ /*
+  * This is passed to the llvm disassembler.
+  */
+-struct disassemble_info {
++static struct disassemble_info {
+   enum bool verbose;
+   /* Relocation information.  */
+   struct relocation_info *sorted_relocs;
