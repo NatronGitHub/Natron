@@ -32,6 +32,8 @@
 #include <QtCore/QDebug>
 
 #include "Engine/AppManager.h"
+#include "Engine/Cache.h"
+#include "Engine/CacheEntryBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/OSGLContext.h"
@@ -39,740 +41,153 @@
 
 NATRON_NAMESPACE_ENTER;
 
-#define BM_GET(i, j) mapStart + ( i - _bounds.bottom() ) * _bounds.width() + ( j - _bounds.left() )
-
-#define PIXEL_UNAVAILABLE 2
-
-template <int trimap>
-RectI
-minimalNonMarkedBbox_internal(const RectI& roi,
-                              const RectI& _bounds,
-                              const char* mapStart,
-                              bool* isBeingRenderedElsewhere)
+struct MonoChannelTile
 {
-    RectI bbox;
+    // A pointer to the internal storage
+    MemoryBufferedCacheEntryBasePtr buffer;
 
-    assert( _bounds.contains(roi) );
-    bbox = roi;
+    // Was this found in the cache ?
+    bool isCached;
+};
 
-    //find bottom
-    for (int i = bbox.bottom(); i < bbox.top(); ++i) {
-        const char* buf = BM_GET( i, bbox.left() );
-
-        if (trimap) {
-            const char* lineEnd = buf + bbox.width();
-            bool metUnavailablePixel = false;
-            while (buf < lineEnd) {
-                if (!*buf) {
-                    buf = 0;
-                    break;
-                } else if (*buf == PIXEL_UNAVAILABLE) {
-                    metUnavailablePixel = true;
-                }
-                ++buf;
-            }
-            if (!buf) {
-                break;
-            } else if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
-                ++bbox.y1;
-            } else {
-                ++bbox.y1;
-            }
-        } else {
-            const char* lineEnd = buf + bbox.width();
-            while (buf < lineEnd) {
-                if ( !*buf || (*buf == PIXEL_UNAVAILABLE) ) {
-                    buf = 0;
-                    break;
-                }
-                ++buf;
-            }
-            if (!buf) {
-                break;
-            } else {
-                ++bbox.y1;
-            }
-        }
-    }
-
-    //find top (will do zero iteration if the bbox is already empty)
-    for (int i = bbox.top() - 1; i >= bbox.bottom(); --i) {
-        const char* buf = BM_GET( i, bbox.left() );
-
-        if (trimap) {
-            const char* lineEnd = buf + bbox.width();
-            bool metUnavailablePixel = false;
-            while (buf < lineEnd) {
-                if (!*buf) {
-                    buf = 0;
-                    break;
-                } else if (*buf == PIXEL_UNAVAILABLE) {
-                    metUnavailablePixel = true;
-                }
-                ++buf;
-            }
-            if (!buf) {
-                break;
-            } else if (metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true; //< only flag if the whole row is not 0
-                --bbox.y2;
-            } else {
-                --bbox.y2;
-            }
-        } else {
-            const char* lineEnd = buf + bbox.width();
-            while (buf < lineEnd) {
-                if ( !*buf || (*buf == PIXEL_UNAVAILABLE) ) {
-                    buf = 0;
-                    break;
-                }
-                ++buf;
-            }
-            if (!buf) {
-                break;
-            } else {
-                --bbox.y2;
-            }
-        }
-    }
-
-    // avoid making bbox.width() iterations for nothing
-    if ( bbox.isNull() ) {
-        return bbox;
-    }
-
-    //find left
-    for (int j = bbox.left(); j < bbox.right(); ++j) {
-        const char* pix = BM_GET(bbox.bottom(), j);
-        bool metUnavailablePixel = false;
-
-        for ( int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width() ) {
-            if (!*pix) {
-                pix = 0;
-                break;
-            } else if (*pix == PIXEL_UNAVAILABLE) {
-                if (trimap) {
-                    metUnavailablePixel = true;
-                } else {
-                    pix = 0;
-                    break;
-                }
-            }
-        }
-        if (pix) {
-            ++bbox.x1;
-            if (trimap && metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
-            }
-        } else {
-            break;
-        }
-    }
-
-    //find right
-    for (int j = bbox.right() - 1; j >= bbox.left(); --j) {
-        const char* pix = BM_GET(bbox.bottom(), j);
-        bool metUnavailablePixel = false;
-
-        for ( int i = bbox.bottom(); i < bbox.top(); ++i, pix += _bounds.width() ) {
-            if (!*pix) {
-                pix = 0;
-                break;
-            } else if (*pix == PIXEL_UNAVAILABLE) {
-                if (trimap) {
-                    metUnavailablePixel = true;
-                } else {
-                    pix = 0;
-                    break;
-                }
-            }
-        }
-        if (pix) {
-            --bbox.x2;
-            if (trimap && metUnavailablePixel) {
-                *isBeingRenderedElsewhere = true; //< only flag is the whole column is not 0
-            }
-        } else {
-            break;
-        }
-    }
-
-    return bbox;
-} // minimalNonMarkedBbox_internal
-
-template <int trimap>
-void
-minimalNonMarkedRects_internal(const RectI & roi,
-                               const RectI& _bounds,
-                               const char* mapStart,
-                               std::list<RectI>& ret,
-                               bool* isBeingRenderedElsewhere)
+struct ImageTile
 {
-    ///Any out of bounds portion is pushed to the rectangles to render
-    RectI intersection;
+    // Each ImageTile internally holds a pointer to a mono-channel tile in the cache
+    std::vector<MonoChannelTile> perChannelTile;
 
-    roi.intersect(_bounds, &intersection);
-    if (roi != intersection) {
-        if ( (_bounds.x1 > roi.x1) && (_bounds.y2 > _bounds.y1) ) {
-            RectI left(roi.x1, _bounds.y1, _bounds.x1, _bounds.y2);
-            ret.push_back(left);
-        }
+};
 
-
-        if ( (roi.x2 > roi.x1) && (_bounds.y1 > roi.y1) ) {
-            RectI btm(roi.x1, roi.y1, roi.x2, _bounds.y1);
-            ret.push_back(btm);
-        }
-
-
-        if ( (roi.x2 > _bounds.x2) && (_bounds.y2 > _bounds.y1) ) {
-            RectI right(_bounds.x2, _bounds.y1, roi.x2, _bounds.y2);
-            ret.push_back(right);
-        }
-
-
-        if ( (roi.x2 > roi.x1) && (roi.y2 > _bounds.y2) ) {
-            RectI top(roi.x1, _bounds.y2, roi.x2, roi.y2);
-            ret.push_back(top);
-        }
-    }
-
-    if ( intersection.isNull() ) {
-        return;
-    }
-
-    RectI bboxM = minimalNonMarkedBbox_internal<trimap>(intersection, _bounds, mapStart, isBeingRenderedElsewhere);
-    assert( (trimap && isBeingRenderedElsewhere) || (!trimap && !isBeingRenderedElsewhere) );
-
-    //#define NATRON_BITMAP_DISABLE_OPTIMIZATION
-#ifdef NATRON_BITMAP_DISABLE_OPTIMIZATION
-    if ( !bboxM.isNull() ) { // empty boxes should not be pushed
-        ret.push_back(bboxM);
-    }
-#else
-    if ( bboxM.isNull() ) {
-        return; // return an empty rectangle list
-    }
-
-    // optimization by Fred, Jan 31, 2014
-    //
-    // Now that we have the smallest enclosing bounding box,
-    // let's try to find rectangles for the bottom, the top,
-    // the left and the right part.
-    // This happens quite often, for example when zooming out
-    // (in this case the area to compute is formed of A, B, C and D,
-    // and X is already rendered), or when panning (in this case the area
-    // is just two rectangles, e.g. A and C, and the rectangles B, D and
-    // X are already rendered).
-    // The rectangles A, B, C and D from the following drawing are just
-    // zeroes, and X contains zeroes and ones.
-    //
-    // BBBBBBBBBBBBBB
-    // BBBBBBBBBBBBBB
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // CXXXXXXXXXXDDD
-    // AAAAAAAAAAAAAA
-
-    // First, find if there's an "A" rectangle, and push it to the result
-    //find bottom
-    RectI bboxX = bboxM;
-    RectI bboxA = bboxX;
-    bboxA.set_top( bboxX.bottom() );
-    for (int i = bboxX.bottom(); i < bboxX.top(); ++i) {
-        const char* buf = BM_GET( i, bboxX.left() );
-        if (trimap) {
-            const char* lineEnd = buf + bboxX.width();
-            bool metUnavailablePixel = false;
-            while (buf < lineEnd) {
-                if (*buf == 1) {
-                    buf = 0;
-                    break;
-                } else if ( (*buf == PIXEL_UNAVAILABLE) && trimap ) {
-                    buf = 0;
-                    metUnavailablePixel = true;
-                    break;
-                }
-                ++buf;
-            }
-            if (buf) {
-                ++bboxX.y1;
-                bboxA.y2 = bboxX.y1;
-            } else {
-                if (metUnavailablePixel) {
-                    *isBeingRenderedElsewhere = true;
-                }
-                break;
-            }
-        } else {
-            if ( !memchr( buf, 1, bboxX.width() ) ) {
-                ++bboxX.y1;
-                bboxA.y2 = bboxX.y1;
-            } else {
-                break;
-            }
-        }
-    }
-    if ( !bboxA.isNull() ) { // empty boxes should not be pushed
-        ret.push_back(bboxA);
-    }
-
-    // Now, find the "B" rectangle
-    //find top
-    RectI bboxB = bboxX;
-    bboxB.set_bottom( bboxX.top() );
-    for (int i = bboxX.top() - 1; i >= bboxX.bottom(); --i) {
-        const char* buf = BM_GET( i, bboxX.left() );
-
-        if (trimap) {
-            const char* lineEnd = buf + bboxX.width();
-            bool metUnavailablePixel = false;
-            while (buf < lineEnd) {
-                if (*buf == 1) {
-                    buf = 0;
-                    break;
-                } else if ( (*buf == PIXEL_UNAVAILABLE) && trimap ) {
-                    buf = 0;
-                    metUnavailablePixel = true;
-                    break;
-                }
-                ++buf;
-            }
-            if (buf) {
-                --bboxX.y2;
-                bboxB.y1 = bboxX.y2;
-            } else {
-                if (metUnavailablePixel) {
-                    *isBeingRenderedElsewhere = true;
-                }
-                break;
-            }
-        } else {
-            if ( !memchr( buf, 1, bboxX.width() ) ) {
-                --bboxX.y2;
-                bboxB.y1 = bboxX.y2;
-            } else {
-                break;
-            }
-        }
-    }
-    if ( !bboxB.isNull() ) { // empty boxes should not be pushed
-        ret.push_back(bboxB);
-    }
-
-    //find left
-    RectI bboxC = bboxX;
-    bboxC.set_right( bboxX.left() );
-    if ( bboxX.bottom() < bboxX.top() ) {
-        for (int j = bboxX.left(); j < bboxX.right(); ++j) {
-            const char* pix = BM_GET(bboxX.bottom(), j);
-            bool metUnavailablePixel = false;
-
-            for ( int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width() ) {
-                if (*pix == 1) {
-                    pix = 0;
-                    break;
-                } else if ( trimap && (*pix == PIXEL_UNAVAILABLE) ) {
-                    pix = 0;
-                    metUnavailablePixel = true;
-                    break;
-                }
-            }
-            if (pix) {
-                ++bboxX.x1;
-                bboxC.x2 = bboxX.x1;
-            } else {
-                if (metUnavailablePixel) {
-                    *isBeingRenderedElsewhere = true;
-                }
-                break;
-            }
-        }
-    }
-    if ( !bboxC.isNull() ) { // empty boxes should not be pushed
-        ret.push_back(bboxC);
-    }
-
-    //find right
-    RectI bboxD = bboxX;
-    bboxD.set_left( bboxX.right() );
-    if ( bboxX.bottom() < bboxX.top() ) {
-        for (int j = bboxX.right() - 1; j >= bboxX.left(); --j) {
-            const char* pix = BM_GET(bboxX.bottom(), j);
-            bool metUnavailablePixel = false;
-
-            for ( int i = bboxX.bottom(); i < bboxX.top(); ++i, pix += _bounds.width() ) {
-                if (*pix == 1) {
-                    pix = 0;
-                    break;
-                } else if ( trimap && (*pix == PIXEL_UNAVAILABLE) ) {
-                    pix = 0;
-                    metUnavailablePixel = true;
-                    break;
-                }
-            }
-            if (pix) {
-                --bboxX.x2;
-                bboxD.x1 = bboxX.x2;
-            } else {
-                if (metUnavailablePixel) {
-                    *isBeingRenderedElsewhere = true;
-                }
-                break;
-            }
-        }
-    }
-    if ( !bboxD.isNull() ) { // empty boxes should not be pushed
-        ret.push_back(bboxD);
-    }
-
-    assert( bboxA.bottom() == bboxM.bottom() );
-    assert( bboxA.left() == bboxM.left() );
-    assert( bboxA.right() == bboxM.right() );
-    assert( bboxA.top() == bboxX.bottom() );
-
-    assert( bboxB.top() == bboxM.top() );
-    assert( bboxB.left() == bboxM.left() );
-    assert( bboxB.right() == bboxM.right() );
-    assert( bboxB.bottom() == bboxX.top() );
-
-    assert( bboxC.top() == bboxX.top() );
-    assert( bboxC.left() == bboxM.left() );
-    assert( bboxC.right() == bboxX.left() );
-    assert( bboxC.bottom() == bboxX.bottom() );
-
-    assert( bboxD.top() == bboxX.top() );
-    assert( bboxD.left() == bboxX.right() );
-    assert( bboxD.right() == bboxM.right() );
-    assert( bboxD.bottom() == bboxX.bottom() );
-
-    // get the bounding box of what's left (the X rectangle in the drawing above)
-    bboxX = minimalNonMarkedBbox_internal<trimap>(bboxX, _bounds, mapStart, isBeingRenderedElsewhere);
-
-    if ( !bboxX.isNull() ) { // empty boxes should not be pushed
-        ret.push_back(bboxX);
-    }
-
-#endif // NATRON_BITMAP_DISABLE_OPTIMIZATION
-} // minimalNonMarkedRects
-
-RectI
-Bitmap::minimalNonMarkedBbox(const RectI & roi) const
+struct ImagePrivate
 {
-    if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
-            return RectI();
-        }
+    RectI bounds;
 
-        return minimalNonMarkedBbox_internal<0>(realRoi, _bounds, _map.getData(), NULL);
-    } else {
-        return minimalNonMarkedBbox_internal<0>(roi, _bounds, _map.getData(), NULL);
+    std::vector<ImageTile> tiles;
+
+    // If a tile was read from the cache and modified but this flag is set to false, then the tile
+    // will be removed from the cache.
+    // If a tile was not found in the cache but this flag is enabled, then the tile is inserted in the cache.
+    bool cacheWriteEnabled;
+
+    ImagePrivate()
+    : bounds()
+    , tiles()
+    , cacheWriteEnabled(false)
+    {
+
     }
-}
+};
 
-void
-Bitmap::minimalNonMarkedRects(const RectI & roi,
-                              std::list<RectI>& ret) const
+Image::Image()
+: _imp(new ImagePrivate())
 {
-    if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
-            return;
-        }
-        minimalNonMarkedRects_internal<0>(realRoi, _bounds, _map.getData(), ret, NULL);
-    } else {
-        minimalNonMarkedRects_internal<0>(roi, _bounds, _map.getData(), ret, NULL);
-    }
-}
 
-#if NATRON_ENABLE_TRIMAP
-RectI
-Bitmap::minimalNonMarkedBbox_trimap(const RectI & roi,
-                                    bool* isBeingRenderedElsewhere) const
-{
-    if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
-            *isBeingRenderedElsewhere = false;
-
-            return RectI();
-        }
-
-        return minimalNonMarkedBbox_internal<1>(realRoi, _bounds, _map.getData(), isBeingRenderedElsewhere);
-    } else {
-        return minimalNonMarkedBbox_internal<1>(roi, _bounds, _map.getData(), isBeingRenderedElsewhere);
-    }
-}
-
-void
-Bitmap::minimalNonMarkedRects_trimap(const RectI & roi,
-                                     std::list<RectI>& ret,
-                                     bool* isBeingRenderedElsewhere) const
-{
-    if (_dirtyZoneSet) {
-        RectI realRoi;
-        if ( !roi.intersect(_dirtyZone, &realRoi) ) {
-            *isBeingRenderedElsewhere = false;
-
-            return;
-        }
-        minimalNonMarkedRects_internal<1>(realRoi, _bounds, _map.getData(), ret, isBeingRenderedElsewhere);
-    } else {
-        minimalNonMarkedRects_internal<1>(roi, _bounds, _map.getData(), ret, isBeingRenderedElsewhere);
-    }
-}
-
-#endif
-
-void
-Bitmap::markForRendered(const RectI & roi)
-{
-    char* mapStart = _map.getData();
-    char* buf = BM_GET( roi.bottom(), roi.left() );
-    int w = _bounds.width();
-    int roiw = roi.width();
-
-    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        std::memset( buf, 1, roiw);
-    }
-}
-
-#if NATRON_ENABLE_TRIMAP
-void
-Bitmap::markForRendering(const RectI & roi)
-{
-    assert(_map.size() > 0);
-    char* mapStart = _map.getData();
-    char* buf = BM_GET( roi.bottom(), roi.left() );
-    int w = _bounds.width();
-    int roiw = roi.width();
-
-    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        std::memset( buf, PIXEL_UNAVAILABLE, roiw );
-    }
-}
-
-#endif
-
-void
-Bitmap::clear(const RectI& roi)
-{
-    assert(_map.size() > 0);
-    char* mapStart = _map.getData();
-    char* buf = BM_GET( roi.bottom(), roi.left() );
-    int w = _bounds.width();
-    int roiw = roi.width();
-
-    for (int i = roi.y1; i < roi.y2; ++i, buf += w) {
-        std::memset( buf, 0, roiw );
-    }
-}
-
-void
-Bitmap::swap(Bitmap& other)
-{
-    _map.swap(other._map);
-    _bounds = other._bounds;
-    _dirtyZone.clear(); //merge(other._dirtyZone);
-    _dirtyZoneSet = false;
-}
-
-const char*
-Bitmap::getBitmapAt(int x,
-                    int y) const
-{
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        const char* mapStart = _map.getData();
-        return BM_GET(y, x);
-    } else {
-        return NULL;
-    }
-}
-
-char*
-Bitmap::getBitmapAt(int x,
-                    int y)
-{
-    if ( ( x >= _bounds.left() ) && ( x < _bounds.right() ) && ( y >= _bounds.bottom() ) && ( y < _bounds.top() ) ) {
-        char* mapStart = _map.getData();
-        return BM_GET(y, x);
-    } else {
-        return NULL;
-    }
-}
-
-#ifdef DEBUG
-void
-Image::printUnrenderedPixels(const RectI& roi) const
-{
-    if (!_useBitmap) {
-        return;
-    }
-    QReadLocker k(&_entryLock);
-    const char* bm = _bitmap.getBitmapAt(roi.x1, roi.y1);
-    int roiw = roi.x2 - roi.x1;
-    int boundsW = _bitmap.getBounds().width();
-    RectD bboxUnrendered;
-    bboxUnrendered.setupInfinity();
-    RectD bboxUnavailable;
-    bboxUnavailable.setupInfinity();
-
-    bool hasUnrendered = false;
-    bool hasUnavailable = false;
-
-    for ( int y = roi.y1; y < roi.y2; ++y,
-          bm += (boundsW - roiw) ) {
-        for (int x = roi.x1; x < roi.x2; ++x, ++bm) {
-            if (*bm == 0) {
-                if (x < bboxUnrendered.x1) {
-                    bboxUnrendered.x1 = x;
-                }
-                if (x > bboxUnrendered.x2) {
-                    bboxUnrendered.x2 = x;
-                }
-                if (y < bboxUnrendered.y1) {
-                    bboxUnrendered.y1 = y;
-                }
-                if (y > bboxUnrendered.y2) {
-                    bboxUnrendered.y2 = y;
-                }
-                hasUnrendered = true;
-            } else if (*bm == PIXEL_UNAVAILABLE) {
-                if (x < bboxUnavailable.x1) {
-                    bboxUnavailable.x1 = x;
-                }
-                if (x > bboxUnavailable.x2) {
-                    bboxUnavailable.x2 = x;
-                }
-                if (y < bboxUnavailable.y1) {
-                    bboxUnavailable.y1 = y;
-                }
-                if (y > bboxUnavailable.y2) {
-                    bboxUnavailable.y2 = y;
-                }
-                hasUnavailable = true;
-            }
-        } // for x
-    } // for y
-    if (hasUnrendered) {
-        qDebug() << "Unrenderer pixels in the following region:";
-        bboxUnrendered.debug();
-    }
-    if (hasUnavailable) {
-        qDebug() << "Unavailable pixels in the following region:";
-        bboxUnavailable.debug();
-    }
-} // Image::printUnrenderedPixels
-
-#endif \
-    // ifdef DEBUG
-
-Image::Image(const ImageKey & key,
-             const ImageParamsPtr& params,
-             const CacheAPI* cache)
-    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>(key, params, cache)
-    , _useBitmap(true)
-{
-    _bitDepth = params->getBitDepth();
-    _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
-    _nbComponents = params->getComponents().getNumComponents();
-    _rod = params->getRoD();
-    _bounds = params->getBounds();
-    _par = params->getPixelAspectRatio();
-    _premult = params->getPremultiplication();
-    _fielding = params->getFieldingOrder();
-}
-
-Image::Image(const ImageKey & key,
-             const ImageParamsPtr& params)
-    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>( key, params, NULL )
-    , _useBitmap(false)
-{
-    _bitDepth = params->getBitDepth();
-    _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
-    _nbComponents = params->getComponents().getNumComponents();
-    _rod = params->getRoD();
-    _bounds = params->getBounds();
-    _par = params->getPixelAspectRatio();
-    _premult = params->getPremultiplication();
-    _fielding = params->getFieldingOrder();
-
-    allocateMemory();
-}
-
-/*This constructor can be used to allocate a local Image. The deallocation should
-   then be handled by the user. Note that no view number is passed in parameter
-   as it is not needed.*/
-Image::Image(const ImageComponents& components,
-             const RectD & regionOfDefinition, //!< rod in canonical coordinates
-             const RectI & bounds, //!< bounds in pixel coordinates
-             unsigned int mipMapLevel,
-             double par,
-             ImageBitDepthEnum bitdepth,
-             ImagePremultiplicationEnum premult,
-             ImageFieldingOrderEnum fielding,
-             bool useBitmap,
-             StorageModeEnum storage,
-             const OSGLContextPtr& context,
-             U32 textureTarget,
-             bool isGPUTexture )
-    : CacheEntryHelper<unsigned char, ImageKey, ImageParams>()
-    , _useBitmap(useBitmap)
-{
-    setCacheEntry(ImageKey(std::string(), 0, 0, ViewIdx(0), false),
-                  ImageParamsPtr( new ImageParams(regionOfDefinition,
-                                                  par,
-                                                  mipMapLevel,
-                                                  bounds,
-                                                  bitdepth,
-                                                  fielding,
-                                                  premult,
-                                                  components,
-                                                  context,
-                                                  storage,
-                                                  textureTarget) ),
-                  NULL /*cacheAPI*/
-                  );
-    _params->getStorageInfo().isGPUTexture = isGPUTexture;
-
-    _bitDepth = bitdepth;
-    _depthBytesSize = getSizeOfForBitDepth(_bitDepth);
-    _nbComponents = components.getNumComponents();
-    _rod = regionOfDefinition;
-    _bounds = _params->getBounds();
-    _par = par;
-    _premult = premult;
-    _fielding = fielding;
-
-    allocateMemory();
 }
 
 Image::~Image()
 {
-    deallocate();
+
 }
+
 
 void
-Image::onMemoryAllocated(bool diskRestoration)
+Image::initializeStorage(const Image::InitStorageArgs& args)
 {
-    if (_cache || _useBitmap) {
-        _bitmap.initialize(_bounds);
+    CachePtr cache = appPTR->getCache();
+    assert(cache);
+
+    // Should be initialized once!
+    assert(_imp->tiles.empty());
+    if (!_imp->tiles.empty()) {
+        return;
     }
 
-    if (diskRestoration) {
-        _bitmap.setTo1();
+    _imp->bounds = args.bounds;
+    _imp->cacheWriteEnabled = args.cacheWriteEnabled;
+
+    int tileSize = cache->getTileSizeBytes();
+
+    int nTilesHeight,nTilesWidth;
+    if (!args.cacheReadEnabled || args.storage == eStorageModeGLTex) {
+
+        // When not using the cache or a GL texture use a single tile
+        nTilesHeight = 1;
+        nTilesWidth = 1;
+    } else {
+        nTilesHeight = std::ceil(_imp->bounds.height() / tileSize) * tileSize;
+        nTilesWidth = std::ceil(_imp->bounds.width() / tileSize) * tileSize;
     }
 
-#ifdef DEBUG
-    if (!diskRestoration) {
-        ///fill with red, to recognize unrendered pixels
-        //fill(_bounds,1.,0.,0.,1.);
+    int nTiles = nTilesWidth * nTilesHeight;
+    _imp->tiles.resize(nTiles);
+
+    int tx = 0, ty = 0;
+    for (int tile_i = 0; tile_i < nTiles; ++tile_i) {
+
+        ImageTile& tile = _imp->tiles[tile_i];
+
+        const std::string& layerName = args.layer.getLayerName();
+
+        int nBuffers;
+        if (args.storage == eStorageModeGLTex) {
+            // GL textures are always RGBA so use 1 texture
+            nBuffers = 1;
+        } else {
+            // As many buffer as there are components
+            nBuffers = args.layer.getNumComponents();
+        }
+        tile.perChannelTile.resize(nBuffers);
+
+        for (int c = 0; c < nBuffers; ++c) {
+
+            MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
+
+            std::string channelName;
+            if (args.storage == eStorageModeGLTex) {
+                channelName = layerName;
+            } else {
+                channelName = layerName + "." + args.layer.getComponentsNames()[c];
+            }
+
+            ImageTileKeyPtr key(new ImageTileKey(args.nodeHashKey,
+                                                 channelName,
+                                                 args.mipMapLevel,
+                                                 args.isDraft,
+                                                 args.bitdepth,
+                                                 tx,
+                                                 ty));
+            {
+                CacheEntryBasePtr cacheEntry;
+                CacheEntryLockerPtr entryLocker;
+                bool isCached = cache->get(key, &cacheEntry, &entryLocker);
+
+                if (args.cacheReadEnabled) {
+                    isCached = false;
+                    cacheEntry.reset();
+                }
+#pragma message WARN("wip")
+                if (isCached) {
+                    // Found in cache, check if the key is really equal to this key
+                    if (key->equals(*cacheEntry->getKey())) {
+                        MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
+                        assert(isBufferedEntry);
+                        thisChannelTile.buffer = isBufferedEntry;
+                        thisChannelTile.isCached = true;
+                    }
+                }
+            }
+        }
+
+        // Increment tile coords
+        if (tx == nTilesWidth - 1) {
+            tx = 0;
+            ++ty;
+        } else {
+            ++tx;
+        }
     }
-#endif
-}
+
+} // initializeStorage
+
 
 void
 Image::setBitmapDirtyZone(const RectI& zone)

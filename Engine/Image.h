@@ -34,15 +34,9 @@
 
 #include "Global/GlobalDefines.h"
 
-CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QHash>
-CLANG_DIAG_ON(deprecated)
-#include <QtCore/QReadWriteLock>
 
-#include "Engine/ImageKey.h"
 #include "Engine/ImageComponents.h"
-#include "Engine/ImageParams.h"
-#include "Engine/CacheEntry.h"
+#include "Engine/CacheEntryBase.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
@@ -51,189 +45,71 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-
-class GenericAccess
+/**
+ * @brief An image in Natron is a view one or multiple buffers that may be cached.
+ * An image may have the following forms...
+ * - One or multiple tiled buffers cached (RAM or MMAP). Each tile is a separate mono-channel buffer
+ * In the case of a single tiled image, it is possible for the tile to have a rectangular size (i.e width != height)
+ * - A single OpenGL texture (cached or not), contains all 4 RGBA channels.
+ *
+ * The ctor of the image does nothing, it just creates an empty container without anything inside.
+ * The initializeStorage() function is used to allocate the storage for the image. The arguments of the function
+ * are used to control whether to cache the image or not and what kind of storage is used.
+ * 
+ * If the image has cache write enabled, the destructor will push the pixels of the modified tile to the cache.
+ **/
+struct ImagePrivate;
+class Image : public BufferableObject
 {
+
 public:
-
-    GenericAccess() {}
-
-    virtual ~GenericAccess()
-    {
-    }
-};
-
-class Bitmap
-{
-public:
-    Bitmap(const RectI & bounds)
-        : _bounds(bounds)
-        , _map()
-        , _dirtyZone()
-        , _dirtyZoneSet(false)
-    {
-        //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
-        // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
-        // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
-        //assert(!rod.isNull());
-        _map.resize(bounds.area());
-        memset(_map.getData(), 0, _map.size());
-    }
-
-    Bitmap()
-        : _bounds()
-        , _map()
-        , _dirtyZone()
-        , _dirtyZoneSet(false)
-    {
-    }
-
-    void initialize(const RectI & bounds)
-    {
-        _bounds = bounds;
-        _map.resize( _bounds.area() );
-        memset(_map.getData(), 0, _map.size());
-    }
-
-    ~Bitmap()
-    {
-    }
-
-    void setTo1()
-    {
-        memset(_map.getData(), 1, _map.size());
-    }
-
-    const RectI & getBounds() const
-    {
-        return _bounds;
-    }
-
-#if NATRON_ENABLE_TRIMAP
-    void minimalNonMarkedRects_trimap(const RectI & roi, std::list<RectI>& ret, bool* isBeingRenderedElsewhere) const;
-    RectI minimalNonMarkedBbox_trimap(const RectI & roi, bool* isBeingRenderedElsewhere) const;
-#endif
-
-    void minimalNonMarkedRects(const RectI & roi, std::list<RectI>& ret) const;
-    RectI minimalNonMarkedBbox(const RectI & roi) const;
-
-
-    ///Fill with 1 the roi
-    void markForRendered(const RectI & roi);
-
-#if NATRON_ENABLE_TRIMAP
-    ///Fill with 2 the roi
-    void markForRendering(const RectI & roi);
-#endif
-
-    void clear(const RectI& roi);
-
-    void swap(Bitmap& other);
-
-    const char* getBitmap() const
-    {
-        return _map.getData();
-    }
-
-    char* getBitmap()
-    {
-        return _map.getData();
-    }
-
-    const char* getBitmapAt(int x, int y) const;
-    char* getBitmapAt(int x, int y);
-
-    void copyRowPortion(int x1, int x2, int y, const Bitmap& other);
-
-    void copyBitmapPortion(const RectI& roi, const Bitmap& other);
-
-    void setDirtyZone(const RectI& zone)
-    {
-        _dirtyZone = zone;
-        _dirtyZoneSet = true;
-    }
-
-private:
-    RectI _bounds;
-    RamBuffer<char> _map;
 
     /**
-     * This represents the zone that has potentially something to render. In minimalNonMarkedRects
-     * we intersect the region of interest with the dirty zone. This is useful to optimize the bitmap checking
-     * when we are sure multiple threads are not using the image and we have a very small RoI to render.
-     * For now it's only used for the rotopaint while painting.
+     * @brief Ctor. Make a new empty image
      **/
-    RectI _dirtyZone;
-    bool _dirtyZoneSet;
-};
+    Image();
 
-class Image
-    : public CacheEntryHelper<unsigned char, ImageKey, ImageParams>, public BufferableObject
-{
-public:
+    struct InitStorageArgs
+    {
+        // The bounds of the image. This will internally set the required number of tiles
+        RectI bounds;
 
-    Image(const ImageKey & key,
-          const ImageParamsPtr &  params,
-          const CacheAPI* cache);
+        // The storage for the image. If storage is an OpenGL texture a single tile will be used internally.
+        StorageModeEnum storage;
 
+        // The bitdepth of the image. Internally this will control how many tiles this image spans
+        ImageBitDepthEnum bitdepth;
 
-    /*This constructor can be used to allocate a local Image. The deallocation should
-       then be handled by the user. Note that no view number is passed in parameter
-       as it is not needed.*/
-    Image(const ImageComponents& components,
-          const RectD & regionOfDefinition,    //!< rod in canonical coordinates
-          const RectI & bounds,    //!< bounds in pixel coordinates
-          unsigned int mipMapLevel,
-          double par,
-          ImageBitDepthEnum bitdepth,
-          ImagePremultiplicationEnum premult,
-          ImageFieldingOrderEnum fielding,
-          bool useBitmap,
-          StorageModeEnum storage,
-          const OSGLContextPtr& context,
-          U32 textureTarget,
-          bool isGPUTexture);
+        // The layer represented by this image
+        ImageComponents layer;
 
-    //Same as above but parameters are in the ImageParams object
-    Image(const ImageKey & key,
-          const ImageParamsPtr& params);
+        // Whether or not the initializeStorage() may look for already existing tiles in the cache
+        bool cacheReadEnabled;
 
+        // Whether or not the image may push data to the cache when its done computing.
+        // If a tile was read from the cache and modified but this flag is set to false, then the tile
+        // will be removed from the cache.
+        bool cacheWriteEnabled;
 
+        // The mipmaplevel of the image
+        unsigned int mipMapLevel;
+
+        // Is this image used to perform draft computations ? (i.e that were computed with low samples)
+        // This is used only if the image is cached
+        bool isDraft;
+
+        // In order to be cached, the tiles of the image need to know the node hash of the node they correspond to.
+        U64 nodeHashKey;
+    };
+
+    void initializeStorage(const InitStorageArgs& args);
+
+    /**
+      * @brief Releases the storage used by this image and if needed push the pixels to the cache.
+     **/
     virtual ~Image();
 
-    bool usesBitMap() const { return _useBitmap; }
-
-    StorageModeEnum getStorageMode() const
-    {
-        return _params->getStorageInfo().mode;
-    }
-
-    virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
-
-    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
-                                     const double par,
-                                     unsigned int mipMapLevel,
-                                     const ImageComponents& components,
-                                     ImageBitDepthEnum bitdepth,
-                                     ImagePremultiplicationEnum premult,
-                                     ImageFieldingOrderEnum fielding,
-                                     const OSGLContextPtr& context,
-                                     StorageModeEnum storage,
-                                     U32 textureTarget);
-    
-    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
-                                     const RectI& bounds,
-                                     const double par,
-                                     unsigned int mipMapLevel,
-                                     const ImageComponents& components,
-                                     ImageBitDepthEnum bitdepth,
-                                     ImagePremultiplicationEnum premult,
-                                     ImageFieldingOrderEnum fielding,
-                                     const OSGLContextPtr& context,
-                                     StorageModeEnum storage,
-                                     U32 textureTarget);
-
-    // ImageParamsPtr getParams() const WARN_UNUSED_RETURN;
+    StorageModeEnum getStorageMode() const;
 
     /**
      * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
@@ -1083,16 +959,8 @@ private:
     void scaleBoxForDepth(const RectI & roi, Image* output) const;
 
 private:
-    ImageBitDepthEnum _bitDepth;
-    int _depthBytesSize;
-    Bitmap _bitmap;
-    RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
-    RectI _bounds;
-    double _par;
-    ImageFieldingOrderEnum _fielding;
-    ImagePremultiplicationEnum _premult;
-    bool _useBitmap;
-    int _nbComponents;
+
+    boost::scoped_ptr<ImagePrivate> _imp;
 };
 
 //template <> inline unsigned char clamp(unsigned char v) { return v; }

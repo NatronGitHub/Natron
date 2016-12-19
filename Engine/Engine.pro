@@ -120,7 +120,6 @@ SOURCES += \
     ImageConvert.cpp \
     ImageCopyChannels.cpp \
     ImageComponents.cpp \
-    ImageKey.cpp \
     ImageMaskMix.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
@@ -340,9 +339,6 @@ HEADERS += \
     HostOverlaySupport.h \
     Image.h \
     ImageComponents.h \
-    ImageKey.h \
-    ImageLocker.h \
-    ImageParams.h \
     Interpolation.h \
     JoinViewsNode.h \
     Knob.h \
