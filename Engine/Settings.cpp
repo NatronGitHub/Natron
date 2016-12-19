@@ -43,6 +43,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/Cache.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -167,33 +168,17 @@ public:
     // Caching
     KnobPagePtr _cachingTab;
     KnobBoolPtr _aggressiveCaching;
-    ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    KnobStringPtr _maxPlaybackLabel;
 
-    ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
-    ///by _unreachableRamPercent that determines how much RAM should be left free for other use on the computer
-    KnobIntPtr _maxRAMPercent;
-    KnobStringPtr _maxRAMLabel;
-
-    ///The percentage of the system total's RAM you want to keep free from cache usage
-    ///When the cache grows and reaches a point where it is about to cross that threshold
-    ///it starts freeing the LRU entries regardless of the _maxRAMPercent and _maxPlaybackPercent
-    ///A reasonable value should be set for it, allowing Natron's caches to always stay in RAM and
-    ///avoid being swapped-out on disk. Assuming the user isn't using many applications at the same time,
-    ///10% seems a reasonable value.
-    KnobIntPtr _unreachableRAMPercent;
-    KnobStringPtr _unreachableRAMLabel;
-
-    ///The total disk space allowed for all Natron's caches
-    KnobIntPtr _maxViewerDiskCacheGB;
-    KnobIntPtr _maxDiskCacheNodeGB;
+    // The total disk space allowed for all Natron's caches
+    KnobIntPtr _maxDiskCacheSizeGb;
+    KnobIntPtr _maxRAMCacheSizeMb;
+    KnobIntPtr _cacheTileSizePo2;
     KnobPathPtr _diskCachePath;
     KnobButtonPtr _wipeDiskCache;
 
     // Viewer
     KnobPagePtr _viewersTab;
     KnobChoicePtr _texturesMode;
-    KnobIntPtr _powerOf2Tiling;
     KnobIntPtr _checkerboardTileSize;
     KnobColorPtr _checkerboardColor1;
     KnobColorPtr _checkerboardColor2;
@@ -349,7 +334,6 @@ public:
     void initializeKnobsNodeGraphColors();
     void initializeKnobsScriptEditorColors();
 
-    void setCachingLabels();
     void setDefaultValues();
 
     bool tryLoadOpenColorIOConfig();
@@ -1404,17 +1388,6 @@ SettingsPrivate::initializeKnobsViewers()
                                       " Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
 
-    _powerOf2Tiling = AppManager::createKnob<KnobInt>( thisShared, tr("Viewer tile size is 2 to the power of...") );
-    _powerOf2Tiling->setName("viewerTiling");
-    _powerOf2Tiling->setHintToolTip( tr("The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). "
-                                        "A high value means that the viewer renders large tiles, so that "
-                                        "rendering is done less often, but on larger areas.") );
-    _powerOf2Tiling->disableSlider();
-    _powerOf2Tiling->setRange(4, 9);
-    _powerOf2Tiling->setDisplayRange(4, 9);
-
-    _viewersTab->addKnob(_powerOf2Tiling);
-
     _checkerboardTileSize = AppManager::createKnob<KnobInt>( thisShared, tr("Checkerboard tile size (pixels)") );
     _checkerboardTileSize->setName("checkerboardTileSize");
     _checkerboardTileSize->setRange(1, INT_MAX);
@@ -1541,93 +1514,62 @@ SettingsPrivate::initializeKnobsCaching()
     /////////// Caching tab
     _cachingTab = AppManager::createKnob<KnobPage>( thisShared, tr("Caching") );
 
-    _aggressiveCaching = AppManager::createKnob<KnobBool>( thisShared, tr("Aggressive caching") );
+    _aggressiveCaching = AppManager::createKnob<KnobBool>( thisShared, tr("Aggressive Caching") );
     _aggressiveCaching->setName("aggressiveCaching");
     _aggressiveCaching->setHintToolTip( tr("When checked, %1 will cache the output of all images "
                                            "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
                                            "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
-                                           "If not checked, %1 will only cache the  nodes "
-                                           "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
-                                           "output has its settings panel opened.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                           "If not checked, %1 will only cache the nodes when needed").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _cachingTab->addKnob(_aggressiveCaching);
 
-    _maxRAMPercent = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum amount of RAM memory used for caching (% of total RAM)") );
-    _maxRAMPercent->setName("maxRAMPercent");
-    _maxRAMPercent->disableSlider();
-    _maxRAMPercent->setRange(0, 100);
-    QString ramHint( tr("This setting indicates the percentage of the total RAM which can be used by the memory caches. "
-                        "This system has %1 of RAM.").arg( printAsRAM( getSystemTotalRAM() ) ) );
-    if ( isApplication32Bits() && (getSystemTotalRAM() > 4ULL * 1024ULL * 1024ULL * 1024ULL) ) {
-        ramHint.append( QString::fromUtf8("\n") );
-        ramHint.append( tr("The version of %1 you are running is 32 bits, which means the available RAM "
-                           "is limited to 4GiB. The amount of RAM used for caching is 4GiB * MaxRamPercent.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    }
 
-    _maxRAMPercent->setHintToolTip(ramHint);
-    _maxRAMPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_maxRAMPercent);
+    _maxDiskCacheSizeGb = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum Disk Cache Size (GiB)") );
+    _maxDiskCacheSizeGb->setName("maxDiskCacheMb");
+    _maxDiskCacheSizeGb->disableSlider();
+    _maxDiskCacheSizeGb->setRange(0, INT_MAX);
+    _maxDiskCacheSizeGb->setHintToolTip( tr("The maximum Disk size that may be used by the Cache (in GiB)") );
+    _cachingTab->addKnob(_maxDiskCacheSizeGb);
 
-    _maxRAMLabel = AppManager::createKnob<KnobString>( thisShared, std::string() );
-    _maxRAMLabel->setName("maxRamLabel");
-    _maxRAMLabel->setIsPersistent(false);
-    _maxRAMLabel->setAsLabel();
-    _cachingTab->addKnob(_maxRAMLabel);
+    _maxRAMCacheSizeMb = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum RAM Cache Size (MiB) (0 = All)") );
+    _maxRAMCacheSizeMb->setName("maxRAMCacheMb");
+    _maxRAMCacheSizeMb->disableSlider();
+    _maxRAMCacheSizeMb->setRange(0, INT_MAX);
+    _maxRAMCacheSizeMb->setHintToolTip( tr("The maximum RAM that may be used by the Cache (in MiB)") );
+    _cachingTab->addKnob(_maxRAMCacheSizeMb);
 
 
-    _unreachableRAMPercent = AppManager::createKnob<KnobInt>( thisShared, tr("System RAM to keep free (% of total RAM)") );
-    _unreachableRAMPercent->setName("unreachableRAMPercent");
-    _unreachableRAMPercent->disableSlider();
-    _unreachableRAMPercent->setRange(0, 90);
-    _unreachableRAMPercent->setHintToolTip(tr("This determines how much RAM should be kept free for other applications "
-                                              "running on the same system. "
-                                              "When this limit is reached, the caches start recycling memory instead of growing. "
-                                              //"A reasonable value should be set for it allowing the caches to stay in physical RAM " // users don't understand what swap is
-                                              //"and avoid being swapped-out on disk. "
-                                              "This value should reflect the amount of memory "
-                                              "you want to keep available on your computer for other usage. "
-                                              "A low value may result in a massive slowdown and high disk usage.")
-                                           );
-    _unreachableRAMPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_unreachableRAMPercent);
-    _unreachableRAMLabel = AppManager::createKnob<KnobString>( thisShared, std::string() );
-    _unreachableRAMLabel->setName("unreachableRAMLabel");
-    _unreachableRAMLabel->setIsPersistent(false);
-    _unreachableRAMLabel->setAsLabel();
-    _cachingTab->addKnob(_unreachableRAMLabel);
-
-    _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum playback disk cache size (GiB)") );
-    _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
-    _maxViewerDiskCacheGB->disableSlider();
-    _maxViewerDiskCacheGB->setRange(0, 100);
-    _maxViewerDiskCacheGB->setHintToolTip( tr("The maximum size that may be used by the playback cache on disk (in GiB)") );
-    _cachingTab->addKnob(_maxViewerDiskCacheGB);
-
-    _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum DiskCache node disk usage (GiB)") );
-    _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
-    _maxDiskCacheNodeGB->disableSlider();
-    _maxDiskCacheNodeGB->setRange(0, 100);
-    _maxDiskCacheNodeGB->setHintToolTip( tr("The maximum size that may be used by the DiskCache node on disk (in GiB)") );
-    _cachingTab->addKnob(_maxDiskCacheNodeGB);
-
-
-    _diskCachePath = AppManager::createKnob<KnobPath>( thisShared, tr("Disk cache path (empty = default)") );
+    _diskCachePath = AppManager::createKnob<KnobPath>( thisShared, tr("Disk Cache Path (empty = default)") );
     _diskCachePath->setName("diskCachePath");
     _diskCachePath->setMultiPath(false);
 
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-    QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
-                            "This is points to the location where %1 on-disk caches will be. "
+    QString diskCacheTt( tr("This is the location where the disk cache is. "
                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
-                            "the default location will be used. The default location is: \n").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                            "the default location will be used. The default location is: %1\n").arg(defaultLocation) );
 
-    _diskCachePath->setHintToolTip( diskCacheTt + defaultLocation );
+    _diskCachePath->setHintToolTip(diskCacheTt);
+    knobsRequiringRestart.insert(_diskCachePath);
+
     _cachingTab->addKnob(_diskCachePath);
 
     _wipeDiskCache = AppManager::createKnob<KnobButton>( thisShared, tr("Wipe Disk Cache") );
     _wipeDiskCache->setHintToolTip( tr("Cleans-up all caches, deleting all folders that may contain cached data. "
                                        "This is provided in case %1 lost track of cached images "
                                        "for some reason.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+
     _cachingTab->addKnob(_wipeDiskCache);
+
+    _cacheTileSizePo2 = AppManager::createKnob<KnobInt>( thisShared, tr("Cache Tile size is 2 to the power of...") );
+    _cacheTileSizePo2->setName("cacheTiling");
+    _cacheTileSizePo2->setHintToolTip( tr("The dimension of the cache tiles for 8-bit images is 2^n by 2^n (i.e. 256 by 256 pixels for n=8).\n"
+                                          "To fit in the same amount of memory, 16-bit images will have a 2^(n-1) tile size (128x128px for n = 8) and "
+                                          "32-bit images will have a 2^(n-2) tile size (64x64px for n=8).\n"
+                                          "A high value means more elements in the cache but higher chances to find an already computed area.") );
+    _cacheTileSizePo2->disableSlider();
+    _cacheTileSizePo2->setRange(6, 10);
+    _cacheTileSizePo2->setDisplayRange(4, 9);
+
+    _viewersTab->addKnob(_cachingTab);
 } // Settings::initializeKnobsCaching
 
 void
@@ -1743,16 +1685,6 @@ SettingsPrivate::initializeKnobsPython()
     _pythonPage->addKnob(_echoVariableDeclarationToPython);
 } // initializeKnobs
 
-void
-SettingsPrivate::setCachingLabels()
-{
-    int maxTotalRam = _maxRAMPercent->getValue();
-    U64 systemTotalRam = getSystemTotalRAM();
-    U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
-
-    _maxRAMLabel->setValue( printAsRAM(maxRAM).toStdString() );
-    _unreachableRAMLabel->setValue( printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString() );
-}
 
 void
 SettingsPrivate::setDefaultValues()
@@ -1802,7 +1734,7 @@ SettingsPrivate::setDefaultValues()
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
     _texturesMode->setDefaultValue(0);
-    _powerOf2Tiling->setDefaultValue(8);
+    _cacheTileSizePo2->setDefaultValue(8);
     _checkerboardTileSize->setDefaultValue(5);
     _checkerboardColor1->setDefaultValue(0.5);
     _checkerboardColor1->setDefaultValue(0.5, DimIdx(1));
@@ -1821,11 +1753,13 @@ SettingsPrivate::setDefaultValues()
     _ocioStartupCheck->setDefaultValue(true);
 
     _aggressiveCaching->setDefaultValue(false);
-    _maxRAMPercent->setDefaultValue(50);
-    _unreachableRAMPercent->setDefaultValue(5);
-    _maxViewerDiskCacheGB->setDefaultValue(5);
-    _maxDiskCacheNodeGB->setDefaultValue(10);
-    setCachingLabels();
+
+    // Default to 10GiB on disk
+    _maxDiskCacheSizeGb->setDefaultValue(10);
+
+    // Default to All ram
+    _maxRAMCacheSizeMb->setDefaultValue(0);
+
     _autoScroll->setDefaultValue(false);
     _autoTurbo->setDefaultValue(false);
     _usePluginIconsInNodeGraph->setDefaultValue(true);
@@ -2336,6 +2270,10 @@ Settings::restoreAllSettings()
             int i = 0;
             for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
                 if (i == curIndex) {
+                    CachePtr cache = appPTR->getCache();
+                    if (cache) {
+                        cache->setMaximumCacheSize(eStorageModeGLTex, it->maxMemBytes);
+                    }
                     QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
                     QString curRenderer = (QString::fromUtf8("<p><h2>") +
                                            tr("OpenGL Renderer Infos:") +
@@ -2475,23 +2413,33 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     Q_EMIT settingChanged(k, reason);
     bool ret = true;
 
-    if ( k == _imp->_maxViewerDiskCacheGB ) {
-        if (!_imp->_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
+    if ( k == _imp->_maxRAMCacheSizeMb ) {
+        std::size_t maxRamBytes = (std::size_t)_imp->_maxRAMCacheSizeMb->getValue() * 1024 * 1024;
+
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->setMaximumCacheSize(eStorageModeRAM, maxRamBytes);
         }
-    } else if ( k == _imp->_maxDiskCacheNodeGB ) {
-        if (!_imp->_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheNodeSize() );
+
+    } else if ( k == _imp->_maxDiskCacheSizeGb ) {
+
+        std::size_t maxDiskBytes = (std::size_t)_imp->_maxDiskCacheSizeGb->getValue() * 1024 * 1024 * 1024;
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->setMaximumCacheSize(eStorageModeDisk, maxDiskBytes);
         }
-    } else if ( k == _imp->_maxRAMPercent ) {
-        if (!_imp->_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
-        }
-        _imp->setCachingLabels();
+
     } else if ( k == _imp->_diskCachePath ) {
-        appPTR->setDiskCacheLocation( QString::fromUtf8( _imp->_diskCachePath->getValue().c_str() ) );
+
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->setDirectoryContainingCachePath(_imp->_diskCachePath->getValue());
+        }
     } else if ( k == _imp->_wipeDiskCache ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->clearAndRecreateCacheDirectory();
+        }
     } else if ( k == _imp->_numberOfThreads ) {
         int nbThreads = getNumberOfThreads();
         appPTR->setNThreadsToRender(nbThreads);
@@ -2527,10 +2475,14 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         appPTR->onQueueRendersChanged( _imp->_queueRenders->getValue() );
     } else if ( ( k == _imp->_checkerboardTileSize ) || ( k == _imp->_checkerboardColor1 ) || ( k == _imp->_checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _imp->_powerOf2Tiling && !_imp->_restoringSettings) {
-        appPTR->onViewerTileCacheSizeChanged();
+    } else if ( k == _imp->_cacheTileSizePo2) {
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->clear();
+            cache->set8bitTileSizePo2(_imp->_cacheTileSizePo2->getValue());
+        }
     } else if ( k == _imp->_texturesMode &&  !_imp->_restoringSettings) {
-        appPTR->onViewerTileCacheSizeChanged();
+        appPTR->clearAllCaches();
     } else if ( ( k == _imp->_hideOptionalInputsAutomatically ) && !_imp->_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _imp->_autoProxyWhenScrubbingTimeline ) {
@@ -2620,9 +2572,9 @@ Settings::getViewersBitDepth() const
 }
 
 int
-Settings::getViewerTilesPowerOf2() const
+Settings::getCache8BitTilesPo2() const
 {
-    return _imp->_powerOf2Tiling->getValue();
+    return _imp->_cacheTileSizePo2->getValue();
 }
 
 int
@@ -2694,30 +2646,16 @@ Settings::isAggressiveCachingEnabled() const
     return _imp->_aggressiveCaching->getValue();
 }
 
-double
-Settings::getRamMaximumPercent() const
+std::size_t
+Settings::getMaximumDiskCacheSize() const
 {
-    return (double)_imp->_maxRAMPercent->getValue() / 100.;
+    return _imp->_maxDiskCacheSizeGb->getValue() * 1024 * 1024 * 1024;
 }
 
-U64
-Settings::getMaximumViewerDiskCacheSize() const
+std::size_t
+Settings::getMaximumRAMCacheSize() const
 {
-    return (U64)( _imp->_maxViewerDiskCacheGB->getValue() ) * std::pow(1024., 3.);
-}
-
-U64
-Settings::getMaximumDiskCacheNodeSize() const
-{
-    return (U64)( _imp->_maxDiskCacheNodeGB->getValue() ) * std::pow(1024., 3.);
-}
-
-///////////////////////////////////////////////////
-
-double
-Settings::getUnreachableRamPercent() const
-{
-    return (double)_imp->_unreachableRAMPercent->getValue() / 100.;
+    return _imp->_maxRAMCacheSizeMb->getValue() * 1024 * 1024;
 }
 
 bool
@@ -2903,7 +2841,6 @@ Settings::restoreDefault()
     for (U32 i = 0; i < knobs.size(); ++i) {
         knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     }
-    _imp->setCachingLabels();
     endChanges();
 
     if (_imp->_nRedrawStyleSheetRequests > 0) {

@@ -59,6 +59,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/Distorsion2D.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
@@ -103,6 +104,7 @@ struct OfxEffectInstancePrivate
             , label()
             , hint()
             , visible(true)
+            , canReceiveDistorsion(false)
         {
         }
 
@@ -112,6 +114,7 @@ struct OfxEffectInstancePrivate
         std::string label;
         std::string hint;
         bool visible;
+        bool canReceiveDistorsion;
     };
 
     std::vector<ClipsInfo> clipsInfos;
@@ -303,6 +306,7 @@ OfxEffectInstance::initializeDataAfterCreate()
         _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
         _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
         _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
+        _imp->clipsInfos[i].canReceiveDistorsion = clips[i]->canDistort();
         assert(_imp->clipsInfos[i].clip);
     }
 
@@ -1166,7 +1170,7 @@ OfxEffectInstance::getRegionOfDefinition(double time,
 void
 OfxEffectInstance::calcDefaultRegionOfDefinition(double time,
                                                  const RenderScale & scale,
-                                                 ViewIdx /*view*/,
+                                                 ViewIdx view,
                                                  RectD *rod)
 {
     assert(_imp->context != eContextNone);
@@ -1191,7 +1195,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(double time,
 
     // the following ofxh function does the job
 
-    ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale);
+    ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale, view);
 
 
     rod->x1 = ofxRod.x1;
@@ -1213,7 +1217,6 @@ rectToOfxRectD(const RectD & b,
 void
 OfxEffectInstance::getRegionsOfInterest(double time,
                                         const RenderScale & scale,
-                                        const RectD & outputRoD,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                         ViewIdx view,
                                         RoIMap* ret)
@@ -1223,8 +1226,7 @@ OfxEffectInstance::getRegionsOfInterest(double time,
     if (!_imp->initialized) {
         return;
     }
-    assert(outputRoD.x2 >= outputRoD.x1 && outputRoD.y2 >= outputRoD.y1);
-    Q_UNUSED(outputRoD);
+
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
     {
@@ -1451,7 +1453,7 @@ OfxEffectInstance::isIdentity(double time,
     if ( (supportsRS == eSupportsNo) && !scaleIsOne ) {
         qDebug() << "isIdentity called with render scale != 1, but effect does not support render scale!";
         assert(false);
-        throw std::logic_error("isIdentity called with render scale != 1, but effect does not support render scale!");
+        return false;
     }
 
     OfxStatus stat;
@@ -2426,26 +2428,30 @@ OfxEffectInstance::ofxGetOutputPremultiplication() const
 }
 
 bool
-OfxEffectInstance::getCanTransform() const
-{   //use OFX_EXTENSIONS_NUKE
+OfxEffectInstance::getCanDistort() const
+{   //use OFX_EXTENSIONS_NATRON
     if (!effectInstance()) {
         return false;
     }
-    return effectInstance()->canTransform();
+    return effectInstance()->canDistort();
 }
 
 bool
-OfxEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
+OfxEffectInstance::getInputCanReceiveDistorsion(int inputNb) const
 {
-    return effectInstance()->getInputsHoldingTransform(inputs);
+    if (inputNb < 0 || inputNb >= (int)_imp->clipsInfos.size()) {
+        assert(false);
+        return false;
+    }
+    return _imp->clipsInfos[inputNb].canReceiveDistorsion;
 }
 
+
 StatusEnum
-OfxEffectInstance::getTransform(double time,
+OfxEffectInstance::getDistorsion(double time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 ViewIdx view,
-                                int* inputToTransform,
-                                Transform::Matrix3x3* transform)
+                                DistorsionFunction2D* distorsion)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string clipName;
@@ -2453,7 +2459,7 @@ OfxEffectInstance::getTransform(double time,
     OfxStatus stat;
     {
         try {
-            stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform );
+            stat = effectInstance()->getDistorsionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distorsion->func, &distorsion->customData, &distorsion->customDataSizeHintInBytes, &distorsion->customDataFreeFunc );
         } catch (...) {
             return eStatusFailed;
         }
@@ -2468,9 +2474,9 @@ OfxEffectInstance::getTransform(double time,
 
     assert(stat == kOfxStatOK);
 
-    transform->a = tmpTransform[0]; transform->b = tmpTransform[1]; transform->c = tmpTransform[2];
-    transform->d = tmpTransform[3]; transform->e = tmpTransform[4]; transform->f = tmpTransform[5];
-    transform->g = tmpTransform[6]; transform->h = tmpTransform[7]; transform->i = tmpTransform[8];
+    distorsion->transformMatrix->a = tmpTransform[0]; distorsion->transformMatrix->b = tmpTransform[1]; distorsion->transformMatrix->c = tmpTransform[2];
+    distorsion->transformMatrix->d = tmpTransform[3]; distorsion->transformMatrix->e = tmpTransform[4]; distorsion->transformMatrix->f = tmpTransform[5];
+    distorsion->transformMatrix->g = tmpTransform[6]; distorsion->transformMatrix->h = tmpTransform[7]; distorsion->transformMatrix->i = tmpTransform[8];
 
 
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
@@ -2479,7 +2485,7 @@ OfxEffectInstance::getTransform(double time,
     if (!natronClip) {
         return eStatusFailed;
     }
-    *inputToTransform = natronClip->getInputNb();
+    distorsion->inputNbToDistort = natronClip->getInputNb();
    
     return eStatusOK;
 }

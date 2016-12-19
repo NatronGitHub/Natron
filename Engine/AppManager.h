@@ -49,7 +49,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/ImageLocker.h"
 #include "Engine/LogEntry.h"
 #include "Engine/EngineFwd.h"
 
@@ -185,76 +184,9 @@ public:
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
-     **/
-    bool getImage(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
+    CachePtr getCache() const;
 
-    /**
-     * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
-     **/
-    bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
-                          ImageLocker* locker,
-                          ImagePtr* returnValue) const;
-
-
-    bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
-
-
-    bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
-                                    ImagePtr* returnValue) const;
-
-    bool getTexture(const FrameKey & key,
-                    std::list<FrameEntryPtr>* returnValue) const;
-
-    bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
-                            FrameEntryLocker* locker,
-                            FrameEntryPtr* returnValue) const;
-
-
-    U64 getCachesTotalMemorySize() const;
-    U64 getCachesTotalDiskSize() const;
-    boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
-
-    void setApplicationsCachesMaximumMemoryPercent(double p);
-
-    void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
-
-    void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
-
-    /**
-     * @brief Removes from the node cache the given image.
-     **/
-    void removeFromNodeCache(const ImagePtr & image);
-
-    /**
-     * @brief Removes from the texture cache the given texture.
-     **/
-    void removeFromViewerCache(const FrameEntryPtr & texture);
-
-    /**
-     * @brief Removes from the node cache all images matching the same hash
-     **/
-    void removeFromNodeCache(U64 hash);
-
-    /**
-     * @brief Removes from the texture cache all textures matching the same hash
-     **/
-    void removeFromViewerCache(U64 hash);
-
-    /**
-     * @brief Removes from the cache all entries associated to the given holder.
-     * The entries are destroyed in a separate thread.
-     **/
-    void removeAllCacheEntriesForPlugin(const std::string& pluginID);
-
-
-    /**
-     * @brief Adds images to delete in a separate thread
-     **/
-    void queueEntriesForDeletion(const std::list<ImagePtr>& images);
-    void queueEntriesForDeletion(const std::list<FrameEntryPtr>& images);
-
+    void deleteCacheEntriesInSeparateThread(const std::list<CacheEntryBasePtr> & entriesToDelete);
 
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
@@ -369,12 +301,6 @@ public:
     void increaseNCacheFilesOpened();
     void decreaseNCacheFilesOpened();
 
-    /**
-     * @brief Called by the caches to check that there's enough free memory on the computer to perform the allocation.
-     * WARNING: This functin may remove some entries from the caches.
-     **/
-    void checkCacheFreeMemoryIsGoodEnough();
-
     void onCheckerboardSettingsChanged() { Q_EMIT checkerboardSettingsChanged(); }
 
     void onOCIOConfigPathChanged(const std::string& path);
@@ -469,12 +395,7 @@ public:
     }
 
 
-    bool isNodeCacheAlmostFull() const;
-
     bool isAggressiveCachingEnabled() const;
-
-    void setDiskCacheLocation(const QString& path);
-    const QString& getDiskCacheLocation() const;
 
     void saveCaches() const;
 
@@ -624,25 +545,12 @@ public Q_SLOTS:
         exitApp(true);
     }
 
-    void onViewerTileCacheSizeChanged();
 
     void toggleAutoHideGraphInputs();
-
-    void clearPlaybackCache();
-
-    void clearViewerCache();
-
-    void clearDiskCache();
-
-    void clearNodeCache();
-
-    void clearExceedingEntriesFromNodeCache();
 
     void clearPluginsLoadedCache();
 
     void clearAllCaches();
-
-    void wipeAndCreateDiskCacheStructure();
 
     void onNodeMemoryRegistered(qint64 mem);
 

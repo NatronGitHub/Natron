@@ -41,13 +41,12 @@
 #include "Global/KeySymbols.h"
 
 #include "Engine/ImageComponents.h"
-#include "Engine/ImageLocker.h"
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/ParallelRenderArgs.h"
+#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/PluginActionShortcut.h"
 #include "Engine/ViewIdx.h"
 
@@ -162,6 +161,17 @@ struct PlaneToRender
     }
 };
 
+struct ComponentsNeededResults
+{
+    ComponentsNeededMap comps;
+    int passThroughInputNb;
+    double passThroughTime;
+    ViewIdx passThroughView;
+    std::bitset<4> processChannels;
+    bool processAllLayers;
+};
+
+typedef boost::shared_ptr<ComponentsNeededResults> ComponentsNeededResultsPtr;
 
 /**
  * @brief This is the base class for visual effects.
@@ -170,7 +180,6 @@ struct PlaneToRender
  **/
 class EffectInstance
     : public NamedKnobHolder
-    , public LockManagerI<Image>
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -186,25 +195,39 @@ public:
         // Developper note: the fields were reordered to optimize packing.
         // see http://www.catb.org/esr/structure-packing/
 
-        double time; //< the time at which to render
-        RenderScale scale; //< the scale at which to render
-        unsigned int mipMapLevel; //< the mipmap level (redundant with the scale, stored here to avoid refetching it everytimes)
-        ViewIdx view; //< the view to render
-        RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
-        std::list<ImageComponents> components; //< the requested image components (per plane)
+        // The time at which to render
+        double time;
 
-        ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
-        ///might already be in this list
+        // The view to render
+        ViewIdx view;
+
+        // The scale at which to render
+        RenderScale scale;
+
+        // The mipmap level (for now redundant with scale)
+        unsigned int mipMapLevel;
+
+        // The rectangle to render (in pixel coordinates)
+        RectI roi;
+
+        // The image planes to render
+        std::list<ImageComponents> components;
+
+        // When called from getImage() the calling node  will have already computed input images, hence the image of this node
+        // might already be in this list
         InputImagesMap inputImagesList;
+
+        // The effect calling renderRoI if within getImage
         EffectInstancePtr caller;
-        ImageBitDepthEnum bitdepth; //< the requested bit depth
-        bool byPassCache;
+
+        // The input number of this node in the caller node
+        int inputNbInCaller;
+
+        // True if called by getImage
         bool calledFromGetImage;
 
-        // Request what kind of storage we need images to be in return of renderRoI
-        StorageModeEnum returnStorage;
-
         // Set to false if you don't want the node to render using the GPU at all
+        // This is useful if the previous render failed because GPU memory was maxed out
         bool allowGPURendering;
 
         // the time that was passed to the original renderRoI call of the caller node
@@ -212,17 +235,15 @@ public:
 
         RenderRoIArgs()
         : time(0)
+        , view(0)
         , scale(1.)
         , mipMapLevel(0)
-        , view(0)
         , roi()
         , components()
         , inputImagesList()
         , caller()
-        , bitdepth(eImageBitDepthFloat)
-        , byPassCache(false)
+        , inputNbInCaller(-1)
         , calledFromGetImage(false)
-        , returnStorage(eStorageModeRAM)
         , allowGPURendering(true)
         , callerRenderTime(0.)
         {
@@ -232,27 +253,23 @@ public:
                        const RenderScale & scale_,
                        unsigned int mipMapLevel_,
                        ViewIdx view_,
-                       bool byPassCache_,
                        const RectI & roi_,
                        const std::list<ImageComponents> & components_,
-                       ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
                        EffectInstancePtr caller,
-                       StorageModeEnum returnStorage,
+                       int inputNbInCaller,
                        double callerRenderTime,
                        const InputImagesMap & inputImages = InputImagesMap() )
             : time(time_)
+            , view(view_)
             , scale(scale_)
             , mipMapLevel(mipMapLevel_)
-            , view(view_)
             , roi(roi_)
             , components(components_)
             , inputImagesList(inputImages)
             , caller(caller)
-            , bitdepth(bitdepth_)
-            , byPassCache(byPassCache_)
+            , inputNbInCaller(inputNbInCaller)
             , calledFromGetImage(calledFromGetImage)
-            , returnStorage(returnStorage)
             , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
         {
@@ -321,11 +338,11 @@ public:
      * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
      * at any time during the same render call.
      **/
-    bool getRenderHash(double time, ViewIdx view, U64* hash) const WARN_UNUSED_RETURN;
+    bool getRenderHash(double time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, U64* hash) const WARN_UNUSED_RETURN;
 
 private:
 
-    void computeFrameViewHashUsingFramesNeeded(double time, ViewIdx view, U64* hash);
+    void computeFrameViewHashUsingFramesNeeded(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash);
 
 public:
 
@@ -556,6 +573,14 @@ public:
     }
 
 
+    struct RenderRoIResults
+    {
+        // For each component requested, the image plane rendered
+        std::map<ImageComponents, ImagePtr> outputPlanes;
+
+        // If this effect can apply distorsion, this is the stack of distorsions upstream to apply
+        Distorsion2DStackPtr distorsionStack;
+    };
 
     /**
      * @brief Renders the image planes at the given time,scale and for the given view & render window.
@@ -564,8 +589,7 @@ public:
      * The return code indicates whether the render succeeded or failed. Note that this function may succeed
      * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
-    RenderRoIRetCode renderRoI(const RenderRoIArgs & args,
-                               std::map<ImageComponents, ImagePtr >* outputPlanes) WARN_UNUSED_RETURN;
+    RenderRoIRetCode renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
@@ -636,89 +660,43 @@ public:
     };
 
 
-    struct SetParallelRenderTLSArgs
-    {
-        ParallelRenderArgsSetterPtr parent;
-        double time;
-        ViewIdx view;
-        bool isRenderUserInteraction;
-        bool isSequential;
-        NodePtr treeRoot;
-        int visitsCount;
-        OSGLContextPtr glContext;
-        OSGLContextPtr cpuGlContext;
-        int textureIndex;
-        TimeLinePtr timeline;
-        RenderSafetyEnum currentThreadSafety;
-        PluginOpenGLRenderSupport currentOpenGLSupport;
-        bool doNanHandling;
-        bool draftMode;
-        RenderValuesCachePtr cache;
-        RenderStatsPtr stats;
-    };
-
-    typedef boost::shared_ptr<SetParallelRenderTLSArgs> SetParallelRenderTLSArgsPtr;
-    /**
-     * @brief Sets render preferences for the rendering of a frame for the current thread.
-     * This is thread local storage. This is NOT local to a call to renderRoI
-     **/
-    ParallelRenderArgsPtr initParallelRenderArgsTLS(const SetParallelRenderTLSArgsPtr& inArgs);
-
-    ParallelRenderArgsPtr createFrameRenderTLS(const AbortableRenderInfoPtr& renderID);
-
-
-private:
-    void initRenderValuesCache(const RenderValuesCachePtr& cache);
-
 public:
 
     virtual bool getActionsRecursionLevel() const OVERRIDE FINAL;
 
-    void invalidateParallelRenderArgsTLS();
-
     EffectTLSDataPtr getTLSObject() const;
-
-    ParallelRenderArgsPtr getParallelRenderArgsTLS() const;
 
     RenderValuesCachePtr getRenderValuesCacheTLS(double* currentRenderTime = 0, ViewIdx* currentRenderView = 0) const;
 
-    //Implem in ParallelRenderArgs.cpp
+    //Implem in TreeRender.cpp
     static StatusEnum getInputsRoIsFunctor(double time,
                                            ViewIdx view,
                                            unsigned originalMipMapLevel,
+                                           const TreeRenderPtr& render,
+                                           const TreeRenderNodeArgsPtr& frameArgs,
                                            const NodePtr & node,
                                            const NodePtr& callerNode,
                                            const NodePtr & treeRoot,
                                            const RectD & canonicalRenderWindow);
 
-    /**
-     * @brief Visit recursively the compositing tree and computes required informations about region of interests for each node and
-     * for each frame/view pair. This helps to call render a single time per frame/view pair for a node.
-     * Implem is in ParallelRenderArgs.cpp
-     **/
-    static StatusEnum optimizeRoI(double time,
-                                         ViewIdx view,
-                                         unsigned int mipMapLevel,
-                                         const RectD & renderWindow,
-                                         const NodePtr & treeRoot);
 
     static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect);
 
 
-    // Implem is in ParallelRenderArgs.cpp
+    // Implem is in TreeRender.cpp
     static RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
-                                                               const NodePtr & node,
-                                                               const FramesNeededMap & framesNeeded,
-                                                               const RoIMap* inputRois, // roi functor specific
-                                                               StorageModeEnum renderStorageMode, // The storage of the image returned by the current Render
-                                                               unsigned int originalMipMapLevel,         // roi functor specific
-                                                               double time,
-                                                               ViewIdx view,
-                                                               const NodePtr & treeRoot,
-                                                               InputImagesMap* inputImages,         // render functor specific
-                                                               const ComponentsNeededMap* neededComps,         // render functor specific
-                                                               bool useScaleOneInputs,         // render functor specific
-                                                               bool byPassCache);         // render functor specific
+                                               const TreeRenderPtr& render,
+                                               const NodePtr & node,
+                                               const FramesNeededMap & framesNeeded,
+                                               const RoIMap* inputRois, // roi functor specific
+                                               unsigned int originalMipMapLevel,         // roi functor specific
+                                               double time,
+                                               ViewIdx view,
+                                               const NodePtr & treeRoot,
+                                               InputImagesMap* inputImages,         // render functor specific
+                                               const ComponentsNeededMap* neededComps,         // render functor specific
+                                               bool useScaleOneInputs         // render functor specific
+                                                );
 
 
     virtual void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
@@ -832,28 +810,35 @@ public:
     ImageBitDepthEnum getBitDepth(int inputNb) const;
 
 
+    void copyMetaData(NodeMetadata* metadata) const;
+
+
     ///////////////////////End Metadatas related////////////////////////
 
-
-    virtual void lock(const ImagePtr & entry) OVERRIDE FINAL;
-    virtual bool tryLock(const ImagePtr & entry) OVERRIDE FINAL;
-    virtual void unlock(const ImagePtr & entry) OVERRIDE FINAL;
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
     virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
     void getCurrentTimeView(double* time, ViewIdx* view) const;
 
-    virtual bool getCanTransform() const
+    /**
+     * @brief Return true if this effect can return a distorsion 2D. In this case
+     * you have to implement getDistorsion.
+     **/
+    virtual bool getCanDistort() const
+    {
+        return false;
+    }
+
+    /**
+     * @brief Return true if the given input should also attempt to return a distorsion function
+     * along with the image when possible
+     **/
+    virtual bool getInputCanReceiveDistorsion(int /*inputNb*/) const
     {
         return false;
     }
 
     RenderScale getOverlayInteractRenderScale() const;
-
-    virtual bool getInputsHoldingTransform(std::list<int>* /*inputs*/) const
-    {
-        return false;
-    }
 
 
     OSGLContextPtr getThreadLocalOpenGLContext() const;
@@ -911,7 +896,10 @@ public:
         EffectOpenGLContextDataPtr glContextData;
         std::bitset<4> processChannels;
         OSGLContextPtr glContext;
+        TreeRenderPtr frameArgs;
     };
+
+
 
 protected:
     /**
@@ -927,11 +915,13 @@ protected:
         return eStatusOK;
     }
 
-    virtual StatusEnum getTransform(double /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/,
-                                    int* /*inputToTransform*/,
-                                    Transform::Matrix3x3* /*transform*/) WARN_UNUSED_RETURN
+
+
+    virtual StatusEnum getDistorsion(double /*time*/,
+                                     const RenderScale & /*renderScale*/,
+                                     ViewIdx /*view*/,
+                                     const TreeRenderPtr& /*render*/,
+                                     DistorsionFunction2D* /*distorsion*/) WARN_UNUSED_RETURN
     {
         return eStatusReplyDefault;
     }
@@ -940,12 +930,12 @@ public:
 
 
     StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
-    StatusEnum getTransform_public(double time,
+
+    StatusEnum getDistorsion_public(double time,
                                    const RenderScale & renderScale,
                                    ViewIdx view,
-                                   U64 hash,
-                                   EffectInstancePtr* inputToTransform,
-                                   Transform::Matrix3x3* transform) WARN_UNUSED_RETURN;
+                                   const TreeRenderNodeArgsPtr& render,
+                                   DistorsionFunction2D* distorsion) WARN_UNUSED_RETURN;
 
 protected:
 /**
@@ -963,6 +953,7 @@ protected:
                             const RenderScale & /*scale*/,
                             const RectI & /*roi*/,
                             ViewIdx /*view*/,
+                            const TreeRenderNodeArgsPtr& /*render*/,
                             double* /*inputTime*/,
                             ViewIdx* /*inputView*/,
                             int* /*inputNb*/) WARN_UNUSED_RETURN
@@ -974,11 +965,11 @@ public:
 
 
     bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
-                           U64 hash,
                            double time,
                            const RenderScale & scale,
                            const RectI & renderWindow,
                            ViewIdx view,
+                           const TreeRenderNodeArgsPtr& render,
                            double* inputTime,
                            ViewIdx* inputView,
                            int* inputNb) WARN_UNUSED_RETURN;
@@ -1000,26 +991,68 @@ public:
     bool aborted() const WARN_UNUSED_RETURN;
 
 
-    /** @brief Returns the image computed by the input 'inputNb' at the given time and scale for the given view.
-     * @param dontUpscale If the image is retrieved is downscaled but the plug-in doesn't support the user of
-     * downscaled images by default we upscale the image. If dontUpscale is true then we don't do this upscaling.
+    struct GetImageInArgs
+    {
+        // The input nb to fetch the image from
+        int inputNb;
+
+        // The time to sample on the input
+        double time;
+
+        // The view to sample on the input
+        ViewIdx view;
+
+        // The scale at which to fetch the images
+        RenderScale scale;
+
+        // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
+        // If not specified, this will ask to render the full region of definition.
+        const RectD* optionalBounds;
+
+        // If set this is the layer to fetch, otherwise we use the meta-data on
+        // the effect.
+        const ImageComponents* layer;
+
+        // The storage that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
+        // the image may not support OpenGL. In this case setting storage to eStorageModeRAM would convert the OpenGL texture to
+        // a RAM image.
+        StorageModeEnum storage;
+
+        // If true the image returned from the input will be mapped against this node requested meta-datas (bitdepth/components)
+        bool mapToMetaDatas;
+
+        TreeRenderPtr render;
+    };
+
+    struct GetImageOutArgs
+    {
+        // The returned image
+        ImagePtr image;
+
+        // The roi of this effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
+        RectI roiPixel;
+
+        // Whether we have a distorsion stack to apply
+        Distorsion2DStackPtr distorsionStack;
+    };
+
+    /** @brief This is the main-entry point to pull images from up-stream of this node. 
+     * There are 2 kind of behaviors: 
      *
-     * @param roiPixel If non NULL will be set to the render window used to render the image, that is, either the
-     * region of interest of this effect on the input effect we want to render or the optionalBounds if set, but
-     * converted to pixel coordinates
-     */
-    ImagePtr getImage(int inputNb,
-                      const double time,
-                      const RenderScale & scale,
-                      const ViewIdx view,
-                      const RectD *optionalBounds, //!< optional region in canonical coordinates
-                      const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
-                      const bool mapToClipPrefs,
-                      const bool dontUpscale,
-                      const StorageModeEnum returnStorage,
-                      const ImageBitDepthEnum* textureDepth,
-                      RectI* roiPixel,
-                      boost::shared_ptr<Transform::Matrix3x3>* transform = 0) WARN_UNUSED_RETURN;
+     * 1) We are currently in the render action of a plug-in and which wish to fetch images from above.
+     * In this case the image in input has probably already been pre-computed and cached away using the 
+     * getFramesNeeded and getRegionsOfInterest actions to drive the algorithm.
+     *
+     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistorsion action:
+     * This image will pull images from upstream that have not yet be pre-computed. In this case the inArgs have an extra
+     * optionalBounds parameter that can be set to specify which portion of the input image is needed.
+     *
+     * @returns This function returns true if the image set in the outArgs is valid.
+     * Note that in the outArgs is returned the distorsion stack to apply if this effect was marked
+     * as getCanDistort().
+     **/
+    bool getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
+
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
@@ -1029,14 +1062,16 @@ public:
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
      **/
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view,
+                                             const TreeRenderNodeArgsPtr& render,
+                                             RectD* rod) WARN_UNUSED_RETURN;
 
-    void calcDefaultRegionOfDefinition_public(double time, const RenderScale & scale, ViewIdx view, RectD *rod);
+    void calcDefaultRegionOfDefinition_public(double time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
 
 protected:
 
 
-    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD *rod);
+    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD *rod);
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
@@ -1045,6 +1080,7 @@ protected:
     void ifInfiniteApplyHeuristic(double time,
                                   const RenderScale & scale,
                                   ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
                                   RectD* rod); //!< input/output
 
     /**
@@ -1056,16 +1092,16 @@ protected:
      **/
     virtual void getRegionsOfInterest(double time,
                                       const RenderScale & scale,
-                                      const RectD & outputRoD,   //!< the RoD of the effect, in canonical coordinates
                                       const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
+                                      const TreeRenderNodeArgsPtr& render,
                                       RoIMap* ret);
 
     /**
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
      * that this effects need in order to render the frame at the given time.
      **/
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) WARN_UNUSED_RETURN;
+    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render) WARN_UNUSED_RETURN;
 
 
     /**
@@ -1073,20 +1109,20 @@ protected:
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return eStatusFailed.
      **/
-    virtual void getFrameRange(double *first, double *last);
+    virtual void getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 public:
 
-    StatusEnum getRegionOfDefinition_public(U64 hash,
-                                            double time,
+    StatusEnum getRegionOfDefinition_public(double time,
                                             const RenderScale & scale,
                                             ViewIdx view,
+                                            const TreeRenderNodeArgsPtr& render,
                                             RectD* rod) WARN_UNUSED_RETURN;
 
-    StatusEnum getRegionOfDefinitionFromCache(U64 hash,
-                                              double time,
+    StatusEnum getRegionOfDefinitionFromCache(double time,
                                               const RenderScale & scale,
                                               ViewIdx view,
+                                              const TreeRenderNodeArgsPtr& render,
                                               RectD* rod) WARN_UNUSED_RETURN;
 
 public:
@@ -1094,26 +1130,25 @@ public:
 
     void getRegionsOfInterest_public(double time,
                                      const RenderScale & scale,
-                                     const RectD & outputRoD,
                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
                                      ViewIdx view,
+                                     const TreeRenderNodeArgsPtr& render,
                                      RoIMap* ret);
 
     /**
      * @brief Computes the frame/view pairs needed by this effect in input for the render action.
      * @param time The time at which the input should be sampled
      * @param view the view at which the input should be sampled
-     * @para initTLS, if set to true, this will create the TLS on the object for a render thread
      * @param hash If set this will return the hash of the node for the given time view. In a 
      * render thread, this hash should be cached away 
      **/
-    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, bool initTLS, const AbortableRenderInfoPtr& abortInfo, U64* hash) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash) WARN_UNUSED_RETURN;
 
     void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 
     void cacheIsIdentity(double time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView);
 
-    void getFrameRange_public(U64 hash, double *first, double *last);
+    void getFrameRange_public(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 
     /**
@@ -1319,6 +1354,7 @@ public:
     struct RectToRender
     {
         EffectInstancePtr identityInput;
+        int identityInputNumber;
         RectI rect;
         double identityTime;
         bool isIdentity;
@@ -1663,15 +1699,11 @@ private:
 
 public:
 
-    void getComponentsNeededAndProduced_public(bool useLayerChoice,
-                                               bool useThisNodeComponentsNeeded,
-                                               double time, ViewIdx view,
-                                               ComponentsNeededMap* comps,
-                                               bool* processAllRequested,
-                                               SequenceTime* passThroughTime,
-                                               int* passThroughView,
-                                               std::bitset<4> *processChannels,
-                                               NodePtr* passThroughInput);
+
+
+    void getComponentsNeededAndProduced_public(double time, ViewIdx view,
+                                               const TreeRenderNodeArgsPtr& render,
+                                               ComponentsNeededResults* results);
 
     void setComponentsAvailableDirty(bool dirty);
 
@@ -1686,13 +1718,7 @@ public:
                                   InputMatrixMap* inputTransforms);
 
 
-    static void transformInputRois(const EffectInstancePtr& self,
-                                   const InputMatrixMapPtr& inputTransforms,
-                                   double par,
-                                   const RenderScale & scale,
-                                   RoIMap* inputRois,
-                                   const ReRoutesMapPtr& reroutesMap);
-
+  
 
 protected:
 
@@ -1713,10 +1739,8 @@ protected:
      * passThroughInput to fetch the components needed.
      **/
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                ComponentsNeededMap* comps,
-                                                SequenceTime* passThroughTime,
-                                                int* passThroughView,
-                                                NodePtr* passThroughInput);
+                                                const TreeRenderNodeArgsPtr& render,
+                                                ComponentsNeededResults* results);
 
 
     virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
@@ -1872,7 +1896,7 @@ private:
                                                  const U64 frameViewHash,
                                                  const OSGLContextPtr& glContext,
                                                  double time,
-                                                 const ParallelRenderArgsPtr & frameArgs,
+                                                 const TreeRenderNodeArgsPtr & frameArgs,
                                                  RenderSafetyEnum safety,
                                                  unsigned int mipMapLevel,
                                                  ViewIdx view,
@@ -1885,7 +1909,7 @@ private:
                                                  bool byPassCache,
                                                  ImageBitDepthEnum outputClipPrefDepth,
                                                  const ImageComponents& outputClipPrefsComps,
-                                                 const ComponentsNeededMapPtr & compsNeeded,
+                                                 const ComponentsNeededResultsPtr & compsNeeded,
                                                  std::bitset<4> processChannels);
 
 

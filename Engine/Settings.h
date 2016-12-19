@@ -117,13 +117,9 @@ public:
                                     double time,
                                     ViewSetSpec view) OVERRIDE FINAL;
 
-    double getRamMaximumPercent() const;
+    std::size_t getMaximumDiskCacheSize() const;
 
-    U64 getMaximumViewerDiskCacheSize() const;
-
-    U64 getMaximumDiskCacheNodeSize() const;
-
-    double getUnreachableRamPercent() const;
+    std::size_t getMaximumRAMCacheSize() const;
 
     bool getColorPickerLinear() const;
 
@@ -236,7 +232,7 @@ public:
     ///////////////////////////////////////////////////////
     // "Viewers" pane
     ImageBitDepthEnum getViewersBitDepth() const;
-    int getViewerTilesPowerOf2() const;
+    int getCache8BitTilesPo2() const;
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r, double* g, double* b, double* a) const;
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;

@@ -86,7 +86,7 @@ struct RotoDrawableItemPrivate
 public:
 
 
-    typedef std::map<AbortableRenderInfoWPtr, RotoDrawableItemPtr> RenderClonesMap;
+    typedef std::map<TreeRenderWPtr, RotoDrawableItemPtr> RenderClonesMap;
 
     // For each render, a map of the clones
     mutable QMutex renderClonesMutex;
@@ -1398,13 +1398,13 @@ RotoDrawableItem::onItemInsertedInModel()
 }
 
 RotoDrawableItemPtr
-RotoDrawableItem::getOrCreateCachedDrawable(const AbortableRenderInfoPtr& renderID)
+RotoDrawableItem::getOrCreateCachedDrawable(const TreeRenderPtr& render)
 {
     assert(isRenderCloneNeeded());
     assert(!isRenderClone());
 
     QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(renderID);
+    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
         return found->second;
     }
@@ -1418,13 +1418,13 @@ RotoDrawableItem::getOrCreateCachedDrawable(const AbortableRenderInfoPtr& render
 
 
 RotoDrawableItemPtr
-RotoDrawableItem::getCachedDrawable(const AbortableRenderInfoPtr& renderID) const
+RotoDrawableItem::getCachedDrawable(const TreeRenderPtr& render) const
 {
     assert(isRenderCloneNeeded());
     assert(!isRenderClone());
 
     QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(renderID);
+    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
         return found->second;
     }
@@ -1432,10 +1432,10 @@ RotoDrawableItem::getCachedDrawable(const AbortableRenderInfoPtr& renderID) cons
 }
 
 void
-RotoDrawableItem::removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const
+RotoDrawableItem::removeCachedDrawable(const TreeRenderPtr& render) const
 {
     QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(renderID);
+    RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
         _imp->renderClones.erase(renderID);
     }

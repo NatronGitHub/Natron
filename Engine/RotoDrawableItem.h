@@ -249,17 +249,17 @@ public:
     /**
      * @brief Can only be called on a non render clone. This will create a render clone for the given renderID.
      **/
-    RotoDrawableItemPtr getOrCreateCachedDrawable(const AbortableRenderInfoPtr& renderID);
+    RotoDrawableItemPtr getOrCreateCachedDrawable(const TreeRenderPtr& render);
 
     /**
      * @brief Retrieves the render clone for the given renderID
      **/
-    RotoDrawableItemPtr getCachedDrawable(const AbortableRenderInfoPtr& renderID) const;
+    RotoDrawableItemPtr getCachedDrawable(const TreeRenderPtr& render) const;
 
     /**
      * @brief Remove a cached drawable previously registered with getOrCreateCachedDrawable
      **/
-    void removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const;
+    void removeCachedDrawable(const TreeRenderPtr& render) const;
 
 
 Q_SIGNALS:

@@ -55,22 +55,12 @@ public:
     /**
      * @brief Set the informations related to a specific render so we know if it was aborted or not in getAbortInfo()
      **/
-    void setAbortInfo(bool isRenderResponseToUserInteraction,
-                      const AbortableRenderInfoPtr& abortInfo,
-                      const EffectInstancePtr& treeRoot);
+    void setCurrentRender(const TreeRenderPtr& render);
 
     /**
-     * @brief Clear any render-specific abort info held on this thread
+     * @brief Returns the render currently owning this thread
      **/
-    void clearAbortInfo();
-
-    /**
-     * @brief Returns the abort info related on the specific render ongoing on this thread.
-     * This is used in EffectInstance::aborted() to figure out if a render thread was aborted or not.
-     **/
-    bool getAbortInfo(bool* isRenderResponseToUserInteraction,
-                      AbortableRenderInfoPtr* abortInfo,
-                      EffectInstancePtr* treeRoot) const;
+    TreeRenderPtr getCurrentRender() const;
 
     // For debug purposes, so that the debugger can display the thread name
     void setThreadName(const std::string& threadName);

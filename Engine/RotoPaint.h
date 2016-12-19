@@ -422,9 +422,6 @@ public:
     virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
 
 
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;

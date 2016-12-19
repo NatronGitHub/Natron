@@ -644,19 +644,19 @@ Node::getCurrentSupportTiles() const
 }
 
 void
-Node::setCurrentCanTransform(bool support)
+Node::setCurrentCanDistort(bool support)
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
 
-    _imp->currentCanTransform = support;
+    _imp->currentCanDistort = support;
 }
 
 bool
-Node::getCurrentCanTransform() const
+Node::getCurrentCanDistort() const
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
 
-    return _imp->currentCanTransform;
+    return _imp->currentCanDistort;
 }
 
 void
@@ -676,12 +676,12 @@ Node::refreshDynamicProperties()
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
-    bool canTransform = _imp->effect->getCanTransform();
+    bool canDistort = _imp->effect->getCanDistort();
     _imp->pluginSafety = _imp->effect->getCurrentRenderThreadSafety();
     setRenderThreadSafety(_imp->pluginSafety);
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
-    setCurrentCanTransform(canTransform);
+    setCurrentCanDistort(canDistort);
 }
 
 bool
@@ -6303,7 +6303,6 @@ Node::makePreviewImage(SequenceTime time,
         tlsArgs->isSequential = isSequentialRender;
         tlsArgs->abortInfo = abortInfo;
         tlsArgs->treeRoot = thisNode;
-        tlsArgs->textureIndex = 0;
         tlsArgs->timeline = getApp()->getTimeLine();
         tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
         tlsArgs->draftMode = true;
@@ -6362,6 +6361,7 @@ Node::makePreviewImage(SequenceTime time,
                                                                                                            depth,
                                                                                                            false,
                                                                                                            effect,
+                                                                                                           -1,
                                                                                                            eStorageModeRAM /*returnStorage*/,
                                                                                                            time /*callerRenderTime*/) );
             RenderRoIRetCode retCode;
@@ -10779,11 +10779,7 @@ Node::renderFrame(const double time,
     const bool isRenderUserInteraction = !isPlayback;
     const bool isSequentialRender = isPlayback;
 
-    // If abortable thread, set abort info on the thread, to make the render abortable faster
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-    if (isAbortable) {
-        isAbortable->setAbortInfo( isRenderUserInteraction, abortInfo, getEffectInstance() );
-    }
+ 
 
     // Setup frame TLS on the node tree required to render
     ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
@@ -10793,7 +10789,6 @@ Node::renderFrame(const double time,
     tlsArgs->isSequential = isSequentialRender;
     tlsArgs->abortInfo = abortInfo;
     tlsArgs->treeRoot = shared_from_this();
-    tlsArgs->textureIndex = 0;
     tlsArgs->timeline = getApp()->getTimeLine();
     tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
     tlsArgs->draftMode = true;

@@ -1291,31 +1291,6 @@ OfxImageEffectInstance::getClips() const
     return _clips;
 }
 
-bool
-OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
-{
-    if (!inputs) {
-        return false;
-    }
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        if ( it->second && it->second->canTransform() ) {
-            ///Output clip should not have the property set.
-            assert( !it->second->isOutput() );
-            if ( it->second->isOutput() ) {
-                continue;
-            }
-
-
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (clip) {
-                inputs->push_back( clip->getInputNb() );
-            }
-        }
-    }
-
-    return !inputs->empty();
-}
 
 #ifdef kOfxImageEffectPropInAnalysis // removed in OFX 1.4
 bool

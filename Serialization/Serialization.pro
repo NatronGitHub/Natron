@@ -47,13 +47,9 @@ HEADERS += \
     BezierSerialization.h \
     BezierCPSerialization.h \
     CacheSerialization.h \
-    CacheSerializationImpl.h \
+    CacheEntrySerialization.h \
     CurveSerialization.h \
     FormatSerialization.h \
-    FrameKeySerialization.h \
-    FrameParamsSerialization.h \
-    ImageKeySerialization.h \
-    ImageParamsSerialization.h \
     KnobSerialization.h \
     KnobTableItemSerialization.h \
     NodeSerialization.h \
@@ -79,12 +75,10 @@ HEADERS += \
 SOURCES += \
     BezierCPSerialization.cpp \
     BezierSerialization.cpp \
+    CacheSerialization.cpp \
+    CacheEntrySerialization.cpp \
     CurveSerialization.cpp \
     FormatSerialization.cpp \
-    FrameKeySerialization.cpp \
-    FrameParamsSerialization.cpp \
-    ImageKeySerialization.cpp \
-    ImageParamsSerialization.cpp \
     KnobSerialization.cpp \
     KnobTableItemSerialization.cpp \
     NodeSerialization.cpp \

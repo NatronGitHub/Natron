@@ -244,8 +244,6 @@ public:
 #endif
 
 
-    bool getInputsHoldingTransform(std::list<int>* inputs) const;
-
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
     static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);
     static const OFX::Host::Property::PropSpec* getOfxParamOverlayInteractDescProps();

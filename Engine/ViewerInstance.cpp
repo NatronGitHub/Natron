@@ -1337,7 +1337,8 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                                                     requestedComponents,
                                                                     imageDepth,
                                                                     false /*calledFromGetImage*/,
-                                                                    shared_from_this(),
+                                                                    inArgs.activeInputToRender,
+                                                                    -1,
                                                                     eStorageModeRAM /*returnStorage*/,
                                                                     inArgs.params->time) );
                 retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);

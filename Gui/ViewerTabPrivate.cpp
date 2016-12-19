@@ -97,7 +97,7 @@ ViewerTabPrivate::getOverlayTransform(double time,
 
     // Internally this will return an identity matrix if the node is identity
 
-    stat = currentNode->getTransform_public(time, s, view, 0, &input, &mat);
+    stat = currentNode->getDistorsion_public(time, s, view, 0, &input, &mat);
 
 
     if (stat == eStatusFailed) {

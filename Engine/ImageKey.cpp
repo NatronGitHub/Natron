@@ -72,29 +72,6 @@ ImageKey::operator==(const ImageKey & other) const
 
 }
 
-void
-ImageKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
-{
-    SERIALIZATION_NAMESPACE::ImageKeySerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ImageKeySerialization*>(serializationBase);
-    if (!serialization) {
-        return;
-    }
-    serialization->nodeHashKey = _nodeHashKey;
-    serialization->time = _time;
-    serialization->view = (int)_view;
-    serialization->draft = _draftMode;
-}
 
-void
-ImageKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
-{
-    const SERIALIZATION_NAMESPACE::ImageKeySerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::ImageKeySerialization*>(&serializationBase);
-    if (!serialization) {
-        return;
-    }
-    _nodeHashKey = serialization->nodeHashKey;
-    _view = ViewIdx(serialization->view);
-    _draftMode = serialization->draft;
-}
 
 NATRON_NAMESPACE_EXIT;

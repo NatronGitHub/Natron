@@ -277,22 +277,24 @@ public:
     RenderRoIRetCode determinePlanesToRender(const EffectInstance::RenderRoIArgs& args, std::list<ImageComponents> *requestedComponents, std::map<ImageComponents, ImagePtr>* outputPlanes);
 
     RenderRoIRetCode handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
-                                                          const ParallelRenderArgsPtr& frameArgs,
-                                                          const FrameViewRequest* requestPassData,
-                                                          SupportsEnum supportsRS,
-                                                          U64 frameViewHash,
-                                                          double par,
-                                                          unsigned int mipMapLevel,
-                                                          ImagePremultiplicationEnum thisEffectOutputPremult,
-                                                          const RectD& rod,
-                                                          const std::list<ImageComponents> &requestedComponents,
-                                                          const std::vector<ImageComponents>& outputComponents,
-                                                          const ComponentsNeededMapPtr& neededComps,
-                                                          RenderScale& renderMappedScale,
-                                                          unsigned int &renderMappedMipMapLevel,
-                                                          bool &renderFullScaleThenDownscale,
-                                                          std::map<ImageComponents, ImagePtr>* outputPlanes,
-                                                          bool *isIdentity);
+                                          const ParallelRenderArgsPtr& frameArgs,
+                                          const FrameViewRequest* requestPassData,
+                                          SupportsEnum supportsRS,
+                                          U64 frameViewHash,
+                                          double par,
+                                          unsigned int mipMapLevel,
+                                          ImagePremultiplicationEnum thisEffectOutputPremult,
+                                          const RectD& rod,
+                                          const std::list<ImageComponents> &requestedComponents,
+                                          const std::vector<ImageComponents>& outputComponents,
+                                          const ComponentsNeededMapPtr& neededComps,
+                                          RenderScale& renderMappedScale,
+                                          unsigned int &renderMappedMipMapLevel,
+                                          bool &renderFullScaleThenDownscale,
+                                          RenderRoIResults* outputPlanes,
+                                          bool *isIdentity);
+
+    bool handleConcatenation(const EffectInstance::RenderRoIArgs& args, const RenderScale& renderMappedScale, U64 frameViewHash, RenderRoIResults* results, RenderRoIRetCode* retCode);
 
     bool setupRenderRoIParams(const RenderRoIArgs & args,
                               EffectTLSDataPtr* tls,

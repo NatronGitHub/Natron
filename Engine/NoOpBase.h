@@ -61,7 +61,7 @@ public:
         return 1;
     }
 
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE
     {
@@ -71,12 +71,6 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    virtual StatusEnum getTransform(double time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    int* inputToTransform,
-                                    Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;

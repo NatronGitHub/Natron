@@ -58,6 +58,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/DiskCacheNode.h"
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/EffectOpenGLContextData.h"
+#include "Engine/Distorsion2D.h"
 #include "Engine/Cache.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
@@ -112,6 +113,7 @@ optimizeRectsToRender(const EffectInstancePtr& self,
         std::vector<RectI> splits = it->splitIntoSmallerRects(0);
         EffectInstance::RectToRender nonIdentityRect;
         nonIdentityRect.isIdentity = false;
+        nonIdentityRect.identityInputNumber = -1;
         nonIdentityRect.identityTime = 0;
         nonIdentityRect.rect.x1 = INT_MAX;
         nonIdentityRect.rect.x2 = INT_MIN;
@@ -154,6 +156,7 @@ optimizeRectsToRender(const EffectInstancePtr& self,
                         }
                     }
                 }
+                r.identityInputNumber = identityInputNb;
                 r.identityInput = identityInput;
                 r.identityTime = identityInputTime;
                 r.identityView = inputIdentityView;
@@ -580,13 +583,13 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
             boost::scoped_ptr<RenderRoIArgs> inArgs ( new RenderRoIArgs(args) );
             inArgs->components.clear();
             inArgs->components.push_back(it->first);
-            std::map<ImageComponents, ImagePtr> inputPlanes;
-            RenderRoIRetCode inputRetCode = node->getEffectInstance()->renderRoI(*inArgs, &inputPlanes);
-            assert( inputPlanes.size() == 1 || inputPlanes.empty() );
-            if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputPlanes.empty() ) {
+            RenderRoIResults inputResults;
+            RenderRoIRetCode inputRetCode = node->getEffectInstance()->renderRoI(*inArgs, &inputResults);
+            assert( inputResults.outputPlanes.size() == 1 || inputResults.outputPlanes.empty() );
+            if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputResults.outputPlanes.empty() ) {
                 return inputRetCode;
             }
-            outputPlanes->insert( std::make_pair(it->first, inputPlanes.begin()->second) );
+            outputPlanes->insert( std::make_pair(it->first, inputResults.outputPlanes.begin()->second) );
         }
     }
 
@@ -612,7 +615,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                                                      RenderScale& renderMappedScale,
                                                      unsigned int &renderMappedMipMapLevel,
                                                      bool &renderFullScaleThenDownscale,
-                                                     std::map<ImageComponents, ImagePtr>* outputPlanes,
+                                                     RenderRoIResults* results,
                                                      bool *isIdentity)
 {
     double inputTimeIdentity = 0.;
@@ -660,12 +663,9 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                 argCpy->time = inputTimeIdentity;
                 argCpy->view = inputIdentityView;
 
-                return _publicInterface->renderRoI(*argCpy, outputPlanes);
+                return _publicInterface->renderRoI(*argCpy, results);
             }
         }
-
-        double firstFrame, lastFrame;
-        _publicInterface->getFrameRange_public(frameViewHash, &firstFrame, &lastFrame);
 
         RectD canonicalRoI;
         ///WRONG! We can't clip against the RoD of *this* effect. We should clip against the RoD of the input effect, but this is done
@@ -686,7 +686,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
 
 
             /*
-             When the effect is identity, we can make 2 different requests upstream:
+             When the effect is identity, we can make 2 different requests upstream for planes:
              A) If they do not exist upstream, then this will result in a black image
              B) If instead we request what this node (the identity node) has set to the corresponding layer
              selector for the identity input, we may end-up with something different.
@@ -716,11 +716,16 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                 inputArgs->components = requestedComponents;
             }
 
+            std::map<ImageComponents, ImagePtr> finalPlanes = results->outputPlanes;
 
-            std::map<ImageComponents, ImagePtr> identityPlanes;
-            RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(*inputArgs, &identityPlanes);
+            results->outputPlanes.clear();
+
+            // Copy results so far if a stack is already allocated
+            RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
             if (ret == eRenderRoIRetCodeOk) {
-                outputPlanes->insert( identityPlanes.begin(), identityPlanes.end() );
+
+                // Add planes to existing outputPlanes
+                finalPlanes.insert( results->outputPlanes.begin(), results->outputPlanes.end() );
 
                 if (fetchUserSelectedComponentsUpstream) {
                     // We fetched potentially different components, so convert them to the format requested
@@ -729,7 +734,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                     const bool useAlpha0ForRGBToRGBAConversion = false;
                     std::list<ImageComponents>::const_iterator compIt = args.components.begin();
 
-                    for (std::map<ImageComponents, ImagePtr>::iterator it = outputPlanes->begin(); it != outputPlanes->end(); ++it, ++compIt) {
+                    for (std::map<ImageComponents, ImagePtr>::iterator it = finalPlanes.begin(); it != finalPlanes.end(); ++it, ++compIt) {
                         ImagePremultiplicationEnum premult;
                         const ImageComponents & outComp = outputComponents.front();
                         if ( outComp.isColorPlane() ) {
@@ -742,13 +747,13 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                         assert(tmp);
                         convertedPlanes[it->first] = tmp;
                     }
-                    *outputPlanes = convertedPlanes;
+                    results->outputPlanes = convertedPlanes;
                 }
             } else {
                 return ret;
             }
         } else {
-            assert( outputPlanes->empty() );
+            assert( results->outputPlanes.empty() );
         }
 
         return eRenderRoIRetCodeOk;
@@ -762,13 +767,55 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         argCpy->view = ViewIdx(0);
         argCpy->components = requestedComponents;
         *isIdentity = true;
-        return _publicInterface->renderRoI(*argCpy, outputPlanes);
+        return _publicInterface->renderRoI(*argCpy, results);
     }
 
     assert(!*isIdentity);
     return eRenderRoIRetCodeOk;
 } // EffectInstance::Implementation::handleIdentityEffect
 
+bool
+EffectInstance::Implementation::handleConcatenation(const EffectInstance::RenderRoIArgs& args, const RenderScale& renderMappedScale, U64 frameViewHash, RenderRoIResults* results, RenderRoIRetCode* retCode)
+{
+    *retCode = eRenderRoIRetCodeOk;
+    bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
+    if (useTransforms && args.caller && args.caller.get() != _publicInterface) {
+
+        assert(args.inputNbInCaller != -1);
+
+        // If the caller can apply a distorsion, then check if this effect has a distorsion
+
+        if (args.caller->getInputCanReceiveDistorsion(args.inputNbInCaller)) {
+            DistorsionFunction2DPtr disto(new DistorsionFunction2D);
+            StatusEnum stat = _publicInterface->getDistorsion_public(args.time, renderMappedScale, args.view, frameViewHash, disto.get());
+            if (stat == eStatusOK && disto->inputNbToDistort != -1) {
+
+                // Recurse on input given by plug-in
+                EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
+                if (!distoInput) {
+                    return eRenderRoIRetCodeFailed;
+                }
+                boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
+                argsCpy->caller = _publicInterface->shared_from_this();
+                argsCpy->inputNbInCaller = disto->inputNbToDistort;
+                *retCode = distoInput->renderRoI(*argsCpy, results);
+
+                // Create the stack if it was not already
+                if (!results->distorsionStack) {
+                    results->distorsionStack.reset(new Distorsion2DStack);
+                }
+                
+                // And then push our distorsion to the stack...
+                results->distorsionStack->pushDistorsion(disto);
+
+                return true;
+
+            }
+        }
+
+    }
+    return false;
+} // handleConcatenation
 
 bool
 EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
@@ -1132,7 +1179,7 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
     if (storage == eStorageModeGLTex && glRenderContext->isGPUContext()) {
         *createInCache = false;
     } else {
-        if (args.caller == frameArgs->treeRoot || frameArgs->treeRoot->getEffectInstance().get() == _publicInterface)  {
+        if ((args.caller && args.caller == frameArgs->treeRoot) || frameArgs->treeRoot->getEffectInstance().get() == _publicInterface)  {
             // Always cache the root node
             *createInCache = true;
         } else {
@@ -2019,18 +2066,17 @@ EffectInstance::Implementation::renderRoITermination(const RenderRoIArgs & args,
 } // EffectInstance::Implementation::renderRoITermination
 
 RenderRoIRetCode
-EffectInstance::renderRoI(const RenderRoIArgs & args,
-                          std::map<ImageComponents, ImagePtr>* outputPlanes)
+EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 {
 
 
     // Make sure this call is not made recursively from getImage on a render clone on which we are already calling renderRoI.
     // If so, forward the call to the main instance
     if (_imp->mainInstance) {
-        return _imp->mainInstance->renderRoI(args, outputPlanes);
+        return _imp->mainInstance->renderRoI(args, results);
     }
 
-    // Check if the effect is continuous
+    // Check if the effect is continuous, if not render at the nearest integer frame
     {
         int roundedTime = std::floor(args.time + 0.5);
         if (roundedTime != args.time && !canRenderContinuously()) {
@@ -2038,19 +2084,19 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
             // An effect that is not continous can only render at integer times (e.g: a reader)
             boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
             argsCpy->time = roundedTime;
-            return renderRoI(*argsCpy, outputPlanes);
+            return renderRoI(*argsCpy, results);
         }
 
     }
 
-    // Check if the effect is view variant
+    // Check if the effect is view variant, if not render view 0 instead
     {
         // An effect that is view invariant will always return the same image, so make it the main view.
         ViewInvarianceLevel viewInvariance = isViewInvariant();
         if (viewInvariance == eViewInvarianceAllViewsInvariant && args.view != ViewIdx(0)) {
             boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
             argsCpy->view = ViewIdx(0);
-            return renderRoI(*argsCpy, outputPlanes);
+            return renderRoI(*argsCpy, results);
         }
     }
 
@@ -2087,7 +2133,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     std::list<ImageComponents> requestedComponents;
     {
         
-        RenderRoIRetCode upstreamRetCode = _imp->determinePlanesToRender(args, &requestedComponents, outputPlanes);
+        RenderRoIRetCode upstreamRetCode = _imp->determinePlanesToRender(args, &requestedComponents, &results->outputPlanes);
         if (upstreamRetCode != eRenderRoIRetCodeOk) {
             return upstreamRetCode;
         }
@@ -2101,18 +2147,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     ////////////////////////////// Check if effect is identity /////////////////////////////////////////////////////////////
     {
         bool isIdentity;
-        RenderRoIRetCode upstreamRetCode = _imp->handleIdentityEffect(args, frameArgs, requestPassData, supportsRS, frameViewHash, par, args.mipMapLevel, thisEffectOutputPremult, rod, requestedComponents, *outputComponents, neededComps, renderMappedScale, renderMappedMipMapLevel, renderFullScaleThenDownscale, outputPlanes, &isIdentity);
+        RenderRoIRetCode upstreamRetCode = _imp->handleIdentityEffect(args, frameArgs, requestPassData, supportsRS, frameViewHash, par, args.mipMapLevel, thisEffectOutputPremult, rod, requestedComponents, *outputComponents, neededComps, renderMappedScale, renderMappedMipMapLevel, renderFullScaleThenDownscale, results, &isIdentity);
         if (isIdentity) {
             return upstreamRetCode;
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Transform concatenations ///////////////////////////////////////////////////////////////
+    ////////////////////////////// Handle Concatenations //////////////////////////////////////////////////////////////////
     {
-        bool useTransforms = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
-        if (useTransforms && args.caller.get() != this) {
-            
-            tryConcatenateTransforms( args.time, args.view, args.scale, frameViewHash, tls->currentRenderArgs.transformRedirections.get() );
+        RenderRoIRetCode upstreamRetCode;
+        if (_imp->handleConcatenation(args, renderMappedScale, frameViewHash, results, &upstreamRetCode)) {
+            return upstreamRetCode;
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -2157,7 +2202,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
     boost::scoped_ptr<ImageKey> key;
 
     {
-        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, frameViewHash, storage, glRenderContext, glContextLocker, planesToRender, isDuringPaintStrokeDrawing, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, outputPlanes)) {
+        if (!_imp->renderRoILookupCacheFirstTime(args, frameArgs, frameViewHash, storage, glRenderContext, glContextLocker, planesToRender, isDuringPaintStrokeDrawing, requestedComponents, *outputComponents, rod, roi, upscaledImageBounds, downscaledImageBounds, renderFullScaleThenDownscale, renderMappedMipMapLevel, &createInCache, &renderScaleOneUpstreamIfRenderScaleSupportDisabled, &isPlaneCached, &key, &results->outputPlanes)) {
             return eRenderRoIRetCodeFailed;
         }
     }
@@ -2244,13 +2289,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
         boost::scoped_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
         newArgs->allowGPURendering = false;
 
-        return renderRoI(*newArgs, outputPlanes);
+        return renderRoI(*newArgs, results);
     }
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Termination /////////////////////////////////////////////////////////////////////////////
-    _imp->renderRoITermination(args, frameArgs, planesToRender, glGpuContext, hasSomethingToRender, isDuringPaintStrokeDrawing, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, outputPlanes, &glContextLocker);
+    _imp->renderRoITermination(args, frameArgs, planesToRender, glGpuContext, hasSomethingToRender, isDuringPaintStrokeDrawing, rod, roi, downscaledImageBounds, originalRoI, par, renderFullScaleThenDownscale, renderAborted, renderRetCode, &results->outputPlanes, &glContextLocker);
 
     return eRenderRoIRetCodeOk;
 } // renderRoI

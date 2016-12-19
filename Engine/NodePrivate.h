@@ -312,7 +312,7 @@ public:
     bool currentSupportTiles;
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
     SequentialPreferenceEnum currentSupportSequentialRender;
-    bool currentCanTransform;
+    bool currentCanDistort;
     bool draftModeUsed, mustComputeInputRelatedData;
     mutable QMutex lastStrokeMovementMutex;
     bool strokeBitmapCleared;

@@ -82,6 +82,7 @@
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/CacheDeleterThread.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
@@ -616,14 +617,6 @@ AppManager::~AppManager()
     ///Caches may have launched some threads to delete images, wait for them to be done
     QThreadPool::globalInstance()->waitForDone();
 
-    ///Kill caches now because decreaseNCacheFilesOpened can be called
-    _imp->_nodeCache->waitForDeleterThread();
-    _imp->_diskCache->waitForDeleterThread();
-    _imp->_viewerCache->waitForDeleterThread();
-    _imp->_nodeCache.reset();
-    _imp->_viewerCache.reset();
-    _imp->_diskCache.reset();
-
     tearDownPython();
     _imp->tearDownGL();
 
@@ -1072,38 +1065,12 @@ AppManager::initGui(const CLArgs& cl)
 bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
-    try {
-        size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-        U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-        U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new ImageCache("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
-        _imp->_diskCache.reset( new ImageCache("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new FrameEntryCache("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
-        _imp->setViewerCacheTileSize();
-    } catch (std::logic_error) {
-        // ignore
-    }
+    setLoadingStatus( tr("Restoring Cache...") );
 
-    int oldCacheVersion = 0;
-    {
-        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
+    _imp->restoreCaches();
 
-        if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
-            oldCacheVersion = settings.value( QString::fromUtf8(kNatronCacheVersionSettingsKey) ).toInt();
-        }
-        settings.setValue(QString::fromUtf8(kNatronCacheVersionSettingsKey), NATRON_CACHE_VERSION);
-    }
-
-    setLoadingStatus( tr("Restoring the image cache...") );
-
-    if (oldCacheVersion != NATRON_CACHE_VERSION) {
-        wipeAndCreateDiskCacheStructure();
-    } else {
-        _imp->restoreCaches();
-    }
-
-    setLoadingStatus( tr("Loading plug-in cache...") );
+    setLoadingStatus( tr("Loading Plug-in Cache...") );
 
 
     ///Set host properties after restoring settings since it depends on the host name.
@@ -1192,41 +1159,6 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 } // AppManager::loadInternalAfterInitGui
 
-void
-AppManager::onViewerTileCacheSizeChanged()
-{
-    if (_imp->_viewerCache) {
-        _imp->_viewerCache->clear();
-        _imp->setViewerCacheTileSize();
-    }
-    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        (*it)->renderAllViewers(true);
-    }
-}
-
-void
-AppManagerPrivate::setViewerCacheTileSize()
-{
-    if (!_viewerCache) {
-        return;
-    }
-    std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
-
-    // Viewer tiles are always RGBA
-    tileSize = tileSize * tileSize * 4;
-
-
-    ImageBitDepthEnum viewerDepth = _settings->getViewersBitDepth();
-    switch (viewerDepth) {
-        case eImageBitDepthFloat:
-        case eImageBitDepthHalf:
-            tileSize *= sizeof(float);
-            break;
-        default:
-            break;
-    }
-    _viewerCache->setTiled(true, tileSize);
-}
 
 AppInstancePtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
@@ -1347,52 +1279,6 @@ AppManager::getAppType() const
     return _imp->_appType;
 }
 
-void
-AppManager::clearPlaybackCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-    _imp->_viewerCache->clearInMemoryPortion();
-    clearLastRenderedTextures();
-}
-
-void
-AppManager::clearViewerCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-
-    _imp->_viewerCache->clear();
-}
-
-void
-AppManager::clearDiskCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-
-    clearLastRenderedTextures();
-    _imp->_viewerCache->clear();
-    _imp->_diskCache->clear();
-}
-
-void
-AppManager::clearNodeCache()
-{
-    AppInstanceVec copy;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        copy = _imp->_appInstances;
-    }
-
-    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->clearAllLastRenderedImages();
-    }
-    _imp->_nodeCache->clear();
-}
 
 void
 AppManager::clearPluginsLoadedCache()
@@ -1413,10 +1299,8 @@ AppManager::clearAllCaches()
         (*it)->abortAllViewers();
     }
 
-    clearDiskCache();
-    clearNodeCache();
-
-
+    _imp->cache->clear();
+    
     ///for each app instance clear all its nodes cache
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
         (*it)->clearOpenFXPluginsCaches();
@@ -1429,21 +1313,6 @@ AppManager::clearAllCaches()
     Project::clearAutoSavesDir();
 }
 
-void
-AppManager::wipeAndCreateDiskCacheStructure()
-{
-    //Should be called on the main-thread because potentially can interact with rendering
-    assert( QThread::currentThread() == qApp->thread() );
-
-    abortAnyProcessing();
-
-    clearAllCaches();
-
-    assert(_imp->_diskCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
-    assert(_imp->_viewerCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
-}
 
 AppInstancePtr
 AppManager::getTopLevelInstance () const
@@ -1498,26 +1367,6 @@ AppManager::writeToOutputPipe(const QString & longMessage,
     return true;
 }
 
-void
-AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
-{
-    size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
-
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
-    _imp->_nodeCache->setMaximumInMemorySize(1);
-}
-
-void
-AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
-{
-    _imp->_viewerCache->setMaximumCacheSize(size);
-}
-
-void
-AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
-{
-    _imp->_diskCache->setMaximumCacheSize(size);
-}
 
 void
 AppManager::loadAllPlugins()
@@ -2505,93 +2354,64 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     return retNode;
 }
 
-void
-AppManager::removeFromNodeCache(const ImagePtr & image)
+CachePtr
+AppManager::getCache() const
 {
-    _imp->_nodeCache->removeEntry(image);
+    return _imp->cache;
 }
 
 void
-AppManager::removeFromViewerCache(const FrameEntryPtr & texture)
+AppManager::deleteCacheEntriesInSeparateThread(const std::list<CacheEntryBasePtr> & entriesToDelete)
 {
-    _imp->_viewerCache->removeEntry(texture);
-}
-
-void
-AppManager::removeFromNodeCache(U64 hash)
-{
-    _imp->_nodeCache->removeEntry(hash);
-}
-
-void
-AppManager::removeFromViewerCache(U64 hash)
-{
-    _imp->_viewerCache->removeEntry(hash);
-}
-
-
-void
-AppManager::removeAllCacheEntriesForPlugin(const std::string& pluginID)
-{
-    _imp->_nodeCache->removeAllEntriesForPluginPublic(pluginID, false);
-    _imp->_diskCache->removeAllEntriesForPluginPublic(pluginID, false);
-    _imp->_viewerCache->removeAllEntriesForPluginPublic(pluginID, false);
-}
-
-void
-AppManager::queueEntriesForDeletion(const std::list<ImagePtr>& images)
-{
-    _imp->_nodeCache->appendToQueue(images);
-}
-
-void
-AppManager::queueEntriesForDeletion(const std::list<FrameEntryPtr>& images)
-{
-    _imp->_viewerCache->appendToQueue(images);
+    _imp->cacheDeleterThread->appendToQueue(entriesToDelete);
 }
 
 void
 AppManager::printCacheMemoryStats() const
 {
     appPTR->clearErrorLog_mt_safe();
-    std::map<std::string, CacheEntryReportInfo> infos;
+    std::map<std::string, CacheReportInfo> infos;
+    _imp->cache->getMemoryStats(&infos);
 
-    {
-        // Cache entries for the viewer cache don't have a plug-in ID since this is the only plug-in using it
-        std::map<std::string, CacheEntryReportInfo> viewerInfos;
-        _imp->_viewerCache->getMemoryStats(&viewerInfos);
-
-        CacheEntryReportInfo& data = infos[PLUGINID_NATRON_VIEWER_INTERNAL];
-        for (std::map<std::string, CacheEntryReportInfo>::iterator it = viewerInfos.begin(); it!=viewerInfos.end(); ++it) {
-            data.diskBytes += it->second.diskBytes;
-            data.ramBytes += it->second.ramBytes;
-        }
-    }
-    {
-        _imp->_nodeCache->getMemoryStats(&infos);
-    }
-    {
-        _imp->_diskCache->getMemoryStats(&infos);
-    }
 
     QString reportStr;
     std::size_t totalDisk = 0;
     std::size_t totalRam = 0;
+    std::size_t totalGLTextures = 0;
+    int totalNEntries = 0;
     reportStr += QLatin1String("\n");
     if (!infos.empty()) {
-        for (std::map<std::string, CacheEntryReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
+        for (std::map<std::string, CacheReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
             if (it->second.ramBytes == 0 && it->second.diskBytes == 0) {
                 continue;
             }
             totalRam += it->second.ramBytes;
             totalDisk += it->second.diskBytes;
+            totalGLTextures += it->second.glTextureBytes;
+            totalNEntries += it->second.nEntries;
 
+            if (it->second.ramBytes == 0 && it->second.diskBytes == 0 && it->second.glTextureBytes == 0) {
+                continue;
+            }
+            
             reportStr += QString::fromUtf8(it->first.c_str());
             reportStr += QLatin1String("--> ");
-            reportStr += QLatin1String("RAM: ");
-            reportStr += printAsRAM(it->second.ramBytes);
-            reportStr += QLatin1String(" Disk: ");
-            reportStr += printAsRAM(it->second.diskBytes);
+            if (it->second.ramBytes > 0) {
+                reportStr += QLatin1String("RAM: ");
+                reportStr += printAsRAM(it->second.ramBytes);
+            }
+            if (it->second.diskBytes > 0) {
+                reportStr += QLatin1String(" Disk: ");
+                reportStr += printAsRAM(it->second.diskBytes);
+            }
+            if (it->second.glTextureBytes > 0) {
+                reportStr += QLatin1String(" GL Textures: ");
+                reportStr += printAsRAM(it->second.glTextureBytes);
+            }
+            if (it->second.nEntries > 0) {
+                reportStr += tr(" Number of Cache Entries: ");
+                reportStr += QString::number(it->second.nEntries);
+            }
             reportStr += QLatin1String("\n");
         }
         reportStr += QLatin1String("-------------------------------\n");
@@ -2602,6 +2422,9 @@ AppManager::printCacheMemoryStats() const
     reportStr += printAsRAM(totalRam);
     reportStr += QLatin1String(" Disk: ");
     reportStr += printAsRAM(totalDisk);
+    reportStr += QLatin1String(" GL Textures: ");
+    reportStr += printAsRAM(totalGLTextures);
+    reportStr += tr(" taken by %1 cache entries.").arg(QString::number(totalNEntries));
 
 
     appPTR->writeToErrorLog_mt_safe(tr("Cache Report"), QDateTime::currentDateTime(), reportStr);
@@ -2747,27 +2570,6 @@ AppManager::registerEngineMetaTypes() const
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
 #endif
-}
-
-void
-AppManager::setDiskCacheLocation(const QString& path)
-{
-    QDir d(path);
-    QMutexLocker k(&_imp->diskCachesLocationMutex);
-
-    if ( d.exists() && !path.isEmpty() ) {
-        _imp->diskCachesLocation = path;
-    } else {
-        _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-    }
-}
-
-const QString&
-AppManager::getDiskCacheLocation() const
-{
-    QMutexLocker k(&_imp->diskCachesLocationMutex);
-
-    return _imp->diskCachesLocation;
 }
 
 bool
@@ -2977,23 +2779,6 @@ AppManager::qt_tildeExpansion(const QString &path,
 }
 
 #endif
-
-bool
-AppManager::isNodeCacheAlmostFull() const
-{
-    std::size_t nodeCacheSize = _imp->_nodeCache->getMemoryCacheSize();
-    std::size_t nodeMaxCacheSize = _imp->_nodeCache->getMaximumMemorySize();
-
-    if (nodeMaxCacheSize == 0) {
-        return true;
-    }
-
-    if ( (double)nodeCacheSize / nodeMaxCacheSize >= NATRON_CACHE_LIMIT_PERCENT ) {
-        return true;
-    } else {
-        return false;
-    }
-}
 
 void
 AppManager::checkCacheFreeMemoryIsGoodEnough()

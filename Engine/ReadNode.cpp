@@ -840,11 +840,6 @@ ReadNode::supportsMultipleClipDepths() const
     return p ? p->getEffectInstance()->supportsMultipleClipDepths() : EffectInstance::supportsMultipleClipDepths();
 }
 
-bool
-ReadNode::getCanTransform() const
-{
-    return false;
-}
 
 SequentialPreferenceEnum
 ReadNode::getSequentialPreference() const

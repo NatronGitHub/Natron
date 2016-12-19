@@ -1011,32 +1011,6 @@ NodeCollection::forceComputeInputDependentDataOnAllTrees()
     }
 }
 
-void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >& argsMap) const
-{
-    NodesList nodes = getNodes();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( !(*it)->isActivated() ) {
-            continue;
-        }
-        ParallelRenderArgsPtr args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
-        if (args) {
-            argsMap.insert( std::make_pair(*it, args) );
-        }
-
-
-        const NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-        if (isGrp) {
-            isGrp->getParallelRenderArgs(argsMap);
-        }
-
-        const PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
-        }
-    }
-}
 
 void
 NodeCollection::setSubGraphEditedByUser(bool edited)

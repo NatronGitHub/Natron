@@ -116,7 +116,7 @@ struct RenderViewerArgs
 };
 
 struct ViewerInstance::ViewerInstancePrivate
-    : public QObject, public LockManagerI<FrameEntry>
+    : public QObject
 {
 
 public:

@@ -156,7 +156,6 @@ public:
     virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD *rod)  OVERRIDE;
     virtual void getRegionsOfInterest(double time,
                                       const RenderScale & scale,
-                                      const RectD & outputRoD, //!< full RoD in canonical coordinates
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
@@ -260,13 +259,12 @@ public:
     virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
 public:
 
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getTransform(double time,
+    virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getInputCanReceiveDistorsion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum getDistorsion(double time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    int* inputToTransform,
-                                    Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                    DistorsionFunction2D* distorsion) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;

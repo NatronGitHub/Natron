@@ -600,8 +600,8 @@ public:
     void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
     SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
 
-    void setCurrentCanTransform(bool support);
-    bool getCurrentCanTransform() const;
+    void setCurrentCanDistort(bool support);
+    bool getCurrentCanDistort() const;
 
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;

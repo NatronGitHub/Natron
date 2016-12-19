@@ -341,7 +341,6 @@ HEADERS += \
     Image.h \
     ImageComponents.h \
     ImageKey.h \
-    ImageLocker.h \
     ImageParams.h \
     Interpolation.h \
     JoinViewsNode.h \

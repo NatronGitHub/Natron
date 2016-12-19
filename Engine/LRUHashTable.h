@@ -119,7 +119,7 @@ class StlLRUHashTable
 {
 public:
     typedef K key_type;
-    typedef std::list<V> value_type;
+    typedef V value_type;
     // Key access history, most recent at back
     typedef std::list<key_type> key_tracker_type;
     // Key to value and key history iterator
@@ -163,10 +163,10 @@ public:
     }
 
     void insert(const key_type & k,
-                const value_type& list)
+                const value_type& v)
     {
         typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
-        _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
+        _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
     }
 
     // Record a fresh key-value pair in the cache
@@ -175,14 +175,12 @@ public:
     {
         typename key_to_value_type::iterator found =  _key_to_value.find(k);
         if ( found != _key_to_value.end() ) {
-            found->second.first.push_back(v);
+            found->second.first = v;
         } else {
-            value_type list;
-            list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
             typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
-            _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
+            _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
         }
     }
 
@@ -193,33 +191,34 @@ public:
     }
 
     // Purge the least-recently-used element in the cache
-    std::pair<key_type, V> evict()
+    std::pair<key_type, V> evict(bool checkUseCount)
     {
-        // Assert method is never called when cache is empty
-        assert( !_key_tracker.empty() );
+
+        if (_key_tracker.empty()) {
+            return std::make_pair( key_type(), V() );
+        }
+
         // Identify least recently used key
         const typename key_to_value_type::iterator it  = _key_to_value.find( _key_tracker.front() );
-        for (typename std::list<V>::iterator it2 = it->second.first.begin();
-             it2 != it->second.first.end();
-             ++it2) {
-            if ( (*it2).use_count() == 1 ) {
-                std::pair<key_type, V> ret = std::make_pair(it->first, *it2);
-                if (it->second.first.size() == 1) {
-                    // Erase both elements to completely purge record
-                    _key_to_value.erase(it);
-                    _key_tracker.pop_front();
-                } else {
-                    it->second.first.erase(it2);
-                }
+        while (it != _key_to_value.end()) {
 
+            if ( !checkUseCount || it->second.use_count() == 1 ) {
+                // Erase both elements to completely purge record
+                std::pair<key_type, V> ret = *it;
+                _key_to_value.erase(it);
+                _key_tracker.pop_front();
                 return ret;
+                
             }
+
+            ++it;
         }
+
 
         return std::make_pair( key_type(), V() );
     }
 
-    unsigned int size()
+    std::size_t size()
     {
         return _container.size();
     }
@@ -282,9 +281,9 @@ public:
     }
 
     void insert(const key_type & k,
-                const value_type& list)
+                const value_type& v)
     {
-        _container.insert( typename container_type::value_type(k, list) );
+        _container.insert( typename container_type::value_type(k, v) );
     }
 
     void insert(const key_type & k,
@@ -293,13 +292,11 @@ public:
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        typename container_type::left_iterator found = this->operator ()(k);
+        typename container_type::left_iterator found = _container.left.find(k);
         if ( found != _container.left.end() ) {
-            found->second.push_back(v);
+            found->second = v;
         } else {
-            value_type list;
-            list.push_back(v);
-            _container.insert( typename container_type::value_type(k, list) );
+            _container.insert( typename container_type::value_type(k, v) );
         }
     }
 
@@ -308,31 +305,24 @@ public:
         _container.clear();
     }
 
-    std::pair<key_type, V> evict()
+    std::pair<key_type, V> evict(bool checkUseCount)
     {
         typename container_type::right_iterator it = _container.right.begin();
         while ( it != _container.right.end() ) {
-            for (typename std::list<V>::iterator it2 = it->first.begin();
-                 it2 != it->first.end();
-                 ++it2) {
-                if ( (*it2).use_count() == 1 ) {
-                    std::pair<key_type, V> ret = std::make_pair(it->second, *it2);
-                    if (it->first.size() == 1) {
-                        _container.right.erase(it);
-                    } else {
-                        it->first.erase(it2);
-                    }
 
-                    return ret;
-                }
+            if ( !checkUseCount || it->first.use_count() == 1 ) {
+                std::pair<key_type, V> ret = std::make_pair(it->second, it->first);
+                _container.right.erase(it);
+                return ret;
             }
+
             ++it;
         }
 
         return std::make_pair( key_type(), V() );
     }
 
-    unsigned int size()
+    std::size_t size()
     {
         return _container.size();
     }
@@ -397,10 +387,10 @@ public:
     }
 
     void insert(const key_type & k,
-                const value_type& list)
+                const value_type& v)
     {
         typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
-        _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
+        _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
     }
 
     // Record a fresh key-value pair in the cache
@@ -411,12 +401,10 @@ public:
         if ( found != _key_to_value.end() ) {
             found->second.first.push_back(v);
         } else {
-            value_type list;
-            list.push_back(v);
             // Create the key-value entry,
             // linked to the usage record.
             typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
-            _key_to_value.insert( std::make_pair( k, std::make_pair(list, it) ) );
+            _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
         }
     }
 
@@ -427,33 +415,32 @@ public:
     }
 
     // Purge the least-recently-used element in the cache
-    std::pair<key_type, V> evict()
+    std::pair<key_type, V> evict(bool checkUseCount)
     {
         // Assert method is never called when cache is empty
-        assert( !_key_tracker.empty() );
+        if (_key_tracker.empty()) {
+            return std::make_pair( key_type(), V() );
+        }
         // Identify least recently used key
         const typename key_to_value_type::iterator it  = _key_to_value.find( _key_tracker.front() );
-        for (typename std::list<V>::iterator it2 = it->second.first.begin();
-             it2 != it->second.first.end();
-             ++it2) {
-            if ( (*it2).use_count() == 1 ) {
-                std::pair<key_type, V> ret = std::make_pair(it->first, *it2);
-                if (it->second.first.size() == 1) {
-                    // Erase both elements to completely purge record
-                    _key_to_value.erase(it);
-                    _key_tracker.pop_front();
-                } else {
-                    it->second.first.erase(it2);
-                }
+
+        while (!checkUseCount || it != _key_to_value.end()) {
+            if ( it->second.first.use_count() == 1 ) {
+                std::pair<key_type, V> ret = std::make_pair(it->first, it->second.first);
+                // Erase both elements to completely purge record
+                _key_to_value.erase(it);
+                _key_tracker.pop_front();
 
                 return ret;
             }
+            ++it;
         }
-
+        
+        
         return std::make_pair( key_type(), V() );
     }
 
-    unsigned int size()
+    std::size_t size()
     {
         return _key_to_value.size();
     }
@@ -474,7 +461,7 @@ class BoostLRUHashTable
 {
 public:
     typedef K key_type;
-    typedef std::list<V> value_type;
+    typedef V value_type;
     typedef boost::bimaps::bimap<boost::bimaps::unordered_set_of<key_type>, boost::bimaps::list_of<value_type> > container_type;
 
     BoostLRUHashTable()
@@ -512,9 +499,9 @@ public:
     }
 
     void insert(const key_type & k,
-                const value_type& list)
+                const value_type& v)
     {
-        _container.insert( typename container_type::value_type(k, list) );
+        _container.insert( typename container_type::value_type(k, v) );
     }
 
     void insert(const key_type & k,
@@ -523,13 +510,11 @@ public:
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        typename container_type::left_iterator found = this->operator ()(k);
+        typename container_type::left_iterator found = _container.left.find(k);
         if ( found != _container.left.end() ) {
-            found->second.push_back(v);
+            found->second = v;
         } else {
-            value_type list;
-            list.push_back(v);
-            _container.insert( typename container_type::value_type(k, list) );
+            _container.insert( typename container_type::value_type(k, v) );
         }
     }
 
@@ -538,29 +523,24 @@ public:
         _container.clear();
     }
 
-    std::pair<key_type, V> evict()
+    std::pair<key_type, V> evict(bool checkUseCount)
     {
         typename container_type::right_iterator it = _container.right.begin();
-        while ( it != _container.right.end() ) {
-            for (typename std::list<V>::iterator it2 = it->first.begin(); it2 != it->first.end(); ++it2) {
-                if (it2->use_count() == 1) {
-                    std::pair<key_type, V> ret = std::make_pair(it->second, *it2);
-                    if (it->first.size() == 1) {
-                        _container.right.erase(it);
-                    } else {
-                        it->first.erase(it2);
-                    }
+        while ( !checkUseCount || it != _container.right.end() ) {
+            if (it->first.use_count() == 1) {
+                std::pair<key_type, V> ret = std::make_pair(it->second, it->first);
+                _container.right.erase(it);
 
-                    return ret;
-                }
+                return ret;
             }
+
             ++it;
         }
 
         return std::make_pair( key_type(), V() );
     }
 
-    unsigned int size()
+    std::size_t size()
     {
         return _container.size();
     }
@@ -625,13 +605,11 @@ public:
         // Create a new record from the key and the value
         // bimap's list_view defaults to inserting this at
         // the list tail (considered most-recently-used).
-        typename container_type::left_iterator found = this->operator ()(k);
+        typename container_type::left_iterator found = _container.left.find(k);
         if ( found != _container.left.end() ) {
-            found->second.push_back(v);
+            found->second = v;
         } else {
-            value_type list;
-            list.push_back(v);
-            _container.insert( typename container_type::value_type(k, list) );
+            _container.insert( typename container_type::value_type(k, v) );
         }
     }
 
@@ -640,29 +618,23 @@ public:
         _container.clear();
     }
 
-    std::pair<key_type, V> evict()
+    std::pair<key_type, V> evict(bool checkUseCount)
     {
         typename container_type::right_iterator it = _container.right.begin();
         while ( it != _container.right.end() ) {
-            for (typename std::list<V>::iterator it2 = it->first.begin(); it2 != it->first.end(); ++it2) {
-                if ( (*it2).use_count() == 1 ) {
-                    std::pair<key_type, V> ret = std::make_pair(it->second, *it2);
-                    if (it->first.size() == 1) {
-                        _container.right.erase(it);
-                    } else {
-                        it->first.erase(it2);
-                    }
-
-                    return ret;
-                }
+            if ( !checkUseCount || it->first.use_count() == 1 ) {
+                std::pair<key_type, V> ret = std::make_pair(it->second, it->first);
+                _container.right.erase(it);
+                return ret;
             }
+
             ++it;
         }
 
         return std::make_pair( key_type(), V() );
     }
 
-    unsigned int size()
+    std::size_t size()
     {
         return _container.size();
     }

@@ -80,27 +80,4 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-StatusEnum
-NoOpBase::getTransform(double /*time*/,
-                       const RenderScale & /*renderScale*/,
-                       ViewIdx /*view*/,
-                       int* inputToTransform,
-                       Transform::Matrix3x3* transform)
-{
-    *inputToTransform = 0;
-    transform->a = 1.; transform->b = 0.; transform->c = 0.;
-    transform->d = 0.; transform->e = 1.; transform->f = 0.;
-    transform->g = 0.; transform->h = 0.; transform->i = 1.;
-
-    return eStatusOK;
-}
-
-bool
-NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
-{
-    inputs->push_back(0);
-
-    return true;
-}
-
 NATRON_NAMESPACE_EXIT;

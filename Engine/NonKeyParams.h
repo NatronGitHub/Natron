@@ -37,28 +37,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-inline int
-getSizeOfForBitDepth(ImageBitDepthEnum bitdepth)
-{
-    switch (bitdepth) {
-    case eImageBitDepthByte: {
-        return sizeof(unsigned char);
-    }
-    case eImageBitDepthShort: {
-        return sizeof(unsigned short);
-    }
-    case eImageBitDepthHalf: {
-        return sizeof(unsigned short);
-    }
-    case eImageBitDepthFloat: {
-        return sizeof(float);
-    }
-    case eImageBitDepthNone:
-        break;
-    }
 
-    return 0;
-}
 
 struct CacheEntryStorageInfo
 {

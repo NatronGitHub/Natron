@@ -24,50 +24,7 @@
 #include "Serialization/TextureRectSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
-#define kBitDepthSerializationByte "B"
-#define kBitDepthSerializationShort "S"
-#define kBitDepthSerializationHalf "H"
-#define kBitDepthSerializationFloat "F"
 
-
-SERIALIZATION_NAMESPACE_ENTER;
-
-class FrameKeySerialization
-: public SerializationObjectBase
-{
-public:
-
-    int frame;
-    int view;
-    unsigned long long treeHash;
-    std::string bitdepth;
-    TextureRectSerialization textureRect;
-    bool draftMode;
-    bool useShader;
-
-    FrameKeySerialization()
-    : SerializationObjectBase()
-    , frame(0)
-    , view(0)
-    , treeHash(0)
-    , bitdepth()
-    , textureRect()
-    , draftMode(false)
-    , useShader(false)
-    {
-
-    }
-
-    virtual ~FrameKeySerialization()
-    {
-
-    }
-
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
-
-    virtual void decode(const YAML::Node& node) OVERRIDE;
-
-};
 
 
 SERIALIZATION_NAMESPACE_EXIT;
