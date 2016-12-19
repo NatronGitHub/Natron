@@ -68,6 +68,20 @@ public:
      * @brief Ctor. Make a new empty image
      **/
     Image();
+    
+    enum CacheAccessModeEnum
+    {
+        // The image should not use the cache at all
+        eCacheAccessModeEnumNone,
+        
+        // The image shoud try to look for a match in the cache
+        // if possible. Tiles that are allocated or modified will be
+        // pushed to the cache.
+        eCacheAccessModeReadWrite,
+        
+        // The image should use cached tiles but can write to the cache
+        eCacheAccessModeEnumWriteOnly
+    };
 
     struct InitStorageArgs
     {
@@ -84,13 +98,8 @@ public:
         ImageComponents layer;
 
         // Whether or not the initializeStorage() may look for already existing tiles in the cache
-        bool cacheReadEnabled;
-
-        // Whether or not the image may push data to the cache when its done computing.
-        // If a tile was read from the cache and modified but this flag is set to false, then the tile
-        // will be removed from the cache.
-        bool cacheWriteEnabled;
-
+        CacheAccessModeEnum cachePolicy;
+        
         // The mipmaplevel of the image
         unsigned int mipMapLevel;
 

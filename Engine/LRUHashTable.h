@@ -169,20 +169,6 @@ public:
         _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
     }
 
-    // Record a fresh key-value pair in the cache
-    void insert(const key_type & k,
-                const value_type & v)
-    {
-        typename key_to_value_type::iterator found =  _key_to_value.find(k);
-        if ( found != _key_to_value.end() ) {
-            found->second.first = v;
-        } else {
-            // Create the key-value entry,
-            // linked to the usage record.
-            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
-            _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
-        }
-    }
 
     void clear()
     {
@@ -286,19 +272,6 @@ public:
         _container.insert( typename container_type::value_type(k, v) );
     }
 
-    void insert(const key_type & k,
-                const V & v)
-    {
-        // Create a new record from the key and the value
-        // bimap's list_view defaults to inserting this at
-        // the list tail (considered most-recently-used).
-        typename container_type::left_iterator found = _container.left.find(k);
-        if ( found != _container.left.end() ) {
-            found->second = v;
-        } else {
-            _container.insert( typename container_type::value_type(k, v) );
-        }
-    }
 
     void clear()
     {
@@ -391,21 +364,6 @@ public:
     {
         typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
         _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
-    }
-
-    // Record a fresh key-value pair in the cache
-    void insert(const key_type & k,
-                const value_type & v)
-    {
-        typename key_to_value_type::iterator found =  _key_to_value.find(k);
-        if ( found != _key_to_value.end() ) {
-            found->second.first.push_back(v);
-        } else {
-            // Create the key-value entry,
-            // linked to the usage record.
-            typename key_tracker_type::iterator it = _key_tracker.insert(_key_tracker.end(), k);
-            _key_to_value.insert( std::make_pair( k, std::make_pair(v, it) ) );
-        }
     }
 
     void clear()
@@ -504,19 +462,6 @@ public:
         _container.insert( typename container_type::value_type(k, v) );
     }
 
-    void insert(const key_type & k,
-                const V & v)
-    {
-        // Create a new record from the key and the value
-        // bimap's list_view defaults to inserting this at
-        // the list tail (considered most-recently-used).
-        typename container_type::left_iterator found = _container.left.find(k);
-        if ( found != _container.left.end() ) {
-            found->second = v;
-        } else {
-            _container.insert( typename container_type::value_type(k, v) );
-        }
-    }
 
     void clear()
     {
@@ -597,20 +542,6 @@ public:
                 const value_type& list)
     {
         _container.insert( typename container_type::value_type(k, list) );
-    }
-
-    void insert(const key_type & k,
-                const V & v)
-    {
-        // Create a new record from the key and the value
-        // bimap's list_view defaults to inserting this at
-        // the list tail (considered most-recently-used).
-        typename container_type::left_iterator found = _container.left.find(k);
-        if ( found != _container.left.end() ) {
-            found->second = v;
-        } else {
-            _container.insert( typename container_type::value_type(k, v) );
-        }
     }
 
     void clear()

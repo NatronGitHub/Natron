@@ -45,6 +45,10 @@ struct MonoChannelTile
 {
     // A pointer to the internal storage
     MemoryBufferedCacheEntryBasePtr buffer;
+    
+    // Used when working with the cache
+    // to ensure a single thread computed this tile
+    CacheEntryLockerPtr entryLocker;
 
     // Was this found in the cache ?
     bool isCached;
@@ -63,15 +67,13 @@ struct ImagePrivate
 
     std::vector<ImageTile> tiles;
 
-    // If a tile was read from the cache and modified but this flag is set to false, then the tile
-    // will be removed from the cache.
-    // If a tile was not found in the cache but this flag is enabled, then the tile is inserted in the cache.
-    bool cacheWriteEnabled;
+    // Controls the cache access for the image
+    Image::CacheAccessModeEnum cachePolicy;
 
     ImagePrivate()
     : bounds()
     , tiles()
-    , cacheWriteEnabled(false)
+    , cachePolicy(Image::eCacheAccessModeEnumNone)
     {
 
     }
@@ -102,12 +104,12 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     }
 
     _imp->bounds = args.bounds;
-    _imp->cacheWriteEnabled = args.cacheWriteEnabled;
+    _imp->cachePolicy = args.cachePolicy;
 
     int tileSize = cache->getTileSizeBytes();
 
     int nTilesHeight,nTilesWidth;
-    if (!args.cacheReadEnabled || args.storage == eStorageModeGLTex) {
+    if (args.cachePolicy == eCacheAccessModeEnumNone || args.storage == eStorageModeGLTex) {
 
         // When not using the cache or a GL texture use a single tile
         nTilesHeight = 1;
@@ -120,6 +122,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     int nTiles = nTilesWidth * nTilesHeight;
     _imp->tiles.resize(nTiles);
 
+    // Initialize each tile
     int tx = 0, ty = 0;
     for (int tile_i = 0; tile_i < nTiles; ++tile_i) {
 
@@ -158,24 +161,75 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             {
                 CacheEntryBasePtr cacheEntry;
                 CacheEntryLockerPtr entryLocker;
-                bool isCached = cache->get(key, &cacheEntry, &entryLocker);
-
-                if (args.cacheReadEnabled) {
-                    isCached = false;
-                    cacheEntry.reset();
-                }
-#pragma message WARN("wip")
-                if (isCached) {
-                    // Found in cache, check if the key is really equal to this key
-                    if (key->equals(*cacheEntry->getKey())) {
-                        MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
-                        assert(isBufferedEntry);
-                        thisChannelTile.buffer = isBufferedEntry;
-                        thisChannelTile.isCached = true;
+                
+                // If the entry wants to be cached but we don't want to read from the cache
+                // we must remove from the cache any entry that already exists at the given hash.
+                if (args.cachePolicy == eCacheAccessModeEnumWriteOnly) {
+                    bool isCached = cache->get(key, &cacheEntry, &entryLocker);
+                    if (isCached) {
+                        assert(cacheEntry);
+                        cache->removeEntry(cacheEntry);
                     }
                 }
+                
+                // Look in the cache
+                bool isCached = false;
+                if (args.cachePolicy == eCacheAccessModeReadWrite || args.cachePolicy == eCacheAccessModeEnumWriteOnly) {
+                    isCached = cache->get(key, &cacheEntry, &entryLocker);
+                    if (isCached) {
+                        // Found in cache, check if the key is really equal to this key
+                        if (key->equals(*cacheEntry->getKey())) {
+                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
+                            assert(isBufferedEntry);
+                            thisChannelTile.buffer = isBufferedEntry;
+                            thisChannelTile.isCached = true;
+                        }
+                    }
+                }
+                
+                if (!isCached) {
+                    thisChannelTile.isCached = false;
+                
+                    // Make the hash locker live as long as this image will live
+                    thisChannelTile.entryLocker = entryLocker;
+#pragma message WARN("more wip")
+                    boost::shared_ptr<AllocateMemoryArgs> allocArgs;
+                    MemoryBufferedCacheEntryBasePtr entryBuffer;
+                    // Allocate a new entry
+                    switch (args.storage) {
+                        case eStorageModeDisk: {
+                            MemoryMappedCacheEntryPtr buffer(new MemoryMappedCacheEntry(cache));
+                            entryBuffer = buffer;
+                            boost::shared_ptr<MMAPAllocateMemoryArgs> a(new MMAPAllocateMemoryArgs());
+                            a->bitDepth = args.bitdepth;
+                            allocArgs = a;
+                        }   break;
+                        case eStorageModeGLTex: {
+                            GLCacheEntryPtr buffer(new GLCacheEntry(cache));
+                            entryBuffer = buffer;
+                            boost::shared_ptr<GLAllocateMemoryArgs> a(new GLAllocateMemoryArgs());
+                            allocArgs = a;
+                        }   break;
+                        case eStorageModeRAM: {
+                            RAMCacheEntryPtr buffer(new RAMCacheEntry(cache));
+                            entryBuffer = buffer;
+                            boost::shared_ptr<RAMAllocateMemoryArgs> a(new RAMAllocateMemoryArgs());
+                            a->bitDepth = args.bitdepth;
+                            allocArgs = a;
+                        }   break;
+                        case eStorageModeNone:
+                            assert(false);
+                            throw std::bad_alloc();
+                            break;
+                    }
+                    assert(allocArgs && entryBuffer);
+                    
+                    // This may throw a std::bad_alloc
+                    entryBuffer->allocateMemory(*allocArgs);
+                }
+                
             }
-        }
+        } // for each channel
 
         // Increment tile coords
         if (tx == nTilesWidth - 1) {
@@ -184,7 +238,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
         } else {
             ++tx;
         }
-    }
+    } // for each tile
 
 } // initializeStorage
 
