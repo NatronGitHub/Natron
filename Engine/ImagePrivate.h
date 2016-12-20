@@ -144,7 +144,7 @@ struct ImagePrivate
                               const MemoryBufferedCacheEntryBasePtr& to,
                               const int toChannelIndex,
                               Image::ImageBufferLayoutEnum toLayout,
-                              const RectI& roi);
+                              const Image::CopyPixelsArgs& args);
 
    
 

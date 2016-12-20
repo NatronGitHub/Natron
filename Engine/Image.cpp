@@ -420,9 +420,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
         CopyPixelsArgs copyArgs;
         copyArgs.roi = roi;
-#pragma message WARN("unsure about this")
-        copyArgs.conversionChannel = 3;
-        copyArgs.alphaHandling = eAlphaChannelHandlingFillFromChannel;
+        copyArgs.alphaHandling = eAlphaChannelHandlingCreateFill1;
         copyArgs.monoConversion = eMonoToPackedConversionCopyToChannelAndFillOthers;
         tmpImage->copyPixels(other, copyArgs);
     } // requiresTmpBuffer
@@ -430,6 +428,10 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     const Image* fromImage = tmpImage? tmpImage.get() : &other;
 
+    // Update the roi before calling copyRectangle
+    CopyPixelsArgs argsCpy = args;
+    argsCpy.roi = roi;
+    
     if (_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
 
         // UNTILED ---> TILED
@@ -452,11 +454,10 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
                 // This is the tile to write to
                 const ImageTile& thisTile = _imp->tiles[tile_i];
 
-                RectI tileRoI;
-                thisTile.tileBounds.intersect(roi, &tileRoI);
+                thisTile.tileBounds.intersect(roi, &argsCpy.roi);
 
                 for (std::size_t c = 0; c < thisTile.perChannelTile.size(); ++c) {
-                    ImagePrivate::copyRectangle(fromBuffer, fromIndex, fromImage->_imp->bufferFormat, thisTile.perChannelTile[c].buffer, thisTile.perChannelTile[c].channelIndex, _imp->bufferFormat, tileRoI);
+                    ImagePrivate::copyRectangle(fromBuffer, fromIndex, fromImage->_imp->bufferFormat, thisTile.perChannelTile[c].buffer, thisTile.perChannelTile[c].channelIndex, _imp->bufferFormat, argsCpy);
                 }
             } // for all tiles horizontally
         } // for all tiles vertically
@@ -471,7 +472,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
             // UNTILED ---> UNTILED
             assert(_imp->tiles[0].perChannelTile.size() == 1 && _imp->tiles[0].perChannelTile[0].channelIndex == -1);
             assert(fromImage->_imp->tiles[0].perChannelTile.size() == 1 && fromImage->_imp->tiles[0].perChannelTile[0].channelIndex == -1);
-            ImagePrivate::copyRectangle(fromImage->_imp->tiles[0].perChannelTile[0].buffer, -1, fromImage->_imp->bufferFormat, _imp->tiles[0].perChannelTile[0].buffer, -1, _imp->bufferFormat, roi);
+            ImagePrivate::copyRectangle(fromImage->_imp->tiles[0].perChannelTile[0].buffer, -1, fromImage->_imp->bufferFormat, _imp->tiles[0].perChannelTile[0].buffer, -1, _imp->bufferFormat, argsCpy);
         } else {
             // TILED ---> UNTILED
             assert(_imp->tiles[0].perChannelTile.size() == 1 && _imp->tiles[0].perChannelTile[0].channelIndex == -1);
@@ -492,11 +493,10 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
                     // This is the tile to write to
                     const ImageTile& fromTile = fromImage->_imp->tiles[tile_i];
 
-                    RectI tileRoI;
-                    fromTile.tileBounds.intersect(roi, &tileRoI);
+                    fromTile.tileBounds.intersect(roi, &argsCpy.roi);
 
                     for (std::size_t c = 0; c < fromTile.perChannelTile.size(); ++c) {
-                        ImagePrivate::copyRectangle(fromTile.perChannelTile[c].buffer, fromTile.perChannelTile[c].channelIndex, fromImage->_imp->bufferFormat, toBuffer, toIndex, _imp->bufferFormat, tileRoI);
+                        ImagePrivate::copyRectangle(fromTile.perChannelTile[c].buffer, fromTile.perChannelTile[c].channelIndex, fromImage->_imp->bufferFormat, toBuffer, toIndex, _imp->bufferFormat, argsCpy);
                     }
                 } // for all tiles horizontally
             } // for all tiles vertically
@@ -552,18 +552,6 @@ Image::getBitDepth() const
     }
     assert(!_imp->tiles[0].perChannelTile.empty() && _imp->tiles[0].perChannelTile[0].buffer);
     return _imp->tiles[0].perChannelTile[0].buffer->getBitDepth();
-}
-
-
-
-
-void
-Image::setRoD(const RectD& rod)
-{
-    QWriteLocker k(&_entryLock);
-
-    _rod = rod;
-    _params->setRoD(rod);
 }
 
 
@@ -1096,13 +1084,6 @@ Image::pixelAtStatic(int x,
 }
 
 
-unsigned int
-Image::getComponentsCount() const
-{
-    return _nbComponents;
-}
-
-
 std::string
 Image::getFormatString(const ImageComponents& comps,
                        ImageBitDepthEnum depth)
@@ -1149,31 +1130,6 @@ Image::isBitDepthConversionLossy(ImageBitDepthEnum from,
     return sizeOfTo < sizeOfFrom;
 }
 
-double
-Image::getPixelAspectRatio() const
-{
-    return this->_par;
-}
-
-ImageFieldingOrderEnum
-Image::getFieldingOrder() const
-{
-    return this->_fielding;
-}
-
-ImagePremultiplicationEnum
-Image::getPremultiplication() const
-{
-    return this->_premult;
-}
-
-unsigned int
-Image::getRowElements() const
-{
-    QReadLocker k(&_entryLock);
-
-    return getComponentsCount() * _bounds.width();
-}
 
 // code proofread and fixed by @devernay on 4/12/2014
 template <typename PIX, int maxValue>

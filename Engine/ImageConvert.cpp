@@ -967,7 +967,7 @@ ImagePrivate::copyRectangle(const MemoryBufferedCacheEntryBasePtr& from,
                             const MemoryBufferedCacheEntryBasePtr& to,
                             const int toChannelIndex,
                             Image::ImageBufferLayoutEnum toLayout,
-                            const RectI& roi)
+                            const Image::CopyPixelsArgs& args)
 {
     assert(from && to);
 
@@ -1001,7 +1001,7 @@ ImagePrivate::copyRectangle(const MemoryBufferedCacheEntryBasePtr& from,
         // to a temporary CPU image first.
         assert(fromIsGLTexture->getOpenGLContext() == toIsGLTexture->getOpenGLContext());
 
-        copyGLTexture(fromIsGLTexture, toIsGLTexture, roi, fromIsGLTexture->getOpenGLContext());
+        copyGLTexture(fromIsGLTexture, toIsGLTexture, args.roi, fromIsGLTexture->getOpenGLContext());
 
     } else if (fromIsGLTexture && !toIsGLTexture) {
         // GL texture to CPU
@@ -1017,7 +1017,7 @@ ImagePrivate::copyRectangle(const MemoryBufferedCacheEntryBasePtr& from,
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.
         assert(fromIsRAMBuffer);
-        convertRGBAPackedCPUBufferToGLTexture(fromIsRAMBuffer, roi, toIsGLTexture);
+        convertRGBAPackedCPUBufferToGLTexture(fromIsRAMBuffer, args.roi, toIsGLTexture);
     } else {
         // CPU to CPU
         assert((fromIsRAMBuffer || fromIsMMAPBuffer) && (toIsRAMBuffer || toIsMMAPBuffer));
@@ -1054,14 +1054,13 @@ ImagePrivate::copyRectangle(const MemoryBufferedCacheEntryBasePtr& from,
             dstBitDepth = toIsMMAPBuffer->getBitDepth();
             dstNComps = 1;
         }
-#pragma message WARN("Currently alpha when converting from RGB to RGBA is always set to 1. Need to pass an extra parameter to this function")
 
         switch (fromLayout) {
             case Image::eImageBufferLayoutMonoChannelTiled: {
                 switch (toLayout) {
                     case Image::eImageBufferLayoutMonoChannelTiled:
                         // Mono channel to mono channel: 1 comp in and out
-                        convertCPUImage(roi, srcColorspace, dstColorspace, false /*unPremult*/, 0/*conversionChannel*/, eAlphaChannelHandlingFillFromChannel, eMonoToPackedConversionCopyToChannelAndLeaveOthers,  srcBuf, 1 /*srcNComps*/, srcBitDepth, srcBounds, dstBuf, 1 /*dstNComps*/, dstBitDepth, dstBounds);
+                        convertCPUImage(args.roi, srcColorspace, dstColorspace, false /*unPremult*/, 0/*conversionChannel*/, Image::eAlphaChannelHandlingFillFromChannel, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers,  srcBuf, 1 /*srcNComps*/, srcBitDepth, srcBounds, dstBuf, 1 /*dstNComps*/, dstBitDepth, dstBounds);
                         break;
                     case Image::eImageBufferLayoutRGBACoplanarFullRect: {
                         assert(toChannelIndex == -1);
@@ -1071,12 +1070,12 @@ ImagePrivate::copyRectangle(const MemoryBufferedCacheEntryBasePtr& from,
 
                         // Writing to a co-planar buffer: need to offset the buffer
                         void* dstPixels = dstBuf + toChannelIndex * dstPlaneSize;
-                        convertCPUImage(roi, srcColorspace, dstColorspace, false /*unPremult*/, 0/*conversionChannel*/, eAlphaChannelHandlingFillFromChannel, eMonoToPackedConversionCopyToChannelAndLeaveOthers, srcBuf, 1 /*srcNComps*/, srcBitDepth, srcBounds, dstPixels, 1 /*dstNComps*/, dstBitDepth, dstBounds);
+                        convertCPUImage(roi, srcColorspace, dstColorspace, false /*unPremult*/, 0/*conversionChannel*/, Image::eAlphaChannelHandlingFillFromChannel, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers, srcBuf, 1 /*srcNComps*/, srcBitDepth, srcBounds, dstPixels, 1 /*dstNComps*/, dstBitDepth, dstBounds);
                     }   break;
                     case Image::eImageBufferLayoutRGBAPackedFullRect:
                         assert(toChannelIndex == -1);
                         // 1 comp to N comps
-                        convertCPUImage(roi, srcColorspace, dstColorspace, false /*unPremult*/, fromChannelIndex == -1 ? 0 : fromChannelIndex /*conversionChannel*/, eAlphaChannelHandlingFillFromChannel, eMonoToPackedConversionCopyToChannelAndLeaveOthers, srcBuf, 1 /*srcNComps*/, srcBitDepth, srcBounds, dstBuf, dstNComps, dstBitDepth, dstBounds);
+                        convertCPUImage(roi, srcColorspace, dstColorspace, false /*unPremult*/, fromChannelIndex == -1 ? 0 : fromChannelIndex /*conversionChannel*/, Image::eAlphaChannelHandlingFillFromChannel, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers, srcBuf, 1 /*srcNComps*/, srcBitDepth, srcBounds, dstBuf, dstNComps, dstBitDepth, dstBounds);
                         break;
                 }
 
