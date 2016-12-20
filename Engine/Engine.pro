@@ -117,6 +117,7 @@ SOURCES += \
     HistogramCPU.cpp \
     HostOverlaySupport.cpp \
     Image.cpp \
+    ImagePrivate.cpp \
     ImageConvert.cpp \
     ImageCopyChannels.cpp \
     ImageComponents.cpp \
@@ -338,6 +339,7 @@ HEADERS += \
     HistogramCPU.h \
     HostOverlaySupport.h \
     Image.h \
+    ImagePrivate.h \
     ImageComponents.h \
     Interpolation.h \
     JoinViewsNode.h \

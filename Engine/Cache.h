@@ -210,11 +210,11 @@ public:
     bool get(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr* returnValue, CacheEntryLockerPtr* locker) const;
 
     /**
-     * @brief Insert an entry in the cache with the given key. The caller should have first called the get() function
+     * @brief Insert an entry in the cache. The caller should have first called the get() function
      * which should have returned a locker if the entry was not found. This same locker should be given to the insert functino
      * and should be deleted as soon as this function returns.
      **/
-    void insert(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr& value, const CacheEntryLockerPtr& locker);
+    void insert(const CacheEntryBasePtr& value, const CacheEntryLockerPtr& locker);
 
     /**
      * @brief Clears the cache of its last recently used entries so at least nBytesToFree are available for the given storage.
@@ -275,7 +275,7 @@ private:
     /**
      * @brief Used internally in the implementation of insert()
      **/
-    void insertInternal(const CacheEntryKeyBasePtr& key, const CacheEntryBasePtr& value);
+    void insertInternal(const CacheEntryBasePtr& value);
 
     /**
      * @brief Removes all cache entries for the given pluginID.

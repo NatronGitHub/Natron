@@ -104,16 +104,7 @@ public:
         }
     }
 
-    virtual std::size_t sizeInRAM() const OVERRIDE FINAL
-    {
-        std::size_t ret = 0;
-
-        for (std::list<CachedTile>::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
-            ret += it->bytesCount;
-        }
-
-        return ret;
-    }
+ 
 
     bool mustFreeRamBuffer; // set to true when !cachedFrame, in this case we have only 1 tile
 

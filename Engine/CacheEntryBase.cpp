@@ -95,7 +95,7 @@ CacheEntryBase::getKey() const
 }
 
 void
-CacheEntryBase::setKey(const CacheEntryBasePtr& key)
+CacheEntryBase::setKey(const CacheEntryKeyBasePtr& key)
 {
     QMutexLocker (&_imp->lock);
     _imp->key = key;
@@ -252,6 +252,20 @@ MemoryMappedCacheEntry::getBounds() const
     return ret;
 }
 
+std::size_t
+MemoryMappedCacheEntry::getRowSize() const
+{
+    CachePtr cache = getCache();
+    if (!cache) {
+        return 0;
+    }
+    ImageBitDepthEnum bitDepth = getBitDepth();
+    int tileSize = cache->getTileSizePx(bitDepth);
+
+    return tileSize * getSizeOfForBitDepth(bitDepth);
+
+}
+
 const char*
 MemoryMappedCacheEntry::getData() const
 {
@@ -389,6 +403,18 @@ RAMCacheEntry::getBounds() const
     return _imp->bounds;
 }
 
+std::size_t
+RAMCacheEntry::getNumComponents() const
+{
+    return _imp->numComps;
+}
+
+std::size_t
+RAMCacheEntry::getRowSize() const
+{
+    return _imp->bounds.width() * _imp->numComps * getSizeOfForBitDepth(_imp->bitDepth);
+}
+
 StorageModeEnum
 RAMCacheEntry::getStorageMode() const
 {
@@ -501,6 +527,12 @@ GLCacheEntry::~GLCacheEntry()
 
 }
 
+OSGLContextPtr
+GLCacheEntry::getOpenGLContext() const
+{
+    return _imp->glContext.lock();
+}
+
 RectI
 GLCacheEntry::getBounds() const
 {
@@ -556,7 +588,7 @@ GLCacheEntry::allocateMemoryImpl(const AllocateMemoryArgs& args)
                                      format,
                                      internalFormat,
                                      glType,
-                                     glArgs->isGPUTexture /*useOpenGL*/) );
+                                     glArgs->glContext->isGPUContext() /*useOpenGL*/) );
 
 
     TextureRect r(glArgs->bounds.x1, glArgs->bounds.y1, glArgs->bounds.x2, glArgs->bounds.y2, 1., 1.);

@@ -106,7 +106,7 @@ public:
      * @brief Set the key object for this entry.
      * Note that this should be done prior to inserting this entry in the cache.
      **/
-    void setKey(const CacheEntryBasePtr& key);
+    void setKey(const CacheEntryKeyBasePtr& key);
 
     /**
      * @brief Get the hash key for this entry
@@ -262,6 +262,8 @@ public:
 
     const char* getData() const;
 
+    std::size_t getRowSize() const;
+
     char* getData();
 
     std::size_t getOffsetInFile() const;
@@ -282,6 +284,13 @@ private:
 
     boost::scoped_ptr<MemoryMappedCacheEntryPrivate> _imp;
 };
+
+inline
+MemoryMappedCacheEntryPtr
+toMemoryMappedCacheEntry(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<MemoryMappedCacheEntry>(entry);
+}
 
 class RAMAllocateMemoryArgs : public AllocateMemoryArgs
 {
@@ -336,6 +345,10 @@ public:
 
     RectI getBounds() const;
 
+    std::size_t getNumComponents() const;
+
+    std::size_t getRowSize() const;
+
     virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
 
     virtual std::size_t getSize() const OVERRIDE FINAL;
@@ -353,6 +366,12 @@ private:
     boost::scoped_ptr<RAMCacheEntryPrivate> _imp;
 };
 
+inline
+RAMCacheEntryPtr
+toRAMCacheEntry(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<RAMCacheEntry>(entry);
+}
 
 class GLAllocateMemoryArgs : public AllocateMemoryArgs
 {
@@ -371,7 +390,6 @@ public:
 
     RectI bounds;
     U32 textureTarget;
-    bool isGPUTexture;
     OSGLContextPtr glContext;
 };
 
@@ -394,6 +412,8 @@ public:
 
     RectI getBounds() const;
 
+    OSGLContextPtr getOpenGLContext() const;
+
     U32 getGLTextureID() const;
 
     int getGLTextureTarget() const;
@@ -413,6 +433,12 @@ private:
     boost::scoped_ptr<GLCacheEntryPrivate> _imp;
 };
 
+inline
+GLCacheEntryPtr
+toGLCacheEntry(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<GLCacheEntry>(entry);
+}
 
 NATRON_NAMESPACE_EXIT;
 

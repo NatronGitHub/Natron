@@ -58,7 +58,6 @@ public:
         uniqueID = aid;
     }
 
-    virtual std::size_t sizeInRAM() const = 0;
 };
 
 typedef std::list<BufferableObjectPtr > BufferableObjectList;

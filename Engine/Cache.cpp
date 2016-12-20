@@ -839,8 +839,11 @@ Cache::get(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr* returnValue, Cach
             hasWaitedOnce = true;
         }
 
-        // Ok now if we waited once, the entry must now be in the cache
-        // because the thread that locked the hash must have inserted it.
+        // Ok now if we waited once, the entry may now be in the cache
+        // because the thread that locked the hash is done with it.
+        // If the entry is not in the cache but it was released it means that the
+        // original thread aborted, in this case let this thread redo the computation.
+        // It is likely that this thread gets in turn aborted.
         if (hasWaitedOnce) {
             foundEntry = bucket.container(hash);
             if (foundEntry != bucket.container.end()) {
@@ -861,21 +864,26 @@ Cache::get(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr* returnValue, Cach
 } // get
 
 void
-Cache::insert(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr& value, const CacheEntryLockerPtr& locker)
+Cache::insert(const CacheEntryBasePtr& value, const CacheEntryLockerPtr& locker)
 {
-    assert(key && value && locker);
-    if (!key || !value || !locker) {
+    assert(value && locker);
+    if (!value || !locker) {
         return;
     }
-    insertInternal(key, value);
+    insertInternal(value);
 
 } // insert
 
 void
-Cache::insertInternal(const CacheEntryKeyBasePtr& key, const CacheEntryBasePtr& value)
+Cache::insertInternal(const CacheEntryBasePtr& value)
 {
     // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
     // buckets
+    CacheEntryKeyBasePtr key = value->getKey();
+    assert(key);
+    if (!key) {
+        throw std::runtime_error("Cache entry without a key!");
+    }
     U64 hash = key->getHash();
 
     int cacheBucket_i = _imp->getBucketCacheBucketIndex(hash);
@@ -1295,7 +1303,8 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
         key->setHolderPluginID((*it)->pluginID);
         
         MemoryMappedCacheEntryPtr value(new MemoryMappedCacheEntry(thisShared));
-
+        value->setKey(key);
+        
         MMAPAllocateMemoryArgs allocArgs;
         allocArgs.bitDepth = bitDepth;
         allocArgs.cacheFilePath = (*it)->filePath;
@@ -1309,7 +1318,7 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
 
         usedFilePaths.insert(QString::fromUtf8((*it)->filePath.c_str()));
 
-        insertInternal(key, value);
+        insertInternal(value);
     } // for each serialized entry
 
     // Remove from the cache all files that are not referenced by the table of contents

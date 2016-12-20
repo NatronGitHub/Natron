@@ -140,6 +140,12 @@ private:
     boost::scoped_ptr<ImageTileKeyPrivate> _imp;
 };
 
+inline
+ImageTileKeyPtr toImageTileKey(const CacheEntryKeyBasePtr& key)
+{
+    return boost::dynamic_pointer_cast<ImageTileKey>(key);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_CACHEENTRYBASE_H
