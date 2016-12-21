@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Image.h"
+#include "ImagePrivate.h"
 
 #include <cassert>
 #include <stdexcept>
@@ -47,9 +47,9 @@ GCC_DIAG_OFF(unused-but-set-variable) // only on gcc >= 4.6
 
 NATRON_NAMESPACE_ENTER;
 
-template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
-void
-Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
+template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
+static void
+copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
                                          const RectI& roi,
                                          const ImagePtr& originalImage)
 {
@@ -62,8 +62,7 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
     int dstRowElements = dstNComps * _bounds.width();
     PIX* dst_pixels = (PIX*)pixelAt(roi.x1, roi.y1);
     assert(dst_pixels);
-    assert(srcNComps == 1 || srcNComps == 4 || !originalPremult); // only A or RGBA can be premult
-    assert(dstNComps == 1 || dstNComps == 4 || !premult); // only A or RGBA can be premult
+
 
     for ( int y = roi.y1; y < roi.y2; ++y, dst_pixels += (dstRowElements - (roi.x2 - roi.x1) * dstNComps) ) {
         for (int x = roi.x1; x < roi.x2; ++x, dst_pixels += dstNComps) {
@@ -77,6 +76,9 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
             }
 
 #        ifdef NATRON_COPY_CHANNELS_UNPREMULT
+            assert(srcNComps == 1 || srcNComps == 4 || !originalPremult); // only A or RGBA can be premult
+            assert(dstNComps == 1 || dstNComps == 4 || !premult); // only A or RGBA can be premult
+
             // Repremult R G and B if output is premult and alpha was modified.
             // We do not consider it a good thing, since the user explicitely deselected the channels, and expects
             // to get the values from input instead.
@@ -198,8 +200,8 @@ Image::copyUnProcessedChannelsForPremult(const std::bitset<4> processChannels,
 } // Image::copyUnProcessedChannelsForPremult
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
-void
-Image::copyUnProcessedChannelsForPremult(const bool premult,
+static void
+copyUnProcessedChannelsForPremult(const bool premult,
                                          const bool originalPremult,
                                          const std::bitset<4> processChannels,
                                          const RectI& roi,
@@ -307,8 +309,8 @@ Image::copyUnProcessedChannelsForPremult(const bool premult,
 } // Image::copyUnProcessedChannelsForPremult
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-void
-Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
+static void
+copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
                                           const bool premult,
                                           const RectI& roi,
                                           const ImagePtr& originalImage,
@@ -351,8 +353,8 @@ Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
 }
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-void
-Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
+static void
+copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
                                           const bool premult,
                                           const RectI& roi,
                                           const ImagePtr& originalImage,
@@ -367,8 +369,8 @@ Image::copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
 }
 
 template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-void
-Image::copyUnProcessedChannelsForComponents(const bool premult,
+static void
+copyUnProcessedChannelsForComponents(const bool premult,
                                             const RectI& roi,
                                             const std::bitset<4> processChannels,
                                             const ImagePtr& originalImage,
@@ -453,13 +455,16 @@ Image::copyUnProcessedChannelsForComponents(const bool premult,
 } // Image::copyUnProcessedChannelsForComponents
 
 template <typename PIX, int maxValue>
-void
-Image::copyUnProcessedChannelsForDepth(const bool premult,
-                                       const RectI& roi,
-                                       const std::bitset<4> processChannels,
-                                       const ImagePtr& originalImage,
-                                       const bool originalPremult,
-                                       bool ignorePremult)
+static void
+copyUnProcessedChannelsForDepth(const void* originalImgPtrs[4],
+                                const RectI& originalImgBounds,
+                                int originalImgNComps,
+                                void* dstImgPtrs[4],
+                                ImageBitDepthEnum dstImgBitDepth,
+                                int dstImgNComps,
+                                const RectI& dstBounds,
+                                const std::bitset<4> processChannels,
+                                const RectI& roi)
 {
     int dstNComps = getComponents().getNumComponents();
     int srcNComps = originalImage ? originalImage->getComponents().getNumComponents() : 0;
@@ -554,57 +559,66 @@ Image::copyUnProcessedChannelsForDepth(const bool premult,
         }
         break;
 
-    default:
-        assert(false);
-        break;
+        default:
+            assert(false);
+            break;
     } // switch
 } // Image::copyUnProcessedChannelsForDepth
 
-bool
-Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) const
+void
+ImagePrivate::copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
+                                         const RectI& originalImgBounds,
+                                         int originalImgNComps,
+                                         void* dstImgPtrs[4],
+                                         ImageBitDepthEnum dstImgBitDepth,
+                                         int dstImgNComps,
+                                         const RectI& dstBounds,
+                                         const std::bitset<4> processChannels,
+                                         const RectI& roi)
 {
-    int numComp = getComponents().getNumComponents();
+    switch (dstImgBitDepth) {
+        case eImageBitDepthByte:
+            copyUnProcessedChannelsForDepth<unsigned char, 255>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi);
+            break;
+        case eImageBitDepthFloat:
+            copyUnProcessedChannelsForDepth<float, 1>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi);
+            break;
+        case eImageBitDepthShort:
+            copyUnProcessedChannelsForDepth<unsigned short, 65535>(originalImgPtrs, originalImgBounds, originalImgNComps, dstImgPtrs, dstImgNComps, dstBounds, processChannels, roi);
+            break;
 
-    if (numComp == 0) {
-        return false;
-    }
-    if ( (numComp == 1) && processChannels[3] ) { // 1 component is alpha
-        return false;
-    } else if ( (numComp == 2) && processChannels[0] && processChannels[1] ) {
-        return false;
-    } else if ( (numComp == 3) && processChannels[0] && processChannels[1] && processChannels[2] ) {
-        return false;
-    } else if ( (numComp == 4) && processChannels[0] && processChannels[1] && processChannels[2] && processChannels[3] ) {
-        return false;
-    }
+        case eImageBitDepthHalf:
+        case eImageBitDepthNone:
 
-    return true;
+            break;
+    }
 }
+
+
 
 template <typename GL>
 void
-copyUnProcessedChannelsGL(const RectI& roi,
-                          const ImagePremultiplicationEnum outputPremult,
-                          const ImagePremultiplicationEnum originalImagePremult,
-                          const std::bitset<4> processChannels,
-                          const ImagePtr& originalImage,
-                          bool ignorePremult,
-                          const OSGLContextPtr& glContext,
-                          const RectI& bounds,
-                          const RectI& srcRoi,
-                          int target,
-                          int texID,
-                          int originalTexID)
+copyUnProcessedChannelsGLInternal(const GLCacheEntryPtr& originalTexture,
+                                  const GLCacheEntryPtr& dstTexture,
+                                  const std::bitset<4> processChannels,
+                                  const RectI& roi,
+                                  const OSGLContextPtr& glContext)
 {
-    assert(originalImage->getStorageMode() == eStorageModeGLTex);
+
     GLShaderBasePtr shader = glContext->getOrCreateCopyUnprocessedChannelsShader(processChannels[0], processChannels[1], processChannels[2], processChannels[3]);
     assert(shader);
     GLuint fboID = glContext->getOrCreateFBOId();
 
+    int target = dstTexture->getGLTextureTarget();
+    int dstTexID = dstTexture->getGLTextureID();
+    int originalTexID = 0;
+    if (originalTexture) {
+        originalTexID = originalTexture->getGLTextureID();
+    }
     GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
     GL::Enable(target);
     GL::ActiveTexture(GL_TEXTURE0);
-    GL::BindTexture( target, texID );
+    GL::BindTexture( target, dstTexID );
 
     GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -612,7 +626,7 @@ copyUnProcessedChannelsGL(const RectI& roi,
     GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
     GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
-    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
+    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, dstTexID, 0 /*LoD*/);
     glCheckFramebufferError(GL);
     glCheckError(GL);
     GL::ActiveTexture(GL_TEXTURE1);
@@ -624,6 +638,8 @@ copyUnProcessedChannelsGL(const RectI& roi,
     GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
     GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
+    const RectI& dstBounds = dstTexture->getBounds();
+    const RectI& srcBounds = originalTexture ? originalTexture->getBounds() : dstBounds;
 
     shader->bind();
     shader->setUniform("originalImageTex", 1);
@@ -635,7 +651,7 @@ copyUnProcessedChannelsGL(const RectI& roi,
         processChannels[3] ? 1.f : 0.f
     };
     shader->setUniform("processChannels", procChannelsV);
-    Image::applyTextureMapping<GL>(originalImage->getBounds(), bounds, srcRoi);
+    OSGLContext::applyTextureMapping<GL>(srcBounds, dstBounds, roi);
     shader->unbind();
 
     glCheckError(GL);
@@ -644,73 +660,30 @@ copyUnProcessedChannelsGL(const RectI& roi,
     GL::BindTexture(target, 0);
     glCheckError(GL);
 
-}
+} // copyUnProcessedChannelsGLInternal
 
 void
-Image::copyUnProcessedChannels(const RectI& roi,
-                               const ImagePremultiplicationEnum outputPremult,
-                               const ImagePremultiplicationEnum originalImagePremult,
-                               const std::bitset<4> processChannels,
-                               const ImagePtr& originalImage,
-                               bool ignorePremult,
-                               const OSGLContextPtr& glContext)
+ImagePrivate::copyUnprocessedChannelsGL(const GLCacheEntryPtr& originalTexture,
+                                        const GLCacheEntryPtr& dstTexture,
+                                        const std::bitset<4> processChannels,
+                                        const RectI& roi)
 {
-    int numComp = getComponents().getNumComponents();
+    OSGLContextPtr glContext = dstTexture->getOpenGLContext();
+    // Save the current context
+    OSGLContextSaver saveCurrentContext;
 
-    if (numComp == 0) {
-        return;
-    }
-    if ( (numComp == 1) && processChannels[3] ) { // 1 component is alpha
-        return;
-    } else if ( (numComp == 2) && processChannels[0] && processChannels[1] ) {
-        return;
-    } else if ( (numComp == 3) && processChannels[0] && processChannels[1] && processChannels[2] ) {
-        return;
-    } else if ( (numComp == 4) && processChannels[0] && processChannels[1] && processChannels[2] && processChannels[3] ) {
-        return;
-    }
+    {
+        // Ensure this context is attached
+        OSGLContextAttacherPtr contextAttacher = OSGLContextAttacher::create(glContext);
+        contextAttacher->attach();
 
-
-    if ( originalImage && ( getMipMapLevel() != originalImage->getMipMapLevel() ) ) {
-        qDebug() << "WARNING: attempting to call copyUnProcessedChannels on images with different mipMapLevel";
-
-        return;
-    }
-
-    QWriteLocker k(&_entryLock);
-    assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
-
-
-    RectI srcRoi;
-    roi.intersect(_bounds, &srcRoi);
-
-    if (getStorageMode() == eStorageModeGLTex) {
-        assert(glContext);
         if (glContext->isGPUContext()) {
-            copyUnProcessedChannelsGL<GL_GPU>(roi, outputPremult, originalImagePremult, processChannels, originalImage, ignorePremult, glContext, _bounds, srcRoi, getGLTextureTarget(), getGLTextureID(), originalImage->getGLTextureID());
+            copyUnProcessedChannelsGLInternal<GL_GPU>(originalTexture, dstTexture, processChannels, roi, glContext);
         } else {
-            copyUnProcessedChannelsGL<GL_CPU>(roi, outputPremult, originalImagePremult, processChannels, originalImage, ignorePremult, glContext, _bounds, srcRoi, getGLTextureTarget(), getGLTextureID(), originalImage->getGLTextureID());
+            copyUnProcessedChannelsGLInternal<GL_CPU>(originalTexture, dstTexture, processChannels, roi, glContext);
         }
-        return;
     }
+}
 
-
-    bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
-    bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        copyUnProcessedChannelsForDepth<unsigned char, 255>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
-        break;
-    case eImageBitDepthShort:
-        copyUnProcessedChannelsForDepth<unsigned short, 65535>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
-        break;
-    case eImageBitDepthFloat:
-        copyUnProcessedChannelsForDepth<float, 1>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
-        break;
-    default:
-
-        return;
-    }
-} // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;

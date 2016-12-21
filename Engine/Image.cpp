@@ -369,6 +369,7 @@ Image::CopyPixelsArgs::CopyPixelsArgs()
 , srcColorspace(eViewerColorSpaceLinear)
 , dstColorspace(eViewerColorSpaceLinear)
 , unPremultIfNeeded(false)
+, skipDestinationTilesMarkedCached(false)
 {
 
 }
@@ -900,32 +901,97 @@ Image::applyMaskMix(const RectI& roi,
     }
     assert(maskImgNComps == 1);
 
-    for (std::size_t tile_i; tile_i < _imp->tiles.size(); ++tile_i) {
+    for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
 
+        void* dstImgPtrs[4];
+        RectI dstImgBounds;
+        ImageBitDepthEnum dstImgBitdepth;
+        int dstImgNComps = 0;
+        getCPUTileData(_imp->tiles[tile_i], dstImgPtrs, &dstImgBounds, &dstImgBitdepth, &dstImgNComps);
+
+        RectI tileRoI;
+        roi.intersect(dstImgBounds, &tileRoI);
+
+        _imp->applyMaskMixCPU((const void**)origImgPtrs, origImgBounds, origImgNComps, (const void**)maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitdepth, dstImgNComps, mix, maskInvert, dstImgBounds, tileRoI);
     } // for each tile
-
-
-
-
-    int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
-    switch (srcNComps) {
-        case 1:
-            applyMaskMixForSrcComponents<1>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-            break;
-        case 2:
-            applyMaskMixForSrcComponents<2>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-            break;
-        case 3:
-            applyMaskMixForSrcComponents<3>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-            break;
-        case 4:
-            applyMaskMixForSrcComponents<4>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
-            break;
-        default:
-            break;
-    }
 } // applyMaskMix
 
+bool
+Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) const
+{
+    int numComp = getComponents().getNumComponents();
 
+    if (numComp == 0) {
+        return false;
+    }
+    if ( (numComp == 1) && processChannels[3] ) { // 1 component is alpha
+        return false;
+    } else if ( (numComp == 2) && processChannels[0] && processChannels[1] ) {
+        return false;
+    } else if ( (numComp == 3) && processChannels[0] && processChannels[1] && processChannels[2] ) {
+        return false;
+    } else if ( (numComp == 4) && processChannels[0] && processChannels[1] && processChannels[2] && processChannels[3] ) {
+        return false;
+    }
+
+    return true;
+}
+
+
+void
+Image::copyUnProcessedChannels(const RectI& roi,
+                               const ImagePremultiplicationEnum outputPremult,
+                               const ImagePremultiplicationEnum originalImagePremult,
+                               const std::bitset<4> processChannels,
+                               const ImagePtr& originalImage,
+                               bool ignorePremult)
+{
+
+    if (!canCallCopyUnProcessedChannels(processChannels)) {
+        return;
+    }
+
+    int numComp = getComponents().getNumComponents();
+
+    assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
+
+
+    RectI srcRoi;
+    roi.intersect(_bounds, &srcRoi);
+
+    if (getStorageMode() == eStorageModeGLTex) {
+
+        GLCacheEntryPtr originalImageTexture, dstTexture;
+        if (originalImage) {
+            assert(originalImage->getStorageMode() == eStorageModeGLTex);
+            originalImageTexture = toGLCacheEntry(originalImage->_imp->tiles[0].perChannelTile[0].buffer);
+        }
+
+        dstTexture = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+
+        RectI realRoi;
+        roi.intersect(dstTexture->getBounds(), &realRoi);
+        ImagePrivate::copyUnprocessedChannelsGL(originalImageTexture, dstTexture, processChannels, realRoi);
+        return;
+    }
+
+
+    bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
+    bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
+    switch ( getBitDepth() ) {
+        case eImageBitDepthByte:
+            copyUnProcessedChannelsForDepth<unsigned char, 255>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
+            break;
+        case eImageBitDepthShort:
+            copyUnProcessedChannelsForDepth<unsigned short, 65535>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
+            break;
+        case eImageBitDepthFloat:
+            copyUnProcessedChannelsForDepth<float, 1>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
+            break;
+        default:
+            
+            return;
+    }
+} // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;

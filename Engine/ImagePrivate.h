@@ -235,6 +235,21 @@ struct ImagePrivate
                                 const RectI& dstBounds,
                                 const RectI& roi);
 
+    static void copyUnprocessedChannelsGL(const GLCacheEntryPtr& originalTexture,
+                                          const GLCacheEntryPtr& dstTexture,
+                                          const std::bitset<4> processChannels,
+                                          const RectI& roi);
+
+    static void copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
+                                           const RectI& originalImgBounds,
+                                           int originalImgNComps,
+                                           void* dstImgPtrs[4],
+                                           ImageBitDepthEnum dstImgBitDepth,
+                                           int dstImgNComps,
+                                           const RectI& dstBounds,
+                                           const std::bitset<4> processChannels,
+                                           const RectI& roi);
+    
     
 };
 

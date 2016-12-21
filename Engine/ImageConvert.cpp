@@ -986,7 +986,7 @@ copyGLTextureInternal(const GLCacheEntryPtr& from,
     shader->bind();
     shader->setUniform("srcTex", 0);
 
-    Image::applyTextureMapping<GL>(from->getBounds(), to->getBounds(), roi);
+    OSGLContext::applyTextureMapping<GL>(from->getBounds(), to->getBounds(), roi);
 
     shader->unbind();
     GL::BindTexture(target, 0);
@@ -1177,17 +1177,24 @@ convertGLTextureToRGBAPackedCPUBuffer(const GLCacheEntryPtr& texture,
 }
 
 void
-ImagePrivate::copyRectangle(const ImageTile& fromTile,
+ImagePrivate::copyRectangle(const Image::Tile& fromTile,
                             StorageModeEnum fromStorage,
                             Image::ImageBufferLayoutEnum fromLayout,
-                            const ImageTile& toTile,
+                            const Image::Tile& toTile,
                             StorageModeEnum toStorage,
                             Image::ImageBufferLayoutEnum toLayout,
                             const Image::CopyPixelsArgs& args)
 {
+
     assert(fromStorage != eStorageModeNone && toStorage != eStorageModeNone);
 
     if (fromStorage == eStorageModeGLTex && toStorage == eStorageModeGLTex) {
+
+        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].isCached) {
+            // Don't write over cached tiles
+            return;
+        }
+
         // GL texture to GL texture
         assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect &&
                toLayout == Image::eImageBufferLayoutRGBAPackedFullRect);
@@ -1211,6 +1218,12 @@ ImagePrivate::copyRectangle(const ImageTile& fromTile,
         }
 
     } else if (fromStorage == eStorageModeGLTex && toStorage != eStorageModeGLTex) {
+
+        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].isCached) {
+            // Don't write over cached tiles
+            return;
+        }
+
         // GL texture to CPU
         assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect &&
                toLayout == Image::eImageBufferLayoutRGBAPackedFullRect);
@@ -1234,6 +1247,11 @@ ImagePrivate::copyRectangle(const ImageTile& fromTile,
         }
 
     } else if (fromStorage != eStorageModeGLTex && toStorage == eStorageModeGLTex) {
+
+        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].isCached) {
+            // Don't write over cached tiles
+            return;
+        }
 
         // CPU to GL texture
         assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect &&
@@ -1261,6 +1279,21 @@ ImagePrivate::copyRectangle(const ImageTile& fromTile,
 
         // CPU to CPU
 
+        if (args.skipDestinationTilesMarkedCached) {
+            // Don't write over cached tiles
+            // Currently it only skips if all channels are mark cached, otherwise it will write over.
+            // This not very important whilst the effects anyway always compute all channels at once.
+            bool hasUncachedTile = false;
+            for (std::size_t i = 0; i < toTile.perChannelTile.size(); ++i) {
+                if (!toTile.perChannelTile[i].isCached) {
+                    hasUncachedTile = true;
+                }
+            }
+            if (!hasUncachedTile) {
+                return;
+            }
+        }
+
         // The pointer to the RGBA channels.
         // If layout is RGBAPacked only the first pointer is valid and points to the RGBA buffer.
         // If layout is RGBACoplanar or mono channel tiled all pointers are set (if they exist).
@@ -1274,6 +1307,7 @@ ImagePrivate::copyRectangle(const ImageTile& fromTile,
         int dstNComps = 0;
 
         for (std::size_t i = 0; i < fromTile.perChannelTile.size(); ++i) {
+
             RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(fromTile.perChannelTile[i].buffer);
             MemoryMappedCacheEntryPtr fromIsMMAPBuffer = toMemoryMappedCacheEntry(fromTile.perChannelTile[i].buffer);
 
@@ -1363,6 +1397,7 @@ ImagePrivate::copyRectangle(const ImageTile& fromTile,
 
         // This function is very optimized and templated for each cases.
         // In the best optimize case memcpy is used
+#pragma message WARN("We should make use of the multi-thread suite here")
         convertCPUImage(args.roi,
                         args.srcColorspace,
                         args.dstColorspace,

@@ -376,6 +376,12 @@ public:
         // Default - false
         bool unPremultIfNeeded;
 
+        // When copying the image, tiles that are marked cached on the
+        // destination image will not be written to
+        //
+        // Default - false
+        bool skipDestinationTilesMarkedCached;
+
         CopyPixelsArgs();
     };
 
@@ -560,8 +566,6 @@ public:
     bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
 
 
-
-
     /**
      * @brief Returns whether copyUnProcessedChannels() will have any effect at all
      **/
@@ -605,89 +609,6 @@ public:
     template <typename SRCPIX, typename DSTPIX>
     static DSTPIX convertPixelDepth(SRCPIX pix);
 
-
-    template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
-    void applyMaskMixForMaskInvert(const RectI& roi,
-                                   const Image* maskImg,
-                                   const Image* originalImg,
-                                   float mix);
-
-
-    template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked>
-    void applyMaskMixForMasked(const RectI& roi,
-                               const Image* maskImg,
-                               const Image* originalImg,
-                               bool maskInvert,
-                               float mix);
-
-    template<int srcNComps, int dstNComps, typename PIX, int maxValue>
-    void applyMaskMixForDepth(const RectI& roi,
-                              const Image* maskImg,
-                              const Image* originalImg,
-                              bool masked,
-                              bool maskInvert,
-                              float mix);
-
-
-    template<int srcNComps, int dstNComps>
-    void applyMaskMixForDstComponents(const RectI& roi,
-                                      const Image* maskImg,
-                                      const Image* originalImg,
-                                      bool masked,
-                                      bool maskInvert,
-                                      float mix);
-
-    template<int srcNComps>
-    void applyMaskMixForSrcComponents(const RectI& roi,
-                                      const Image* maskImg,
-                                      const Image* originalImg,
-                                      bool masked,
-                                      bool maskInvert,
-                                      float mix);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
-    void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
-                                           const RectI& roi,
-                                           const ImagePtr& originalImage);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
-    void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
-                                           std::bitset<4> processChannels,
-                                           const RectI& roi,
-                                           const ImagePtr& originalImage);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
-                                            const bool premult,
-                                            const RectI& roi,
-                                            const ImagePtr& originalImage,
-                                            const bool originalPremult,
-                                            const bool ignorePremult);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
-                                            const bool premult,
-                                            const RectI& roi,
-                                            const ImagePtr& originalImage,
-                                            const bool originalPremult,
-                                            const bool ignorePremult);
-
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-    void copyUnProcessedChannelsForComponents(bool premult,
-                                              const RectI& roi,
-                                              const std::bitset<4> processChannels,
-                                              const ImagePtr& originalImage,
-                                              const bool originalPremult,
-                                              const bool ignorePremult);
-
-    template <typename PIX, int maxValue>
-    void copyUnProcessedChannelsForDepth(bool premult,
-                                         const RectI& roi,
-                                         std::bitset<4> processChannels,
-                                         const ImagePtr& originalImage,
-                                         bool originalPremult,
-                                         bool ignorePremult);
 
 private:
 
