@@ -27,7 +27,7 @@
 #include <QMutex>
 
 #include "Engine/Hash64.h"
-#include "Engine/ParallelRenderArgs.h"
+#include "Engine/TreeRenderNodeArgs.h"
 
 
 NATRON_NAMESPACE_ENTER

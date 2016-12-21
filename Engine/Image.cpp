@@ -34,6 +34,9 @@
 #include "Engine/ImagePrivate.h"
 
 
+#ifndef M_LN2
+#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
+#endif
 
 NATRON_NAMESPACE_ENTER;
 
@@ -55,7 +58,9 @@ Image::~Image()
 {
     // If there's a mirror image, update it
     if (_imp->mirrorImage) {
-        _imp->mirrorImage->copyPixels(*this, _imp->mirrorImageRoI);
+        CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = _imp->mirrorImageRoI;
+        _imp->mirrorImage->copyPixels(*this, cpyArgs);
     }
 
     // Push tiles to cache if needed
@@ -156,7 +161,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     int tx = 0, ty = 0;
     for (int tile_i = 0; tile_i < nTiles; ++tile_i) {
 
-        ImageTile& tile = _imp->tiles[tile_i];
+        Image::Tile& tile = _imp->tiles[tile_i];
 
         const std::string& layerName = args.layer.getLayerName();
 
@@ -249,23 +254,39 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             bool isCached = false;
             if (args.cachePolicy == eCacheAccessModeReadWrite || args.cachePolicy == eCacheAccessModeWriteOnly) {
 
-                // In eCacheAccessModeWriteOnly mode, we already accessed the cache. If we got an entry locker because the entry
-                // was not cached, do not read a second time.
-                if (!entryLocker) {
-                    isCached = cache->get(key, &cacheEntry, &entryLocker);
-                    assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
-                }
-                if (isCached) {
-                    // Found in cache, check if the key is really equal to this key
-                    if (key->equals(*cacheEntry->getKey())) {
-                        MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
-                        assert(isBufferedEntry);
-                        thisChannelTile.buffer = isBufferedEntry;
-                        thisChannelTile.isCached = true;
+                for (int draft_i = 0; draft_i < 2; ++draft_i) {
+
+                    const bool useDraft = (const bool)draft_i;
+
+                    ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeHashKey,
+                                                                    channelName,
+                                                                    args.mipMapLevel,
+                                                                    useDraft,
+                                                                    args.bitdepth,
+                                                                    tx,
+                                                                    ty));
+
+                    // In eCacheAccessModeWriteOnly mode, we already accessed the cache. If we got an entry locker because the entry
+                    // was not cached, do not read a second time.
+                    if (!entryLocker) {
+                        isCached = cache->get(keyToReadCache, &cacheEntry, &entryLocker);
+                        assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
+                    }
+                    if (isCached) {
+                        // Found in cache, check if the key is really equal to this key
+                        if (keyToReadCache->equals(*cacheEntry->getKey())) {
+                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
+                            assert(isBufferedEntry);
+                            thisChannelTile.buffer = isBufferedEntry;
+                            thisChannelTile.isCached = true;
+
+                            // We found a cache entry, don't continue to look for a tile computed in draft mode.
+                            break;
+                        }
                     }
                 }
             }
-
+            
             if (!isCached) {
 
                 // If we got the locker object, we are the only thread computing this tile.
@@ -370,143 +391,39 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
         return;
     }
 
-
-
-    ImagePtr tmpImage;
-
-    bool requiresTmpBuffer = false;
-    bool requiresRGBABuffer = false;
-
-    // Copying from a tiled buffer is not trivial unless we are not tile either.
-    if (other._imp->bufferFormat == eImageBufferLayoutMonoChannelTiled && _imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
-        requiresTmpBuffer = true;
-    }
-
-    // OpenGL textures may only be read from a RGBA packed buffer
-    if (!requiresTmpBuffer && other.getStorageMode() == eStorageModeGLTex) {
-
-        // Converting from OpenGL requires a RGBA buffer
-        if (_imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || getComponentsCount() != 4) {
-            requiresTmpBuffer = true;
-            requiresRGBABuffer = true;
-        }
-
-    }
-
-    // OpenGL textures may only be written from a RGBA packed buffer
-    if (!requiresTmpBuffer && getStorageMode() == eStorageModeGLTex) {
-
-        // Converting to OpenGl requires an RGBA buffer
-        if (other._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || other.getComponentsCount() != 4) {
-            requiresTmpBuffer = true;
-            requiresRGBABuffer = true;
-        }
-    }
-
-    // Check if we need to copy the original image into a temporary buffer
-    if (requiresTmpBuffer) {
-        InitStorageArgs args;
-        args.bounds = roi;
-        if (!requiresRGBABuffer) {
-            args.layer = other._imp->layer;
-        } else {
-            args.layer = ImageComponents::getRGBAComponents();
-        }
-        args.components[0] =  args.components[1] = args.components[2] = args.components[3] = 1;
-        args.storage = eStorageModeRAM;
-        args.cachePolicy = eCacheAccessModeNone;
-        args.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
-        tmpImage = Image::create(args);
-
-        CopyPixelsArgs copyArgs;
-        copyArgs.roi = roi;
-        copyArgs.alphaHandling = eAlphaChannelHandlingCreateFill1;
-        copyArgs.monoConversion = eMonoToPackedConversionCopyToChannelAndFillOthers;
-        tmpImage->copyPixels(other, copyArgs);
-    } // requiresTmpBuffer
-
+    ImagePtr tmpImage = ImagePrivate::checkIfCopyToTempImageIsNeeded(other, *this, roi);
 
     const Image* fromImage = tmpImage? tmpImage.get() : &other;
 
     // Update the roi before calling copyRectangle
     CopyPixelsArgs argsCpy = args;
     argsCpy.roi = roi;
-    
+
     if (_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
-
         // UNTILED ---> TILED
-        // If this image is tiled, the other image must not be tiled
-        assert(fromImage->_imp->bufferFormat != eImageBufferLayoutMonoChannelTiled);
+        _imp->copyUntiledImageToTiledImage(*fromImage, argsCpy);
 
-        MemoryBufferedCacheEntryBasePtr fromBuffer = fromImage->_imp->tiles[0].perChannelTile[0].buffer;
-        assert(fromImage->_imp->tiles[0].perChannelTile[0].channelIndex == -1);
-
-        const int fromIndex = -1;
-        const int nTilesPerLine = _imp->getNTilesPerLine();
-        const RectI tilesRect = _imp->getTilesCoordinates(roi);
-
-        // Copy each tile individually
-        for (int ty = tilesRect.y1; ty < tilesRect.y2; ++ty) {
-            for (int tx = tilesRect.x1; tx < tilesRect.x2; ++tx) {
-                int tile_i = tx + ty * nTilesPerLine;
-                assert(tile_i >= 0 && tile_i < (int)_imp->tiles.size());
-
-                // This is the tile to write to
-                const ImageTile& thisTile = _imp->tiles[tile_i];
-
-                thisTile.tileBounds.intersect(roi, &argsCpy.roi);
-
-                for (std::size_t c = 0; c < thisTile.perChannelTile.size(); ++c) {
-                    ImagePrivate::copyRectangle(fromBuffer, fromIndex, fromImage->_imp->bufferFormat, thisTile.perChannelTile[c].buffer, thisTile.perChannelTile[c].channelIndex, _imp->bufferFormat, argsCpy);
-                }
-            } // for all tiles horizontally
-        } // for all tiles vertically
     } else {
-        // The input image may or may not be tiled, but we surely are not.
-        assert(_imp->bufferFormat != eImageBufferLayoutMonoChannelTiled);
 
         // Optimize the case where nobody is tiled
         if (fromImage->_imp->bufferFormat != eImageBufferLayoutMonoChannelTiled) {
-            assert(fromImage->_imp->tiles.size() == 1 && _imp->tiles.size() == 1);
 
             // UNTILED ---> UNTILED
-            assert(_imp->tiles[0].perChannelTile.size() == 1 && _imp->tiles[0].perChannelTile[0].channelIndex == -1);
-            assert(fromImage->_imp->tiles[0].perChannelTile.size() == 1 && fromImage->_imp->tiles[0].perChannelTile[0].channelIndex == -1);
-            ImagePrivate::copyRectangle(fromImage->_imp->tiles[0].perChannelTile[0].buffer, -1, fromImage->_imp->bufferFormat, _imp->tiles[0].perChannelTile[0].buffer, -1, _imp->bufferFormat, argsCpy);
+            _imp->copyUntiledImageToUntiledImage(*fromImage, argsCpy);
+
         } else {
             // TILED ---> UNTILED
-            assert(_imp->tiles[0].perChannelTile.size() == 1 && _imp->tiles[0].perChannelTile[0].channelIndex == -1);
-
-            MemoryBufferedCacheEntryBasePtr toBuffer = _imp->tiles[0].perChannelTile[0].buffer;
-            assert(_imp->tiles[0].perChannelTile[0].channelIndex == -1);
-
-            const int toIndex = -1;
-            const int nTilesPerLine = fromImage->_imp->getNTilesPerLine();
-            const RectI tilesRect = fromImage->_imp->getTilesCoordinates(roi);
-
-            // Copy each tile individually
-            for (int ty = tilesRect.y1; ty < tilesRect.y2; ++ty) {
-                for (int tx = tilesRect.x1; tx < tilesRect.x2; ++tx) {
-                    int tile_i = tx + ty * nTilesPerLine;
-                    assert(tile_i >= 0 && tile_i < (int)fromImage->_imp->tiles.size());
-
-                    // This is the tile to write to
-                    const ImageTile& fromTile = fromImage->_imp->tiles[tile_i];
-
-                    fromTile.tileBounds.intersect(roi, &argsCpy.roi);
-
-                    for (std::size_t c = 0; c < fromTile.perChannelTile.size(); ++c) {
-                        ImagePrivate::copyRectangle(fromTile.perChannelTile[c].buffer, fromTile.perChannelTile[c].channelIndex, fromImage->_imp->bufferFormat, toBuffer, toIndex, _imp->bufferFormat, argsCpy);
-                    }
-                } // for all tiles horizontally
-            } // for all tiles vertically
-
+            _imp->copyTiledImageToUntiledImage(*fromImage, argsCpy);
         }
 
     } // isTiled
-
-
 } // copyPixels
+
+Image::ImageBufferLayoutEnum
+Image::getBufferFormat() const
+{
+    return _imp->bufferFormat;
+}
 
 StorageModeEnum
 Image::getStorageMode() const
@@ -518,7 +435,7 @@ Image::getStorageMode() const
     return _imp->tiles[0].perChannelTile[0].buffer->getStorageMode();
 }
 
-RectI
+const RectI&
 Image::getBounds() const
 {
     return _imp->bounds;
@@ -529,6 +446,24 @@ Image::getMipMapLevel() const
 {
     return _imp->mipMapLevel;
 }
+
+
+double
+Image::getScaleFromMipMapLevel(unsigned int level)
+{
+    return 1. / (1 << level);
+}
+
+
+unsigned int
+Image::getLevelFromScale(double s)
+{
+    assert(0. < s && s <= 1.);
+    int retval = -std::floor(std::log(s) / M_LN2 + 0.5);
+    assert(retval >= 0);
+    return retval;
+}
+
 
 unsigned int
 Image::getComponentsCount() const
@@ -554,180 +489,73 @@ Image::getBitDepth() const
     return _imp->tiles[0].perChannelTile[0].buffer->getBitDepth();
 }
 
-
-
-template <typename GL>
-static void
-pasteFromGL(const Image & src,
-            Image* dst,
-            const RectI & srcRoi,
-            bool /*copyBitmap*/,
-            const OSGLContextPtr& glContext,
-            const RectI& srcBounds,
-            const RectI& dstBounds,
-            StorageModeEnum thisStorage,
-            StorageModeEnum otherStorage,
-            int target)
+void
+Image::getCPUTileData(const Image::Tile& tile,
+                      void* ptrs[4],
+                      RectI *tileBounds,
+                      ImageBitDepthEnum *bitDepth,
+                      int *nComps) const
 {
-
-    int texID = dst->getGLTextureID();
-    if ( (thisStorage == eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
-        // OpenGL texture to OpenGL texture
-
-        GLuint fboID = glContext->getOrCreateFBOId();
-        GL::Disable(GL_SCISSOR_TEST);
-        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::Enable(target);
-        GL::ActiveTexture(GL_TEXTURE0);
-
-        GL::BindTexture( target, texID );
-
-        GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-
-        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
-        glCheckFramebufferError(GL);
-        GL::BindTexture( target, src.getGLTextureID() );
-
-        GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-        GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-        GLShaderBasePtr shader = glContext->getOrCreateCopyTexShader();
-        assert(shader);
-        shader->bind();
-        shader->setUniform("srcTex", 0);
-
-        Image::applyTextureMapping<GL>(srcBounds, dstBounds, srcRoi);
-
-        shader->unbind();
-        GL::BindTexture(target, 0);
-        
-        glCheckError(GL);
-    } else if ( (thisStorage == eStorageModeGLTex) && (otherStorage != eStorageModeGLTex) ) {
-        // RAM image to OpenGL texture
-
-        // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
-            return;
-        }
-        GLuint pboID = glContext->getOrCreatePBOId();
-        GL::Enable(target);
-
-        // bind PBO to update texture source
-        GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, pboID);
-
-        std::size_t dataSize = roi.area() * 4 * src.getParams()->getStorageInfo().dataTypeSize;
-
-        // Note that glMapBufferARB() causes sync issue.
-        // If GPU is working with this buffer, glMapBufferARB() will wait(stall)
-        // until GPU to finish its job. To avoid waiting (idle), you can call
-        // first glBufferDataARB() with NULL pointer before glMapBufferARB().
-        // If you do that, the previous data in PBO will be discarded and
-        // glMapBufferARB() returns a new allocated pointer immediately
-        // even if GPU is still working with the previous data.
-        GL::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, dataSize, 0, GL_DYNAMIC_DRAW_ARB);
-
-        // map the buffer object into client's memory
-        void* gpuData = GL::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
-        assert(gpuData);
-        if (gpuData) {
-            // update data directly on the mapped buffer
-            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
-            tmpImg->pasteFrom(src, roi);
-
-            Image::ReadAccess racc(tmpImg ? tmpImg.get() : dst);
-            const unsigned char* srcdata = racc.pixelAt(roi.x1, roi.y1);
-            assert(srcdata);
-
-            memcpy(gpuData, srcdata, dataSize);
-
-            GLboolean result = GL::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
-            assert(result == GL_TRUE);
-            Q_UNUSED(result);
-        }
-
-        // bind the texture
-        GL::BindTexture( target, texID );
-        // copy pixels from PBO to texture object
-        // Use offset instead of pointer (last parameter is 0).
-        GL::TexSubImage2D(target,
-                            0,              // level
-                            roi.x1, roi.y1,               // xoffset, yoffset
-                            roi.width(), roi.height(),
-                            src.getGLTextureFormat(),            // format
-                            src.getGLTextureType(),       // type
-                            0);
-
-        GL::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, 0);
-        GL::BindTexture(target, 0);
-        glCheckError(GL);
-    } else if ( (thisStorage != eStorageModeGLTex) && (otherStorage == eStorageModeGLTex) ) {
-        // OpenGL texture to RAM image
-
-        // only copy the intersection of roi, bounds and otherBounds
-        RectI roi = srcRoi;
-        bool doInteresect = roi.intersect(dstBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of this image
-            return;
-        }
-        doInteresect = roi.intersect(srcBounds, &roi);
-        if (!doInteresect) {
-            // no intersection between roi and the bounds of the other image
-            return;
-        }
-
-        GLuint fboID = glContext->getOrCreateFBOId();
-
-        int srcTarget = src.getGLTextureTarget();
-
-        GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::Enable(srcTarget);
-        GL::BindTexture( srcTarget, src.getGLTextureID() );
-        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, srcTarget, src.getGLTextureID(), 0 /*LoD*/);
-        //glViewport( 0, 0, srcBounds.width(), srcBounds.height() );
-        GL::Viewport( roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height() );
-        glCheckFramebufferError(GL);
-        // Ensure all drawing commands are finished
-        GL::Flush();
-        GL::Finish();
-        glCheckError(GL);
-        // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), dst->getRoD(), roi, 0, dst->getPixelAspectRatio(), dst->getBitDepth(), dst->getPremultiplication(), dst->getFieldingOrder(), false, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
-
-        {
-            Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : dst);
-            unsigned char* data = tmpAcc.pixelAt(roi.x1, roi.y1);
-
-            GL::ReadPixels(roi.x1 - srcBounds.x1, roi.y1 - srcBounds.y1, roi.width(), roi.height(), src.getGLTextureFormat(), src.getGLTextureType(), (GLvoid*)data);
-            GL::BindTexture(srcTarget, 0);
-        }
-        GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
-        glCheckError(GL);
-
-        // Ok now convert from RGBA to this image format if needed
-        if ( tmpImg->getComponentsCount() != dst->getComponentsCount() ) {
-            tmpImg->convertToFormat(roi, eViewerColorSpaceLinear, eViewerColorSpaceLinear, 3, false, false, dst);
-        } else {
-            dst->pasteFrom(*tmpImg, roi, false);
-        }
-    } 
+    memset(ptrs, 0, sizeof(void*) * 4);
+    *nComps = 0;
+    *bitDepth = eImageBitDepthNone;
     
+    for (std::size_t i = 0; i < tile.perChannelTile.size(); ++i) {
+        RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(tile.perChannelTile[i].buffer);
+        MemoryMappedCacheEntryPtr fromIsMMAPBuffer = toMemoryMappedCacheEntry(tile.perChannelTile[i].buffer);
+
+        if (!fromIsMMAPBuffer || !fromIsRAMBuffer) {
+            continue;
+        }
+        if (i == 0) {
+            if (fromIsRAMBuffer) {
+                ptrs[0] = fromIsRAMBuffer->getData();
+                *tileBounds = fromIsRAMBuffer->getBounds();
+                *bitDepth = fromIsRAMBuffer->getBitDepth();
+                *nComps = fromIsRAMBuffer->getNumComponents();
+
+                if (_imp->bufferFormat == Image::eImageBufferLayoutRGBACoplanarFullRect) {
+                    // Coplanar requires offsetting
+                    assert(tile.perChannelTile.size() == 1);
+                    std::size_t planeSize = *nComps * tileBounds->area() * getSizeOfForBitDepth(*bitDepth);
+                    if (*nComps > 1) {
+                        ptrs[1] = (char*)ptrs[0] + planeSize;
+                        if (*nComps > 2) {
+                            ptrs[2] = (char*)ptrs[1] + planeSize;
+                            if (*nComps > 3) {
+                                ptrs[3] = (char*)ptrs[2] + planeSize;
+                            }
+                        }
+                    }
+                }
+            } else {
+                ptrs[0] = fromIsMMAPBuffer->getData();
+                *tileBounds = fromIsMMAPBuffer->getBounds();
+                *bitDepth = fromIsMMAPBuffer->getBitDepth();
+                // MMAP based storage only support mono channel images
+                *nComps = 1;
+            }
+        } else {
+            int channelIndex = tile.perChannelTile[i].channelIndex;
+            assert(channelIndex >= 0 && channelIndex < 4);
+            if (fromIsRAMBuffer) {
+                ptrs[channelIndex] = fromIsRAMBuffer->getData();
+            } else {
+                ptrs[channelIndex] = fromIsMMAPBuffer->getData();
+            }
+        }
+    } // for each channel
+}
+
+
+bool
+Image::getTileAt(int tileIndex, Image::Tile* tile) const
+{
+    if (!tile || tileIndex < 0 || tileIndex > (int)_imp->tiles.size()) {
+        return false;
+    }
+    *tile = _imp->tiles[tileIndex];
+    return true;
 }
 
 void
@@ -765,277 +593,56 @@ Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, Rect
     dRect.x2 = srcBounds.x1;
     dRect.y2 = srcBounds.y2;
 
-}
+} // getABCDRectangles
 
 
-
-template <typename PIX, int maxValue, int nComps>
-void
-Image::fillForDepthForComponents(const RectI & roi_,
-                                 float r,
-                                 float g,
-                                 float b,
-                                 float a)
-{
-    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
-
-    RectI roi = roi_;
-    bool doInteresect = roi.intersect(_bounds, &roi);
-    if (!doInteresect) {
-        // no intersection between roi and the bounds of the image
-        return;
-    }
-
-    int rowElems = (int)getComponentsCount() * _bounds.width();
-    const float fillValue[4] = {
-        nComps == 1 ? a * maxValue : r * maxValue, g * maxValue, b * maxValue, a * maxValue
-    };
-
-
-    // now we're safe: the image contains the area in roi
-    PIX* dst = (PIX*)pixelAt(roi.x1, roi.y1);
-    for ( int i = 0; i < roi.height(); ++i, dst += (rowElems - roi.width() * nComps) ) {
-        for (int j = 0; j < roi.width(); ++j, dst += nComps) {
-            for (int k = 0; k < nComps; ++k) {
-                dst[k] = fillValue[k];
-            }
-        }
-    }
-}
-
-// code proofread and fixed by @devernay on 8/8/2014
-template <typename PIX, int maxValue>
-void
-Image::fillForDepth(const RectI & roi_,
-                    float r,
-                    float g,
-                    float b,
-                    float a)
-{
-    switch (_nbComponents) {
-    case 0:
-
-        return;
-        break;
-    case 1:
-        fillForDepthForComponents<PIX, maxValue, 1>(roi_, r, g, b, a);
-        break;
-    case 2:
-        fillForDepthForComponents<PIX, maxValue, 2>(roi_, r, g, b, a);
-        break;
-    case 3:
-        fillForDepthForComponents<PIX, maxValue, 3>(roi_, r, g, b, a);
-        break;
-    case 4:
-        fillForDepthForComponents<PIX, maxValue, 4>(roi_, r, g, b, a);
-        break;
-    default:
-        break;
-    }
-}
-
-template <typename GL>
-void fillGL(const RectI & roi,
-            float r,
-            float g,
-            float b,
-            float a,
-            const OSGLContextPtr& glContext,
-            const RectI& bounds,
-            int target,
-            int texID)
-{
-    RectI realRoI = roi;
-    bool doInteresect = roi.intersect(bounds, &realRoI);
-    if (!doInteresect) {
-        // no intersection between roi and the bounds of the image
-        return;
-    }
-
-    assert(glContext);
-
-    GLuint fboID = glContext->getOrCreateFBOId();
-
-    GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
-    GL::Enable(target);
-    GL::ActiveTexture(GL_TEXTURE0);
-    GL::BindTexture( target, texID );
-
-    GL::TexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    GL::TexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    GL::TexParameteri (target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    GL::TexParameteri (target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texID, 0 /*LoD*/);
-    glCheckFramebufferError(GL);
-
-    Image::setupGLViewport<GL>(bounds, roi);
-    GL::ClearColor(r, g, b, a);
-    GL::Clear(GL_COLOR_BUFFER_BIT);
-
-    GL::BindTexture(target, 0);
-    glCheckError(GL);
-}
-
-// code proofread and fixed by @devernay on 8/8/2014
 void
 Image::fill(const RectI & roi,
             float r,
             float g,
             float b,
-            float a,
-            const OSGLContextPtr& glContext)
+            float a)
 {
-    QWriteLocker k(&_entryLock);
-
-    if (getStorageMode() == eStorageModeGLTex) {
-        if (glContext->isGPUContext()) {
-            fillGL<GL_GPU>(roi, r, g, b, a, glContext, _bounds, getGLTextureTarget(), getGLTextureID());
-        } else {
-            fillGL<GL_CPU>(roi, r, g, b, a, glContext, _bounds, getGLTextureTarget(), getGLTextureID());
-        }
+    if (_imp->tiles.empty()) {
         return;
     }
 
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        fillForDepth<unsigned char, 255>(roi, r, g, b, a);
-        break;
-    case eImageBitDepthShort:
-        fillForDepth<unsigned short, 65535>(roi, r, g, b, a);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        fillForDepth<float, 1>(roi, r, g, b, a);
-        break;
-    case eImageBitDepthNone:
-        break;
+    if (getStorageMode() == eStorageModeGLTex) {
+        GLCacheEntryPtr glEntry = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+        _imp->fillGL(roi, r, g, b, a, glEntry);
+        return;
     }
+
+
+
+    for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
+        
+        void* ptrs[4];
+        RectI tileBounds;
+        ImageBitDepthEnum bitDepth;
+        int nComps;
+
+        getCPUTileData(_imp->tiles[tile_i], ptrs, &tileBounds, &bitDepth, &nComps);
+        RectI tileRoI;
+        roi.intersect(tileBounds, &tileRoI);
+
+        _imp->fillCPU(ptrs, r, g, b, a, nComps, bitDepth, tileBounds, tileRoI);
+    }
+
 } // fill
 
 void
-Image::fillZero(const RectI& roi,
-                const OSGLContextPtr& glContext)
+Image::fillZero(const RectI& roi)
 {
-    if (getStorageMode() == eStorageModeGLTex) {
-        fill(roi, 0., 0., 0., 0., glContext);
-
-        return;
-    }
-
-    QWriteLocker k(&_entryLock);
-    RectI intersection;
-
-    if ( !roi.intersect(_bounds, &intersection) ) {
-        return;
-    }
-
-
-    std::size_t rowSize =  (std::size_t)_nbComponents;
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        rowSize *= sizeof(unsigned char);
-        break;
-    case eImageBitDepthShort:
-        rowSize *= sizeof(unsigned short);
-        break;
-    case eImageBitDepthHalf:
-        rowSize *= sizeof(unsigned short);
-        break;
-    case eImageBitDepthFloat:
-        rowSize *= sizeof(float);
-        break;
-    case eImageBitDepthNone:
-
-        return;
-    }
-
-    std::size_t roiMemSize = rowSize * intersection.width();
-    rowSize *= _bounds.width();
-
-    char* dstPixels = (char*)pixelAt(intersection.x1, intersection.y1);
-    assert(dstPixels);
-    for (int y = intersection.y1; y < intersection.y2; ++y, dstPixels += rowSize) {
-        std::memset(dstPixels, 0, roiMemSize);
-    }
+    fill(roi, 0., 0., 0., 0.);
 }
 
 void
-Image::fillBoundsZero(const OSGLContextPtr& glContext)
+Image::fillBoundsZero()
 {
-    if (getStorageMode() == eStorageModeGLTex) {
-        fill(getBounds(), 0., 0., 0., 0., glContext);
-
-        return;
-    }
-
-    QWriteLocker k(&_entryLock);
-    std::size_t rowSize =  (std::size_t)_nbComponents;
-
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        rowSize *= sizeof(unsigned char);
-        break;
-    case eImageBitDepthShort:
-        rowSize *= sizeof(unsigned short);
-        break;
-    case eImageBitDepthHalf:
-        rowSize *= sizeof(unsigned short);
-        break;
-    case eImageBitDepthFloat:
-        rowSize *= sizeof(float);
-        break;
-    case eImageBitDepthNone:
-
-        return;
-    }
-
-    std::size_t roiMemSize = rowSize * _bounds.width() * _bounds.height();
-    char* dstPixels = (char*)pixelAt(_bounds.x1, _bounds.y1);
-    std::memset(dstPixels, 0, roiMemSize);
+    fillZero(getBounds());
 }
 
-unsigned char*
-Image::pixelAt(int x,
-               int y)
-{
-    if ( ( x < _bounds.x1 ) || ( x >= _bounds.x2 ) || ( y < _bounds.y1 ) || ( y >= _bounds.y2 ) ) {
-        return NULL;
-    } else {
-        unsigned char* ret =  (unsigned char*)this->_data.writable();
-        if (!ret) {
-            return 0;
-        }
-        std::size_t compDataSize = _depthBytesSize * _nbComponents;
-        ret = ret + (std::size_t)( y - _bounds.y1 ) * compDataSize * _bounds.width()
-              + (std::size_t)( x - _bounds.x1 ) * compDataSize;
-
-        return ret;
-    }
-}
-
-
-const unsigned char*
-Image::pixelAt(int x,
-               int y) const
-{
-    if ( ( x < _bounds.x1 ) || ( x >= _bounds.x2 ) || ( y < _bounds.y1 ) || ( y >= _bounds.y2 ) ) {
-        return NULL;
-    } else {
-        unsigned char* ret = (unsigned char*)this->_data.readable();
-        if (!ret) {
-            return 0;
-        }
-        int compDataSize = _depthBytesSize * _nbComponents;
-        ret = ret + (qint64)( y - _bounds.y1 ) * compDataSize * _bounds.width()
-        + (qint64)( x - _bounds.x1 ) * compDataSize;
-
-        return ret;
-    }
-}
 
 const unsigned char*
 Image::pixelAtStatic(int x,
@@ -1048,7 +655,7 @@ Image::pixelAtStatic(int x,
     if ( ( x < bounds.x1 ) || ( x >= bounds.x2 ) || ( y < bounds.y1 ) || ( y >= bounds.y2 ) ) {
         return NULL;
     } else {
-        unsigned char* ret = buf;
+        const unsigned char* ret = buf;
         if (!ret) {
             return 0;
         }
@@ -1131,302 +738,86 @@ Image::isBitDepthConversionLossy(ImageBitDepthEnum from,
 }
 
 
-// code proofread and fixed by @devernay on 4/12/2014
-template <typename PIX, int maxValue>
-void
-Image::halveRoIForDepth(const RectI & roi,
-                        bool copyBitMap,
-                        Image* output) const
+ImagePtr
+Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
 {
-    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) ||
-            (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) ||
-            (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
-
-    ///handle case where there is only 1 column/row
-    if ( (roi.width() == 1) || (roi.height() == 1) ) {
-        assert( !(roi.width() == 1 && roi.height() == 1) ); /// can't be 1x1
-        halve1DImage(roi, output);
-
-        return;
+    // If we don't have to downscale or this is an OpenGL texture there's nothing to do
+    if (downscaleLevels == 0 || getStorageMode() == eStorageModeGLTex) {
+        return boost::const_pointer_cast<Image>(shared_from_this());
     }
 
-    /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
+    if (_imp->tiles.empty()) {
+        return ImagePtr();
+    }
 
-    ///The source rectangle, intersected to this image region of definition in pixels
-    const RectI &srcBounds = _bounds;
-    const RectI &dstBounds = output->_bounds;
-    const RectI &srcBmBounds = _bitmap.getBounds();
-    const RectI &dstBmBounds = output->_bitmap.getBounds();
-    assert( !copyBitMap || usesBitMap() );
-    assert( !usesBitMap() || (srcBmBounds == srcBounds && dstBmBounds == dstBounds) );
+    // The roi must be contained in the bounds of the image
+    assert(_imp->bounds.contains(roi));
+    if (!_imp->bounds.contains(roi)) {
+        return ImagePtr();
+    }
 
-    // the srcRoD of the output should be enclosed in half the roi.
-    // It does not have to be exactly half of the input.
-    //    assert(dstRoD.x1*2 >= roi.x1 &&
-    //           dstRoD.x2*2 <= roi.x2 &&
-    //           dstRoD.y1*2 >= roi.y1 &&
-    //           dstRoD.y2*2 <= roi.y2 &&
-    //           dstRoD.width()*2 <= roi.width() &&
-    //           dstRoD.height()*2 <= roi.height());
-    assert( getComponents() == output->getComponents() );
+    RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLevels);
+    ImagePtr mipmapImage;
 
-    RectI dstRoI;
-    RectI srcRoI = roi;
-    srcRoI.intersect(srcBounds, &srcRoI); // intersect srcRoI with the region of definition
+    RectI previousLevelRoI = roi;
+    ImageConstPtr previousLevelImage = shared_from_this();
 
-    dstRoI.x1 = std::floor(srcRoI.x1 / 2.);
-    dstRoI.y1 = std::floor(srcRoI.y1 / 2.);
-    dstRoI.x2 = std::ceil(srcRoI.x2 / 2.);
-    dstRoI.y2 = std::ceil(srcRoI.y2 / 2.);
+    // The downscaling function only supports full rect format.
+    // Copy this image to the appropriate format if necessary.
+    if (previousLevelImage->_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
+        InitStorageArgs args;
+        args.bounds = roi;
+        args.layer = previousLevelImage->_imp->layer;
+        args.bitdepth = previousLevelImage->getBitDepth();
+        args.mipMapLevel = previousLevelImage->getMipMapLevel();
+        ImagePtr tmpImg = Image::create(args);
+
+        CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = roi;
+        tmpImg->copyPixels(*this, cpyArgs);
+
+        previousLevelImage = tmpImg;
+    }
 
 
-    const PIX* const srcPixels      = (const PIX*)pixelAt(srcBounds.x1,   srcBounds.y1);
-    const char* const srcBmPixels   = _bitmap.getBitmapAt(srcBmBounds.x1, srcBmBounds.y1);
-    PIX* const dstPixels          = (PIX*)output->pixelAt(dstBounds.x1,   dstBounds.y1);
-    char* const dstBmPixels = output->_bitmap.getBitmapAt(dstBmBounds.x1, dstBmBounds.y1);
-    int srcRowSize = srcBounds.width() * _nbComponents;
-    int dstRowSize = dstBounds.width() * _nbComponents;
+    // Build all the mipmap levels until we reach the one we are interested in
+    for (unsigned int i = 0; i < downscaleLevels; ++i) {
 
-    // offset pointers so that srcData and dstData correspond to pixel (0,0)
-    const PIX* const srcData = srcPixels - (srcBounds.x1 * _nbComponents + srcRowSize * srcBounds.y1);
-    PIX* const dstData       = dstPixels - (dstBounds.x1 * _nbComponents + dstRowSize * dstBounds.y1);
-    const int srcBmRowSize = srcBmBounds.width();
-    const int dstBmRowSize = dstBmBounds.width();
-    const char* const srcBmData = srcBmPixels - (srcBmBounds.x1 + srcBmRowSize * srcBmBounds.y1);
-    char* const dstBmData       = dstBmPixels - (dstBmBounds.x1 + dstBmRowSize * dstBmBounds.y1);
+        // Halve the smallest enclosing po2 rect as we need to render a minimum of the renderWindow
+        RectI halvedRoI = previousLevelRoI.downscalePowerOfTwoSmallestEnclosing(1);
 
-    for (int y = dstRoI.y1; y < dstRoI.y2; ++y) {
-        const PIX* const srcLineStart    = srcData + y * 2 * srcRowSize;
-        PIX* const dstLineStart          = dstData + y     * dstRowSize;
-        const char* const srcBmLineStart = srcBmData + y * 2 * srcBmRowSize;
-        char* const dstBmLineStart       = dstBmData + y     * dstBmRowSize;
-
-        // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
-        // Check that if are within srcBounds.
-        int srcy = y * 2;
-        bool pickThisRow = srcBounds.y1 <= (srcy + 0) && (srcy + 0) < srcBounds.y2;
-        bool pickNextRow = srcBounds.y1 <= (srcy + 1) && (srcy + 1) < srcBounds.y2;
-        int sumH = (int)pickNextRow + (int)pickThisRow;
-        assert(sumH == 1 || sumH == 2);
-
-        for (int x = dstRoI.x1; x < dstRoI.x2; ++x) {
-            const PIX* const srcPixStart    = srcLineStart   + x * 2 * _nbComponents;
-            const char* const srcBmPixStart = srcBmLineStart + x * 2;
-            PIX* const dstPixStart          = dstLineStart   + x * _nbComponents;
-            char* const dstBmPixStart       = dstBmLineStart + x;
-
-            // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
-            // Check that if are within srcBounds.
-            int srcx = x * 2;
-            bool pickThisCol = srcBounds.x1 <= (srcx + 0) && (srcx + 0) < srcBounds.x2;
-            bool pickNextCol = srcBounds.x1 <= (srcx + 1) && (srcx + 1) < srcBounds.x2;
-            int sumW = (int)pickThisCol + (int)pickNextCol;
-            assert(sumW == 1 || sumW == 2);
-            const int sum = sumW * sumH;
-            assert(0 < sum && sum <= 4);
-
-            if (sum == 0) { // never happens
-                for (int k = 0; k < _nbComponents; ++k) {
-                    dstPixStart[k] = 0;
-                }
-                if (copyBitMap) {
-                    dstBmPixStart[0] = 0;
-                }
-                continue;
-            }
-
-            for (int k = 0; k < _nbComponents; ++k) {
-                ///a b
-                ///c d
-
-                const PIX a = (pickThisCol && pickThisRow) ? *(srcPixStart + k) : 0;
-                const PIX b = (pickNextCol && pickThisRow) ? *(srcPixStart + k + _nbComponents) : 0;
-                const PIX c = (pickThisCol && pickNextRow) ? *(srcPixStart + k + srcRowSize) : 0;
-                const PIX d = (pickNextCol && pickNextRow) ? *(srcPixStart + k + srcRowSize  + _nbComponents)  : 0;
-
-                assert( sumW == 2 || ( sumW == 1 && ( (a == 0 && c == 0) || (b == 0 && d == 0) ) ) );
-                assert( sumH == 2 || ( sumH == 1 && ( (a == 0 && b == 0) || (c == 0 && d == 0) ) ) );
-                dstPixStart[k] = (a + b + c + d) / sum;
-            }
-
-            if (copyBitMap) {
-                ///a b
-                ///c d
-
-                char a = (pickThisCol && pickThisRow) ? *(srcBmPixStart) : 0;
-                char b = (pickNextCol && pickThisRow) ? *(srcBmPixStart + 1) : 0;
-                char c = (pickThisCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize) : 0;
-                char d = (pickNextCol && pickNextRow) ? *(srcBmPixStart + srcBmRowSize  + 1)  : 0;
-#if NATRON_ENABLE_TRIMAP
-                /*
-                   The only correct solution is to convert pixels being rendered to 0 otherwise the caller
-                   would have to wait for the original fullscale image render to be finished and then re-downscale again.
-                 */
-                if (a == PIXEL_UNAVAILABLE) {
-                    a = 0;
-                }
-                if (b == PIXEL_UNAVAILABLE) {
-                    b = 0;
-                }
-                if (c == PIXEL_UNAVAILABLE) {
-                    c = 0;
-                }
-                if (d == PIXEL_UNAVAILABLE) {
-                    d = 0;
-                }
-#endif
-                assert( sumW == 2 || ( sumW == 1 && ( (a == 0 && c == 0) || (b == 0 && d == 0) ) ) );
-                assert( sumH == 2 || ( sumH == 1 && ( (a == 0 && b == 0) || (c == 0 && d == 0) ) ) );
-                assert(a + b + c + d <= sum); // bitmaps are 0 or 1
-                // the following is an integer division, the result can be 0 or 1
-                dstBmPixStart[0] = (a + b + c + d) / sum;
-                assert(dstBmPixStart[0] == 0 || dstBmPixStart[0] == 1);
-            }
+        // Allocate an image with half the size of the source image
+        {
+            InitStorageArgs args;
+            args.bounds = halvedRoI;
+            args.layer = previousLevelImage->_imp->layer;
+            args.bitdepth = previousLevelImage->getBitDepth();
+            args.mipMapLevel = previousLevelImage->getMipMapLevel() + 1;
+            mipmapImage = Image::create(args);
         }
-    }
-} // halveRoIForDepth
 
-// code proofread and fixed by @devernay on 8/8/2014
-void
-Image::halveRoI(const RectI & roi,
-                bool copyBitMap,
-                Image* output) const
-{
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        halveRoIForDepth<unsigned char, 255>(roi, copyBitMap,  output);
-        break;
-    case eImageBitDepthShort:
-        halveRoIForDepth<unsigned short, 65535>(roi, copyBitMap, output);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        halveRoIForDepth<float, 1>(roi, copyBitMap, output);
-        break;
-    case eImageBitDepthNone:
-        break;
-    }
-}
+        void* srcPtrs[4];
+        RectI srcBounds;
+        ImageBitDepthEnum srcBitdepth;
+        int srcNComps;
+        getCPUTileData(previousLevelImage->_imp->tiles[0], srcPtrs, &srcBounds, &srcBitdepth, &srcNComps);
 
-// code proofread and fixed by @devernay on 8/8/2014
-template <typename PIX, int maxValue>
-void
-Image::halve1DImageForDepth(const RectI & roi,
-                            Image* output) const
-{
-    int width = roi.width();
-    int height = roi.height();
 
-    assert(width == 1 || height == 1); /// must be 1D
-    assert( output->getComponents() == getComponents() );
+        void* dstPtrs[4];
+        RectI dstBounds;
+        ImageBitDepthEnum dstBitDepth;
+        int dstNComps;
+        getCPUTileData(mipmapImage->_imp->tiles[0], dstPtrs, &dstBounds, &dstBitDepth, &dstNComps);
 
-    /// Take the lock for both bitmaps since we're about to read/write from them!
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
-    const RectI & srcBounds = _bounds;
-    const RectI & dstBounds = output->_bounds;
-//    assert(dstBounds.x1 * 2 == roi.x1 &&
-//           dstBounds.y1 * 2 == roi.y1 &&
-//           (
-//               dstBounds.x2 * 2 == roi.x2 || // we halve in only 1 dimension
-//               dstBounds.y2 * 2 == roi.y2)
-//           );
-    int halfWidth = width / 2;
-    int halfHeight = height / 2;
-    if (height == 1) { //1 row
-        assert(width != 1); /// widthxheight can't be 1x1
+        ImagePrivate::halveImage((const void**)srcPtrs, srcNComps, srcBitdepth, srcBounds, dstPtrs, dstBounds);
 
-        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
-        assert(src && dst);
-        for (int x = 0; x < halfWidth; ++x) {
-            for (int k = 0; k < _nbComponents; ++k) {
-                *dst++ = PIX( (float)( *src + *(src + _nbComponents) ) / 2. );
-                ++src;
-            }
-            src += _nbComponents;
-        }
-    } else if (width == 1) {
-        int rowSize = srcBounds.width() * _nbComponents;
-        const PIX* src = (const PIX*)pixelAt(roi.x1, roi.y1);
-        PIX* dst = (PIX*)output->pixelAt(dstBounds.x1, dstBounds.y1);
-        assert(src && dst);
-        for (int y = 0; y < halfHeight; ++y) {
-            for (int k = 0; k < _nbComponents; ++k) {
-                *dst++ = PIX( (float)( *src + (*src + rowSize) ) / 2. );
-                ++src;
-            }
-            src += rowSize;
-        }
-    }
-}
+        // Switch for next pass
+        previousLevelRoI = halvedRoI;
+        previousLevelImage = mipmapImage;
+    } // for all downscale levels
+    return mipmapImage;
 
-// code proofread and fixed by @devernay on 8/8/2014
-void
-Image::halve1DImage(const RectI & roi,
-                    Image* output) const
-{
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        halve1DImageForDepth<unsigned char, 255>(roi, output);
-        break;
-    case eImageBitDepthShort:
-        halve1DImageForDepth<unsigned short, 65535>(roi, output);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        halve1DImageForDepth<float, 1>(roi, output);
-        break;
-    case eImageBitDepthNone:
-        break;
-    }
-}
-
-// code proofread and fixed by @devernay on 8/8/2014
-void
-Image::downscaleMipMap(const RectD& dstRod,
-                       const RectI & roi,
-                       unsigned int fromLevel,
-                       unsigned int toLevel,
-                       bool copyBitMap,
-                       Image* output) const
-{
-    assert(getStorageMode() != eStorageModeGLTex);
-
-    ///You should not call this function with a level equal to 0.
-    assert(toLevel >  fromLevel);
-
-    assert(_bounds.x1 <= roi.x1 && roi.x2 <= _bounds.x2 &&
-           _bounds.y1 <= roi.y1 && roi.y2 <= _bounds.y2);
-    double par = getPixelAspectRatio();
-//    RectD roiCanonical;
-//    roi.toCanonical(fromLevel, par , dstRod, &roiCanonical);
-//    RectI dstRoI;
-//    roiCanonical.toPixelEnclosing(toLevel, par , &dstRoI);
-    unsigned int downscaleLvls = toLevel - fromLevel;
-
-    assert( !copyBitMap || _bitmap.getBitmap() );
-
-    RectI dstRoI  = roi.downscalePowerOfTwoSmallestEnclosing(downscaleLvls);
-    ImagePtr tmpImg( new Image( getComponents(), dstRod, dstRoI, toLevel, par, getBitDepth(), getPremultiplication(), getFieldingOrder(), true, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true) );
-
-    buildMipMapLevel( dstRod, roi, downscaleLvls, copyBitMap, tmpImg.get() );
-
-    // check that the downscaled mipmap is inside the output image (it may not be equal to it)
-    assert(dstRoI.x1 >= output->_bounds.x1);
-    assert(dstRoI.x2 <= output->_bounds.x2);
-    assert(dstRoI.y1 >= output->_bounds.y1);
-    assert(dstRoI.y2 <= output->_bounds.y2);
-
-    ///Now copy the result of tmpImg into the output image
-    output->pasteFrom(*tmpImg, dstRoI, copyBitMap);
-}
+} // downscaleMipMap
 
 bool
 Image::checkForNaNs(const RectI& roi)
@@ -1438,337 +829,103 @@ Image::checkForNaNs(const RectI& roi)
         return false;
     }
 
-    QWriteLocker k(&_entryLock);
-    unsigned int compsCount = getComponentsCount();
-    bool hasnan = false;
-    for (int y = roi.y1; y < roi.y2; ++y) {
-        float* pix = (float*)pixelAt(roi.x1, y);
-        float* const end = pix +  compsCount * roi.width();
+    bool hasNan = false;
 
-        for (; pix < end; ++pix) {
-            // we remove NaNs, but infinity values should pose no problem
-            // (if they do, please explain here which ones)
-            if (*pix != *pix) { // check for NaN
-                *pix = 1.;
-                hasnan = true;
-            }
-        }
+    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        void* ptrs[4];
+        RectI bounds;
+        ImageBitDepthEnum bitDepth;
+        int nComps;
+        getCPUTileData(_imp->tiles[i], ptrs, &bounds, &bitDepth, &nComps);
+
+        RectI tileRoi;
+        roi.intersect(bounds, &tileRoi);
+        hasNan |= _imp->checkForNaNs(ptrs, nComps, bitDepth, bounds, tileRoi);
     }
+    return hasNan;
 
-    return hasnan;
-}
+} // checkForNaNs
 
-// code proofread and fixed by @devernay on 8/8/2014
-template <typename PIX, int maxValue>
+
 void
-Image::upscaleMipMapForDepth(const RectI & roi,
-                             unsigned int fromLevel,
-                             unsigned int toLevel,
-                             Image* output) const
+Image::applyMaskMix(const RectI& roi,
+                    const ImagePtr& maskImg,
+                    const ImagePtr& originalImg,
+                    bool masked,
+                    bool maskInvert,
+                    float mix)
 {
-    assert( getBitDepth() == output->getBitDepth() );
-    assert( (getBitDepth() == eImageBitDepthByte && sizeof(PIX) == 1) || (getBitDepth() == eImageBitDepthShort && sizeof(PIX) == 2) || (getBitDepth() == eImageBitDepthFloat && sizeof(PIX) == 4) );
-
-    ///You should not call this function with a level equal to 0.
-    assert(fromLevel > toLevel);
-
-    assert(roi.x1 <= _bounds.x1 && _bounds.x2 <= roi.x2 &&
-           roi.y1 <= _bounds.y1 && _bounds.y2 <= roi.y2);
-
-    ///The source rectangle, intersected to this image region of definition in pixels
-    RectD roiCanonical;
-    roi.toCanonical(fromLevel, _par, getRoD(), &roiCanonical);
-    RectI dstRoi;
-    roiCanonical.toPixelEnclosing(toLevel, _par, &dstRoi);
-
-    const RectI & srcRoi = roi;
-
-    dstRoi.intersect(output->_bounds, &dstRoi); //output may be a bit smaller than the upscaled RoI
-    int scale = 1 << (fromLevel - toLevel);
-
-    assert( output->getComponents() == getComponents() );
-
-    if (_nbComponents == 0) {
+    // !masked && mix == 1: nothing to do
+    if ( !masked && (mix == 1) ) {
         return;
     }
 
-    QWriteLocker k1(&output->_entryLock);
-    QReadLocker k2(&_entryLock);
-    int srcRowSize = _bounds.width() * _nbComponents;
-    int dstRowSize = output->_bounds.width() * _nbComponents;
-    const PIX *src = (const PIX*)pixelAt(srcRoi.x1, srcRoi.y1);
-    PIX* dst = (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1);
-    assert(src && dst);
+    // Mask must be alpha
+    assert( !masked || !maskImg || maskImg->getComponents() == ImageComponents::getAlphaComponents() );
 
-    // algorithm: fill the first line of output, and replicate it as many times as necessary
-    // works even if dstRoi is not exactly a multiple of srcRoi (first/last column/line may not be complete)
-    int yi = srcRoi.y1;
-    int ycount; // how many lines should be filled
-    for (int yo = dstRoi.y1; yo < dstRoi.y2; ++yi, src += srcRowSize, yo += ycount, dst += ycount * dstRowSize) {
-        const PIX * const srcLineStart = src;
-        PIX * const dstLineBatchStart = dst;
-        ycount = scale - ((yo - dstRoi.y1) - (yi - srcRoi.y1) * scale); // how many lines should be filled
-        ycount = std::min(ycount, dstRoi.y2 - yo);
-        assert(0 < ycount && ycount <= scale);
-        int xi = srcRoi.x1;
-        int xcount = 0; // how many pixels should be filled
-        const PIX * srcPix = srcLineStart;
-        PIX * dstPixFirst = dstLineBatchStart;
-        // fill the first line
-        for (int xo = dstRoi.x1; xo < dstRoi.x2; ++xi, srcPix += _nbComponents, xo += xcount, dstPixFirst += xcount * _nbComponents) {
-            xcount = scale - ((xo - dstRoi.x1) - (xi - srcRoi.x1) * scale);
-            xcount = std::min(xcount, dstRoi.x2 - xo);
-            //assert(0 < xcount && xcount <= scale);
-            // replicate srcPix as many times as necessary
-            PIX * dstPix = dstPixFirst;
-            //assert((srcPix-(PIX*)pixelAt(srcRoi.x1, srcRoi.y1)) % components == 0);
-            for (int i = 0; i < xcount; ++i, dstPix += _nbComponents) {
-                assert( ( dstPix - (PIX*)output->pixelAt(dstRoi.x1, dstRoi.y1) ) % _nbComponents == 0 );
-                assert(dstPix >= (PIX*)output->pixelAt(xo, yo) && dstPix < (PIX*)output->pixelAt(xo, yo) + xcount * _nbComponents);
-                for (int c = 0; c < _nbComponents; ++c) {
-                    dstPix[c] = srcPix[c];
-                }
-            }
-            //assert(dstPix == dstPixFirst + xcount*components);
+    if (getStorageMode() == eStorageModeGLTex) {
+
+        GLCacheEntryPtr originalImageTexture, maskTexture, dstTexture;
+        if (originalImg) {
+            assert(originalImg->getStorageMode() == eStorageModeGLTex);
+            originalImageTexture = toGLCacheEntry(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
         }
-        PIX * dstLineStart = dstLineBatchStart + dstRowSize; // first line was filled already
-        // now replicate the line as many times as necessary
-        for (int i = 1; i < ycount; ++i, dstLineStart += dstRowSize) {
-            std::copy(dstLineBatchStart, dstLineBatchStart + dstRowSize, dstLineStart);
+        if (maskImg && masked) {
+            assert(maskImg->getStorageMode() == eStorageModeGLTex);
+            maskTexture = toGLCacheEntry(maskImg->_imp->tiles[0].perChannelTile[0].buffer);
         }
-    }
-} // upscaleMipMapForDepth
-
-// code proofread and fixed by @devernay on 8/8/2014
-void
-Image::upscaleMipMap(const RectI & roi,
-                     unsigned int fromLevel,
-                     unsigned int toLevel,
-                     Image* output) const
-{
-    assert(getStorageMode() != eStorageModeGLTex);
-
-    switch ( getBitDepth() ) {
-    case eImageBitDepthByte:
-        upscaleMipMapForDepth<unsigned char, 255>(roi, fromLevel, toLevel, output);
-        break;
-    case eImageBitDepthShort:
-        upscaleMipMapForDepth<unsigned short, 65535>(roi, fromLevel, toLevel, output);
-        break;
-    case eImageBitDepthHalf:
-        assert(false);
-        break;
-    case eImageBitDepthFloat:
-        upscaleMipMapForDepth<float, 1>(roi, fromLevel, toLevel, output);
-        break;
-    case eImageBitDepthNone:
-        break;
-    }
-}
-
-// code proofread and fixed by @devernay on 8/8/2014
-void
-Image::buildMipMapLevel(const RectD& dstRoD,
-                        const RectI & roi,
-                        unsigned int level,
-                        bool copyBitMap,
-                        Image* output) const
-{
-    ///The last mip map level we will make with closestPo2
-    RectI lastLevelRoI = roi.downscalePowerOfTwoSmallestEnclosing(level);
-
-    ///The output image must contain the last level roi
-    assert( output->getBounds().contains(lastLevelRoI) );
-
-    assert( output->getComponents() == getComponents() );
-
-    if (level == 0) {
-        ///Just copy the roi and return
-        output->pasteFrom(*this, roi, copyBitMap);
-
+        dstTexture = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+        ImagePrivate::applyMaskMixGL(originalImageTexture, maskTexture, dstTexture, mix, maskInvert, roi);
         return;
     }
 
-    const Image* srcImg = this;
-    Image* dstImg = NULL;
-    bool mustFreeSrc = false;
-    RectI previousRoI = roi;
-    ///Build all the mipmap levels until we reach the one we are interested in
-    for (unsigned int i = 1; i <= level; ++i) {
-        ///Halve the smallest enclosing po2 rect as we need to render a minimum of the renderWindow
-        RectI halvedRoI = previousRoI.downscalePowerOfTwoSmallestEnclosing(1);
+    // This function only works if original image and mask image are in full rect formats with the same bitdepth as output
+    assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
+    assert(!maskImg || (maskImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && maskImg->getBitDepth() == getBitDepth()));
 
-        ///Allocate an image with half the size of the source image
-        dstImg = new Image( getComponents(), dstRoD, halvedRoI, getMipMapLevel() + i, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), true, eStorageModeRAM, OSGLContextPtr(), GL_TEXTURE_2D, true);
-
-        ///Half the source image into dstImg.
-        ///We pass the closestPo2 roi which might not be the entire size of the source image
-        ///If the source image'sroi was originally a po2.
-        srcImg->halveRoI(previousRoI, copyBitMap, dstImg);
-
-        ///Clean-up, we should use shared_ptrs for safety
-        if (mustFreeSrc) {
-            delete srcImg;
-        }
-
-        ///Switch for next pass
-        previousRoI = halvedRoI;
-        srcImg = dstImg;
-        mustFreeSrc = true;
+    void* origImgPtrs[4] = {0, 0, 0, 0};
+    RectI origImgBounds;
+    ImageBitDepthEnum origImgBitdepth = eImageBitDepthFloat;
+    int origImgNComps = 0;
+    if (originalImg) {
+        getCPUTileData(originalImg->_imp->tiles[0], origImgPtrs, &origImgBounds, &origImgBitdepth, &origImgNComps);
     }
 
-    assert(srcImg->getBounds() == lastLevelRoI);
-
-    ///Finally copy the last mipmap level into output.
-    output->pasteFrom( *srcImg, srcImg->getBounds(), copyBitMap);
-
-    ///Clean-up, we should use shared_ptrs for safety
-    if (mustFreeSrc) {
-        delete srcImg;
+    void* maskImgPtrs[4] = {0, 0, 0, 0};
+    RectI maskImgBounds;
+    ImageBitDepthEnum maskImgBitdepth = eImageBitDepthFloat;
+    int maskImgNComps = 0;
+    if (originalImg) {
+        getCPUTileData(maskImg->_imp->tiles[0], maskImgPtrs, &maskImgBounds, &maskImgBitdepth, &maskImgNComps);
     }
-} // buildMipMapLevel
+    assert(maskImgNComps == 1);
 
-double
-Image::getScaleFromMipMapLevel(unsigned int level)
-{
-    return 1. / (1 << level);
-}
+    for (std::size_t tile_i; tile_i < _imp->tiles.size(); ++tile_i) {
 
-#ifndef M_LN2
-#define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
-#endif
-unsigned int
-Image::getLevelFromScale(double s)
-{
-    assert(0. < s && s <= 1.);
-    int retval = -std::floor(std::log(s) / M_LN2 + 0.5);
-    assert(retval >= 0);
+    } // for each tile
 
-    return retval;
-}
 
-void
-Image::copyBitmapRowPortion(int x1,
-                            int x2,
-                            int y,
-                            const Image& other)
-{
-    _bitmap.copyRowPortion(x1, x2, y, other._bitmap);
-}
 
-void
-Bitmap::copyRowPortion(int x1,
-                       int x2,
-                       int y,
-                       const Bitmap& other)
-{
-    const char* srcBitmap = other.getBitmapAt(x1, y);
-    char* dstBitmap = getBitmapAt(x1, y);
-    const char* end = dstBitmap + (x2 - x1);
 
-    while (dstBitmap < end) {
-        *dstBitmap = /**srcBitmap == PIXEL_UNAVAILABLE ? 0 : */ *srcBitmap;
-        ++dstBitmap;
-        ++srcBitmap;
+    int srcNComps = originalImg ? (int)originalImg->getComponentsCount() : 0;
+    switch (srcNComps) {
+        case 1:
+            applyMaskMixForSrcComponents<1>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
+            break;
+        case 2:
+            applyMaskMixForSrcComponents<2>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
+            break;
+        case 3:
+            applyMaskMixForSrcComponents<3>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
+            break;
+        case 4:
+            applyMaskMixForSrcComponents<4>(realRoI, maskImg, originalImg, masked, maskInvert, mix);
+            break;
+        default:
+            break;
     }
-}
+} // applyMaskMix
 
-void
-Image::copyBitmapPortion(const RectI& roi,
-                         const Image& other)
-{
-    _bitmap.copyBitmapPortion(roi, other._bitmap);
-}
 
-void
-Bitmap::copyBitmapPortion(const RectI& roi,
-                          const Bitmap& other)
-{
-    assert(roi.x1 >= _bounds.x1 && roi.x2 <= _bounds.x2 && roi.y1 >= _bounds.y1 && roi.y2 <= _bounds.y2);
-    assert(roi.x1 >= other._bounds.x1 && roi.x2 <= other._bounds.x2 && roi.y1 >= other._bounds.y1 && roi.y2 <= other._bounds.y2);
-
-    int srcRowSize = other._bounds.width();
-    int dstRowSize = _bounds.width();
-    const char* srcBitmap = other.getBitmapAt(roi.x1, roi.y1);
-    char* dstBitmap = getBitmapAt(roi.x1, roi.y1);
-
-    for (int y = roi.y1; y < roi.y2; ++y,
-         srcBitmap += srcRowSize,
-         dstBitmap += dstRowSize) {
-        const char* srcCur = srcBitmap;
-        const char* srcEnd = srcBitmap + roi.width();
-        char* dstCur = dstBitmap;
-        while (srcCur < srcEnd) {
-            *dstCur = /**srcCur == PIXEL_UNAVAILABLE ? 0 : */ *srcCur;
-            ++srcCur;
-            ++dstCur;
-        }
-    }
-}
-
-template <typename PIX, bool doPremult>
-void
-Image::premultInternal(const RectI& roi)
-{
-    WriteAccess acc(this);
-    RectI renderWindow;
-
-    roi.intersect(_bounds, &renderWindow);
-
-    assert(getComponentsCount() == 4);
-
-    int srcRowElements = 4 * _bounds.width();
-    PIX* dstPix = (PIX*)acc.pixelAt(renderWindow.x1, renderWindow.y1);
-    for ( int y = renderWindow.y1; y < renderWindow.y2; ++y, dstPix += (srcRowElements - (renderWindow.x2 - renderWindow.x1) * 4) ) {
-        for (int x = renderWindow.x1; x < renderWindow.x2; ++x, dstPix += 4) {
-            for (int c = 0; c < 3; ++c) {
-                if (doPremult) {
-                    dstPix[c] = PIX(float(dstPix[c]) * dstPix[3]);
-                } else {
-                    if (dstPix[3] != 0) {
-                        dstPix[c] = PIX( dstPix[c] / float(dstPix[3]) );
-                    }
-                }
-            }
-        }
-    }
-}
-
-template <bool doPremult>
-void
-Image::premultForDepth(const RectI& roi)
-{
-    if (getComponentsCount() != 4) {
-        return;
-    }
-    ImageBitDepthEnum depth = getBitDepth();
-    switch (depth) {
-    case eImageBitDepthByte:
-        premultInternal<unsigned char, doPremult>(roi);
-        break;
-    case eImageBitDepthShort:
-        premultInternal<unsigned short, doPremult>(roi);
-        break;
-    case eImageBitDepthFloat:
-        premultInternal<float, doPremult>(roi);
-        break;
-    default:
-        break;
-    }
-}
-
-void
-Image::premultImage(const RectI& roi)
-{
-    assert(getStorageMode() != eStorageModeGLTex);
-    premultForDepth<true>(roi);
-}
-
-void
-Image::unpremultImage(const RectI& roi)
-{
-    assert(getStorageMode() != eStorageModeGLTex);
-    premultForDepth<false>(roi);
-}
 
 NATRON_NAMESPACE_EXIT;

@@ -40,34 +40,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct MonoChannelTile
-{
-    // A pointer to the internal storage
-    MemoryBufferedCacheEntryBasePtr buffer;
 
-    // Used when working with the cache
-    // to ensure a single thread computed this tile
-    CacheEntryLockerPtr entryLocker;
 
-    // The index of the channel 0 <= channel <= 3
-    // if mono channel.
-    // If not mon channel this is -1
-    int channelIndex;
 
-    // Was this found in the cache ?
-    bool isCached;
-
-};
-
-struct ImageTile
-{
-    // Each ImageTile internally holds a pointer to a mono-channel tile in the cache
-    std::vector<MonoChannelTile> perChannelTile;
-
-    // The bounds covered by this tile
-    RectI tileBounds;
-
-};
 
 struct ImagePrivate
 {
@@ -75,7 +50,7 @@ struct ImagePrivate
     RectI bounds;
 
     // Each individual tile storage
-    std::vector<ImageTile> tiles;
+    std::vector<Image::Tile> tiles;
 
     // The layer represented by this image
     ImageComponents layer;
@@ -121,7 +96,7 @@ struct ImagePrivate
     /**
      * @brief Returns the tile corresponding to the pixel at position x,y or null if out of bounds
      **/
-    const ImageTile* getTile(int x, int y) const;
+    const Image::Tile* getTile(int x, int y) const;
 
     /**
      * @brief Returns the number of tiles that fit in 1 line of the image
@@ -133,18 +108,38 @@ struct ImagePrivate
      **/
     RectI getTilesCoordinates(const RectI& pixelCoordinates) const;
 
+    /**
+     * @brief Helper to copy from a untiled image to a tiled image
+     **/
+    void copyUntiledImageToTiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args);
+
+    /**
+     * @brief Helper to copy from a tiled image to a untiled image
+     **/
+    void copyTiledImageToUntiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args);
+
+    /**
+     * @brief Helper to copy from an untiled image to another untiled image
+     **/
+    void copyUntiledImageToUntiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args);
 
     /**
      * @brief The main entry point to copy image portions.
      * The storage may vary as well as the number of components and the bitdepth.
      **/
-    static void copyRectangle(const MemoryBufferedCacheEntryBasePtr& from,
-                              const int fromChannelIndex,
+    static void copyRectangle(const Image::Tile& fromTile,
+                              StorageModeEnum fromStorage,
                               Image::ImageBufferLayoutEnum fromLayout,
-                              const MemoryBufferedCacheEntryBasePtr& to,
-                              const int toChannelIndex,
+                              const Image::Tile& toTile,
+                              StorageModeEnum toStorage,
                               Image::ImageBufferLayoutEnum toLayout,
                               const Image::CopyPixelsArgs& args);
+
+    /**
+     * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
+     * returns a temporary image that is suitable to copy then to the toImage.
+     **/
+    static ImagePtr checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image& toImage, const RectI& roi);
 
    
 
@@ -175,15 +170,71 @@ struct ImagePrivate
                                 int conversionChannel,
                                 Image::AlphaChannelHandlingEnum alphaHandling,
                                 Image::MonoToPackedConversionEnum monoConversion,
-                                const void* srcBuf,
+                                const void* srcBufPtrs[4],
                                 int srcNComps,
                                 ImageBitDepthEnum srcBitDepth,
                                 const RectI& srcBounds,
-                                void* dstBuf,
+                                void* dstBufPtrs[4],
                                 int dstNComps,
                                 ImageBitDepthEnum dstBitDepth,
                                 const RectI& dstBounds);
-    
+
+    static void fillGL(const RectI & roi,
+                       float r,
+                       float g,
+                       float b,
+                       float a,
+                       const GLCacheEntryPtr& texture);
+
+    static void fillCPU(void* ptrs[4],
+                        float r,
+                        float g,
+                        float b,
+                        float a,
+                        int nComps,
+                        ImageBitDepthEnum bitDepth,
+                        const RectI& bounds,
+                        const RectI& roi);
+
+    static void fillCPUBlack(void* ptrs[4],
+                             int nComps,
+                             ImageBitDepthEnum bitDepth,
+                             const RectI& bounds,
+                             const RectI& roi);
+
+    static void halveImage(const void* srcPtrs[4],
+                           int nComps,
+                           ImageBitDepthEnum bitdepth,
+                           const RectI& srcBounds,
+                           void* dstPtrs[4],
+                           const RectI& dstBounds);
+
+    static bool checkForNaNs(void* ptrs[4],
+                             int nComps,
+                             ImageBitDepthEnum bitdepth,
+                             const RectI& bounds,
+                             const RectI& roi);
+
+    static void applyMaskMixGL(const GLCacheEntryPtr& originalTexture,
+                               const GLCacheEntryPtr& maskTexture,
+                               const GLCacheEntryPtr& dstTexture,
+                               double mix,
+                               bool invertMask,
+                               const RectI& roi);
+
+    static void applyMaskMixCPU(const void* originalImgPtrs[4],
+                                const RectI& originalImgBounds,
+                                int originalImgNComps,
+                                const void* maskImgPtrs[4],
+                                const RectI& maskImgBounds,
+                                void* dstImgPtrs[4],
+                                ImageBitDepthEnum dstImgBitDepth,
+                                int dstImgNComps,
+                                double mix,
+                                bool invertMask,
+                                const RectI& dstBounds,
+                                const RectI& roi);
+
     
 };
 

@@ -109,7 +109,7 @@ inline bool findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap&
 }
 
 /**
- * @brief These are datas related to a single frame/view render of a node
+ * @brief These are datas related to a single frame/view render of a node. This is thread-safe.
  **/
 struct FrameViewRequestPrivate;
 class FrameViewRequest
@@ -164,7 +164,7 @@ typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFr
 
 
 /**
- * @brief Thread-local arguments given to render a frame by the tree.
+ * @brief Render-local arguments given to render a frame by the tree.
  * This is different than the RenderArgs because it is not local to a
  * renderRoI call but to the rendering of a whole frame.
  **/

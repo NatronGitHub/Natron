@@ -44,7 +44,6 @@
 #endif
 
 #include "Engine/AppManager.h"
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/GPUContextPool.h"
 
 #include "Global/GLIncludes.h"

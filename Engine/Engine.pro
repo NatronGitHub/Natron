@@ -117,10 +117,11 @@ SOURCES += \
     HistogramCPU.cpp \
     HostOverlaySupport.cpp \
     Image.cpp \
-    ImagePrivate.cpp \
     ImageConvert.cpp \
+    ImageComponents.cpp  \
     ImageCopyChannels.cpp \
-    ImageComponents.cpp \
+    ImageFill.cpp \
+    ImagePrivate.cpp \
     ImageMaskMix.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
