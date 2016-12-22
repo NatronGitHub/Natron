@@ -4040,10 +4040,7 @@ EffectInstance::getRegionOfDefinition_public(double inArgsTime,
         // Get the render args for the input
         TreeRenderNodeArgsPtr inputRenderArgs;
         if (render) {
-            TreeRenderPtr parentRender = render->getParentRender();
-            if (parentRender) {
-                inputRenderArgs = parentRender->getOrCreateRenderArgs(identityInputNode->getNode());
-            }
+            inputRenderArgs = render->getInputRenderArgs(inputIdentityNb);
         }
 
         StatusEnum stat = identityInputNode->getRegionOfDefinition_public(inputIdentityTime, scale, inputIdentityView, inputRenderArgs, rod);
@@ -4221,14 +4218,8 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, const Tr
 
             // If during a render we must also find the render args for the input node
             TreeRenderNodeArgsPtr inputRenderArgs;
-            {
-                TreeRenderPtr parentRender;
-                if (render) {
-                    parentRender = render->getParentRender();
-                }
-                if (parentRender) {
-                    inputRenderArgs = parentRender->getOrCreateRenderArgs(inputEffect->getNode());
-                }
+            if (render) {
+                inputRenderArgs = render->getInputRenderArgs(it->first);
             }
             
             // For all views requested in input

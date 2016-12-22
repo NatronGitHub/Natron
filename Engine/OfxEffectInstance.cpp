@@ -60,6 +60,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobTypes.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Distorsion2D.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
@@ -89,6 +90,10 @@ NATRON_NAMESPACE_ENTER;
 struct OfxEffectInstancePrivate
 {
     boost::scoped_ptr<OfxImageEffectInstance> effect;
+
+    // Thread-local storage used to workaround the poorly written OpenFX spec.
+    boost::shared_ptr<TLSHolder<EffectTLSData> > tlsData;
+
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
     KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
     KnobIntWPtr selectionRectangleStateKnob;
@@ -140,6 +145,7 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate()
         : effect()
+        , tlsData()
         , overlayInteract()
         , cursorKnob()
         , selectionRectangleStateKnob()
@@ -165,6 +171,7 @@ struct OfxEffectInstancePrivate
 
     OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
         : effect()
+        , tlsData(other.tlsData)
         , overlayInteract()
         , context(other.context)
         , clipsInfos(other.clipsInfos)

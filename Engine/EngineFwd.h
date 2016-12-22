@@ -462,6 +462,7 @@ typedef boost::weak_ptr<TrackerParamsProvider> TrackerParamsProviderWPtr;
 typedef boost::weak_ptr<TrackerHelper> TrackerHelperWPtr;
 typedef boost::weak_ptr<TrackMarker> TrackMarkerWPtr;
 typedef boost::weak_ptr<TreeRender> TreeRenderWPtr;
+typedef boost::weak_ptr<TreeRenderNodeArgs> TreeRenderNodeArgsWPtr;
 typedef boost::weak_ptr<ViewerInstance> ViewerInstanceWPtr;
 typedef boost::weak_ptr<ViewerNode> ViewerNodeWPtr;
 typedef std::list<ImagePtr> ImageList;

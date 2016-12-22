@@ -40,7 +40,7 @@ struct EffectTLSDataPrivate
     // These are arguments global to the render of frame.
     // In each render of a frame multiple subsequent render on the effect may occur but these data should remain the same.
     // Multiple threads may share the same pointer as these datas remain the same.
-    ParallelRenderArgsPtr frameArgs;
+    TreeRenderNodeArgsWPtr frameArgs;
 
     // Even though these data are unique to the holder thread, we need a Mutex when copying one thread data
     // over another one.
@@ -109,8 +109,7 @@ void
 EffectTLSData::pushRenderActionArgs(double time, ViewIdx view, RenderScale& scale,
                           const RectI& renderWindowPixel,
                           const InputImagesMap& preRenderedInputImages,
-                          const std::map<ImageComponents, PlaneToRender>& outputPlanes,
-                          const ComponentsNeededMapPtr& compsNeeded)
+                          const std::map<ImageComponents, PlaneToRender>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
     args->time = time;
@@ -161,31 +160,20 @@ EffectTLSData::isDuringActionThatCannotSetValue() const
 #endif
 
 
-ParallelRenderArgsPtr
-EffectTLSData::getParallelRenderArgs() const
+TreeRenderNodeArgsPtr
+EffectTLSData::getRenderArgs() const
 {
     QMutexLocker k(&_imp->lock);
-    return _imp->frameArgs;
-}
-
-
-ParallelRenderArgsPtr
-EffectTLSData::getOrCreateParallelRenderArgs()
-{
-    QMutexLocker k(&_imp->lock);
-    if (_imp->frameArgs) {
-        return _imp->frameArgs;
-    }
-    _imp->frameArgs.reset(new ParallelRenderArgs);
-    return _imp->frameArgs;
+    return _imp->frameArgs.lock();
 }
 
 void
-EffectTLSData::invalidateParallelRenderArgs()
+EffectTLSData::setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->frameArgs.reset();
+    _imp->frameArgs = renderArgs;
 }
+
 
 void
 EffectTLSData::ensureLastActionInStackIsNotRender()

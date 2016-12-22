@@ -176,9 +176,6 @@ public:
     }
 
     EffectInstance* _publicInterface; // can not be a smart ptr
-
-    ///Thread-local storage living through the render_public action and used by getImage to retrieve all parameters
-    boost::shared_ptr<TLSHolder<EffectTLSData> > tlsData;
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 

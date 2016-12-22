@@ -105,7 +105,6 @@ public:
     , renderWindowPixel()
     , inputImages()
     , outputPlanes()
-    , compsNeeded()
     {
 
     }
@@ -135,11 +134,6 @@ public:
     // clipGetImage on the output clip.
     std::map<ImageComponents, PlaneToRender> outputPlanes;
 
-    // FIXME: this should be removed and the result of the action getComponentsNeeded should be cached much like any
-    // other action
-    ComponentsNeededMapPtr compsNeeded;
-
-
     virtual GenericActionTLSArgsPtr createCopy() OVERRIDE FINAL
     {
         RenderActionTLSDataPtr ret(new RenderActionTLSData);
@@ -152,7 +146,6 @@ public:
         ret->renderWindowPixel = renderWindowPixel;
         ret->inputImages = inputImages;
         ret->outputPlanes  = outputPlanes;
-        ret->compsNeeded = compsNeeded;
         return ret;
     }
 
@@ -188,8 +181,7 @@ public:
     void pushRenderActionArgs(double time, ViewIdx view, RenderScale& scale,
                               const RectI& renderWindowPixel,
                               const InputImagesMap& preRenderedInputImages,
-                              const std::map<ImageComponents, PlaneToRender>& outputPlanes,
-                              const ComponentsNeededMapPtr& compsNeeded);
+                              const std::map<ImageComponents, PlaneToRender>& outputPlanes);
 
     /**
      * @brief Pop the current action TLS. This call must match a call to one of the push functions above.
@@ -222,8 +214,7 @@ public:
     bool getCurrentRenderActionArgs(double* time, ViewIdx* view, RenderScale* scale,
                                     RectI* renderWindowPixel,
                                     InputImagesMap* preRenderedInputImages,
-                                    std::map<ImageComponents, PlaneToRender>* outputPlanes,
-                                    ComponentsNeededMapPtr* compsNeeded) const;
+                                    std::map<ImageComponents, PlaneToRender>* outputPlanes) const;
 
     /**
      * @brief If the current action is the render action, this sets the output planes.
@@ -239,19 +230,15 @@ public:
     void ensureLastActionInStackIsNotRender();
 
     /**
-     * @brief Returns the parallel render args TLS
+     * @brief Returns the render args
      **/
-    ParallelRenderArgsPtr getParallelRenderArgs() const;
+    TreeRenderNodeArgsPtr getRenderArgs() const;
 
     /**
-     * @brief Creates the parallel render args TLS
+     * @brief Set the parallel render args
      **/
-    ParallelRenderArgsPtr getOrCreateParallelRenderArgs();
+    void setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs);
 
-    /**
-     * @brief Clear the parallel render args pointer
-     **/
-    void invalidateParallelRenderArgs();
     
 private:
     
@@ -304,11 +291,10 @@ public:
                                 double time, ViewIdx view, RenderScale& scale,
                                 const RectI& renderWindowPixel,
                                 const InputImagesMap& preRenderedInputImages,
-                                const std::map<ImageComponents, PlaneToRender>& outputPlanes,
-                                const ComponentsNeededMapPtr& compsNeeded)
+                                const std::map<ImageComponents, PlaneToRender>& outputPlanes)
     : tls(tls)
     {
-        tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, preRenderedInputImages, outputPlanes, compsNeeded);
+        tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, preRenderedInputImages, outputPlanes);
     }
 
     ~RenderActionArgsSetter_RAII()

@@ -266,7 +266,8 @@ Q_SIGNALS:
 
     /**
      * @brief Emitted whenever an entry that has its isCacheSignalRequired() return true is inserted or
-     * removed from the cache.
+     * removed from the cache. This is used for example to update the timeline when a cached texture
+     * is inserted or removed.
      **/
     void cacheChanged();
     

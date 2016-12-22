@@ -53,27 +53,6 @@ NATRON_NAMESPACE_ENTER;
 
 typedef std::set<AbortableThread*> ThreadSet;
 
-struct FindDependenciesNode
-{
-    // Did we already recurse on this node (i.e: did we call upstream on input nodes)
-    bool recursed;
-
-    // How many times did we visit this node
-    int visitCounter;
-
-    // A map of the hash for each frame/view pair
-    FrameViewHashMap frameViewHash;
-
-
-    FindDependenciesNode()
-    : recursed(false)
-    , visitCounter(0)
-    , frameViewHash()
-    {}
-};
-
-
-typedef std::map<NodePtr,FindDependenciesNode> FindDependenciesMap;
 
 
 struct TreeRenderPrivate
@@ -155,8 +134,9 @@ struct TreeRenderPrivate
     /**
      * @brief Must be called right away after the constructor to initialize the data
      * specific to this render.
+     * This returns a pointer to the render data for the tree root node.
      **/
-    void init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface);
+    TreeRenderNodeArgsPtr init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface);
 
     /**
      * @brief Should be called before launching any call to renderRoI to optimize the render
@@ -165,23 +145,13 @@ struct TreeRenderPrivate
 
     void fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs);
 
-    void getDependenciesRecursive_internal(const TreeRenderPtr& render,
-                                           const NodePtr& node,
-                                           double time,
-                                           ViewIdx view,
-                                           FindDependenciesMap& finalNodes,
-                                           U64* nodeHash);
+    /**
+     * @brief Builds the internal render tree (including this node) and all its dependencies through expressions as well (which
+     * also may be recursive).
+     * This function throw exceptions upon error.
+     **/
+    TreeRenderNodeArgsPtr buildRenderTreeRecursive(const NodePtr& node, std::set<NodePtr>* visitedNodes);
 
-
-    void setNodeTLSInternal(const TreeRender::CtorArgsPtr& inArgs,
-                            const NodePtr& node,
-                            bool initTLS,
-                            bool addFrameViewHash,
-                            double time,
-                            ViewIdx view,
-                            U64 hash,
-                            const OSGLContextPtr& gpuContext,
-                            const OSGLContextPtr& cpuContext);
 };
 
 
@@ -197,15 +167,6 @@ TreeRender::~TreeRender()
     if (_imp->abortTimeoutTimer) {
         _imp->abortTimeoutTimer->deleteLater();
     }
-
-    // Invalidate the TLS on all nodes that had it set
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( !(*it) || !(*it)->getEffectInstance() ) {
-            continue;
-        }
-        (*it)->getEffectInstance()->invalidateParallelRenderArgsTLS();
-    }
-
 }
 
 TreeRenderNodeArgsPtr
@@ -219,20 +180,6 @@ TreeRender::getNodeRenderArgs(const NodePtr& node) const
         return TreeRenderNodeArgsPtr();
     }
     return it->second;
-}
-
-TreeRenderNodeArgsPtr
-TreeRender::getOrCreateRenderArgs(const NodePtr& node)
-{
-    if (!node) {
-        return TreeRenderNodeArgsPtr();
-    }
-    std::map<NodePtr, TreeRenderNodeArgsPtr>::const_iterator it = _imp->perNodeArgs.find(node);
-    if (it != _imp->perNodeArgs.end()) {
-        return it->second;
-    }
-    TreeRenderNodeArgsPtr ret(new TreeRenderNodeArgs(shared_from_this(), node));
-    return ret;
 }
 
 
@@ -450,225 +397,78 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
 }
 
 
-void
-TreeRenderPrivate::setNodeTLSInternal(const TreeRender::CtorArgsPtr& inArgs,
-                                      const NodePtr& node,
-                                      bool initTLS,
-                                      bool addFrameViewHash,
-                                      double time,
-                                      ViewIdx view,
-                                      U64 hash,
-                                      const OSGLContextPtr& gpuContext,
-                                      const OSGLContextPtr& cpuContext)
-{
-    EffectInstancePtr effect = node->getEffectInstance();
-    assert(effect);
 
-    if (!initTLS) {
-        // Find a TLS object that was created in a call to this function before
-        TreeRenderNodeArgsPtr curTLS = effect->getParallelRenderArgsTLS();
-        if (!curTLS) {
-            // Not found, create it
-            initTLS = true;
-        } else {
-            assert(curTLS->request);
-            // Found: add the hash for this frame/view pair and also increase the visitsCount
-            if (addFrameViewHash) {
-                curTLS->request->setFrameViewHash(time, view, hash);
-            }
-            curTLS->visitsCount = visitsCounter;
-
-        }
-    }
-
-    // Create the TLS object for this frame render
-    if (initTLS) {
-        RenderSafetyEnum safety = node->getCurrentRenderThreadSafety();
-        PluginOpenGLRenderSupport glSupport = node->getCurrentOpenGLRenderSupport();
-
-        EffectInstance::SetParallelRenderTLSArgsPtr tlsArgs(new EffectInstance::SetParallelRenderTLSArgs);
-        tlsArgs->time = inArgs->time;
-        tlsArgs->view = inArgs->view;
-        tlsArgs->treeRoot = inArgs->treeRoot;
-        tlsArgs->glContext = gpuContext;
-        tlsArgs->cpuGlContext = cpuContext;
-        tlsArgs->currentThreadSafety = safety;
-        tlsArgs->currentOpenGLSupport = glSupport;
-        tlsArgs->doNanHandling = doNansHandling;
-        tlsArgs->draftMode = inArgs->draftMode;
-        tlsArgs->stats = inArgs->stats;
-        tlsArgs->visitsCount = visitsCounter;
-        tlsArgs->parent = _publicInterface->shared_from_this();
-
-        ParallelRenderArgsPtr curTLS = effect->initParallelRenderArgsTLS(tlsArgs);
-        assert(curTLS);
-        if (addFrameViewHash) {
-            curTLS->request->setFrameViewHash(time, view, hash);
-        }
-    }
-}
-
-
-/**
- * @brief Builds the internal render tree (including this node) and all its dependencies through expressions as well (which
- * also may be recursive).
- * The hash is also computed for each frame/view pair of each node.
- * This function throw exceptions upon error.
- **/
-void
-TreeRenderPrivate::getDependenciesRecursive_internal(const TreeRenderPtr& render,
-                                                     const NodePtr& node,
-                                                     double inArgsTime,
-                                                     ViewIdx view,
-                                                     FindDependenciesMap& finalNodes,
-                                                     U64* nodeHash)
+TreeRenderNodeArgsPtr
+TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
+                                            std::set<NodePtr>* visitedNodes)
 {
 
-
-
-    // There may be cases where nodes gets added to the finalNodes in getAllExpressionDependenciesRecursive(), but we still
-    // want to recurse upstream for them too
-    bool foundInMap = false;
-    bool alreadyRecursedUpstream = false;
-
+    assert(node);
     // Sanity check
     if ( !node || !node->isNodeCreated() ) {
-        return;
+        return TreeRenderNodeArgsPtr();
     }
 
     EffectInstancePtr effect = node->getEffectInstance();
     if (!effect) {
-        return;
+        return TreeRenderNodeArgsPtr();
+    }
+
+    if (visitedNodes->find(node) != visitedNodes->end()) {
+        // Already visited this node
+        TreeRenderNodeArgsPtr args = _publicInterface->getNodeRenderArgs(node);
+        assert(args);
+        return args;
     }
 
     // When building the render tree, the actual graph is flattened and groups no longer exist!
     assert(!dynamic_cast<NodeGroup*>(effect.get()));
 
-    double time = inArgsTime;
+    visitedNodes->insert(node);
+
+    // Ensure this node has a render object. If this is the first time we visit this node it will create it.
+    // The render object will copy and cache all knob values and inputs and anything that may change during
+    // the render.
+    // Since we did not make any action calls yet, we ensure that knob values remain the same throughout the render
+    // as long as this object lives.
+    TreeRenderNodeArgsPtr frameArgs;
     {
-        int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !effect->canRenderContinuously()) {
-            time = roundedTime;
+        std::map<NodePtr, TreeRenderNodeArgsPtr>::const_iterator foundArgs = perNodeArgs.find(node);
+        if (foundArgs != perNodeArgs.end()) {
+            frameArgs = foundArgs->second;
+        } else {
+            frameArgs.reset(new TreeRenderNodeArgs(_publicInterface->shared_from_this(), node));
+            perNodeArgs[node] = frameArgs;
         }
     }
 
-    FindDependenciesNode *nodeData = 0;
-
-    // Check if we visited the node already
-    {
-        FindDependenciesMap::iterator found = finalNodes.find(node);
-        if (found != finalNodes.end()) {
-            nodeData = &found->second;
-            foundInMap = true;
-            if (found->second.recursed) {
-                // We already called getAllUpstreamNodesRecursiveWithDependencies on its inputs
-                // Increment the number of time we visited this node
-                ++found->second.visitCounter;
-                alreadyRecursedUpstream = true;
-            } else {
-                // Now we set the recurse flag
-                nodeData->recursed = true;
-                nodeData->visitCounter = 1;
-            }
-
-        }
-    }
-
-    if (!nodeData) {
-        // Add this node to the set
-        nodeData = &finalNodes[node];
-        nodeData->recursed = true;
-        nodeData->visitCounter = 1;
-    }
-
-
-    // If the frame args did not exist yet for this node, create them
-    TreeRenderNodeArgsPtr frameArgs = render->getNodeRenderArgs(node);
     
-
-    // Compute frames-needed, which will also give us the hash for this node.
-    // This action will most likely make getValue calls on knobs, so we need to create the TLS object
-    // on the effect with at least the render values cache even if we don't have yet other informations.
-    U64 hashValue;
-    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, nodeData->visitCounter == 1 /*createTLS*/, render, &hashValue);
-
-
-    // Now update the TLS with the hash value and initialize data if needed
-    setNodeTLSInternal(inArgs, doNansHandling, node, nodeData->visitCounter == 1 /*initTLS*/, nodeData->visitCounter, true /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
-
-    // If the node is within a group, also apply TLS on the group so that knobs have a consistant state throughout the render, even though
-    // the group node will not actually render anything.
-    {
-        NodeGroupPtr isContainerAGroup = toNodeGroup(effect->getNode()->getGroup());
-        if (isContainerAGroup) {
-            isContainerAGroup->createFrameRenderTLS(inArgs->abortInfo);
-            setNodeTLSInternal(inArgs, doNansHandling, isContainerAGroup->getNode(), true /*createTLS*/, 0 /*visitCounter*/, false /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
-        }
-    }
-
-
-    // If we already got this node from expressions dependencies, don't do it again
-    if (!foundInMap || !alreadyRecursedUpstream) {
-
-        std::set<NodePtr> expressionsDeps;
-        effect->getAllExpressionDependenciesRecursive(expressionsDeps);
-
-        // Also add all expression dependencies but mark them as we did not recursed on them yet
-        for (std::set<NodePtr>::iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
-            FindDependenciesNode n;
-            n.recursed = false;
-            n.visitCounter = 0;
-            std::pair<FindDependenciesMap::iterator,bool> insertOK = finalNodes.insert(std::make_pair(node, n));
-
-            // Set the TLS on the expression dependency
-            if (insertOK.second) {
-                (*it)->getEffectInstance()->createFrameRenderTLS(inArgs->abortInfo);
-                setNodeTLSInternal(inArgs, doNansHandling, *it, true /*createTLS*/, 0 /*visitCounter*/, false /*addFrameViewHash*/, time, view, hashValue, glContext, cpuContext);
-            }
-        }
-    }
-
-
-    // Recurse on frames needed
-    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
-
-        EffectInstancePtr inputEffect = EffectInstance::resolveInputEffectForFrameNeeded(it->first, effect.get());
-        if (!inputEffect) {
+    // Recurse on all inputs to ensure they are part of the tree
+    int nInputs = node->getMaxInputCount();
+    for (int i = 0; i < nInputs; ++i) {
+        NodePtr inputNode = node->getInput(i);
+        if (!inputNode) {
             continue;
         }
-
-        // For all views requested in input
-        for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
-
-            // For all ranges in this view
-            for (U32 range = 0; range < viewIt->second.size(); ++range) {
-
-                // For all frames in the range
-                for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
-                    U64 inputHash;
-                    getDependenciesRecursive_internal(inArgs, doNansHandling, glContext, cpuContext, inputEffect->getNode(), treeRoot, f, viewIt->first, finalNodes, &inputHash);
-                }
-            }
-
-        }
+        TreeRenderNodeArgsPtr inputArgs = buildRenderTreeRecursive(inputNode, visitedNodes);
+        assert(inputArgs);
+        frameArgs->setInputRenderArgs(i, inputArgs);
     }
 
-    // For the viewer, since it has no hash of its own, do NOT set the frameViewHash.
-    ViewerInstance* isViewerInstance = dynamic_cast<ViewerInstance*>(effect.get());
-    if (!isViewerInstance) {
-        FrameViewPair fv = {time, view};
-        nodeData->frameViewHash[fv] = hashValue;
+    // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
+    // and a render time and view when we run the expression.
+    std::set<NodePtr> expressionsDeps;
+    effect->getAllExpressionDependenciesRecursive(expressionsDeps);
+
+    for (std::set<NodePtr>::const_iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
+        buildRenderTreeRecursive(*it, visitedNodes);
     }
-    
-    
-    if (nodeHash) {
-        *nodeHash = hashValue;
-    }
-    
-} // getDependenciesRecursive_internal
+
+    return frameArgs;
+} // buildRenderTreeRecursive
 
 
-void
+TreeRenderNodeArgsPtr
 TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface)
 {
     assert(inArgs->treeRoot);
@@ -679,6 +479,7 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     isPlayback = inArgs->playback;
     isDraft = inArgs->draftMode;
     byPassCache = inArgs->byPassCache;
+    handleNaNs = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
 
     // If abortable thread, set abort info on the thread, to make the render abortable faster
@@ -687,36 +488,34 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
         isAbortable->setCurrentRender(publicInterface);
     }
 
+    // Fetch the OpenGL context used for the render. It will not be attached to any render thread yet.
     fetchOpenGLContext(inArgs);
 
-    OSGLContextPtr glContext = _imp->openGLContext.lock(), cpuContext = _imp->cpuOpenGLContext.lock();
 
-    bool doNanHandling = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
+    // Build the render tree
+    std::set<NodePtr> visitedNodes;
+    TreeRenderNodeArgsPtr rootNodeRenderArgs = buildRenderTreeRecursive(inArgs->treeRoot, &visitedNodes);
+    return rootNodeRenderArgs;
 
-
-    // Get dependencies node tree and apply TLS
-    FindDependenciesMap dependenciesMap;
-    getDependenciesRecursive_internal(inArgs, doNanHandling, glContext, cpuContext, inArgs->treeRoot, inArgs->treeRoot, inArgs->time, inArgs->view, dependenciesMap, 0);
-
-    for (FindDependenciesMap::iterator it = dependenciesMap.begin(); it != dependenciesMap.end(); ++it) {
-        nodes.push_back(it->first);
-    }
-    
-    
-}
+} // init
 
 ImagePtr
 TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, RenderRoIRetCode* renderStatus)
 {
     TreeRenderPtr render(new TreeRender());
+
+    TreeRenderNodeArgsPtr rootNodeRenderArgs;
     try {
-        render->_imp->init(inArgs, render);
+        // Setup the render tree and make local copy of knob values for the render.
+        // This will also set the per node render object in the TLS for OpenFX effects.
+        rootNodeRenderArgs = render->_imp->init(inArgs, render);
     } catch (...) {
         *renderStatus = eRenderRoIRetCodeFailed;
     }
 
-    EffectInstancePtr effectToRender = inArgs->treeRoot->getEffectInstance();
+    assert(rootNodeRenderArgs);
 
+    EffectInstancePtr effectToRender = inArgs->treeRoot->getEffectInstance();
 
     // Use the provided RoI, otherwise render the RoD
     RectD canonicalRoi;
@@ -725,7 +524,7 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, Rend
         canonicalRoi = *inArgs->canonicalRoI;
     } else {
         RenderScale scale = Image::getScaleFromMipMapLevel(inArgs->mipMapLevel);
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(0, inArgs->time, scale, inArgs->view, &canonicalRoi);
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, scale, inArgs->view, rootNodeRenderArgs, &canonicalRoi);
         if (stat == eStatusFailed) {
             *renderStatus = eRenderRoIRetCodeFailed;
             return ImagePtr();
@@ -740,8 +539,8 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, Rend
         // Should have been set in init() when calling getFramesNeeded
         assert(nodeFrameArgs);
         
-        StatusEnum stat = EffectInstance::getInputsRoIsFunctor(time,
-                                                               view,
+        StatusEnum stat = EffectInstance::getInputsRoIsFunctor(inArgs->time,
+                                                               inArgs->view,
                                                                inArgs->mipMapLevel,
                                                                render,
                                                                nodeFrameArgs,

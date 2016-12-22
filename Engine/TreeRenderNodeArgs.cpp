@@ -27,7 +27,8 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <boost/scoped_ptr.hpp>
+#include <QDebug>
+
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -549,7 +550,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 }
                             }
 
-                            if ( effect->aborted() ) {
+                            if ( render->isAborted() ) {
                                 return eRenderRoIRetCodeAborted;
                             }
 
@@ -620,11 +621,11 @@ EffectInstance::getInputsRoIsFunctor(double inArgsTime,
 
     FrameViewRequest* fvRequest = frameArgs->getOrCreateFrameViewRequest(frameView.time, frameView.view);
 
-    // We should already have the hash by now because getFramesNeeded was already called in the constructor of TreeRender
+
+    // Get frames needed to recurse upstream. This will also compute the hash if needed
     U64 frameViewHash;
-    bool gotHash = fvRequest->getHash(&frameViewHash);
-    assert(gotHash);
-    (void)gotHash;
+    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, frameArgs, &frameViewHash);
+
 
     // Increment the number of visits for this frame/view
     fvRequest->incrementVisitsCount();
@@ -714,9 +715,6 @@ EffectInstance::getInputsRoIsFunctor(double inArgsTime,
     effect->getRegionsOfInterest_public(time, mappedScale, canonicalRenderWindow, view, frameArgs, &inputsRoi);
 
 
-    // Get frames needed to recurse upstream
-    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, frameArgs, 0);
-
     RenderRoIRetCode ret = treeRecurseFunctor(false,
                                               render,
                                               node,
@@ -746,6 +744,9 @@ struct TreeRenderNodeArgsPrivate
 
     // The node to which these args correspond to
     NodePtr node;
+
+    // Pointer to render args of all inputs
+    std::vector<TreeRenderNodeArgsWPtr> inputRenderArgs;
 
     // Contains data for all frame/view pair that are going to be computed
     // for this frame/view pair with the overall RoI to avoid rendering several times with this node.
@@ -780,6 +781,7 @@ struct TreeRenderNodeArgsPrivate
     TreeRenderNodeArgsPrivate(const TreeRenderPtr& render, const NodePtr& node)
     : parentRender(render)
     , node(node)
+    , inputRenderArgs(node->getMaxInputCount())
     , frames()
     , mappedScale(1.)
     , valuesCache(new RenderValuesCache)
@@ -847,6 +849,25 @@ TreeRenderNodeArgs::getNode() const
 {
     return _imp->node;
 }
+
+void
+TreeRenderNodeArgs::setInputRenderArgs(int inputNb, const TreeRenderNodeArgsPtr& inputRenderArgs)
+{
+    if (inputNb < 0 || inputNb >= (int)_imp->inputRenderArgs.size()) {
+        throw std::invalid_argument("TreeRenderNodeArgs::setInputRenderArgs: input index out of range");
+    }
+    _imp->inputRenderArgs[inputNb] = inputRenderArgs;
+}
+
+TreeRenderNodeArgsPtr
+TreeRenderNodeArgs::getInputRenderArgs(int inputNb) const
+{
+    if (inputNb < 0 || inputNb >= (int)_imp->inputRenderArgs.size()) {
+        return TreeRenderNodeArgsPtr();
+    }
+    return _imp->inputRenderArgs[inputNb].lock();
+}
+
 
 const FrameViewRequest*
 TreeRenderNodeArgs::getFrameViewRequest(double time,

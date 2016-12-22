@@ -146,11 +146,6 @@ public:
      **/
     TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;
 
-    /**
-     * @brief Get or create arguments for the given node.
-     **/
-    TreeRenderNodeArgsPtr getOrCreateRenderArgs(const NodePtr& node);
-
 private Q_SLOTS:
 
     /**

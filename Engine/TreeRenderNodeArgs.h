@@ -165,8 +165,10 @@ typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFr
 
 /**
  * @brief Render-local arguments given to render a frame by the tree.
- * This is different than the RenderArgs because it is not local to a
+ * This is different than the FrameViewRequest because it is not local to a
  * renderRoI call but to the rendering of a whole frame.
+ * This class is not thread-safe, because every field are set in the thread
+ * that created the TreeRender object and then they are no longer changed.
  **/
 struct TreeRenderNodeArgsPrivate;
 class TreeRenderNodeArgs
@@ -191,6 +193,16 @@ public:
      * @brief Get the node associated to these render args
      **/
     NodePtr getNode() const;
+
+    /**
+     * @brief Set the input node render args at the given input number
+     **/
+    void setInputRenderArgs(int inputNb, const TreeRenderNodeArgsPtr& inputRenderArgs);
+
+    /**
+     * @brief Get the input node render args at the given input number
+     **/
+    TreeRenderNodeArgsPtr getInputRenderArgs(int inputNb) const;
 
     /**
      * @brief Set/get the mapped render-scale for the node, i.e:
