@@ -296,11 +296,6 @@ public:
 
     void registerPlugin(const PluginPtr& plugin);
 
-    bool isNCacheFilesOpenedCapped() const;
-    size_t getNCacheFilesOpened() const;
-    void increaseNCacheFilesOpened();
-    void decreaseNCacheFilesOpened();
-
     void onCheckerboardSettingsChanged() { Q_EMIT checkerboardSettingsChanged(); }
 
     void onOCIOConfigPathChanged(const std::string& path);
@@ -309,40 +304,6 @@ public:
 
 
     int getHardwareIdealThreadCount();
-
-
-    /**
-     * @brief Toggle on/off multi-threading globally in Natron
-     **/
-    void setNumberOfThreads(int threadsNb);
-
-    /**
-     * @brief The value held by the Number of render threads settings.
-     * It is stored it for faster access (1 mutex instead of 3 read/write locks)
-     *
-     * WARNING: This has nothing to do with the setNumberOfThreads function!
-     * This function is just called by the Settings so that the getNThreadsSettings
-     * function is cheap (no need to pass by the Knob API), whereas the
-     * setNumberOfThreads function actually set the value of the Knob in the settings!
-     **/
-    void setNThreadsToRender(int nThreads);
-    void setNThreadsPerEffect(int nThreadsPerEffect);
-    void setUseThreadPool(bool useThreadPool);
-
-    void getNThreadsSettings(int* nThreadsToRender, int* nThreadsPerEffect) const;
-    bool getUseThreadPool() const;
-
-    /**
-     * @brief Updates the global runningThreadsCount maintained across the whole application
-     **/
-    void fetchAndAddNRunningThreads(int nThreads);
-
-    /**
-     * @brief Returns the number of threads that were launched by Natron for rendering.
-     * This sums up threads launched by the multi-thread suite and threads launched for
-     * parallel rendering.
-     **/
-    int getNRunningThreads() const;
 
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 
@@ -432,6 +393,8 @@ public:
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
     GPUContextPool* getGPUContextPool() const;
+
+    const MultiThread* getMultiThreadHandler() const;
 
 
     /**

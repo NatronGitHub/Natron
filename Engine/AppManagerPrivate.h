@@ -64,8 +64,7 @@ GCC_DIAG_ON(deprecated)
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
-#include "Engine/CacehDeleterThread.h"
-#include "Engine/FrameEntry.h"
+#include "Engine/CacheDeleterThread.h"
 #include "Engine/Image.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
@@ -104,6 +103,9 @@ public:
 
     boost::scoped_ptr<OfxHost> ofxHost; //< OpenFX host
 
+    // Multi-thread handler
+    boost::scoped_ptr<MultiThread> multiThreadSuite;
+
     boost::scoped_ptr<KnobFactory> _knobFactory; //< knob maker
 
     CachePtr cache; //< Main application cache
@@ -123,36 +125,9 @@ public:
 
     std::list<LogEntry> errorLog;
 
-    size_t maxCacheFiles; //< the maximum number of files the application can open for caching. This is the hard limit * 0.9
-
-    size_t currentCacheFilesCount; //< the number of cache files currently opened in the application
-
-    mutable QMutex currentCacheFilesCountMutex; //< protects currentCacheFilesCount
-
     std::string currentOCIOConfigPath; //< the currentOCIO config path
 
     int idealThreadCount; // return value of QThread::idealThreadCount() cached here
-
-    int nThreadsToRender; // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
-
-    int nThreadsPerEffect;  // the value held by the corresponding Knob in the Settings, stored here for faster access (3 RW lock vs 1 mutex here)
-
-    bool useThreadPool; // whether the multi-thread suite should use the global thread pool (of QtConcurrent) or not
-    
-    mutable QMutex nThreadsMutex; // protects nThreadsToRender & nThreadsPerEffect & useThreadPool
-
-    //The idea here is to keep track of the number of threads launched by Natron (except the ones of the global thread pool of QtConcurrent)
-    //So that we can properly have an estimation of how much the cores of the CPU are used.
-    //This method has advantages and drawbacks:
-    // Advantages:
-    // - This is quick and fast
-    // - This very well describes the render activity of Natron
-    //
-    // Disadvantages:
-    // - This only takes into account the current Natron process and disregard completly CPU activity.
-    // - We might count a thread that is actually waiting in a mutex as a running thread
-    // Another method could be to analyse all cores running, but this is way more expensive and would impair performances.
-    QAtomicInt runningThreadsCount;
 
     ///Python needs wide strings as from Python 3.x onwards everything is unicode based
 #if PY_MAJOR_VERSION >= 3
@@ -185,9 +160,6 @@ public:
     //from UNC path to path with drive letter.
     std::map<QChar, QString> uncPathMapping;
 #endif
-
-    // Copy of the setting knob for faster access from OfxImage constructor
-    bool pluginsUseInputImageCopyToRender;
 
     // True if we can use OpenGL
     struct OpenGLRequirementsData

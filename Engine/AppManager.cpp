@@ -2572,49 +2572,6 @@ AppManager::registerEngineMetaTypes() const
 #endif
 }
 
-bool
-AppManager::isNCacheFilesOpenedCapped() const
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    return _imp->currentCacheFilesCount >= _imp->maxCacheFiles;
-}
-
-size_t
-AppManager::getNCacheFilesOpened() const
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    return _imp->currentCacheFilesCount;
-}
-
-void
-AppManager::increaseNCacheFilesOpened()
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    ++_imp->currentCacheFilesCount;
-#ifdef DEBUG
-    if (_imp->currentCacheFilesCount > _imp->maxCacheFiles) {
-        qDebug() << "Cache has more files opened than the limit allowed:" << _imp->currentCacheFilesCount << '/' << _imp->maxCacheFiles;
-    }
-#endif
-#ifdef NATRON_DEBUG_CACHE
-    qDebug() << "N Cache Files Opened:" << _imp->currentCacheFilesCount;
-#endif
-}
-
-void
-AppManager::decreaseNCacheFilesOpened()
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    --_imp->currentCacheFilesCount;
-#ifdef NATRON_DEBUG_CACHE
-    qDebug() << "NFiles Opened:" << _imp->currentCacheFilesCount;
-#endif
-}
-
 void
 AppManager::onMaxPanelsOpenedChanged(int maxPanels)
 {
@@ -2821,60 +2778,6 @@ const std::string&
 AppManager::getOCIOConfigPath() const
 {
     return _imp->currentOCIOConfigPath;
-}
-
-void
-AppManager::setNThreadsToRender(int nThreads)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->nThreadsToRender = nThreads;
-}
-
-void
-AppManager::getNThreadsSettings(int* nThreadsToRender,
-                                int* nThreadsPerEffect) const
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    *nThreadsToRender = _imp->nThreadsToRender;
-    *nThreadsPerEffect = _imp->nThreadsPerEffect;
-}
-
-void
-AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->nThreadsPerEffect = nThreadsPerEffect;
-}
-
-void
-AppManager::setUseThreadPool(bool useThreadPool)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->useThreadPool = useThreadPool;
-}
-
-bool
-AppManager::getUseThreadPool() const
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    return _imp->useThreadPool;
-}
-
-void
-AppManager::fetchAndAddNRunningThreads(int nThreads)
-{
-    _imp->runningThreadsCount.fetchAndAddRelaxed(nThreads);
-}
-
-int
-AppManager::getNRunningThreads() const
-{
-    return (int)_imp->runningThreadsCount;
 }
 
 void
@@ -3637,6 +3540,12 @@ const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
+}
+
+const MultiThread*
+AppManager::getMultiThreadHandler() const
+{
+    return _imp->multiThreadSuite.get();
 }
 
 GPUContextPool*

@@ -138,6 +138,7 @@ SOURCES += \
     Lut.cpp \
     Markdown.cpp \
     MemoryFile.cpp \
+    MultiThread.cpp \
     Node.cpp \
     NodePrivate.cpp \
     NodeGroup.cpp \
@@ -363,6 +364,7 @@ HEADERS += \
     Markdown.h \
     MemoryFile.h \
     MergingEnum.h \
+    MultiThread.h \
     Node.h \
     NodePrivate.h \
     Noise.h \

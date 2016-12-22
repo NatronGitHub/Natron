@@ -127,16 +127,6 @@ public:
 
     void setNumberOfThreads(int threadsNb);
 
-    int getNumberOfParallelRenders() const;
-
-    void setNumberOfParallelRenders(int nb);
-
-    int getNumberOfThreadsPerEffect() const;
-
-    bool useGlobalThreadPool() const;
-
-    void setUseGlobalThreadPool(bool use);
-
     void restorePluginSettings();
 
     void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);

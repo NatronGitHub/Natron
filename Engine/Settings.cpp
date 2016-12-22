@@ -111,9 +111,6 @@ public:
     // General/Threading
     KnobPagePtr _threadingPage;
     KnobIntPtr _numberOfThreads;
-    KnobIntPtr _numberOfParallelRenders;
-    KnobBoolPtr _useThreadPool;
-    KnobIntPtr _nThreadsPerEffect;
     KnobBoolPtr _renderInSeparateProcess;
     KnobBoolPtr _queueRenders;
 
@@ -588,53 +585,20 @@ SettingsPrivate::initializeKnobsThreading()
     _numberOfThreads = AppManager::createKnob<KnobInt>( thisShared, tr("Number of render threads (0=\"guess\")") );
     _numberOfThreads->setName("noRenderThreads");
 
+    int hwThreadsCount = appPTR->getHardwareIdealThreadCount();
     QString numberOfThreadsToolTip = tr("Controls how many threads %1 should use to render. \n"
-                                        "-1: Disable multithreading totally (useful for debugging) \n"
-                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
+                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( hwThreadsCount );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
-    _numberOfThreads->setRange(-1, INT_MAX);
-    _numberOfThreads->setDisplayRange(-1, 30);
+#ifdef DEBUG
+    // -1: Disable multithreading totally (useful for debugging)
+    _numberOfThreads->setRange(-1, hwThreadsCount);
+#else
+    _numberOfThreads->setRange(0, hwThreadsCount);
+#endif
+    _numberOfThreads->setDisplayRange(0, hwThreadsCount);
     _threadingPage->addKnob(_numberOfThreads);
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders = AppManager::createKnob<KnobInt>( thisShared, tr("Number of parallel renders (0=\"guess\")") );
-    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer."
-                                                 "A value of 0 indicate that %1 should automatically determine "
-                                                 "the best number of parallel renders to launch given your CPU activity. "
-                                                 "Setting a value different than 0 should be done only if you know what you're doing and can lead "
-                                                 "in some situations to worse performances. Overall to get the best performances you should have your "
-                                                 "CPU at 100% activity without idle times.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _numberOfParallelRenders->setName("nParallelRenders");
-    _numberOfParallelRenders->setRange(0, INT_MAX);
-    _numberOfParallelRenders->disableSlider();
-    _threadingPage->addKnob(_numberOfParallelRenders);
-#endif
-
-    _useThreadPool = AppManager::createKnob<KnobBool>( thisShared, tr("Effects use the thread-pool") );
-
-    _useThreadPool->setName("useThreadPool");
-    _useThreadPool->setHintToolTip( tr("When checked, all effects will use a global thread-pool to do their processing instead of launching "
-                                       "their own threads. "
-                                       "This suppresses the overhead created by the operating system creating new threads on demand for "
-                                       "each rendering of a special effect. As a result of this, the rendering might be faster on systems "
-                                       "with a lot of cores (>= 8). \n"
-                                       "WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially "
-                                       "some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, "
-                                       "make sure to uncheck this option first otherwise it will crash %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _threadingPage->addKnob(_useThreadPool);
-
-    _nThreadsPerEffect = AppManager::createKnob<KnobInt>( thisShared, tr("Max threads usable per effect (0=\"guess\")") );
-    _nThreadsPerEffect->setName("nThreadsPerEffect");
-    _nThreadsPerEffect->setHintToolTip( tr("Controls how many threads a specific effect can use at most to do its processing. "
-                                           "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
-                                           "the time spent to launch all the threads might exceed the time spent actually processing."
-                                           "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
-                                           "for an effect.") );
-
-    _nThreadsPerEffect->setRange(0, INT_MAX);
-    _nThreadsPerEffect->disableSlider();
-    _threadingPage->addKnob(_nThreadsPerEffect);
 
     _renderInSeparateProcess = AppManager::createKnob<KnobBool>( thisShared, tr("Render in a separate process") );
     _renderInSeparateProcess->setName("renderNewProcess");
@@ -1713,13 +1677,8 @@ SettingsPrivate::setDefaultValues()
 
 
     _osmesaRenderers->setDefaultValue(defaultMesaDriver);
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setDefaultValue(0);
-#endif
     _nOpenGLContexts->setDefaultValue(2);
     _enableOpenGL->setDefaultValue((int)Settings::eEnableOpenGLEnabled);
-    _useThreadPool->setDefaultValue(true);
-    _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false);
     _queueRenders->setDefaultValue(false);
     _autoPreviewEnabledForNewProjects->setDefaultValue(true);
@@ -2227,9 +2186,6 @@ Settings::restoreSettings(const KnobsVec& knobs)
             saveSetting(_imp->_defaultAppearanceVersion );
         }
 
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-        appPTR->setNThreadsToRender( getNumberOfThreads() );
-        appPTR->setUseThreadPool( _imp->_useThreadPool->getValue() );
         appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
     } catch (std::logic_error) {
         // ignore
@@ -2441,18 +2397,22 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
             cache->clearAndRecreateCacheDirectory();
         }
     } else if ( k == _imp->_numberOfThreads ) {
-        int nbThreads = getNumberOfThreads();
-        appPTR->setNThreadsToRender(nbThreads);
+        int nbThreads = _imp->_numberOfThreads->getValue();
+#ifdef DEBUG
         if (nbThreads == -1) {
-            QThreadPool::globalInstance()->setMaxThreadCount(1);
-            appPTR->abortAnyProcessing();
-        } else if (nbThreads == 0) {
-            QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
+            nbThreads = 1;
+        }
+#endif
+        assert(nbThreads >= 0);
+        if (nbThreads == 0) {
+            int idealCount = appPTR->getHardwareIdealThreadCount();
+            assert(idealCount > 0);
+            idealCount = std::max(idealCount, 1);
+            QThreadPool::globalInstance()->setMaxThreadCount(idealCount);
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
-    } else if ( k == _imp->_nThreadsPerEffect ) {
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
+
     } else if ( k == _imp->_ocioConfigKnob ) {
         if (_imp->_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);
@@ -2460,9 +2420,6 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
             _imp->_customOcioConfigFile->setEnabled(false);
         }
         _imp->tryLoadOpenColorIOConfig();
-    } else if ( k == _imp->_useThreadPool ) {
-        bool useTP = _imp->_useThreadPool->getValue();
-        appPTR->setUseThreadPool(useTP);
     } else if ( k == _imp->_customOcioConfigFile ) {
         if ( _imp->_customOcioConfigFile->isEnabled() ) {
             _imp->tryLoadOpenColorIOConfig();
@@ -2662,12 +2619,6 @@ bool
 Settings::getColorPickerLinear() const
 {
     return _imp->_linearPickers->getValue();
-}
-
-int
-Settings::getNumberOfThreadsPerEffect() const
-{
-    return _imp->_nThreadsPerEffect->getValue();
 }
 
 int
@@ -3151,26 +3102,6 @@ Settings::isAutoFixRelativeFilePathEnabled() const
     return _imp->_fixPathsOnProjectPathChanged->getValue();
 }
 
-int
-Settings::getNumberOfParallelRenders() const
-{
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-
-    return _imp->_numberOfParallelRenders->getValue();
-#else
-
-    return 1;
-#endif
-}
-
-void
-Settings::setNumberOfParallelRenders(int nb)
-{
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _imp->_numberOfParallelRenders->setValue(nb);
-#endif
-}
-
 bool
 Settings::areRGBPixelComponentsSupported() const
 {
@@ -3181,18 +3112,6 @@ bool
 Settings::isTransformConcatenationEnabled() const
 {
     return _imp->_activateTransformConcatenationSupport->getValue();
-}
-
-bool
-Settings::useGlobalThreadPool() const
-{
-    return _imp->_useThreadPool->getValue();
-}
-
-void
-Settings::setUseGlobalThreadPool(bool use)
-{
-    _imp->_useThreadPool->setValue(use);
 }
 
 bool

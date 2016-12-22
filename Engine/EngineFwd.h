@@ -192,6 +192,7 @@ class LogEntry;
 class MemoryFile;
 class MemoryBufferedCacheEntryBase;
 class MemoryMappedCacheEntry;
+class MultiThread;
 class NamedKnobHolder;
 class Node;
 class NodeCollection;

@@ -54,7 +54,7 @@
 #include "Engine/Cache.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
-#include "Engine/FrameEntry.h"
+#include "Engine/MultiThread.h"
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
@@ -83,6 +83,7 @@ AppManagerPrivate::AppManagerPrivate()
     , readerPlugins()
     , writerPlugins()
     , ofxHost( new OfxHost() )
+    , multiThreadSuite(new MultiThread())
     , _knobFactory( new KnobFactory() )
     , cache(Cache::create())
     , _backgroundIPC()
@@ -91,15 +92,7 @@ AppManagerPrivate::AppManagerPrivate()
     , _nodesGlobalMemoryUse(0)
     , errorLogMutex()
     , errorLog()
-    , maxCacheFiles(0)
-    , currentCacheFilesCount(0)
-    , currentCacheFilesCountMutex()
     , idealThreadCount(0)
-    , nThreadsToRender(0)
-    , nThreadsPerEffect(0)
-    , useThreadPool(true)
-    , nThreadsMutex()
-    , runningThreadsCount()
     , commandLineArgsUtf8()
     , nArgs(0)
     , mainModule(0)
@@ -111,7 +104,6 @@ AppManagerPrivate::AppManagerPrivate()
     , breakpadAliveThread()
 #endif
     , natronPythonGIL(QMutex::Recursive)
-    , pluginsUseInputImageCopyToRender(false)
     , glRequirements()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
@@ -124,7 +116,6 @@ AppManagerPrivate::AppManagerPrivate()
     setMaxCacheFiles();
 
     cache->setCacheName("Cache");
-    runningThreadsCount = 0;
 }
 
 AppManagerPrivate::~AppManagerPrivate()

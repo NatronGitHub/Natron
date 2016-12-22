@@ -1190,21 +1190,6 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     AddCreateNode_RAII creatingNode_raii(_imp.get(), node, args);
 
     {
-        // Furnace plug-ins don't handle using the thread pool
-        SettingsPtr settings = appPTR->getCurrentSettings();
-        if ( !isSilentCreation && boost::starts_with(foundPluginID, "uk.co.thefoundry.furnace") &&
-             ( settings->useGlobalThreadPool() || ( settings->getNumberOfParallelRenders() != 1) ) ) {
-            StandardButtonEnum reply = Dialogs::questionDialog(tr("Warning").toStdString(),
-                                                               tr("The settings of the application are currently set to use "
-                                                                  "the global thread-pool for rendering effects.\n"
-                                                                  "The Foundry Furnace "
-                                                                  "is known not to work well when this setting is checked.\n"
-                                                                  "Would you like to turn it off?").toStdString(), false);
-            if (reply == eStandardButtonYes) {
-                settings->setUseGlobalThreadPool(false);
-                settings->setNumberOfParallelRenders(1);
-            }
-        }
 
         // If this is a stereo plug-in, check that the project has been set for multi-view
         if (!isSilentCreation) {

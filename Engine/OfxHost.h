@@ -168,12 +168,9 @@ public:
     {
         OfxImageEffectInstance* lastEffectCallingMainEntry;
 
-        ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
-        std::list<int> threadIndexes;
 
         OfxHostTLSData()
             : lastEffectCallingMainEntry(0)
-            , threadIndexes()
         {
         }
     };
