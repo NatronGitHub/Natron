@@ -183,6 +183,11 @@ public:
     TreeRenderPtr getParentRender() const;
 
     /**
+     * @brief Convenience function for getParentRender()->isAborted()
+     **/
+    bool isAborted() const;
+
+    /**
      * @brief Get the node associated to these render args
      **/
     NodePtr getNode() const;

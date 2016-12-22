@@ -836,6 +836,12 @@ TreeRenderNodeArgs::getParentRender() const
     return _imp->parentRender.lock();
 }
 
+bool
+TreeRenderNodeArgs::isAborted() const
+{
+    return _imp->parentRender.lock()->isAborted();
+}
+
 NodePtr
 TreeRenderNodeArgs::getNode() const
 {

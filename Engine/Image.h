@@ -199,6 +199,14 @@ public:
         // Default: eCacheAccessModeNone
         CacheAccessModeEnum cachePolicy;
 
+        // This must be set if the cache policy is not none.
+        // This will be used to prevent inserting in the cache part of images that had
+        // their render aborted.
+        // Also any of the algorithms used by this image (fill, copyUnprocessChannels, etc..)
+        // will use this to check if the render has been aborted and cancel early the processing
+        // if needed.
+        TreeRenderNodeArgsPtr renderArgs;
+
         // Indicates the desired buffer format for the image. This defaults to eImageBufferLayoutRGBAPackedFullRect
         //
         // Default - eImageBufferLayoutRGBAPackedFullRect
@@ -229,6 +237,7 @@ public:
         //
         // Default - GL_TEXTURE_2D
         U32 textureTarget;
+        
 
         InitStorageArgs();
     };
@@ -486,20 +495,47 @@ public:
         }
     } // getChannelPointers
 
+    struct CPUTileData
+    {
+        void* ptrs[4];
+        RectI tileBounds;
+        ImageBitDepthEnum bitDepth;
+        int nComps;
+
+        CPUTileData()
+        : ptrs()
+        , tileBounds()
+        , bitDepth(eImageBitDepthNone)
+        , nComps(0)
+        {
+            memset(ptrs, 0, sizeof(void*) * 4);
+        }
+
+        CPUTileData(const CPUTileData& other)
+        : ptrs()
+        , tileBounds(other.tileBounds)
+        , bitDepth(other.bitDepth)
+        , nComps(other.nComps)
+        {
+            memcpy(ptrs, other.ptrs, sizeof(void*) * 4);
+        }
+    };
+
     /**
      * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
      **/
-    void getCPUTileData(const Tile& tile,
-                        void* ptrs[4],
-                        RectI *tileBounds,
-                        ImageBitDepthEnum *bitDepth,
-                        int *nComps) const;
+    void getCPUTileData(const Tile& tile, CPUTileData* data) const;
 
     /**
      * @brief Returns the tile at the given tileIndex.
      * An untiled image has a single tile at index 0.
      **/
     bool getTileAt(int tileIndex, Tile* tile) const;
+
+    /**
+     * @brief Returns the number of tiles
+     **/
+    int getNumTiles() const;
 
     template <typename PIX>
     static inline void getChannelPointers(const PIX* ptrs[4],

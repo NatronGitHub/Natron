@@ -116,7 +116,6 @@ struct TreeRenderPrivate
     QThread* ownerThread;
     bool timerStarted;
 
-    bool canAbort;
     bool isPlayback;
     bool isDraft;
     bool byPassCache;
@@ -140,7 +139,6 @@ struct TreeRenderPrivate
     , abortTimeoutTimer(0)
     , ownerThread(QThread::currentThread())
     , timerStarted(false)
-    , canAbort(true)
     , isPlayback(false)
     , isDraft(false)
     , byPassCache(false)
@@ -237,11 +235,6 @@ TreeRender::getOrCreateRenderArgs(const NodePtr& node)
     return ret;
 }
 
-bool
-TreeRender::canAbort() const
-{
-    return _imp->canAbort;
-}
 
 bool
 TreeRender::isAborted() const
@@ -270,6 +263,19 @@ TreeRender::setAborted()
     } else {
         onStartTimerInOriginalThreadTriggered();
     }
+}
+
+bool
+TreeRender::isPlayback() const
+{
+    return _imp->isPlayback;
+}
+
+
+bool
+TreeRender::isDraftRender() const
+{
+    return _imp->isDraft;
 }
 
 void

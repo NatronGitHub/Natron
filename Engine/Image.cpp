@@ -56,18 +56,22 @@ Image::create(const InitStorageArgs& args)
 
 Image::~Image()
 {
-    // If there's a mirror image, update it
-    if (_imp->mirrorImage) {
-        CopyPixelsArgs cpyArgs;
-        cpyArgs.roi = _imp->mirrorImageRoI;
-        _imp->mirrorImage->copyPixels(*this, cpyArgs);
+    // Only push data to the cache if we are not aborted.
+    if (!_imp->renderArgs || !_imp->renderArgs->isAborted()) {
+        // If there's a mirror image, update it
+        if (_imp->mirrorImage) {
+            CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = _imp->mirrorImageRoI;
+            _imp->mirrorImage->copyPixels(*this, cpyArgs);
+        }
+
+        // Push tiles to cache if needed
+        if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
+            _imp->cachePolicy == eCacheAccessModeWriteOnly) {
+            _imp->insertTilesInCache();
+        }
     }
 
-    // Push tiles to cache if needed
-    if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
-        _imp->cachePolicy == eCacheAccessModeWriteOnly) {
-        _imp->insertTilesInCache();
-    }
 }
 
 Image::InitStorageArgs::InitStorageArgs()
@@ -112,6 +116,8 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     _imp->mipMapLevel = args.mipMapLevel;
     _imp->mirrorImage = args.mirrorImage;
     _imp->mirrorImageRoI = args.mirrorImageRoI;
+    _imp->renderArgs = args.renderArgs;
+    
     if (_imp->mirrorImage) {
         // If there's a mirror image, the portion to update must be contained in the mirror image
         // and in this image.
@@ -492,14 +498,11 @@ Image::getBitDepth() const
 
 void
 Image::getCPUTileData(const Image::Tile& tile,
-                      void* ptrs[4],
-                      RectI *tileBounds,
-                      ImageBitDepthEnum *bitDepth,
-                      int *nComps) const
+                      Image::CPUTileData* data) const
 {
-    memset(ptrs, 0, sizeof(void*) * 4);
-    *nComps = 0;
-    *bitDepth = eImageBitDepthNone;
+    memset(data->ptrs, 0, sizeof(void*) * 4);
+    data->nComps = 0;
+    data->bitDepth = eImageBitDepthNone;
     
     for (std::size_t i = 0; i < tile.perChannelTile.size(); ++i) {
         RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(tile.perChannelTile[i].buffer);
@@ -510,44 +513,49 @@ Image::getCPUTileData(const Image::Tile& tile,
         }
         if (i == 0) {
             if (fromIsRAMBuffer) {
-                ptrs[0] = fromIsRAMBuffer->getData();
-                *tileBounds = fromIsRAMBuffer->getBounds();
-                *bitDepth = fromIsRAMBuffer->getBitDepth();
-                *nComps = fromIsRAMBuffer->getNumComponents();
+                data->ptrs[0] = fromIsRAMBuffer->getData();
+                data->tileBounds = fromIsRAMBuffer->getBounds();
+                data->bitDepth = fromIsRAMBuffer->getBitDepth();
+                data->nComps = fromIsRAMBuffer->getNumComponents();
 
                 if (_imp->bufferFormat == Image::eImageBufferLayoutRGBACoplanarFullRect) {
                     // Coplanar requires offsetting
                     assert(tile.perChannelTile.size() == 1);
-                    std::size_t planeSize = *nComps * tileBounds->area() * getSizeOfForBitDepth(*bitDepth);
-                    if (*nComps > 1) {
-                        ptrs[1] = (char*)ptrs[0] + planeSize;
-                        if (*nComps > 2) {
-                            ptrs[2] = (char*)ptrs[1] + planeSize;
-                            if (*nComps > 3) {
-                                ptrs[3] = (char*)ptrs[2] + planeSize;
+                    std::size_t planeSize = data->nComps * data->tileBounds.area() * getSizeOfForBitDepth(data->bitDepth);
+                    if (data->nComps > 1) {
+                        data->ptrs[1] = (char*)data->ptrs[0] + planeSize;
+                        if (data->nComps > 2) {
+                            data->ptrs[2] = (char*)data->ptrs[1] + planeSize;
+                            if (data->nComps > 3) {
+                                data->ptrs[3] = (char*)data->ptrs[2] + planeSize;
                             }
                         }
                     }
                 }
             } else {
-                ptrs[0] = fromIsMMAPBuffer->getData();
-                *tileBounds = fromIsMMAPBuffer->getBounds();
-                *bitDepth = fromIsMMAPBuffer->getBitDepth();
+                data->ptrs[0] = fromIsMMAPBuffer->getData();
+                data->tileBounds = fromIsMMAPBuffer->getBounds();
+                data->bitDepth = fromIsMMAPBuffer->getBitDepth();
                 // MMAP based storage only support mono channel images
-                *nComps = 1;
+                data->nComps = 1;
             }
         } else {
             int channelIndex = tile.perChannelTile[i].channelIndex;
             assert(channelIndex >= 0 && channelIndex < 4);
             if (fromIsRAMBuffer) {
-                ptrs[channelIndex] = fromIsRAMBuffer->getData();
+                data->ptrs[channelIndex] = fromIsRAMBuffer->getData();
             } else {
-                ptrs[channelIndex] = fromIsMMAPBuffer->getData();
+                data->ptrs[channelIndex] = fromIsMMAPBuffer->getData();
             }
         }
     } // for each channel
 }
 
+int
+Image::getNumTiles() const
+{
+    return (int)_imp->tiles.size();
+}
 
 bool
 Image::getTileAt(int tileIndex, Image::Tile* tile) const
@@ -596,6 +604,43 @@ Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, Rect
 
 } // getABCDRectangles
 
+class FillProcessor : public ImageMultiThreadProcessorBase
+{
+    void* _ptrs[4];
+    RectI _tileBounds;
+    ImageBitDepthEnum _bitDepth;
+    int _nComps;
+    RGBAColourF _color;
+
+public:
+
+    FillProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    : ImageMultiThreadProcessorBase(renderArgs)
+    {
+
+    }
+
+    virtual ~FillProcessor()
+    {
+    }
+
+    void setValues(void* ptrs[4], const RectI& tileBounds, ImageBitDepthEnum bitDepth, int nComps, const RGBAColourF& color)
+    {
+        memcpy(_ptrs, ptrs, sizeof(void*) * 4);
+        _tileBounds = tileBounds;
+        _bitDepth = bitDepth;
+        _nComps = nComps;
+        _color = color;
+    }
+
+private:
+
+    virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    {
+        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _tileBounds, renderWindow, renderArgs);
+        return eStatusOK;
+    }
+};
 
 void
 Image::fill(const RectI & roi,
@@ -617,18 +662,19 @@ Image::fill(const RectI & roi,
 
 
     for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
-        
-        void* ptrs[4];
-        RectI tileBounds;
-        ImageBitDepthEnum bitDepth;
-        int nComps;
 
-        getCPUTileData(_imp->tiles[tile_i], ptrs, &tileBounds, &bitDepth, &nComps);
+        Image::CPUTileData tileData;
+        getCPUTileData(_imp->tiles[tile_i], &tileData);
         RectI tileRoI;
-        roi.intersect(tileBounds, &tileRoI);
+        roi.intersect(tileData.tileBounds, &tileRoI);
 
-#pragma message WARN("We should make use of the multi-thread suite here")
-        ImagePrivate::fillCPU(ptrs, r, g, b, a, nComps, bitDepth, tileBounds, tileRoI);
+        RGBAColourF color = {r, g, b, a};
+
+        FillProcessor processor(_imp->renderArgs);
+        processor.setValues(tileData.ptrs, tileData.tileBounds, tileData.bitDepth, tileData.nComps, color);
+        processor.setRenderWindow(tileRoI);
+        processor.process();
+
     }
 
 } // fill
@@ -795,6 +841,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
     if (previousLevelImage->_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
         InitStorageArgs args;
         args.bounds = roi;
+        args.renderArgs = _imp->renderArgs;
         args.layer = previousLevelImage->_imp->layer;
         args.bitdepth = previousLevelImage->getBitDepth();
         args.mipMapLevel = previousLevelImage->getMipMapLevel();
@@ -818,26 +865,20 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         {
             InitStorageArgs args;
             args.bounds = halvedRoI;
+            args.renderArgs = _imp->renderArgs;
             args.layer = previousLevelImage->_imp->layer;
             args.bitdepth = previousLevelImage->getBitDepth();
             args.mipMapLevel = previousLevelImage->getMipMapLevel() + 1;
             mipmapImage = Image::create(args);
         }
 
-        void* srcPtrs[4];
-        RectI srcBounds;
-        ImageBitDepthEnum srcBitdepth;
-        int srcNComps;
-        getCPUTileData(previousLevelImage->_imp->tiles[0], srcPtrs, &srcBounds, &srcBitdepth, &srcNComps);
+        Image::CPUTileData srcTileData;
+        getCPUTileData(previousLevelImage->_imp->tiles[0], &srcTileData);
 
+        Image::CPUTileData dstTileData;
+        getCPUTileData(mipmapImage->_imp->tiles[0], &dstTileData);
 
-        void* dstPtrs[4];
-        RectI dstBounds;
-        ImageBitDepthEnum dstBitDepth;
-        int dstNComps;
-        getCPUTileData(mipmapImage->_imp->tiles[0], dstPtrs, &dstBounds, &dstBitDepth, &dstNComps);
-
-        ImagePrivate::halveImage((const void**)srcPtrs, srcNComps, srcBitdepth, srcBounds, dstPtrs, dstBounds);
+        ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.tileBounds, dstTileData.ptrs, dstTileData.tileBounds);
 
         // Switch for next pass
         previousLevelRoI = halvedRoI;
@@ -860,20 +901,61 @@ Image::checkForNaNs(const RectI& roi)
     bool hasNan = false;
 
     for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        void* ptrs[4];
-        RectI bounds;
-        ImageBitDepthEnum bitDepth;
-        int nComps;
-        getCPUTileData(_imp->tiles[i], ptrs, &bounds, &bitDepth, &nComps);
+        Image::CPUTileData tileData;
+        getCPUTileData(_imp->tiles[i], &tileData);
 
         RectI tileRoi;
-        roi.intersect(bounds, &tileRoi);
-        hasNan |= _imp->checkForNaNs(ptrs, nComps, bitDepth, bounds, tileRoi);
+        roi.intersect(tileData.tileBounds, &tileRoi);
+        hasNan |= _imp->checkForNaNs(tileData.ptrs, tileData.nComps, tileData.bitDepth, tileData.tileBounds, tileRoi);
     }
     return hasNan;
 
 } // checkForNaNs
 
+
+class MaskMixProcessor : public ImageMultiThreadProcessorBase
+{
+    Image::CPUTileData _srcTileData, _maskTileData, _dstTileData;
+    double _mix;
+    bool _maskInvert;
+public:
+
+    MaskMixProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    : ImageMultiThreadProcessorBase(renderArgs)
+    , _srcTileData()
+    , _maskTileData()
+    , _dstTileData()
+    , _mix(0)
+    , _maskInvert(false)
+    {
+
+    }
+
+    virtual ~MaskMixProcessor()
+    {
+    }
+
+    void setValues(const Image::CPUTileData& srcTileData,
+                   const Image::CPUTileData& maskTileData,
+                   const Image::CPUTileData& dstTileData,
+                   double mix,
+                   bool maskInvert)
+    {
+        _srcTileData = srcTileData;
+        _maskTileData = maskTileData;
+        _dstTileData = dstTileData;
+        _mix = mix;
+        _maskInvert = maskInvert;
+    }
+
+private:
+
+    virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    {
+        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.tileBounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.tileBounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.tileBounds, renderWindow, renderArgs);
+        return eStatusOK;
+    }
+};
 
 void
 Image::applyMaskMix(const RectI& roi,
@@ -911,36 +993,30 @@ Image::applyMaskMix(const RectI& roi,
     assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
     assert(!maskImg || (maskImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && maskImg->getBitDepth() == getBitDepth()));
 
-    void* origImgPtrs[4] = {0, 0, 0, 0};
-    RectI origImgBounds;
-    ImageBitDepthEnum origImgBitdepth = eImageBitDepthFloat;
-    int origImgNComps = 0;
+    Image::CPUTileData srcImgData, maskImgData;
     if (originalImg) {
-        getCPUTileData(originalImg->_imp->tiles[0], origImgPtrs, &origImgBounds, &origImgBitdepth, &origImgNComps);
+        getCPUTileData(originalImg->_imp->tiles[0], &srcImgData);
     }
 
-    void* maskImgPtrs[4] = {0, 0, 0, 0};
-    RectI maskImgBounds;
-    ImageBitDepthEnum maskImgBitdepth = eImageBitDepthFloat;
-    int maskImgNComps = 0;
-    if (originalImg) {
-        getCPUTileData(maskImg->_imp->tiles[0], maskImgPtrs, &maskImgBounds, &maskImgBitdepth, &maskImgNComps);
+    if (maskImg) {
+        getCPUTileData(maskImg->_imp->tiles[0], &maskImgData);
+        assert(maskImgData.nComps == 1);
     }
-    assert(maskImgNComps == 1);
+
 
     for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
 
-        void* dstImgPtrs[4];
-        RectI dstImgBounds;
-        ImageBitDepthEnum dstImgBitdepth;
-        int dstImgNComps = 0;
-        getCPUTileData(_imp->tiles[tile_i], dstImgPtrs, &dstImgBounds, &dstImgBitdepth, &dstImgNComps);
+        Image::CPUTileData dstImgData;
+        getCPUTileData(_imp->tiles[tile_i], &dstImgData);
 
         RectI tileRoI;
-        roi.intersect(dstImgBounds, &tileRoI);
+        roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-#pragma message WARN("We should make use of the multi-thread suite here")
-        ImagePrivate::applyMaskMixCPU((const void**)origImgPtrs, origImgBounds, origImgNComps, (const void**)maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitdepth, dstImgNComps, mix, maskInvert, dstImgBounds, tileRoI);
+        MaskMixProcessor processor(_imp->renderArgs);
+        processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
+        processor.setRenderWindow(tileRoI);
+        processor.process();
+
     } // for each tile
 } // applyMaskMix
 
@@ -966,6 +1042,41 @@ Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) cons
 }
 
 
+class CopyUnProcessedProcessor : public ImageMultiThreadProcessorBase
+{
+    Image::CPUTileData _srcImgData, _dstImgData;
+    std::bitset<4> _processChannels;
+public:
+
+    CopyUnProcessedProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    : ImageMultiThreadProcessorBase(renderArgs)
+    {
+
+    }
+
+    virtual ~CopyUnProcessedProcessor()
+    {
+    }
+
+    void setValues(const Image::CPUTileData& srcImgData,
+                   const Image::CPUTileData& dstImgData,
+                   std::bitset<4> processChannels)
+    {
+        _srcImgData = srcImgData;
+        _dstImgData = dstImgData;
+        _processChannels = processChannels;
+    }
+
+private:
+
+    virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    {
+        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.tileBounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.tileBounds, _processChannels, renderWindow, renderArgs);
+        return eStatusOK;
+    }
+};
+
+
 void
 Image::copyUnProcessedChannels(const RectI& roi,
                                const std::bitset<4> processChannels,
@@ -975,8 +1086,6 @@ Image::copyUnProcessedChannels(const RectI& roi,
     if (!canCallCopyUnProcessedChannels(processChannels)) {
         return;
     }
-
-    int numComp = getComponents().getNumComponents();
 
     if (getStorageMode() == eStorageModeGLTex) {
 
@@ -997,28 +1106,25 @@ Image::copyUnProcessedChannels(const RectI& roi,
     // This function only works if original  image is in full rect format with the same bitdepth as output
     assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
 
-    void* origImgPtrs[4] = {0, 0, 0, 0};
-    RectI origImgBounds;
-    ImageBitDepthEnum origImgBitdepth = eImageBitDepthFloat;
-    int origImgNComps = 0;
+    Image::CPUTileData srcImgData;
     if (originalImg) {
-        getCPUTileData(originalImg->_imp->tiles[0], origImgPtrs, &origImgBounds, &origImgBitdepth, &origImgNComps);
+        getCPUTileData(originalImg->_imp->tiles[0], &srcImgData);
     }
 
 
     for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
 
-        void* dstImgPtrs[4];
-        RectI dstImgBounds;
-        ImageBitDepthEnum dstImgBitdepth;
-        int dstImgNComps = 0;
-        getCPUTileData(_imp->tiles[tile_i], dstImgPtrs, &dstImgBounds, &dstImgBitdepth, &dstImgNComps);
+        Image::CPUTileData dstImgData;
+        getCPUTileData(_imp->tiles[tile_i], &dstImgData);
 
         RectI tileRoI;
-        roi.intersect(dstImgBounds, &tileRoI);
+        roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-#pragma message WARN("We should make use of the multi-thread suite here")
-        ImagePrivate::copyUnprocessedChannelsCPU((const void**)origImgPtrs, origImgBounds, origImgNComps, (void**)dstImgPtrs, dstImgBitdepth, dstImgNComps, dstImgBounds, processChannels, tileRoI);
+        CopyUnProcessedProcessor processor(_imp->renderArgs);
+        processor.setValues(srcImgData, dstImgData, processChannels);
+        processor.setRenderWindow(tileRoI);
+        processor.process();
+
     } // for each tile
     
 } // copyUnProcessedChannels

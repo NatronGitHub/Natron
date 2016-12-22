@@ -579,12 +579,6 @@ public:
                                   const std::bitset<4>& processChannels);
 
 
-
-
-    static bool aborted(bool isRenderResponseToUserInteraction,
-                        const AbortableRenderInfoPtr& abortInfo,
-                        const EffectInstancePtr& treeRoot)  WARN_UNUSED_RETURN;
-
     void checkMetadata(NodeMetadata &metadata);
 };
 

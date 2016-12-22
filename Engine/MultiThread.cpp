@@ -96,7 +96,6 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
                       unsigned int threadMax,
                       QThread* spawnerThread,
                       void *customArg,
-                      const EffectInstancePtr& effect,
                       const TreeRenderNodeArgsPtr& renderArgs)
 {
     assert(threadIndex < threadMax);
@@ -118,7 +117,7 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
 
     StatusEnum ret = eStatusOK;
     try {
-        ret = func(threadIndex, threadMax, customArg, effect, renderArgs);
+        ret = func(threadIndex, threadMax, customArg, renderArgs);
     } catch (const std::bad_alloc & ba) {
         ret =  eStatusOutOfMemory;
     } catch (...) {
@@ -147,7 +146,6 @@ public:
                         unsigned int threadMax,
                         QThread* spawnerThread,
                         void *customArg,
-                        const EffectInstancePtr& effect,
                         const TreeRenderNodeArgsPtr& renderArgs,
                         StatusEnum *stat)
     : QThread()
@@ -158,7 +156,6 @@ public:
     , _threadMax(threadMax)
     , _spawnerThread(spawnerThread)
     , _customArg(customArg)
-    , _effect(effect)
     , _renderArgs(renderArgs)
     , _stat(stat)
     {
@@ -185,7 +182,7 @@ private:
 
         assert(*_stat == eStatusFailed);
         try {
-            _func(_threadIndex, _threadMax, _customArg, _effect, _renderArgs);
+            _func(_threadIndex, _threadMax, _customArg, _renderArgs);
             *_stat = eStatusOK;
         } catch (const std::bad_alloc & ba) {
             *_stat = eStatusOutOfMemory;
@@ -206,7 +203,6 @@ private:
     unsigned int _threadMax;
     QThread* _spawnerThread;
     void *_customArg;
-    EffectInstancePtr _effect;
     TreeRenderNodeArgsPtr _renderArgs;
     StatusEnum *_stat;
 };
@@ -227,7 +223,7 @@ MultiThread::~MultiThread()
 
 
 StatusEnum
-MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect, const TreeRenderNodeArgsPtr& renderArgs)
+MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs)
 {
     if (!func) {
         return eStatusFailed;
@@ -245,7 +241,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // multiple times.
         try {
             for (unsigned int i = 0; i < nThreads; ++i) {
-                StatusEnum stat = func(i, nThreads, customArg, effect, renderArgs);
+                StatusEnum stat = func(i, nThreads, customArg, renderArgs);
                 if (stat != eStatusOK) {
                     return stat;
                 }
@@ -263,8 +259,8 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
     // The first method is to be preferred but can be proven to not work properly with some plug-ins that
     // require thread local storage such as The Foundry Furnace plug-ins.
     bool useThreadPool = true;
-    if (effect) {
-        NodePtr node = effect->getNode();
+    if (renderArgs) {
+        NodePtr node = renderArgs->getNode();
         if (node) {
             if (boost::starts_with(node->getPluginID(), "uk.co.thefoundry.furnace")) {
                 useThreadPool = false;
@@ -292,11 +288,11 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
-        QFuture<StatusEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, customArg, effect, renderArgs) );
+        QFuture<StatusEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, customArg, renderArgs) );
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
-            StatusEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, customArg, effect, renderArgs);
+            StatusEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, customArg, renderArgs);
             if (stat != eStatusOK) {
                 // This thread failed, wait for other threads and exit
                 future.waitForFinished();
@@ -325,7 +321,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             // at most maxConcurrentThread should be running at the same time
             QVector<NonThreadPoolThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, spawnerThread, customArg, effect, renderArgs, &status[i]);
+                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, spawnerThread, customArg, renderArgs, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads
@@ -418,9 +414,8 @@ MultiThread::isCurrentThreadSpawnedThread()
     return stat == eStatusOK;
 }
 
-MultiThreadProcessorBase::MultiThreadProcessorBase(const EffectInstancePtr& effect, const TreeRenderNodeArgsPtr& renderArgs)
-: _effect(effect)
-, _renderArgs(renderArgs)
+MultiThreadProcessorBase::MultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs)
+:  _renderArgs(renderArgs)
 {
 
 }
@@ -434,11 +429,10 @@ StatusEnum
 MultiThreadProcessorBase::staticMultiThreadFunction(unsigned int threadIndex,
                                                     unsigned int threadMax,
                                                     void *customArg,
-                                                    const EffectInstancePtr& effect,
                                                     const TreeRenderNodeArgsPtr& renderArgs)
 {
     MultiThreadProcessorBase* processor = (MultiThreadProcessorBase*)customArg;
-    return processor->multiThreadFunction(threadIndex, threadMax, effect, renderArgs);
+    return processor->multiThreadFunction(threadIndex, threadMax, renderArgs);
 }
 
 StatusEnum
@@ -451,17 +445,16 @@ MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
 
     // if 1 cpu, don't bother with the threading
     if (nCPUs == 1) {
-        return multiThreadFunction(0, 1, _effect, _renderArgs);
+        return multiThreadFunction(0, 1, _renderArgs);
     } else {
         // OK do it
-        StatusEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect, _renderArgs);
+        StatusEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _renderArgs);
         return stat;
     }
 }
 
-ImageMultiThreadProcessorBase::ImageMultiThreadProcessorBase(const EffectInstancePtr& effect,
-                                                             const TreeRenderNodeArgsPtr& renderArgs)
-: MultiThreadProcessorBase(effect, renderArgs)
+ImageMultiThreadProcessorBase::ImageMultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs)
+: MultiThreadProcessorBase(renderArgs)
 {
 
 }
@@ -502,7 +495,6 @@ ImageMultiThreadProcessorBase::getThreadRange(unsigned int threadID, unsigned in
 StatusEnum
 ImageMultiThreadProcessorBase::multiThreadFunction(unsigned int threadID,
                                                    unsigned int nThreads,
-                                                   const EffectInstancePtr& effect,
                                                    const TreeRenderNodeArgsPtr& renderArgs)
 {
     // Each threads get a rectangular portion but full scan-lines
@@ -511,7 +503,7 @@ ImageMultiThreadProcessorBase::multiThreadFunction(unsigned int threadID,
 
     if ( (win.y2 - win.y1) > 0 ) {
         // and render that thread on each
-        return multiThreadProcessImages(win, effect, renderArgs);
+        return multiThreadProcessImages(win, renderArgs);
     }
     return eStatusOK;
 }

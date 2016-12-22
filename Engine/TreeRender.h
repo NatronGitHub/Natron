@@ -121,11 +121,6 @@ public:
     virtual ~TreeRender();
 
     /**
-     * @brief Is this render abortable ?
-     **/
-    bool canAbort() const;
-
-    /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
      **/
     bool isAborted() const;
@@ -134,6 +129,16 @@ public:
      * @brief Set this render as aborted, cannot be reversed. This is called when the function GenericSchedulerThread::abortThreadedTask() is called
      **/
     void setAborted();
+
+    /**
+     * @brief Returns whether this render is part of a playback render or just a single render
+     **/
+    bool isPlayback() const;
+
+    /**
+     * @brief Returns whether this render is a bad quality render (typically used when scrubbing a slider or the timeline) or normal quality render
+     **/
+    bool isDraftRender() const;
 
     /**
      * @brief Returns arguments that are specific to the given node by that remain the same throughout the render of the frame, even if multiple time/view

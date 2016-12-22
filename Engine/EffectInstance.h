@@ -986,10 +986,6 @@ public:
 
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
 
-    /*@brief The derived class should query this to abort any long process
-       in the engine function.*/
-    bool aborted() const WARN_UNUSED_RETURN;
-
 
     struct GetImageInArgs
     {

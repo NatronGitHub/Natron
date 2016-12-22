@@ -1173,7 +1173,7 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     args.customArg = customArg;
     // OpenFX does not pass the image effect instance pointer back to us so we loose the context...
     // The only way to recover it will be in the aborted() function entry point with help of thread local storage.
-    Status stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, EffectInstancePtr(), TreeRenderNodeArgsPtr());
+    Status stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, TreeRenderNodeArgsPtr());
     if (stat == eStatusFailed) {
         return kOfxStatFailed;
     } else if (stat == eStatusOutOfMemory) {

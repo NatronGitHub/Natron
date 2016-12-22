@@ -144,6 +144,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
     if (fromImage._imp->bufferFormat == Image::eImageBufferLayoutMonoChannelTiled && toImage._imp->bufferFormat == Image::eImageBufferLayoutMonoChannelTiled) {
         ImagePtr tmpImage;
         Image::InitStorageArgs args;
+        args.renderArgs = fromImage._imp->renderArgs;
         args.bounds = roi;
         args.layer = fromImage._imp->layer;
         tmpImage = Image::create(args);
@@ -167,6 +168,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             if (isGlEntry->getOpenGLContext() != otherIsGlEntry->getOpenGLContext()) {
                 ImagePtr tmpImage;
                 Image::InitStorageArgs args;
+                args.renderArgs = fromImage._imp->renderArgs;
                 args.bounds = fromImage.getBounds();
                 args.layer = ImageComponents::getRGBAComponents();
                 tmpImage = Image::create(args);
@@ -182,6 +184,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         if (toImage._imp->bufferFormat != Image::eImageBufferLayoutRGBAPackedFullRect || toImage.getComponentsCount() != 4 || toImage.getBounds() != fromImage.getBounds()) {
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
+            args.renderArgs = fromImage._imp->renderArgs;
             args.bounds = fromImage.getBounds();
             args.layer = ImageComponents::getRGBAComponents();
             tmpImage = Image::create(args);
@@ -204,6 +207,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         if (fromImage._imp->bufferFormat != Image::eImageBufferLayoutRGBAPackedFullRect || fromImage.getComponentsCount() != 4) {
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
+            args.renderArgs = fromImage._imp->renderArgs;
             args.bounds = fromImage.getBounds();
             args.layer = ImageComponents::getRGBAComponents();
             tmpImage = Image::create(args);

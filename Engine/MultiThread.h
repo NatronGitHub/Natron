@@ -47,8 +47,7 @@ public:
      @param threadIndex unique index of this thread, will be between 0 and threadMax
      @param threadMax to total number of threads executing this function
      @param customArg the argument passed into multiThread
-     @param effect A pointer to the effect that needs to launch threads.
-     @param renderArgs A pointer to the current render data for the node
+     @param renderArgs A pointer to the current render data for the node launching threads
      This may be used to call the aborted() function of the effect to cancel
      processing quickly
 
@@ -57,7 +56,6 @@ public:
     typedef StatusEnum (ThreadFunctor)(unsigned int threadIndex,
                                        unsigned int threadMax,
                                        void *customArg,
-                                       const EffectInstancePtr& effect,
                                        const TreeRenderNodeArgsPtr& renderArgs);
     
     MultiThread();
@@ -81,7 +79,7 @@ public:
      * Note that the thread indexes are from 0 to nThreads - 1.
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
      */
-    static StatusEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect, const TreeRenderNodeArgsPtr& renderArgs);
+    static StatusEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs);
 
     /**
      * @brief Function which indicates the number of CPUs available for SMP processing
@@ -120,13 +118,11 @@ class MultiThreadProcessorBase
 {
 private:
 
-    EffectInstancePtr _effect;
     TreeRenderNodeArgsPtr _renderArgs;
 
 public:
 
-    MultiThreadProcessorBase(const EffectInstancePtr& effect,
-                             const TreeRenderNodeArgsPtr& renderArgs);
+    MultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs);
 
     virtual ~MultiThreadProcessorBase();
 
@@ -137,7 +133,6 @@ protected:
      * ID is from 0..nThreads-1 nThreads are the number of threads it is being run over */
     virtual StatusEnum multiThreadFunction(unsigned int threadID,
                                            unsigned int nThreads,
-                                           const EffectInstancePtr& effect,
                                            const TreeRenderNodeArgsPtr& renderArgs) = 0;
 
     /** @brief Call this to kick off multi threading
@@ -152,7 +147,6 @@ private:
     static StatusEnum staticMultiThreadFunction(unsigned int threadIndex,
                                                 unsigned int threadMax,
                                                 void *customArg,
-                                                const EffectInstancePtr& effect,
                                                 const TreeRenderNodeArgsPtr& renderArgs);
     
 };
@@ -163,8 +157,7 @@ class ImageMultiThreadProcessorBase : public MultiThreadProcessorBase
 
 public:
 
-    ImageMultiThreadProcessorBase(const EffectInstancePtr& effect,
-                                  const TreeRenderNodeArgsPtr& renderArgs);
+    ImageMultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs);
 
     virtual ~ImageMultiThreadProcessorBase();
 
@@ -191,11 +184,10 @@ protected:
      * @brief The function that will be called by each thread concurrently and that should process the image.
      * @param renderWindow The rectangle of pixels to process.
      *
-     * Note that this function should use the effect and renderData parameters to check periodically the
-     * EffectInstance::aborted() function
+     * Note that this function should use the renderData parameter to check periodically if the render
+     * has been aborted.
      **/
     virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow,
-                                                const EffectInstancePtr& effect,
                                                 const TreeRenderNodeArgsPtr& renderArgs) = 0;
 
 private:
@@ -204,8 +196,7 @@ private:
 
     virtual StatusEnum multiThreadFunction(unsigned int threadID,
                                            unsigned int nThreads,
-                                           const EffectInstancePtr& effect,
-                                           const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE;
+                                           const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL;
 
 
 };

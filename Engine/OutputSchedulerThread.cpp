@@ -46,7 +46,6 @@
 
 #include "Global/MemoryInfo.h"
 
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
@@ -2885,6 +2884,9 @@ RenderEngine::renderFrameRange(bool isBlocking,
                                const std::vector<ViewIdx>& viewsToRender,
                                RenderDirectionEnum forward)
 {
+    // We are going to start playback, abort any current viewer refresh
+    _imp->currentFrameScheduler->abortThreadedTask();
+    
     setPlaybackAutoRestartEnabled(true);
 
     {
@@ -2902,6 +2904,9 @@ RenderEngine::renderFromCurrentFrame(bool enableRenderStats,
                                      const std::vector<ViewIdx>& viewsToRender,
                                      RenderDirectionEnum forward)
 {
+    // We are going to start playback, abort any current viewer refresh
+    _imp->currentFrameScheduler->abortThreadedTask();
+    
     setPlaybackAutoRestartEnabled(true);
 
     {

@@ -32,9 +32,11 @@
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/Image.h"
+#include "Engine/MultiThread.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/RectI.h"
+#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ViewIdx.h"
 
 
@@ -75,6 +77,11 @@ struct ImagePrivate
     // This should be contained in mirrorImage
     RectI mirrorImageRoI;
 
+    // This must be set if the cache policy is not none.
+    // This will be used to prevent inserting in the cache part of images that had
+    // their render aborted.
+    TreeRenderNodeArgsPtr renderArgs;
+
     ImagePrivate()
     : bounds()
     , tiles()
@@ -84,6 +91,7 @@ struct ImagePrivate
     , bufferFormat(Image::eImageBufferLayoutRGBAPackedFullRect)
     , mirrorImage()
     , mirrorImageRoI()
+    , renderArgs()
     {
 
     }
@@ -133,7 +141,8 @@ struct ImagePrivate
                               const Image::Tile& toTile,
                               StorageModeEnum toStorage,
                               Image::ImageBufferLayoutEnum toLayout,
-                              const Image::CopyPixelsArgs& args);
+                              const Image::CopyPixelsArgs& args,
+                              const TreeRenderNodeArgsPtr& renderArgs);
 
     /**
      * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
@@ -177,7 +186,8 @@ struct ImagePrivate
                                 void* dstBufPtrs[4],
                                 int dstNComps,
                                 ImageBitDepthEnum dstBitDepth,
-                                const RectI& dstBounds);
+                                const RectI& dstBounds,
+                                const TreeRenderNodeArgsPtr& renderArgs);
 
     static void fillGL(const RectI & roi,
                        float r,
@@ -194,13 +204,8 @@ struct ImagePrivate
                         int nComps,
                         ImageBitDepthEnum bitDepth,
                         const RectI& bounds,
-                        const RectI& roi);
-
-    static void fillCPUBlack(void* ptrs[4],
-                             int nComps,
-                             ImageBitDepthEnum bitDepth,
-                             const RectI& bounds,
-                             const RectI& roi);
+                        const RectI& roi,
+                        const TreeRenderNodeArgsPtr& renderArgs);
 
     static void halveImage(const void* srcPtrs[4],
                            int nComps,
@@ -233,7 +238,8 @@ struct ImagePrivate
                                 double mix,
                                 bool invertMask,
                                 const RectI& dstBounds,
-                                const RectI& roi);
+                                const RectI& roi,
+                                const TreeRenderNodeArgsPtr& renderArgs);
 
     static void copyUnprocessedChannelsGL(const GLCacheEntryPtr& originalTexture,
                                           const GLCacheEntryPtr& dstTexture,
@@ -248,7 +254,8 @@ struct ImagePrivate
                                            int dstImgNComps,
                                            const RectI& dstBounds,
                                            const std::bitset<4> processChannels,
-                                           const RectI& roi);
+                                           const RectI& roi,
+                                           const TreeRenderNodeArgsPtr& renderArgs);
     
     
 };

@@ -35,7 +35,8 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
                           void* dstImgPtrs[4],
                           double mix,
                           const RectI& bounds,
-                          const RectI& roi)
+                          const RectI& roi,
+                          const TreeRenderNodeArgsPtr& renderArgs)
 {
 
     PIX* dstPixelPtrs[4];
@@ -46,6 +47,9 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
 
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
+        if (renderArgs && renderArgs->isAborted()) {
+            return;
+        }
         for (int x = roi.x1; x < roi.x2; ++x) {
 
             PIX* srcPixelPtrs[4];
@@ -113,12 +117,13 @@ applyMaskMixForMasked(const void* originalImgPtrs[4],
                       double mix,
                       bool invertMask,
                       const RectI& bounds,
-                      const RectI& roi)
+                      const RectI& roi,
+                      const TreeRenderNodeArgsPtr& renderArgs)
 {
     if (invertMask) {
-        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi);
+        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderArgs);
     } else {
-        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi);
+        applyMaskMixForMaskInvert<srcNComps, dstNComps, PIX, maxValue, masked, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, bounds, roi, renderArgs);
     }
 }
 
@@ -132,12 +137,13 @@ applyMaskMixForDepth(const void* originalImgPtrs[4],
                      double mix,
                      bool invertMask,
                      const RectI& bounds,
-                     const RectI& roi)
+                     const RectI& roi,
+                     const TreeRenderNodeArgsPtr& renderArgs)
 {
     if (maskImgPtrs[0]) {
-        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi);
+        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, true>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderArgs);
     } else {
-        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi);
+        applyMaskMixForMasked<srcNComps, dstNComps, PIX, maxValue, false>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderArgs);
     }
 }
 
@@ -152,17 +158,18 @@ applyMaskMixForDstComponents(const void* originalImgPtrs[4],
                              double mix,
                              bool invertMask,
                              const RectI& bounds,
-                             const RectI& roi)
+                             const RectI& roi,
+                             const TreeRenderNodeArgsPtr& renderArgs)
 {
     switch (dstImgBitDepth) {
         case eImageBitDepthByte:
-            applyMaskMixForDepth<srcNComps, dstNComps, unsigned char, 255>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi);
+            applyMaskMixForDepth<srcNComps, dstNComps, unsigned char, 255>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderArgs);
             break;
         case eImageBitDepthShort:
-            applyMaskMixForDepth<srcNComps, dstNComps, unsigned short, 65535>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi);
+            applyMaskMixForDepth<srcNComps, dstNComps, unsigned short, 65535>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderArgs);
             break;
         case eImageBitDepthFloat:
-            applyMaskMixForDepth<srcNComps, dstNComps, float, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi);
+            applyMaskMixForDepth<srcNComps, dstNComps, float, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, mix, invertMask, bounds, roi, renderArgs);
             break;
         default:
             assert(false);
@@ -182,21 +189,22 @@ applyMaskMixForSrcComponents(const void* originalImgPtrs[4],
                              double mix,
                              bool invertMask,
                              const RectI& bounds,
-                             const RectI& roi)
+                             const RectI& roi,
+                             const TreeRenderNodeArgsPtr& renderArgs)
 {
 
     switch (dstImgNComps) {
         case 1:
-            applyMaskMixForDstComponents<srcNComps, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi);
+            applyMaskMixForDstComponents<srcNComps, 1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderArgs);
             break;
         case 2:
-            applyMaskMixForDstComponents<srcNComps, 2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi);
+            applyMaskMixForDstComponents<srcNComps, 2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderArgs);
             break;
         case 3:
-            applyMaskMixForDstComponents<srcNComps, 3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi);
+            applyMaskMixForDstComponents<srcNComps, 3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderArgs);
             break;
         case 4:
-            applyMaskMixForDstComponents<srcNComps, 4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi);
+            applyMaskMixForDstComponents<srcNComps, 4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, mix, invertMask, bounds, roi, renderArgs);
             break;
         default:
             break;
@@ -215,20 +223,21 @@ ImagePrivate::applyMaskMixCPU(const void* originalImgPtrs[4],
                               double mix,
                               bool invertMask,
                               const RectI& bounds,
-                              const RectI& roi)
+                              const RectI& roi,
+                              const TreeRenderNodeArgsPtr& renderArgs)
 {
     switch (originalImgNComps) {
         case 1:
-            applyMaskMixForSrcComponents<1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi);
+            applyMaskMixForSrcComponents<1>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderArgs);
             break;
         case 2:
-            applyMaskMixForSrcComponents<2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi);
+            applyMaskMixForSrcComponents<2>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderArgs);
             break;
         case 3:
-            applyMaskMixForSrcComponents<3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi);
+            applyMaskMixForSrcComponents<3>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderArgs);
             break;
         case 4:
-            applyMaskMixForSrcComponents<4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi);
+            applyMaskMixForSrcComponents<4>(originalImgPtrs, originalImgBounds, maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitDepth, dstImgNComps, mix, invertMask, bounds, roi, renderArgs);
             break;
         default:
             break;

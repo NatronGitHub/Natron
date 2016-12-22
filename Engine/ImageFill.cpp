@@ -105,12 +105,13 @@ ImagePrivate::fillGL(const RectI & roi,
     // th old context will be restored when saveCurrentContext is destroyed
 } // fillGL
 
-void
-ImagePrivate::fillCPUBlack(void* ptrs[4],
+static void
+fillCPUBlack(void* ptrs[4],
                            int nComps,
                            ImageBitDepthEnum bitDepth,
                            const RectI& bounds,
-                           const RectI& roi)
+                           const RectI& roi,
+                           const TreeRenderNodeArgsPtr& renderArgs)
 {
     if (roi == bounds) {
         // memset the whole bounds at once
@@ -130,6 +131,10 @@ ImagePrivate::fillCPUBlack(void* ptrs[4],
 
         // memset for each scan-line
         for (int y = roi.y1; y < roi.y2; ++y) {
+
+            if (renderArgs && renderArgs->isAborted()) {
+                return;
+            }
 
             char* dstPixelPtrs[4];
             int dstPixelStride;
@@ -155,7 +160,8 @@ fillForDepthForComponents(void* ptrs[4],
                           float b,
                           float a,
                           const RectI& bounds,
-                          const RectI& roi)
+                          const RectI& roi,
+                          const TreeRenderNodeArgsPtr& renderArgs)
 {
     const float fillValue[4] = {
         nComps == 1 ? a * maxValue : r * maxValue, g * maxValue, b * maxValue, a * maxValue
@@ -174,6 +180,11 @@ fillForDepthForComponents(void* ptrs[4],
     Image::getChannelPointers<char>((PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, dstPixelPtrs, &dstPixelStride);
 
     for (int y = roi.y1; y < roi.y2; ++y) {
+
+        if (renderArgs && renderArgs->isAborted()) {
+            return;
+        }
+
         for (int x = roi.x1; x < roi.x2; ++x) {
             for (int c = 0; c < 4; ++c) {
                 if (dstPixelPtrs[c]) {
@@ -201,20 +212,21 @@ fillForDepth(void* ptrs[4],
              float a,
              int nComps,
              const RectI& bounds,
-             const RectI& roi)
+             const RectI& roi,
+             const TreeRenderNodeArgsPtr& renderArgs)
 {
     switch (nComps) {
         case 1:
-            fillForDepthForComponents<PIX, maxValue, 1>(ptrs, r, g, b, a, bounds, roi);
+            fillForDepthForComponents<PIX, maxValue, 1>(ptrs, r, g, b, a, bounds, roi, renderArgs);
             break;
         case 2:
-            fillForDepthForComponents<PIX, maxValue, 2>(ptrs, r, g, b, a, bounds, roi);
+            fillForDepthForComponents<PIX, maxValue, 2>(ptrs, r, g, b, a, bounds, roi, renderArgs);
             break;
         case 3:
-            fillForDepthForComponents<PIX, maxValue, 3>(ptrs, r, g, b, a, bounds, roi);
+            fillForDepthForComponents<PIX, maxValue, 3>(ptrs, r, g, b, a, bounds, roi, renderArgs);
             break;
         case 4:
-            fillForDepthForComponents<PIX, maxValue, 4>(ptrs, r, g, b, a, bounds, roi);
+            fillForDepthForComponents<PIX, maxValue, 4>(ptrs, r, g, b, a, bounds, roi, renderArgs);
             break;
         default:
             break;
@@ -231,22 +243,23 @@ ImagePrivate::fillCPU(void* ptrs[4],
                       int nComps,
                       ImageBitDepthEnum bitDepth,
                       const RectI& bounds,
-                      const RectI& roi)
+                      const RectI& roi,
+                      const TreeRenderNodeArgsPtr& renderArgs)
 {
     if (r == 0 && g == 0 &&  b == 0 && a == 0) {
-        fillCPUBlack(ptrs, nComps, bitDepth, bounds, roi);
+        fillCPUBlack(ptrs, nComps, bitDepth, bounds, roi, renderArgs);
         return;
     }
 
     switch (bitDepth) {
         case eImageBitDepthByte:
-            fillForDepth<unsigned char, 255>(ptrs, r, g, b, a, nComps, bounds, roi);
+            fillForDepth<unsigned char, 255>(ptrs, r, g, b, a, nComps, bounds, roi, renderArgs);
             break;
         case eImageBitDepthFloat:
-            fillForDepth<float, 1>(ptrs, r, g, b, a, nComps, bounds, roi);
+            fillForDepth<float, 1>(ptrs, r, g, b, a, nComps, bounds, roi, renderArgs);
             break;
         case eImageBitDepthShort:
-            fillForDepth<unsigned short, 65535>(ptrs, r, g, b, a, nComps, bounds, roi);
+            fillForDepth<unsigned short, 65535>(ptrs, r, g, b, a, nComps, bounds, roi, renderArgs);
             break;
         case eImageBitDepthHalf:
         default:
