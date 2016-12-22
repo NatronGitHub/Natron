@@ -315,15 +315,14 @@ halveImageForInternal(const void* srcPtrs[4],
                       void* dstPtrs[4],
                       const RectI& dstBounds)
 {
-    const int dataSizeOf = sizeof(PIX);
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<PIX, nComps>((PIX**)dstPtrs, dstBounds.x1, dstBounds.y1, dstBounds, dataSizeOf, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, nComps>((PIX**)dstPtrs, dstBounds.x1, dstBounds.y1, dstBounds, dstPixelPtrs, &dstPixelStride);
 
     const PIX* srcPixelPtrs[4];
     int srcPixelStride;
-    Image::getChannelPointers<PIX, nComps>((PIX**)srcPtrs, srcBounds.x1, srcBounds.y1, srcBounds, dataSizeOf, srcPixelPtrs, &srcPixelStride);
+    Image::getChannelPointers<PIX, nComps>((PIX**)srcPtrs, srcBounds.x1, srcBounds.y1, srcBounds, srcPixelPtrs, &srcPixelStride);
 
     const int dstRowElementsCount = dstBounds.width() * dstPixelStride;
     const int srcRowElementsCount = srcBounds.width() * srcPixelStride;
@@ -446,11 +445,10 @@ checkForNaNsInternal(void* ptrs[4],
                      const RectI& bounds,
                      const RectI& roi)
 {
-    const int dataSizeOf = sizeof(PIX);
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<PIX, nComps>((PIX**)ptrs, roi.x1, roi.y1, bounds, dataSizeOf, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, nComps>((PIX**)ptrs, roi.x1, roi.y1, bounds, dstPixelPtrs, &dstPixelStride);
     const int rowElementsCount = bounds.width() * dstPixelStride;
 
     bool hasnan = false;

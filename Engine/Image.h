@@ -439,18 +439,19 @@ public:
 
     /**
      * @brief Utility function to retrieve pointers to the RGBA buffers as well as the pixel stride (in the PIX type).
-     * @param ptrs If in a packed RGBA format, only the first pointer has been set and others are NULL. If co-planar
+     * @param ptrs In input, if in a packed RGBA format, only the first pointer has been set and others are NULL. If co-planar
      * each pointer points to the appropriate channel or NULL if it does not exist.
+     * @param dataSizeOf The number of bytes
      **/
     template <typename PIX, int nComps>
     static inline void getChannelPointers(const PIX* ptrs[4],
                                           int x, int y,
                                           const RectI& bounds,
-                                          int dataSizeOf,
                                           PIX* outPtrs[4],
                                           int* pixelStride)
     {
-        memset(outPtrs, 0, sizeof(PIX) * 4);
+        const int dataSizeOf = sizeof(PIX);
+        memset(outPtrs, 0, dataSizeOf * 4);
         {
             // If co-planar and number of components greater than 1, then ptrs[1] should be set,
             // In this case the pixel stride is always 1.
@@ -505,28 +506,37 @@ public:
                                           int x, int y,
                                           const RectI& bounds,
                                           int nComps,
-                                          int dataSizeOf,
                                           PIX* outPtrs[4],
                                           int* pixelStride)
     {
         switch (nComps) {
             case 1:
-                getChannelPointers<PIX, 1>(ptrs, x, y, bounds, dataSizeOf, outPtrs, pixelStride);
+                getChannelPointers<PIX, 1>(ptrs, x, y, bounds, outPtrs, pixelStride);
                 break;
             case 2:
-                getChannelPointers<PIX, 2>(ptrs, x, y, bounds, dataSizeOf, outPtrs, pixelStride);
+                getChannelPointers<PIX, 2>(ptrs, x, y, bounds, outPtrs, pixelStride);
                 break;
             case 3:
-                getChannelPointers<PIX, 3>(ptrs, x, y, bounds, dataSizeOf, outPtrs, pixelStride);
+                getChannelPointers<PIX, 3>(ptrs, x, y, bounds, outPtrs, pixelStride);
                 break;
             case 4:
-                getChannelPointers<PIX, 4>(ptrs, x, y, bounds, dataSizeOf, outPtrs, pixelStride);
+                getChannelPointers<PIX, 4>(ptrs, x, y, bounds, outPtrs, pixelStride);
                 break;
             default:
+                memset(outPtrs, 0, sizeof(void*) * 4);
+                *pixelStride = 0;
                 break;
         }
 
     }
+
+    static void getChannelPointers(const void* ptrs[4],
+                                   int x, int y,
+                                   const RectI& bounds,
+                                   int nComps,
+                                   ImageBitDepthEnum bitdepth,
+                                   void* outPtrs[4],
+                                   int* pixelStride);
 
 
     /**
@@ -576,11 +586,8 @@ public:
      * that are not marked to true in processChannels.
      **/
     void copyUnProcessedChannels(const RectI& roi,
-                                 ImagePremultiplicationEnum outputPremult,
-                                 ImagePremultiplicationEnum originalImagePremult,
                                  std::bitset<4> processChannels,
-                                 const ImagePtr& originalImage,
-                                 bool ignorePremult);
+                                 const ImagePtr& originalImage);
 
     /**
      * @brief Mask the image by the given mask and also disolves it to the originalImg with the given mix.
@@ -600,6 +607,11 @@ public:
     static PIX clamp(PIX x, PIX minval, PIX maxval);
 
 
+    /**
+     * @brief If PIX is an integer format (unsigned char/unsigned short)
+     * then it is clamped between 0 and maxValue, otherwise if floating point type
+     * it is left untouched.
+     **/
     template<typename PIX>
     static PIX clampIfInt(float v);
 

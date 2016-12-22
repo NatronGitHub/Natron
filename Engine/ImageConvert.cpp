@@ -153,7 +153,6 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     const Color::Lut* const srcLut = (srcLut_ == dstLut_) ? 0 : srcLut_;
     const Color::Lut* const dstLut = (srcLut_ == dstLut_) ? 0 : dstLut_;
 
-    int dstDataSizeOf = sizeof(DSTPIX);
     int srcDataSizeOf = sizeof(SRCPIX);
 
 
@@ -165,11 +164,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             const SRCPIX* srcPixelPtrs[4];
             int srcPixelStride;
-            Image::getChannelPointers<SRCPIX, nComp>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcDataSizeOf, srcPixelPtrs, &srcPixelStride);
+            Image::getChannelPointers<SRCPIX, nComp>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcPixelPtrs, &srcPixelStride);
 
             DSTPIX* dstPixelPtrs[4];
             int dstPixelStride;
-            Image::getChannelPointers<DSTPIX, nComp>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstDataSizeOf, dstPixelPtrs, &dstPixelStride);
+            Image::getChannelPointers<DSTPIX, nComp>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstPixelPtrs, &dstPixelStride);
 
             std::size_t nBytesToCopy = renderWindow.width() * nComp * srcDataSizeOf;
             if (nComp == 1 || !srcPixelPtrs[1]) {
@@ -190,11 +189,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             const SRCPIX* srcPixelPtrs[4];
             int srcPixelStride;
-            Image::getChannelPointers<SRCPIX, nComp>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, srcDataSizeOf, srcPixelPtrs, &srcPixelStride);
+            Image::getChannelPointers<SRCPIX, nComp>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, srcPixelPtrs, &srcPixelStride);
 
             DSTPIX* dstPixelPtrs[4];
             int dstPixelStride;
-            Image::getChannelPointers<DSTPIX, nComp>((const SRCPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, dstDataSizeOf, dstPixelPtrs, &dstPixelStride);
+            Image::getChannelPointers<DSTPIX, nComp>((const SRCPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, dstPixelPtrs, &dstPixelStride);
 
             const SRCPIX* srcPixelStart[4];
             DSTPIX* dstPixelStart[4];
@@ -314,10 +313,6 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
     // Other cases are optimizes in convertFromMono and convertToMono
     assert(dstNComps > 1 && srcNComps > 1);
 
-    int dstDataSizeOf = sizeof(DSTPIX);
-    int srcDataSizeOf = sizeof(SRCPIX);
-
-
     const Color::Lut* const srcLut = useColorspaces ? lutFromColorspace( (ViewerColorSpaceEnum)srcColorSpace ) : 0;
     const Color::Lut* const dstLut = useColorspaces ? lutFromColorspace( (ViewerColorSpaceEnum)dstColorSpace ) : 0;
 
@@ -329,11 +324,11 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, srcDataSizeOf, srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, dstNComps>((const SRCPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, dstDataSizeOf, dstPixelPtrs, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, dstNComps>((const SRCPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, dstPixelPtrs, &dstPixelStride);
 
         const SRCPIX* srcPixelStart[4];
         DSTPIX* dstPixelStart[4];
@@ -512,9 +507,6 @@ static convertToMonoImage(const RectI & renderWindow,
 {
     assert(dstBufPtrs[0] && !dstBufPtrs[1] && !dstBufPtrs[2] && !dstBufPtrs[3]);
 
-    int dstDataSizeOf = sizeof(DSTPIX);
-    int srcDataSizeOf = sizeof(SRCPIX);
-
     DSTPIX pix;
 
     for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
@@ -523,11 +515,11 @@ static convertToMonoImage(const RectI & renderWindow,
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcDataSizeOf, srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, 1>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstDataSizeOf, dstPixelPtrs, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, 1>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, &dstPixelStride);
 
 
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
@@ -561,8 +553,7 @@ static convertFromMonoImage(const RectI & renderWindow,
                           void* dstBufPtrs[4],
                           const RectI& dstBounds)
 {
-    int dstDataSizeOf = sizeof(DSTPIX);
-    int srcDataSizeOf = sizeof(SRCPIX);
+
 
     assert(srcBufPtrs[0] && !srcBufPtrs[1] && !srcBufPtrs[2] && !srcBufPtrs[3]);
 
@@ -574,11 +565,11 @@ static convertFromMonoImage(const RectI & renderWindow,
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, 1>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcDataSizeOf, srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, 1>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, dstNComps>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstDataSizeOf, dstPixelPtrs, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, dstNComps>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstPixelPtrs, &dstPixelStride);
 
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
 

@@ -133,7 +133,7 @@ ImagePrivate::fillCPUBlack(void* ptrs[4],
 
             char* dstPixelPtrs[4];
             int dstPixelStride;
-            Image::getChannelPointers<char>((const char**)ptrs, roi.x1, y, bounds, nComps, dataSizeOf, dstPixelPtrs, &dstPixelStride);
+            Image::getChannelPointers<char>((const char**)ptrs, roi.x1, y, bounds, nComps, dstPixelPtrs, &dstPixelStride);
 
             std::size_t rowSize = roi.width() * dstPixelStride * dataSizeOf;
 
@@ -168,13 +168,10 @@ fillForDepthForComponents(void* ptrs[4],
 
     std::size_t nElementsPerRow = nCompsPerBuffer * bounds.width();
 
-
-    int dataSizeOf  = sizeof(PIX);
-
     // now we're safe: the image contains the area in roi
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<char>((PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, dataSizeOf, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<char>((PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, dstPixelPtrs, &dstPixelStride);
 
     for (int y = roi.y1; y < roi.y2; ++y) {
         for (int x = roi.x1; x < roi.x2; ++x) {

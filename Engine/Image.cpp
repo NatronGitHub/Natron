@@ -627,7 +627,8 @@ Image::fill(const RectI & roi,
         RectI tileRoI;
         roi.intersect(tileBounds, &tileRoI);
 
-        _imp->fillCPU(ptrs, r, g, b, a, nComps, bitDepth, tileBounds, tileRoI);
+#pragma message WARN("We should make use of the multi-thread suite here")
+        ImagePrivate::fillCPU(ptrs, r, g, b, a, nComps, bitDepth, tileBounds, tileRoI);
     }
 
 } // fill
@@ -642,6 +643,32 @@ void
 Image::fillBoundsZero()
 {
     fillZero(getBounds());
+}
+
+void
+Image::getChannelPointers(const void* ptrs[4],
+                          int x, int y,
+                          const RectI& bounds,
+                          int nComps,
+                          ImageBitDepthEnum bitdepth,
+                          void* outPtrs[4],
+                          int* pixelStride)
+{
+    switch (bitdepth) {
+        case eImageBitDepthByte:
+            getChannelPointers<unsigned char>((const unsigned char**)ptrs, x, y, bounds, nComps, (unsigned char**)outPtrs, pixelStride);
+            break;
+        case eImageBitDepthShort:
+            getChannelPointers<unsigned short>((const unsigned short**)ptrs, x, y, bounds, nComps, (unsigned short**)outPtrs, pixelStride);
+            break;
+        case eImageBitDepthFloat:
+            getChannelPointers<float>((const float**)ptrs, x, y, bounds, nComps, (float**)outPtrs, pixelStride);
+            break;
+        default:
+            memset(outPtrs, 0, sizeof(void*) * 4);
+            *pixelStride = 0;
+            break;
+    }
 }
 
 
@@ -912,7 +939,8 @@ Image::applyMaskMix(const RectI& roi,
         RectI tileRoI;
         roi.intersect(dstImgBounds, &tileRoI);
 
-        _imp->applyMaskMixCPU((const void**)origImgPtrs, origImgBounds, origImgNComps, (const void**)maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitdepth, dstImgNComps, mix, maskInvert, dstImgBounds, tileRoI);
+#pragma message WARN("We should make use of the multi-thread suite here")
+        ImagePrivate::applyMaskMixCPU((const void**)origImgPtrs, origImgBounds, origImgNComps, (const void**)maskImgPtrs, maskImgBounds, dstImgPtrs, dstImgBitdepth, dstImgNComps, mix, maskInvert, dstImgBounds, tileRoI);
     } // for each tile
 } // applyMaskMix
 
@@ -940,11 +968,8 @@ Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) cons
 
 void
 Image::copyUnProcessedChannels(const RectI& roi,
-                               const ImagePremultiplicationEnum outputPremult,
-                               const ImagePremultiplicationEnum originalImagePremult,
                                const std::bitset<4> processChannels,
-                               const ImagePtr& originalImage,
-                               bool ignorePremult)
+                               const ImagePtr& originalImg)
 {
 
     if (!canCallCopyUnProcessedChannels(processChannels)) {
@@ -953,18 +978,12 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
     int numComp = getComponents().getNumComponents();
 
-    assert( !originalImage || getBitDepth() == originalImage->getBitDepth() );
-
-
-    RectI srcRoi;
-    roi.intersect(_bounds, &srcRoi);
-
     if (getStorageMode() == eStorageModeGLTex) {
 
         GLCacheEntryPtr originalImageTexture, dstTexture;
-        if (originalImage) {
-            assert(originalImage->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLCacheEntry(originalImage->_imp->tiles[0].perChannelTile[0].buffer);
+        if (originalImg) {
+            assert(originalImg->getStorageMode() == eStorageModeGLTex);
+            originalImageTexture = toGLCacheEntry(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
         }
 
         dstTexture = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
@@ -975,23 +994,33 @@ Image::copyUnProcessedChannels(const RectI& roi,
         return;
     }
 
+    // This function only works if original  image is in full rect format with the same bitdepth as output
+    assert(!originalImg || (originalImg->getBufferFormat() != eImageBufferLayoutMonoChannelTiled && originalImg->getBitDepth() == getBitDepth()));
 
-    bool premult = (outputPremult == eImagePremultiplicationPremultiplied);
-    bool originalPremult = (originalImagePremult == eImagePremultiplicationPremultiplied);
-    switch ( getBitDepth() ) {
-        case eImageBitDepthByte:
-            copyUnProcessedChannelsForDepth<unsigned char, 255>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
-            break;
-        case eImageBitDepthShort:
-            copyUnProcessedChannelsForDepth<unsigned short, 65535>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
-            break;
-        case eImageBitDepthFloat:
-            copyUnProcessedChannelsForDepth<float, 1>(premult, roi, processChannels, originalImage, originalPremult, ignorePremult);
-            break;
-        default:
-            
-            return;
+    void* origImgPtrs[4] = {0, 0, 0, 0};
+    RectI origImgBounds;
+    ImageBitDepthEnum origImgBitdepth = eImageBitDepthFloat;
+    int origImgNComps = 0;
+    if (originalImg) {
+        getCPUTileData(originalImg->_imp->tiles[0], origImgPtrs, &origImgBounds, &origImgBitdepth, &origImgNComps);
     }
+
+
+    for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
+
+        void* dstImgPtrs[4];
+        RectI dstImgBounds;
+        ImageBitDepthEnum dstImgBitdepth;
+        int dstImgNComps = 0;
+        getCPUTileData(_imp->tiles[tile_i], dstImgPtrs, &dstImgBounds, &dstImgBitdepth, &dstImgNComps);
+
+        RectI tileRoI;
+        roi.intersect(dstImgBounds, &tileRoI);
+
+#pragma message WARN("We should make use of the multi-thread suite here")
+        ImagePrivate::copyUnprocessedChannelsCPU((const void**)origImgPtrs, origImgBounds, origImgNComps, (void**)dstImgPtrs, dstImgBitdepth, dstImgNComps, dstImgBounds, processChannels, tileRoI);
+    } // for each tile
+    
 } // copyUnProcessedChannels
 
 NATRON_NAMESPACE_EXIT;
