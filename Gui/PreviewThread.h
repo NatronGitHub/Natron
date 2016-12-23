@@ -50,7 +50,7 @@ public:
 
     virtual ~PreviewThread();
 
-    void appendToQueue(const NodeGuiPtr& node, double time);
+    void appendToQueue(const NodeGuiPtr& node, TimeValue time);
 
 private:
 

@@ -116,7 +116,7 @@ OneViewNode::initializeKnobs()
 }
 
 bool
-OneViewNode::isIdentity(double time,
+OneViewNode::isIdentity(TimeValue time,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
                         ViewIdx /*view*/,
@@ -135,7 +135,7 @@ OneViewNode::isIdentity(double time,
 }
 
 FramesNeededMap
-OneViewNode::getFramesNeeded(double time,
+OneViewNode::getFramesNeeded(TimeValue time,
                              ViewIdx /*view*/)
 {
     FramesNeededMap ret;

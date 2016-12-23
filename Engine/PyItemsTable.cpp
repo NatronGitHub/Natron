@@ -115,7 +115,7 @@ static bool getViewSpecFromViewNameInternal(const ItemBase* item, bool allowAll,
 }
 
 bool
-ItemBase::getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const
+ItemBase::getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const
 {
     return getViewSpecFromViewNameInternal(this, false, viewName, view);
 }
@@ -276,8 +276,8 @@ ItemBase::getUserKeyframes(std::list<double>* keys, const QString& view) const
         return;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return;
     }

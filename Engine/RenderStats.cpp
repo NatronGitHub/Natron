@@ -136,7 +136,7 @@ NodeRenderStats::operator=(const NodeRenderStats& other)
 }
 
 void
-NodeRenderStats::addTimeSpentRendering(double time)
+NodeRenderStats::addTimeSpentRendering(TimeValue time)
 {
     _imp->totalTimeSpentRendering += time;
 }
@@ -419,7 +419,7 @@ RenderStats::addRenderInfosForNode(const NodePtr& node,
                                    const NodePtr& identity,
                                    const std::string& plane,
                                    const RectI& rectangle,
-                                   double timeSpent)
+                                   TimeValue timeSpent)
 {
     QMutexLocker k(&_imp->lock);
 

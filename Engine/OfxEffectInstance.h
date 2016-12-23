@@ -150,29 +150,29 @@ public:
     virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD *rod)  OVERRIDE;
-    virtual void getRegionsOfInterest(double time,
+    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD *rod)  OVERRIDE;
+    virtual void getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE;
+    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
-    virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
-                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool canHandleRenderScaleForOverlays() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
@@ -180,10 +180,10 @@ public:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE;
+                             TimeValue time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool isIdentity(double time,
+    virtual bool isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & renderWindow, //!< render window in pixel coords
                             ViewIdx view,
@@ -241,18 +241,14 @@ public:
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                ComponentsNeededMap* comps,
-                                                SequenceTime* passThroughTime,
-                                                int* passThroughView,
-                                                NodePtr* passThroughInput) OVERRIDE;
+    virtual void getComponentsNeededAndProduced(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, ComponentsNeededResults* result) OVERRIDE;
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+    virtual StatusEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
     virtual EffectInstancePtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
@@ -261,13 +257,15 @@ public:
 
     virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputCanReceiveDistorsion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getDistorsion(double time,
+    virtual StatusEnum getDistorsion(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     DistorsionFunction2D* distorsion) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
+
+    virtual void checkCanSetValueAndWarn() const OVERRIDE FINAL;
 
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;

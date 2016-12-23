@@ -294,7 +294,7 @@ RotoItem::isLockedRecursive() const
 bool
 RotoItem::onKnobValueChanged(const KnobIPtr& knob,
                              ValueChangedReasonEnum reason,
-                             double /*time*/,
+                             TimeValue /*time*/,
                              ViewSetSpec /*view*/)
 {
     if (knob == _imp->lockedKnob.lock()) {

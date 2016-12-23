@@ -73,7 +73,7 @@ NATRON_NAMESPACE_ENTER;
 
 static Point
 getPointAt(const BezierCPs& cps,
-           double time,
+           TimeValue time,
            double t)
 {
     int ncps = (int)cps.size();
@@ -124,7 +124,7 @@ getPointAt(const BezierCPs& cps,
 
 static Point
 getLeftPointAt(const BezierCPs& cps,
-               double time,
+               TimeValue time,
                double t)
 {
     int ncps = (int)cps.size();
@@ -189,7 +189,7 @@ getLeftPointAt(const BezierCPs& cps,
 
 static Point
 getRightPointAt(const BezierCPs& cps,
-                double time,
+                TimeValue time,
                 double t)
 {
     int ncps = cps.size();
@@ -268,7 +268,7 @@ norm(const Point& z0,
 
 static Point
 predir(const BezierCPs& cps,
-       double time,
+       TimeValue time,
        double t)
 {
     //Compute the unit vector in the direction of the bysector angle
@@ -320,7 +320,7 @@ predir(const BezierCPs& cps,
 
 static Point
 postdir(const BezierCPs& cps,
-        double time,
+        TimeValue time,
         double t)
 {
     Point dir;
@@ -371,7 +371,7 @@ postdir(const BezierCPs& cps,
 
 static Point
 dirVect(const BezierCPs& cps,
-        double time,
+        TimeValue time,
         double t,
         int sign)
 {
@@ -398,7 +398,7 @@ dirVect(const BezierCPs& cps,
 
 static Point
 dirVect(const BezierCPs& cps,
-        double time,
+        TimeValue time,
         double t)
 {
     int t_i = std::floor(t);
@@ -483,7 +483,7 @@ makeBezierCPFromPoint(const Point& p,
 
 static void
 findIntersection(const BezierCPs& cps,
-                 double time,
+                 TimeValue time,
                  const Point& p,
                  const Point& q,
                  BezierCPPtr* newPoint,
@@ -582,7 +582,7 @@ findIntersection(const BezierCPs& cps,
 
 static bool
 splitAt(const BezierCPs &cps,
-        double time,
+        TimeValue time,
         double t,
         std::list<BezierCPs>* ret)
 {
@@ -677,7 +677,7 @@ splitAt(const BezierCPs &cps,
  **/
 static bool
 checkAnglesAndSplitIfNeeded(const BezierCPs &cps,
-                            double time,
+                            TimeValue time,
                             int sign,
                             std::list<BezierCPs>* ret)
 {
@@ -705,7 +705,7 @@ checkAnglesAndSplitIfNeeded(const BezierCPs &cps,
 
 static void
 tensor(const BezierCPs& p,
-       double time,
+       TimeValue time,
        const Point* internal,
        Point ret[4][4])
 {
@@ -732,7 +732,7 @@ tensor(const BezierCPs& p,
 
 static void
 coonsPatch(const BezierCPs& p,
-           double time,
+           TimeValue time,
            Point ret[4][4])
 {
     assert(p.size() >= 3);
@@ -895,7 +895,7 @@ normal(const Point P[4][4],
 static
 Point
 findPointInside(const BezierCPs& cps,
-                double time)
+                TimeValue time)
 {
     /*
        Given a simple polygon, find some point inside it. Here is a method based on the proof that
@@ -1345,7 +1345,7 @@ checkCurve(const Point& z0,
 // the path.
 static int
 computeWindingNumber(const BezierCPs& patch,
-                     double time,
+                     TimeValue time,
                      const Point& z)
 {
     assert(patch.size() >= 3);
@@ -1377,7 +1377,7 @@ computeWindingNumber(const BezierCPs& patch,
 
 void
 CoonsRegularization::regularize(const BezierCPs &patch,
-                                double time,
+                                TimeValue time,
                                 std::list<BezierCPs> *fixedPatch)
 {
     if (patch.size() < 3) {

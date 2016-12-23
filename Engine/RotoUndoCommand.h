@@ -54,7 +54,7 @@ public:
                                  ,
                                  double dx,
                                  double dy,
-                                 double time, ViewIdx view);
+                                 TimeValue time, ViewIdx view);
 
     virtual ~MoveControlPointsUndoCommand();
 
@@ -104,7 +104,7 @@ public:
                          double ty,
                          double sx,
                          double sy,
-                         double time,
+                         TimeValue time,
                          ViewIdx view);
 
     virtual ~TransformUndoCommand();
@@ -264,7 +264,7 @@ public:
     MoveTangentUndoCommand(const RotoPaintInteractPtr& roto,
                            double dx,
                            double dy,
-                           double time,
+                           TimeValue time,
                            ViewIdx view,
                            const BezierCPPtr & cp,
                            bool left,
@@ -304,7 +304,7 @@ public:
                               double dx,
                               double dy,
                               const std::pair<BezierCPPtr, BezierCPPtr > & point,
-                              double time,
+                              TimeValue time,
                               ViewIdx view);
 
     virtual ~MoveFeatherBarUndoCommand();
@@ -398,7 +398,7 @@ public:
 
     SmoothCuspUndoCommand(const RotoPaintInteractPtr& roto,
                           const std::list<SmoothCuspCurveData> & data,
-                          double time,
+                          TimeValue time,
                           ViewIdx view,
                           bool cusp,
                           const std::pair<double, double>& pixelScale);
@@ -434,7 +434,7 @@ public:
                           bool createPoint,
                           double dx,
                           double dy,
-                          double time);
+                          TimeValue time);
 
     virtual ~MakeBezierUndoCommand();
 
@@ -477,7 +477,7 @@ public:
                            double fromy,
                            double tox,
                            double toy,
-                           double time);
+                           TimeValue time);
 
     virtual ~MakeEllipseUndoCommand();
 
@@ -515,7 +515,7 @@ public:
                              double fromy,
                              double tox,
                              double toy,
-                             double time);
+                             TimeValue time);
 
     virtual ~MakeRectangleUndoCommand();
 

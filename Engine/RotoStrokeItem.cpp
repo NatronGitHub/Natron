@@ -202,7 +202,7 @@ struct RotoStrokeItemPrivate
      **/
     bool copyStrokeForRendering(const RotoStrokeItemPrivate& other);
 
-    RectD computeBoundingBox(double time, ViewGetSpec view) const;
+    RectD computeBoundingBox(TimeValue time, ViewIdx view) const;
 
     U64 computeHashFromStrokes();
 
@@ -335,7 +335,7 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
         // since we are drawing anyway nothing else is happening.
-        double time = _publicInterface->getCurrentTime();
+        TimeValue time = _publicInterface->getCurrentTime();
         ViewIdx view = _publicInterface->getCurrentView();
 
         lastStrokeStepBbox = computeBoundingBox(time, view);
@@ -1153,7 +1153,7 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
 }
 
 RectD
-RotoStrokeItemPrivate::computeBoundingBox(double time, ViewGetSpec view) const
+RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
 {
     // Private - should not lock
     assert(!lock.tryLock());
@@ -1270,7 +1270,7 @@ RotoStrokeItemPrivate::computeBoundingBox(double time, ViewGetSpec view) const
 
 
 RectD
-RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
+RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
 {
     bool enabled = isActivated(time, view);
 
@@ -1325,8 +1325,8 @@ RotoStrokeItem::getNumControlPoints(int strokeIndex) const
 
 void
 RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
-                               double time,
-                               ViewGetSpec view,
+                               TimeValue time,
+                               ViewIdx view,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
                                RectD* bbox,
                                bool ignoreTransform) const
@@ -1390,7 +1390,7 @@ RotoStrokeItemPrivate::computeHashFromStrokes()
 }
 
 void
-RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
+RotoStrokeItem::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
 {
     {
         // Append the item knobs

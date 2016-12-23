@@ -95,7 +95,7 @@ DialogParamHolder::setParamChangedCallback(const QString& callback)
 bool
 DialogParamHolder::onKnobValueChanged(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
-                                      double time,
+                                      TimeValue time,
                                       ViewSetSpec view)
 {
     std::string callback;

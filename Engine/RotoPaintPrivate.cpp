@@ -162,7 +162,7 @@ RotoPaintInteract::isBboxClickAnywhereEnabled() const
 }
 
 void
-RotoPaintInteract::drawSelectedCp(double time,
+RotoPaintInteract::drawSelectedCp(TimeValue time,
                                   const BezierCPPtr & cp,
                                   double x,
                                   double y,
@@ -494,7 +494,7 @@ RotoPaintInteract::removeItemFromSelection(const RotoDrawableItemPtr& b)
 }
 
 static void
-handleControlPointMaximum(double time,
+handleControlPointMaximum(TimeValue time,
                           const BezierCP & p,
                           double* l,
                           double *b,
@@ -801,7 +801,7 @@ RotoPaintInteract::computeSelectedCpsBBOX()
         return;
     }
 
-    double time = p->publicInterface->getCurrentTime();
+    TimeValue time = p->publicInterface->getCurrentTime();
 
     double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
@@ -1073,12 +1073,12 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     bool pressSize = pressureSizeButton.lock()->getValue();
     bool pressHarness = pressureHardnessButton.lock()->getValue();
     bool buildUp = buildUpButton.lock()->getValue();
-    double timeOffset = timeOffsetSpinBox.lock()->getValue();
-    double timeOffsetMode_i = timeOffsetModeChoice.lock()->getValue();
+    TimeValue timeOffset = timeOffsetSpinBox.lock()->getValue();
+    TimeValue timeOffsetMode_i = timeOffsetModeChoice.lock()->getValue();
     int sourceType_i = sourceTypeChoice.lock()->getValue();
     double effectValue = effectSpinBox.lock()->getValue();
 
-    double time = strokeBeingPaint->getApp()->getTimeLine()->currentFrame();
+    TimeValue time = strokeBeingPaint->getApp()->getTimeLine()->currentFrame();
     strokeBeingPaintedTimelineFrame = time;
     if (colorKnob) {
         colorKnob->setValueAcrossDimensions(color, DimIdx(0));
@@ -1429,7 +1429,7 @@ RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
 }
 
 std::pair<BezierCPPtr, BezierCPPtr >
-RotoPaintInteract::isNearbyFeatherBar(double time,
+RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
                                       ViewIdx view,
                                       const std::pair<double, double> & pixelScale,
                                       const QPointF & pos) const
@@ -1566,7 +1566,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
 BezierPtr
 RotoPaintInteract::isNearbyBezier(double x,
                                   double y,
-                                  double time, ViewIdx view,
+                                  TimeValue time, ViewIdx view,
                                   double acceptance,
                                   int* index,
                                   double* t,
@@ -1676,7 +1676,7 @@ BezierPtr RotoPaintInteract::getBezierBeingBuild() const
 }
 
 bool
-RotoPaintInteract::smoothSelectedCurve(double time, ViewIdx view)
+RotoPaintInteract::smoothSelectedCurve(TimeValue time, ViewIdx view)
 {
     std::pair<double, double> pixelScale;
 
@@ -1717,7 +1717,7 @@ RotoPaintInteract::smoothSelectedCurve(double time, ViewIdx view)
 }
 
 bool
-RotoPaintInteract::cuspSelectedCurve(double time, ViewIdx view)
+RotoPaintInteract::cuspSelectedCurve(TimeValue time, ViewIdx view)
 {
     std::pair<double, double> pixelScale;
 
@@ -1815,7 +1815,7 @@ RotoPaintInteract::lockSelectedCurves()
 bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                 int y,
-                                                double time,
+                                                TimeValue time,
                                                 ViewIdx view)
 {
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > points;
@@ -1872,7 +1872,7 @@ RotoPaint::hasOverlay() const
 }
 
 void
-RotoPaint::drawOverlay(double time,
+RotoPaint::drawOverlay(TimeValue time,
                        const RenderScale & /*renderScale*/,
                        ViewIdx view)
 {
@@ -2340,7 +2340,7 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
         selectionMode = 2;
     }
 
-    double time = getCurrentTime();
+    TimeValue time = getCurrentTime();
     ViewIdx view = getCurrentView();
 
     bool featherVisible = _imp->ui->isFeatherVisible();
@@ -2386,7 +2386,7 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
 } // RotoPaint::onInteractViewportSelectionUpdated
 
 bool
-RotoPaint::onOverlayPenDoubleClicked(double time,
+RotoPaint::onOverlayPenDoubleClicked(TimeValue time,
                                      const RenderScale & /*renderScale*/,
                                      ViewIdx view,
                                      const QPointF & /*viewportPos*/,
@@ -2428,13 +2428,13 @@ RotoPaint::onOverlayPenDoubleClicked(double time,
 } // onOverlayPenDoubleClicked
 
 bool
-RotoPaint::onOverlayPenDown(double time,
+RotoPaint::onOverlayPenDown(TimeValue time,
                             const RenderScale & /*renderScale*/,
                             ViewIdx view,
                             const QPointF & /*viewportPos*/,
                             const QPointF & pos,
                             double pressure,
-                            double timestamp,
+                            TimeValue timestamp,
                             PenType pen)
 {
 
@@ -2837,13 +2837,13 @@ RotoPaint::onOverlayPenDown(double time,
 } // penDown
 
 bool
-RotoPaint::onOverlayPenMotion(double time,
+RotoPaint::onOverlayPenMotion(TimeValue time,
                               const RenderScale & /*renderScale*/,
                               ViewIdx view,
                               const QPointF & /*viewportPos*/,
                               const QPointF & pos,
                               double pressure,
-                              double timestamp)
+                              TimeValue timestamp)
 {
 
     std::pair<double, double> pixelScale;
@@ -3243,7 +3243,7 @@ RotoPaint::onOverlayPenMotion(double time,
 } // onOverlayPenMotion
 
 bool
-RotoPaint::onOverlayPenUp(double /*time*/,
+RotoPaint::onOverlayPenUp(TimeValue /*time*/,
                           const RenderScale & /*renderScale*/,
                           ViewIdx /*view*/,
                           const QPointF & /*viewportPos*/,
@@ -3314,7 +3314,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
 } // onOverlayPenUp
 
 bool
-RotoPaint::onOverlayKeyDown(double /*time*/,
+RotoPaint::onOverlayKeyDown(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx view,
                             Key key,
@@ -3354,7 +3354,7 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
 } //onOverlayKeyDown
 
 bool
-RotoPaint::onOverlayKeyUp(double /*time*/,
+RotoPaint::onOverlayKeyUp(TimeValue /*time*/,
                           const RenderScale & /*renderScale*/,
                           ViewIdx /*view*/,
                           Key key,
@@ -3400,7 +3400,7 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
 } // onOverlayKeyUp
 
 bool
-RotoPaint::onOverlayKeyRepeat(double /*time*/,
+RotoPaint::onOverlayKeyRepeat(TimeValue /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key /*key*/,
@@ -3410,7 +3410,7 @@ RotoPaint::onOverlayKeyRepeat(double /*time*/,
 } // onOverlayKeyRepeat
 
 bool
-RotoPaint::onOverlayFocusGained(double /*time*/,
+RotoPaint::onOverlayFocusGained(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/)
 {
@@ -3418,7 +3418,7 @@ RotoPaint::onOverlayFocusGained(double /*time*/,
 } // onOverlayFocusGained
 
 bool
-RotoPaint::onOverlayFocusLost(double /*time*/,
+RotoPaint::onOverlayFocusLost(TimeValue /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/)
 {

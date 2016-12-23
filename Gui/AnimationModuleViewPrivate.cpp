@@ -407,7 +407,7 @@ AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::Key
 }
 
 void
-AnimationModuleViewPrivate::drawKeyFrameTime(const ZoomContext& ctx,  double time, const QColor& textColor, const RectD& rect) const
+AnimationModuleViewPrivate::drawKeyFrameTime(const ZoomContext& ctx,  TimeValue time, const QColor& textColor, const RectD& rect) const
 {
     QString text = QString::number(time);
     QPointF p = ctx.toWidgetCoordinates( rect.right(), rect.bottom() );

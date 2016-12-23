@@ -281,7 +281,7 @@ struct OutputSchedulerThreadPrivate
     {
     }
 
-    void appendBufferedFrame(double time,
+    void appendBufferedFrame(TimeValue time,
                              ViewIdx view,
                              const RenderStatsPtr& stats,
                              const BufferableObjectPtr& image)
@@ -333,7 +333,7 @@ struct OutputSchedulerThreadPrivate
 
     typedef std::set<ViewUniqueIDPair, ViewUniqueIDPairCompareLess> ViewUniqueIDSet;
 
-    void getFromBufferAndErase(double time,
+    void getFromBufferAndErase(TimeValue time,
                                BufferedFrames& frames)
     {
         ///Private, shouldn't lock
@@ -1124,7 +1124,7 @@ OutputSchedulerThread::startRender()
 
 #ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
     QMutexLocker k(&_imp->lastRecordedFPSMutex);
-    double timeoutMS = _imp->lastRecordedFPS == 0. ? NATRON_SCHEDULER_THREADS_SPAWN_DEFAULT_TIMEOUT_MS : (1. / _imp->lastRecordedFPS) * 1000;
+    TimeValue timeoutMS = _imp->lastRecordedFPS == 0. ? NATRON_SCHEDULER_THREADS_SPAWN_DEFAULT_TIMEOUT_MS : (1. / _imp->lastRecordedFPS) * 1000;
     _imp->threadSpawnsTimer.start(timeoutMS);
 #endif
 } // OutputSchedulerThread::startRender
@@ -1560,7 +1560,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
     // Report render stats if desired
     OutputEffectInstancePtr effect = _imp->outputEffect.lock();
     if (stats) {
-        double timeSpentForFrame;
+        TimeValue timeSpentForFrame;
         std::map<NodePtr, NodeRenderStats > statResults = stats->getStats(&timeSpentForFrame);
         if ( !statResults.empty() ) {
             effect->reportStats(frame, viewIndex, timeSpentForFrame, statResults);
@@ -1629,9 +1629,9 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
         percentage = (double)_imp->nFramesRendered / nbTotalFrames;
     }
     assert(_imp->renderTimer);
-    double timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
+    TimeValue timeSpentSinceStartSec = _imp->renderTimer->getTimeSinceCreation();
     double estimatedFps = (double)nbFramesRendered / timeSpentSinceStartSec;
-    double timeRemaining = timeSpentSinceStartSec * (1. - percentage);
+    TimeValue timeRemaining = timeSpentSinceStartSec * (1. - percentage);
 
     // If running in background, notify to the pipe that we rendered a frame
     if (isBackground) {
@@ -1726,7 +1726,7 @@ OutputSchedulerThread::notifyFrameRendered(int frame,
 } // OutputSchedulerThread::notifyFrameRendered
 
 void
-OutputSchedulerThread::appendToBuffer_internal(double time,
+OutputSchedulerThread::appendToBuffer_internal(TimeValue time,
                                                ViewIdx view,
                                                const RenderStatsPtr& stats,
                                                const BufferableObjectPtr& frame,
@@ -1756,7 +1756,7 @@ OutputSchedulerThread::appendToBuffer_internal(double time,
 }
 
 void
-OutputSchedulerThread::appendToBuffer(double time,
+OutputSchedulerThread::appendToBuffer(TimeValue time,
                                       ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       const BufferableObjectPtr& image)
@@ -1765,7 +1765,7 @@ OutputSchedulerThread::appendToBuffer(double time,
 }
 
 void
-OutputSchedulerThread::appendToBuffer(double time,
+OutputSchedulerThread::appendToBuffer(TimeValue time,
                                       ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       const BufferableObjectList& frames)
@@ -3631,7 +3631,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
         assert(params);
         if ( params && (params->tiles.size() >= 1) ) {
             if (stats) {
-                double timeSpent;
+                TimeValue timeSpent;
                 std::map<NodePtr, NodeRenderStats > ret = stats->getStats(&timeSpent);
                 viewer->reportStats(0, ViewIdx(0), timeSpent, ret);
             }
@@ -3792,7 +3792,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
             // The texture was cached
             // Report stats from input A only
             if ( stats && (i == 0) ) {
-                double timeSpent;
+                TimeValue timeSpent;
                 std::map<NodePtr, NodeRenderStats > statResults = stats->getStats(&timeSpent);
                 _imp->viewer->reportStats(frame, view, timeSpent, statResults);
             }

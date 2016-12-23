@@ -155,119 +155,6 @@ EffectInstance::clearPluginMemoryChunks()
     _imp->pluginMemoryChunks.clear();
 }
 
-#ifdef DEBUG
-void
-EffectInstance::checkCanSetValueAndWarn() const
-{
-    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return;
-    }
-
-    if (tls->isDuringActionThatCannotSetValue()) {
-        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
-    }
-}
-
-#endif //DEBUG
-
-
-
-static double
-getCurrentTimeInternal(const EffectTLSDataPtr& tlsData, const AppInstancePtr& app)
-{
-    if (!app) {
-        return 0.;
-    }
-
-    // If during an action, return the action time
-    double currentActionTime;
-    if (tlsData->getCurrentActionArgs(&currentActionTime, 0, 0)) {
-        return currentActionTime;
-    }
-
-    // If during a frame render, return the time of the frame to render
-    ParallelRenderArgsPtr frameArgs = tlsData->getParallelRenderArgs();
-    if (frameArgs) {
-        return frameArgs->time;
-    }
-
-    return app->getTimeLine()->currentFrame();
-}
-
-
-double
-EffectInstance::getCurrentTime() const
-{
-    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
-    AppInstancePtr app = getApp();
-    if (!app) {
-        return 0.;
-    }
-    if (!tls) {
-        return app->getTimeLine()->currentFrame();
-    }
-    return getCurrentTimeInternal(tls, app);
-}
-
-static ViewIdx
-getCurrentViewInternal(const EffectTLSDataPtr& tlsData)
-{
-    // If during an action, return the action time
-    ViewIdx currentActionView;
-    if (tlsData->getCurrentActionArgs(0, &currentActionView, 0)) {
-        return currentActionView;
-    }
-
-    // If during a frame render, return the time of the frame to render
-    ParallelRenderArgsPtr frameArgs = tlsData->getParallelRenderArgs();
-    if (frameArgs) {
-        return frameArgs->view;
-    }
-    return ViewIdx(0);
-}
-
-ViewIdx
-EffectInstance::getCurrentView() const
-{
-    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
-
-    if (!tls) {
-        return ViewIdx(0);
-    }
-    return getCurrentViewInternal(tls);
-}
-
-void
-EffectInstance::getCurrentTimeView(double* time, ViewIdx* view) const
-{
-    EffectTLSDataPtr tls = _imp->tlsData->getTLSData();
-    AppInstancePtr app = getApp();
-    if (!tls) {
-        *view = ViewIdx(0);
-        *time = app ? app->getTimeLine()->currentFrame() : 0.;
-        return;
-    }
-
-    // If during an action, return the action time
-    if (tls->getCurrentActionArgs(time, view, 0)) {
-        return;
-    }
-
-    // If during a frame render, return the time of the frame to render
-    ParallelRenderArgsPtr frameArgs = tls->getParallelRenderArgs();
-    if (frameArgs) {
-        *view = frameArgs->view;
-        *time = frameArgs->time;
-        return;
-    }
-
-
-    *view = ViewIdx(0);
-    *time = app ? app->getTimeLine()->currentFrame() : 0.;
-
-}
 
 EffectTLSDataPtr
 EffectInstance::getTLSObject() const
@@ -298,7 +185,7 @@ EffectInstance::getRenderValuesCacheTLS(double* currentRenderTime, ViewIdx* curr
 }
 
 void
-EffectInstance::appendToHash(double time, ViewIdx view, Hash64* hash)
+EffectInstance::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
 {
     NodePtr node = getNode();
 
@@ -386,7 +273,7 @@ EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
 bool
 EffectInstance::getRenderHash(double inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, U64* retHash) const
 {
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -417,7 +304,7 @@ EffectInstance::getRenderHash(double inArgsTime, ViewIdx view, const TreeRenderN
 
 bool
 EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
-                                  double time,
+                                  TimeValue time,
                                   ViewIdx view,
                                   int visitsCount) const
 {
@@ -557,7 +444,7 @@ EffectInstance::getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
     }
 
     // If this effect is not continuous, no need to ask for a floating point time upstream
-    double time = inArgs.time;
+    TimeValue time = inArgs.time;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -910,20 +797,13 @@ EffectInstance::getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 } // getImage
 
 void
-EffectInstance::calcDefaultRegionOfDefinition_public(double time, const RenderScale & scale, ViewIdx view,const TreeRenderNodeArgsPtr& render, RectD *rod)
+EffectInstance::calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view,const TreeRenderNodeArgsPtr& render, RectD *rod)
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
     return calcDefaultRegionOfDefinition(time, scale, view, render, rod);
 }
 
 void
-EffectInstance::calcDefaultRegionOfDefinition(double /*time*/,
+EffectInstance::calcDefaultRegionOfDefinition(TimeValue /*time*/,
                                               const RenderScale & scale,
                                               ViewIdx /*view*/,
                                               const TreeRenderNodeArgsPtr& /*render*/,
@@ -937,7 +817,7 @@ EffectInstance::calcDefaultRegionOfDefinition(double /*time*/,
 }
 
 StatusEnum
-EffectInstance::getRegionOfDefinition(double time,
+EffectInstance::getRegionOfDefinition(TimeValue time,
                                       const RenderScale & scale,
                                       ViewIdx view,
                                       RectD* rod) //!< rod is in canonical coordinates
@@ -975,7 +855,7 @@ EffectInstance::getRegionOfDefinition(double time,
 }
 
 void
-EffectInstance::ifInfiniteApplyHeuristic(double time,
+EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
                                          const RenderScale & scale,
                                          ViewIdx view,
                                          const TreeRenderNodeArgsPtr& render,
@@ -1076,7 +956,7 @@ EffectInstance::ifInfiniteApplyHeuristic(double time,
 } // ifInfiniteApplyHeuristic
 
 void
-EffectInstance::getRegionsOfInterest(double time,
+EffectInstance::getRegionsOfInterest(TimeValue time,
                                      const RenderScale & scale,
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                      ViewIdx view,
@@ -1105,7 +985,7 @@ EffectInstance::getRegionsOfInterest(double time,
 }
 
 FramesNeededMap
-EffectInstance::getFramesNeeded(double time,
+EffectInstance::getFramesNeeded(TimeValue time,
                                 ViewIdx view)
 {
     FramesNeededMap ret;
@@ -1600,7 +1480,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
 } // EffectInstance::getImageFromCacheAndConvertIfNeeded
 
 void
-EffectInstance::tryConcatenateTransforms(double time,
+EffectInstance::tryConcatenateTransforms(TimeValue time,
                                          ViewIdx view,
                                          const RenderScale & scale,
                                          U64 hash,
@@ -1802,7 +1682,7 @@ EffectInstance::allocateImagePlane(const ImageKey & key,
 
 RenderRoIRetCode
 EffectInstance::renderInputImagesForRoI(StorageModeEnum renderStorageMode,
-                                        double time,
+                                        TimeValue time,
                                         ViewIdx view,
                                         unsigned int mipMapLevel,
                                         bool useScaleOneInputImages,
@@ -2007,7 +1887,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
                                                       const unsigned int mipMapLevel,
                                                       const unsigned int renderMappedMipMapLevel,
                                                       const RectD & rod,
-                                                      const double time,
+                                                      const TimeValue time,
                                                       const ViewIdx view,
                                                       const double par,
                                                       const bool byPassCache,
@@ -2089,7 +1969,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const EffectTLSDataPtr& tl
                                                       const RectI & renderMappedRectToRender,
                                                       const RectI & downscaledRectToRender,
                                                       const ImageBitDepthEnum outputClipPrefDepth,
-                                                      const double time,
+                                                      const TimeValue time,
                                                       const ViewIdx view,
                                                       const unsigned int mipMapLevel,
                                                       const TimeLapsePtr& timeRecorder,
@@ -2676,7 +2556,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const EffectTLSDataPtr&
 void
 EffectInstance::Implementation::setupRenderArgs(const EffectTLSDataPtr& tls,
                                                 const OSGLContextPtr& glContext,
-                                                const double time,
+                                                const TimeValue time,
                                                 const ViewIdx view,
                                                 unsigned int mipMapLevel,
                                                 bool isSequentialRender,
@@ -2863,7 +2743,7 @@ EffectInstance::evaluate(bool isSignificant,
     node->refreshIdentityState();
 
 
-    double time = getCurrentTime();
+    TimeValue time = getCurrentTime();
 
     // Get the connected viewers downstream and re-render or redraw them.
     std::list<ViewerInstancePtr> viewers;
@@ -2987,7 +2867,7 @@ EffectInstance::refreshRenderScaleSupport()
         first = last = getApp()->getTimeLine()->currentFrame();
     }
 
-    double time = first;
+    TimeValue time = first;
     RectD rod;
     StatusEnum stat = getRegionOfDefinition_public(0, time, scaleOne, ViewIdx(0), &rod);
 
@@ -3108,7 +2988,7 @@ EffectInstance::setDoingInteractAction(bool doing)
 }
 
 void
-EffectInstance::drawOverlay_public(double time,
+EffectInstance::drawOverlay_public(TimeValue time,
                                    const RenderScale & renderScale,
                                    ViewIdx view)
 {
@@ -3127,13 +3007,7 @@ EffectInstance::drawOverlay_public(double time,
     }
 
 
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
+
 
     _imp->setDuringInteractAction(true);
     bool drawHostOverlay = shouldDrawHostOverlay();
@@ -3145,13 +3019,13 @@ EffectInstance::drawOverlay_public(double time,
 }
 
 bool
-EffectInstance::onOverlayPenDown_public(double time,
+EffectInstance::onOverlayPenDown_public(TimeValue time,
                                         const RenderScale & renderScale,
                                         ViewIdx view,
                                         const QPointF & viewportPos,
                                         const QPointF & pos,
                                         double pressure,
-                                        double timestamp,
+                                        TimeValue timestamp,
                                         PenType pen)
 {
     ///cannot be run in another thread
@@ -3169,13 +3043,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
+
 
         _imp->setDuringInteractAction(true);
         bool drawHostOverlay = shouldDrawHostOverlay();
@@ -3198,7 +3066,7 @@ EffectInstance::onOverlayPenDown_public(double time,
 }
 
 bool
-EffectInstance::onOverlayPenDoubleClicked_public(double time,
+EffectInstance::onOverlayPenDoubleClicked_public(TimeValue time,
                                                  const RenderScale & renderScale,
                                                  ViewIdx view,
                                                  const QPointF & viewportPos,
@@ -3219,13 +3087,7 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
+
 
         _imp->setDuringInteractAction(true);
         bool drawHostOverlay = shouldDrawHostOverlay();
@@ -3248,13 +3110,13 @@ EffectInstance::onOverlayPenDoubleClicked_public(double time,
 }
 
 bool
-EffectInstance::onOverlayPenMotion_public(double time,
+EffectInstance::onOverlayPenMotion_public(TimeValue time,
                                           const RenderScale & renderScale,
                                           ViewIdx view,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          TimeValue timestamp)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3269,14 +3131,6 @@ EffectInstance::onOverlayPenMotion_public(double time,
         actualScale = renderScale;
     }
 
-
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
 
     _imp->setDuringInteractAction(true);
     bool ret;
@@ -3299,13 +3153,13 @@ EffectInstance::onOverlayPenMotion_public(double time,
 }
 
 bool
-EffectInstance::onOverlayPenUp_public(double time,
+EffectInstance::onOverlayPenUp_public(TimeValue time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure,
-                                      double timestamp)
+                                      TimeValue timestamp)
 {
     ///cannot be run in another thread
     assert( QThread::currentThread() == qApp->thread() );
@@ -3322,13 +3176,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
+
         _imp->setDuringInteractAction(true);
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -3350,7 +3198,7 @@ EffectInstance::onOverlayPenUp_public(double time,
 }
 
 bool
-EffectInstance::onOverlayKeyDown_public(double time,
+EffectInstance::onOverlayKeyDown_public(TimeValue time,
                                         const RenderScale & renderScale,
                                         ViewIdx view,
                                         Key key,
@@ -3372,13 +3220,6 @@ EffectInstance::onOverlayKeyDown_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
@@ -3392,7 +3233,7 @@ EffectInstance::onOverlayKeyDown_public(double time,
 }
 
 bool
-EffectInstance::onOverlayKeyUp_public(double time,
+EffectInstance::onOverlayKeyUp_public(TimeValue time,
                                       const RenderScale & renderScale,
                                       ViewIdx view,
                                       Key key,
@@ -3413,13 +3254,6 @@ EffectInstance::onOverlayKeyUp_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
@@ -3433,7 +3267,7 @@ EffectInstance::onOverlayKeyUp_public(double time,
 }
 
 bool
-EffectInstance::onOverlayKeyRepeat_public(double time,
+EffectInstance::onOverlayKeyRepeat_public(TimeValue time,
                                           const RenderScale & renderScale,
                                           ViewIdx view,
                                           Key key,
@@ -3454,13 +3288,6 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         _imp->setDuringInteractAction(true);
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
@@ -3474,7 +3301,7 @@ EffectInstance::onOverlayKeyRepeat_public(double time,
 }
 
 bool
-EffectInstance::onOverlayFocusGained_public(double time,
+EffectInstance::onOverlayFocusGained_public(TimeValue time,
                                             const RenderScale & renderScale,
                                             ViewIdx view)
 {
@@ -3493,13 +3320,6 @@ EffectInstance::onOverlayFocusGained_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusGained(time, actualScale, view);
@@ -3514,7 +3334,7 @@ EffectInstance::onOverlayFocusGained_public(double time,
 }
 
 bool
-EffectInstance::onOverlayFocusLost_public(double time,
+EffectInstance::onOverlayFocusLost_public(TimeValue time,
                                           const RenderScale & renderScale,
                                           ViewIdx view)
 {
@@ -3534,14 +3354,6 @@ EffectInstance::onOverlayFocusLost_public(double time,
 
     bool ret;
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, actualScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
-        
         _imp->setDuringInteractAction(true);
         ret = onOverlayFocusLost(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
@@ -3609,7 +3421,7 @@ EffectInstance::render_public(const RenderActionArgs & args)
 }
 
 void
-EffectInstance::computeFrameViewHashUsingFramesNeeded(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash)
+EffectInstance::computeFrameViewHashUsingFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash)
 {
     FramesNeededMap framesNeeded = getFramesNeeded_public(time, view, render, hash);
     (void)framesNeeded;
@@ -3633,7 +3445,7 @@ EffectInstance::getDistorsion_public(double inArgsTime,
     distorsion->func = 0;
     distorsion->customDataSizeHintInBytes = 0;
 
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -3701,18 +3513,6 @@ EffectInstance::getDistorsion_public(double inArgsTime,
     } else {
 
         // Call the action
-
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
-
-
-
         StatusEnum stat = getDistorsion(time, renderScale, view, render, distorsion.get());
         if (stat == eStatusFailed) {
             return stat;
@@ -3735,13 +3535,7 @@ EffectInstance::getDistorsion_public(double inArgsTime,
 void
 EffectInstance::createInstanceAction_public()
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
+
     createInstanceAction();
 
     // Check if there is any overlay
@@ -3762,7 +3556,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !(scale.x == 1. && scale.y == 1.) ) );
 
 
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
 
@@ -3843,18 +3637,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // Don't call isIdentity if plugin is sequential only
         if (sequential != eSequentialPreferenceOnlySequential) {
 
-
-            
-
-            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, scale
-#ifdef DEBUG
-                                                      , /*canSetValue*/ false
-                                                      , /*canBeCalledRecursively*/ true
-#endif
-                                                      );
-
-
             try {
                 *inputView = view;
                 ret = isIdentity(time, scale, renderWindow, view, render, inputTime, inputView, inputNb);
@@ -3883,13 +3665,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 void
 EffectInstance::beginEditKnobs_public()
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
+
     beginEditKnobs();
 }
 
@@ -3897,13 +3673,7 @@ EffectInstance::beginEditKnobs_public()
 void
 EffectInstance::onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode)
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
+
     REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
 
 
@@ -3923,7 +3693,7 @@ EffectInstance::getRegionOfDefinitionFromCache(double inArgsTime,
                                                const TreeRenderNodeArgsPtr& render,
                                                RectD* rod)
 {
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
 
@@ -3967,7 +3737,7 @@ EffectInstance::getRegionOfDefinition_public(double inArgsTime,
         return eStatusFailed;
     }
 
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -4051,14 +3821,6 @@ EffectInstance::getRegionOfDefinition_public(double inArgsTime,
         RenderScale scaleOne(1.);
         RenderScale mappedScale = supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale;
         {
-            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, mappedScale
-#ifdef DEBUG
-                                                      , /*canSetValue*/ false
-                                                      , /*canBeCalledRecursively*/ true
-#endif
-                                                      );
-
 
 
             StatusEnum stat = getRegionOfDefinition(time, mappedScale, view, render, rod);
@@ -4093,7 +3855,7 @@ EffectInstance::getRegionsOfInterest_public(double inArgsTime,
                                             const TreeRenderNodeArgsPtr& render,
                                             RoIMap* ret)
 {
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -4103,26 +3865,18 @@ EffectInstance::getRegionsOfInterest_public(double inArgsTime,
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
-
     getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
 }
 
 void
-EffectInstance::cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded)
+EffectInstance::cacheFramesNeeded(TimeValue time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded)
 {
 
     _imp->actionsCache->setFramesNeededResult(hash, time, view, 0, framesNeeded);
 }
 
 void
-EffectInstance::cacheIsIdentity(double time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView)
+EffectInstance::cacheIsIdentity(TimeValue time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView)
 {
     _imp->actionsCache->setIdentityResult(hash, time, view, identityInput, identityView, identityTime);
 }
@@ -4132,7 +3886,7 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, const Tr
 {
 
     // Round time for non continuous effects
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -4187,13 +3941,6 @@ EffectInstance::getFramesNeeded_public(double inArgsTime, ViewIdx view, const Tr
 
     // Call the action
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         try {
             framesNeeded = getFramesNeeded(time, view);
@@ -4311,7 +4058,7 @@ EffectInstance::getFrameRange_public(double inArgsTime, ViewIdx view,
                                      double *last)
 {
     // Round time for non continuous effects
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -4358,13 +4105,6 @@ EffectInstance::getFrameRange_public(double inArgsTime, ViewIdx view,
 
     // Call the action
     {
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         getFrameRange(&range.min, &range.max);
     }
@@ -4395,13 +4135,6 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool isOpenGLRender,
                                            const EffectOpenGLContextDataPtr& glContextData)
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),first, view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
 
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
 
@@ -4422,13 +4155,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool isOpenGLRender,
                                          const EffectOpenGLContextDataPtr& glContextData)
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), first, view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
+
 
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
 
@@ -4490,16 +4217,12 @@ EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
  * @brief This function calls the impementation specific attachOpenGLContext()
  **/
 StatusEnum
-EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
+EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale,
+                                           const TreeRenderNodeArgsPtr& renderArgs,
+                                           const OSGLContextPtr& glContext,
                                            EffectOpenGLContextDataPtr* data)
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
+   
 
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
@@ -4518,7 +4241,7 @@ EffectInstance::attachOpenGLContext_public(const OSGLContextPtr& glContext,
     }
 
 
-    StatusEnum ret = attachOpenGLContext(glContext, data);
+    StatusEnum ret = attachOpenGLContext(time, view, scale, renderArgs, glContext, data);
 
     if ( (ret == eStatusOK) || (ret == eStatusReplyDefault) ) {
         if (!concurrentGLRender) {
@@ -4570,16 +4293,8 @@ EffectInstance::dettachAllOpenGLContexts()
  * @brief This function calls the impementation specific dettachOpenGLContext()
  **/
 StatusEnum
-EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
+EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
 {
-
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
 
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
@@ -4594,7 +4309,7 @@ EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, con
         _imp->attachedContexts.erase(found);
     }
 
-    StatusEnum ret = dettachOpenGLContext(glContext, data);
+    StatusEnum ret = dettachOpenGLContext(renderArgs, glContext, data);
     if (mustUnlock) {
         _imp->attachedContextsMutex.unlock();
     }
@@ -4645,7 +4360,7 @@ EffectInstance::setComponentsAvailableDirty(bool dirty)
 void
 EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
                                                 bool useThisNodeComponentsNeeded,
-                                                double time,
+                                                TimeValue time,
                                                 ViewIdx view,
                                                 ComponentsAvailableMap* comps,
                                                 std::list<EffectInstancePtr>* markedNodes)
@@ -4816,7 +4531,7 @@ EffectInstance::getComponentsAvailableRecursive(bool useLayerChoice,
 void
 EffectInstance::getComponentsAvailable(bool useLayerChoice,
                                        bool useThisNodeComponentsNeeded,
-                                       double time,
+                                       TimeValue time,
                                        ComponentsAvailableMap* comps,
                                        std::list<EffectInstancePtr>* markedNodes)
 {
@@ -4826,7 +4541,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
 void
 EffectInstance::getComponentsAvailable(bool useLayerChoice,
                                        bool useThisNodeComponentsNeeded,
-                                       double time,
+                                       TimeValue time,
                                        ComponentsAvailableMap* comps)
 {
     //int nViews = getApp()->getProject()->getProjectViewsCount();
@@ -4842,7 +4557,7 @@ EffectInstance::getComponentsAvailable(bool useLayerChoice,
 }
 
 void
-EffectInstance::getComponentsNeededAndProduced(double time,
+EffectInstance::getComponentsNeededAndProduced(TimeValue time,
                                                ViewIdx view,
                                                ComponentsNeededMap* comps,
                                                SequenceTime* passThroughTime,
@@ -4890,7 +4605,7 @@ EffectInstance::getComponentsNeededAndProduced_public(double inArgsTime,
 
 {
     // Round time for non continuous effects
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !canRenderContinuously()) {
@@ -4939,15 +4654,6 @@ EffectInstance::getComponentsNeededAndProduced_public(double inArgsTime,
     if ( isMultiPlanar() ) {
 
         // call the getClipComponents action
-
-
-        EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
         getComponentsNeededAndProduced(time, view, compsNeeded.get());
 
@@ -5108,7 +4814,7 @@ EffectInstance::getCurrentOpenGLSupport() const
 bool
 EffectInstance::onKnobValueChanged(const KnobIPtr& /*k*/,
                                    ValueChangedReasonEnum /*reason*/,
-                                   double /*time*/,
+                                   TimeValue /*time*/,
                                    ViewSetSpec /*view*/)
 {
     return false;
@@ -5168,13 +4874,7 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 void
 EffectInstance::purgeCaches_public()
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
+
     purgeCaches();
 }
 
@@ -5183,13 +4883,6 @@ EffectInstance::beginKnobsValuesChanged_public(ValueChangedReasonEnum reason)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
 
     beginKnobsValuesChanged(reason);
 }
@@ -5199,20 +4892,13 @@ EffectInstance::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getCurrentTime(), getCurrentView(), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
     endKnobsValuesChanged(reason);
 }
 
 bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
                                           ValueChangedReasonEnum reason,
-                                          double time,
+                                          TimeValue time,
                                           ViewSetSpec view)
 {
     NodePtr node = getNode();
@@ -5239,13 +4925,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     assert(kh);
     if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
         {
-            EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, viewIdx, RenderScale(1.)
-#ifdef DEBUG
-                                                      , /*canSetValue*/ true
-                                                      , /*canBeCalledRecursively*/ true
-#endif
-                                                      );
+
 
             REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
             // Map to a plug-in known reason
@@ -5304,7 +4984,7 @@ EffectInstance::clearLastRenderedImage()
  * from last to first.
  **/
 EffectInstancePtr
-EffectInstance::getNearestNonDisabled(double time, ViewIdx view) const
+EffectInstance::getNearestNonDisabled(TimeValue time, ViewIdx view) const
 {
     NodePtr node = getNode();
 
@@ -5392,7 +5072,7 @@ EffectInstance::getNearestNonDisabled(double time, ViewIdx view) const
 } // EffectInstance::getNearestNonDisabled
 
 EffectInstancePtr
-EffectInstance::getNearestNonIdentity(double time)
+EffectInstance::getNearestNonIdentity(TimeValue time)
 {
 
     RenderScale scale(1.);
@@ -5455,14 +5135,6 @@ EffectInstance::isPaintingOverItselfEnabled() const
 StatusEnum
 EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
 {
-    EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
-
 
     StatusEnum stat = getDefaultMetadata(metadata);
 
@@ -6141,7 +5813,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 
 void
 EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
-                                                  double time)
+                                                  TimeValue time)
 {
     KnobHolder::refreshExtraStateAfterTimeChanged(isPlayback, time);
 

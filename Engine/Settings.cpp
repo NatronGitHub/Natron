@@ -2362,7 +2362,7 @@ crash_application()
 bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             double /*time*/,
+                             TimeValue /*time*/,
                              ViewSetSpec /*view*/)
 {
 

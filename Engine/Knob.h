@@ -112,7 +112,7 @@ public:
                                  Variant newValue,
                                  ViewSetSpec view,
                                  DimSpec dim,
-                                 double time,
+                                 TimeValue time,
                                  bool setKeyFrame)
     {
         Q_EMIT appendParamEditChange(reason, setValueRetCode, oldValue, newValue, view,  dim, time, setKeyFrame);
@@ -215,7 +215,7 @@ Q_SIGNALS:
 
     // Same as setValueWithUndoStack except that the value change will be compressed
     // in a multiple edit undo/redo action
-    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewVariantMap oldValue, Variant newValue, ViewSetSpec view, DimSpec dim, double time, bool setKeyFrame);
+    void appendParamEditChange(ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, PerDimViewVariantMap oldValue, Variant newValue, ViewSetSpec view, DimSpec dim, TimeValue time, bool setKeyFrame);
 
     void selectedMultipleTimes(bool);
 
@@ -362,7 +362,7 @@ public:
     /**
      * @brief Return whether all dimensions are folded or not, when folded all dimensions have the same value/animation
      **/
-    virtual bool getAllDimensionsVisible(ViewGetSpec view) const = 0;
+    virtual bool getAllDimensionsVisible(ViewIdx view) const = 0;
 
     /**
      * @brief Set whether all dimensions are folded or not, when folded all dimensions have the same value/animation
@@ -651,14 +651,14 @@ public:
     /**
      * @brief Returns the value previously set by setAutoKeyingEnabled
      **/
-    virtual bool isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const = 0;
+    virtual bool isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason) const = 0;
 
     /**
      * @brief Called by setValue to refresh the GUI, call the instanceChanged action on the plugin and
      * evaluate the new value (cause a render).
      * @returns true if the knobChanged handler was called once for this knob
      **/
-    virtual bool evaluateValueChange(DimSpec dimension, double time, ViewSetSpec view, ValueChangedReasonEnum reason) = 0;
+    virtual bool evaluateValueChange(DimSpec dimension, TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason) = 0;
 
     /**
      * @brief Copies the value and animation of the knob "other" to this knob.
@@ -678,21 +678,21 @@ public:
 
     virtual void cloneDefaultValues(const KnobIPtr& other) = 0;
 
-    virtual double random(double time, unsigned int seed) const = 0;
+    virtual double random(TimeValue time, unsigned int seed) const = 0;
     virtual double random(double min = 0., double max = 1.) const = 0;
-    virtual int randomInt(double time, unsigned int seed) const = 0;
+    virtual int randomInt(TimeValue time, unsigned int seed) const = 0;
     virtual int randomInt(int min = INT_MIN, int max = INT_MAX) const = 0;
 
     /**
      * @brief Evaluates the curve at the given dimension and at the given time. This returns the value of the curve directly.
      * If the knob is holding a string, it will return the index.
      **/
-    virtual double getRawCurveValueAt(double time, ViewGetSpec view, DimIdx dimension)  = 0;
+    virtual double getRawCurveValueAt(TimeValue time, ViewIdx view, DimIdx dimension)  = 0;
 
     /**
      * @brief Same as getRawCurveValueAt, but first check if an expression is present. The expression should return a PoD.
      **/
-    virtual double getValueAtWithExpression(double time, ViewGetSpec view, DimIdx dimension) = 0;
+    virtual double getValueAtWithExpression(TimeValue time, ViewIdx view, DimIdx dimension) = 0;
 
     /**
      * @brief Set an expression on the knob. If this expression is invalid, this function throws an excecption with the error from the
@@ -739,7 +739,7 @@ public:
      * @brief Tries to re-apply invalid expressions, returns true if they are all valid
      **/
     virtual bool checkInvalidExpressions() = 0;
-    virtual bool isExpressionValid(DimIdx dimension, ViewGetSpec view, std::string* error) const = 0;
+    virtual bool isExpressionValid(DimIdx dimension, ViewIdx view, std::string* error) const = 0;
     virtual void setExpressionInvalid(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) = 0;
 
 
@@ -753,7 +753,7 @@ public:
                                              const std::string& newName) = 0;
     virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) = 0;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) = 0;
-    virtual std::string getExpression(DimIdx dimension, ViewGetSpec view = ViewGetSpec::current()) const = 0;
+    virtual std::string getExpression(DimIdx dimension, ViewIdx view = ViewIdx::current()) const = 0;
 
     /**
      * @brief Checks that the given expr for the given dimension will produce a correct behaviour.
@@ -771,20 +771,20 @@ public:
     /**
      * @brief Returns whether the expr at the given dimension uses the ret variable to assign to the return value or not
      **/
-    virtual bool isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const = 0;
+    virtual bool isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const = 0;
 
     /**
      * @brief Returns in dependencies a list of all the knobs used in the expression at the given dimension
      * @returns True on sucess, false if no expression is set.
      **/
-    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, KnobDimViewKeySet& dependencies) const = 0;
+    virtual bool getExpressionDependencies(DimIdx dimension, ViewIdx view, KnobDimViewKeySet& dependencies) const = 0;
 
     /**
      * @brief Called when the current time of the timeline changes.
      * It must get the value at the given time and notify  the gui it must
      * update the value displayed.
      **/
-    virtual void onTimeChanged(bool isPlayback, double time) = 0;
+    virtual void onTimeChanged(bool isPlayback, TimeValue time) = 0;
 
     /**
      * @brief Compute the derivative at time as a double
@@ -792,7 +792,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual double getDerivativeAtTime(double time, ViewGetSpec view, DimIdx dimension) = 0;
+    virtual double getDerivativeAtTime(TimeValue time, ViewIdx view, DimIdx dimension) = 0;
 
     /**
      * @brief Compute the integral of dimension from time1 to time2 as a double
@@ -800,7 +800,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual double getIntegrateFromTimeToTime(double time1, double time2, ViewGetSpec view, DimIdx dimension)  = 0;
+    virtual double getIntegrateFromTimeToTime(TimeValue time1, TimeValue time2, ViewIdx view, DimIdx dimension)  = 0;
 
     /**
      * @brief Places in time the keyframe time at the given index.
@@ -809,7 +809,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual bool getKeyFrameTime(ViewGetSpec view, int index, DimIdx dimension, double* time) const = 0;
+    virtual bool getKeyFrameTime(ViewIdx view, int index, DimIdx dimension, double* time) const = 0;
 
     /**
      * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the last
@@ -818,7 +818,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual bool getLastKeyFrameTime(ViewGetSpec view, DimIdx dimension, double* time) const = 0;
+    virtual bool getLastKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const = 0;
 
     /**
      * @brief Convenience function, does the same as getKeyFrameWithIndex but returns the first
@@ -827,7 +827,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual bool getFirstKeyFrameTime(ViewGetSpec view, DimIdx dimension, double* time) const = 0;
+    virtual bool getFirstKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const = 0;
 
     /**
      * @brief Returns the count of keyframes in the given dimension.
@@ -835,7 +835,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual int getKeyFramesCount(ViewGetSpec view, DimIdx dimension) const = 0;
+    virtual int getKeyFramesCount(ViewIdx view, DimIdx dimension) const = 0;
 
     /**
      * @brief Returns the nearest keyframe time if it was found.
@@ -844,7 +844,7 @@ public:
      * to a valid view index.
      * @return true if it succeeded, false otherwise.
      **/
-    virtual bool getNearestKeyFrameTime(ViewGetSpec view, DimIdx dimension, double time, double* nearestTime) const = 0;
+    virtual bool getNearestKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, double* nearestTime) const = 0;
 
     /**
      * @brief Returns the keyframe index if there's any keyframe in the curve
@@ -853,7 +853,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual int getKeyFrameIndex(ViewGetSpec view, DimIdx dimension, double time) const = 0;
+    virtual int getKeyFrameIndex(ViewIdx view, DimIdx dimension, TimeValue time) const = 0;
 
     /**
      * @brief Returns true if the curve corresponding to the dimension/view is animated with keyframes.
@@ -862,7 +862,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index. 
      **/
-    virtual bool isAnimated( DimIdx dimension, ViewGetSpec view ) const = 0;
+    virtual bool isAnimated( DimIdx dimension, ViewIdx view ) const = 0;
 
     /**
      * @brief Returns true if at least 1 dimension/view is animated. MT-Safe
@@ -923,7 +923,7 @@ public:
     virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) = 0;
     virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const = 0;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
 
     /**
      * @brief Any GUI representing this parameter should represent the next parameter on the same line as this parameter.
@@ -1199,11 +1199,6 @@ public:
     virtual void setOfxParamHandle(void* ofxParamHandle) = 0;
     virtual void* getOfxParamHandle() const = 0;
 
-    /**
-     * @brief Returns the current time if attached to a timeline or the time being rendered
-     **/
-    virtual double getCurrentTime() const = 0;
-
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
 
@@ -1322,7 +1317,7 @@ public:
     /**
      * @brief Get the current animation level.
      **/
-    virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, ViewGetSpec view) const = 0;
+    virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, TimeValue time, ViewIdx view) const = 0;
 
     /**
      * @brief Restores the default value
@@ -1491,7 +1486,7 @@ public:
 
     virtual void setKnobGuiPointer(const KnobGuiIPtr& ptr) OVERRIDE FINAL;
     virtual KnobGuiIPtr getKnobGuiPointer() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getAllDimensionsVisible(ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getAllDimensionsVisible(ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAllDimensionsVisible(ViewSetSpec view, bool visible)  OVERRIDE FINAL;
     virtual void setCanAutoFoldDimensions(bool enabled) OVERRIDE FINAL ;
     virtual bool isAutoFoldDimensionsEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1545,13 +1540,13 @@ public:
     virtual void unblockValueChanges() OVERRIDE FINAL;
     virtual bool isValueChangesBlocked() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAutoKeyingEnabled(bool enabled) OVERRIDE FINAL;
-    virtual bool isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool evaluateValueChange(DimSpec dimension, double time, ViewSetSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
-    virtual void onTimeChanged(bool isPlayback, double time) OVERRIDE FINAL;
+    virtual bool isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool evaluateValueChange(DimSpec dimension, TimeValue time, ViewSetSpec view,  ValueChangedReasonEnum reason) OVERRIDE FINAL;
+    virtual void onTimeChanged(bool isPlayback, TimeValue time) OVERRIDE FINAL;
 
 private:
 
-    bool isAutoKeyingEnabledInternal(DimIdx dimension, ViewIdx view) const WARN_UNUSED_RETURN;
+    bool isAutoKeyingEnabledInternal(DimIdx dimension, TimeValue time, ViewIdx view) const WARN_UNUSED_RETURN;
 
 protected:
 
@@ -1559,7 +1554,7 @@ protected:
 
     // Returns true if the knobChanged handler was called
     bool evaluateValueChangeInternal(DimSpec dimension,
-                                     double time,
+                                     TimeValue time,
                                      ViewSetSpec view,
                                      ValueChangedReasonEnum reason,
                                      std::set<KnobIPtr>* evaluatedKnobs);
@@ -1567,15 +1562,15 @@ protected:
 public:
 
 
-    virtual double random(double time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double random(TimeValue time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual double random(double min = 0., double max = 1.) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int randomInt(double time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int randomInt(TimeValue time, unsigned int seed) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int randomInt(int min = 0, int max = INT_MAX) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 protected:
 
 
-    void randomSeed(double time, unsigned int seed) const;
+    void randomSeed(TimeValue time, unsigned int seed) const;
 
 #ifdef DEBUG
     //Helper to set breakpoints in templated code
@@ -1590,38 +1585,38 @@ public:
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE ;
-    virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
-    virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
+    virtual void deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
+    virtual void deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE ;
-    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
-    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE ;
+    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
+    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE ;
     //////////// End from AnimatingObjectI
 
 private:
 
     void removeAnimationInternal(ViewIdx view, DimIdx dimension);
     void deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx view, DimIdx dimension);
-    void deleteAnimationConditional(double time, ViewSetSpec view, DimSpec dimension, bool before);
-    void deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx dimension, bool before);
+    void deleteAnimationConditional(TimeValue time, ViewSetSpec view, DimSpec dimension, bool before);
+    void deleteAnimationConditionalInternal(TimeValue time, ViewIdx view, DimIdx dimension, bool before);
     bool warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx view,  DimIdx dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes);
     void setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys);
-    bool setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double left, double right);
-    bool setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double derivative, bool isLeft);
+    bool setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValue time, double left, double right);
+    bool setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValue time, double derivative, bool isLeft);
 
 public:
 
 
-    virtual bool getKeyFrameTime(ViewGetSpec view, int index, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getLastKeyFrameTime(ViewGetSpec view, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getFirstKeyFrameTime(ViewGetSpec view, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getKeyFramesCount(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getNearestKeyFrameTime(ViewGetSpec view, DimIdx dimension, double time, double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual int getKeyFrameIndex(ViewGetSpec view, DimIdx dimension, double time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isAnimated( DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getKeyFrameTime(ViewIdx view, int index, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getLastKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getFirstKeyFrameTime(ViewIdx view, DimIdx dimension, double* time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getKeyFramesCount(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getNearestKeyFrameTime(ViewIdx view, DimIdx dimension, TimeValue time, double* nearestTime) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual int getKeyFrameIndex(ViewIdx view, DimIdx dimension, TimeValue time) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isAnimated( DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasAnimation() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool checkInvalidExpressions() OVERRIDE FINAL;
-    virtual bool isExpressionValid(DimIdx dimension, ViewGetSpec view, std::string* error) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isExpressionValid(DimIdx dimension, ViewIdx view, std::string* error) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setExpressionInvalid(DimSpec dimension, ViewSetSpec view, bool valid, const std::string& error) OVERRIDE FINAL;
 
 protected:
@@ -1682,15 +1677,15 @@ protected:
     template <typename T>
     T pyObjectToType(PyObject* o, ViewIdx view) const;
 
-    void refreshListenersAfterValueChangeInternal(double time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs);
+    void refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs);
 
-    void refreshListenersAfterValueChange(double time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs) ;
+    void refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs) ;
 
 public:
 
-    virtual bool isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getExpressionDependencies(DimIdx dimension, ViewGetSpec view, KnobDimViewKeySet& dependencies) const OVERRIDE FINAL;
-    virtual std::string getExpression(DimIdx dimension, ViewGetSpec view = ViewGetSpec::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getExpressionDependencies(DimIdx dimension, ViewIdx view, KnobDimViewKeySet& dependencies) const OVERRIDE FINAL;
+    virtual std::string getExpression(DimIdx dimension, ViewIdx view = ViewIdx::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setKeyFrameTrackingEnabled(bool enabled) OVERRIDE FINAL;
@@ -1773,8 +1768,6 @@ public:
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getCurrentTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(DimIdx dim, const std::string & name) OVERRIDE FINAL;
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1806,14 +1799,14 @@ protected:
     void resetMaster(DimIdx dimension, ViewIdx view);
 
     ///The return value must be Py_DECRREF
-    bool executeExpression(double time, ViewIdx view, DimIdx dimension, PyObject** ret, std::string* error) const;
+    bool executeExpression(TimeValue time, ViewIdx view, DimIdx dimension, PyObject** ret, std::string* error) const;
 
 public:
 
     virtual bool getSharingMaster(DimIdx dimension, ViewIdx view, KnobDimViewKey* linkData) const OVERRIDE FINAL;
     virtual void getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* sharedKnobs) const OVERRIDE FINAL;
 
-    virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, ViewGetSpec view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual AnimationLevelEnum getAnimationLevel(DimIdx dimension, TimeValue time, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     /**
@@ -1979,7 +1972,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual T getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
+    virtual T getValue(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
 
 
     /**
@@ -1994,7 +1987,7 @@ public:
      * but this should be the only knob which should ever need to overload it.
      *
      **/
-    virtual T getValueAtTime(double time, DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
+    virtual T getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current(), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as getValueAtTime excepts that it ignores expression, hard-links (slave/master) and doesn't clamp to min/max.
@@ -2003,7 +1996,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual double getRawCurveValueAt(double time, ViewGetSpec view,  DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getRawCurveValueAt(TimeValue time, ViewIdx view,  DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as getValueAtTime excepts that the expression is evaluated to return a double value, mainly to display the curve corresponding to an expression
@@ -2011,33 +2004,33 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual double getValueAtWithExpression(double time, ViewGetSpec view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getValueAtWithExpression(TimeValue time, ViewIdx view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 public:
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE;
 
     //////////// Overriden from AnimatingObjectI
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
 
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
     virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual void setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
 
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
     virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
+    virtual void setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
     virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE;
 
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
     virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
+    virtual void setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
     virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE;
     //////////// end overriden from AnimatingObjectI
 
@@ -2055,7 +2048,7 @@ public:
      * knob holder will be called and an evaluation will be triggered.
      * @return Returns the kind of changed that the knob has had
      **/
-    ValueChangedReturnCodeEnum setValueAtTime(double time,
+    ValueChangedReturnCodeEnum setValueAtTime(TimeValue time,
                                               const T & v,
                                               ViewSetSpec view = ViewSetSpec::current(),
                                               DimSpec dimension = DimSpec(0),
@@ -2085,7 +2078,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param reason The change reason
      **/
-    void setValueAtTimeAcrossDimensions(double time,
+    void setValueAtTimeAcrossDimensions(TimeValue time,
                                         const std::vector<T>& values,
                                         DimIdx dimensionStartIndex = DimIdx(0),
                                         ViewSetSpec view = ViewSetSpec::current(),
@@ -2249,9 +2242,9 @@ public:
     virtual bool canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisView, DimIdx otherDim, ViewIdx otherView, std::string* error) const OVERRIDE WARN_UNUSED_RETURN;
 
     ///Cannot be overloaded by KnobHelper as it requires the value member
-    virtual double getDerivativeAtTime(double time, ViewGetSpec view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getIntegrateFromTimeToTime(double time1, double time2, ViewGetSpec view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    double getIntegrateFromTimeToTimeSimpson(double time1, double time2, ViewGetSpec view, DimIdx dimension);
+    virtual double getDerivativeAtTime(TimeValue time, ViewIdx view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual double getIntegrateFromTimeToTime(TimeValue time1, TimeValue time2, ViewIdx view, DimIdx dimension)  OVERRIDE FINAL WARN_UNUSED_RETURN;
+    double getIntegrateFromTimeToTimeSimpson(TimeValue time1, TimeValue time2, ViewIdx view, DimIdx dimension);
 
     ///Cannot be overloaded by KnobHelper as it requires setValue
     virtual void resetToDefaultValue(DimSpec dimension = DimSpec::all(), ViewSetSpec view = ViewSetSpec::all()) OVERRIDE FINAL;
@@ -2280,9 +2273,9 @@ public:
     T getDisplayMinimum(DimIdx dimension = DimIdx(0)) const;
     T getDisplayMaximum(DimIdx dimension = DimIdx(0)) const;
 
-    void getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) const;
+    void getExpressionResults(DimIdx dim, ViewIdx view, FrameValueMap& map) const;
 
-    bool getValueFromCurve(double time, ViewGetSpec view, DimIdx dimension, bool clamp, T* ret);
+    bool getValueFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 
     virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE FINAL;
 
@@ -2310,9 +2303,9 @@ private:
                        ViewIdx view,
                        bool clamp);
 
-    void setValueOnCurveInternal(double time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret);
+    void setValueOnCurveInternal(TimeValue time, const T& v, DimIdx dimension, ViewIdx view, KeyFrame* newKey, ValueChangedReturnCodeEnum* ret);
 
-    void addSetValueToUndoRedoStackIfNeeded(const T& oldValue, const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, double time, bool setKeyFrame);
+    void addSetValueToUndoRedoStackIfNeeded(const T& oldValue, const T& value, ValueChangedReasonEnum reason, ValueChangedReturnCodeEnum setValueRetCode, ViewSetSpec view, DimSpec dimension, TimeValue time, bool setKeyFrame);
 
     virtual void copyValuesFromCurve(DimIdx dim, ViewIdx view) OVERRIDE FINAL;
 
@@ -2327,23 +2320,23 @@ private:
                                          DimSpec dimension,
                                          DimSpec otherDimension) OVERRIDE FINAL;
 
-    void makeKeyFrame(double time, const T& v, ViewIdx view, KeyFrame* key);
+    void makeKeyFrame(TimeValue time, const T& v, ViewIdx view, KeyFrame* key);
 
     void queueSetValue(const T& v, ViewSetSpec view, DimSpec dimension);
 
     virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
 
-    bool evaluateExpression(double time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
+    bool evaluateExpression(TimeValue time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
 
     /*
      * @brief Same as evaluateExpression but expects it to return a PoD
      */
-    bool evaluateExpression_pod(double time, ViewIdx view, DimIdx dimension, double* value, std::string* error);
+    bool evaluateExpression_pod(TimeValue time, ViewIdx view, DimIdx dimension, double* value, std::string* error);
 
 
-    bool getValueFromExpression(double time, ViewGetSpec view, DimIdx dimension, bool clamp, T* ret);
+    bool getValueFromExpression(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 
-    bool getValueFromExpression_pod(double time, ViewGetSpec view, DimIdx dimension, bool clamp, double* ret);
+    bool getValueFromExpression_pod(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, double* ret);
 
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
@@ -2401,7 +2394,7 @@ class AddToUndoRedoStackHelper
         PerDimViewVariantMap oldValues;
         ViewSetSpec view;
         DimSpec dimension;
-        double time;
+        TimeValue time;
         bool setKeyframe;
         ValueChangedReasonEnum reason;
     };
@@ -2420,7 +2413,7 @@ public:
      * @brief Must be called to prepare the old value per dimension/view map before a call to addSetValueToUndoRedoStackIfNeeded.
      * each call to this function must match a following call of addSetValueToUndoRedoStackIfNeeded.
      **/
-    void prepareOldValueToUndoRedoStack(ViewSetSpec view, DimSpec dimension, double time, ValueChangedReasonEnum reason, bool setKeyFrame);
+    void prepareOldValueToUndoRedoStack(ViewSetSpec view, DimSpec dimension, TimeValue time, ValueChangedReasonEnum reason, bool setKeyFrame);
 
     /**
      * @brief Must be called after prepareOldValueToUndoRedoStack to finalize the value in the undo/redo stack.
@@ -2485,7 +2478,7 @@ public:
     virtual ~AnimatingKnobStringHelper();
 
 
-    void stringToKeyFrameValue(double time, ViewIdx view, const std::string & v, double* returnValue);
+    void stringToKeyFrameValue(TimeValue time, ViewIdx view, const std::string & v, double* returnValue);
 
     //for integration of openfx custom params
     typedef OfxStatus (*customParamInterpolationV1Entry_t)(const void*            handleRaw,
@@ -2501,9 +2494,9 @@ public:
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle);
 
-    void stringFromInterpolatedValue(double interpolated, ViewGetSpec view, std::string* returnValue) const;
+    void stringFromInterpolatedValue(double interpolated, ViewIdx view, std::string* returnValue) const;
 
-    std::string getStringAtTime(double time, ViewGetSpec view);
+    std::string getStringAtTime(TimeValue time, ViewIdx view);
 
 
 protected:
@@ -2638,14 +2631,16 @@ public:
     const std::vector< KnobIPtr > & getKnobs() const WARN_UNUSED_RETURN;
     std::vector< KnobIPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
 
-    void refreshAfterTimeChange(bool isPlayback, double time);
+    void refreshAfterTimeChange(bool isPlayback, TimeValue time);
+
+    virtual double getTimelineCurrentTime() const;
 
     /**
      * @brief Same as refreshAfterTimeChange but refreshes only the knobs
      * whose function evaluateValueChangeOnTimeChange() return true so that
      * after a playback their state is correct
      **/
-    void refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time);
+    void refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(TimeValue time);
 
     void setIsInitializingKnobs(bool b);
     bool isInitializingKnobs() const;
@@ -2663,7 +2658,7 @@ public:
 protected:
 
     virtual void refreshExtraStateAfterTimeChanged(bool /*isPlayback*/,
-                                                   double /*time*/) {}
+                                                   TimeValue /*time*/) {}
 
 
 public:
@@ -2778,7 +2773,7 @@ public:
     bool isEvaluationBlocked() const;
 
     bool onKnobValueChangedInternal(const KnobIPtr& knob,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view,
                                     ValueChangedReasonEnum reason);
 
@@ -2788,7 +2783,7 @@ public:
      * @brief To implement if you need to make the hash vary at a specific time/view
      **/
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE;
 
 
     /**
@@ -2841,7 +2836,7 @@ public:
      * You can overload this to do things when a value is changed. Bear in mind that you can compress
      * the change by using the begin/end[ValueChanges] to optimize the changes.
      **/
-    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSetSpec view);
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, TimeValue time, ViewSetSpec view);
 
 
 
@@ -2855,19 +2850,6 @@ public:
 
     void initializeKnobsPublic();
 
-
-    /**
-     * @brief Returns the local current time of the timeline
-     **/
-    virtual double getCurrentTime() const;
-
-    /**
-     * @brief Returns the local current view being rendered or 0
-     **/
-    virtual ViewIdx getCurrentView() const
-    {
-        return ViewIdx(0);
-    }
 
     int getPageIndex(const KnobPagePtr page) const;
 
@@ -2920,7 +2902,7 @@ protected:
      **/
     virtual bool onKnobValueChanged(const KnobIPtr& /*k*/,
                                     ValueChangedReasonEnum /*reason*/,
-                                    double /*time*/,
+                                    TimeValue /*time*/,
                                     ViewSetSpec /*view*/)
     {
         return false;

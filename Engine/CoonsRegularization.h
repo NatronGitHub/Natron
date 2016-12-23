@@ -40,7 +40,7 @@ NATRON_NAMESPACE_ENTER;
 
 namespace CoonsRegularization {
 void regularize(const std::list<BezierCPPtr >& coonsPatch,
-                double time,
+                TimeValue time,
                 std::list<std::list<BezierCPPtr > >* fixedPatch);
 } // namespace CoonsRegularization
 

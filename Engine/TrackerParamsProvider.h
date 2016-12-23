@@ -107,7 +107,7 @@ public:
     /**
      * @brief Returns the rectangle used to normalize coordinates for the given time/view
      **/
-    virtual RectD getNormalizationRoD(double time, ViewIdx view) const = 0;
+    virtual RectD getNormalizationRoD(TimeValue time, ViewIdx view) const = 0;
 
 };
 

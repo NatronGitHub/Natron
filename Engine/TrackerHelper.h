@@ -64,7 +64,7 @@ public:
 
     Transform::Matrix3x3 h;
     int nbEnabledPoints;
-    double time;
+    TimeValue time;
     bool valid;
     double rms;
 };
@@ -91,7 +91,7 @@ public:
     double rotation;
     double scale;
     bool hasRotationAndScale;
-    double time;
+    TimeValue time;
     bool valid;
     double rms;
 };
@@ -235,7 +235,7 @@ public:
      * to time.
      **/
     static TransformData computeTransformParamsFromTracksAtTime(double refTime,
-                                                                double time,
+                                                                TimeValue time,
                                                                 int jitterPeriod,
                                                                 bool jitterAdd,
                                                                 bool robustModel,
@@ -249,7 +249,7 @@ public:
      * to time.
      **/
     static CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
-                                                                double time,
+                                                                TimeValue time,
                                                                 int jitterPeriod,
                                                                 bool jitterAdd,
                                                                 bool robustModel,

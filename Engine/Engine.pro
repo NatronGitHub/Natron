@@ -96,6 +96,7 @@ SOURCES += \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstanceTLSData.cpp \
+    EffectInstanceActionResults.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
     EffectOpenGLContextData.cpp \
@@ -317,6 +318,7 @@ HEADERS += \
     EffectInstance.h \
     EffectInstanceTLSData.h \
     EffectInstancePrivate.h \
+    EffectInstanceActionResults.h \
     EffectOpenGLContextData.h \
     ExistenceCheckThread.h \
     EngineFwd.h \
@@ -450,6 +452,7 @@ HEADERS += \
     TimeLine.h \
     TimeLineKeys.h \
     Timer.h \
+    TimeValue.h \
     TrackArgs.h \
     TrackerHelper.h \
     TrackerHelperPrivate.h \

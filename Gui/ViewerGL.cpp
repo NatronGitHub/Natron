@@ -648,7 +648,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
         /*
            Draw the overlays corresponding to the image displayed on the viewer, not the current timeline's time
          */
-        double time = getCurrentlyDisplayedTime();
+        TimeValue time = getCurrentlyDisplayedTime();
         _imp->viewerTab->drawOverlays( time, RenderScale(scale) );
 
         glCheckErrorIgnoreOSXBug(GL_GPU);
@@ -1662,7 +1662,7 @@ bool
 ViewerGL::penMotionInternal(int x,
                             int y,
                             double pressure,
-                            double timestamp,
+                            TimeValue timestamp,
                             QInputEvent* e)
 {
     Q_UNUSED(e);

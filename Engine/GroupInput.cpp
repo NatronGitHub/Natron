@@ -79,7 +79,7 @@ bool
 GroupInput::knobChanged(const KnobIPtr& k,
                         ValueChangedReasonEnum /*reason*/,
                         ViewSetSpec /*view*/,
-                        double /*time*/)
+                        TimeValue /*time*/)
 {
     bool ret = true;
     KnobBoolPtr optKnob = _optional.lock();

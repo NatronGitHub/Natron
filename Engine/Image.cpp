@@ -279,16 +279,14 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                         assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
                     }
                     if (isCached) {
-                        // Found in cache, check if the key is really equal to this key
-                        if (keyToReadCache->equals(*cacheEntry->getKey())) {
-                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
-                            assert(isBufferedEntry);
-                            thisChannelTile.buffer = isBufferedEntry;
-                            thisChannelTile.isCached = true;
+                        MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
+                        assert(isBufferedEntry);
+                        thisChannelTile.buffer = isBufferedEntry;
+                        thisChannelTile.isCached = true;
 
-                            // We found a cache entry, don't continue to look for a tile computed in draft mode.
-                            break;
-                        }
+                        // We found a cache entry, don't continue to look for a tile computed in draft mode.
+                        break;
+
                     }
                 }
             }

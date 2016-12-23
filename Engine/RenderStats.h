@@ -63,7 +63,7 @@ public:
 
     void operator=(const NodeRenderStats& other);
 
-    void addTimeSpentRendering(double time);
+    void addTimeSpentRendering(TimeValue time);
     double getTotalTimeSpentRendering() const;
 
     const RectD& getRoD() const;
@@ -140,7 +140,7 @@ public:
                                const NodePtr& identity,
                                const std::string& plane,
                                const RectI& rectangle,
-                               double timeSpent);
+                               TimeValue timeSpent);
 
     std::map<NodePtr, NodeRenderStats > getStats(double *totalTimeSpent) const;
 

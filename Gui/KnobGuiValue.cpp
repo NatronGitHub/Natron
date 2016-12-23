@@ -1205,7 +1205,7 @@ KnobGuiDouble::getNormalizationPolicy(DimIdx dimension) const
 
 double
 KnobGuiDouble::denormalize(DimIdx dimension,
-                           double time,
+                           TimeValue time,
                            double value) const
 {
     return _knob.lock()->denormalize(dimension, time, value);
@@ -1213,7 +1213,7 @@ KnobGuiDouble::denormalize(DimIdx dimension,
 
 double
 KnobGuiDouble::normalize(DimIdx dimension,
-                         double time,
+                         TimeValue time,
                          double value) const
 {
     return _knob.lock()->normalize(dimension, time, value);

@@ -36,7 +36,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct DimTimeView
 {
-    double time;
+    TimeValue time;
     DimIdx dimension;
     ViewIdx view;
 };
@@ -74,7 +74,7 @@ typedef std::map<int, CurvePtr> PerDimensionParametricCurve;
 template <typename T>
 bool findCachedKnobValueInternal(const boost::shared_ptr<Knob<T> >& knob,
                          const typename std::map<boost::shared_ptr<Knob<T> >, std::map<DimTimeView, T, ValueDimTimeViewCompareLess> >& cache,
-                         double time,
+                         TimeValue time,
                          DimIdx dim,
                          ViewIdx view,
                          T* value)
@@ -96,7 +96,7 @@ bool findCachedKnobValueInternal(const boost::shared_ptr<Knob<T> >& knob,
 template <typename T>
 void setCachedKnobValueInternal(const boost::shared_ptr<Knob<T> >& knob,
                         typename std::map<boost::shared_ptr<Knob<T> >, std::map<DimTimeView, T, ValueDimTimeViewCompareLess> >& cache,
-                        double time,
+                        TimeValue time,
                         DimIdx dim,
                         ViewIdx view,
                         const T& value)
@@ -197,14 +197,14 @@ RenderValuesCache::setCachedInput(int inputNb, const NodePtr& node)
 
 template <>
 bool
-RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<bool> >& knob, double time, DimIdx dimension, ViewIdx view, bool* value) const
+RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<bool> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, bool* value) const
 {
     return findCachedKnobValueInternal<bool>(knob, _imp->boolKnobValues, time, dimension, view, value);
 }
 
 template <>
 bool
-RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<int> >& knob, double time, DimIdx dimension, ViewIdx view, int* value) const
+RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<int> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, int* value) const
 {
     return findCachedKnobValueInternal<int>(knob, _imp->intKnobValues, time, dimension, view, value);
 }
@@ -212,7 +212,7 @@ RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<int> >& knob,
 
 template <>
 bool
-RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<double> >& knob, double time, DimIdx dimension, ViewIdx view, double* value) const
+RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<double> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, double* value) const
 {
     return findCachedKnobValueInternal<double>(knob, _imp->doubleKnobValues, time, dimension, view, value);
 }
@@ -220,21 +220,21 @@ RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<double> >& kn
 
 template <>
 bool
-RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<std::string> >& knob, double time, DimIdx dimension, ViewIdx view, std::string* value) const
+RenderValuesCache::getCachedKnobValue(const boost::shared_ptr<Knob<std::string> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, std::string* value) const
 {
     return findCachedKnobValueInternal<std::string>(knob, _imp->stringKnobValues, time, dimension, view, value);
 }
 
 template <>
 void
-RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<bool> >& knob, double time, DimIdx dimension, ViewIdx view, const bool& value)
+RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<bool> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, const bool& value)
 {
     setCachedKnobValueInternal<bool>(knob, _imp->boolKnobValues, time, dimension, view, value);
 }
 
 template <>
 void
-RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<int> >& knob, double time, DimIdx dimension, ViewIdx view, const int& value)
+RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<int> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, const int& value)
 {
     setCachedKnobValueInternal<int>(knob, _imp->intKnobValues, time, dimension, view, value);
 }
@@ -242,7 +242,7 @@ RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<int> >& knob,
 
 template <>
 void
-RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<double> >& knob, double time, DimIdx dimension, ViewIdx view, const double& value)
+RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<double> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, const double& value)
 {
     setCachedKnobValueInternal<double>(knob, _imp->doubleKnobValues, time, dimension, view, value);
 }
@@ -250,7 +250,7 @@ RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<double> >& kn
 
 template <>
 void
-RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<std::string> >& knob, double time, DimIdx dimension, ViewIdx view, const std::string& value)
+RenderValuesCache::setCachedKnobValue(const boost::shared_ptr<Knob<std::string> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, const std::string& value)
 {
     setCachedKnobValueInternal<std::string>(knob, _imp->stringKnobValues, time, dimension, view, value);
 }

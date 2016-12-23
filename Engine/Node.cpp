@@ -3037,7 +3037,7 @@ Node::makeInfoForInput(int inputNumber) const
 
 
     ImageBitDepthEnum depth = _imp->effect->getBitDepth(inputNumber);
-    double time = getApp()->getTimeLine()->currentFrame();
+    TimeValue time = getApp()->getTimeLine()->currentFrame();
     std::stringstream ss;
     { // input name
         QString inputName;
@@ -7048,7 +7048,7 @@ Node::getRenderInstancesSharedMutex()
 }
 
 static void
-refreshPreviewsRecursivelyUpstreamInternal(double time,
+refreshPreviewsRecursivelyUpstreamInternal(TimeValue time,
                                            const NodePtr& node,
                                            std::list<NodePtr>& marked)
 {
@@ -7073,7 +7073,7 @@ refreshPreviewsRecursivelyUpstreamInternal(double time,
 }
 
 void
-Node::refreshPreviewsRecursivelyUpstream(double time)
+Node::refreshPreviewsRecursivelyUpstream(TimeValue time)
 {
     std::list<NodePtr> marked;
 
@@ -7081,7 +7081,7 @@ Node::refreshPreviewsRecursivelyUpstream(double time)
 }
 
 static void
-refreshPreviewsRecursivelyDownstreamInternal(double time,
+refreshPreviewsRecursivelyDownstreamInternal(TimeValue time,
                                              const NodePtr& node,
                                              std::list<NodePtr>& marked)
 {
@@ -7103,7 +7103,7 @@ refreshPreviewsRecursivelyDownstreamInternal(double time,
 }
 
 void
-Node::refreshPreviewsRecursivelyDownstream(double time)
+Node::refreshPreviewsRecursivelyDownstream(TimeValue time)
 {
     if ( !getNodeGui() ) {
         return;
@@ -7270,7 +7270,7 @@ Node::unlock(const ImagePtr & image)
 }
 
 ImagePtr
-Node::getImageBeingRendered(double time,
+Node::getImageBeingRendered(TimeValue time,
                             unsigned int mipMapLevel,
                             ViewIdx view)
 {
@@ -7574,7 +7574,7 @@ Node::canHandleRenderScaleForOverlays() const
 }
 
 bool
-Node::shouldDrawOverlay(double time, ViewIdx view) const
+Node::shouldDrawOverlay(TimeValue time, ViewIdx view) const
 {
     if ( !hasOverlay() ) {
         return false;
@@ -7605,7 +7605,7 @@ Node::shouldDrawOverlay(double time, ViewIdx view) const
 }
 
 void
-Node::drawHostOverlay(double time,
+Node::drawHostOverlay(TimeValue time,
                       const RenderScale& renderScale,
                       ViewIdx view)
 {
@@ -7617,7 +7617,7 @@ Node::drawHostOverlay(double time,
 }
 
 bool
-Node::onOverlayPenDownDefault(double time,
+Node::onOverlayPenDownDefault(TimeValue time,
                               const RenderScale& renderScale,
                               ViewIdx view,
                               const QPointF & viewportPos,
@@ -7634,7 +7634,7 @@ Node::onOverlayPenDownDefault(double time,
 }
 
 bool
-Node::onOverlayPenDoubleClickedDefault(double time,
+Node::onOverlayPenDoubleClickedDefault(TimeValue time,
                                        const RenderScale& renderScale,
                                        ViewIdx view,
                                        const QPointF & viewportPos,
@@ -7650,7 +7650,7 @@ Node::onOverlayPenDoubleClickedDefault(double time,
 }
 
 bool
-Node::onOverlayPenMotionDefault(double time,
+Node::onOverlayPenMotionDefault(TimeValue time,
                                 const RenderScale& renderScale,
                                 ViewIdx view,
                                 const QPointF & viewportPos,
@@ -7667,7 +7667,7 @@ Node::onOverlayPenMotionDefault(double time,
 }
 
 bool
-Node::onOverlayPenUpDefault(double time,
+Node::onOverlayPenUpDefault(TimeValue time,
                             const RenderScale& renderScale,
                             ViewIdx view,
                             const QPointF & viewportPos,
@@ -7684,7 +7684,7 @@ Node::onOverlayPenUpDefault(double time,
 }
 
 bool
-Node::onOverlayKeyDownDefault(double time,
+Node::onOverlayKeyDownDefault(TimeValue time,
                               const RenderScale& renderScale,
                               ViewIdx view,
                               Key key,
@@ -7700,7 +7700,7 @@ Node::onOverlayKeyDownDefault(double time,
 }
 
 bool
-Node::onOverlayKeyUpDefault(double time,
+Node::onOverlayKeyUpDefault(TimeValue time,
                             const RenderScale& renderScale,
                             ViewIdx view,
                             Key key,
@@ -7716,7 +7716,7 @@ Node::onOverlayKeyUpDefault(double time,
 }
 
 bool
-Node::onOverlayKeyRepeatDefault(double time,
+Node::onOverlayKeyRepeatDefault(TimeValue time,
                                 const RenderScale& renderScale,
                                 ViewIdx view,
                                 Key key,
@@ -7732,7 +7732,7 @@ Node::onOverlayKeyRepeatDefault(double time,
 }
 
 bool
-Node::onOverlayFocusGainedDefault(double time,
+Node::onOverlayFocusGainedDefault(TimeValue time,
                                   const RenderScale& renderScale,
                                   ViewIdx view)
 {
@@ -7746,7 +7746,7 @@ Node::onOverlayFocusGainedDefault(double time,
 }
 
 bool
-Node::onOverlayFocusLostDefault(double time,
+Node::onOverlayFocusLostDefault(TimeValue time,
                                 const RenderScale& renderScale,
                                 ViewIdx view)
 {
@@ -8106,7 +8106,7 @@ Node::onRefreshIdentityStateRequestReceived()
     if (project->isLoadingProject()) {
         return;
     }
-    double time = project->currentFrame();
+    TimeValue time = project->currentFrame();
     RenderScale scale(1.);
     double inputTime = 0;
     U64 hash = 0;
@@ -8744,7 +8744,7 @@ Node::getLifeTimeKnob() const
 }
 
 bool
-Node::isNodeDisabledForFrame(double time, ViewIdx view) const
+Node::isNodeDisabledForFrame(TimeValue time, ViewIdx view) const
 {
     // Check disabled knob
     KnobBoolPtr b = _imp->disableNodeKnob.lock();
@@ -8976,7 +8976,7 @@ Node::canOthersConnectToThisNode() const
 static void
 addIdentityNodesRecursively(NodeConstPtr caller,
                             NodeConstPtr node,
-                            double time,
+                            TimeValue time,
                             ViewIdx view,
                             std::list<NodeConstPtr>* outputs,
                             std::list<NodeConstPtr>* markedNodes)
@@ -9070,7 +9070,7 @@ addIdentityNodesRecursively(NodeConstPtr caller,
 
 bool
 Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
-                        double time,
+                        TimeValue time,
                         ViewIdx view,
                         int /*visitsCount*/) const
 {
@@ -9256,7 +9256,7 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     if (canCallRefreshMetaData) {
 
 
-        double time = (double)getApp()->getTimeLine()->currentFrame();
+        TimeValue time = (double)getApp()->getTimeLine()->currentFrame();
         RenderScale scaleOne(1.);
         ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
         if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
@@ -10429,7 +10429,7 @@ Node::refreshChannelSelectors()
     }
     _imp->effect->setComponentsAvailableDirty(true);
 
-    double time = getApp()->getTimeLine()->currentFrame();
+    TimeValue time = getApp()->getTimeLine()->currentFrame();
     bool hasChanged = false;
     for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
         NodePtr node;
@@ -10748,7 +10748,7 @@ Node::getUserCreatedComponents(std::list<ImageComponents>* comps)
 }
 
 double
-Node::getHostMixingValue(double time,
+Node::getHostMixingValue(TimeValue time,
                          ViewIdx view) const
 {
     KnobDoublePtr mix = _imp->mixWithSource.lock();
@@ -10757,7 +10757,7 @@ Node::getHostMixingValue(double time,
 }
 
 RenderRoIRetCode
-Node::renderFrame(const double time,
+Node::renderFrame(const TimeValue time,
                   const ViewIdx view,
                   const unsigned int mipMapLevel,
                   const bool isPlayback,

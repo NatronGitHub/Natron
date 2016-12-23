@@ -99,7 +99,7 @@ public:
     /**
      * @brief High level: split a closed bezier represented by a list of control points into coons patchs
      **/
-    static void bezulate(double time, const BezierCPs& cps, std::list<BezierCPs>* patches);
+    static void bezulate(TimeValue time, const BezierCPs& cps, std::list<BezierCPs>* patches);
 
     /**
      * @brief Low level: renders the given stroke item into the cairo image
@@ -112,7 +112,7 @@ public:
                                    const RotoDrawableItemPtr& stroke,
                                    bool doBuildup,
                                    double opacity,
-                                   double time,
+                                   TimeValue time,
                                    ViewIdx view,
                                    unsigned int mipmapLevel,
                                    double* distToNextOut,
@@ -121,17 +121,17 @@ public:
     /**
      * @brief Low level: renders the given bezier with motion blur onto the given cairo image
      **/
-    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, double time, ViewIdx view, unsigned int mipmapLevel);
+    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, TimeValue time, ViewIdx view, unsigned int mipmapLevel);
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
      **/
-    static void renderFeather_old_cairo(const BezierPtr& bezier, double time, ViewIdx view, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
 
     /**
     * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
     **/
-    static void renderInternalShape_old_cairo(double time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
+    static void renderInternalShape_old_cairo(TimeValue time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the new algorithm which does use triangulation.
@@ -151,7 +151,7 @@ public:
     static void renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                          const RectI & roi,
                                          const ImageComponents& components,
-                                         const double time,
+                                         const TimeValue time,
                                          ViewIdx view,
                                          const RangeD& shutterRange,
                                          int nDivisions,
@@ -164,7 +164,7 @@ public:
                                          Point* lastCenterPointOut);
 
 
-    static bool renderSmear_cairo(double time,
+    static bool renderSmear_cairo(TimeValue time,
                                   ViewIdx view,
                                   unsigned int mipMapLevel,
                                   const RotoStrokeItemPtr& rotoItem,

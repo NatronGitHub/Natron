@@ -380,13 +380,13 @@ public:
      * @brief Denormalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    double denormalize(DimIdx dimension, double time, double value) const;
+    double denormalize(DimIdx dimension, TimeValue time, double value) const;
 
     /**
      * @brief Normalize the given value according to the RoD of the attached effect's input's RoD.
      * WARNING: Can only be called once setValueIsNormalized has been called!
      **/
-    double normalize(DimIdx dimension, double time, double value) const;
+    double normalize(DimIdx dimension, TimeValue time, double value) const;
 
     void setHasHostOverlayHandle(bool handle);
 
@@ -745,22 +745,22 @@ public:
     /**
      * @brief Get all menu entries
      **/
-    std::vector<std::string> getEntries(ViewGetSpec view = ViewGetSpec::current()) const;
+    std::vector<std::string> getEntries(ViewIdx view = ViewIdx::current()) const;
 
     /**
      * @brief Get one menu entry. Throws an invalid_argument exception if index is invalid
      **/
-    std::string getEntry(int v, ViewGetSpec view = ViewGetSpec::current()) const;
+    std::string getEntry(int v, ViewIdx view = ViewIdx::current()) const;
 
     /**
      * @brief Get all menu entry tooltips
      **/
-    std::vector<std::string> getEntriesHelp(ViewGetSpec view = ViewGetSpec::current()) const;
+    std::vector<std::string> getEntriesHelp(ViewIdx view = ViewIdx::current()) const;
 
     /**
      * @brief Get the active entry text
      **/
-    std::string getActiveEntryText(ViewGetSpec view = ViewGetSpec::current());
+    std::string getActiveEntryText(ViewIdx view = ViewIdx::current());
 
     /**
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
@@ -768,7 +768,7 @@ public:
      **/
     void setActiveEntryText(const std::string& entry, ViewSetSpec view = ViewSetSpec::all());
 
-    int getNumEntries(ViewGetSpec view = ViewGetSpec::current()) const;
+    int getNumEntries(ViewIdx view = ViewIdx::current()) const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
@@ -1193,7 +1193,7 @@ public:
     /**
      * @brief Same as getValue() but decorates the string with the current font state. Only useful if rich text has been enabled
      **/
-    QString getValueDecorated(double time, ViewGetSpec view);
+    QString getValueDecorated(TimeValue time, ViewIdx view);
 
 private:
 
@@ -1485,19 +1485,19 @@ public:
     void setDefaultCurvesFromCurves();
 
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
-    CurvePtr getParametricCurve(DimIdx dimension, ViewGetSpec view) const;
+    CurvePtr getParametricCurve(DimIdx dimension, ViewIdx view) const;
     CurvePtr getDefaultParametricCurve(DimIdx dimension) const;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
     StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum evaluateCurve(DimIdx dimension, ViewGetSpec view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNControlPoints(DimIdx dimension, ViewGetSpec view, int *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum evaluateCurve(DimIdx dimension, ViewIdx view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    StatusEnum getNControlPoints(DimIdx dimension, ViewIdx view, int *returnValue) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(DimIdx dimension,
-                                  ViewGetSpec view,
+                                  ViewIdx view,
                                   int nthCtl,
                                   double *key,
                                   double *value) const WARN_UNUSED_RETURN;
     StatusEnum getNthControlPoint(DimIdx dimension,
-                                  ViewGetSpec view,
+                                  ViewIdx view,
                                   int nthCtl,
                                   double *key,
                                   double *value,
@@ -1535,24 +1535,24 @@ public:
 
     void loadParametricCurves(const std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >& curves);
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
 
     //////////// Overriden from AnimatingObjectI
-    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE FINAL;
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE ;
-    virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
-    virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
+    virtual void deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
+    virtual void deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE ;
-    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
+    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
+    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
 
@@ -1566,13 +1566,13 @@ Q_SIGNALS:
 
 private:
 
-    CurvePtr getParametricCurveInternal(DimIdx dimension, ViewGetSpec view, ParametricKnobDimViewPtr* data) const;
+    CurvePtr getParametricCurveInternal(DimIdx dimension, ViewIdx view, ParametricKnobDimViewPtr* data) const;
 
     void signalCurveChanged(DimSpec dimension, const KnobDimViewBasePtr& data);
 
     virtual KnobDimViewBasePtr createDimViewData() const OVERRIDE;
 
-    ValueChangedReturnCodeEnum setKeyFrameInternal(double time,
+    ValueChangedReturnCodeEnum setKeyFrameInternal(TimeValue time,
                                                    double value,
                                                    DimIdx dimension,
                                                    ViewIdx view,

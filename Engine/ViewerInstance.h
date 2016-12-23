@@ -52,7 +52,7 @@ struct ViewerArgs
     bool forceRender;
     U64 activeInputHash;
     boost::shared_ptr<UpdateViewerParams> params;
-    boost::shared_ptr<ParallelRenderArgsSetter> frameArgs;
+    TreeRenderPtr frameArgs;
     bool draftModeEnabled;
     unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
     bool autoContrast;
@@ -232,7 +232,8 @@ public:
 
     int getLastRenderedTime() const;
 
-    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual double getTimelineCurrentTime() const OVERRIDE FINAL;
+
     TimeLinePtr getTimeline() const;
 
     void getTimelineBounds(int* first, int* last) const;

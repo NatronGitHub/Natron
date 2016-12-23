@@ -113,10 +113,10 @@ private:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
+                             TimeValue time) OVERRIDE FINAL;
+    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual void getComponentsNeededAndProduced(TimeValue time, ViewIdx view,
                                                 ComponentsNeededMap* comps,
                                                 SequenceTime* passThroughTime,
                                                 int* passThroughView,
@@ -144,13 +144,13 @@ private:
                                          bool isOpenGLRender,
                                          const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getRegionsOfInterest(double time,
+    virtual void getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
                                       const RectD & outputRoD, //!< full RoD in canonical coordinates
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 

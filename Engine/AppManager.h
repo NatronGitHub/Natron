@@ -51,6 +51,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/KnobFactory.h"
 #include "Engine/LogEntry.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()

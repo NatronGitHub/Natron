@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_RotoPoint_h
-#define Engine_RotoPoint_h
+
+#ifndef NATRON_ENGINE_TIMEVALUE_H
+#define NATRON_ENGINE_TIMEVALUE_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,52 +26,36 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#include <list>
-#include <set>
-#include <string>
-
-CLANG_DIAG_OFF(deprecated-declarations)
-#include <QtCore/QObject>
-#include <QtCore/QMutex>
-#include <QtCore/QMetaType>
-CLANG_DIAG_ON(deprecated-declarations)
-
-#include "Global/GlobalDefines.h"
-#include "Engine/FitCurve.h"
-#include "Engine/EngineFwd.h"
-
-NATRON_NAMESPACE_ENTER;
-
-class RotoPoint
+/**
+ * @brief Small value representing a time. This should be passed to any function using a time as parameter
+ **/
+class TimeValue
 {
-    Point _pos;
-    double _pressure;
-    TimeValue _timestamp;
+    double _value;
 
 public:
-    RotoPoint()
-        : _pos(), _pressure(0), _timestamp(0) {}
 
-    RotoPoint(const Point &pos_,
-              double pressure_,
-              TimeValue timestamp_)
-        : _pos(pos_), _pressure(pressure_), _timestamp(timestamp_) {}
+    explicit TimeValue(double t = 0)
+    : _value(t)
+    {
 
-    RotoPoint(double x,
-              double y,
-              double pressure_,
-              TimeValue timestamp_)
-        : _pressure(pressure_), _timestamp(timestamp_) { _pos.x = x; _pos.y = y; }
+    }
 
-    const Point& pos() const { return _pos; }
+    // Cast to double is implicit
+    operator double() const
+    {
+        return _value;
+    }
 
-    double pressure() const { return _pressure; }
+    double value() const
+    {
+        return _value;
+    }
 
-    TimeValue timestamp() const { return _timestamp; }
+    bool operator<(const TimeValue& b) const {
+        return _value < b._value;
+    }
 };
 
-NATRON_NAMESPACE_EXIT;
 
-#endif // Engine_RotoPoint_h
+#endif // NATRON_ENGINE_TIMEVALUE_H

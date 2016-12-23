@@ -264,9 +264,9 @@ private:
     void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstancePtr associatedNode,
                                        OfxRectD* rod) const;
 
-    bool getInputImageInternal(const OfxTime time, const ViewGetSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
+    bool getInputImageInternal(const OfxTime time, const ViewIdx view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
     bool getOutputImageInternal(const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
-    bool getImagePlaneInternal(OfxTime time, ViewGetSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
+    bool getImagePlaneInternal(OfxTime time, ViewIdx view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
 
 private:
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;

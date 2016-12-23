@@ -128,10 +128,10 @@ public:
     void reloadFile();
 
 
-    std::string getRawFileName(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current()) WARN_UNUSED_RETURN;
+    std::string getRawFileName(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current()) WARN_UNUSED_RETURN;
 
-    virtual std::string getValue(DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual std::string getValueAtTime(double time, DimIdx dimension = DimIdx(0), ViewGetSpec view = ViewGetSpec::current(), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getValue(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current(), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current(), bool clampToMinMax = true) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 Q_SIGNALS:
 

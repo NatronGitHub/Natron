@@ -41,7 +41,7 @@
 #include "Engine/DimensionIdx.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/Transform.h"
-
+#include "Engine/TimeValue.h"
 
 #define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
@@ -87,7 +87,7 @@ public:
 
     double getValue() const;
 
-    double getTime() const;
+    TimeValue getTime() const;
 
     double getLeftDerivative() const;
 
@@ -107,7 +107,7 @@ public:
 
 private:
 
-    double _time;
+    TimeValue _time;
     double _value;
     double _leftDerivative;
     double _rightDerivative;
@@ -247,27 +247,27 @@ public:
     // Returns true if a keyframe was added, false if it modified an existing one
     ValueChangedReturnCodeEnum setOrAddKeyframe(KeyFrame key);
 
-    void removeKeyFrameWithTime(double time);
+    void removeKeyFrameWithTime(TimeValue time);
 
     void removeKeyFrameWithIndex(int index);
 
-    void removeKeyFramesBeforeTime(double time, std::list<double>* keyframeRemoved);
+    void removeKeyFramesBeforeTime(TimeValue time, std::list<double>* keyframeRemoved);
 
-    void removeKeyFramesAfterTime(double time, std::list<double>* keyframeRemoved);
+    void removeKeyFramesAfterTime(TimeValue time, std::list<double>* keyframeRemoved);
 
-    bool getNearestKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+    bool getNearestKeyFrameWithTime(TimeValue time, KeyFrame* k) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the previous keyframe to the given time, which doesn't have to be a keyframe time
      **/
-    bool getPreviousKeyframeTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+    bool getPreviousKeyframeTime(TimeValue time, KeyFrame* k) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Returns the next keyframe to the given time, which doesn't have to be a keyframe time
      **/
-    bool getNextKeyframeTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+    bool getNextKeyframeTime(TimeValue time, KeyFrame* k) const WARN_UNUSED_RETURN;
 
-    bool getKeyFrameWithTime(double time, KeyFrame* k) const WARN_UNUSED_RETURN;
+    bool getKeyFrameWithTime(TimeValue time, KeyFrame* k) const WARN_UNUSED_RETURN;
 
     /*
      * @brief Returns the number of keyframes in the range [first,last[
@@ -300,7 +300,7 @@ public:
      * @brief Set the new value and time of the keyframe positioned at index index and returns the new  keyframe.
      * Also the index of the new keyframe is returned in newIndex.
      **/
-    KeyFrame setKeyFrameValueAndTime(double time, double value, int index, int* newIndex = NULL);
+    KeyFrame setKeyFrameValueAndTime(TimeValue time, double value, int index, int* newIndex = NULL);
 
     class KeyFrameWarp
     {
@@ -486,7 +486,7 @@ public:
 
 private:
 
-    KeyFrame setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex);
+    KeyFrame setKeyFrameValueAndTimeInternal(TimeValue time, double value, int index, int* newIndex);
 
 public:
 
@@ -532,7 +532,7 @@ public:
      * Also the index of the new keyframe is returned in newIndex.
      **/
     KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index, int* newIndex = NULL);
-    bool setKeyFrameInterpolation(KeyframeTypeEnum interp, double time, KeyFrame* ret = 0);
+    bool setKeyFrameInterpolation(KeyframeTypeEnum interp, TimeValue time, KeyFrame* ret = 0);
 
 private:
 
@@ -550,7 +550,7 @@ public:
 
     void setDisplayYRange(double displayMin, double displayMax);
 
-    int keyFrameIndex(double time) const WARN_UNUSED_RETURN;
+    int keyFrameIndex(TimeValue time) const WARN_UNUSED_RETURN;
 
 
     /**
@@ -558,7 +558,7 @@ public:
      * @param fromIt A hint where to start the search. If fromIt == keys.end() then the search will cycle the whole keys set,
      * otherwise it will start from the provided iterator.
      **/
-    static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, KeyFrameSet::const_iterator fromIt, double time);
+    static KeyFrameSet::const_iterator findWithTime(const KeyFrameSet& keys, KeyFrameSet::const_iterator fromIt, TimeValue time);
 
     /**
      * @brief Smooth the curve.
@@ -575,7 +575,7 @@ private:
     void serialize(Archive & ar, const unsigned int version);
 
     ///////The following functions are not thread-safe
-    KeyFrameSet::const_iterator find(double time, KeyFrameSet::const_iterator fromIt) const WARN_UNUSED_RETURN;
+    KeyFrameSet::const_iterator find(TimeValue time, KeyFrameSet::const_iterator fromIt) const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator atIndex(int index) const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator begin() const WARN_UNUSED_RETURN;
     KeyFrameSet::const_iterator end() const WARN_UNUSED_RETURN;
@@ -600,7 +600,7 @@ private:
      **/
     KeyFrameSet::iterator evaluateCurveChanged(CurveChangedReasonEnum reason, KeyFrameSet::iterator key) WARN_UNUSED_RETURN;
     KeyFrameSet::iterator refreshDerivatives(CurveChangedReasonEnum reason, KeyFrameSet::iterator key);
-    KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value, double time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
+    KeyFrameSet::iterator setKeyFrameValueAndTimeNoUpdate(double value, TimeValue time, KeyFrameSet::iterator k) WARN_UNUSED_RETURN;
 
 
     KeyFrameSet::iterator setKeyframeInterpolation_internal(KeyFrameSet::iterator it, KeyframeTypeEnum type);

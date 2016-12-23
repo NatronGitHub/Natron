@@ -95,7 +95,7 @@ public Q_SLOTS:
 private:
 
 
-    virtual bool isIdentity(double time,
+    virtual bool isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,

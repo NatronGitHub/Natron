@@ -713,7 +713,7 @@ struct ViewerNodePrivate
 
     void startPlayback(RenderDirectionEnum direction);
 
-    void timelineGoTo(double time);
+    void timelineGoTo(TimeValue time);
 
     void refreshInputChoiceMenu(int internalIndex, int groupInputIndex);
 
@@ -2562,7 +2562,7 @@ ViewerNode::isInfoBarVisible() const
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                         ViewSetSpec view,
-                        double /*time*/)
+                        TimeValue /*time*/)
 {
     if (!k || reason == eValueChangedReasonRestoreDefault) {
         return false;
@@ -3440,7 +3440,7 @@ ViewerNodePrivate::drawWipeControl()
 } // drawWipeControl
 
 void
-ViewerNode::drawOverlay(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+ViewerNode::drawOverlay(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     bool userRoIEnabled = _imp->toggleUserRoIButtonKnob.lock()->getValue();
     if (userRoIEnabled) {
@@ -3641,7 +3641,7 @@ ViewerNodePrivate::isNearByUserRoI(double x,
 
 
 bool
-ViewerNode::onOverlayPenDown(double /*time*/,
+ViewerNode::onOverlayPenDown(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             const QPointF & /*viewportPos*/,
@@ -3799,7 +3799,7 @@ ViewerNode::onOverlayPenDown(double /*time*/,
 } // onOverlayPenDown
 
 bool
-ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/,
+ViewerNode::onOverlayPenMotion(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/,
                                 const QPointF & /*viewportPos*/, const QPointF & pos, double /*pressure*/, double /*timestamp*/)
 {
     OverlaySupport* viewport = getCurrentViewportForOverlays();
@@ -4012,7 +4012,7 @@ ViewerNode::onOverlayPenMotion(double /*time*/, const RenderScale & /*renderScal
 } // onOverlayPenMotion
 
 bool
-ViewerNode::onOverlayPenUp(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, const QPointF & /*viewportPos*/, const QPointF & /*pos*/, double /*pressure*/, double /*timestamp*/)
+ViewerNode::onOverlayPenUp(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, const QPointF & /*viewportPos*/, const QPointF & /*pos*/, double /*pressure*/, double /*timestamp*/)
 {
 
     bool caught = false;
@@ -4037,7 +4037,7 @@ ViewerNode::onOverlayPenUp(double /*time*/, const RenderScale & /*renderScale*/,
 } // onOverlayPenUp
 
 bool
-ViewerNode::onOverlayPenDoubleClicked(double /*time*/,
+ViewerNode::onOverlayPenDoubleClicked(TimeValue /*time*/,
                                        const RenderScale & /*renderScale*/,
                                        ViewIdx /*view*/,
                                        const QPointF & /*viewportPos*/,
@@ -4047,31 +4047,31 @@ ViewerNode::onOverlayPenDoubleClicked(double /*time*/,
 } // onOverlayPenDoubleClicked
 
 bool
-ViewerNode::onOverlayKeyDown(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+ViewerNode::onOverlayKeyDown(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
 {
     return false;
 } // onOverlayKeyDown
 
 bool
-ViewerNode::onOverlayKeyUp(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+ViewerNode::onOverlayKeyUp(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
 {
     return false;
 } // onOverlayKeyUp
 
 bool
-ViewerNode::onOverlayKeyRepeat(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
+ViewerNode::onOverlayKeyRepeat(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/, Key /*key*/, KeyboardModifiers /*modifiers*/)
 {
     return false;
 } // onOverlayKeyRepeat
 
 bool
-ViewerNode::onOverlayFocusGained(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+ViewerNode::onOverlayFocusGained(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     return false;
 } // onOverlayFocusGained
 
 bool
-ViewerNode::onOverlayFocusLost(double /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
+ViewerNode::onOverlayFocusLost(TimeValue /*time*/, const RenderScale & /*renderScale*/, ViewIdx /*view*/)
 {
     return false;
 } // onOverlayFocusLost
@@ -4506,7 +4506,7 @@ ViewerNode::refreshFps()
 }
 
 void
-ViewerNodePrivate::timelineGoTo(double time)
+ViewerNodePrivate::timelineGoTo(TimeValue time)
 {
     ViewerInstancePtr viewer = _publicInterface->getInternalViewerNode();
     viewer->getTimeline()->seekFrame(time, true, viewer, eTimelineChangeReasonOtherSeek);

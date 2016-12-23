@@ -975,7 +975,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
 } // ViewerInstance::getViewerRoIAndTexture
 
 
-static U64 makeViewerCacheHash(double time, ViewIdx view, U64 viewerInputHash, const ViewerInstance* viewer)
+static U64 makeViewerCacheHash(TimeValue time, ViewIdx view, U64 viewerInputHash, const ViewerInstance* viewer)
 {
     Hash64 hash;
     hash.append(viewerInputHash);
@@ -2923,10 +2923,11 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     return std::log(closestPowerOf2) / M_LN2;
 }
 
-ViewIdx
-ViewerInstance::getCurrentView() const
+double
+ViewerInstance::getTimelineCurrentTime() const
 {
-    return getViewerNodeGroup()->getCurrentView();
+    TimeLinePtr timeline = getTimeline();
+    return timeline->currentFrame();
 }
 
 bool

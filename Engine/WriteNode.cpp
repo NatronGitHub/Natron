@@ -235,7 +235,7 @@ public:
 
     void createDefaultWriteNode();
 
-    bool checkEncoderCreated(double time, ViewIdx view);
+    bool checkEncoderCreated(TimeValue time, ViewIdx view);
 
     void setReadNodeOriginalFrameRange();
 };
@@ -490,13 +490,13 @@ WriteNodePrivate::createDefaultWriteNode()
 }
 
 bool
-WriteNodePrivate::checkEncoderCreated(double time,
+WriteNodePrivate::checkEncoderCreated(TimeValue time,
                                       ViewIdx view)
 {
     KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string pattern = fileKnob->getValueAtTime( std::floor(time + 0.5), DimIdx(0), ViewGetSpec( view.value() ) );
+    std::string pattern = fileKnob->getValueAtTime( std::floor(time + 0.5), DimIdx(0), ViewIdx( view.value() ) );
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
@@ -1038,7 +1038,7 @@ bool
 WriteNode::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum reason,
                        ViewSetSpec view,
-                       double time)
+                       TimeValue time)
 {
     bool ret = true;
     NodePtr writer = _imp->embeddedPlugin.lock();

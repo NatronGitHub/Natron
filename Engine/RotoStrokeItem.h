@@ -202,12 +202,12 @@ public:
 
     static RotoStrokeType strokeTypeFromSerializationString(const std::string& s);
     
-    virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
+    virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
 
 
     ///bbox is in canonical coords
-    void evaluateStroke(unsigned int mipMapLevel, double time,
-                        ViewGetSpec view,
+    void evaluateStroke(unsigned int mipMapLevel, TimeValue time,
+                        ViewIdx view,
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0,
                         bool ignoreTransform = false) const;
@@ -235,7 +235,7 @@ public:
     KnobChoicePtr getBrushCloneFilterKnob() const;
     KnobBoolPtr getBrushCloneBlackOutsideKnob() const;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
 
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 

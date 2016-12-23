@@ -39,6 +39,14 @@
 #include "Engine/EngineFwd.h"
 #include "Serialization/SerializationBase.h"
 
+#define kCacheKeyUniqueIDImageTile 1
+#define kCacheKeyUniqueIDGetRoDResults 2
+#define kCacheKeyUniqueIDIsIdentityResults 3
+#define kCacheKeyUniqueIDFramesNeededResults 4
+#define kCacheKeyUniqueIDGetDistorsionResults 5
+#define kCacheKeyUniqueIDGetMetaDatasResults 6
+#define kCacheKeyUniqueIDGetComponentsNeededResults 7
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -81,6 +89,15 @@ public:
     void setHolderPluginID(const std::string& holderID);
     
 protected:
+
+    /**
+     * @brief Must return a unique string identifying this class.
+     * Imagine 2 key derived class having the same parameters in the same order, the hash
+     * produced could be the same but the value associated to the key could be of a different type.
+     * To ensure that a hash is unique to an item type, this function must return something unique
+     * for each type.
+     **/
+    virtual int getUniqueID() const = 0;
 
     /**
      * @brief Must append anything that should identify uniquely the cache entry.
@@ -134,6 +151,8 @@ public:
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
 private:
+
+    virtual int getUniqueID() const OVERRIDE FINAL;
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
 

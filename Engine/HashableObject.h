@@ -65,17 +65,17 @@ public:
     /**
      * @brief Look for a hash in the cache. Returns 0 if nothing is found
      **/
-    bool findCachedHash(double time, ViewIdx view, U64 *hash) const;
+    bool findCachedHash(TimeValue time, ViewIdx view, U64 *hash) const;
 
     /**
      * @brief Compute has hash at the given time/view but does not use the hash cache at all.
      **/
-    void computeHash_noCache(double time, ViewIdx view, Hash64* hash);
+    void computeHash_noCache(TimeValue time, ViewIdx view, Hash64* hash);
 
     /**
      * @brief Set the hash for the given frame view in the cache
      **/
-    void addHashToCache(double time, ViewIdx view, U64 hashValue);
+    void addHashToCache(TimeValue time, ViewIdx view, U64 hashValue);
 
 
     /**
@@ -84,7 +84,7 @@ public:
      * : findCachedHash, computeHash_noCache, addHashToCache except that everything
      * is protected under the same mutex for guarenteed atomicity.
      **/
-    U64 computeHash(double time, ViewIdx view);
+    U64 computeHash(TimeValue time, ViewIdx view);
     
     /**
      * @brief Invalidate the hash cache and invalidate recursively the listeners as well.
@@ -114,7 +114,7 @@ protected:
      * When adding a class inheriting HashableObject to the hash, make sure to call
      * computeHash to get the cache working.
      **/
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) = 0;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) = 0;
 
 private:
 

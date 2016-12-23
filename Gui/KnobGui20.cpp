@@ -564,7 +564,7 @@ KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   Variant newValue,
                                   ViewSetSpec view,
                                   DimSpec dim,
-                                  double time,
+                                  TimeValue time,
                                   bool setKeyFrame)
 {
     KnobIPtr knob = getKnob();

@@ -235,7 +235,7 @@ CurveGui::evaluate(bool useExpr, double x) const
 }
 
 int
-CurveGui::getKeyFrameIndex(double time) const
+CurveGui::getKeyFrameIndex(TimeValue time) const
 {
     return getInternalCurve()->keyFrameIndex(time);
 }

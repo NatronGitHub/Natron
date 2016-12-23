@@ -29,7 +29,7 @@
 
 #include "Global/Enums.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -73,7 +73,7 @@ double integrate(double tcur, const double vcur, //start control point
                  const double vcurDerivRight, //being the derivative dv/dt at tcur
                  const double vnextDerivLeft, //being the derivative dv/dt at tnext
                  double tnext, const double vnext, //end control point
-                 double time1, double time2,
+                 TimeValue time1, TimeValue time2,
                  KeyframeTypeEnum interp,
                  KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;
 
@@ -82,7 +82,7 @@ double integrate_clamp(double tcur, const double vcur, //start control point
                        const double vcurDerivRight, //being the derivative dv/dt at tcur
                        const double vnextDerivLeft, //being the derivative dv/dt at tnext
                        double tnext, const double vnext, //end control point
-                       double time1, double time2,
+                       TimeValue time1, TimeValue time2,
                        double vmin, double vmax,
                        KeyframeTypeEnum interp,
                        KeyframeTypeEnum interpNext) WARN_UNUSED_RETURN;

@@ -149,17 +149,17 @@ public:
     KnobChoicePtr getMotionModelKnob() const;
     KnobBoolPtr getEnabledKnob() const;
 
-    int getReferenceFrame(double time, int frameStep) const;
+    int getReferenceFrame(TimeValue time, int frameStep) const;
 
     void getCenterKeyframes(std::set<double>* keyframes) const;
 
-    bool isEnabled(double time) const;
+    bool isEnabled(TimeValue time) const;
 
-    void setEnabledAtTime(double time, bool enabled);
+    void setEnabledAtTime(TimeValue time, bool enabled);
 
     AnimationLevelEnum getEnabledNessAnimationLevel() const;
 
-    void setEnabledFromGui(double time, bool enabled);
+    void setEnabledFromGui(TimeValue time, bool enabled);
 
     void setMotionModelFromGui(int index);
 
@@ -169,18 +169,18 @@ public:
 
     void resetTrack();
 
-    void setKeyFrameOnCenterAndPatternAtTime(double time);
+    void setKeyFrameOnCenterAndPatternAtTime(TimeValue time);
     /*
        Controls animation of the center & offset not the pattern
      */
     void clearAnimation();
-    void clearAnimationBeforeTime(double time);
-    void clearAnimationAfterTime(double time);
+    void clearAnimationBeforeTime(TimeValue time);
+    void clearAnimationAfterTime(TimeValue time);
 
 
-    std::pair<ImagePtr, RectI> getMarkerImage(double time, const RectI& roi) const;
+    std::pair<ImagePtr, RectI> getMarkerImage(TimeValue time, const RectI& roi) const;
 
-    RectI getMarkerImageRoI(double time) const;
+    RectI getMarkerImageRoI(TimeValue time) const;
 
     void notifyTrackingStarted();
     void notifyTrackingEnded();

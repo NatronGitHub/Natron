@@ -136,7 +136,7 @@ RotoShapeRenderNode::initializeKnobs()
 }
 
 void
-RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
+RotoShapeRenderNode::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
 {
     RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
     assert(item);
@@ -192,7 +192,7 @@ RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
     return eStatusOK;
 }
 
-static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx view, RectD* rod)
+static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, ViewIdx view, RectD* rod)
 {
     // Account for motion-blur
     RangeD range;
@@ -219,7 +219,7 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx
 
 
 StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
    
 
@@ -237,7 +237,7 @@ RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scal
 }
 
 bool
-RotoShapeRenderNode::isIdentity(double time,
+RotoShapeRenderNode::isIdentity(TimeValue time,
                 const RenderScale & scale,
                 const RectI & roi,
                 ViewIdx view,

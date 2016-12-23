@@ -1808,12 +1808,6 @@ AppInstance::onBackgroundRenderProcessFinished()
     }
 }
 
-void
-AppInstance::getFrameRange(double* first,
-                           double* last) const
-{
-    return _imp->_currentProject->getFrameRange(first, last);
-}
 
 void
 AppInstance::clearOpenFXPluginsCaches()

@@ -55,7 +55,7 @@ typedef RenderStatsPtr RenderStatsPtr;
 struct BufferedFrame
 {
     ViewIdx view;
-    double time;
+    TimeValue time;
     RenderStatsPtr stats;
     BufferableObjectPtr frame;
 
@@ -222,19 +222,19 @@ public:
      * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames
      * use the other version of this function.
      **/
-    void appendToBuffer(double time,
+    void appendToBuffer(TimeValue time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,
                         const BufferableObjectPtr& frame);
     
-    void appendToBuffer(double time,
+    void appendToBuffer(TimeValue time,
                         ViewIdx view,
                         const RenderStatsPtr& stats,
                         const BufferableObjectList& frames);
 
 private:
 
-    void appendToBuffer_internal(double time,
+    void appendToBuffer_internal(TimeValue time,
                                  ViewIdx view,
                                  const RenderStatsPtr& stats,
                                  const BufferableObjectPtr& frame,

@@ -1536,7 +1536,7 @@ Project::load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj,
 bool
 Project::onKnobValueChanged(const KnobIPtr& knob,
                             ValueChangedReasonEnum reason,
-                            double /*time*/,
+                            TimeValue /*time*/,
                             ViewSetSpec /*view*/)
 {
     if (reason == eValueChangedReasonRestoreDefault) {

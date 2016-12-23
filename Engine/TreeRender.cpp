@@ -70,7 +70,7 @@ struct TreeRenderPrivate
     NodePtr treeRoot;
 
     // the time to render
-    double time;
+    TimeValue time;
 
     // the view to render
     ViewIdx view;

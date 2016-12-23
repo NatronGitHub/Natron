@@ -116,7 +116,7 @@ public:
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash)  OVERRIDE FINAL;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash)  OVERRIDE FINAL;
 
 private:
 
@@ -128,11 +128,11 @@ private:
 
     virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
 
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
-    virtual bool isIdentity(double time,
+    virtual bool isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,

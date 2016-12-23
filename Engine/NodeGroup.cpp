@@ -376,7 +376,7 @@ NodeCollection::refreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    double time = appInst->getTimeLine()->currentFrame();
+    TimeValue time = appInst->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -400,7 +400,7 @@ NodeCollection::forceRefreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    double time = appInst->getTimeLine()->currentFrame();
+    TimeValue time = appInst->getTimeLine()->currentFrame();
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {

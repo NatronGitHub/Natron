@@ -180,10 +180,10 @@ KeyFrame::getValue() const
     return _value;
 }
 
-double
+TimeValue
 KeyFrame::getTime() const
 {
-    return _time;
+    return TimeValue(_time);
 }
 
 double
@@ -316,7 +316,7 @@ Curve::cloneAndCheckIfChanged(const Curve& other, double offset, const RangeD* r
     KeyFrameSet::iterator oit = tmpSet.begin();
     _imp->keyFrames.clear();
     for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
-        double time = it->getTime();
+        TimeValue time = it->getTime();
         if ( range && ( (time < range->min) || (time > range->max) ) ) {
             // We ignore a keyframe, then consider the curve has changed
             hasChanged = true;
@@ -351,7 +351,7 @@ Curve::clone(const Curve & other,
 
     _imp->keyFrames.clear();
     for (KeyFrameSet::iterator it = otherKeys.begin(); it != otherKeys.end(); ++it) {
-        double time = it->getTime();
+        TimeValue time = it->getTime();
         if ( copyRange && ( (time < range->min) || (time > range->max) ) ) {
             continue;
         }
@@ -576,7 +576,7 @@ Curve::removeKeyFrameWithIndex(int index)
 }
 
 void
-Curve::removeKeyFrameWithTime(double time)
+Curve::removeKeyFrameWithTime(TimeValue time)
 {
     QMutexLocker l(&_imp->_lock);
     KeyFrameSet::iterator it = find(time, _imp->keyFrames.end());
@@ -589,7 +589,7 @@ Curve::removeKeyFrameWithTime(double time)
 }
 
 void
-Curve::removeKeyFramesBeforeTime(double time,
+Curve::removeKeyFramesBeforeTime(TimeValue time,
                                  std::list<double>* keyframeRemoved)
 {
     KeyFrameSet newSet;
@@ -612,7 +612,7 @@ Curve::removeKeyFramesBeforeTime(double time,
 }
 
 void
-Curve::removeKeyFramesAfterTime(double time,
+Curve::removeKeyFramesAfterTime(TimeValue time,
                                 std::list<double>* keyframeRemoved)
 {
     KeyFrameSet newSet;
@@ -651,7 +651,7 @@ Curve::getKeyFrameWithIndex(int index,
 }
 
 bool
-Curve::getNearestKeyFrameWithTime(double time,
+Curve::getNearestKeyFrameWithTime(TimeValue time,
                                   KeyFrame* k) const
 {
     assert(k);
@@ -701,7 +701,7 @@ Curve::getNearestKeyFrameWithTime(double time,
 }
 
 bool
-Curve::getPreviousKeyframeTime(double time,
+Curve::getPreviousKeyframeTime(TimeValue time,
                                KeyFrame* k) const
 {
     assert(k);
@@ -743,7 +743,7 @@ Curve::getPreviousKeyframeTime(double time,
 }
 
 bool
-Curve::getNextKeyframeTime(double time,
+Curve::getNextKeyframeTime(TimeValue time,
                            KeyFrame* k) const
 {
     assert(k);
@@ -792,7 +792,7 @@ Curve::getNKeyFramesInRange(double first,
 }
 
 bool
-Curve::getKeyFrameWithTime(double time,
+Curve::getKeyFrameWithTime(TimeValue time,
                            KeyFrame* k) const
 {
     assert(k);
@@ -1239,7 +1239,7 @@ Curve::getKeyFrames_mt_safe() const
 
 KeyFrameSet::iterator
 Curve::setKeyFrameValueAndTimeNoUpdate(double value,
-                                       double time,
+                                       TimeValue time,
                                        KeyFrameSet::iterator k)
 {
     // PRIVATE - should not lock
@@ -1254,7 +1254,7 @@ Curve::setKeyFrameValueAndTimeNoUpdate(double value,
 }
 
 KeyFrame
-Curve::setKeyFrameValueAndTimeInternal(double time, double value, int index, int* newIndex)
+Curve::setKeyFrameValueAndTimeInternal(TimeValue time, double value, int index, int* newIndex)
 {
     KeyFrame ret;
     {
@@ -1282,7 +1282,7 @@ Curve::setKeyFrameValueAndTimeInternal(double time, double value, int index, int
 
 
 KeyFrame
-Curve::setKeyFrameValueAndTime(double time,
+Curve::setKeyFrameValueAndTime(TimeValue time,
                                double value,
                                int index,
                                int* newIndex)
@@ -1602,7 +1602,7 @@ Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp,
 }
 
 bool
-Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp, double time, KeyFrame* ret)
+Curve::setKeyFrameInterpolation(KeyframeTypeEnum interp, TimeValue time, KeyFrame* ret)
 {
     int index = keyFrameIndex(time);
     if (index == -1) {
@@ -1822,7 +1822,7 @@ Curve::evaluateCurveChanged(CurveChangedReasonEnum reason,
 KeyFrameSet::const_iterator
 Curve::findWithTime(const KeyFrameSet& keys,
                     KeyFrameSet::const_iterator fromIt,
-                    double time)
+                    TimeValue time)
 {
     if (fromIt == keys.end()) {
         fromIt = keys.begin();
@@ -1831,7 +1831,7 @@ Curve::findWithTime(const KeyFrameSet& keys,
 }
 
 KeyFrameSet::const_iterator
-Curve::find(double time, KeyFrameSet::const_iterator fromIt) const
+Curve::find(TimeValue time, KeyFrameSet::const_iterator fromIt) const
 {
     // PRIVATE - should not lock
     return findWithTime(_imp->keyFrames, fromIt, time);
@@ -1852,7 +1852,7 @@ Curve::atIndex(int index) const
 }
 
 int
-Curve::keyFrameIndex(double time) const
+Curve::keyFrameIndex(TimeValue time) const
 {
     QMutexLocker l(&_imp->_lock);
     int i = 0;
@@ -2096,7 +2096,7 @@ Curve::smooth(const RangeD* range)
     KeyFrameSet::iterator start = _imp->keyFrames.end();
 
     for (KeyFrameSet::iterator it = _imp->keyFrames.begin(); it != _imp->keyFrames.end(); ++it) {
-        double time = it->getTime();
+        TimeValue time = it->getTime();
         if ( range != 0 ) {
             if (time < range->min) {
                 continue;

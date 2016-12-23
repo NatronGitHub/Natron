@@ -108,14 +108,14 @@ protected:
     }
 
     virtual double denormalize(DimIdx /*dimension*/,
-                               double /*time*/,
+                               TimeValue /*time*/,
                                double value) const
     {
         return value;
     }
 
     virtual double normalize(DimIdx /*dimension*/,
-                             double /*time*/,
+                             TimeValue /*time*/,
                              double value) const
     {
         return value;
@@ -204,8 +204,8 @@ private:
     virtual bool isRectangleType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isSpatialType() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ValueIsNormalizedEnum getNormalizationPolicy(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double denormalize(DimIdx dimension, double time, double value) const OVERRIDE FINAL;
-    virtual double normalize(DimIdx dimension, double time, double value) const OVERRIDE FINAL;
+    virtual double denormalize(DimIdx dimension, TimeValue time, double value) const OVERRIDE FINAL;
+    virtual double normalize(DimIdx dimension, TimeValue time, double value) const OVERRIDE FINAL;
     virtual void connectKnobSignalSlots() OVERRIDE FINAL;
     virtual void disableSlider() OVERRIDE FINAL;
     virtual void getIncrements(std::vector<double>* increments) const OVERRIDE FINAL;

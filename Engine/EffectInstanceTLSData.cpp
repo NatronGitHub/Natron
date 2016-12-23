@@ -80,7 +80,7 @@ EffectTLSData::EffectTLSData(const EffectTLSData& other)
 }
 
 void
-EffectTLSData::pushActionArgs(double time, ViewIdx view, const RenderScale& scale
+EffectTLSData::pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                               , bool canSetValue
                               , bool canBeCalledRecursively
@@ -106,7 +106,7 @@ EffectTLSData::pushActionArgs(double time, ViewIdx view, const RenderScale& scal
 
 
 void
-EffectTLSData::pushRenderActionArgs(double time, ViewIdx view, RenderScale& scale,
+EffectTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
                           const RectI& renderWindowPixel,
                           const InputImagesMap& preRenderedInputImages,
                           const std::map<ImageComponents, PlaneToRender>& outputPlanes)

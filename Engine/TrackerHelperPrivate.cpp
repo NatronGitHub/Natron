@@ -714,7 +714,7 @@ PointWithErrorCompareLess(const PointWithError& lhs,
 
 void
 TrackerHelper::extractSortedPointsFromMarkers(double refTime,
-                                                      double time,
+                                                      TimeValue time,
                                                       const std::vector<TrackMarkerPtr>& markers,
                                                       int jitterPeriod,
                                                       bool jitterAdd,
@@ -732,7 +732,7 @@ TrackerHelper::extractSortedPointsFromMarkers(double refTime,
         KnobDoublePtr centerKnob = markers[i]->getCenterKnob();
         KnobDoublePtr errorKnob = markers[i]->getErrorKnob();
 
-        if (centerKnob->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(0), time) < 0) {
+        if (centerKnob->getKeyFrameIndex(ViewIdx::current(), DimIdx(0), time) < 0) {
             continue;
         }
         pointsWithErrors.resize(pointsWithErrors.size() + 1);
@@ -802,7 +802,7 @@ TrackerHelper::extractSortedPointsFromMarkers(double refTime,
 
 TransformData
 TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
-                                                      double time,
+                                                      TimeValue time,
                                                       int jitterPeriod,
                                                       bool jitterAdd,
                                                       bool robustModel,
@@ -864,7 +864,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
 
 CornerPinData
 TrackerHelper::computeCornerPinParamsFromTracksAtTime(double refTime,
-                                                      double time,
+                                                      TimeValue time,
                                                       int jitterPeriod,
                                                       bool jitterAdd,
                                                       bool robustModel,

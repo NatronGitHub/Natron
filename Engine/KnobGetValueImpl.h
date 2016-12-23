@@ -33,8 +33,8 @@ NATRON_NAMESPACE_ENTER
 
 template <typename T>
 bool
-Knob<T>::getValueFromExpression(double time,
-                                ViewGetSpec view,
+Knob<T>::getValueFromExpression(TimeValue time,
+                                ViewIdx view,
                                 DimIdx dimension,
                                 bool clamp,
                                 T* ret)
@@ -94,8 +94,8 @@ Knob<T>::getValueFromExpression(double time,
 
 template <>
 bool
-KnobStringBase::getValueFromExpression_pod(double time,
-                                           ViewGetSpec view,
+KnobStringBase::getValueFromExpression_pod(TimeValue time,
+                                           ViewIdx view,
                                            DimIdx dimension,
                                            bool /*clamp*/,
                                            double* ret)
@@ -134,8 +134,8 @@ KnobStringBase::getValueFromExpression_pod(double time,
 
 template <typename T>
 bool
-Knob<T>::getValueFromExpression_pod(double time,
-                                    ViewGetSpec view,
+Knob<T>::getValueFromExpression_pod(TimeValue time,
+                                    ViewIdx view,
                                     DimIdx dimension,
                                     bool clamp,
                                     double* ret)
@@ -233,7 +233,7 @@ Knob<T>::getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
 template <typename T>
 T
 Knob<T>::getValue(DimIdx dimension,
-                  ViewGetSpec view,
+                  ViewIdx view,
                   bool clamp)
 {
 
@@ -264,7 +264,7 @@ Knob<T>::getValue(DimIdx dimension,
     std::string hasExpr = getExpression(dimension);
     if ( !hasExpr.empty() ) {
         T ret;
-        double time = valuesCache ? tlsCurrentTime : getCurrentTime();
+        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime();
         if ( getValueFromExpression(time, view, dimension, clamp, &ret) ) {
             if (valuesCache) {
                 valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
@@ -275,7 +275,7 @@ Knob<T>::getValue(DimIdx dimension,
 
     // If animated, call getValueAtTime instead
     if ( isAnimated(dimension, view) ) {
-        double time = valuesCache ? tlsCurrentTime : getCurrentTime();
+        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime();
         return getValueAtTime(time, dimension, view, clamp);
     }
 
@@ -286,8 +286,8 @@ Knob<T>::getValue(DimIdx dimension,
 
 template <typename T>
 bool
-Knob<T>::getValueFromCurve(double time,
-                           ViewGetSpec view,
+Knob<T>::getValueFromCurve(TimeValue time,
+                           ViewIdx view,
                            DimIdx dimension,
                            bool clamp,
                            T* ret)
@@ -308,8 +308,8 @@ Knob<T>::getValueFromCurve(double time,
 
 template <>
 bool
-KnobStringBase::getValueFromCurve(double time,
-                                  ViewGetSpec view,
+KnobStringBase::getValueFromCurve(TimeValue time,
+                                  ViewIdx view,
                                   DimIdx dimension,
                                   bool /*clamp*/,
                                   std::string* ret)
@@ -341,8 +341,8 @@ KnobStringBase::getValueFromCurve(double time,
 
 template <>
 double
-KnobStringBase::getRawCurveValueAt(double time,
-                                   ViewGetSpec view,
+KnobStringBase::getRawCurveValueAt(TimeValue time,
+                                   ViewIdx view,
                                    DimIdx dimension)
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
@@ -358,8 +358,8 @@ KnobStringBase::getRawCurveValueAt(double time,
 
 template <typename T>
 double
-Knob<T>::getRawCurveValueAt(double time,
-                            ViewGetSpec view,
+Knob<T>::getRawCurveValueAt(TimeValue time,
+                            ViewIdx view,
                             DimIdx dimension)
 {
     CurvePtr curve  = getAnimationCurve(view, dimension);
@@ -384,8 +384,8 @@ Knob<T>::getRawCurveValueAt(double time,
 
 template <typename T>
 double
-Knob<T>::getValueAtWithExpression(double time,
-                                  ViewGetSpec view,
+Knob<T>::getValueAtWithExpression(TimeValue time,
+                                  ViewIdx view,
                                   DimIdx dimension)
 {
     bool exprValid = isExpressionValid(dimension, view, 0);
@@ -403,9 +403,9 @@ Knob<T>::getValueAtWithExpression(double time,
 
 template<typename T>
 T
-Knob<T>::getValueAtTime(double time,
+Knob<T>::getValueAtTime(TimeValue time,
                         DimIdx dimension,
-                        ViewGetSpec view,
+                        ViewIdx view,
                         bool clamp)
 {
 
@@ -457,8 +457,8 @@ Knob<T>::getValueAtTime(double time,
 
 template<typename T>
 double
-Knob<T>::getDerivativeAtTime(double time,
-                             ViewGetSpec view,
+Knob<T>::getDerivativeAtTime(TimeValue time,
+                             ViewIdx view,
                              DimIdx dimension)
 {
     if ( ( dimension > getNDimensions() ) || (dimension < 0) ) {
@@ -485,8 +485,8 @@ Knob<T>::getDerivativeAtTime(double time,
 
 template<>
 double
-KnobStringBase::getDerivativeAtTime(double /*time*/,
-                                    ViewGetSpec /*view*/,
+KnobStringBase::getDerivativeAtTime(TimeValue /*time*/,
+                                    ViewIdx /*view*/,
                                     DimIdx /*dimension*/)
 {
     throw std::invalid_argument("Knob<string>::getDerivativeAtTime() not available");
@@ -496,9 +496,9 @@ KnobStringBase::getDerivativeAtTime(double /*time*/,
 // \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
 template<typename T>
 double
-Knob<T>::getIntegrateFromTimeToTimeSimpson(double time1,
-                                           double time2,
-                                           ViewGetSpec view,
+Knob<T>::getIntegrateFromTimeToTimeSimpson(TimeValue time1,
+                                           TimeValue time2,
+                                           ViewIdx view,
                                            DimIdx dimension)
 {
     double fa = getValueAtTime(time1, dimension, view);
@@ -510,9 +510,9 @@ Knob<T>::getIntegrateFromTimeToTimeSimpson(double time1,
 
 template<typename T>
 double
-Knob<T>::getIntegrateFromTimeToTime(double time1,
-                                    double time2,
-                                    ViewGetSpec view,
+Knob<T>::getIntegrateFromTimeToTime(TimeValue time1,
+                                    TimeValue time2,
+                                    ViewIdx view,
                                     DimIdx dimension)
 {
     if ( ( dimension > getNDimensions() ) || (dimension < 0) ) {
@@ -564,7 +564,7 @@ template<>
 double
 KnobStringBase::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
                                                   double /*time2*/,
-                                                  ViewGetSpec /*view*/,
+                                                  ViewIdx /*view*/,
                                                   DimIdx /*dimension*/)
 {
     return 0; // dummy value
@@ -574,7 +574,7 @@ template<>
 double
 KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
                                            double /*time2*/,
-                                           ViewGetSpec /*view*/,
+                                           ViewIdx /*view*/,
                                            DimIdx /*dimension*/)
 {
     throw std::invalid_argument("Knob<string>::getIntegrateFromTimeToTime() not available");

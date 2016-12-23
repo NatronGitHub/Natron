@@ -715,7 +715,7 @@ public:
 
     void setFromPointsToInputRod();
 
-    RectD getInputRoD(double time, ViewIdx view) const;
+    RectD getInputRoD(TimeValue time, ViewIdx view) const;
 
     void resetTransformCenter();
 
@@ -770,7 +770,7 @@ public:
     virtual bool isBruteForcePreTrackEnabled() const OVERRIDE FINAL;
     virtual bool isNormalizeIntensitiesEnabled() const OVERRIDE FINAL;
     virtual double getPreBlurSigma() const OVERRIDE FINAL;
-    virtual RectD getNormalizationRoD(double time, ViewIdx view) const OVERRIDE FINAL;
+    virtual RectD getNormalizationRoD(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
     ////////////////////
 
     void averageSelectedTracks();
@@ -938,7 +938,7 @@ public:
     bool nudgeSelectedTracks(int x, int y);
 
 
-    void transformPattern(double time, TrackerMouseStateEnum state, const Point& delta);
+    void transformPattern(TimeValue time, TrackerMouseStateEnum state, const Point& delta);
 
     void refreshSelectedMarkerTexture();
 
@@ -982,7 +982,7 @@ public:
                        double xWidget,
                        double yWidget,
                        double toleranceWidget,
-                       double time);
+                       TimeValue time);
 
     bool isNearbyPoint(const QPointF& p,
                        double xWidget,

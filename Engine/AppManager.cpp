@@ -2557,7 +2557,6 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSetSpec>("ViewSetSpec");
-    qRegisterMetaType<ViewGetSpec>("ViewGetSpec");
     qRegisterMetaType<NodePtr >("NodePtr");
     qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");

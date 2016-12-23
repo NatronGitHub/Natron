@@ -817,9 +817,19 @@ Cache::get(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr* returnValue, Cach
         // Check for a matching entry
         CacheIterator foundEntry = bucket.container(hash);
         if (foundEntry != bucket.container.end()) {
-            // Ok found one, return it
-            *returnValue = getValueFromIterator(foundEntry);
-            return true;
+
+            CacheEntryBasePtr ret = getValueFromIterator(foundEntry);
+            // Ok found one
+            // Check if the key is really equal, not just the hash
+            if (key->equals(*ret->getKey())) {
+                *returnValue = ret;
+                return true;
+            }
+
+            // If the key was not equal this may be because 2 hash computations returned the same results.
+            // Erase the current entry
+            bucket.container.erase(foundEntry);
+            foundEntry = bucket.container.end();
         }
 
         // Not found. Since we have the lock, all other threads that want to check for the same entry
@@ -1339,6 +1349,51 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
 
 
 } // fromSerialization
+
+
+
+struct CacheFetcherPrivate
+{
+    CacheEntryLockerPtr entryLocker;
+    CacheEntryBasePtr entry;
+
+    CacheFetcherPrivate()
+    : entryLocker()
+    {
+
+    }
+};
+
+CacheFetcher::CacheFetcher(const CacheEntryKeyBasePtr& key)
+: _imp(new CacheFetcherPrivate())
+{
+    CachePtr cache = appPTR->getCache();
+    bool cached = cache->get(key, &_imp->entry, &_imp->entryLocker);
+    (void)cached;
+}
+
+CacheEntryBasePtr
+CacheFetcher::isCached() const
+{
+    return _imp->entry;
+}
+
+void
+CacheFetcher::setEntry(const CacheEntryBasePtr& entry)
+{
+    // The entry should only be computed if isCached retured NULL.
+    assert(!_imp->entry && _imp->entryLocker);
+    _imp->entry = entry;
+}
+
+CacheFetcher::~CacheFetcher()
+{
+    // If we created the item, push it to the cache.
+    if (_imp->entryLocker && _imp->entry) {
+        CachePtr cache = appPTR->getCache();
+        cache->insert(_imp->entry, _imp->entryLocker);
+    }
+}
 
 
 NATRON_NAMESPACE_EXIT;

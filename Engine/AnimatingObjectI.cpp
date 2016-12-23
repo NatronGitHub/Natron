@@ -83,34 +83,13 @@ AnimatingObjectI::getViewsList() const
 }
 
 ViewIdx
-AnimatingObjectI::getViewIdxFromGetSpec(ViewGetSpec view) const
+AnimatingObjectI::getViewIdxFromGetSpec(ViewIdx view) const
 {
-    if (!view.isCurrent()) {
 
-        // Find the view. If it is not in the split views, fallback on the main view.
-        QMutexLocker k(&_imp->viewsMutex);
-        return _imp->findMatchingView(ViewIdx(view.value()));
+    // Find the view. If it is not in the split views, fallback on the main view.
+    QMutexLocker k(&_imp->viewsMutex);
+    return _imp->findMatchingView(view);
 
-    } else {
-
-
-        {
-            QMutexLocker k(&_imp->viewsMutex);
-            if (_imp->views.size() <= 1) {
-                // Only 1 view, return the main-view
-                // Doing it early avoids calling getCurrentView() which
-                // may be expensive if it has to read thread local storage.
-                return ViewIdx(0);
-            }
-        }
-
-        ViewIdx curView = getCurrentView();
-
-        {
-            QMutexLocker k(&_imp->viewsMutex);
-            return _imp->findMatchingView(curView);
-        }
-    }
 } // getViewIdxFromGetSpec
 
 bool
@@ -171,7 +150,7 @@ AnimatingObjectI::unSplitAllViews()
 
 
 ValueChangedReturnCodeEnum
-AnimatingObjectI::setIntValueAtTime(double /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+AnimatingObjectI::setIntValueAtTime(TimeValue /*time*/, int /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
         throw std::invalid_argument("Invalid call to setIntValueAtTime on an object that does not support integer");
@@ -180,7 +159,7 @@ AnimatingObjectI::setIntValueAtTime(double /*time*/, int /*value*/, ViewSetSpec 
 }
 
 ValueChangedReturnCodeEnum
-AnimatingObjectI::setDoubleValueAtTime(double /*time*/, double /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+AnimatingObjectI::setDoubleValueAtTime(TimeValue /*time*/, double /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
         throw std::invalid_argument("Invalid call to setDoubleValueAtTime on an object that does not support double");
@@ -189,7 +168,7 @@ AnimatingObjectI::setDoubleValueAtTime(double /*time*/, double /*value*/, ViewSe
 }
 
 ValueChangedReturnCodeEnum
-AnimatingObjectI::setBoolValueAtTime(double /*time*/, bool /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+AnimatingObjectI::setBoolValueAtTime(TimeValue /*time*/, bool /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
         throw std::invalid_argument("Invalid call to setBoolValueAtTime on an object that does not support bool");
@@ -198,7 +177,7 @@ AnimatingObjectI::setBoolValueAtTime(double /*time*/, bool /*value*/, ViewSetSpe
 }
 
 ValueChangedReturnCodeEnum
-AnimatingObjectI::setStringValueAtTime(double /*time*/, const std::string& /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
+AnimatingObjectI::setStringValueAtTime(TimeValue /*time*/, const std::string& /*value*/, ViewSetSpec /*view*/, DimSpec /*dimension*/, ValueChangedReasonEnum /*reason*/, KeyFrame* /*newKey*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeString) {
         throw std::invalid_argument("Invalid call to setStringValueAtTime on an object that does not support string");
@@ -240,7 +219,7 @@ AnimatingObjectI::setMultipleStringValueAtTime(const std::list<StringTimeValuePa
 }
 
 void
-AnimatingObjectI::setIntValueAtTimeAcrossDimensions(double /*time*/, const std::vector<int>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+AnimatingObjectI::setIntValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<int>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeInt) {
         throw std::invalid_argument("Invalid call to setIntValueAtTimeAcrossDimensions on an object that does not support integer");
@@ -248,7 +227,7 @@ AnimatingObjectI::setIntValueAtTimeAcrossDimensions(double /*time*/, const std::
 }
 
 void
-AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(double /*time*/, const std::vector<double>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<double>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeDouble) {
         throw std::invalid_argument("Invalid call to setDoubleValueAtTimeAcrossDimensions on an object that does not support double");
@@ -257,7 +236,7 @@ AnimatingObjectI::setDoubleValueAtTimeAcrossDimensions(double /*time*/, const st
 }
 
 void
-AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(double /*time*/, const std::vector<bool>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<bool>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeBool) {
         throw std::invalid_argument("Invalid call to setBoolValueAtTimeAcrossDimensions on an object that does not support boolean");
@@ -265,7 +244,7 @@ AnimatingObjectI::setBoolValueAtTimeAcrossDimensions(double /*time*/, const std:
 }
 
 void
-AnimatingObjectI::setStringValueAtTimeAcrossDimensions(double /*time*/, const std::vector<std::string>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
+AnimatingObjectI::setStringValueAtTimeAcrossDimensions(TimeValue /*time*/, const std::vector<std::string>& /*values*/, DimIdx /*dimensionStartIndex*/, ViewSetSpec /*view*/, ValueChangedReasonEnum /*reason*/, std::vector<ValueChangedReturnCodeEnum>* /*retCodes*/)
 {
     if (getKeyFrameDataType() != eKeyframeDataTypeString) {
         throw std::invalid_argument("Invalid call to setStringValueAtTimeAcrossDimensions on an object that does not support string");
@@ -308,7 +287,7 @@ AnimatingObjectI::setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStr
 
 
 void
-AnimatingObjectI::deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
+AnimatingObjectI::deleteValueAtTime(TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason)
 {
     std::list<double> times;
     times.push_back(time);
@@ -316,7 +295,7 @@ AnimatingObjectI::deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimen
 }
 
 bool
-AnimatingObjectI::moveValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, double dt, double dv, KeyFrame* newKey)
+AnimatingObjectI::moveValueAtTime(TimeValue time, ViewSetSpec view,  DimSpec dimension, double dt, double dv, KeyFrame* newKey)
 {
     std::list<double> times;
     times.push_back(time);
@@ -335,7 +314,7 @@ AnimatingObjectI::moveValuesAtTime(const std::list<double>& times, ViewSetSpec v
 }
 
 bool
-AnimatingObjectI::transformValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey)
+AnimatingObjectI::transformValueAtTime(TimeValue time, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey)
 {
     std::list<double> times;
     times.push_back(time);
@@ -355,7 +334,7 @@ AnimatingObjectI::transformValuesAtTime(const std::list<double>& times, ViewSetS
 
 
 void
-AnimatingObjectI::setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey)
+AnimatingObjectI::setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, KeyframeTypeEnum interpolation, KeyFrame* newKey)
 {
     std::list<double> times;
     times.push_back(time);

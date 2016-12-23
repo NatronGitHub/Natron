@@ -106,9 +106,9 @@ public Q_SLOTS:
     ///This gets called when the selection changes internally in the RotoContext
     void onSelectionChanged(int reason);
 
-    void onSelectedBezierKeyframeSet(double time);
+    void onSelectedBezierKeyframeSet(TimeValue time);
 
-    void onSelectedBezierKeyframeRemoved(double time);
+    void onSelectedBezierKeyframeRemoved(TimeValue time);
 
     void onSelectedBezierAnimationRemoved();
 

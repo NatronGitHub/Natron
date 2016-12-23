@@ -84,7 +84,7 @@ HashableObject::addHashListener(const HashableObjectPtr& parent)
 }
 
 bool
-HashableObject::findCachedHash(double time, ViewIdx view, U64 *hash) const
+HashableObject::findCachedHash(TimeValue time, ViewIdx view, U64 *hash) const
 {
     QMutexLocker k(&_imp->hashCacheMutex);;
     return findFrameViewHash(time, view, _imp->hashCache, hash);
@@ -92,7 +92,7 @@ HashableObject::findCachedHash(double time, ViewIdx view, U64 *hash) const
 
 
 void
-HashableObject::computeHash_noCache(double time, ViewIdx view, Hash64* hash)
+HashableObject::computeHash_noCache(TimeValue time, ViewIdx view, Hash64* hash)
 {
 
     // Call the virtual portion to let implementation add extra fields to the hash
@@ -101,7 +101,7 @@ HashableObject::computeHash_noCache(double time, ViewIdx view, Hash64* hash)
 
 
 void
-HashableObject::addHashToCache(double time, ViewIdx view, U64 hashValue)
+HashableObject::addHashToCache(TimeValue time, ViewIdx view, U64 hashValue)
 {
     assert(hashValue != 0);
     if (hashValue == 0) {
@@ -113,7 +113,7 @@ HashableObject::addHashToCache(double time, ViewIdx view, U64 hashValue)
 }
 
 U64
-HashableObject::computeHash(double time, ViewIdx view)
+HashableObject::computeHash(TimeValue time, ViewIdx view)
 {
     {
         // Find a hash in the cache..

@@ -117,7 +117,7 @@ public:
      * @brief Must return the size in bytes of the entry, so that the cache is aware
      * of the amount of memory taken by this entry.
      **/
-    virtual size_t getSize() const = 0;
+    virtual std::size_t getSize() const = 0;
 
     /**
      * @brief If this returns true, the cache will emit a cacheChanged() signal whenever an entry of this type is 

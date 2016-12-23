@@ -110,7 +110,7 @@ public:
 
     int textureIndex; // The texture index (for input A or B)
 
-    double time; // the frame
+    TimeValue time; // the frame
 
     ViewIdx view; // the view
 

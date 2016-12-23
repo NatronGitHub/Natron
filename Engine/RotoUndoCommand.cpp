@@ -62,7 +62,7 @@ MoveControlPointsUndoCommand::MoveControlPointsUndoCommand(const RotoPaintIntera
                                                            ,
                                                            double dx,
                                                            double dy,
-                                                           double time,
+                                                           TimeValue time,
                                                            ViewIdx view)
     : UndoCommand()
     , _firstRedoCalled(false)
@@ -233,7 +233,7 @@ TransformUndoCommand::TransformUndoCommand(const RotoPaintInteractPtr& roto,
                                            double ty,
                                            double sx,
                                            double sy,
-                                           double time,
+                                           TimeValue time,
                                            ViewIdx view)
     : UndoCommand()
     , _firstRedoCalled(false)
@@ -717,7 +717,7 @@ AddMultiStrokeUndoCommand::redo()
 MoveTangentUndoCommand::MoveTangentUndoCommand(const RotoPaintInteractPtr& roto,
                                                double dx,
                                                double dy,
-                                               double time,
+                                               TimeValue time,
                                                ViewIdx view,
                                                const BezierCPPtr & cp,
                                                bool left,
@@ -762,7 +762,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static void
 getDeltaForPoint(const BezierCP& p,
-                 const double time,
+                 const TimeValue time,
                  const Transform::Matrix3x3& transform,
                  const double dx,
                  const double dy,
@@ -804,7 +804,7 @@ getDeltaForPoint(const BezierCP& p,
 }
 
 static void
-dragTangent(double time,
+dragTangent(TimeValue time,
             ViewIdx view,
             BezierCP & cp,
             BezierCP & fp,
@@ -938,7 +938,7 @@ MoveFeatherBarUndoCommand::MoveFeatherBarUndoCommand(const RotoPaintInteractPtr&
                                                      double dx,
                                                      double dy,
                                                      const std::pair<BezierCPPtr, BezierCPPtr > & point,
-                                                     double time,
+                                                     TimeValue time,
                                                      ViewIdx view)
     : UndoCommand()
     , _roto(roto)
@@ -1216,7 +1216,7 @@ OpenCloseUndoCommand::redo()
 
 SmoothCuspUndoCommand::SmoothCuspUndoCommand(const RotoPaintInteractPtr& roto,
                                              const std::list<SmoothCuspCurveData> & data,
-                                             double time,
+                                             TimeValue time,
                                              ViewIdx view,
                                              bool cusp,
                                              const std::pair<double, double>& pixelScale)
@@ -1339,7 +1339,7 @@ MakeBezierUndoCommand::MakeBezierUndoCommand(const RotoPaintInteractPtr& roto,
                                              bool createPoint,
                                              double dx,
                                              double dy,
-                                             double time)
+                                             TimeValue time)
     : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
@@ -1490,7 +1490,7 @@ MakeEllipseUndoCommand::MakeEllipseUndoCommand(const RotoPaintInteractPtr& roto,
                                                double fromy,
                                                double tox,
                                                double toy,
-                                               double time)
+                                               TimeValue time)
     : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)
@@ -1655,7 +1655,7 @@ MakeRectangleUndoCommand::MakeRectangleUndoCommand(const RotoPaintInteractPtr& r
                                                    double fromy,
                                                    double tox,
                                                    double toy,
-                                                   double time)
+                                                   TimeValue time)
     : UndoCommand()
     , _firstRedoCalled(false)
     , _roto(roto)

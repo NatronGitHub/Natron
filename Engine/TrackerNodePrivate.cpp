@@ -700,7 +700,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
             KeyFrameTexIDs keysToRender = getKeysToRenderForMarker(currentTime, it->second);
 
             for (KeyFrameTexIDs::const_iterator it2 = keysToRender.begin(); it2 != keysToRender.end(); ++it2) {
-                double time = (double)it2->first;
+                TimeValue time = (double)it2->first;
                 Point offset, center, topLeft, topRight, btmRight, btmLeft;
 
                 center.x = centerKnob->getValueAtTime(time, DimIdx(0));
@@ -1029,7 +1029,7 @@ TrackerNodeInteract::isNearbyPoint(const KnobDoublePtr& knob,
                                    double xWidget,
                                    double yWidget,
                                    double toleranceWidget,
-                                   double time)
+                                   TimeValue time)
 {
     QPointF p;
     OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
@@ -1457,7 +1457,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
     if ( !markers.empty() ) {
         std::pair<double, double> pixelScale;
         _p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-        double time = _p->publicInterface->getCurrentTime();
+        TimeValue time = _p->publicInterface->getCurrentTime();
         bool createkey = createKeyOnMoveButton.lock()->getValue();
 
         int hasMovedMarker = false;
@@ -1499,7 +1499,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
 }
 
 void
-TrackerNodeInteract::transformPattern(double time,
+TrackerNodeInteract::transformPattern(TimeValue time,
                                       TrackerMouseStateEnum state,
                                       const Point& delta)
 {
@@ -1858,7 +1858,7 @@ struct CenterPointDisplayInfo
 typedef std::map<double, CenterPointDisplayInfo> CenterPointsMap;
 
 void
-TrackerNode::drawOverlay(double time,
+TrackerNode::drawOverlay(TimeValue time,
                          const RenderScale & /*renderScale*/,
                          ViewIdx /*view*/)
 {
@@ -2045,9 +2045,9 @@ TrackerNode::drawOverlay(double time,
                     name += tr("(disabled)").toStdString();
                 }
                 CenterPointsMap centerPoints;
-                CurvePtr xCurve = centerKnob->getAnimationCurve(ViewGetSpec::current(), DimIdx(0));
-                CurvePtr yCurve = centerKnob->getAnimationCurve(ViewGetSpec::current(), DimIdx(1));
-                CurvePtr errorCurve = errorKnob->getAnimationCurve(ViewGetSpec::current(), DimIdx(0));
+                CurvePtr xCurve = centerKnob->getAnimationCurve(ViewIdx::current(), DimIdx(0));
+                CurvePtr yCurve = centerKnob->getAnimationCurve(ViewIdx::current(), DimIdx(1));
+                CurvePtr errorCurve = errorKnob->getAnimationCurve(ViewIdx::current(), DimIdx(0));
 
                 {
                     KeyFrameSet xKeyframes = xCurve->getKeyFrames_mt_safe();
@@ -2424,7 +2424,7 @@ TrackerNode::drawOverlay(double time,
 } // drawOverlay
 
 bool
-TrackerNode::onOverlayPenDown(double time,
+TrackerNode::onOverlayPenDown(TimeValue time,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               const QPointF & viewportPos,
@@ -2672,7 +2672,7 @@ TrackerNode::onOverlayPenDown(double time,
 } // penDown
 
 bool
-TrackerNode::onOverlayPenMotion(double time,
+TrackerNode::onOverlayPenMotion(TimeValue time,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx view,
                                 const QPointF & viewportPos,
@@ -3395,7 +3395,7 @@ TrackerNode::onOverlayPenMotion(double time,
 } //penMotion
 
 bool
-TrackerNode::onOverlayPenDoubleClicked(double /*time*/,
+TrackerNode::onOverlayPenDoubleClicked(TimeValue /*time*/,
                                        const RenderScale & /*renderScale*/,
                                        ViewIdx /*view*/,
                                        const QPointF & /*viewportPos*/,
@@ -3405,7 +3405,7 @@ TrackerNode::onOverlayPenDoubleClicked(double /*time*/,
 }
 
 bool
-TrackerNode::onOverlayPenUp(double /*time*/,
+TrackerNode::onOverlayPenUp(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             const QPointF & /*viewportPos*/,
@@ -3429,7 +3429,7 @@ TrackerNode::onOverlayPenUp(double /*time*/,
 } // penUp
 
 bool
-TrackerNode::onOverlayKeyDown(double /*time*/,
+TrackerNode::onOverlayKeyDown(TimeValue /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key key,
@@ -3462,7 +3462,7 @@ TrackerNode::onOverlayKeyDown(double /*time*/,
 } // keydown
 
 bool
-TrackerNode::onOverlayKeyUp(double /*time*/,
+TrackerNode::onOverlayKeyUp(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/,
                             Key key,
@@ -3504,7 +3504,7 @@ TrackerNode::onOverlayKeyUp(double /*time*/,
 } // KeyUp
 
 bool
-TrackerNode::onOverlayKeyRepeat(double /*time*/,
+TrackerNode::onOverlayKeyRepeat(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
@@ -3514,7 +3514,7 @@ TrackerNode::onOverlayKeyRepeat(double /*time*/,
 } // keyrepeat
 
 bool
-TrackerNode::onOverlayFocusGained(double /*time*/,
+TrackerNode::onOverlayFocusGained(TimeValue /*time*/,
                                   const RenderScale & /*renderScale*/,
                                   ViewIdx /* view*/)
 {
@@ -3522,7 +3522,7 @@ TrackerNode::onOverlayFocusGained(double /*time*/,
 } // gainFocus
 
 bool
-TrackerNode::onOverlayFocusLost(double /*time*/,
+TrackerNode::onOverlayFocusLost(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/)
 {

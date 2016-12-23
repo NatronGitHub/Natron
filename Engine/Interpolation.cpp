@@ -578,8 +578,8 @@ Interpolation::integrate(double tcur,
                          const double vnextDerivLeft, //being the derivative dv/dt at tnext
                          double tnext,
                          const double vnext,               //end control point
-                         double time1,
-                         double time2,
+                         TimeValue time1,
+                         TimeValue time2,
                          KeyframeTypeEnum interp,
                          KeyframeTypeEnum interpNext)
 {
@@ -718,8 +718,8 @@ Interpolation::integrate_clamp(double tcur,
                                const double vnextDerivLeft, //being the derivative dv/dt at tnext
                                double tnext,
                                const double vnext,               //end control point
-                               double time1,
-                               double time2,
+                               TimeValue time1,
+                               TimeValue time2,
                                double vmin,
                                double vmax,
                                KeyframeTypeEnum interp,

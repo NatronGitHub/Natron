@@ -50,117 +50,6 @@ NATRON_NAMESPACE_ENTER;
 
 typedef std::list<PluginMemoryWPtr> PluginMemoryWPtrList;
 
-struct ActionKey
-{
-    double time;
-    ViewIdx view;
-    unsigned int mipMapLevel;
-};
-
-struct IdentityResults
-{
-    int inputIdentityNb;
-    double inputIdentityTime;
-    ViewIdx inputView;
-};
-
-struct TransformResults
-{
-    Transform::Matrix3x3 mat;
-    int inputToTransformNb;
-};
-
-struct CompareActionsCacheKeys
-{
-    bool operator() (const ActionKey & lhs,
-                     const ActionKey & rhs) const
-    {
-        if (lhs.time < rhs.time) {
-            return true;
-        } else if (lhs.time == rhs.time) {
-            if (lhs.mipMapLevel < rhs.mipMapLevel) {
-                return true;
-            } else if (lhs.mipMapLevel == rhs.mipMapLevel) {
-                if (lhs.view < rhs.view) {
-                    return true;
-                } else {
-                    return false;
-                }
-            } else {
-                return false;
-            }
-        } else {
-            return false;
-        }
-    }
-};
-
-typedef std::map<ActionKey, IdentityResults, CompareActionsCacheKeys> IdentityCacheMap;
-typedef std::map<ActionKey, RectD, CompareActionsCacheKeys> RoDCacheMap;
-typedef std::map<ActionKey, FramesNeededMap, CompareActionsCacheKeys> FramesNeededCacheMap;
-typedef std::map<ActionKey, TransformResults, CompareActionsCacheKeys> TransformCacheMap;
-
-/**
- * @brief This class stores all results of the following actions:
-   - getRegionOfDefinition (invalidated on hash change, mapped across time + scale)
-   - getTimeDomain (invalidated on hash change, only 1 value possible
-   - isIdentity (invalidated on hash change,mapped across time + scale)
- * The reason we store them is that the OFX Clip API can potentially call these actions recursively
- * but this is forbidden by the spec:
- * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id475585
- **/
-class ActionsCache
-{
-public:
-    ActionsCache(int maxAvailableHashes);
-
-    void clearAll();
-
-    void invalidateAll(U64 newHash);
-
-    bool getIdentityResult(U64 hash, double time, ViewIdx view, int* inputNbIdentity, ViewIdx *inputView, double* identityTime);
-
-    void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, ViewIdx inputView, double identityTime);
-
-    bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
-
-    void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
-
-    bool getTransformResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, Transform::Matrix3x3* transform, int *inputNbToTransform);
-
-    void setTransformResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const Transform::Matrix3x3& transform, int inputNbToTransform);
-
-    bool getFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, FramesNeededMap* framesNeeded);
-
-    void setFramesNeededResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const FramesNeededMap & framesNeeded);
-
-    bool getTimeDomainResult(U64 hash, double *first, double* last);
-
-    void setTimeDomainResult(U64 hash, double first, double last);
-
-private:
-    mutable QMutex _cacheMutex; //< protects everything in the cache
-    struct ActionsCacheInstance
-    {
-        U64 _hash;
-        OfxRangeD _timeDomain;
-        bool _timeDomainSet;
-        IdentityCacheMap _identityCache;
-        RoDCacheMap _rodCache;
-        FramesNeededCacheMap _framesNeededCache;
-        TransformCacheMap _transformCache;
-
-        ActionsCacheInstance();
-    };
-
-    //In  a list to track the LRU
-    std::list<ActionsCacheInstance> _instances;
-    std::size_t _maxInstances;
-    std::list<ActionsCacheInstance>::iterator createActionCacheInternal(U64 newHash);
-    ActionsCacheInstance & getOrCreateActionCache(U64 newHash);
-};
-
-
 class EffectInstance::Implementation
 {
     Q_DECLARE_TR_FUNCTIONS(EffectInstance)
@@ -176,51 +65,21 @@ public:
     }
 
     EffectInstance* _publicInterface; // can not be a smart ptr
+
     mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
     bool duringInteractAction; //< true when we're running inside an interact action
 
-    ///Current chuncks of memory held by the plug-in
+    // Current chuncks of memory held by the plug-in
     mutable QMutex pluginMemoryChunksMutex;
     PluginMemoryWPtrList pluginMemoryChunks;
 
-    ///Does this plug-in supports render scale ?
-    QMutex supportsRenderScaleMutex;
+    // Does this plug-in supports render scale ?
+    mutable QMutex supportsRenderScaleMutex;
     SupportsEnum supportsRenderScale;
 
-    /// Mt-Safe actions cache
-    boost::shared_ptr<ActionsCache> actionsCache;
-
-#if NATRON_ENABLE_TRIMAP
-    ///Store all images being rendered to avoid 2 threads rendering the same portion of an image
-    struct ImageBeingRendered
-    {
-        QWaitCondition cond;
-        QMutex lock;
-        int refCount;
-        bool renderFailed;
-
-        ImageBeingRendered()
-            : cond(), lock(), refCount(0), renderFailed(false)
-        {
-        }
-    };
-
-    QMutex imagesBeingRenderedMutex;
-    typedef boost::shared_ptr<ImageBeingRendered> IBRPtr;
-    typedef std::map<ImagePtr, IBRPtr > IBRMap;
-    IBRMap imagesBeingRendered;
-#endif
-
-    ///A cache for components available
-    mutable QMutex componentsAvailableMutex;
-    bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
-    EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
-    mutable QMutex metadatasMutex;
-    NodeMetadata metadatas;
-    bool runningClipPreferences; //only used on main thread
-
-    // set during interact actions on main-thread
+    // Set during interact actions. This is only read/written on the main-thread.
     OverlaySupport* overlaysViewport;
+
     mutable QMutex attachedContextsMutex;
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
@@ -230,25 +89,23 @@ public:
     // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
     // eRenderSafetyInstanceSafe or lower
     EffectInstancePtr mainInstance; // pointer to the main-instance if this instance is a clone
-    bool isDoingInstanceSafeRender; // true if this intance is rendering
+
+    // True if this intance is rendering. Only used if the plug-in is instance thread safe.
+    // Protected by renderClonesMutex
+    bool isDoingInstanceSafeRender;
+
+    // Protects renderClonesPool
     mutable QMutex renderClonesMutex;
+
+    // List of render clones if the main instance is not multi-thread safe
     std::list<EffectInstancePtr> renderClonesPool;
 
     void setDuringInteractAction(bool b);
 
-#if NATRON_ENABLE_TRIMAP
-    void markImageAsBeingRendered(const ImagePtr & img);
-
-    bool waitForImageBeingRenderedElsewhereAndUnmark(const RectI & roi, const ImagePtr & img);
-
-    void unmarkImageAsBeingRendered(const ImagePtr & img, bool renderFailed);
-#endif
-
-
     void
     determineRectsToRender(ImagePtr& isPlaneCached,
                            const ParallelRenderArgsPtr& frameArgs,
-                           double time,
+                           TimeValue time,
                            ViewIdx view,
                            RenderSafetyEnum safety,
                            const RenderScale& argsScale,
@@ -451,7 +308,7 @@ public:
         unsigned int mipMapLevel;
         unsigned int renderMappedMipMapLevel;
         RectD rod;
-        double time;
+        TimeValue time;
         ViewIdx view;
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
@@ -511,7 +368,7 @@ public:
                                                   const unsigned int mipMapLevel,
                                                   const unsigned int renderMappedMipMapLevel,
                                                   const RectD & rod,
-                                                  const double time,
+                                                  const TimeValue time,
                                                   const ViewIdx view,
                                                   const double par,
                                                   const bool byPassCache,
@@ -529,7 +386,7 @@ public:
                                                   const RectI & renderMappedRectToRender,
                                                   const RectI & downscaledRectToRender,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const double time,
+                                                  const TimeValue time,
                                                   const ViewIdx view,
                                                   const unsigned int mipMapLevel,
                                                   const TimeLapsePtr& timeRecorder,
@@ -549,7 +406,7 @@ public:
 
     void setupRenderArgs(const EffectTLSDataPtr& tls,
                          const OSGLContextPtr& glContext,
-                         const double time,
+                         const TimeValue time,
                          const ViewIdx view,
                          unsigned int mipMapLevel,
                          bool isSequentialRender,

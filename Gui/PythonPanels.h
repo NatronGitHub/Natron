@@ -85,7 +85,7 @@ private:
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view) OVERRIDE FINAL;
     boost::scoped_ptr<DialogParamHolderPrivate> _imp;
 };

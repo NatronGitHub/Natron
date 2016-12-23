@@ -1044,7 +1044,7 @@ OfxDoubleInstance::derive(OfxTime time,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    v = knob->getDerivativeAtTime( time, ViewGetSpec::current(), DimIdx(0) );
+    v = knob->getDerivativeAtTime( time, ViewIdx::current(), DimIdx(0) );
 
     return kOfxStatOK;
 }
@@ -1056,7 +1056,7 @@ OfxDoubleInstance::integrate(OfxTime time1,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    v = knob->getIntegrateFromTimeToTime( time1, time2, ViewGetSpec::current(), DimIdx(0) );
+    v = knob->getIntegrateFromTimeToTime( time1, time2, ViewIdx::current(), DimIdx(0) );
 
     return kOfxStatOK;
 }
@@ -1152,7 +1152,7 @@ OfxDoubleInstance::isAnimated() const
 {
     KnobDoublePtr knob = _knob.lock();
 
-    return knob->isAnimated( DimIdx(0), ViewGetSpec::current() );
+    return knob->isAnimated( DimIdx(0), ViewIdx::current() );
 }
 
 OfxStatus
@@ -1689,10 +1689,10 @@ OfxRGBAInstance::get(OfxTime time,
 {
     KnobColorPtr color = _knob.lock();
 
-    r = color->getValueAtTime( time, DimIdx(0), ViewGetSpec::current() );
-    g = color->getValueAtTime( time, DimIdx(1), ViewGetSpec::current() );
-    b = color->getValueAtTime( time, DimIdx(2), ViewGetSpec::current() );
-    a = color->getValueAtTime( time, DimIdx(3), ViewGetSpec::current() );
+    r = color->getValueAtTime( time, DimIdx(0), ViewIdx::current() );
+    g = color->getValueAtTime( time, DimIdx(1), ViewIdx::current() );
+    b = color->getValueAtTime( time, DimIdx(2), ViewIdx::current() );
+    a = color->getValueAtTime( time, DimIdx(3), ViewIdx::current() );
 
     return kOfxStatOK;
 }
@@ -1743,10 +1743,10 @@ OfxRGBAInstance::derive(OfxTime time,
 {
     KnobColorPtr color = _knob.lock();
 
-    r = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(0));
-    g = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(1));
-    b = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(2));
-    a = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(3));
+    r = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(0));
+    g = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(1));
+    b = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(2));
+    a = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(3));
 
     return kOfxStatOK;
 }
@@ -1761,10 +1761,10 @@ OfxRGBAInstance::integrate(OfxTime time1,
 {
     KnobColorPtr color = _knob.lock();
 
-    r = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(0));
-    g = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(1));
-    b = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(2));
-    a = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(3));
+    r = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(0));
+    g = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(1));
+    b = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(2));
+    a = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(3));
 
     return kOfxStatOK;
 }
@@ -1867,7 +1867,7 @@ OfxRGBAInstance::isAnimated(int dimension) const
 {
     KnobColorPtr color = _knob.lock();
 
-    return color->isAnimated( DimIdx(dimension), ViewGetSpec::current() );
+    return color->isAnimated( DimIdx(dimension), ViewIdx::current() );
 }
 
 bool
@@ -1875,7 +1875,7 @@ OfxRGBAInstance::isAnimated() const
 {
     KnobColorPtr color = _knob.lock();
 
-    return color->isAnimated( DimIdx(0), ViewGetSpec::current() ) || color->isAnimated( DimIdx(1), ViewGetSpec::current() ) || color->isAnimated( DimIdx(2), ViewGetSpec::current() ) || color->isAnimated( DimIdx(3), ViewGetSpec::current() );
+    return color->isAnimated( DimIdx(0), ViewIdx::current() ) || color->isAnimated( DimIdx(1), ViewIdx::current() ) || color->isAnimated( DimIdx(2), ViewIdx::current() ) || color->isAnimated( DimIdx(3), ViewIdx::current() );
 }
 
 OfxStatus
@@ -2023,9 +2023,9 @@ OfxRGBInstance::derive(OfxTime time,
 {
     KnobColorPtr color = _knob.lock();
 
-    r = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(0));
-    g = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(1));
-    b = color->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(2));
+    r = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(0));
+    g = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(1));
+    b = color->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(2));
 
     return kOfxStatOK;
 }
@@ -2039,9 +2039,9 @@ OfxRGBInstance::integrate(OfxTime time1,
 {
     KnobColorPtr color = _knob.lock();
 
-    r = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(0));
-    g = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(1));
-    b = color->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(2));
+    r = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(0));
+    g = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(1));
+    b = color->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(2));
 
     return kOfxStatOK;
 }
@@ -2143,7 +2143,7 @@ OfxRGBInstance::isAnimated(int dimension) const
 {
     KnobColorPtr color = _knob.lock();
 
-    return color->isAnimated( DimIdx(dimension), ViewGetSpec::current() );
+    return color->isAnimated( DimIdx(dimension), ViewIdx::current() );
 }
 
 bool
@@ -2151,7 +2151,7 @@ OfxRGBInstance::isAnimated() const
 {
     KnobColorPtr color = _knob.lock();
 
-    return color->isAnimated( DimIdx(0), ViewGetSpec::current() ) || color->isAnimated( DimIdx(1), ViewGetSpec::current() ) || color->isAnimated( DimIdx(2), ViewGetSpec::current() );
+    return color->isAnimated( DimIdx(0), ViewIdx::current() ) || color->isAnimated( DimIdx(1), ViewIdx::current() ) || color->isAnimated( DimIdx(2), ViewIdx::current() );
 }
 
 OfxStatus
@@ -2359,8 +2359,8 @@ OfxDouble2DInstance::derive(OfxTime time,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    x1 = knob->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(_startIndex));
-    x2 = knob->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(1 + _startIndex));
+    x1 = knob->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(_startIndex));
+    x2 = knob->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(1 + _startIndex));
 
     return kOfxStatOK;
 }
@@ -2373,8 +2373,8 @@ OfxDouble2DInstance::integrate(OfxTime time1,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(_startIndex));
-    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(1 + _startIndex));
+    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(_startIndex));
+    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(1 + _startIndex));
 
     return kOfxStatOK;
 }
@@ -2486,7 +2486,7 @@ OfxDouble2DInstance::isAnimated() const
 {
     KnobDoublePtr dblKnob = _knob.lock();
 
-    return dblKnob->isAnimated( DimIdx(0 + _startIndex), ViewGetSpec::current() ) || dblKnob->isAnimated( DimIdx(1 + _startIndex), ViewGetSpec::current() );
+    return dblKnob->isAnimated( DimIdx(0 + _startIndex), ViewIdx::current() ) || dblKnob->isAnimated( DimIdx(1 + _startIndex), ViewIdx::current() );
 }
 
 OfxStatus
@@ -2917,9 +2917,9 @@ OfxDouble3DInstance::derive(OfxTime time,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    x1 = knob->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(0 + _startIndex));
-    x2 = knob->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(1 + _startIndex));
-    x3 = knob->getDerivativeAtTime(time, ViewGetSpec::current(), DimIdx(2 + _startIndex));
+    x1 = knob->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(0 + _startIndex));
+    x2 = knob->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(1 + _startIndex));
+    x3 = knob->getDerivativeAtTime(time, ViewIdx::current(), DimIdx(2 + _startIndex));
 
     return kOfxStatOK;
 }
@@ -2933,9 +2933,9 @@ OfxDouble3DInstance::integrate(OfxTime time1,
 {
     KnobDoublePtr knob = _knob.lock();
 
-    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(0 + _startIndex));
-    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(1 + _startIndex));
-    x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewGetSpec::current(), DimIdx(2 + _startIndex));
+    x1 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(0 + _startIndex));
+    x2 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(1 + _startIndex));
+    x3 = knob->getIntegrateFromTimeToTime(time1, time2, ViewIdx::current(), DimIdx(2 + _startIndex));
 
     return kOfxStatOK;
 }
@@ -3048,7 +3048,7 @@ OfxDouble3DInstance::isAnimated(int dimension) const
 {
     KnobDoublePtr knob = _knob.lock();
 
-    return knob->isAnimated( DimIdx(dimension), ViewGetSpec::current() );
+    return knob->isAnimated( DimIdx(dimension), ViewIdx::current() );
 }
 
 bool
@@ -3056,7 +3056,7 @@ OfxDouble3DInstance::isAnimated() const
 {
     KnobDoublePtr knob = _knob.lock();
 
-    return knob->isAnimated( DimIdx(0 + _startIndex), ViewGetSpec::current() ) || knob->isAnimated( DimIdx(1 + _startIndex), ViewGetSpec::current() ) || knob->isAnimated( DimIdx(2 + _startIndex), ViewGetSpec::current() );
+    return knob->isAnimated( DimIdx(0 + _startIndex), ViewIdx::current() ) || knob->isAnimated( DimIdx(1 + _startIndex), ViewIdx::current() ) || knob->isAnimated( DimIdx(2 + _startIndex), ViewIdx::current() );
 }
 
 OfxStatus
@@ -4448,7 +4448,7 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    StatusEnum stat = _knob.lock()->evaluateCurve(DimIdx(curveIndex), ViewGetSpec::current(), parametricPosition, returnValue);
+    StatusEnum stat = _knob.lock()->evaluateCurve(DimIdx(curveIndex), ViewIdx::current(), parametricPosition, returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4462,7 +4462,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    StatusEnum stat = _knob.lock()->getNControlPoints(DimIdx(curveIndex), ViewGetSpec::current(), returnValue);
+    StatusEnum stat = _knob.lock()->getNControlPoints(DimIdx(curveIndex), ViewIdx::current(), returnValue);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4478,7 +4478,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    StatusEnum stat = _knob.lock()->getNthControlPoint(DimIdx(curveIndex), ViewGetSpec::current(), nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->getNthControlPoint(DimIdx(curveIndex), ViewIdx::current(), nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4496,7 +4496,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current(), nthCtl, key, value);
+    StatusEnum stat = _knob.lock()->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewIdx::current(), nthCtl, key, value);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4550,7 +4550,7 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current(), nthCtl);
+    StatusEnum stat = _knob.lock()->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewIdx::current(), nthCtl);
 
     if (stat == eStatusOK) {
         return kOfxStatOK;
@@ -4562,7 +4562,7 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
-    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewGetSpec::current());
+    StatusEnum stat = _knob.lock()->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), ViewIdx::current());
 
     if (stat == eStatusOK) {
         return kOfxStatOK;

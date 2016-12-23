@@ -1411,7 +1411,7 @@ DockablePanel::setKeyOnAllParameters()
     const std::vector<KnobAnimPtr>& knobs = nodeAnim->getKnobs();
 
     AnimItemDimViewKeyFramesMap keys;
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time = getGui()->getApp()->getTimeLine()->currentFrame();
 
 
 

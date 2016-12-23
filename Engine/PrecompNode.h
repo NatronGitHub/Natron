@@ -108,7 +108,7 @@ private:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
+                             TimeValue time) OVERRIDE FINAL;
     boost::scoped_ptr<PrecompNodePrivate> _imp;
 };
 

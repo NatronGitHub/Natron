@@ -640,7 +640,7 @@ RotoDrawableItem::activateNodes()
 bool
 RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
                         ValueChangedReasonEnum reason,
-                        double time,
+                        TimeValue time,
                         ViewSetSpec view)
 {
     KnobItemsTablePtr model = getModel();
@@ -847,7 +847,7 @@ RotoDrawableItem::refreshNodesConnections()
 
             // If there's a time-offset, use it prior to the effect.
             KnobChoicePtr timeOffsetModeKnob = _imp->timeOffsetMode.lock();
-            double timeOffsetMode_i = 0;
+            TimeValue timeOffsetMode_i = 0;
             if (timeOffsetModeKnob) {
                 timeOffsetMode_i = timeOffsetModeKnob->getValue();
             }
@@ -1028,7 +1028,7 @@ RotoDrawableItem::resetNodesThreadSafety()
 
 
 bool
-RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
+RotoDrawableItem::isActivated(TimeValue time, ViewIdx view) const
 {
     if ( !isGloballyActivatedRecursive() ) {
         return false;
@@ -1062,7 +1062,7 @@ RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
 }
 
 std::vector<RangeD>
-RotoDrawableItem::getActivatedRanges(ViewGetSpec view) const
+RotoDrawableItem::getActivatedRanges(ViewIdx view) const
 {
     std::vector<RangeD> ret;
     RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime.lock()->getValue();
@@ -1239,7 +1239,7 @@ RotoDrawableItem::getBrushVisiblePortionKnob() const
 
 
 void
-RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
+RotoDrawableItem::setKeyframeOnAllTransformParameters(TimeValue time)
 {
     KnobDoublePtr translate = _imp->translate.lock();
     if (translate) {
@@ -1270,8 +1270,8 @@ RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 
 
 void
-RotoDrawableItem::getTransformAtTime(double time,
-                                     ViewGetSpec view,
+RotoDrawableItem::getTransformAtTime(TimeValue time,
+                                     ViewIdx view,
                                      Transform::Matrix3x3* matrix) const
 {
     KnobDoublePtr translate = _imp->translate.lock();
@@ -1312,7 +1312,7 @@ RotoDrawableItem::getTransformAtTime(double time,
 
 void
 RotoDrawableItem::setExtraMatrix(bool setKeyframe,
-                                 double time,
+                                 TimeValue time,
                                  ViewSetSpec view,
                                  const Transform::Matrix3x3& mat)
 {
@@ -1342,7 +1342,7 @@ RotoDrawableItem::resetTransformCenter()
     if (!centerKnob) {
         return;
     }
-    double time = getApp()->getTimeLine()->currentFrame();
+    TimeValue time = getApp()->getTimeLine()->currentFrame();
     RectD bbox =  getBoundingBox(time, ViewIdx(0));
 
 
@@ -1443,8 +1443,8 @@ RotoDrawableItem::removeCachedDrawable(const TreeRenderPtr& render) const
 
 
 void
-RotoDrawableItem::getMotionBlurSettings(const double time,
-                                        ViewGetSpec view,
+RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
+                                        ViewIdx view,
                                         RangeD* range,
                                         int* divisions) const
 {
@@ -1516,7 +1516,7 @@ RotoDrawableItem::getMotionBlurSettings(const double time,
 }
 
 RectD
-CompNodeItem::getBoundingBox(double /*time*/, ViewGetSpec /*view*/) const
+CompNodeItem::getBoundingBox(TimeValue /*time*/, ViewIdx /*view*/) const
 {
     // Not useful since we don't render any mask
     return RectD();

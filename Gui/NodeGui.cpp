@@ -1233,7 +1233,7 @@ NodeGui::markInputNull(Edge* e)
 }
 
 void
-NodeGui::updatePreviewImage(double time)
+NodeGui::updatePreviewImage(TimeValue time)
 {
     NodePtr node = getNode();
 
@@ -1252,7 +1252,7 @@ NodeGui::updatePreviewImage(double time)
 }
 
 void
-NodeGui::forceComputePreview(double time)
+NodeGui::forceComputePreview(TimeValue time)
 {
     NodePtr node = getNode();
 
@@ -3110,7 +3110,7 @@ NodeGui::setCurrentViewportForHostOverlays(OverlaySupport* viewPort)
 }
 
 void
-NodeGui::drawHostOverlay(double time,
+NodeGui::drawHostOverlay(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view)
 {
@@ -3121,7 +3121,7 @@ NodeGui::drawHostOverlay(double time,
 }
 
 bool
-NodeGui::onOverlayPenDownDefault(double time,
+NodeGui::onOverlayPenDownDefault(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view,
                                  const QPointF & viewportPos,
@@ -3136,7 +3136,7 @@ NodeGui::onOverlayPenDownDefault(double time,
 }
 
 bool
-NodeGui::onOverlayPenDoubleClickedDefault(double time,
+NodeGui::onOverlayPenDoubleClickedDefault(TimeValue time,
                                           const RenderScale& renderScale,
                                           ViewIdx view,
                                           const QPointF & viewportPos,
@@ -3150,7 +3150,7 @@ NodeGui::onOverlayPenDoubleClickedDefault(double time,
 }
 
 bool
-NodeGui::onOverlayPenMotionDefault(double time,
+NodeGui::onOverlayPenMotionDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view,
                                    const QPointF & viewportPos,
@@ -3165,7 +3165,7 @@ NodeGui::onOverlayPenMotionDefault(double time,
 }
 
 bool
-NodeGui::onOverlayPenUpDefault(double time,
+NodeGui::onOverlayPenUpDefault(TimeValue time,
                                const RenderScale& renderScale,
                                ViewIdx view,
                                const QPointF & viewportPos,
@@ -3180,7 +3180,7 @@ NodeGui::onOverlayPenUpDefault(double time,
 }
 
 bool
-NodeGui::onOverlayKeyDownDefault(double time,
+NodeGui::onOverlayKeyDownDefault(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view,
                                  Key key,
@@ -3196,7 +3196,7 @@ NodeGui::onOverlayKeyDownDefault(double time,
 }
 
 bool
-NodeGui::onOverlayKeyUpDefault(double time,
+NodeGui::onOverlayKeyUpDefault(TimeValue time,
                                const RenderScale& renderScale,
                                ViewIdx view,
                                Key key,
@@ -3212,7 +3212,7 @@ NodeGui::onOverlayKeyUpDefault(double time,
 }
 
 bool
-NodeGui::onOverlayKeyRepeatDefault(double time,
+NodeGui::onOverlayKeyRepeatDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view,
                                    Key key,
@@ -3228,7 +3228,7 @@ NodeGui::onOverlayKeyRepeatDefault(double time,
 }
 
 bool
-NodeGui::onOverlayFocusGainedDefault(double time,
+NodeGui::onOverlayFocusGainedDefault(TimeValue time,
                                      const RenderScale& renderScale,
                                      ViewIdx view)
 {
@@ -3242,7 +3242,7 @@ NodeGui::onOverlayFocusGainedDefault(double time,
 }
 
 bool
-NodeGui::onOverlayFocusLostDefault(double time,
+NodeGui::onOverlayFocusLostDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view)
 {
@@ -3364,8 +3364,8 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     if (enabled) {
         RotoDrawableItemPtr attachItem = node->getAttachedRotoItem();
-        double time = node->getEffectInstance()->getCurrentTime();
-        if (attachItem && !attachItem->isActivated(time, ViewGetSpec(0))) {
+        TimeValue time = node->getEffectInstance()->getCurrentTime();
+        if (attachItem && !attachItem->isActivated(time, ViewIdx(0))) {
             enabled = false;
         }
     }

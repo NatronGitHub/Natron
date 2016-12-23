@@ -341,7 +341,7 @@ TrackMarker::getEnabledKnob() const
 void
 TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 {
-    CurvePtr curve = _imp->center.lock()->getAnimationCurve(ViewGetSpec(0), DimIdx(0));
+    CurvePtr curve = _imp->center.lock()->getAnimationCurve(ViewIdx(0), DimIdx(0));
 
     assert(curve);
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
@@ -351,13 +351,13 @@ TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 }
 
 bool
-TrackMarker::isEnabled(double time) const
+TrackMarker::isEnabled(TimeValue time) const
 {
-    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewGetSpec::current(), true);
+    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewIdx::current(), true);
 }
 
 void
-TrackMarker::setEnabledAtTime(double time,
+TrackMarker::setEnabledAtTime(TimeValue time,
                               bool enabled)
 {
     KnobBoolPtr knob = _imp->enabled.lock();
@@ -375,13 +375,13 @@ TrackMarker::getEnabledNessAnimationLevel() const
 }
 
 int
-TrackMarker::getReferenceFrame(double time,
+TrackMarker::getReferenceFrame(TimeValue time,
                                int frameStep) const
 {
     QMutexLocker k(&_imp->trackMutex);
 
     std::set<double> userKeyframes;
-    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
+    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
 
     std::set<double>::iterator upper = userKeyframes.upper_bound(time);
 
@@ -461,7 +461,7 @@ deleteKnobAnimation(const std::set<double>& userKeyframes,
                     double currentTime)
 {
     for (int i = 0; i < knob->getNDimensions(); ++i) {
-        CurvePtr curve = knob->getAnimationCurve(ViewGetSpec(0), DimIdx(i));
+        CurvePtr curve = knob->getAnimationCurve(ViewIdx(0), DimIdx(i));
         assert(curve);
         KeyFrameSet keys = curve->getKeyFrames_mt_safe();
         std::list<double> toRemove;
@@ -509,7 +509,7 @@ TrackMarker::clearAnimation()
 {
     std::set<double> userKeyframes;
 
-    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
+    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -525,11 +525,11 @@ TrackMarker::clearAnimation()
 }
 
 void
-TrackMarker::clearAnimationBeforeTime(double time)
+TrackMarker::clearAnimationBeforeTime(TimeValue time)
 {
     std::set<double> userKeyframes;
 
-    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
+    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -545,11 +545,11 @@ TrackMarker::clearAnimationBeforeTime(double time)
 }
 
 void
-TrackMarker::clearAnimationAfterTime(double time)
+TrackMarker::clearAnimationAfterTime(TimeValue time)
 {
     std::set<double> userKeyframes;
 
-    getMasterKeyFrameTimes(ViewGetSpec(0), &userKeyframes);
+    getMasterKeyFrameTimes(ViewIdx(0), &userKeyframes);
 
     KnobIPtr offsetKnob = getOffsetKnob();
     assert(offsetKnob);
@@ -599,7 +599,7 @@ TrackMarker::resetTrack()
 
 
 void
-TrackMarker::setKeyFrameOnCenterAndPatternAtTime(double time)
+TrackMarker::setKeyFrameOnCenterAndPatternAtTime(TimeValue time)
 {
     KnobDoublePtr center = _imp->center.lock();
 
@@ -655,7 +655,7 @@ TrackMarker::notifyTrackingEnded()
 
 
 RectI
-TrackMarker::getMarkerImageRoI(double time) const
+TrackMarker::getMarkerImageRoI(TimeValue time) const
 {
     const unsigned int mipmapLevel = 0;
     Point center, offset;
@@ -689,7 +689,7 @@ TrackMarker::getMarkerImageRoI(double time) const
 }
 
 std::pair<ImagePtr, RectI>
-TrackMarker::getMarkerImage(double time,
+TrackMarker::getMarkerImage(TimeValue time,
                             const RectI& roi) const
 {
 
@@ -767,7 +767,7 @@ TrackMarkerPM::trackMarker(bool forward,
     double centerPoint[2];
     for (int i = 0; i < center->getNDimensions(); ++i) {
         {
-            int index = center->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(i), frame);
+            int index = center->getKeyFrameIndex(ViewIdx::current(), DimIdx(i), frame);
             if (index != -1) {
                 centerPoint[i] = center->getValueAtTime(frame, DimIdx(i));
                 markerCenter->setValueAtTime(frame, centerPoint[i], ViewSetSpec::current(), DimIdx(i));
@@ -778,7 +778,7 @@ TrackMarkerPM::trackMarker(bool forward,
             }
         }
         {
-            int index = center->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(i), refFrame);
+            int index = center->getKeyFrameIndex(ViewIdx::current(), DimIdx(i), refFrame);
             if (index != -1) {
                 double value = center->getValueAtTime(refFrame, DimIdx(i));
                 markerCenter->setValueAtTime(refFrame, value, ViewSetSpec::current(), DimIdx(i));
@@ -791,7 +791,7 @@ TrackMarkerPM::trackMarker(bool forward,
         KnobDoublePtr markerError = getErrorKnob();
         KnobDoublePtr correlation = correlationScoreKnob.lock();
         {
-            int index = correlation->getKeyFrameIndex(ViewGetSpec::current(), DimIdx(0), frame);
+            int index = correlation->getKeyFrameIndex(ViewIdx::current(), DimIdx(0), frame);
             if (index != -1) {
                 // The error is estimated as a percentage of the correlation across the number of pixels in the pattern window
                 KnobDoublePtr  pBtmLeft = patternBtmLeftKnob.lock();

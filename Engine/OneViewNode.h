@@ -109,8 +109,8 @@ public Q_SLOTS:
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isIdentity(double time,
+    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,

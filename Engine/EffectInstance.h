@@ -46,6 +46,7 @@
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/EffectInstanceActionResults.h"
 #include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/PluginActionShortcut.h"
 #include "Engine/ViewIdx.h"
@@ -133,15 +134,8 @@ struct PlaneToRender
     //Points to the image that the plug-in can render (either fullScale or downscale)
     ImagePtr renderMappedImage;
 
-    //Points to a temporary image that the plug-in will render
+    // Points to a temporary image that the plug-in will render
     ImagePtr tmpImage;
-
-    /*
-     In the event where the fullScaleImage is in the cache but we must resize it to render a portion unallocated yet and
-     if the render is issues directly from getImage() we swap image in cache instead of taking the write lock of fullScaleImage
-     */
-    ImagePtr cacheSwapImage;
-    void* originalCachedImage;
 
     /**
      * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
@@ -175,8 +169,6 @@ typedef boost::shared_ptr<ComponentsNeededResults> ComponentsNeededResultsPtr;
 
 /**
  * @brief This is the base class for visual effects.
- * A live instance is always living throughout the lifetime of a Node and other copies are
- * created on demand when a render is needed.
  **/
 class EffectInstance
     : public NamedKnobHolder
@@ -196,7 +188,7 @@ public:
         // see http://www.catb.org/esr/structure-packing/
 
         // The time at which to render
-        double time;
+        TimeValue time;
 
         // The view to render
         ViewIdx view;
@@ -249,7 +241,7 @@ public:
         {
         }
 
-        RenderRoIArgs( double time_,
+        RenderRoIArgs( TimeValue time_,
                        const RenderScale & scale_,
                        unsigned int mipMapLevel_,
                        ViewIdx view_,
@@ -332,17 +324,17 @@ public:
         return _node.lock();
     }
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE;
 
     /**
      * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
      * at any time during the same render call.
      **/
-    bool getRenderHash(double time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, U64* hash) const WARN_UNUSED_RETURN;
+    bool getRenderHash(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, U64* hash) const WARN_UNUSED_RETURN;
 
 private:
 
-    void computeFrameViewHashUsingFramesNeeded(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash);
+    void computeFrameViewHashUsingFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash);
 
 public:
 
@@ -669,7 +661,7 @@ public:
     RenderValuesCachePtr getRenderValuesCacheTLS(double* currentRenderTime = 0, ViewIdx* currentRenderView = 0) const;
 
     //Implem in TreeRender.cpp
-    static StatusEnum getInputsRoIsFunctor(double time,
+    static StatusEnum getInputsRoIsFunctor(TimeValue time,
                                            ViewIdx view,
                                            unsigned originalMipMapLevel,
                                            const TreeRenderPtr& render,
@@ -690,7 +682,7 @@ public:
                                                const FramesNeededMap & framesNeeded,
                                                const RoIMap* inputRois, // roi functor specific
                                                unsigned int originalMipMapLevel,         // roi functor specific
-                                               double time,
+                                               TimeValue time,
                                                ViewIdx view,
                                                const NodePtr & treeRoot,
                                                InputImagesMap* inputImages,         // render functor specific
@@ -706,7 +698,7 @@ public:
     /**
      * @breif Don't override this one, override onKnobValueChanged instead.
      **/
-    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, double time, ViewSetSpec view) OVERRIDE FINAL;
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -714,13 +706,13 @@ public:
      * from last to first.
      * If this not is not disabled, it will return a pointer to this.
      **/
-    EffectInstancePtr getNearestNonDisabled(double time, ViewIdx view) const;
+    EffectInstancePtr getNearestNonDisabled(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
      * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
      **/
-    EffectInstancePtr getNearestNonIdentity(double time);
+    EffectInstancePtr getNearestNonIdentity(TimeValue time);
 
     /**
      * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
@@ -816,9 +808,6 @@ public:
     ///////////////////////End Metadatas related////////////////////////
 
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
-    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
-    void getCurrentTimeView(double* time, ViewIdx* view) const;
 
     /**
      * @brief Return true if this effect can return a distorsion 2D. In this case
@@ -881,7 +870,7 @@ public:
 
     struct RenderActionArgs
     {
-        double time;
+        TimeValue time;
         RenderScale originalScale;
         RenderScale mappedScale;
         RectI roi;
@@ -917,7 +906,7 @@ protected:
 
 
 
-    virtual StatusEnum getDistorsion(double /*time*/,
+    virtual StatusEnum getDistorsion(TimeValue /*time*/,
                                      const RenderScale & /*renderScale*/,
                                      ViewIdx /*view*/,
                                      const TreeRenderPtr& /*render*/,
@@ -931,7 +920,7 @@ public:
 
     StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
 
-    StatusEnum getDistorsion_public(double time,
+    StatusEnum getDistorsion_public(TimeValue time,
                                    const RenderScale & renderScale,
                                    ViewIdx view,
                                    const TreeRenderNodeArgsPtr& render,
@@ -949,7 +938,7 @@ protected:
  * @param inputNb[out] the input number of the effect that is identity of.
  * The special value of -2 indicates that the plugin is identity of itself at another time
  **/
-    virtual bool isIdentity(double /*time*/,
+    virtual bool isIdentity(TimeValue /*time*/,
                             const RenderScale & /*scale*/,
                             const RectI & /*roi*/,
                             ViewIdx /*view*/,
@@ -965,7 +954,7 @@ public:
 
 
     bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
-                           double time,
+                           TimeValue time,
                            const RenderScale & scale,
                            const RectI & renderWindow,
                            ViewIdx view,
@@ -993,7 +982,7 @@ public:
         int inputNb;
 
         // The time to sample on the input
-        double time;
+        TimeValue time;
 
         // The view to sample on the input
         ViewIdx view;
@@ -1049,7 +1038,7 @@ public:
      **/
     bool getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
 
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief Can be derived to get the region that the plugin is capable of filling.
@@ -1058,22 +1047,22 @@ public:
      * In case of failure the plugin should return eStatusFailed.
      * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
      **/
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view,
+    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view,
                                              const TreeRenderNodeArgsPtr& render,
                                              RectD* rod) WARN_UNUSED_RETURN;
 
-    void calcDefaultRegionOfDefinition_public(double time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
+    void calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
 
 protected:
 
 
-    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD *rod);
+    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD *rod);
 
     /**
      * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
      * project format.
      **/
-    void ifInfiniteApplyHeuristic(double time,
+    void ifInfiniteApplyHeuristic(TimeValue time,
                                   const RenderScale & scale,
                                   ViewIdx view,
                                   const TreeRenderNodeArgsPtr& render,
@@ -1086,7 +1075,7 @@ protected:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    virtual void getRegionsOfInterest(double time,
+    virtual void getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
                                       const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
@@ -1097,7 +1086,7 @@ protected:
      * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
      * that this effects need in order to render the frame at the given time.
      **/
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render) WARN_UNUSED_RETURN;
+    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render) WARN_UNUSED_RETURN;
 
 
     /**
@@ -1105,17 +1094,17 @@ protected:
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return eStatusFailed.
      **/
-    virtual void getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last);
+    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 public:
 
-    StatusEnum getRegionOfDefinition_public(double time,
+    StatusEnum getRegionOfDefinition_public(TimeValue time,
                                             const RenderScale & scale,
                                             ViewIdx view,
                                             const TreeRenderNodeArgsPtr& render,
                                             RectD* rod) WARN_UNUSED_RETURN;
 
-    StatusEnum getRegionOfDefinitionFromCache(double time,
+    StatusEnum getRegionOfDefinitionFromCache(TimeValue time,
                                               const RenderScale & scale,
                                               ViewIdx view,
                                               const TreeRenderNodeArgsPtr& render,
@@ -1124,7 +1113,7 @@ public:
 public:
 
 
-    void getRegionsOfInterest_public(double time,
+    void getRegionsOfInterest_public(TimeValue time,
                                      const RenderScale & scale,
                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
                                      ViewIdx view,
@@ -1138,13 +1127,13 @@ public:
      * @param hash If set this will return the hash of the node for the given time view. In a 
      * render thread, this hash should be cached away 
      **/
-    FramesNeededMap getFramesNeeded_public(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash) WARN_UNUSED_RETURN;
+    FramesNeededMap getFramesNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash) WARN_UNUSED_RETURN;
 
-    void cacheFramesNeeded(double time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
+    void cacheFramesNeeded(TimeValue time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
 
-    void cacheIsIdentity(double time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView);
+    void cacheIsIdentity(TimeValue time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView);
 
-    void getFrameRange_public(double time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last);
+    void getFrameRange_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 
     /**
@@ -1395,7 +1384,9 @@ public:
 
 
 #ifdef DEBUG
-    void checkCanSetValueAndWarn() const;
+    virtual void checkCanSetValueAndWarn() const
+    {
+    }
 #endif
 
     void onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
@@ -1431,7 +1422,7 @@ protected:
     virtual bool knobChanged(const KnobIPtr& /*k*/,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSetSpec /*view*/,
-                             double /*time*/)
+                             TimeValue /*time*/)
     {
         return false;
     }
@@ -1490,7 +1481,7 @@ public:
     ///Doesn't do anything, instead we overriden onKnobValueChanged_public
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view) OVERRIDE FINAL;
     StatusEnum beginSequenceRender_public(double first, double last,
                                           double step, bool interactive, const RenderScale & scale,
@@ -1510,25 +1501,25 @@ public:
     virtual bool canHandleRenderScaleForOverlays() const { return true; }
 
 
-    void drawOverlay_public(double time, const RenderScale & renderScale, ViewIdx view);
+    void drawOverlay_public(TimeValue time, const RenderScale & renderScale, ViewIdx view);
 
-    bool onOverlayPenDown_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) WARN_UNUSED_RETURN;
+    bool onOverlayPenDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenMotion_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
+    bool onOverlayPenMotion_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenDoubleClicked_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+    bool onOverlayPenDoubleClicked_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUp_public(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) WARN_UNUSED_RETURN;
+    bool onOverlayPenUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDown_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUp_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeat_public(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+    bool onOverlayKeyRepeat_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusGained_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
+    bool onOverlayFocusGained_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusLost_public(double time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
+    bool onOverlayFocusLost_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
     void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
@@ -1556,8 +1547,8 @@ public:
     /**
      * @brief Returns the components available on each input for this effect at the given time.
      **/
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstancePtr>* markedNodes);
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, TimeValue time, ComponentsAvailableMap* comps);
+    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, TimeValue time, ComponentsAvailableMap* comps, std::list<EffectInstancePtr>* markedNodes);
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1609,12 +1600,12 @@ public:
     /**
      * @brief This function calls the impementation specific attachOpenGLContext()
      **/
-    StatusEnum attachOpenGLContext_public(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+    StatusEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
 
     /**
      * @brief This function calls the impementation specific dettachOpenGLContext()
      **/
-    StatusEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+    StatusEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
     /**
      * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
@@ -1672,7 +1663,7 @@ private:
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual StatusEnum attachOpenGLContext(const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
+    virtual StatusEnum attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
 
     /**
      * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
@@ -1682,13 +1673,13 @@ private:
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/) { return eStatusReplyDefault; }
+    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/) { return eStatusReplyDefault; }
 
 
 
     void getComponentsAvailableRecursive(bool useLayerChoice,
                                          bool useThisNodeComponentsNeeded,
-                                         double time,
+                                         TimeValue time,
                                          ViewIdx view,
                                          ComponentsAvailableMap* comps,
                                          std::list<EffectInstancePtr>* markedNodes);
@@ -1697,7 +1688,7 @@ public:
 
 
 
-    void getComponentsNeededAndProduced_public(double time, ViewIdx view,
+    void getComponentsNeededAndProduced_public(TimeValue time, ViewIdx view,
                                                const TreeRenderNodeArgsPtr& render,
                                                ComponentsNeededResults* results);
 
@@ -1707,7 +1698,7 @@ public:
     /**
      * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
      **/
-    void tryConcatenateTransforms(double time,
+    void tryConcatenateTransforms(TimeValue time,
                                   ViewIdx view,
                                   const RenderScale & scale,
                                   U64 hash,
@@ -1718,7 +1709,7 @@ public:
 
 protected:
 
-    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE;
+    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE;
 
     /**
      * @brief Must be implemented to initialize any knob using the
@@ -1734,7 +1725,7 @@ protected:
      * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
      * passThroughInput to fetch the components needed.
      **/
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
+    virtual void getComponentsNeededAndProduced(TimeValue time, ViewIdx view,
                                                 const TreeRenderNodeArgsPtr& render,
                                                 ComponentsNeededResults* results);
 
@@ -1754,13 +1745,13 @@ protected:
         return true;
     }
 
-    virtual void drawOverlay(double /*time*/,
+    virtual void drawOverlay(TimeValue /*time*/,
                              const RenderScale & /*renderScale*/,
                              ViewIdx /*view*/)
     {
     }
 
-    virtual bool onOverlayPenDown(double /*time*/,
+    virtual bool onOverlayPenDown(TimeValue /*time*/,
                                   const RenderScale & /*renderScale*/,
                                   ViewIdx /*view*/,
                                   const QPointF & /*viewportPos*/,
@@ -1772,7 +1763,7 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayPenDoubleClicked(double /*time*/,
+    virtual bool onOverlayPenDoubleClicked(TimeValue /*time*/,
                                            const RenderScale & /*renderScale*/,
                                            ViewIdx /*view*/,
                                            const QPointF & /*viewportPos*/,
@@ -1781,7 +1772,7 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayPenMotion(double /*time*/,
+    virtual bool onOverlayPenMotion(TimeValue /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
                                     const QPointF & /*viewportPos*/,
@@ -1792,7 +1783,7 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayPenUp(double /*time*/,
+    virtual bool onOverlayPenUp(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 const QPointF & /*viewportPos*/,
@@ -1803,7 +1794,7 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayKeyDown(double /*time*/,
+    virtual bool onOverlayKeyDown(TimeValue /*time*/,
                                   const RenderScale & /*renderScale*/,
                                   ViewIdx /*view*/,
                                   Key /*key*/,
@@ -1812,7 +1803,7 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayKeyUp(double /*time*/,
+    virtual bool onOverlayKeyUp(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/,
                                 Key /*key*/,
@@ -1821,7 +1812,7 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayKeyRepeat(double /*time*/,
+    virtual bool onOverlayKeyRepeat(TimeValue /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/,
                                     Key /*key*/,
@@ -1830,14 +1821,14 @@ protected:
         return false;
     }
 
-    virtual bool onOverlayFocusGained(double /*time*/,
+    virtual bool onOverlayFocusGained(TimeValue /*time*/,
                                       const RenderScale & /*renderScale*/,
                                       ViewIdx /*view*/) WARN_UNUSED_RETURN
     {
         return false;
     }
 
-    virtual bool onOverlayFocusLost(double /*time*/,
+    virtual bool onOverlayFocusLost(TimeValue /*time*/,
                                     const RenderScale & /*renderScale*/,
                                     ViewIdx /*view*/) WARN_UNUSED_RETURN
     {
@@ -1891,7 +1882,7 @@ private:
     static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
                                                  const U64 frameViewHash,
                                                  const OSGLContextPtr& glContext,
-                                                 double time,
+                                                 TimeValue time,
                                                  const TreeRenderNodeArgsPtr & frameArgs,
                                                  RenderSafetyEnum safety,
                                                  unsigned int mipMapLevel,
@@ -1911,7 +1902,7 @@ private:
 
     /// \returns false if rendering was aborted
     RenderRoIRetCode renderInputImagesForRoI(StorageModeEnum renderStorageMode,
-                                             double time,
+                                             TimeValue time,
                                              ViewIdx view,
                                              unsigned int mipMapLevel,
                                              bool useScaleOneInputImages,

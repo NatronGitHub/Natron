@@ -42,6 +42,7 @@
 #include "Engine/DimensionIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Curve.h"
+#include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/Variant.h"
 
@@ -52,10 +53,10 @@ class TimeValuePair
 {
 public:
 
-    double time;
+    TimeValue time;
     T value;
 
-    TimeValuePair(double t,
+    TimeValuePair(TimeValue t,
                   const T& v)
     : time(t)
     , value(v)
@@ -72,7 +73,7 @@ typedef TimeValuePair<std::string> StringTimeValuePair;
 // A time value pair that can adapt at runtime
 struct VariantTimeValuePair
 {
-    double time;
+    TimeValue time;
     Variant value;
 };
 
@@ -191,7 +192,7 @@ public:
     /**
      * @brief Returns a pointer to the underlying animation curve for the given view/dimension
      **/
-    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const = 0;
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const = 0;
 
     /**
      * @brief For an object that supports animating strings, this is should return a pointer to it
@@ -242,17 +243,10 @@ public:
     void unSplitAllViews();
 
     /**
-     * @brief Must return the current view in the object context. If the calling thread
-     * is a render thread, this can be the view being rendered by this thread, otherwise this
-     * can be the current view visualized by the UI.
-     **/
-    virtual ViewIdx getCurrentView() const = 0;
-
-    /**
-     * @brief Helper function to use in any getter/setter function when the user gives a ViewGetSpec
+     * @brief Helper function to use in any getter/setter function when the user gives a ViewIdx
      * to figure out which view to address.
      **/
-    ViewIdx getViewIdxFromGetSpec(ViewGetSpec view) const WARN_UNUSED_RETURN;
+    ViewIdx getViewIdxFromGetSpec(ViewIdx view) const WARN_UNUSED_RETURN;
 
 
 
@@ -267,7 +261,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(double time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type int.
@@ -290,7 +284,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setIntValueAtTimeAcrossDimensions(double time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type int.
@@ -305,7 +299,7 @@ public:
      * @brief Set a keyframe on the curve at the given view and dimension. This is only relevant on curves of type double.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type double.
@@ -328,7 +322,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type double.
@@ -349,7 +343,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(double time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type bool.
@@ -372,7 +366,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setBoolValueAtTimeAcrossDimensions(double time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type bool.
@@ -393,7 +387,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @return A status that reports the kind of modification operated on the object
      **/
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(double time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0);
 
     /**
      * @brief Set multiple keyframes on the curve at the given view and dimension. This is only relevant on curves of type string.
@@ -416,7 +410,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * @param retCodes[out] If non null, each return code for each dimension will be stored there. It will be of the same size as the values parameter.
      **/
-    virtual void setStringValueAtTimeAcrossDimensions(double time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
+    virtual void setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
     /**
      * @brief Set multiple keyframes across multiple curves. This is only relevant on curves of type string.
@@ -445,7 +439,7 @@ public:
      * at the given index will receive the change, otherwise no change occurs.
      * The default implementation just calls deleteValuesAtTime.
      **/
-    virtual void deleteValueAtTime(double time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
+    virtual void deleteValueAtTime(TimeValue time, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason);
 
     /**
      * @brief Removes the keyframes at the given times if they exist on the curve for the given view and dimension.
@@ -469,7 +463,7 @@ public:
      * @returns True If the keyframe could be moved, false otherwise
      * The default implementation just calls moveValuesAtTime.
      **/
-    virtual bool moveValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, double dt, double dv, KeyFrame* newKey = 0);
+    virtual bool moveValueAtTime(TimeValue time, ViewSetSpec view,  DimSpec dimension, double dt, double dv, KeyFrame* newKey = 0);
 
     /**
      * @brief If keyframes at the given times exist in the curve at the given view and dimension then they will be moved by dt in time
@@ -498,7 +492,7 @@ public:
      * @returns True If the keyframe could be warped, false otherwise
      * The default implementation just calls transformValuesAtTime.
      **/
-    virtual bool transformValueAtTime(double time, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey);
+    virtual bool transformValueAtTime(TimeValue time, ViewSetSpec view,  DimSpec dimension, const Transform::Matrix3x3& matrix, KeyFrame* newKey);
 
     /**
      * @brief If keyframes at the given times exist in the curve at the given view and dimension then they will be warped by the given
@@ -556,7 +550,7 @@ public:
      * @param dimension If set to all, all dimensions will have their animation removed, otherwise
      * only the dimension at the given index will have its animation removed.
      **/
-    virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) = 0;
+    virtual void deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
      * @brief Removes animation on the curve at the given view and dimension after the given time.
@@ -569,7 +563,7 @@ public:
      * @param dimension If set to all, all dimensions will have their animation removed, otherwise
      * only the dimension at the given index will have its animation removed.
      **/
-    virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) = 0;
+    virtual void deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSpec dimension) = 0;
 
     /**
      * @brief Set the interpolation type for the given keyframe on the curve at the given dimension and view
@@ -581,7 +575,7 @@ public:
      * @param newKey[out] If non null, the new keyframe in return will be assigned to this parameter
      * The default implementation just calls setInterpolationAtTimes.
      **/
-    virtual void setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, double time, KeyframeTypeEnum interpolation, KeyFrame* newKey = 0);
+    virtual void setInterpolationAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, KeyframeTypeEnum interpolation, KeyFrame* newKey = 0);
     
     /**
      * @brief Set the interpolation type for the given keyframes on the curve at the given dimension and view
@@ -604,7 +598,7 @@ public:
      * @param left The new value to set for the left derivative of the keyframe at the given time
      * @param right The new value to set for the right derivative of the keyframe at the given time
      **/
-    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right) = 0;
+    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right) = 0;
 
     /**
      * @brief Set the left or right derivative of the control point at the given time on the curve at the given view and dimension
@@ -616,7 +610,7 @@ public:
      * @param derivative The new value to set for the derivative of the keyframe at the given time
      * @param isLeft If true, the left derivative will be set, otherwise the right derivative will be set
      **/
-    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) = 0;
+    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) = 0;
 
 private:
 

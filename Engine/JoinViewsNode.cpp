@@ -125,7 +125,7 @@ JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 }
 
 bool
-JoinViewsNode::isIdentity(double time,
+JoinViewsNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,

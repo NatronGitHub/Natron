@@ -703,7 +703,7 @@ KnobHelper::checkInvalidExpressions()
 
 bool
 KnobHelper::isExpressionValid(DimIdx dimension,
-                              ViewGetSpec view,
+                              ViewIdx view,
                               std::string* error) const
 {
     if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
@@ -789,7 +789,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
                     setExpressionInvalidInternal(DimIdx(i), *it, valid, error);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 setExpressionInvalidInternal(DimIdx(i), view_i, valid, error);
             }
         }
@@ -802,7 +802,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
                 setExpressionInvalidInternal(DimIdx(dimension), *it, valid, error);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             setExpressionInvalidInternal(DimIdx(dimension), view_i, valid, error);
         }
     }
@@ -895,7 +895,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
                     setExpressionInternal(DimIdx(i), *it, expression, hasRetVariable, clearResults, failIfInvalid);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 setExpressionInternal(DimIdx(i), view_i, expression, hasRetVariable, clearResults, failIfInvalid);
             }
         }
@@ -908,7 +908,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
                 setExpressionInternal(DimIdx(dimension), *it, expression, hasRetVariable, clearResults, failIfInvalid);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             setExpressionInternal(DimIdx(dimension), view_i, expression, hasRetVariable, clearResults, failIfInvalid);
         }
     }
@@ -968,7 +968,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                     replaceNodeNameInExpressionInternal(DimIdx(i), *it, oldName, newName);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 replaceNodeNameInExpressionInternal(DimIdx(i), view_i, oldName, newName);
             }
         }
@@ -981,7 +981,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                 replaceNodeNameInExpressionInternal(DimIdx(dimension), *it, oldName, newName);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             replaceNodeNameInExpressionInternal(DimIdx(dimension), view_i, oldName, newName);
         }
     }
@@ -991,7 +991,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
 } // replaceNodeNameInExpression
 
 bool
-KnobHelper::isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const
+KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
         throw std::invalid_argument("KnobHelper::isExpressionUsingRetVariable(): Dimension out of range");
@@ -1007,7 +1007,7 @@ KnobHelper::isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) con
 
 bool
 KnobHelper::getExpressionDependencies(DimIdx dimension,
-                                      ViewGetSpec view,
+                                      ViewIdx view,
                                       KnobDimViewKeySet& dependencies) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
@@ -1089,7 +1089,7 @@ KnobHelper::clearExpression(DimSpec dimension,
                     didSomething |= clearExpressionInternal(DimIdx(i), *it);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 didSomething |= clearExpressionInternal(DimIdx(i), view_i);
             }
         }
@@ -1102,7 +1102,7 @@ KnobHelper::clearExpression(DimSpec dimension,
                 didSomething |= clearExpressionInternal(DimIdx(dimension), *it);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             didSomething |= clearExpressionInternal(DimIdx(dimension), view_i);
         }
     }
@@ -1157,7 +1157,7 @@ catchErrors(PyObject* mainModule,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
-KnobHelper::executeExpression(double time,
+KnobHelper::executeExpression(TimeValue time,
                               ViewIdx view,
                               DimIdx dimension,
                               PyObject** ret,
@@ -1215,7 +1215,7 @@ KnobHelper::executeExpression(double time,
 } // executeExpression
 
 std::string
-KnobHelper::getExpression(DimIdx dimension, ViewGetSpec view) const
+KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
         throw std::invalid_argument("Knob::getExpression: Dimension out of range");

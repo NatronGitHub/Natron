@@ -45,7 +45,7 @@ class ComputePreviewRequest
 {
 public:
 
-    double time;
+    TimeValue time;
     NodeGuiWPtr node;
 
     ComputePreviewRequest()
@@ -84,7 +84,7 @@ PreviewThread::~PreviewThread()
 
 void
 PreviewThread::appendToQueue(const NodeGuiPtr& node,
-                             double time)
+                             TimeValue time)
 {
     boost::shared_ptr<ComputePreviewRequest> r( new ComputePreviewRequest() );
 

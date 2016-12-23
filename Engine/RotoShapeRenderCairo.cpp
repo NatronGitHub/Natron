@@ -425,7 +425,7 @@ pointInPolygon(const Point & p,
 
 //From http://www.math.ualberta.ca/~bowman/publications/cad10.pdf
 void
-RotoShapeRenderCairo::bezulate(double time,
+RotoShapeRenderCairo::bezulate(TimeValue time,
                              const BezierCPs& cps,
                              std::list<BezierCPs>* patches)
 {
@@ -844,7 +844,7 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                          const RotoDrawableItemPtr& stroke,
                                          bool doBuildup,
                                          double alpha,
-                                         double time,
+                                         TimeValue time,
                                          ViewIdx view,
                                          unsigned int mipmapLevel,
                                          double* distToNextOut,
@@ -1018,7 +1018,7 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
 
 
 bool
-RotoShapeRenderCairo::renderSmear_cairo(double time,
+RotoShapeRenderCairo::renderSmear_cairo(TimeValue time,
                                         ViewIdx view,
                                         unsigned int mipMapLevel,
                                         const RotoStrokeItemPtr& rotoItem,
@@ -1061,7 +1061,7 @@ void
 RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
                                          const BezierPtr& bezier,
                                          double opacity,
-                                         double time,
+                                         TimeValue time,
                                          ViewIdx view,
                                          unsigned int mipmapLevel)
 {
@@ -1121,7 +1121,7 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
 
 void
 RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
-                                              double time,
+                                              TimeValue time,
                                               ViewIdx view,
                                               unsigned int mipmapLevel,
                                               double shapeColor[3],
@@ -1632,7 +1632,7 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
 
 
 void
-RotoShapeRenderCairo::renderInternalShape_old_cairo(double time,
+RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
                                                   unsigned int mipmapLevel,
                                                   double /*shapeColor*/[3],
                                                   double /*opacity*/,
@@ -1848,7 +1848,7 @@ void
 RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                                const RectI & roi,
                                                const ImageComponents& components,
-                                               const double time,
+                                               const TimeValue time,
                                                ViewIdx view,
                                                const RangeD& shutterRange,
                                                int nDivisions,

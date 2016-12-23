@@ -443,7 +443,7 @@ private:
      **/
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view)  OVERRIDE FINAL;
 
     bool load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj, const QString& name, const QString& path);

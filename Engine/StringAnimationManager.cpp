@@ -41,7 +41,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct StringKeyFrame
 {
     std::string value;
-    double time;
+    TimeValue time;
 };
 
 struct StringKeyFrame_compare_time
@@ -121,7 +121,7 @@ StringAnimationManager::setCustomInterpolation(customParamInterpolationV1Entry_t
 }
 
 bool
-StringAnimationManager::customInterpolation(double time,
+StringAnimationManager::customInterpolation(TimeValue time,
                                             std::string* ret) const
 {
     QMutexLocker l(&_imp->keyframesMutex);
@@ -205,7 +205,7 @@ StringAnimationManager::customInterpolation(double time,
 } // customInterpolation
 
 void
-StringAnimationManager::insertKeyFrame(double time,
+StringAnimationManager::insertKeyFrame(TimeValue time,
                                        const std::string & v,
                                        double* index)
 {
@@ -224,7 +224,7 @@ StringAnimationManager::insertKeyFrame(double time,
 }
 
 void
-StringAnimationManager::removeKeyFrame(double time)
+StringAnimationManager::removeKeyFrame(TimeValue time)
 {
     QMutexLocker l(&_imp->keyframesMutex);
  
@@ -313,7 +313,7 @@ StringAnimationManager::clone(const StringAnimationManager & other,
     if (hasChanged) {
         _imp->keyframes.clear();
         for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it != other._imp->keyframes.end(); ++it) {
-            double time = it->time;
+            TimeValue time = it->time;
             if ( range && ( (time < range->min) || (time > range->max) ) ) {
                 // We ignore a keyframe, then consider the curve has changed
                 hasChanged = true;

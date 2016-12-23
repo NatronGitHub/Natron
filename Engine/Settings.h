@@ -114,7 +114,7 @@ public:
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view) OVERRIDE FINAL;
 
     std::size_t getMaximumDiskCacheSize() const;

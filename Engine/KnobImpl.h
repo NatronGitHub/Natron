@@ -442,7 +442,7 @@ hashFunction(unsigned int a)
 
 template <typename T>
 bool
-Knob<T>::evaluateExpression(double time,
+Knob<T>::evaluateExpression(TimeValue time,
                             ViewIdx view,
                             DimIdx dimension,
                             T* value,
@@ -464,7 +464,7 @@ Knob<T>::evaluateExpression(double time,
 
 template <typename T>
 bool
-Knob<T>::evaluateExpression_pod(double time,
+Knob<T>::evaluateExpression_pod(TimeValue time,
                                 ViewIdx view,
                                 DimIdx dimension,
                                 double* value,
@@ -498,7 +498,7 @@ Knob<T>::evaluateExpression_pod(double time,
 
 template <typename T>
 void
-Knob<T>::makeKeyFrame(double time,
+Knob<T>::makeKeyFrame(TimeValue time,
                       const T& v,
                       ViewIdx /*view*/,
                       KeyFrame* key)
@@ -527,7 +527,7 @@ Knob<T>::makeKeyFrame(double time,
 
 template <>
 void
-KnobStringBase::makeKeyFrame(double time,
+KnobStringBase::makeKeyFrame(TimeValue time,
                              const std::string& v,
                              ViewIdx view,
                              KeyFrame* key)
@@ -1030,7 +1030,7 @@ template <typename T>
 void
 Knob<T>::copyValuesFromCurve(DimIdx dim, ViewIdx view)
 {
-    double time = getCurrentTime();
+    TimeValue time = getHolder()->getTimelineCurrentTime();
     T v = getValueAtTime(time, dim, view);
 
     KnobDimViewBasePtr data = getDataForDimView(dim, view);
@@ -1095,7 +1095,7 @@ void appendValueToHash(const std::string& v, Hash64* hash)
 
 template <typename T>
 void
-Knob<T>::appendToHash(double time, ViewIdx view, Hash64* hash)
+Knob<T>::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
 {
     int nDims = getNDimensions();
 
@@ -1153,7 +1153,7 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
                     it->second.clear();
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 typename PerViewFrameValueMap::iterator foundView = _exprRes[i].find(view_i);
                 if (foundView == _exprRes[i].end()) {
                     return;
@@ -1170,7 +1170,7 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
                 it->second.clear();
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
             if (foundView == _exprRes[dimension].end()) {
                 return;
@@ -1183,7 +1183,7 @@ Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
 
 template <typename T>
 void
-Knob<T>::getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) const
+Knob<T>::getExpressionResults(DimIdx dim, ViewIdx view, FrameValueMap& map) const
 {
     if (dim < 0 || dim >= getNDimensions()) {
         throw std::invalid_argument("Knob::getExpressionResults: Dimension out of range");

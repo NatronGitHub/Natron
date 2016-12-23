@@ -345,8 +345,6 @@ public:
     virtual void appendToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
 
-    void getFrameRange(double* first, double* last) const;
-
     virtual void setLastViewerUsingTimeline(const NodePtr& /*node*/) {}
 
     virtual ViewerInstancePtr getLastViewerUsingTimeline() const { return ViewerInstancePtr(); }

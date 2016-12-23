@@ -85,7 +85,7 @@ public:
 protected:
 
     bool getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const;
-    bool getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const;
+    bool getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const;
 
 };
 

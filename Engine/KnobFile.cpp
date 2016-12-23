@@ -101,19 +101,19 @@ KnobFile::typeName() const
 
 
 std::string
-KnobFile::getRawFileName(DimIdx dimension, ViewGetSpec view)
+KnobFile::getRawFileName(DimIdx dimension, ViewIdx view)
 {
     return Knob<std::string>::getValue(dimension, view);
 }
 
 std::string
-KnobFile::getValue(DimIdx dimension, ViewGetSpec view, bool clampToMinMax)
+KnobFile::getValue(DimIdx dimension, ViewIdx view, bool clampToMinMax)
 {
     return getValueAtTime(getCurrentTime(), dimension, view, clampToMinMax);
 }
 
 std::string
-KnobFile::getValueAtTime(double time, DimIdx dimension, ViewGetSpec view, bool /*clampToMinMax*/)
+KnobFile::getValueAtTime(TimeValue time, DimIdx dimension, ViewIdx view, bool /*clampToMinMax*/)
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 

@@ -97,14 +97,14 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
+    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 
-    virtual bool isIdentity(double time,
+    virtual bool isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & renderWindow,
                             ViewIdx view,
@@ -115,9 +115,9 @@ private:
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
+                             TimeValue time) OVERRIDE FINAL;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };
 

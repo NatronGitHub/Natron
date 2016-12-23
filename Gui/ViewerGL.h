@@ -489,7 +489,7 @@ private:
 
     bool checkIfViewPortRoIValidOrRenderForInput(int texIndex);
 
-    bool penMotionInternal(int x, int y, double pressure, double timestamp, QInputEvent* event);
+    bool penMotionInternal(int x, int y, double pressure, TimeValue timestamp, QInputEvent* event);
 
     /**
      * @brief Returns the OpenGL handle of the PBO at the given index.

@@ -141,7 +141,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 void
-RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, ViewIdx view, unsigned int mipmapLevel, double featherDist,
+RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, unsigned int mipmapLevel, double featherDist,
                                              PolygonData* outArgs)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting

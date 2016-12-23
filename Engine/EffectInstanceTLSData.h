@@ -67,7 +67,7 @@ public:
 
 
     // The time parameter passed to an OpenFX action
-    double time;
+    TimeValue time;
 
     // the view parameter passed to an OpenFX action
     ViewIdx view;
@@ -168,7 +168,7 @@ public:
      * @brief Push TLS for an action that is not the render action. Mainly this will be needed by OfxClipInstance::getRegionOfDefinition and OfxClipInstance::getImage
      * This should only be needed for OpenFX plug-ins, as the Natron A.P.I already pass all required arguments in parameter.
      **/
-    void pushActionArgs(double time, ViewIdx view, const RenderScale& scale
+    void pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                         , bool canSetValue
                         , bool canBeCalledRecursively
@@ -178,7 +178,7 @@ public:
     /**
      * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
      **/
-    void pushRenderActionArgs(double time, ViewIdx view, RenderScale& scale,
+    void pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
                               const RectI& renderWindowPixel,
                               const InputImagesMap& preRenderedInputImages,
                               const std::map<ImageComponents, PlaneToRender>& outputPlanes);
@@ -255,7 +255,7 @@ public:
 
     EffectActionArgsSetter_RAII(const EffectTLSDataPtr& tls,
                                 const EffectInstancePtr& effect,
-                                double time, ViewIdx view, const RenderScale& scale
+                                TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                                 , bool canSetValue
                                 , bool canBeCalledRecursively
@@ -288,7 +288,7 @@ class RenderActionArgsSetter_RAII
 public:
 
     RenderActionArgsSetter_RAII(const EffectTLSDataPtr& tls,
-                                double time, ViewIdx view, RenderScale& scale,
+                                TimeValue time, ViewIdx view, RenderScale& scale,
                                 const RectI& renderWindowPixel,
                                 const InputImagesMap& preRenderedInputImages,
                                 const std::map<ImageComponents, PlaneToRender>& outputPlanes)

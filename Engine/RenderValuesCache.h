@@ -62,10 +62,10 @@ public:
     void setCachedInput(int inputNb, const NodePtr& node);
 
     template <typename T>
-    bool getCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, double time, DimIdx dimension, ViewIdx view, T* value) const;
+    bool getCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, T* value) const;
 
     template <typename T>
-    void setCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, double time, DimIdx dimension, ViewIdx view, const T& value);
+    void setCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, const T& value);
 
     CurvePtr getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, const CurvePtr& curve, DimIdx dimension) const;
 

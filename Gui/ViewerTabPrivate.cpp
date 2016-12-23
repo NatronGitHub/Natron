@@ -73,7 +73,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 bool
-ViewerTabPrivate::getOverlayTransform(double time,
+ViewerTabPrivate::getOverlayTransform(TimeValue time,
                                       ViewIdx view,
                                       const NodePtr& target,
                                       const EffectInstancePtr& currentNode,
@@ -193,7 +193,7 @@ transformTimeForNode(const EffectInstancePtr& currentNode,
 }
 
 bool
-ViewerTabPrivate::getTimeTransform(double time,
+ViewerTabPrivate::getTimeTransform(TimeValue time,
                                    ViewIdx view,
                                    const NodePtr& target,
                                    const EffectInstancePtr& currentNode,

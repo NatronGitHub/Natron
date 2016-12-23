@@ -1409,7 +1409,7 @@ bool
 TrackerNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
                          ViewSetSpec /*view*/,
-                         double /*time*/)
+                         TimeValue /*time*/)
 {
 
 
@@ -1573,7 +1573,7 @@ TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
 }
 
 RectD
-TrackerNodePrivate::getInputRoD(double time, ViewIdx view) const
+TrackerNodePrivate::getInputRoD(TimeValue time, ViewIdx view) const
 {
     EffectInstancePtr inputEffect = publicInterface->getInput(0);
     bool useProjFormat = false;
@@ -1660,7 +1660,7 @@ TrackerNode::onInputChanged(int inputNb, const NodePtr& /*oldNode*/, const NodeP
 
 void
 TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
-                                               double /*time*/)
+                                               TimeValue /*time*/)
 {
     if (_imp->ui->showMarkerTexture && !isPlayback && !getApp()->isDraftRenderEnabled()) {
         _imp->ui->refreshSelectedMarkerTexture();
@@ -1755,7 +1755,7 @@ TrackerNodePrivate::resetTransformCenter()
     std::list<TrackMarkerPtr> tracks;
     knobsTable->getAllEnabledMarkers(&tracks);
 
-    double time = (double)referenceFrame.lock()->getValue();
+    TimeValue time = (double)referenceFrame.lock()->getValue();
     std::vector<double> p(2);
     if ( tracks.empty() ) {
         RectD rod = getInputRoD(time, ViewIdx(0));
@@ -1972,7 +1972,7 @@ TrackerNodePrivate::getPreBlurSigma() const
 }
 
 RectD
-TrackerNodePrivate::getNormalizationRoD(double time, ViewIdx view) const
+TrackerNodePrivate::getNormalizationRoD(TimeValue time, ViewIdx view) const
 {
     return getInputRoD(time, view);
 }
@@ -2039,14 +2039,14 @@ TrackerNodePrivate::averageSelectedTracks()
     for (std::list<TrackMarkerPtr >::iterator it = markers.begin(); it != markers.end(); ++it) {
         KnobDoublePtr markCenter = (*it)->getCenterKnob();
         double mini, maxi;
-        bool hasKey = markCenter->getFirstKeyFrameTime(ViewGetSpec(0), DimIdx(0), &mini);
+        bool hasKey = markCenter->getFirstKeyFrameTime(ViewIdx(0), DimIdx(0), &mini);
         if (!hasKey) {
             continue;
         }
         if (mini < keyframesRange.min) {
             keyframesRange.min = mini;
         }
-        hasKey = markCenter->getLastKeyFrameTime(ViewGetSpec(0), DimIdx(0), &maxi);
+        hasKey = markCenter->getLastKeyFrameTime(ViewIdx(0), DimIdx(0), &maxi);
 
         ///both dimensions must have keyframes
         assert(hasKey);

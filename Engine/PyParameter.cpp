@@ -605,7 +605,7 @@ static bool getViewSpecFromViewNameInternal(const Param* param, bool allowAll, c
 }
 
 bool
-Param::getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const
+Param::getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const
 {
     return getViewSpecFromViewNameInternal(this, false, viewName, view);
 }
@@ -841,8 +841,8 @@ Param::curve(double time,
         PythonSetInvalidDimensionError(dimension);
         return false;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
         PythonSetInvalidViewName(viewName);
         return 0.;
     }
@@ -908,8 +908,8 @@ AnimatedParam::splitView(const QString& viewName)
         PythonSetNullError();
         return;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
         PythonSetInvalidViewName(viewName);
         return;
     }
@@ -928,8 +928,8 @@ AnimatedParam::unSplitView(const QString& viewName)
         PythonSetNullError();
         return;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
         PythonSetInvalidViewName(viewName);
         return;
     }
@@ -981,8 +981,8 @@ AnimatedParam::getIsAnimated(int dimension, const QString& view) const
         PythonSetInvalidDimensionError(dimension);
         return false;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -1002,8 +1002,8 @@ AnimatedParam::getNumKeys(int dimension, const QString& view) const
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1025,8 +1025,8 @@ AnimatedParam::getKeyIndex(double time,
         PythonSetInvalidDimensionError(dimension);
         return -1;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return -1;
     }
@@ -1048,8 +1048,8 @@ AnimatedParam::getKeyTime(int index,
         PythonSetInvalidDimensionError(dimension);
         return false;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -1121,8 +1121,8 @@ AnimatedParam::getDerivativeAtTime(double time,
         PythonSetInvalidDimensionError(dimension);
         return 0.;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0.;
     }
@@ -1144,8 +1144,8 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
         PythonSetInvalidDimensionError(dimension);
         return false;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -1219,14 +1219,14 @@ Param::_addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension
         return;
     }
 
-    ViewGetSpec thisViewSpec, fromExprViewSpec;
+    ViewIdx thisViewSpec, fromExprViewSpec;
 
-    if (!getViewGetSpecFromViewName(thisView, &thisViewSpec)) {
+    if (!getViewIdxFromViewName(thisView, &thisViewSpec)) {
         PythonSetInvalidViewName(thisView);
         return;
     }
 
-    if (!getViewGetSpecFromViewName(fromExprView, &fromExprViewSpec)) {
+    if (!getViewIdxFromViewName(fromExprView, &fromExprViewSpec)) {
         PythonSetInvalidViewName(fromExprView);
         return;
     }
@@ -1289,8 +1289,8 @@ AnimatedParam::getExpression(int dimension,
         PythonSetInvalidDimensionError(dimension);
         return QString();
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return QString();
     }
@@ -1323,8 +1323,8 @@ IntParam::get(const QString& view) const
         PythonSetNullError();
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1341,8 +1341,8 @@ Int2DParam::get(const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
 
         return ret;
@@ -1363,8 +1363,8 @@ Int3DParam::get(const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return ret;
     }
@@ -1384,8 +1384,8 @@ IntParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1402,8 +1402,8 @@ Int2DParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
 
         return ret;
@@ -1424,8 +1424,8 @@ Int3DParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return ret;
     }
@@ -1576,8 +1576,8 @@ IntParam::getValue(int dimension, const QString& view) const
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1621,8 +1621,8 @@ IntParam::getValueAtTime(double time,
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1883,8 +1883,8 @@ DoubleParam::get(const QString& view) const
         PythonSetNullError();
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1900,8 +1900,8 @@ Double2DParam::get(const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
 
         return ret;
@@ -1923,8 +1923,8 @@ Double3DParam::get(const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return ret;
     }
@@ -1943,8 +1943,8 @@ DoubleParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -1960,8 +1960,8 @@ Double2DParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
 
         return ret;
@@ -1982,8 +1982,8 @@ Double3DParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return ret;
     }
@@ -2139,8 +2139,8 @@ DoubleParam::getValue(int dimension, const QString& view) const
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -2182,8 +2182,8 @@ DoubleParam::getValueAtTime(double time,
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -2443,8 +2443,8 @@ ColorParam::get(const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return ret;
     }
@@ -2466,8 +2466,8 @@ ColorParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return ret;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return ret;
     }
@@ -2547,8 +2547,8 @@ ColorParam::getValue(int dimension, const QString& view) const
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -2590,8 +2590,8 @@ ColorParam::getValueAtTime(double time,
         PythonSetInvalidDimensionError(dimension);
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -2853,8 +2853,8 @@ ChoiceParam::get(const QString& view) const
         PythonSetNullError();
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -2869,8 +2869,8 @@ ChoiceParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return 0;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -3105,8 +3105,8 @@ ChoiceParam::getActiveOption(const QString& view) const
         PythonSetNullError();
         return QString();
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return QString();
     }
@@ -3171,8 +3171,8 @@ BooleanParam::get(const QString& view) const
         PythonSetNullError();
         return false;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -3188,8 +3188,8 @@ BooleanParam::get(double frame, const QString& view) const
         PythonSetNullError();
         return false;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -3327,8 +3327,8 @@ StringParamBase::get(const QString& view) const
         PythonSetNullError();
         return QString();
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return QString();
     }
@@ -3343,8 +3343,8 @@ StringParamBase::get(double frame, const QString& view) const
         PythonSetNullError();
         return QString();
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(view, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
         return QString();
     }

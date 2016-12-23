@@ -86,6 +86,7 @@ CacheEntryKeyBase::getHash() const
     }
 
     Hash64 hash;
+    hash.append(getUniqueID());
     appendToHash(&hash);
     hash.computeHash();
     _imp->hash = hash.value();
@@ -165,6 +166,12 @@ U64
 ImageTileKey::getNodeFrameViewHashKey() const
 {
     return _imp->nodeFrameViewHashKey;
+}
+
+int
+ImageTileKey::getUniqueID() const
+{
+    return "ITK";
 }
 
 void

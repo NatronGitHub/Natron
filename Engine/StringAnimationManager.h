@@ -59,11 +59,11 @@ public:
 
     void setCustomInterpolation(customParamInterpolationV1Entry_t func, void* ofxParamHandle, const std::string& knobName);
 
-    bool customInterpolation(double time, std::string* ret) const;
+    bool customInterpolation(TimeValue time, std::string* ret) const;
 
-    void insertKeyFrame(double time, const std::string & v, double* index);
+    void insertKeyFrame(TimeValue time, const std::string & v, double* index);
 
-    void removeKeyFrame(double time);
+    void removeKeyFrame(TimeValue time);
 
     void removeKeyframes(const std::list<double>& keysRemoved);
 

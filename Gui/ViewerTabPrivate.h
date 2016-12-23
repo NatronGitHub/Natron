@@ -103,13 +103,13 @@ struct ViewerTabPrivate
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
-    bool getOverlayTransform(double time,
+    bool getOverlayTransform(TimeValue time,
                              ViewIdx view,
                              const NodePtr& target,
                              const EffectInstancePtr& currentNode,
                              Transform::Matrix3x3* transform) const;
 
-    bool getTimeTransform(double time,
+    bool getTimeTransform(TimeValue time,
                           ViewIdx view,
                           const NodePtr& target,
                           const EffectInstancePtr& currentNode,

@@ -146,7 +146,7 @@ public:
 
     void drawTexturedKeyframe(AnimationModuleViewPrivate::KeyframeTexture textureType, const RectD &rect, bool drawDimed) const;
 
-    void drawKeyFrameTime(const ZoomContext& ctx,  double time, const QColor& textColor, const RectD& rect) const;
+    void drawKeyFrameTime(const ZoomContext& ctx,  TimeValue time, const QColor& textColor, const RectD& rect) const;
 
     void drawSelectionRect() const;
 

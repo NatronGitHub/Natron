@@ -63,8 +63,8 @@ BezierCurve::splitView(const QString& viewName)
         PythonSetNullError();
         return;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
         PythonSetInvalidViewName(viewName);
         return;
     }
@@ -83,8 +83,8 @@ BezierCurve::unSplitView(const QString& viewName)
         PythonSetNullError();
         return;
     }
-    ViewGetSpec thisViewSpec;
-    if (!getViewGetSpecFromViewName(viewName, &thisViewSpec)) {
+    ViewIdx thisViewSpec;
+    if (!getViewIdxFromViewName(viewName, &thisViewSpec)) {
         PythonSetInvalidViewName(viewName);
         return;
     }
@@ -130,8 +130,8 @@ BezierCurve::isActivated(double frame, const QString& view) const
         return false;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -164,8 +164,8 @@ BezierCurve::isCurveFinished(const QString& view) const
         return false;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return false;
     }
@@ -190,7 +190,7 @@ BezierCurve::addControlPoint(double x,
     }
 
     KeyFrame k;
-    if (!item->getMasterKeyframe(0, ViewGetSpec(0), &k)) {
+    if (!item->getMasterKeyframe(0, ViewIdx(0), &k)) {
         k.setTime(item->getApp()->getTimeLine()->currentFrame());
     }
     item->addControlPoint(x, y, k.getTime(), viewSpec);
@@ -369,8 +369,8 @@ BezierCurve::getNumControlPoints(const QString& view) const
         return 0;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return 0;
     }
@@ -394,8 +394,8 @@ BezierCurve::getControlPointPosition(int index,
         return;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return;
     }
@@ -426,8 +426,8 @@ BezierCurve::getFeatherPointPosition(int index,
         return;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return;
     }
@@ -452,8 +452,8 @@ BezierCurve::getBoundingBox(double time, const QString& view) const
         return RectD();
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return RectD();
     }
@@ -482,8 +482,8 @@ StrokeItem::getBoundingBox(double time, const QString& view) const
         return RectD();
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return RectD();
     }

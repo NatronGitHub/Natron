@@ -349,7 +349,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                    const FramesNeededMap& framesNeeded,
                                    const RoIMap* inputRois, // roi functor specific
                                    unsigned int originalMipMapLevel, // roi functor specific
-                                   double time,
+                                   TimeValue time,
                                    ViewIdx /*view*/,
                                    const NodePtr& treeRoot,
                                    InputImagesMap* inputImages, // render functor specific
@@ -588,7 +588,7 @@ EffectInstance::getInputsRoIsFunctor(double inArgsTime,
 
     // Round time to nearest integer if the effect is not continuous
 
-    double time = inArgsTime;
+    TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
         if (roundedTime != time && !effect->canRenderContinuously()) {
@@ -870,7 +870,7 @@ TreeRenderNodeArgs::getInputRenderArgs(int inputNb) const
 
 
 const FrameViewRequest*
-TreeRenderNodeArgs::getFrameViewRequest(double time,
+TreeRenderNodeArgs::getFrameViewRequest(TimeValue time,
                                       ViewIdx view) const
 {
     FrameViewPair p = {time,view};
@@ -882,7 +882,7 @@ TreeRenderNodeArgs::getFrameViewRequest(double time,
 }
 
 FrameViewRequest*
-TreeRenderNodeArgs::getOrCreateFrameViewRequest(double time, ViewIdx view)
+TreeRenderNodeArgs::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view)
 {
     FrameViewPair p = {time, view};
     return &_imp->frames[p];
@@ -920,7 +920,7 @@ TreeRenderNodeArgs::getCurrentRenderSequentialPreference() const
 }
 
 void
-TreeRenderNodeArgs::setFrameViewHash(double time, ViewIdx view, U64 hash)
+TreeRenderNodeArgs::setFrameViewHash(TimeValue time, ViewIdx view, U64 hash)
 {
     FrameViewPair id = {roundImageTimeToEpsilon(time), view};
     FrameViewRequest& fv = _imp->frames[id];
@@ -928,7 +928,7 @@ TreeRenderNodeArgs::setFrameViewHash(double time, ViewIdx view, U64 hash)
 }
 
 bool
-TreeRenderNodeArgs::getFrameViewCanonicalRoI(double time,
+TreeRenderNodeArgs::getFrameViewCanonicalRoI(TimeValue time,
                                            ViewIdx view,
                                            RectD* roi) const
 {
@@ -943,7 +943,7 @@ TreeRenderNodeArgs::getFrameViewCanonicalRoI(double time,
 }
 
 bool
-TreeRenderNodeArgs::getFrameViewHash(double time, ViewIdx view, U64* hash) const
+TreeRenderNodeArgs::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const
 {
     FrameViewPair p = {time,view};
     NodeFrameViewRequestData::const_iterator found = _imp->frames.find(p);

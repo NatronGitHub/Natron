@@ -2378,7 +2378,7 @@ bool
 RotoPaint::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSetSpec view,
-                       double time)
+                       TimeValue time)
 {
     if (!k) {
         return false;
@@ -2561,7 +2561,7 @@ RotoPaintPrivate::refreshMotionBlurKnobsVisibility()
 
 void
 RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
-                                             double time)
+                                             TimeValue time)
 {
     NodeGroup::refreshExtraStateAfterTimeChanged(isPlayback, time);
     if (time != _imp->ui->strokeBeingPaintedTimelineFrame) {
@@ -2644,7 +2644,7 @@ RotoPaint::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& ne
 static void
 getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
                                   const KnobTableItemPtr& item,
-                                  double time, ViewIdx view,
+                                  TimeValue time, ViewIdx view,
                                   bool onlyActives)
 {
     RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
@@ -2662,7 +2662,7 @@ getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
 }
 
 std::list< RotoDrawableItemPtr >
-RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(double time, ViewIdx view, bool onlyActivated) const
+RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(TimeValue time, ViewIdx view, bool onlyActivated) const
 {
     std::list< RotoDrawableItemPtr > ret;
     std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
@@ -2713,7 +2713,7 @@ void
 RotoPaintPrivate::resetTransformsCenter(bool doClone,
                                    bool doTransform)
 {
-    double time = publicInterface->getApp()->getTimeLine()->currentFrame();
+    TimeValue time = publicInterface->getApp()->getTimeLine()->currentFrame();
     ViewIdx view(0);
     RectD bbox;
     {
@@ -3203,7 +3203,7 @@ RotoPaint::refreshRotoPaintTree()
     if (_imp->treeRefreshBlocked) {
         return;
     }
-    double time = getCurrentTime();
+    TimeValue time = getCurrentTime();
     ViewIdx view = getCurrentView();
 
     // Get the items by render order. In the GUI they appear from bottom to top.
@@ -3478,7 +3478,7 @@ BezierPtr
 RotoPaint::makeBezier(double x,
                         double y,
                         const std::string & baseName,
-                        double time,
+                        TimeValue time,
                         bool isOpenBezier)
 {
 
@@ -3522,7 +3522,7 @@ RotoPaint::makeEllipse(double x,
                          double y,
                          double diameter,
                          bool fromCenter,
-                         double time)
+                         TimeValue time)
 {
     double half = diameter / 2.;
     BezierPtr curve = makeBezier(x, fromCenter ? y - half : y, tr(kRotoEllipseBaseName).toStdString(), time, false);
@@ -3567,7 +3567,7 @@ BezierPtr
 RotoPaint::makeSquare(double x,
                         double y,
                         double initialSize,
-                        double time)
+                        TimeValue time)
 {
     BezierPtr curve = makeBezier(x, y, kRotoRectangleBaseName, time, false);
 

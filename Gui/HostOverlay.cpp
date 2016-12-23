@@ -100,7 +100,7 @@ DefaultInteractI::getPixelScale(double& scaleX,
 }
 
 void
-DefaultInteractI::draw(double /*time*/,
+DefaultInteractI::draw(TimeValue /*time*/,
                        const RenderScale& /*renderScale*/,
                        ViewIdx /*view*/,
                        const OfxPointD& /*pscale*/,
@@ -113,7 +113,7 @@ DefaultInteractI::draw(double /*time*/,
 }
 
 bool
-DefaultInteractI::penMotion(double /*time*/,
+DefaultInteractI::penMotion(TimeValue /*time*/,
                             const RenderScale& /*renderScale*/,
                             ViewIdx /*view*/,
                             const OfxPointD& /*pscale*/,
@@ -126,7 +126,7 @@ DefaultInteractI::penMotion(double /*time*/,
 }
 
 bool
-DefaultInteractI::penUp(double /*time*/,
+DefaultInteractI::penUp(TimeValue /*time*/,
                         const RenderScale& /*renderScale*/,
                         ViewIdx /*view*/,
                         const OfxPointD& /*pscale*/,
@@ -139,7 +139,7 @@ DefaultInteractI::penUp(double /*time*/,
 }
 
 bool
-DefaultInteractI::penDown(double /*time*/,
+DefaultInteractI::penDown(TimeValue /*time*/,
                           const RenderScale& /*renderScale*/,
                           ViewIdx /*view*/,
                           const OfxPointD& /*pscale*/,
@@ -152,7 +152,7 @@ DefaultInteractI::penDown(double /*time*/,
 }
 
 bool
-DefaultInteractI::penDoubleClicked(double /*time*/,
+DefaultInteractI::penDoubleClicked(TimeValue /*time*/,
                                    const RenderScale& /*renderScale*/,
                                    ViewIdx /*view*/,
                                    const OfxPointD& /*pscale*/,
@@ -164,7 +164,7 @@ DefaultInteractI::penDoubleClicked(double /*time*/,
 }
 
 bool
-DefaultInteractI::keyDown(double /*time*/,
+DefaultInteractI::keyDown(TimeValue /*time*/,
                           const RenderScale& /*renderScale*/,
                           ViewIdx /*view*/,
                           int /*key*/,
@@ -174,7 +174,7 @@ DefaultInteractI::keyDown(double /*time*/,
 }
 
 bool
-DefaultInteractI::keyUp(double /*time*/,
+DefaultInteractI::keyUp(TimeValue /*time*/,
                         const RenderScale& /*renderScale*/,
                         ViewIdx /*view*/,
                         int /*key*/,
@@ -184,7 +184,7 @@ DefaultInteractI::keyUp(double /*time*/,
 }
 
 bool
-DefaultInteractI::keyRepeat(double /*time*/,
+DefaultInteractI::keyRepeat(TimeValue /*time*/,
                             const RenderScale& /*renderScale*/,
                             ViewIdx /*view*/,
                             int /*key*/,
@@ -194,7 +194,7 @@ DefaultInteractI::keyRepeat(double /*time*/,
 }
 
 bool
-DefaultInteractI::gainFocus(double /*time*/,
+DefaultInteractI::gainFocus(TimeValue /*time*/,
                             const RenderScale& /*renderScale*/,
                             ViewIdx /*view*/)
 {
@@ -202,7 +202,7 @@ DefaultInteractI::gainFocus(double /*time*/,
 }
 
 bool
-DefaultInteractI::loseFocus(double /*time*/,
+DefaultInteractI::loseFocus(TimeValue /*time*/,
                             const RenderScale& /*renderScale*/,
                             ViewIdx /*view*/)
 {
@@ -262,7 +262,7 @@ public:
         return TO_DPIX(12.);
     }
 
-    bool getInteractive(double time) const
+    bool getInteractive(TimeValue time) const
     {
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
@@ -271,7 +271,7 @@ public:
         }
     }
 
-    virtual void draw(double time,
+    virtual void draw(TimeValue time,
                       const RenderScale& renderScale,
                       ViewIdx view,
                       const OfxPointD& pscale,
@@ -280,7 +280,7 @@ public:
                       const OfxPointD& shadow,
                       const QFont& font,
                       const QFontMetrics& fm) OVERRIDE FINAL;
-    virtual bool penMotion(double time,
+    virtual bool penMotion(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view,
                            const OfxPointD& pscale,
@@ -288,7 +288,7 @@ public:
                            const QPointF &penPos,
                            const QPoint &penPosViewport,
                            double pressure) OVERRIDE FINAL;
-    virtual bool penUp(double time,
+    virtual bool penUp(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        const OfxPointD& pscale,
@@ -296,7 +296,7 @@ public:
                        const QPointF &penPos,
                        const QPoint &penPosViewport,
                        double pressure) OVERRIDE FINAL;
-    virtual bool penDown(double time,
+    virtual bool penDown(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view,
                          const OfxPointD& pscale,
@@ -304,7 +304,7 @@ public:
                          const QPointF &penPos,
                          const QPoint &penPosViewport,
                          double pressure) OVERRIDE FINAL;
-    virtual bool loseFocus(double time,
+    virtual bool loseFocus(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view) OVERRIDE FINAL;
 };
@@ -450,7 +450,7 @@ public:
     static double ellipseNPoints() { return 50.; }
 
 
-    void getTranslate(double time,
+    void getTranslate(TimeValue time,
                       double* tx,
                       double* ty) const
     {
@@ -461,7 +461,7 @@ public:
         *ty = knob->getValueAtTime(time, DimIdx(1));
     }
 
-    void getCenter(double time,
+    void getCenter(TimeValue time,
                    double* cx,
                    double* cy) const
     {
@@ -472,7 +472,7 @@ public:
         *cy = knob->getValueAtTime(time, DimIdx(1));
     }
 
-    void getScale(double time,
+    void getScale(TimeValue time,
                   double* sx,
                   double* sy) const
     {
@@ -483,7 +483,7 @@ public:
         *sy = knob->getValueAtTime(time, DimIdx(1));
     }
 
-    void getRotate(double time,
+    void getRotate(TimeValue time,
                    double* rot) const
     {
         KnobDoublePtr knob = _rotate.lock();
@@ -492,7 +492,7 @@ public:
         *rot = knob->getValueAtTime(time, DimIdx(0));
     }
 
-    void getSkewX(double time,
+    void getSkewX(TimeValue time,
                   double* x) const
     {
         KnobDoublePtr knob = _skewX.lock();
@@ -501,7 +501,7 @@ public:
         *x = knob->getValueAtTime(time, DimIdx(0));
     }
 
-    void getSkewY(double time,
+    void getSkewY(TimeValue time,
                   double* y) const
     {
         KnobDoublePtr knob = _skewY.lock();
@@ -510,7 +510,7 @@ public:
         *y = knob->getValueAtTime(time, DimIdx(0));
     }
 
-    void getSkewOrder(double time,
+    void getSkewOrder(TimeValue time,
                       int* order) const
     {
         KnobChoicePtr knob = _skewOrder.lock();
@@ -519,7 +519,7 @@ public:
         *order = knob->getValueAtTime(time, DimIdx(0));
     }
 
-    void getScaleUniform(double time,
+    void getScaleUniform(TimeValue time,
                          bool* uniform) const
     {
         KnobBoolPtr knob = _scaleUniform.lock();
@@ -528,7 +528,7 @@ public:
         *uniform = knob->getValueAtTime(time, DimIdx(0));
     }
 
-    bool getInvert(double time) const
+    bool getInvert(TimeValue time) const
     {
         KnobBoolPtr knob = _invert.lock();
 
@@ -539,7 +539,7 @@ public:
         }
     }
 
-    bool getInteractive(double time) const
+    bool getInteractive(TimeValue time) const
     {
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
@@ -548,7 +548,7 @@ public:
         }
     }
 
-    virtual void draw(double time,
+    virtual void draw(TimeValue time,
                       const RenderScale& renderScale,
                       ViewIdx view,
                       const OfxPointD& pscale,
@@ -557,7 +557,7 @@ public:
                       const OfxPointD& shadow,
                       const QFont& font,
                       const QFontMetrics& fm) OVERRIDE FINAL;
-    virtual bool penMotion(double time,
+    virtual bool penMotion(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view,
                            const OfxPointD& pscale,
@@ -565,7 +565,7 @@ public:
                            const QPointF &penPos,
                            const QPoint &penPosViewport,
                            double pressure) OVERRIDE FINAL;
-    virtual bool penUp(double time,
+    virtual bool penUp(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        const OfxPointD& pscale,
@@ -573,7 +573,7 @@ public:
                        const QPointF &penPos,
                        const QPoint &penPosViewport,
                        double pressure) OVERRIDE FINAL;
-    virtual bool penDown(double time,
+    virtual bool penDown(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view,
                          const OfxPointD& pscale,
@@ -581,17 +581,17 @@ public:
                          const QPointF &penPos,
                          const QPoint &penPosViewport,
                          double pressure) OVERRIDE FINAL;
-    virtual bool keyDown(double time,
+    virtual bool keyDown(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view,
                          int key,
                          char*   keyString) OVERRIDE FINAL;
-    virtual bool keyUp(double time,
+    virtual bool keyUp(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        int key,
                        char*   keyString) OVERRIDE FINAL;
-    virtual bool loseFocus(double time,
+    virtual bool loseFocus(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view) OVERRIDE FINAL;
 };
@@ -693,7 +693,7 @@ public:
         return std::fabs(p.x() - x) <= tolerance * pscale.x &&  std::fabs(p.y() - y) <= tolerance * pscale.y;
     }
 
-    void getFrom(double time,
+    void getFrom(TimeValue time,
                  int index,
                  double* tx,
                  double* ty) const
@@ -705,7 +705,7 @@ public:
         *ty = knob->getValueAtTime(time, DimIdx(1));
     }
 
-    void getTo(double time,
+    void getTo(TimeValue time,
                int index,
                double* tx,
                double* ty) const
@@ -717,7 +717,7 @@ public:
         *ty = knob->getValueAtTime(time, DimIdx(1));
     }
 
-    bool getEnabled(double time,
+    bool getEnabled(TimeValue time,
                     int index) const
     {
         KnobBoolPtr knob = _enable[index].lock();
@@ -727,7 +727,7 @@ public:
         return knob->getValueAtTime(time);
     }
 
-    bool getInverted(double time) const
+    bool getInverted(TimeValue time) const
     {
         KnobBoolPtr knob = _invert.lock();
 
@@ -736,7 +736,7 @@ public:
         return knob->getValueAtTime(time);
     }
 
-    bool getUseFromPoints(double time) const
+    bool getUseFromPoints(TimeValue time) const
     {
         KnobChoicePtr knob = _overlayPoints.lock();
 
@@ -745,7 +745,7 @@ public:
         return knob->getValueAtTime(time) == 1;
     }
 
-    bool getInteractive(double time) const
+    bool getInteractive(TimeValue time) const
     {
         if ( _interactive.lock() ) {
             return _interactive.lock()->getValueAtTime(time);
@@ -754,7 +754,7 @@ public:
         }
     }
 
-    virtual void draw(double time,
+    virtual void draw(TimeValue time,
                       const RenderScale& renderScale,
                       ViewIdx view,
                       const OfxPointD& pscale,
@@ -763,7 +763,7 @@ public:
                       const OfxPointD& shadow,
                       const QFont& font,
                       const QFontMetrics& fm) OVERRIDE FINAL;
-    virtual bool penMotion(double time,
+    virtual bool penMotion(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view,
                            const OfxPointD& pscale,
@@ -771,7 +771,7 @@ public:
                            const QPointF &penPos,
                            const QPoint &penPosViewport,
                            double pressure) OVERRIDE FINAL;
-    virtual bool penUp(double time,
+    virtual bool penUp(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        const OfxPointD& pscale,
@@ -779,7 +779,7 @@ public:
                        const QPointF &penPos,
                        const QPoint &penPosViewport,
                        double pressure) OVERRIDE FINAL;
-    virtual bool penDown(double time,
+    virtual bool penDown(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view,
                          const OfxPointD& pscale,
@@ -787,7 +787,7 @@ public:
                          const QPointF &penPos,
                          const QPoint &penPosViewport,
                          double pressure) OVERRIDE FINAL;
-    virtual bool loseFocus(double time,
+    virtual bool loseFocus(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view) OVERRIDE FINAL;
 };
@@ -913,7 +913,7 @@ HostOverlay::addInteract(const HostOverlayKnobsPtr& knobs)
 }
 
 void
-PositionInteract::draw(double time,
+PositionInteract::draw(TimeValue time,
                        const RenderScale& /*renderScale*/,
                        ViewIdx /*view*/,
                        const OfxPointD& pscale,
@@ -1310,7 +1310,7 @@ drawRotationBar(const OfxRGBColourD& color,
 } // drawRotationBar
 
 void
-TransformInteract::draw(double time,
+TransformInteract::draw(TimeValue time,
                         const RenderScale& /*renderScale*/,
                         ViewIdx /*view*/,
                         const OfxPointD& pscale,
@@ -1449,7 +1449,7 @@ TransformInteract::draw(double time,
 } // TransformInteract::draw
 
 void
-CornerPinInteract::draw(double time,
+CornerPinInteract::draw(TimeValue time,
                         const RenderScale& /*renderScale*/,
                         ViewIdx /*view*/,
                         const OfxPointD& pscale,
@@ -1580,7 +1580,7 @@ CornerPinInteract::draw(double time,
 } // CornerPinInteract::draw
 
 void
-HostOverlay::draw(double time,
+HostOverlay::draw(TimeValue time,
                   const RenderScale& renderScale,
                   ViewIdx view)
 {
@@ -1610,7 +1610,7 @@ HostOverlay::draw(double time,
 }
 
 bool
-PositionInteract::penMotion(double time,
+PositionInteract::penMotion(TimeValue time,
                             const RenderScale& /*renderScale*/,
                             ViewIdx view,
                             const OfxPointD& pscale,
@@ -1790,7 +1790,7 @@ rectFromCenterPoint(const OfxPointD& center,
 }
 
 bool
-TransformInteract::penMotion(double time,
+TransformInteract::penMotion(TimeValue time,
                              const RenderScale& /*renderScale*/,
                              ViewIdx view,
                              const OfxPointD& pscale,
@@ -2166,7 +2166,7 @@ TransformInteract::penMotion(double time,
 } // TransformInteract::penMotion
 
 bool
-CornerPinInteract::penMotion(double time,
+CornerPinInteract::penMotion(TimeValue time,
                              const RenderScale& /*renderScale*/,
                              ViewIdx view,
                              const OfxPointD& pscale,
@@ -2279,7 +2279,7 @@ CornerPinInteract::penMotion(double time,
 } // CornerPinInteract::penMotion
 
 bool
-HostOverlay::penMotion(double time,
+HostOverlay::penMotion(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        const QPointF &penPos,
@@ -2303,7 +2303,7 @@ HostOverlay::penMotion(double time,
 }
 
 bool
-PositionInteract::penUp(double time,
+PositionInteract::penUp(TimeValue time,
                         const RenderScale& renderScale,
                         ViewIdx view,
                         const OfxPointD& pscale,
@@ -2346,7 +2346,7 @@ PositionInteract::penUp(double time,
 }
 
 bool
-TransformInteract::penUp(double /*time*/,
+TransformInteract::penUp(TimeValue /*time*/,
                          const RenderScale& /*renderScale*/,
                          ViewIdx view,
                          const OfxPointD& /*pscale*/,
@@ -2411,7 +2411,7 @@ TransformInteract::penUp(double /*time*/,
 }
 
 bool
-CornerPinInteract::penUp(double /*time*/,
+CornerPinInteract::penUp(TimeValue /*time*/,
                          const RenderScale& /*renderScale*/,
                          ViewIdx view,
                          const OfxPointD& /*pscale*/,
@@ -2454,7 +2454,7 @@ CornerPinInteract::penUp(double /*time*/,
 }
 
 bool
-HostOverlay::penUp(double time,
+HostOverlay::penUp(TimeValue time,
                    const RenderScale& renderScale,
                    ViewIdx view,
                    const QPointF &penPos,
@@ -2474,7 +2474,7 @@ HostOverlay::penUp(double time,
 }
 
 bool
-PositionInteract::penDown(double time,
+PositionInteract::penDown(TimeValue time,
                           const RenderScale& renderScale,
                           ViewIdx view,
                           const OfxPointD& pscale,
@@ -2504,7 +2504,7 @@ PositionInteract::penDown(double time,
 }
 
 bool
-TransformInteract::penDown(double time,
+TransformInteract::penDown(TimeValue time,
                            const RenderScale& /*renderScale*/,
                            ViewIdx /*view*/,
                            const OfxPointD& pscale,
@@ -2651,7 +2651,7 @@ TransformInteract::penDown(double time,
 } // TransformInteract::penDown
 
 bool
-CornerPinInteract::penDown(double time,
+CornerPinInteract::penDown(TimeValue time,
                            const RenderScale& /*renderScale*/,
                            ViewIdx /*view*/,
                            const OfxPointD& pscale,
@@ -2732,7 +2732,7 @@ CornerPinInteract::penDown(double time,
 } // CornerPinInteract::penDown
 
 bool
-HostOverlay::penDown(double time,
+HostOverlay::penDown(TimeValue time,
                      const RenderScale& renderScale,
                      ViewIdx view,
                      const QPointF &penPos,
@@ -2756,7 +2756,7 @@ HostOverlay::penDown(double time,
 }
 
 bool
-HostOverlay::penDoubleClicked(double time,
+HostOverlay::penDoubleClicked(TimeValue time,
                               const RenderScale& renderScale,
                               ViewIdx view,
                               const QPointF &penPos,
@@ -2779,7 +2779,7 @@ HostOverlay::penDoubleClicked(double time,
 }
 
 bool
-TransformInteract::keyDown(double /*time*/,
+TransformInteract::keyDown(TimeValue /*time*/,
                            const RenderScale& /*renderScale*/,
                            ViewIdx /*view*/,
                            int key,
@@ -2818,7 +2818,7 @@ TransformInteract::keyDown(double /*time*/,
 }
 
 bool
-HostOverlay::keyDown(double time,
+HostOverlay::keyDown(TimeValue time,
                      const RenderScale& renderScale,
                      ViewIdx view,
                      int key,
@@ -2834,7 +2834,7 @@ HostOverlay::keyDown(double time,
 }
 
 bool
-TransformInteract::keyUp(double /*time*/,
+TransformInteract::keyUp(TimeValue /*time*/,
                          const RenderScale& /*renderScale*/,
                          ViewIdx /*view*/,
                          int key,
@@ -2867,7 +2867,7 @@ TransformInteract::keyUp(double /*time*/,
 }
 
 bool
-HostOverlay::keyUp(double time,
+HostOverlay::keyUp(TimeValue time,
                    const RenderScale& renderScale,
                    ViewIdx view,
                    int key,
@@ -2883,7 +2883,7 @@ HostOverlay::keyUp(double time,
 }
 
 bool
-HostOverlay::keyRepeat(double time,
+HostOverlay::keyRepeat(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        int key,
@@ -2899,7 +2899,7 @@ HostOverlay::keyRepeat(double time,
 }
 
 bool
-HostOverlay::gainFocus(double time,
+HostOverlay::gainFocus(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view)
 {
@@ -2913,7 +2913,7 @@ HostOverlay::gainFocus(double time,
 }
 
 bool
-PositionInteract::loseFocus(double /*time*/,
+PositionInteract::loseFocus(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx /*view*/)
 {
@@ -2935,7 +2935,7 @@ PositionInteract::loseFocus(double /*time*/,
 }
 
 bool
-TransformInteract::loseFocus(double /*time*/,
+TransformInteract::loseFocus(TimeValue /*time*/,
                              const RenderScale & /*renderScale*/,
                              ViewIdx /*view*/)
 {
@@ -2957,7 +2957,7 @@ TransformInteract::loseFocus(double /*time*/,
 }
 
 bool
-CornerPinInteract::loseFocus(double /*time*/,
+CornerPinInteract::loseFocus(TimeValue /*time*/,
                              const RenderScale & /*renderScale*/,
                              ViewIdx /*view*/)
 {
@@ -2969,7 +2969,7 @@ CornerPinInteract::loseFocus(double /*time*/,
 }
 
 bool
-HostOverlay::loseFocus(double time,
+HostOverlay::loseFocus(TimeValue time,
                        const RenderScale &renderScale,
                        ViewIdx view)
 {

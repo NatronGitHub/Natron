@@ -100,7 +100,7 @@ public:
 
     KeyFrameSet getKeyFrames() const;
 
-    int getKeyFrameIndex(double time) const ;
+    int getKeyFrameIndex(TimeValue time) const ;
 
     KeyFrame setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 

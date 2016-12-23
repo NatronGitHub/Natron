@@ -75,7 +75,7 @@ transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
 
 
 void
-ViewerTab::getNodesEntitledForOverlays(double time, ViewIdx view, NodesList & nodes) const
+ViewerTab::getNodesEntitledForOverlays(TimeValue time, ViewIdx view, NodesList & nodes) const
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -126,7 +126,7 @@ ViewerTab::getNodesEntitledForOverlays(double time, ViewIdx view, NodesList & no
 
 
 void
-ViewerTab::drawOverlays(double time,
+ViewerTab::drawOverlays(TimeValue time,
                         const RenderScale & renderScale) const
 {
     Gui* gui = getGui();
@@ -223,7 +223,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          TimeValue timestamp)
 {
     ViewerNodePtr isViewerNode = node->isEffectViewerNode();
     if (isViewerNode && isViewerNode != getInternalNode()) {
@@ -239,7 +239,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     if (!app) {
         return false;
     }
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 
@@ -320,7 +320,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  double pressure,
-                                 double timestamp)
+                                 TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -348,7 +348,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     _imp->hasPenDown = true;
     _imp->hasCaughtPenMotionWhileDragging = false;
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
     NodesList nodes;
@@ -396,7 +396,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         return false;
     }
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
     NodesList nodes;
@@ -480,7 +480,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
-                                            double timestamp)
+                                            TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -497,7 +497,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 
     QPointF transformViewportPos;
     QPointF transformPos;
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -584,7 +584,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    double pressure,
-                                   double timestamp)
+                                   TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -610,7 +610,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
     NodesList nodes;
@@ -647,7 +647,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                double pressure,
-                               double timestamp)
+                               TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -686,7 +686,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
     _imp->lastOverlayNode.reset();
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 
@@ -907,7 +907,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         return false;
     }
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -981,7 +981,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey(qKey );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
 
     NodesList nodes;
@@ -1049,7 +1049,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 
     _imp->lastOverlayNode.reset();
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -1130,7 +1130,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
     }
 
     ViewIdx view = getInternalNode()->getCurrentView();
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     double transformedTime;
@@ -1247,7 +1247,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     }
 
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;
@@ -1312,7 +1312,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     }
 
 
-    double time = app->getTimeLine()->currentFrame();
+    TimeValue time = app->getTimeLine()->currentFrame();
     ViewIdx view = getInternalNode()->getCurrentView();
     bool ret = false;
     NodesList nodes;

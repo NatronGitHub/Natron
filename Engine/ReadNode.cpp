@@ -256,7 +256,7 @@ public:
 
     void createDefaultReadNode();
 
-    bool checkDecoderCreated(double time, ViewIdx view);
+    bool checkDecoderCreated(TimeValue time, ViewIdx view);
 
     static QString getFFProbeBinaryPath()
     {
@@ -513,7 +513,7 @@ ReadNodePrivate::createDefaultReadNode()
 }
 
 bool
-ReadNodePrivate::checkDecoderCreated(double time,
+ReadNodePrivate::checkDecoderCreated(TimeValue time,
                                      ViewIdx view)
 {
     KnobFilePtr fileKnob = inputFileKnob.lock();
@@ -1051,7 +1051,7 @@ bool
 ReadNode::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum reason,
                       ViewSetSpec view,
-                      double time)
+                      TimeValue time)
 {
     bool ret =  true;
 
@@ -1148,7 +1148,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
 } // ReadNode::knobChanged
 
 StatusEnum
-ReadNode::getRegionOfDefinition(double time,
+ReadNode::getRegionOfDefinition(TimeValue time,
                                 const RenderScale & scale,
                                 ViewIdx view,
                                 RectD* rod)
@@ -1177,7 +1177,7 @@ ReadNode::getFrameRange(double *first,
 }
 
 void
-ReadNode::getComponentsNeededAndProduced(double time,
+ReadNode::getComponentsNeededAndProduced(TimeValue time,
                                          ViewIdx view,
                                          ComponentsNeededMap* comps,
                                          SequenceTime* passThroughTime,
@@ -1248,7 +1248,7 @@ ReadNode::render(const RenderActionArgs& args)
 }
 
 void
-ReadNode::getRegionsOfInterest(double time,
+ReadNode::getRegionsOfInterest(TimeValue time,
                                const RenderScale & scale,
                                const RectD & outputRoD,    //!< full RoD in canonical coordinates
                                const RectD & renderWindow,    //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -1262,7 +1262,7 @@ ReadNode::getRegionsOfInterest(double time,
 }
 
 FramesNeededMap
-ReadNode::getFramesNeeded(double time,
+ReadNode::getFramesNeeded(TimeValue time,
                           ViewIdx view)
 {
     NodePtr p = getEmbeddedReader();

@@ -86,15 +86,15 @@ public:
     /**
      *@brief Tells all the nodes in the grpah to draw their overlays
      **/
-    void drawOverlays(double time, const RenderScale & renderScale) const;
+    void drawOverlays(TimeValue time, const RenderScale & renderScale) const;
 
-    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenDown(const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp);
 
     bool notifyOverlaysPenDoubleClick(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos);
 
-    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenMotion(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp);
 
-    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenUp(const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp);
 
     bool notifyOverlaysKeyDown(const RenderScale & renderScale, QKeyEvent* e);
 
@@ -108,9 +108,9 @@ public:
 
 private:
 
-    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenDown_internal(const NodePtr& node, const RenderScale & renderScale, PenType pen, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp);
 
-    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp);
+    bool notifyOverlaysPenMotion_internal(const NodePtr& node, const RenderScale & renderScale, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp);
     bool notifyOverlaysKeyDown_internal(const NodePtr& node, const RenderScale & renderScale, Key k,
                                         KeyboardModifiers km, Qt::Key qKey, const Qt::KeyboardModifiers& mods);
 
@@ -236,7 +236,7 @@ public:
     /**
      * @brief Returns in nodes all the nodes that can draw an overlay in their order of appearance in the properties bin.
      **/
-    void getNodesEntitledForOverlays(double time, ViewIdx view,NodesList& nodes) const;
+    void getNodesEntitledForOverlays(TimeValue time, ViewIdx view,NodesList& nodes) const;
 
     void setInfoBarAndViewerResolution(const RectI& rect, const RectD& canonicalRect, double par, int texIndex);
 

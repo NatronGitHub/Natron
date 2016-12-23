@@ -330,7 +330,7 @@ bool
 PrecompNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
                          ViewSetSpec /*view*/,
-                         double /*time*/)
+                         TimeValue /*time*/)
 {
     bool ret = true;
 

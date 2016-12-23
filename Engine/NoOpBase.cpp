@@ -56,7 +56,7 @@ NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 bool
-NoOpBase::isIdentity(double time,
+NoOpBase::isIdentity(TimeValue time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
                      ViewIdx view,

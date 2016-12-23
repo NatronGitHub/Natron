@@ -42,7 +42,7 @@
 #include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
 
 // This controls how many frames a plug-in can pre-fetch (per view and per input)
 // This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
@@ -54,17 +54,15 @@
 #define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-5
 #define NATRON_IMAGE_TIME_EQUALITY_DECIMALS 5
 
-inline double roundImageTimeToEpsilon(double time)
+inline TimeValue roundImageTimeToEpsilon(TimeValue time)
 {
     int exp = std::pow(10, NATRON_IMAGE_TIME_EQUALITY_DECIMALS);
-    return std::floor(time * exp + 0.5) / exp;
+    return TimeValue(std::floor(time * exp + 0.5) / exp);
 }
 
 NATRON_NAMESPACE_ENTER;
 
 typedef std::map<EffectInstancePtr, RectD> RoIMap; // RoIs are in canonical coordinates
-typedef std::map<ViewIdx, std::vector<RangeD> > FrameRangesMap;
-typedef std::map<int, FrameRangesMap> FramesNeededMap;
 
 struct InputMatrix
 {
@@ -82,7 +80,7 @@ typedef boost::shared_ptr<ReRoutesMap> ReRoutesMapPtr;
 
 struct FrameViewPair
 {
-    double time;
+    TimeValue time;
     ViewIdx view;
 };
 
@@ -95,7 +93,7 @@ struct FrameView_compare_less
 
 typedef std::map<FrameViewPair, U64, FrameView_compare_less> FrameViewHashMap;
 
-inline bool findFrameViewHash(double time, ViewIdx view, const FrameViewHashMap& table, U64* hash)
+inline bool findFrameViewHash(TimeValue time, ViewIdx view, const FrameViewHashMap& table, U64* hash)
 {
     FrameViewPair fv = {roundImageTimeToEpsilon(time), view};
     FrameViewHashMap::const_iterator it = table.find(fv);
@@ -229,29 +227,29 @@ public:
     /**
      * @brief Set hash for the given time/view
      **/
-    void setFrameViewHash(double time, ViewIdx view, U64 hash);
+    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
 
     /**
      * @brief Convenience function, same as getFrameViewRequest(time,view)->finalRoi
      **/
-    bool getFrameViewCanonicalRoI(double time, ViewIdx view, RectD* roi) const;
+    bool getFrameViewCanonicalRoI(TimeValue time, ViewIdx view, RectD* roi) const;
 
     /**
      * @brief Convenience function, same as getFrameViewRequest(time,view)->frameViewHash
      **/
-    bool getFrameViewHash(double time, ViewIdx view, U64* hash) const;
+    bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
 
     /**
      * @brief Returns a previously requested frame/view request from optimizeRoI. This contains most actions
      * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
      * The time passed in parameter should always be rounded for effects that are not continuous.
      **/
-    const FrameViewRequest* getFrameViewRequest(double time, ViewIdx view) const;
+    const FrameViewRequest* getFrameViewRequest(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it
      **/
-    FrameViewRequest* getOrCreateFrameViewRequest(double time, ViewIdx view);
+    FrameViewRequest* getOrCreateFrameViewRequest(TimeValue time, ViewIdx view);
 
 private:
 

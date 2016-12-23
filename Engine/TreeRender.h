@@ -61,7 +61,7 @@ public:
     struct CtorArgs
     {
         // The time at which to render
-        double time;
+        TimeValue time;
 
         // The view at which to render
         ViewIdx view;

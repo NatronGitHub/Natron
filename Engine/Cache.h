@@ -333,6 +333,38 @@ private:
 
 };
 
+/**
+ * @brief Helper class to access the cache.
+ * Construct an item with a given cache key.
+ * Check the isCached() function. If it is not cache then
+ * compute the entry and then set it on the CacheFetcher
+ * using the setEntry function. The setEntry function
+ * may only be called if isCached() returned a NULL item.
+ * Whilst this item lives, it is guaranteed that no other
+ * thread will try to compute the same entry.
+ * If the entry is set using setEntry it will be inserted
+ * in the cache in the destructor of this object.
+ **/
+struct CacheFetcherPrivate;
+class CacheFetcher
+{
+
+public:
+
+    CacheFetcher(const CacheEntryKeyBasePtr& key);
+
+    ~CacheFetcher();
+
+    CacheEntryBasePtr isCached() const;
+
+    void setEntry(const CacheEntryBasePtr& entry);
+
+private:
+
+    boost::scoped_ptr<CacheFetcherPrivate> _imp;
+};
+
+
 NATRON_NAMESPACE_EXIT;
 
 

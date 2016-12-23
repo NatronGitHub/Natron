@@ -102,7 +102,7 @@ public:
                                      const RotoDrawableItemPtr& stroke,
                                      bool doBuildup,
                                      double opacity,
-                                     double time,
+                                     TimeValue time,
                                      ViewIdx view,
                                      unsigned int mipmapLevel,
                                      double* distToNextOut,

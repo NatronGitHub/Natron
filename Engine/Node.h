@@ -726,7 +726,7 @@ public:
 
     bool isUserSelected() const;
 
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
+    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
@@ -881,7 +881,7 @@ public:
     /**
      * @brief Wrapper around EffectInstance::renderRoI that setup things correctly for a render
      **/
-    RenderRoIRetCode renderFrame(const double time,
+    RenderRoIRetCode renderFrame(const TimeValue time,
                                  const ViewIdx view,
                                  const unsigned int mipMapLevel,
                                  const bool isPlayback,
@@ -1008,9 +1008,9 @@ public:
     //only 1 clone can render at any time
     QMutex & getRenderInstancesSharedMutex();
 
-    void refreshPreviewsRecursivelyDownstream(double time);
+    void refreshPreviewsRecursivelyDownstream(TimeValue time);
 
-    void refreshPreviewsRecursivelyUpstream(double time);
+    void refreshPreviewsRecursivelyUpstream(TimeValue time);
 
 public:
 
@@ -1038,7 +1038,7 @@ public:
      * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
      * do not respect the OpenFX specification.
      **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
+    ImagePtr getImageBeingRendered(TimeValue time, unsigned int mipMapLevel, ViewIdx view);
 
     void beginInputEdition();
 
@@ -1050,7 +1050,7 @@ public:
 
     bool getDisabledKnobValue() const;
 
-    bool isNodeDisabledForFrame(double time, ViewIdx view) const;
+    bool isNodeDisabledForFrame(TimeValue time, ViewIdx view) const;
 
     void setNodeDisabled(bool disabled);
 
@@ -1270,47 +1270,47 @@ public:
     void setCurrentCursor(CursorEnum defaultCursor);
     bool setCurrentCursor(const QString& customCursorFilePath);
 
-    bool shouldDrawOverlay(double time, ViewIdx view) const;
+    bool shouldDrawOverlay(TimeValue time, ViewIdx view) const;
 
 
-    void drawHostOverlay(double time,
+    void drawHostOverlay(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view);
 
-    bool onOverlayPenDownDefault(double time,
+    bool onOverlayPenDownDefault(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenDoubleClickedDefault(double time,
+    bool onOverlayPenDoubleClickedDefault(TimeValue time,
                                           const RenderScale& renderScale,
                                           ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
 
-    bool onOverlayPenMotionDefault(double time,
+    bool onOverlayPenMotionDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUpDefault(double time,
+    bool onOverlayPenUpDefault(TimeValue time,
                                const RenderScale& renderScale,
                                ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDownDefault(double time,
+    bool onOverlayKeyDownDefault(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUpDefault(double time,
+    bool onOverlayKeyUpDefault(TimeValue time,
                                const RenderScale& renderScale,
                                ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeatDefault(double time,
+    bool onOverlayKeyRepeatDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusGainedDefault(double time,
+    bool onOverlayFocusGainedDefault(TimeValue time,
                                      const RenderScale& renderScale,
                                      ViewIdx view) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusLostDefault(double time,
+    bool onOverlayFocusLostDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view) WARN_UNUSED_RETURN;
 
@@ -1381,7 +1381,7 @@ public:
 
     void removeParameterFromPython(const std::string& parameterName);
 
-    double getHostMixingValue(double time, ViewIdx view) const;
+    double getHostMixingValue(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Removes all images from the cache associated to this node
@@ -1493,13 +1493,13 @@ public Q_SLOTS:
     }
 
     /*will force a preview re-computation not matter of the project's preview mode*/
-    void computePreviewImage(double time)
+    void computePreviewImage(TimeValue time)
     {
         Q_EMIT previewRefreshRequested(time);
     }
 
     /*will refresh the preview only if the project is in auto-preview mode*/
-    void refreshPreviewImage(double time)
+    void refreshPreviewImage(TimeValue time)
     {
         Q_EMIT previewImageChanged(time);
     }

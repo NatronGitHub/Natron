@@ -119,13 +119,13 @@ public Q_SLOTS:
 
 private:
 
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
+    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
+                             TimeValue time) OVERRIDE FINAL;
     boost::scoped_ptr<WriteNodePrivate> _imp;
 };
 
