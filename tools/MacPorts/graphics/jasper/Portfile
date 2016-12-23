@@ -1,9 +1,11 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
 
 PortSystem      1.0
+PortGroup       cmake 1.0
 
 name            jasper
-version         1.900.29
+version         2.0.6
+revision        2
 categories      graphics
 platforms       darwin
 license         JasPer-2
@@ -18,27 +20,39 @@ long_description \
 homepage        http://www.ece.uvic.ca/~mdadams/jasper/
 master_sites    ${homepage}software/
 
-checksums       rmd160 4ae47353f3dc086b3a11eff86ec7fb57d598c6fb \
-                sha256 2ae7e9d3ba189ddcd4231e7255348d3144757d5c2ff8dd853f37e0df783925c0
+checksums       rmd160 bebb8222c2b7431562ae679cbdaa841fd9d2dcac \
+                sha256 73f10024bc9dd77da6626509f6f04c8186f372bfb547aeef4eeaea9533a2ce3c
 
 depends_lib     path:lib/libjpeg.dylib:jpeg
 
-configure.args  --disable-opengl --disable-strict
+patchfiles      include-order.patch
+
+cmake.out_of_source yes
+
+configure.args-append   -DJAS_ENABLE_AUTOMATIC_DEPENDENCIES=false
+
+# ensure that macOS version of GLUT is used
+patchfiles-append       patch-jiv.c.diff
+configure.args-append   -DGLUT_glut_LIBRARY=/System/Library/Frameworks/GLUT.framework
 
 test.run        yes
-test.target     check
 
-post-destroot {
-    set docdir ${prefix}/share/doc/${name}
-    xinstall -m 755 -d ${destroot}${docdir}
-    xinstall -m 644 {*}[glob ${worksrcpath}/doc/*] ${destroot}${docdir}
-}
+variant docs description {build documentation} {}
 
-variant jiv description {build a basic viewer as well} {
-    depends_lib-append          port:mesa
+if {[variant_isset docs]} {
+    depends_build-append                \
+        port:doxygen                    \
+        port:texlive-latex              \
+        port:texlive-latex-recommended
 
-    configure.args-delete       --disable-opengl
-    configure.args-append       --enable-opengl
+    configure.args-append                           \
+        -DDOXYGEN_EXECUTABLE=${prefix}/bin/doxygen  \
+        -DPDFLATEX_COMPILER=${prefix}/bin/pdflatex
+} else {
+    # prevent building documentation unless requested
+    configure.args-append \
+        -DDOXYGEN_EXECUTABLE= \
+        -DPDFLATEX_COMPILER=
 }
 
 livecheck.type   regex

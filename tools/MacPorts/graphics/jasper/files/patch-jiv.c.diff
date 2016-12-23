@@ -1,0 +1,15 @@
+--- .//src/appl/jiv.c.orig	2016-12-09 07:31:37.000000000 -0700
++++ .//src/appl/jiv.c	2016-12-19 17:27:44.000000000 -0700
+@@ -67,11 +67,7 @@
+ #include <stdlib.h>
+ #include <math.h>
+ #include <inttypes.h>
+-#if defined(JAS_HAVE_GL_GLUT_H)
+-#include <GL/glut.h>
+-#else
+-#include <glut.h>
+-#endif
++#include <GLUT/glut.h>
+ 
+ /******************************************************************************\
+ *
