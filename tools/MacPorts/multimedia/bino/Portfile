@@ -35,7 +35,7 @@ patchfiles	\
 patch.cmd "git apply -v"
 patch.pre_args	-p1
 # autoreconf is only necessary if either configure.ac or a Makefile.am is patched
-#use_autoreconf	yes
+use_autoreconf	yes
 
 configure.args-append \
         MOC="$prefix/libexec/qt4/bin/moc" \
