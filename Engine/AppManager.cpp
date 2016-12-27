@@ -1296,7 +1296,7 @@ AppManager::clearAllCaches()
     }
 
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->abortAllViewers();
+        (*it)->abortAllViewers(true);
     }
 
     _imp->cache->clear();
@@ -2605,29 +2605,7 @@ AppManager::exec()
     return qApp->exec();
 }
 
-void
-AppManager::onNodeMemoryRegistered(qint64 mem)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if ( ( (qint64)_imp->_nodesGlobalMemoryUse + mem ) < 0 ) {
-        qDebug() << "Memory underflow...a node is trying to release more memory than it registered.";
-        _imp->_nodesGlobalMemoryUse = 0;
-
-        return;
-    }
-
-    _imp->_nodesGlobalMemoryUse += mem;
-}
-
-qint64
-AppManager::getTotalNodesMemoryRegistered() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->_nodesGlobalMemoryUse;
-}
 
 void
 AppManager::getErrorLog_mt_safe(std::list<LogEntry>* entries) const

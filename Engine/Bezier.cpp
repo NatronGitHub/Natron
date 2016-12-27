@@ -53,7 +53,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Interpolation.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
@@ -1285,7 +1284,7 @@ Bezier::addControlPointInternal(double x, double y, TimeValue time, ViewIdx view
         return BezierCPPtr();
     }
 
-    double keyframeTime;
+    TimeValue keyframeTime;
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
     BezierCPPtr p;
@@ -1306,7 +1305,7 @@ Bezier::addControlPointInternal(double x, double y, TimeValue time, ViewIdx view
         } else {
             KeyFrame k;
             if (!getMasterKeyframe(0, view, &k)) {
-                keyframeTime = getApp()->getTimeLine()->currentFrame();;
+                keyframeTime = TimeValue(getApp()->getTimeLine()->currentFrame());
             } else {
                 keyframeTime = k.getTime();
             }
@@ -1457,16 +1456,16 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
 
         for (std::set<double>::iterator it = existingKeyframes.begin(); it != existingKeyframes.end(); ++it) {
             Point p0, p1, p2, p3;
-            (*prev)->getPositionAtTime(*it, &p0.x, &p0.y);
-            (*prev)->getRightBezierPointAtTime( *it, &p1.x, &p1.y);
-            (*next)->getPositionAtTime(*it, &p3.x, &p3.y);
-            (*next)->getLeftBezierPointAtTime(*it, &p2.x, &p2.y);
+            (*prev)->getPositionAtTime(TimeValue(*it), &p0.x, &p0.y);
+            (*prev)->getRightBezierPointAtTime( TimeValue(*it), &p1.x, &p1.y);
+            (*next)->getPositionAtTime(TimeValue(*it), &p3.x, &p3.y);
+            (*next)->getLeftBezierPointAtTime(TimeValue(*it), &p2.x, &p2.y);
 
             Point p0f;
             Point p1f;
             if (useFeatherPoints() && prevF != shape->featherPoints.end() && *prevF) {
-                (*prevF)->getPositionAtTime(*it, &p0f.x, &p0f.y);
-                (*prevF)->getRightBezierPointAtTime(*it, &p1f.x, &p1f.y);
+                (*prevF)->getPositionAtTime(TimeValue(*it), &p0f.x, &p0f.y);
+                (*prevF)->getRightBezierPointAtTime(TimeValue(*it), &p1f.x, &p1f.y);
             } else {
                 p0f = p0;
                 p1f = p1;
@@ -1474,8 +1473,8 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
             Point p2f;
             Point p3f;
             if (useFeatherPoints() && nextF != shape->featherPoints.end() && *nextF) {
-                (*nextF)->getPositionAtTime(*it, &p3f.x, &p3f.y);
-                (*nextF)->getLeftBezierPointAtTime(*it, &p2f.x, &p2f.y);
+                (*nextF)->getPositionAtTime(TimeValue(*it), &p3f.x, &p3f.y);
+                (*nextF)->getLeftBezierPointAtTime(TimeValue(*it), &p2f.x, &p2f.y);
             } else {
                 p2f = p2;
                 p3f = p3;
@@ -1490,28 +1489,28 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
             bezierFullPoint(p0f, p1f, p2f, p3f, t, &p0p1f, &p1p2f, &p2p3f, &p0p1_p1p2f, &p1p2_p2p3f, &destf);
 
             //update prev and next inner control points
-            (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
-            (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+            (*prev)->setRightBezierPointAtTime(TimeValue(*it), p0p1.x, p0p1.y);
+            (*next)->setLeftBezierPointAtTime(TimeValue(*it), p2p3.x, p2p3.y);
 
             if ( useFeatherPoints() ) {
                 if (prevF != shape->featherPoints.end() && *prevF) {
-                    (*prevF)->setRightBezierPointAtTime(*it, p0p1f.x, p0p1f.y);
+                    (*prevF)->setRightBezierPointAtTime(TimeValue(*it), p0p1f.x, p0p1f.y);
                 }
                 if (nextF != shape->featherPoints.end() && *nextF) {
-                    (*nextF)->setLeftBezierPointAtTime(*it, p2p3f.x, p2p3f.y);
+                    (*nextF)->setLeftBezierPointAtTime(TimeValue(*it), p2p3f.x, p2p3f.y);
                 }
             }
 
 
-            p->setPositionAtTime(*it, dest.x, dest.y);
+            p->setPositionAtTime(TimeValue(*it), dest.x, dest.y);
             ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-            p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
-            p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
+            p->setLeftBezierPointAtTime(TimeValue(*it), p0p1_p1p2.x, p0p1_p1p2.y);
+            p->setRightBezierPointAtTime(TimeValue(*it), p1p2_p2p3.x, p1p2_p2p3.y);
 
             if ( useFeatherPoints() ) {
-                fp->setPositionAtTime(*it, destf.x, destf.y);
-                fp->setLeftBezierPointAtTime(*it, p0p1_p1p2f.x, p0p1_p1p2f.y);
-                fp->setRightBezierPointAtTime(*it, p1p2_p2p3f.x, p1p2_p2p3f.y);
+                fp->setPositionAtTime(TimeValue(*it), destf.x, destf.y);
+                fp->setLeftBezierPointAtTime(TimeValue(*it), p0p1_p1p2f.x, p0p1_p1p2f.y);
+                fp->setRightBezierPointAtTime(TimeValue(*it), p1p2_p2p3f.x, p1p2_p2p3f.y);
             }
         }
 
@@ -1519,10 +1518,10 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
         if ( existingKeyframes.empty() ) {
             Point p0, p1, p2, p3;
 
-            (*prev)->getPositionAtTime(0, &p0.x, &p0.y);
-            (*prev)->getRightBezierPointAtTime(0, &p1.x, &p1.y);
-            (*next)->getPositionAtTime(0, &p3.x, &p3.y);
-            (*next)->getLeftBezierPointAtTime(0, &p2.x, &p2.y);
+            (*prev)->getPositionAtTime(TimeValue(0), &p0.x, &p0.y);
+            (*prev)->getRightBezierPointAtTime(TimeValue(0), &p1.x, &p1.y);
+            (*next)->getPositionAtTime(TimeValue(0), &p3.x, &p3.y);
+            (*next)->getLeftBezierPointAtTime(TimeValue(0), &p2.x, &p2.y);
 
 
             Point dest;
@@ -1573,7 +1572,7 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
 
 
         ///If auto-keying is enabled, set a new keyframe
-        int currentTime = getApp()->getTimeLine()->currentFrame();
+        TimeValue currentTime = TimeValue(getApp()->getTimeLine()->currentFrame());
         if ( !hasMasterKeyframeAtTime(currentTime, view) && isAutoKeyingEnabled() ) {
             setKeyFrame(currentTime, view, 0);
         }
@@ -3948,10 +3947,13 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 } // expandToFeatherDistance
 
 void
-Bezier::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
+Bezier::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
-    std::list<BezierCPPtr> cps = getControlPoints(view);
-    std::list<BezierCPPtr> fps = getFeatherPoints(view);
+    if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
+        return;
+    }
+    std::list<BezierCPPtr> cps = getControlPoints(args.view);
+    std::list<BezierCPPtr> fps = getFeatherPoints(args.view);
     assert(cps.size() == fps.size() || fps.empty());
 
     if (!cps.empty()) {
@@ -3963,13 +3965,13 @@ Bezier::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
         std::list<BezierCPPtr>::const_iterator fIt = fps.begin();
         for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it!=cps.end(); ++it, ++fIt) {
             double x, y, lx, ly, rx, ry;
-            (*it)->getPositionAtTime(time, &x, &y);
-            (*it)->getLeftBezierPointAtTime(time, &lx, &ly);
-            (*it)->getRightBezierPointAtTime(time, &rx, &ry);
+            (*it)->getPositionAtTime(args.time, &x, &y);
+            (*it)->getLeftBezierPointAtTime(args.time, &lx, &ly);
+            (*it)->getRightBezierPointAtTime(args.time, &rx, &ry);
             double fx, fy, flx, fly, frx, fry;
             (*fIt)->getPositionAtTime(time, &fx, &fy);
-            (*fIt)->getLeftBezierPointAtTime(time, &flx, &fly);
-            (*fIt)->getRightBezierPointAtTime(time, &frx, &fry);
+            (*fIt)->getLeftBezierPointAtTime(args.time, &flx, &fly);
+            (*fIt)->getRightBezierPointAtTime(args.time, &frx, &fry);
 
             hash->append(x);
             hash->append(y);
@@ -3989,7 +3991,7 @@ Bezier::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
             }
         }
     }
-    RotoDrawableItem::appendToHash(time, view, hash);
+    RotoDrawableItem::appendToHash(args, hash);
 } // appendToHash
 
 std::string

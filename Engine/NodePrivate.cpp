@@ -49,12 +49,15 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , inputsMutex()
 , inputs()
 , effect()
+, duringInteractAction(false)
+, overlaysViewport(0)
 , inputsComponents()
 , outputComponents()
-, inputsLabelsMutex()
-, inputLabels()
+, nameMutex()
 , scriptName()
 , label()
+, inputsLabelsMutex()
+, inputLabels()
 , deactivatedState()
 , activatedMutex()
 , activated(true)
@@ -64,8 +67,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , computingPreview(false)
 , previewThreadQuit(false)
 , computingPreviewMutex()
-, pluginInstanceMemoryUsed(0)
-, memoryUsedMutex()
 , mustQuitPreview(0)
 , mustQuitPreviewMutex()
 , mustQuitPreviewCond()
@@ -88,9 +89,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , enabledChan()
 , channelsSelectors()
 , maskSelectors()
-, imagesBeingRenderedMutex()
-, imageBeingRenderedCond()
-, imagesBeingRendered()
 , supportedDepths()
 , lastRenderStartedMutex()
 , lastRenderStartedSlotCallTime()
@@ -113,11 +111,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , currentSupportTiles(false)
 , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
 , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
-, currentCanTransform(false)
-, draftModeUsed(false)
-, mustComputeInputRelatedData(true)
-, lastStrokeMovementMutex()
-, strokeBitmapCleared(false)
+, currentCanDistort(false)
 , lastRenderedImageMutex()
 , lastRenderedImage()
 , isBeingDestroyedMutex()
@@ -125,7 +119,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , inputModifiedRecursion(0)
 , inputsModified()
 , refreshIdentityStateRequestsCount(0)
-, isRefreshingInputRelatedData(false)
 , streamWarnings()
 , requiresGLFinishBeforeRender(false)
 , nodePositionCoords()
@@ -134,8 +127,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , overlayColor()
 , nodeIsSelected(false)
 , restoringDefaults(false)
-, isLoadingPreset(false)
-, presetKnobs()
 , hostChannelSelectorEnabled(false)
 {
     nodePositionCoords[0] = nodePositionCoords[1] = INT_MIN;
@@ -148,6 +139,14 @@ NodePrivate::NodePrivate(Node* publicInterface,
     gettimeofday(&lastRenderStartedSlotCallTime, 0);
     gettimeofday(&lastInputNRenderStartedSlotCallTime, 0);
 }
+
+void
+Node::setDuringInteractAction(bool b)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->duringInteractAction = b;
+}
+
 
 void
 Node::choiceParamAddLayerCallback(const KnobChoicePtr& knob)

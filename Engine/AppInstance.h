@@ -353,13 +353,9 @@ public:
 
     bool loadPythonScriptAndReportToScriptEditor(const QString& script);
 
-    virtual void queueRedrawForAllViewers() {}
-
-    virtual void dequeueRedrawsOnViewers() {}
-
     virtual void renderAllViewers(bool /* canAbort*/) {}
 
-    virtual void abortAllViewers() {}
+    virtual void abortAllViewers(bool /*autoRestartPlayback*/) {}
 
     virtual void refreshAllPreviews() {}
 

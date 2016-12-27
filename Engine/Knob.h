@@ -472,7 +472,7 @@ public:
      * @return Returns the kind of changed that the knob has had
      **/
     virtual ValueChangedReturnCodeEnum setIntValue(int value,
-                                                   ViewSetSpec view = ViewSetSpec::current(),
+                                                   ViewSetSpec view = ViewSetSpec::all(),
                                                    DimSpec dimension = DimSpec(0),
                                                    ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                    KeyFrame* newKey = 0,
@@ -495,7 +495,7 @@ public:
      **/
     virtual void setIntValueAcrossDimensions(const std::vector<int>& values,
                                              DimIdx dimensionStartIndex = DimIdx(0),
-                                             ViewSetSpec view = ViewSetSpec::current(),
+                                             ViewSetSpec view = ViewSetSpec::all(),
                                              ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                              std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
 
@@ -515,7 +515,7 @@ public:
      * @return Returns the kind of changed that the knob has had
      **/
     virtual ValueChangedReturnCodeEnum setDoubleValue(double value,
-                                                      ViewSetSpec view = ViewSetSpec::current(),
+                                                      ViewSetSpec view = ViewSetSpec::all(),
                                                       DimSpec dimension = DimSpec(0),
                                                       ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                       KeyFrame* newKey = 0,
@@ -538,7 +538,7 @@ public:
      **/
     virtual void setDoubleValueAcrossDimensions(const std::vector<double>& values,
                                                 DimIdx dimensionStartIndex = DimIdx(0),
-                                                ViewSetSpec view = ViewSetSpec::current(),
+                                                ViewSetSpec view = ViewSetSpec::all(),
                                                 ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                 std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
 
@@ -558,7 +558,7 @@ public:
      * @return Returns the kind of changed that the knob has had
      **/
     virtual ValueChangedReturnCodeEnum setBoolValue(bool value,
-                                                    ViewSetSpec view = ViewSetSpec::current(),
+                                                    ViewSetSpec view = ViewSetSpec::all(),
                                                     DimSpec dimension = DimSpec(0),
                                                     ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                     KeyFrame* newKey = 0,
@@ -581,7 +581,7 @@ public:
      **/
     virtual void setBoolValueAcrossDimensions(const std::vector<bool>& values,
                                               DimIdx dimensionStartIndex = DimIdx(0),
-                                              ViewSetSpec view = ViewSetSpec::current(),
+                                              ViewSetSpec view = ViewSetSpec::all(),
                                               ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                               std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
 
@@ -601,7 +601,7 @@ public:
      * @return Returns the kind of changed that the knob has had
      **/
     virtual ValueChangedReturnCodeEnum setStringValue(const std::string& value,
-                                                      ViewSetSpec view = ViewSetSpec::current(),
+                                                      ViewSetSpec view = ViewSetSpec::all(),
                                                       DimSpec dimension = DimSpec(0),
                                                       ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                       KeyFrame* newKey = 0,
@@ -625,7 +625,7 @@ public:
      **/
     virtual void setStringValueAcrossDimensions(const std::vector<std::string>& values,
                                                 DimIdx dimensionStartIndex = DimIdx(0),
-                                                ViewSetSpec view = ViewSetSpec::current(),
+                                                ViewSetSpec view = ViewSetSpec::all(),
                                                 ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                 std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) = 0;
     
@@ -753,7 +753,7 @@ public:
                                              const std::string& newName) = 0;
     virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) = 0;
     virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) = 0;
-    virtual std::string getExpression(DimIdx dimension, ViewIdx view = ViewIdx::current()) const = 0;
+    virtual std::string getExpression(DimIdx dimension, ViewIdx view) const = 0;
 
     /**
      * @brief Checks that the given expr for the given dimension will produce a correct behaviour.
@@ -923,7 +923,7 @@ public:
     virtual void setHashingStrategy(KnobFrameViewHashingStrategyEnum strategty) = 0;
     virtual KnobFrameViewHashingStrategyEnum getHashingStrategy() const = 0;
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE = 0;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE = 0;
 
     /**
      * @brief Any GUI representing this parameter should represent the next parameter on the same line as this parameter.
@@ -1685,7 +1685,7 @@ public:
 
     virtual bool isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getExpressionDependencies(DimIdx dimension, ViewIdx view, KnobDimViewKeySet& dependencies) const OVERRIDE FINAL;
-    virtual std::string getExpression(DimIdx dimension, ViewIdx view = ViewIdx::current()) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual std::string getExpression(DimIdx dimension, ViewIdx view) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setAnimationEnabled(bool val) OVERRIDE FINAL;
     virtual bool isAnimationEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setKeyFrameTrackingEnabled(bool enabled) OVERRIDE FINAL;
@@ -1972,7 +1972,7 @@ public:
      * in the thread-local storage (if while rendering) will be used, otherwise the view must correspond
      * to a valid view index.
      **/
-    virtual T getValue(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current(), bool clampToMinMax = true) WARN_UNUSED_RETURN;
+    virtual T getValue(DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true) WARN_UNUSED_RETURN;
 
 
     /**
@@ -1987,7 +1987,7 @@ public:
      * but this should be the only knob which should ever need to overload it.
      *
      **/
-    virtual T getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx::current(), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
+    virtual T getValueAtTime(TimeValue time, DimIdx dimension = DimIdx(0), ViewIdx view = ViewIdx(0), bool clampToMinMax = true)  WARN_UNUSED_RETURN;
 
     /**
      * @brief Same as getValueAtTime excepts that it ignores expression, hard-links (slave/master) and doesn't clamp to min/max.
@@ -2008,29 +2008,29 @@ public:
 
 public:
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
     //////////// Overriden from AnimatingObjectI
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
 
-    virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setIntValueAtTime(TimeValue time, int value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleIntValueAtTime(const std::list<IntTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setIntValueAtTimeAcrossDimensions(TimeValue time, const std::vector<int>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleIntValueAtTimeAcrossDimensions(const PerCurveIntValuesList& keysPerDimension,  ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
 
-    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
+    virtual ValueChangedReturnCodeEnum setBoolValueAtTime(TimeValue time, bool value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleBoolValueAtTime(const std::list<BoolTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setBoolValueAtTimeAcrossDimensions(TimeValue time, const std::vector<bool>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
     virtual void setMultipleBoolValueAtTimeAcrossDimensions(const PerCurveBoolValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE;
 
-    virtual ValueChangedReturnCodeEnum setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
+    virtual ValueChangedReturnCodeEnum setStringValueAtTime(TimeValue time, const std::string& value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleStringValueAtTime(const std::list<StringTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setStringValueAtTimeAcrossDimensions(TimeValue time, const std::vector<std::string>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE;
     virtual void setMultipleStringValueAtTimeAcrossDimensions(const PerCurveStringValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE;
     //////////// end overriden from AnimatingObjectI
 
@@ -2050,7 +2050,7 @@ public:
      **/
     ValueChangedReturnCodeEnum setValueAtTime(TimeValue time,
                                               const T & v,
-                                              ViewSetSpec view = ViewSetSpec::current(),
+                                              ViewSetSpec view = ViewSetSpec::all(),
                                               DimSpec dimension = DimSpec(0),
                                               ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                               KeyFrame* newKey = 0,
@@ -2061,7 +2061,7 @@ public:
      * This is efficient to set many keyframes on the given curve.
      * @param newKey[out] If non null, this will be set to the new keyframe in return
      **/
-    void setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
+    void setMultipleValueAtTime(const std::list<TimeValuePair<T> >& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0);
 
 
     /**
@@ -2081,7 +2081,7 @@ public:
     void setValueAtTimeAcrossDimensions(TimeValue time,
                                         const std::vector<T>& values,
                                         DimIdx dimensionStartIndex = DimIdx(0),
-                                        ViewSetSpec view = ViewSetSpec::current(),
+                                        ViewSetSpec view = ViewSetSpec::all(),
                                         ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                         std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
@@ -2092,7 +2092,7 @@ public:
 
 
     virtual ValueChangedReturnCodeEnum setIntValue(int value,
-                                                   ViewSetSpec view = ViewSetSpec::current(),
+                                                   ViewSetSpec view = ViewSetSpec::all(),
                                                    DimSpec dimension = DimSpec(0),
                                                    ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                    KeyFrame* newKey = 0,
@@ -2105,7 +2105,7 @@ public:
                                              std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
 
     virtual ValueChangedReturnCodeEnum setDoubleValue(double value,
-                                                      ViewSetSpec view = ViewSetSpec::current(),
+                                                      ViewSetSpec view = ViewSetSpec::all(),
                                                       DimSpec dimension = DimSpec(0),
                                                       ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                       KeyFrame* newKey = 0,
@@ -2118,7 +2118,7 @@ public:
                                                 std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
 
     virtual ValueChangedReturnCodeEnum setBoolValue(bool value,
-                                                    ViewSetSpec view = ViewSetSpec::current(),
+                                                    ViewSetSpec view = ViewSetSpec::all(),
                                                     DimSpec dimension = DimSpec(0),
                                                     ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                     KeyFrame* newKey = 0,
@@ -2131,7 +2131,7 @@ public:
                                               std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE FINAL;
 
     virtual ValueChangedReturnCodeEnum setStringValue(const std::string& value,
-                                                      ViewSetSpec view = ViewSetSpec::current(),
+                                                      ViewSetSpec view = ViewSetSpec::all(),
                                                       DimSpec dimension = DimSpec(0),
                                                       ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                                       KeyFrame* newKey = 0,
@@ -2159,7 +2159,7 @@ public:
      * @return Returns the kind of changed that the knob has had
      **/
     ValueChangedReturnCodeEnum setValue(const T & v,
-                                        ViewSetSpec view = ViewSetSpec::current(),
+                                        ViewSetSpec view = ViewSetSpec::all(),
                                         DimSpec dimension = DimSpec(0),
                                         ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                         KeyFrame* newKey = 0,
@@ -2184,7 +2184,7 @@ public:
      **/
     void setValueAcrossDimensions(const std::vector<T>& values,
                                   DimIdx dimensionStartIndex = DimIdx(0),
-                                  ViewSetSpec view = ViewSetSpec::current(),
+                                  ViewSetSpec view = ViewSetSpec::all(),
                                   ValueChangedReasonEnum reason = eValueChangedReasonUserEdited,
                                   std::vector<ValueChangedReturnCodeEnum>* retCodes = 0);
 
@@ -2597,8 +2597,6 @@ public:
 
     void requestOverlayInteractRefresh();
 
-    void checkAndRedrawOverlayInteractsIfNeeded();
-
     //To re-arrange user knobs only, does nothing if knob->isUserKnob() returns false
     bool moveKnobOneStepUp(const KnobIPtr& knob);
     bool moveKnobOneStepDown(const KnobIPtr& knob);
@@ -2783,7 +2781,7 @@ public:
      * @brief To implement if you need to make the hash vary at a specific time/view
      **/
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
 
     /**

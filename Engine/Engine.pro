@@ -96,6 +96,7 @@ SOURCES += \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstanceTLSData.cpp \
+    EffectInstanceActions.cpp \
     EffectInstanceActionResults.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \

@@ -116,7 +116,7 @@ public:
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash)  OVERRIDE FINAL;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash)  OVERRIDE FINAL;
 
 private:
 
@@ -130,7 +130,7 @@ private:
 
     virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual bool isIdentity(TimeValue time,
                             const RenderScale & scale,

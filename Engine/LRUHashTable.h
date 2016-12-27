@@ -382,8 +382,8 @@ public:
         // Identify least recently used key
         const typename key_to_value_type::iterator it  = _key_to_value.find( _key_tracker.front() );
 
-        while (!checkUseCount || it != _key_to_value.end()) {
-            if ( it->second.first.use_count() == 1 ) {
+        while ( it != _key_to_value.end()) {
+            if ( !checkUseCount || it->second.first.use_count() == 1 ) {
                 std::pair<key_type, V> ret = std::make_pair(it->first, it->second.first);
                 // Erase both elements to completely purge record
                 _key_to_value.erase(it);
@@ -471,8 +471,8 @@ public:
     std::pair<key_type, V> evict(bool checkUseCount)
     {
         typename container_type::right_iterator it = _container.right.begin();
-        while ( !checkUseCount || it != _container.right.end() ) {
-            if (it->first.use_count() == 1) {
+        while ( it != _container.right.end() ) {
+            if (!checkUseCount || it->first.use_count() == 1) {
                 std::pair<key_type, V> ret = std::make_pair(it->second, it->first);
                 _container.right.erase(it);
 

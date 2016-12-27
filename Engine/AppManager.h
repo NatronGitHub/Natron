@@ -516,10 +516,6 @@ public Q_SLOTS:
 
     void clearAllCaches();
 
-    void onNodeMemoryRegistered(qint64 mem);
-
-    qint64 getTotalNodesMemoryRegistered() const;
-
     void onMaxPanelsOpenedChanged(int maxPanels);
 
     void onQueueRendersChanged(bool queuingEnabled);

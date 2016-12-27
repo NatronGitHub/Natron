@@ -34,13 +34,11 @@
 #include <QtCore/QDebug>
 #include <QtCore/QCoreApplication>
 
-#include "Engine/CacheEntry.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/Settings.h"
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
 #include "Engine/AppInstance.h"

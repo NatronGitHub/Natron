@@ -48,8 +48,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::list<PluginMemoryWPtr> PluginMemoryWPtrList;
-
 class EffectInstance::Implementation
 {
     Q_DECLARE_TR_FUNCTIONS(EffectInstance)
@@ -64,21 +62,8 @@ public:
         
     }
 
-    EffectInstance* _publicInterface; // can not be a smart ptr
-
-    mutable QReadWriteLock duringInteractActionMutex; //< protects duringInteractAction
-    bool duringInteractAction; //< true when we're running inside an interact action
-
-    // Current chuncks of memory held by the plug-in
-    mutable QMutex pluginMemoryChunksMutex;
-    PluginMemoryWPtrList pluginMemoryChunks;
-
-    // Does this plug-in supports render scale ?
-    mutable QMutex supportsRenderScaleMutex;
-    SupportsEnum supportsRenderScale;
-
-    // Set during interact actions. This is only read/written on the main-thread.
-    OverlaySupport* overlaysViewport;
+    // can not be a smart ptr
+    EffectInstance* _publicInterface;
 
     mutable QMutex attachedContextsMutex;
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
@@ -100,7 +85,11 @@ public:
     // List of render clones if the main instance is not multi-thread safe
     std::list<EffectInstancePtr> renderClonesPool;
 
-    void setDuringInteractAction(bool b);
+    // An effect instance is only allowed to render if it has a render data pointer.
+    // When rendering Natron creates a copy of the "main instance" in a similar fashion as render clones
+    // but the image effect itself is not copied. 
+    TreeRenderNodeArgsPtr renderData;
+
 
     void
     determineRectsToRender(ImagePtr& isPlaneCached,
@@ -133,7 +122,7 @@ public:
     RenderRoIRetCode handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
                                           const ParallelRenderArgsPtr& frameArgs,
                                           const FrameViewRequest* requestPassData,
-                                          SupportsEnum supportsRS,
+                                          RenderScaleSupportEnum supportsRS,
                                           U64 frameViewHash,
                                           double par,
                                           unsigned int mipMapLevel,
@@ -160,7 +149,7 @@ public:
                               double *par,
                               ImageFieldingOrderEnum *fieldingOrder,
                               ImagePremultiplicationEnum *thisEffectOutputPremult,
-                              SupportsEnum *supportsRS,
+                              RenderScaleSupportEnum *supportsRS,
                               bool *renderFullScaleThenDownscale,
                               unsigned int *renderMappedMipMapLevel,
                               RenderScale *renderMappedScale,
@@ -434,7 +423,10 @@ public:
 
 
     void checkMetadata(NodeMetadata &metadata);
+
+    void refreshMetadaWarnings(const NodeMetadata &metadata);
 };
+
 
 
 NATRON_NAMESPACE_EXIT;

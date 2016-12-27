@@ -107,8 +107,8 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     }
     KnobIntPtr inPoint = viewer->getPlaybackInPointKnob();
     KnobIntPtr outPoint = viewer->getPlaybackOutPointKnob();
-    inPoint->setValue(first, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-    outPoint->setValue(second, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    inPoint->setValue(first, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+    outPoint->setValue(second, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
     abortViewersAndRefresh();
 }

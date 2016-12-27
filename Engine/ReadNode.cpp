@@ -943,10 +943,10 @@ ReadNode::purgeCaches()
 }
 
 StatusEnum
-ReadNode::getPreferredMetaDatas(NodeMetadata& metadata)
+ReadNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->getPreferredMetaDatas(metadata) : EffectInstance::getPreferredMetaDatas(metadata);
+    return p ? p->getEffectInstance()->getTimeInvariantMetaDatas(metadata) : EffectInstance::getTimeInvariantMetaDatas(metadata);
 }
 
 void

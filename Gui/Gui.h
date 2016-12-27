@@ -412,7 +412,7 @@ public:
 
     void renderAllViewers(bool canAbort);
 
-    void abortAllViewers();
+    void abortAllViewers(bool autoRestartPlayback);
 
     void toggleAutoHideGraphInputs();
 

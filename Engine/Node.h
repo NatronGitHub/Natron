@@ -417,21 +417,12 @@ public:
      **/
     bool isOutputNode() const;
 
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    bool isOpenFXNode() const;
-
 
     /**
      * @brief Returns true if this node is a backdrop
      **/
     bool isBackdropNode() const;
 
-    /**
-     * @brief Returns true if the node is a rotopaint node
-     **/
-    bool isRotoPaintingNode() const;
 
     ViewerNodePtr isEffectViewerNode() const;
 
@@ -588,6 +579,22 @@ public:
     virtual int getPreferredInput() const;
 
     NodePtr getPreferredInputNode() const;
+
+
+    /**
+     * @brief Does this effect supports rendering at a different scale than 1 ?
+     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
+     * or isIdentity with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
+     * If the renderScale support was not set, this throws an exception.
+     **/
+    bool supportsRenderScale() const;
+
+    RenderScaleSupportEnum supportsRenderScaleMaybe() const;
+
+    /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
+    void setSupportsRenderScaleMaybe(RenderScaleSupportEnum s) const;
+
+    void refreshRenderScaleSupport();
 
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
@@ -998,12 +1005,6 @@ public:
     void setOutputFilesForWriter(const std::string & pattern);
 
 
-    ///called by EffectInstance
-    void registerPluginMemory(size_t nBytes);
-
-    ///called by EffectInstance
-    void unregisterPluginMemory(size_t nBytes);
-
     //see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     QMutex & getRenderInstancesSharedMutex();
@@ -1270,6 +1271,15 @@ public:
     void setCurrentCursor(CursorEnum defaultCursor);
     bool setCurrentCursor(const QString& customCursorFilePath);
 
+private:
+
+    friend class DuringInteractActionSetter_RAII;
+    void setDuringInteractAction(bool b);
+
+public:
+
+    bool isDoingInteractAction() const;
+
     bool shouldDrawOverlay(TimeValue time, ViewIdx view) const;
 
 
@@ -1391,13 +1401,6 @@ public:
 public:
 
 
-    bool isDraftModeUsed() const;
-    bool isInputRelatedDataDirty() const;
-
-    void forceRefreshAllInputRelatedData();
-
-    void markAllInputRelatedDataDirty();
-
     KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
 
     const std::vector<std::string>& getCreatedViews() const;
@@ -1470,8 +1473,6 @@ private:
     bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
 
     bool refreshInputRelatedDataInternal(bool domarking, std::set<NodePtr>& markedNodes);
-
-    bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
     void setNameInternal(const std::string& name, bool throwErrors);
 
@@ -1606,6 +1607,22 @@ private:
 };
 
 
+class DuringInteractActionSetter_RAII
+{
+    NodePtr _node;
+public:
+
+    DuringInteractActionSetter_RAII(const NodePtr& node)
+    : _node(node)
+    {
+        node->setDuringInteractAction(true);
+    }
+
+    ~DuringInteractActionSetter_RAII()
+    {
+        _node->setDuringInteractAction(false);
+    }
+};
 
 NATRON_NAMESPACE_EXIT;
 

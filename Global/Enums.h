@@ -498,6 +498,14 @@ enum SequentialPreferenceEnum
     eSequentialPreferencePreferSequential
 };
 
+
+enum RenderScaleSupportEnum
+{
+    eSupportsMaybe = -1, // We don't know yet if the effect supports render scale
+    eSupportsNo = 0, // Does not support, the effect can only render at scale 1
+    eSupportsYes = 1 // Supports it, the effect can render at any scale
+};
+
 enum StorageModeEnum
 {
     eStorageModeNone = 0, //< no memory will be allocated

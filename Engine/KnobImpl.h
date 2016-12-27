@@ -1095,22 +1095,59 @@ void appendValueToHash(const std::string& v, Hash64* hash)
 
 template <typename T>
 void
-Knob<T>::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
+Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     int nDims = getNDimensions();
 
     KnobFrameViewHashingStrategyEnum hashingStrat = getHashingStrategy();
-
+    bool isMetadataSlave = getIsMetadataSlave();
 
     for (int i = 0; i < nDims; ++i) {
-        if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(DimIdx(i), view)) {
-            handleAnimatedHashing(this, view, DimIdx(i), hash);
-        } else {
-            T v = getValueAtTime(time, DimIdx(i), view);
-            appendValueToHash(v, hash);
+        switch (args.hashType) {
+            case HashableObject::eComputeHashTypeTimeViewVariant: {
+                if (isAnimated(DimIdx(i), args.view)) {
+                    if (hashingStrat == eKnobHashingStrategyAnimation) {
+                        // A parameter such as the speed param of the Retime node need to serialize the entire Curve
+                        // because a value change at another time can influence the result at the current time.
+                        handleAnimatedHashing(this, args.view, DimIdx(i), hash);
+                    } else {
+                        T v = getValueAtTime(args.time, DimIdx(i), args.view);
+                        appendValueToHash(v, hash);
+                    }
+                } else {
+                    T v = getValue(DimIdx(i), args.view);
+                    appendValueToHash(v, hash);
+                }
+            }   break;
+            case HashableObject::eComputeHashTypeTimeViewInvariant: {
+
+                // Ignore animated parameters for time view invariant
+                if (isAnimated(DimIdx(i), ViewIdx(0))) {
+                    continue;
+                }
+
+                T v = getValue(DimIdx(i), ViewIdx(0));
+                appendValueToHash(v, hash);
+
+            }   break;
+            case HashableObject::eComputeHashTypeOnlyMetadataSlaves: {
+
+                // Ignore non metadata slave parameters
+                if (!isMetadataSlave) {
+                    continue;
+                }
+                // Ignore animated parameters for time view invariant
+                if (isAnimated(DimIdx(i), ViewIdx(0))) {
+                    continue;
+                }
+
+                T v = getValue(DimIdx(i), ViewIdx(0));
+                appendValueToHash(v, hash);
+
+            }   break;
         }
     }
-}
+} // appendToHash
 
 template <>
 AnimatingObjectI::KeyframeDataTypeEnum

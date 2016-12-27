@@ -53,7 +53,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Project.h"
@@ -1390,8 +1389,11 @@ RotoStrokeItemPrivate::computeHashFromStrokes()
 }
 
 void
-RotoStrokeItem::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
+RotoStrokeItem::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
+    if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
+        return;
+    }
     {
         // Append the item knobs
         QMutexLocker k(&_imp->lock);
@@ -1400,7 +1402,7 @@ RotoStrokeItem::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
     }
 
 
-    RotoDrawableItem::appendToHash(time, view, hash);
+    RotoDrawableItem::appendToHash(args, hash);
 }
 
 void

@@ -44,6 +44,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/ThreadPool.h"
+#include "Engine/TimeValue.h"
 
 //#define NATRON_PLAYBACK_USES_THREAD_POOL
 
@@ -96,51 +97,28 @@ class OutputSchedulerThread;
 
 struct RenderThreadTaskPrivate;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-class RenderThreadTask
-    :  public QThread
-      , public AbortableThread
-#else
-class RenderThreadTask
-    :  public QRunnable
-#endif
+
+class RenderThreadTask : public QRunnable
 {
 public:
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    RenderThreadTask(const OutputEffectInstancePtr& output,
-                     OutputSchedulerThread* scheduler);
-#else
+
     RenderThreadTask(const OutputEffectInstancePtr& output,
                      OutputSchedulerThread* scheduler,
-                     const int time,
+                     const TimeValue time,
                      const bool useRenderStats,
                      const std::vector<ViewIdx>& viewsToRender);
-#endif
 
     virtual ~RenderThreadTask();
 
     virtual void run() OVERRIDE FINAL;
-
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    /**
-     * @brief Call this to quit the thread whenever it will return to the pickFrameToRender function
-     **/
-    void scheduleForRemoval();
-
-    bool mustQuit() const;
-
-    bool hasQuit() const;
-
-    void notifyIsRunning(bool running);
-#endif
 
 protected:
 
     /**
      * @brief Must render the frame
      **/
-    virtual void renderFrame(int time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats) = 0;
+    virtual void renderFrame(TimeValue time, const std::vector<ViewIdx>& viewsToRender, bool enableRenderStats) = 0;
     boost::scoped_ptr<RenderThreadTaskPrivate> _imp;
 };
 
@@ -158,18 +136,18 @@ public:
 
     bool isBlocking;
     bool enableRenderStats;
-    int firstFrame;
-    int lastFrame;
-    int frameStep;
+    TimeValue firstFrame;
+    TimeValue lastFrame;
+    TimeValue frameStep;
     std::vector<ViewIdx> viewsToRender;
-    RenderDirectionEnum processTimelineDirection, pushTimelineDirection;
+    RenderDirectionEnum direction;
 
 
     OutputSchedulerThreadStartArgs(bool isBlocking,
                                    bool enableRenderStats,
-                                   int firstFrame,
-                                   int lastFrame,
-                                   int frameStep,
+                                   TimeValue firstFrame,
+                                   TimeValue lastFrame,
+                                   TimeValue frameStep,
                                    const std::vector<ViewIdx>& viewsToRender,
                                    RenderDirectionEnum forward)
         : GenericThreadStartArgs()
@@ -179,8 +157,7 @@ public:
         , lastFrame(lastFrame)
         , frameStep(frameStep)
         , viewsToRender(viewsToRender)
-        , processTimelineDirection(forward)
-        , pushTimelineDirection(forward)
+        , direction(forward)
     {
     }
 
@@ -247,9 +224,9 @@ public:
      **/
     void renderFrameRange(bool isBlocking,
                           bool enableRenderStats,
-                          int firstFrame,
-                          int lastFrame,
-                          int frameStep,
+                          TimeValue firstFrame,
+                          TimeValue lastFrame,
+                          TimeValue frameStep,
                           const std::vector<ViewIdx>& viewsToRender,
                           RenderDirectionEnum forward);
 
@@ -324,11 +301,6 @@ public:
 
     void runCallbackWithVariables(const QString& callback);
 
-private Q_SLOTS:
-
-    void onThreadSpawnsTimerTriggered();
-
-
 Q_SIGNALS:
 
     void s_executeCallbackOnMainThread(QString);
@@ -345,17 +317,11 @@ protected:
      **/
     virtual void processFrame(const BufferedFrames& frames) = 0;
 
-    /**
-     * @brief Must be implemented to increment/decrement the timeline by one frame.
-     * @param forward If true, must increment otherwise must decrement
-     **/
-    virtual void timelineStepOne(RenderDirectionEnum direction) = 0;
 
     /**
-     * @brief Set the timeline to the next frame to be rendered, this is used by startSchedulerAtFrame() when starting rendering
-     * then timelineStepOne() is used instead.
+     * @brief Set the timeline to the next frame to be rendered, this is used by startSchedulerAtFrame()
      **/
-    virtual void timelineGoTo(int time) = 0;
+    virtual void timelineGoTo(TimeValue time) = 0;
 
     /**
      * @brief Should we try to maintain a constant FPS ?
@@ -366,23 +332,19 @@ protected:
      * @brief Must return the frame range to render. For the viewer this is what is indicated on the global timeline,
      * for writers this is its internal timeline.
      **/
-    virtual void getFrameRangeToRender(int& first, int& last)  const = 0;
+    virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last)  const = 0;
 
     /**
      * @brief Return the frame expected to be rendered
      **/
-    virtual int timelineGetTime() const = 0;
+    virtual TimeValue timelineGetTime() const = 0;
 
     /**
      * @brief Must create a runnable task that will render 1 frame in a separate thread.
      * The internal thread pool will take care of the thread
      * The task will pick frames to render until there are no more to be rendered.
      **/
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    virtual RenderThreadTask* createRunnable() = 0;
-#else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
-#endif
+    virtual RenderThreadTask* createRunnable(TimeValue frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) = 0;
 
     /**
      * @brief Called upon failure of a thread to render an image
@@ -398,7 +360,7 @@ protected:
      * @brief Returns the last successful render time.
      * This makes sense only for Viewers to keep the timeline in sync with what is displayed.
      **/
-    virtual int getLastRenderedTime() const { return timelineGetTime(); }
+    virtual TimeValue getLastRenderedTime() const { return timelineGetTime(); }
 
     /**
      * @brief Callback when startRender() is called
@@ -435,38 +397,9 @@ private:
     void stopRender();
 
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    /**
-     * @brief Called by the scheduler threads to wake-up render threads and make them do some work
-     * It calls pushFramesToRenderInternal. It starts pushing frames from lastFramePushedIndex
-     **/
-    void pushFramesToRender(int nThreads);
-
-    /**
-     *@brief Called in startRender() when we need to start pushing frames to render
-     **/
-    void pushFramesToRender(int startingFrame, int nThreads);
-
-
-    void pushFramesToRenderInternal(int startingFrame, int nThreads);
-
-    void pushAllFrameRange();
-
-    /**
-     * @brief Starts/stops more threads according to CPU activity and user preferences
-     * @param optimalNThreads[out] Will be set to the new number of threads
-     **/
-    void adjustNumberOfThreads(int* newNThreads, int *lastNThreads);
-#else
     void startTasksFromLastStartedFrame();
-    void startTasks(int startingFrame);
-#endif
-
-    /**
-     * @brief Make nThreadsToStop quit running. If 0 then all threads will be destroyed.
-     **/
-    void stopRenderThreads(int nThreadsToStop);
-
+    
+    void startTasks(TimeValue startingFrame);
 
     boost::scoped_ptr<OutputSchedulerThreadPrivate> _imp;
 };
@@ -489,24 +422,22 @@ public:
 private:
 
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
-    virtual void timelineStepOne(RenderDirectionEnum direction) OVERRIDE FINAL;
-    virtual void timelineGoTo(int time) OVERRIDE FINAL;
-    virtual void getFrameRangeToRender(int& first, int& last) const OVERRIDE FINAL;
-    virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void timelineGoTo(TimeValue time) OVERRIDE FINAL;
+    virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last) const OVERRIDE FINAL;
+    virtual TimeValue timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
-#else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
+    virtual RenderThreadTask* createRunnable(TimeValue frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL;
     virtual void aboutToStartRender() OVERRIDE FINAL;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
+    
+private:
+
     boost::weak_ptr<OutputEffectInstance> _effect;
     mutable QMutex _currentTimeMutex;
-    int _currentTime;
+    TimeValue _currentTime;
 };
 
 
@@ -524,23 +455,19 @@ public:
 private:
 
     virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
-    virtual void timelineStepOne(RenderDirectionEnum direction) OVERRIDE FINAL;
-    virtual void timelineGoTo(int time) OVERRIDE FINAL;
-    virtual int timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void timelineGoTo(TimeValue time) OVERRIDE FINAL;
+    virtual TimeValue timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isFPSRegulationNeeded() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
-    virtual void getFrameRangeToRender(int& first, int& last) const OVERRIDE FINAL;
+    virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last) const OVERRIDE FINAL;
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    virtual RenderThreadTask* createRunnable() OVERRIDE FINAL WARN_UNUSED_RETURN;
-#else
-    virtual RenderThreadTask* createRunnable(int frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
-#endif
+
+    virtual RenderThreadTask* createRunnable(TimeValue frame, bool useRenderStarts, const std::vector<ViewIdx>& viewsToRender) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual void handleRenderFailure(const std::string& errorMessage) OVERRIDE FINAL;
     virtual SchedulingPolicyEnum getSchedulingPolicy() const OVERRIDE FINAL { return eSchedulingPolicyOrdered; }
 
-    virtual int getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual TimeValue getLastRenderedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onRenderStopped(bool aborted) OVERRIDE FINAL;
     boost::weak_ptr<ViewerInstance> _viewer;
 };
@@ -648,9 +575,9 @@ public:
      **/
     void renderFrameRange(bool isBlocking,
                           bool enableRenderStats,
-                          int firstFrame,
-                          int lastFrame,
-                          int frameStep,
+                          TimeValue firstFrame,
+                          TimeValue lastFrame,
+                          TimeValue frameStep,
                           const std::vector<ViewIdx>& viewsToRender,
                           RenderDirectionEnum forward);
 

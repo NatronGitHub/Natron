@@ -1076,8 +1076,9 @@ Cache::evictLRUEntries(std::size_t nBytesToFree, StorageModeEnum storage)
             {
                 QMutexLocker k(&bucket.bucketLock);
 
-                // Clear the LRU entry of this bucket, even if it is used by a thread somewhere.
-                std::pair<U64, CacheEntryBasePtr> evicted = bucket.container.evict(false /*checkUseCount*/);
+                // Clear the LRU entry of this bucket.
+                // Note that if a thread holds a pointer to it somewhere it won't be evicted
+                std::pair<U64, CacheEntryBasePtr> evicted = bucket.container.evict(true /*checkUseCount*/);
                 if (!evicted.second) {
                     continue;
                 }

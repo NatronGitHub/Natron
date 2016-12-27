@@ -53,10 +53,6 @@ public:
 
     ~RenderValuesCache();
 
-    void setCachedNodeMetadatas(const NodeMetadata& data);
-
-    const NodeMetadata& getCachedMetadatas() const;
-
     bool getCachedInput(int inputNb, NodePtr* node) const;
 
     void setCachedInput(int inputNb, const NodePtr& node);

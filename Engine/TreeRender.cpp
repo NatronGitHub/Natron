@@ -152,6 +152,7 @@ struct TreeRenderPrivate
      **/
     TreeRenderNodeArgsPtr buildRenderTreeRecursive(const NodePtr& node, std::set<NodePtr>* visitedNodes);
 
+   
 };
 
 
@@ -443,7 +444,8 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
     }
 
     
-    // Recurse on all inputs to ensure they are part of the tree
+    // Recurse on all inputs to ensure they are part of the tree and make the connections to this
+    // node render args
     int nInputs = node->getMaxInputCount();
     for (int i = 0; i < nInputs; ++i) {
         NodePtr inputNode = node->getInput(i);
@@ -499,8 +501,8 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
 
 } // init
 
-ImagePtr
-TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, RenderRoIRetCode* renderStatus)
+RenderRoIRetCode
+TreeRender::renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
     TreeRenderPtr render(new TreeRender());
 
@@ -510,7 +512,7 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, Rend
         // This will also set the per node render object in the TLS for OpenFX effects.
         rootNodeRenderArgs = render->_imp->init(inArgs, render);
     } catch (...) {
-        *renderStatus = eRenderRoIRetCodeFailed;
+        return eRenderRoIRetCodeFailed;
     }
 
     assert(rootNodeRenderArgs);
@@ -519,15 +521,44 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, Rend
 
     // Use the provided RoI, otherwise render the RoD
     RectD canonicalRoi;
-    RectI pixelRoI;
+    RenderScale scale = Image::getScaleFromMipMapLevel(inArgs->mipMapLevel);
     if (inArgs->canonicalRoI) {
         canonicalRoi = *inArgs->canonicalRoI;
     } else {
-        RenderScale scale = Image::getScaleFromMipMapLevel(inArgs->mipMapLevel);
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, scale, inArgs->view, rootNodeRenderArgs, &canonicalRoi);
+        GetRegionOfDefinitionResultsPtr results;
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, scale, inArgs->view, rootNodeRenderArgs, &results);
         if (stat == eStatusFailed) {
-            *renderStatus = eRenderRoIRetCodeFailed;
-            return ImagePtr();
+            return eRenderRoIRetCodeFailed;
+        }
+        assert(results);
+        canonicalRoi = results->getRoD();
+    }
+
+    // Use the provided components otherwise fallback on all components needed by the output
+    std::list<ImageComponents> componentsToRender;
+    if (inArgs->layers) {
+        componentsToRender = *inArgs->layers;
+    } else {
+        GetComponentsNeededResultsPtr results;
+        StatusEnum stat = effectToRender->getComponentsNeededAndProduced_public(inArgs->time, inArgs->view, rootNodeRenderArgs, &results);
+        if (stat == eStatusFailed) {
+            return eRenderRoIRetCodeFailed;
+        }
+        assert(results);
+
+        ComponentsNeededMap neededComps;
+        int passThroughInputNb;
+        TimeValue passThroughTime;
+        ViewIdx passThroughView;
+        std::bitset<4> processChannels;
+        bool processAll;
+        results->getComponentsNeededResults(&neededComps, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
+        
+        ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+        if ( foundOutput != neededComps.end() ) {
+            for (std::size_t j = 0; j < foundOutput->second.size(); ++j) {
+                componentsToRender.push_back(foundOutput->second[j]);
+            }
         }
     }
 
@@ -542,38 +573,36 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, Rend
         StatusEnum stat = EffectInstance::getInputsRoIsFunctor(inArgs->time,
                                                                inArgs->view,
                                                                inArgs->mipMapLevel,
-                                                               render,
                                                                nodeFrameArgs,
-                                                               inArgs->treeRoot,
                                                                inArgs->treeRoot,
                                                                inArgs->treeRoot,
                                                                canonicalRoi);
 
         if (stat == eStatusFailed) {
-            *renderStatus = eRenderRoIRetCodeFailed;
-            return ImagePtr();
+            return eRenderRoIRetCodeFailed;
         }
     }
 
-    *renderStatus = effectToRender->renderRoI(RenderRoIArgs(time,
-                                                            scale,
-                                                            renderMappedMipMapLevel,
-                                                            view,
-                                                            false /*byPassCache*/,
-                                                            pixelRoI,
-                                                            requestedComps,
-                                                            depth,
-                                                            true,
-                                                            shared_from_this(),
-                                                            inputNb,
-                                                            returnStorage,
-                                                            thisEffectRenderTime,
-                                                            inputImagesThreadLocal), &inputRenderResults);
+    double outputPar = effectToRender->getAspectRatio(rootNodeRenderArgs, -1);
 
+    RectI pixelRoI;
+    canonicalRoi.toPixelEnclosing(scale, outputPar, &pixelRoI);
 
-
-    return ImagePtr();
-
+    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(inArgs->time,
+                                                                                                     inArgs->view,
+                                                                                                     scale,
+                                                                                                     inArgs->mipMapLevel,
+                                                                                                     pixelRoI,
+                                                                                                     componentsToRender,
+                                                                                                     effectToRender,
+                                                                                                     -1,
+                                                                                                     inArgs->time,
+                                                                                                     InputImagesMap()));
+    
+    EffectInstance::RenderRoIResults results;
+    RenderRoIRetCode stat = effectToRender->renderRoI(*renderRoiArgs, &results);
+    *outputPlanes = results.outputPlanes;
+    return stat;
 
 } // renderImage
 

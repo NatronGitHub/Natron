@@ -28,7 +28,6 @@
 #include "Engine/Curve.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
-#include "Engine/NodeMetadata.h"
 #include "Engine/RotoStrokeItem.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -131,10 +130,6 @@ struct RenderValuesCachePrivate
     };
     std::vector<CachedNodeInput> inputs;
 
-    // Node metadatas at the time of render
-    NodeMetadata metadatas;
-
-
     RenderValuesCachePrivate()
     : boolKnobValues()
     , intKnobValues()
@@ -158,18 +153,6 @@ RenderValuesCache::RenderValuesCache()
 RenderValuesCache::~RenderValuesCache()
 {
 
-}
-
-void
-RenderValuesCache::setCachedNodeMetadatas(const NodeMetadata& data)
-{
-    _imp->metadatas = data;
-}
-
-const NodeMetadata&
-RenderValuesCache::getCachedMetadatas() const
-{
-    return _imp->metadatas;
 }
 
 bool

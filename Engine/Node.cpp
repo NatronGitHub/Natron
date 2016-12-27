@@ -77,7 +77,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/GenericSchedulerThreadWatcher.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
@@ -151,7 +150,6 @@ Node::Node(const AppInstancePtr& app,
     : QObject()
     , _imp( new NodePrivate(this, app, group, plugin) )
 {
-    QObject::connect( this, SIGNAL(pluginMemoryUsageChanged(qint64)), appPTR, SLOT(onNodeMemoryRegistered(qint64)) );
     QObject::connect(this, SIGNAL(refreshIdentityStateRequested()), this, SLOT(onRefreshIdentityStateRequestReceived()), Qt::QueuedConnection);
 
     if (plugin && QString::fromUtf8(plugin->getPluginID().c_str()).startsWith(QLatin1String("com.FXHOME.HitFilm"))) {
@@ -476,7 +474,7 @@ Node::load(const CreateNodeArgsPtr& args)
 
 
     // Refresh render scale support
-    _imp->effect->refreshRenderScaleSupport();
+    refreshRenderScaleSupport();
 
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
     refreshDynamicProperties();
@@ -534,6 +532,92 @@ Node::getCurrentNodePresets() const
     QMutexLocker k(&_imp->nodePresetMutex);
     return _imp->initialNodePreset;
 }
+
+/**
+ * @brief Does this effect supports rendering at a different scale than 1 ?
+ * There is no OFX property for this purpose. The only solution found for OFX is that if a isIdentity
+ * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
+ * If the renderScale support was not set, this throws an exception.
+ **/
+bool
+Node::supportsRenderScale() const
+{
+    if (_imp->supportsRenderScale == eSupportsMaybe) {
+        qDebug() << "EffectInstance::supportsRenderScale should be set before calling supportsRenderScale(), or use supportsRenderScaleMaybe() instead";
+        throw std::runtime_error("supportsRenderScale not set");
+    }
+
+    return _imp->supportsRenderScale == eSupportsYes;
+}
+
+RenderScaleSupportEnum
+Node::supportsRenderScaleMaybe() const
+{
+    QMutexLocker l(&_imp->pluginsPropMutex);
+
+    return _imp->supportsRenderScale;
+}
+
+/// should be set during effect initialization, but may also be set by the first getRegionOfDefinition that succeeds
+void
+Node::setSupportsRenderScaleMaybe(EffectInstance::RenderScaleSupportEnum s) const
+{
+    {
+        QMutexLocker l(&_imp->pluginsPropMutex);
+
+        _imp->supportsRenderScale = s;
+    }
+    NodePtr node = getNode();
+
+    if (node) {
+        node->onSetSupportRenderScaleMaybeSet( (int)s );
+    }
+}
+
+void
+Node::refreshRenderScaleSupport()
+{
+
+
+    // Try to set renderscale support at plugin creation.
+    // This is not always possible (e.g. if a param has a wrong value).
+    if (supportsRenderScaleMaybe() != eSupportsMaybe) {
+        return;
+    }
+
+    if ( !isRenderScaleSupportEnabledForPlugin() ) {
+        setSupportsRenderScaleMaybe(eSupportsNo);
+        return;
+    }
+
+    RenderScale scaleOne;
+    scaleOne.x = 1.;
+    scaleOne.y = 1.;
+
+    double first = INT_MIN, last = INT_MAX;
+    _imp->effect->getFrameRange(&first, &last);
+    if ( (first == INT_MIN) || (last == INT_MAX) ) {
+        first = last = getApp()->getTimeLine()->currentFrame();
+    }
+
+    TimeValue time = first;
+    RectD rod;
+    StatusEnum stat = _imp->effect->getRegionOfDefinition_public(0, time, scaleOne, ViewIdx(0), &rod);
+
+    if (stat == eStatusOK || stat == eStatusReplyDefault) {
+        RenderScale scale;
+        scale.x = 0.5;
+        scale.y = 0.5;
+        stat = _imp->effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
+        if (stat == eStatusOK || stat == eStatusReplyDefault) {
+            setSupportsRenderScaleMaybe(eSupportsYes);
+        } else {
+            setSupportsRenderScaleMaybe(eSupportsNo);
+        }
+    }
+
+} // refreshRenderScaleSupport
+
 
 
 void
@@ -962,9 +1046,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (!page) {
                 return;
             }
-            if (!found && _imp->isLoadingPreset) {
-                _imp->presetKnobs.push_back(page);
-            }
+
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(KnobGroupPtr(), page, **it, recursionLevel + 1);
             }
@@ -992,9 +1074,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             if (group) {
                 group->addKnob(grp);
             }
-            if (!found && _imp->isLoadingPreset) {
-                _imp->presetKnobs.push_back(group);
-            }
+
             grp->setValue(groupSerialization->_isOpened);
             for (std::list<boost::shared_ptr<SERIALIZATION_NAMESPACE::KnobSerializationBase> >::const_iterator it = groupSerialization->_children.begin(); it != groupSerialization->_children.end(); ++it) {
                 restoreUserKnob(grp, page, **it, recursionLevel + 1);
@@ -1053,9 +1133,7 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             } else if (isParametric) {
                 knob = AppManager::createKnob<KnobParametric>(_imp->effect, serialization->_label, serialization->_dimension, false);
             }
-            if (!found && _imp->isLoadingPreset) {
-                _imp->presetKnobs.push_back(knob);
-            }
+
         } // found
 
 
@@ -1111,6 +1189,9 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     bool pageOrderChanged = true;
     if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypeRegular) {
         pageOrderChanged = hasPageOrderChangedSinceDefault();
+    } else if (serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePresets) {
+        // Never serialize page order in a Preset
+        pageOrderChanged = false;
     }
 
     bool isFullSaveMode = appPTR->getCurrentSettings()->getIsFullRecoverySaveModeEnabled();
@@ -1139,12 +1220,15 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
             }
 
             // Save user pages if they were added by the user with respect to the initial plug-in state, or if we are encoding as a PyPlug
-            if ( knobs[i]->isUserKnob() && (!knobs[i]->isDeclaredByPlugin() || serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug)) {
-                userPages.push_back(knobs[i]);
+            if (serialization->_encodeType != SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePresets) {
+                if ( knobs[i]->isUserKnob() && (!knobs[i]->isDeclaredByPlugin() || serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug)) {
+                    userPages.push_back(knobs[i]);
+                }
             }
             continue;
         }
 
+        // A knob might be non persistent but still have an expression, in which case we need to serialize it.
         bool hasExpr = false;
         {
             std::list<ViewIdx> views = knobs[i]->getViewsList();
@@ -1817,22 +1901,8 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
 
     if (presetSerialization) {
 
-        // If any preset knob already exist, remove it
-        {
-            for (std::list<KnobIWPtr>::iterator it = _imp->presetKnobs.begin(); it != _imp->presetKnobs.end(); ++it) {
-                KnobIPtr knob = it->lock();
-                if (!knob) {
-                    continue;
-                }
-                _imp->effect->deleteKnob(knob, true);
-            }
-            _imp->presetKnobs.clear();
-        }
-
-        _imp->isLoadingPreset = true;
         // Load presets from serialization if any
         loadPresetsInternal(presetSerialization, true);
-        _imp->isLoadingPreset = false;
     } else {
 
         // Reset knob default values to their initial default value if we had a different preset before
@@ -3024,9 +3094,6 @@ Node::makeInfoForInput(int inputNumber) const
     EffectInstancePtr input;
     if (inputNumber != -1) {
         input = _imp->effect->getInput(inputNumber);
-        /*if (input) {
-            input = input->getNearestNonIdentity( getApp()->getTimeLine()->currentFrame() );
-        }*/
     } else {
         input = _imp->effect;
     }
@@ -4565,7 +4632,7 @@ Node::setForceCachingEnabled(bool value)
 void
 Node::onSetSupportRenderScaleMaybeSet(int support)
 {
-    if ( (EffectInstance::SupportsEnum)support == EffectInstance::eSupportsYes ) {
+    if ( (EffectInstance::RenderScaleSupportEnum)support == EffectInstance::eSupportsYes ) {
         KnobBoolPtr b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
         if (b) {
             b->setSecret(true);
@@ -5862,8 +5929,6 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
     ///Free all memory used by the plug-in.
 
-    ///COMMENTED-OUT: Don't do this, the node may still be rendering here since the abort call is not blocking.
-    ///_imp->effect->clearPluginMemoryChunks();
     clearLastRenderedImage();
 
     if (parentCol && !beingDestroyed) {
@@ -6022,13 +6087,11 @@ Node::onProcessingQuitInDestroyNodeInternal(int taskID,
 void
 Node::doDestroyNodeInternalEnd(bool autoReconnect)
 {
-    //if (doDeactivate) {
-        deactivate(NodesList(),
-                   true,
-                   autoReconnect,
-                   true,
-                   false);
-    //}
+    deactivate(NodesList(),
+               true,
+               autoReconnect,
+               true,
+               false);
 
     {
         NodeGuiIPtr guiPtr = _imp->guiPointer.lock();
@@ -6037,41 +6100,35 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
         }
     }
 
-    ///If its a group, clear its nodes
+    // If its a group, clear its nodes
     NodeGroupPtr isGrp = isEffectNodeGroup();
     if (isGrp) {
         isGrp->clearNodesBlocking();
     }
 
 
-    ///Quit any rendering
+    // Quit any rendering
     {
         OutputEffectInstancePtr isOutput = isEffectOutput();
         if (isOutput) {
             isOutput->getRenderEngine()->quitEngine(true);
         }
     }
-    ///Remove all images in the cache associated to this node
-    ///This will not remove from the disk cache if the project is closing
-    removeAllImagesFromCache();
 
+
+    // Remove the Python node
+    deleteNodeVariableToPython( getFullyQualifiedName() );
+
+    // Removing this node might invalidate some expressions, check it now
     AppInstancePtr app = getApp();
     if (app) {
         app->recheckInvalidExpressions();
     }
 
-    ///Remove the Python node
-    deleteNodeVariableToPython( getFullyQualifiedName() );
 
-
-    ///Kill the effect
-    if (_imp->effect) {
-        _imp->effect->clearPluginMemoryChunks();
-    }
-
-    ///If inside the group, remove it from the group
-    ///the use_count() after the call to removeNode should be 2 and should be the shared_ptr held by the caller and the
-    ///thisShared ptr
+    // If inside the group, remove it from the group
+    // the use_count() after the call to removeNode should be 2 and should be the shared_ptr held by the caller and the
+    // thisShared ptr
 
     NodeCollectionPtr thisGroup = getGroup();
     if ( thisGroup ) {
@@ -6424,22 +6481,6 @@ Node::isOutputNode() const
     return _imp->effect->isOutput();
 }
 
-bool
-Node::isOpenFXNode() const
-{
-    ///MT-safe, never changes
-    return _imp->effect->isOpenFX();
-}
-
-
-/**
- * @brief Returns true if the node is a rotopaint node
- **/
-bool
-Node::isRotoPaintingNode() const
-{
-    return _imp->effect ? _imp->effect->isRotoPaintNode() : false;
-}
 
 ViewerNodePtr
 Node::isEffectViewerNode() const
@@ -7021,26 +7062,6 @@ Node::setOutputFilesForWriter(const std::string & pattern)
     _imp->effect->setOutputFilesForWriter(pattern);
 }
 
-void
-Node::registerPluginMemory(size_t nBytes)
-{
-    {
-        QMutexLocker l(&_imp->memoryUsedMutex);
-        _imp->pluginInstanceMemoryUsed += nBytes;
-    }
-    Q_EMIT pluginMemoryUsageChanged(nBytes);
-}
-
-void
-Node::unregisterPluginMemory(size_t nBytes)
-{
-    {
-        QMutexLocker l(&_imp->memoryUsedMutex);
-        _imp->pluginInstanceMemoryUsed -= nBytes;
-    }
-    Q_EMIT pluginMemoryUsageChanged(-nBytes);
-}
-
 QMutex &
 Node::getRenderInstancesSharedMutex()
 {
@@ -7574,6 +7595,16 @@ Node::canHandleRenderScaleForOverlays() const
 }
 
 bool
+Node::isDoingInteractAction() const
+{
+    if (QThread::currentThread() != qApp->thread()) {
+        return false;
+    }
+
+    return _imp->duringInteractAction;
+}
+
+bool
 Node::shouldDrawOverlay(TimeValue time, ViewIdx view) const
 {
     if ( !hasOverlay() ) {
@@ -8086,6 +8117,7 @@ Node::setHideInputsKnobValue(bool hidden)
 void
 Node::onRefreshIdentityStateRequestReceived()
 {
+#pragma message WARN("Do this in NodeGui instead")
     if ( !_imp->guiPointer.lock() ) {
         return;
     }
@@ -9423,13 +9455,6 @@ Node::refreshInputRelatedDataRecursive()
     refreshInputRelatedDataRecursiveInternal(markedNodes);
 }
 
-bool
-Node::isDraftModeUsed() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->draftModeUsed;
-}
 
 void
 Node::setPosition(double x,
@@ -10111,8 +10136,7 @@ Node::checkForPremultWarningAndCheckboxes()
     }
     NodePtr prefInput = getPreferredInputNode();
 
-    //Do not display a warning for Roto paint
-    if ( !prefInput || _imp->effect->isRotoPaintNode() ) {
+    if ( !prefInput ) {
         //No input, do not warn
         premultWarn->setSecret(true);
 

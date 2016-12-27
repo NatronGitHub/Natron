@@ -239,7 +239,8 @@ public:
     void getTimelineBounds(int* first, int* last) const;
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
-    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
+    
+    virtual StatusEnum getTimeInvariantMetadatas(const NodeMetadata& metadata) OVERRIDE FINAL;
 
     bool isViewerUIVisible() const;
 

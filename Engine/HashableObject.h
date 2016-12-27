@@ -33,6 +33,8 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER
 
@@ -62,20 +64,47 @@ public:
     void addHashListener(const HashableObjectPtr& parent);
 
 
-    /**
-     * @brief Look for a hash in the cache. Returns 0 if nothing is found
-     **/
-    bool findCachedHash(TimeValue time, ViewIdx view, U64 *hash) const;
+    enum ComputeHashTypeEnum
+    {
+        // The hash of the node is the same whatever the time and view
+        eComputeHashTypeTimeViewInvariant,
+
+        // The hash of the node is the same at any time and view and is computed only from the
+        // parameters that are metadata slave
+        eComputeHashTypeOnlyMetadataSlaves,
+
+        // a frame varying or view varying effect will have the time/view
+        // appended to its hash indicating that results may be different at each frame
+        eComputeHashTypeTimeViewVariant
+    };
+
+    struct ComputeHashArgs
+    {
+        // The time at which to compute the hash
+        TimeValue time;
+
+        // The view at which to compute the hash
+        ViewIdx view;
+
+        ComputeHashTypeEnum hashType;
+
+        // Pointer to the node render args if any
+        TreeRenderNodeArgsPtr render;
+
+        ComputeHashArgs()
+        : time(0)
+        , view(0)
+        , hashType(eComputeHashTypeTimeViewInvariant)
+        , render()
+        {
+
+        }
+    };
 
     /**
      * @brief Compute has hash at the given time/view but does not use the hash cache at all.
      **/
-    void computeHash_noCache(TimeValue time, ViewIdx view, Hash64* hash);
-
-    /**
-     * @brief Set the hash for the given frame view in the cache
-     **/
-    void addHashToCache(TimeValue time, ViewIdx view, U64 hashValue);
+    void computeHash_noCache(const ComputeHashArgs& args, Hash64* hash);
 
 
     /**
@@ -84,8 +113,25 @@ public:
      * : findCachedHash, computeHash_noCache, addHashToCache except that everything
      * is protected under the same mutex for guarenteed atomicity.
      **/
-    U64 computeHash(TimeValue time, ViewIdx view);
-    
+    U64 computeHash(const ComputeHashArgs& args);
+
+    struct FindHashArgs
+    {
+        // The time at which to compute the hash
+        TimeValue time;
+
+        // The view at which to compute the hash
+        ViewIdx view;
+
+        ComputeHashTypeEnum hashType;
+    };
+
+    /**
+     * @brief Look for a hash in the cache. Returns 0 if nothing is found
+     **/
+    bool findCachedHash(const FindHashArgs& args, U64 *hash) const;
+
+
     /**
      * @brief Invalidate the hash cache and invalidate recursively the listeners as well.
      * This should be called after anything that the hash computation relies on has changed.
@@ -114,7 +160,7 @@ protected:
      * When adding a class inheriting HashableObject to the hash, make sure to call
      * computeHash to get the cache working.
      **/
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) = 0;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) = 0;
 
 private:
 

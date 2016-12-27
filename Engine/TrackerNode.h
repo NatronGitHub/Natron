@@ -66,11 +66,6 @@ public:
 
     virtual ~TrackerNode();
 
-    virtual bool isBuiltinTrackerNode() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
 
     virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
 

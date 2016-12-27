@@ -262,14 +262,12 @@ NodeGui::initialize(NodeGraph* dag,
     createGui();
     refreshPosition(x, y, true);
 
-    // For the tracker node, it needs the panel created by default for the tracks panel (is it still needed?)
+
     {
-        const bool panelAlwaysCreatedByDefault = internalNode->getEffectInstance()->isBuiltinTrackerNode();
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
         SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
         bool panelOpened = isViewerNode ? false : args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
-        if (panelAlwaysCreatedByDefault ||
-            (!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
+        if ((!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
             ensurePanelCreated();
         }
     }

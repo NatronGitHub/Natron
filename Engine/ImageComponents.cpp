@@ -29,7 +29,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Serialization/ImageParamsSerialization.h"
+#include "Serialization/NodeSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 

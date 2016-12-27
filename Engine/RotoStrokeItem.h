@@ -235,7 +235,7 @@ public:
     KnobChoicePtr getBrushCloneFilterKnob() const;
     KnobBoolPtr getBrushCloneBlackOutsideKnob() const;
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE FINAL;
 
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 

@@ -29,6 +29,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/Hash64.h"
+#include "Engine/NodeMetadata.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -118,7 +119,7 @@ GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 std::size_t
 GetRegionOfDefinitionResults::getSize() const
 {
-    return sizeof(RectD);
+    return 0;
 }
 
 IsIdentityResults::IsIdentityResults()
@@ -160,7 +161,7 @@ IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, 
 std::size_t
 IsIdentityResults::getSize() const
 {
-    return sizeof(_identityInputNb) + sizeof(_identityTime) + sizeof(_identityView);
+    return 0;
 }
 
 
@@ -202,4 +203,176 @@ GetFramesNeededResults::getSize() const
 
 
 
+GetDistorsionResults::GetDistorsionResults()
+: CacheEntryBase(appPTR->getCache())
+, _distorsion()
+{
+
+}
+
+GetDistorsionResultsPtr
+GetDistorsionResults::create(const GetDistorsionKeyPtr& key)
+{
+    GetDistorsionResultsPtr ret(new GetDistorsionResults());
+    ret->setKey(key);
+    return ret;
+
+}
+
+
+void
+GetDistorsionResults::getDistorsionResults(DistorsionFunction2D *disto) const
+{
+    *disto = _distorsion;
+}
+
+void
+GetDistorsionResults::setDistorsionResults(const DistorsionFunction2D &disto)
+{
+    assert(getCacheBucketIndex() == -1);
+    _distorsion = disto;
+}
+
+std::size_t
+GetDistorsionResults::getSize() const
+{
+    return (std::size_t)_distorsion.customDataSizeHintInBytes;
+}
+
+
+
+GetFrameRangeResults::GetFrameRangeResults()
+: CacheEntryBase(appPTR->getCache())
+, _range()
+{
+    _range.min = _range.max = 0;
+}
+
+GetFrameRangeResultsPtr
+GetFrameRangeResults::create(const GetFrameRangeKeyPtr& key)
+{
+    GetFrameRangeResultsPtr ret(new GetFrameRangeResults());
+    ret->setKey(key);
+    return ret;
+
+}
+
+
+void
+GetFrameRangeResults::getFrameRangeResults(RangeD *range) const
+{
+    *range = _range;
+}
+
+void
+GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
+{
+    assert(getCacheBucketIndex() == -1);
+    _range = range;
+}
+
+std::size_t
+GetFrameRangeResults::getSize() const
+{
+    return 0;
+}
+
+
+GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
+: CacheEntryBase(appPTR->getCache())
+, _metadatas()
+{
+
+}
+
+GetTimeInvariantMetaDatasResultsPtr
+GetTimeInvariantMetaDatasResults::create(const GetTimeInvariantMetaDatasKeyPtr& key)
+{
+    GetTimeInvariantMetaDatasResultsPtr ret(new GetTimeInvariantMetaDatasResults());
+    ret->setKey(key);
+    return ret;
+
+}
+
+
+NodeMetadataPtr
+GetTimeInvariantMetaDatasResults::getMetadatasResults() const
+{
+    return _metadatas;
+}
+
+void
+GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &metadatas)
+{
+    assert(getCacheBucketIndex() == -1);
+    _metadatas = metadatas;
+}
+
+std::size_t
+GetTimeInvariantMetaDatasResults::getSize() const
+{
+    return sizeof(NodeMetadata);
+}
+
+
+GetComponentsNeededResults::GetComponentsNeededResults()
+: CacheEntryBase(appPTR->getCache())
+, _compsNeeded()
+, _passThroughInputNb(-1)
+, _passThroughTime(0)
+, _passThroughView(0)
+, _processChannels()
+, _processAllLayers(false)
+{
+
+}
+
+GetComponentsNeededResultsPtr
+GetComponentsNeededResults::create(const GetComponentsNeededKeyPtr& key)
+{
+    GetComponentsNeededResultsPtr ret(new GetComponentsNeededResults());
+    ret->setKey(key);
+    return ret;
+
+}
+
+
+void
+GetComponentsNeededResults::getComponentsNeededResults(ComponentsNeededMap *compsNeeded,
+                                                       int *passThroughInputNb,
+                                                       TimeValue *passThroughTime,
+                                                       ViewIdx *passThroughView,
+                                                       std::bitset<4> *processChannels,
+                                                       bool *processAllLayers) const
+{
+    *compsNeeded = _compsNeeded;
+    *passThroughInputNb = _passThroughInputNb;
+    *passThroughTime = _passThroughTime;
+    *passThroughView = _passThroughView;
+    *processChannels = _processChannels;
+    *processAllLayers = _processAllLayers;
+}
+
+void
+GetComponentsNeededResults::setComponentsNeededResults(const ComponentsNeededMap &compsNeeded,
+                                                       int passThroughInputNb,
+                                                       TimeValue passThroughTime,
+                                                       ViewIdx passThroughView,
+                                                       std::bitset<4> processChannels,
+                                                       bool processAllLayers)
+{
+    assert(getCacheBucketIndex() == -1);
+    _compsNeeded = compsNeeded;
+    _passThroughInputNb = passThroughInputNb;
+    _passThroughTime = passThroughTime;
+    _passThroughView = passThroughView;
+    _processChannels = processChannels;
+    _processAllLayers = processAllLayers;
+}
+
+std::size_t
+GetComponentsNeededResults::getSize() const
+{
+    return 0;
+}
 NATRON_NAMESPACE_EXIT;

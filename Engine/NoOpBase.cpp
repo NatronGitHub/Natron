@@ -55,12 +55,13 @@ NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-bool
+StatusEnum
 NoOpBase::isIdentity(TimeValue time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
                      ViewIdx view,
-                     double* inputTime,
+                     const TreeRenderNodeArgsPtr& /*render*/,
+                     TimeValue* inputTime,
                      ViewIdx* inputView,
                      int* inputNb)
 {
@@ -68,7 +69,7 @@ NoOpBase::isIdentity(TimeValue time,
     *inputNb = 0;
     *inputView = view;
 
-    return true;
+    return eStatusOK;
 }
 
 bool

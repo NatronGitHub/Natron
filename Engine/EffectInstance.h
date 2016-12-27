@@ -148,24 +148,11 @@ struct PlaneToRender
     , downscaleImage()
     , renderMappedImage()
     , tmpImage()
-    , cacheSwapImage()
-    , originalCachedImage(0)
     , isAllocatedOnTheFly(false)
     {
     }
 };
 
-struct ComponentsNeededResults
-{
-    ComponentsNeededMap comps;
-    int passThroughInputNb;
-    double passThroughTime;
-    ViewIdx passThroughView;
-    std::bitset<4> processChannels;
-    bool processAllLayers;
-};
-
-typedef boost::shared_ptr<ComponentsNeededResults> ComponentsNeededResultsPtr;
 
 /**
  * @brief This is the base class for visual effects.
@@ -215,15 +202,13 @@ public:
         // The input number of this node in the caller node
         int inputNbInCaller;
 
-        // True if called by getImage
-        bool calledFromGetImage;
 
         // Set to false if you don't want the node to render using the GPU at all
         // This is useful if the previous render failed because GPU memory was maxed out
         bool allowGPURendering;
 
         // the time that was passed to the original renderRoI call of the caller node
-        double callerRenderTime;
+        TimeValue callerRenderTime;
 
         RenderRoIArgs()
         : time(0)
@@ -235,44 +220,43 @@ public:
         , inputImagesList()
         , caller()
         , inputNbInCaller(-1)
-        , calledFromGetImage(false)
         , allowGPURendering(true)
         , callerRenderTime(0.)
         {
         }
 
-        RenderRoIArgs( TimeValue time_,
-                       const RenderScale & scale_,
-                       unsigned int mipMapLevel_,
-                       ViewIdx view_,
-                       const RectI & roi_,
-                       const std::list<ImageComponents> & components_,
-                       bool calledFromGetImage,
-                       EffectInstancePtr caller,
-                       int inputNbInCaller,
-                       double callerRenderTime,
-                       const InputImagesMap & inputImages = InputImagesMap() )
-            : time(time_)
-            , view(view_)
-            , scale(scale_)
+        RenderRoIArgs(TimeValue time_,
+                      ViewIdx view_,
+                      const RenderScale & scale_,
+                      unsigned int mipMapLevel_,
+                      const RectI & roi_,
+                      const std::list<ImageComponents> & components_,
+                      EffectInstancePtr caller,
+                      int inputNbInCaller,
+                      TimeValue callerRenderTime,
+                      const InputImagesMap & inputImages = InputImagesMap() )
+        : time(time_)
+        , view(view_)
+        , scale(scale_)
             , mipMapLevel(mipMapLevel_)
             , roi(roi_)
             , components(components_)
             , inputImagesList(inputImages)
             , caller(caller)
             , inputNbInCaller(inputNbInCaller)
-            , calledFromGetImage(calledFromGetImage)
             , allowGPURendering(true)
             , callerRenderTime(callerRenderTime)
         {
         }
     };
 
-    enum SupportsEnum
+
+    enum RenderingFunctorRetEnum
     {
-        eSupportsMaybe = -1,
-        eSupportsNo = 0,
-        eSupportsYes = 1
+        eRenderingFunctorRetFailed, //< must stop rendering
+        eRenderingFunctorRetOK, //< ok, move on
+        eRenderingFunctorRetAborted, // we were aborted
+        eRenderingFunctorRetOutOfGPUMemory // GPU render failed, retry with CPU
     };
 
 protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint
@@ -291,10 +275,6 @@ protected:
     EffectInstance(const EffectInstance& other);
 
 public:
-    //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
-    //{
-    //    return EffectInstancePtr( new EffectInstance(node) );
-    //}
 
     EffectInstancePtr shared_from_this() {
         return boost::dynamic_pointer_cast<EffectInstance>(KnobHolder::shared_from_this());
@@ -307,15 +287,662 @@ public:
     // dtor
     virtual ~EffectInstance();
 
-    /**
-     * @brief Returns true once the effect has been fully initialized and is ready to have its actions called apart from
-     * the createInstanceAction
-     **/
-    virtual bool isEffectCreated() const
+
+    struct GetImageInArgs
     {
-        return true;
+        // The input nb to fetch the image from
+        int inputNb;
+
+        // The time to sample on the input
+        TimeValue time;
+
+        // The view to sample on the input
+        ViewIdx view;
+
+        // The scale at which the resulting image should be
+        RenderScale scale;
+
+        // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
+        // If not specified, this will ask to render the full region of definition.
+        const RectD* optionalBounds;
+
+        // If set this is the layer to fetch, otherwise we use the meta-data on
+        // the effect.
+        const ImageComponents* layer;
+
+        // The storage that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
+        // the image may not support OpenGL. In this case setting storage to eStorageModeRAM would convert the OpenGL texture to
+        // a RAM image.
+        StorageModeEnum storage;
+
+        // If true the image returned from the input will be mapped against this node requested meta-datas (bitdepth/components)
+        bool mapToMetaDatas;
+
+        // A pointer to the render args of this node
+        TreeRenderNodeArgsPtr renderArgs;
+    };
+
+    struct GetImageOutArgs
+    {
+        // The returned image
+        ImagePtr image;
+
+        // The roi of the input effect effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
+        RectI roiPixel;
+
+        // Whether we have a distorsion stack to apply
+        Distorsion2DStackPtr distorsionStack;
+    };
+
+    /** @brief This is the main-entry point to pull images from up-stream of this node.
+     * This function may be used in 2 different situations:
+     *
+     * 1) We are currently in the render of a plug-in and wish to fetch images from above.
+     * In this case the image in input has probably already been pre-computed and cached away using the
+     * getFramesNeeded and getRegionsOfInterest actions to drive the algorithm.
+     *
+     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistorsion action:
+     * This image will pull images from upstream that have not yet be pre-computed. In this case the inArgs have an extra
+     * optionalBounds parameter that can be set to specify which portion of the input image is needed.
+     *
+     * Note that this is very important in the case 1) that all images that are accessed via getImage() are
+     * declared to Natron with getFramesNeeded otherwise Natron has to fallback on situation 2 which can lead 
+     * to worse performance.
+     *
+     * @returns This function returns true if the image set in the outArgs is valid.
+     * Note that in the outArgs is returned the distorsion stack to apply if this effect was marked
+     * as getCanDistort().
+     **/
+    bool getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
+
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+    /////////////// Actions to be overriden by the effect   //////////////
+
+    /**
+     * @brief Returns the components needed for the plug-in for each input and in output at the given time and view.
+     **/
+    StatusEnum getComponentsNeededAndProduced_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsNeededResultsPtr* results);
+
+protected:
+
+    /**
+     * @brief Called by getComponentsNeededAndProduced_public, to be overriden. Default implementation
+     * returns the components returned by getMetadatas on the color plane.
+     **/
+    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time,
+                                                ViewIdx view,
+                                                const TreeRenderNodeArgsPtr& render,
+                                                ComponentsNeededMap* comps,
+                                                TimeValue* passThroughTime,
+                                                ViewIdx* passThroughView,
+                                                int* passThroughInputNb);
+
+public:
+
+
+    /**
+     * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
+     * This function will be called once per context. The function dettachOpenGLContext() will be called
+     * on the value returned by this function to deinitialize all context related data.
+     *
+     * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
+     * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
+     *
+     * Possible return status code:
+     * eStatusOK , the action was trapped and all was well
+     * eStatusReplyDefault , the action was ignored, but all was well anyway
+     * eStatusOutOfMemory , in which case this may be called again after a memory purge
+     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
+     **/
+    StatusEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+
+    /**
+     * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
+     * Possible return status code:
+     * eStatusOK , the action was trapped and all was well
+     * eStatusReplyDefault , the action was ignored, but all was well anyway
+     * eStatusOutOfMemory , in which case this may be called again after a memory purge
+     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
+     **/
+    StatusEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+
+    /**
+     * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
+     **/
+    void dettachAllOpenGLContexts();
+
+
+protected:
+
+    /**
+     * @brief Called by attachOpenGLContext_public, to be overriden for effects that support OpenGL
+     **/
+    virtual StatusEnum attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
+
+    /**
+     * @brief Called by dettachOpenGLContext_public, to be overriden for effects that support OpenGL
+     **/
+    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/) { return eStatusReplyDefault; }
+
+
+public:
+
+    /// Overlay actions
+
+    void drawOverlay_public(TimeValue time, const RenderScale & renderScale, ViewIdx view);
+
+    bool onOverlayPenDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) WARN_UNUSED_RETURN;
+
+    bool onOverlayPenMotion_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
+
+    bool onOverlayPenDoubleClicked_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
+
+    bool onOverlayPenUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
+
+    bool onOverlayKeyDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+
+    bool onOverlayKeyUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+
+    bool onOverlayKeyRepeat_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
+
+    bool onOverlayFocusGained_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
+
+    bool onOverlayFocusLost_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
+
+protected:
+
+    virtual void drawOverlay(TimeValue /*time*/,
+                             const RenderScale & /*renderScale*/,
+                             ViewIdx /*view*/)
+    {
     }
 
+    virtual bool onOverlayPenDown(TimeValue /*time*/,
+                                  const RenderScale & /*renderScale*/,
+                                  ViewIdx /*view*/,
+                                  const QPointF & /*viewportPos*/,
+                                  const QPointF & /*pos*/,
+                                  double /*pressure*/,
+                                  TimeValue /*timestamp*/,
+                                  PenType /*pen*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayPenDoubleClicked(TimeValue /*time*/,
+                                           const RenderScale & /*renderScale*/,
+                                           ViewIdx /*view*/,
+                                           const QPointF & /*viewportPos*/,
+                                           const QPointF & /*pos*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayPenMotion(TimeValue /*time*/,
+                                    const RenderScale & /*renderScale*/,
+                                    ViewIdx /*view*/,
+                                    const QPointF & /*viewportPos*/,
+                                    const QPointF & /*pos*/,
+                                    double /*pressure*/,
+                                    TimeValue /*timestamp*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayPenUp(TimeValue /*time*/,
+                                const RenderScale & /*renderScale*/,
+                                ViewIdx /*view*/,
+                                const QPointF & /*viewportPos*/,
+                                const QPointF & /*pos*/,
+                                double /*pressure*/,
+                                TimeValue /*timestamp*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayKeyDown(TimeValue /*time*/,
+                                  const RenderScale & /*renderScale*/,
+                                  ViewIdx /*view*/,
+                                  Key /*key*/,
+                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayKeyUp(TimeValue /*time*/,
+                                const RenderScale & /*renderScale*/,
+                                ViewIdx /*view*/,
+                                Key /*key*/,
+                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayKeyRepeat(TimeValue /*time*/,
+                                    const RenderScale & /*renderScale*/,
+                                    ViewIdx /*view*/,
+                                    Key /*key*/,
+                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayFocusGained(TimeValue /*time*/,
+                                      const RenderScale & /*renderScale*/,
+                                      ViewIdx /*view*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool onOverlayFocusLost(TimeValue /*time*/,
+                                    const RenderScale & /*renderScale*/,
+                                    ViewIdx /*view*/) WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+
+public:
+
+    /**
+     * @brief For sequential effects, this is called before the first call to render .
+     * For non sequential effects, this is called before each call to render.
+     **/
+    StatusEnum beginSequenceRender_public(double first, double last,
+                                          double step, bool interactive, const RenderScale & scale,
+                                          bool isSequentialRender, bool isRenderResponseToUserInteraction,
+                                          bool draftMode,
+                                          ViewIdx view,
+                                          bool isOpenGLRender,
+                                          const EffectOpenGLContextDataPtr& glContextData,
+                                          const TreeRenderNodeArgsPtr& render);
+
+
+    /**
+     * @brief For sequential effects, this is called after the last call to render in a sequence.
+     * For non sequential effects, this is called after each call to render.
+     **/
+    StatusEnum endSequenceRender_public(double first, double last,
+                                        double step, bool interactive, const RenderScale & scale,
+                                        bool isSequentialRender, bool isRenderResponseToUserInteraction,
+                                        bool draftMode,
+                                        ViewIdx view,
+                                        bool isOpenGLRender,
+                                        const EffectOpenGLContextDataPtr& glContextData,
+                                        const TreeRenderNodeArgsPtr& render);
+
+    struct RenderActionArgs
+    {
+        // The time at which to render
+        TimeValue time;
+
+        // The view to render
+        ViewIdx view;
+
+        // The original scale that was requested to this effect
+        RenderScale originalScale;
+
+        // The scale at which this effect is actually rendering
+        RenderScale mappedScale;
+
+        // The render window
+        RectI roi;
+
+        // The list of output planes: these are the images to write to in output
+        std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
+
+        // The frame render args for this node.
+        TreeRenderNodeArgsPtr frameRenderArgs;
+
+        // Should render use OpenGL ? If the effect supports OSMesa too this will be set to true as well.
+        bool useOpenGL;
+
+        // The effect data attached to the current OpenGL context. These are the data that were returned by
+        // attachOpenGLContext.
+        EffectOpenGLContextDataPtr glContextData;
+
+        // The RGBA channels to process. This can optimize render times for un-needed channels.
+        std::bitset<4> processChannels;
+
+        // The OpenGL context to use to render
+        OSGLContextPtr glContext;
+    };
+
+
+    /**
+     * @brief The main render action. This should render onto the given output planes.
+     **/
+    StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
+
+
+protected:
+
+    virtual StatusEnum beginSequenceRender(double /*first*/,
+                                           double /*last*/,
+                                           double /*step*/,
+                                           bool /*interactive*/,
+                                           const RenderScale & /*scale*/,
+                                           bool /*isSequentialRender*/,
+                                           bool /*isRenderResponseToUserInteraction*/,
+                                           bool /*draftMode*/,
+                                           ViewIdx /*view*/,
+                                           bool /*isOpenGLRender*/,
+                                           const EffectOpenGLContextDataPtr& /*glContextData*/,
+                                          const TreeRenderNodeArgsPtr& /*render*/)
+    {
+        return eStatusOK;
+    }
+
+    virtual StatusEnum endSequenceRender(double /*first*/,
+                                         double /*last*/,
+                                         double /*step*/,
+                                         bool /*interactive*/,
+                                         const RenderScale & /*scale*/,
+                                         bool /*isSequentialRender*/,
+                                         bool /*isRenderResponseToUserInteraction*/,
+                                         bool /*draftMode*/,
+                                         ViewIdx /*view*/,
+                                         bool /*isOpenGLRender*/,
+                                         const EffectOpenGLContextDataPtr& /*glContextData*/,
+                                         const TreeRenderNodeArgsPtr& /*render*/)
+    {
+        return eStatusOK;
+    }
+
+
+    virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN
+    {
+        return eStatusOK;
+    }
+
+
+public:
+
+    /**
+     * @brief For effects that can return a distorsion function (e.g an affine Transform), then they 
+     * may flag so with the getCanDistort() function. In this case this function will be called prior to
+     * calling render. If possible, Natron will concatenate distorsion effects and only the effect at
+     * the bottom will do the final rendering.
+     **/
+    StatusEnum getDistorsion_public(TimeValue time,
+                                    const RenderScale & renderScale,
+                                    ViewIdx view,
+                                    const TreeRenderNodeArgsPtr& render,
+                                    GetDistorsionResultsPtr* distorsion) WARN_UNUSED_RETURN;
+
+
+
+protected:
+
+
+
+    virtual StatusEnum getDistorsion(TimeValue /*time*/,
+                                     const RenderScale & /*renderScale*/,
+                                     ViewIdx /*view*/,
+                                     const TreeRenderNodeArgsPtr& /*render*/,
+                                     DistorsionFunction2D* /*distorsion*/) WARN_UNUSED_RETURN
+    {
+        return eStatusReplyDefault;
+    }
+    
+public:
+
+    /**
+     * @brief Indicates whether the effect is an identity, i.e: it doesn't produce
+     * any change in output and is a pass-through.
+     * @param time The time that should be passed to render()
+     * @param scale The scale of the renderWindow
+     * @param renderWindow The portion of the image over which the effect should be identity
+     * @param view The view that should be passed to render()
+     * @param inputTime[out] the input time to which this plugin is identity of
+     * @param inputNb[out] the input number of the effect that is identity of.
+     * The special value of -2 indicates that the plugin is identity of itself at another time
+     * @param inputView[out] the input view of the effect that is identity of.
+     **/
+    StatusEnum isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
+                           TimeValue time,
+                           const RenderScale & scale,
+                           const RectI & renderWindow,
+                           ViewIdx view,
+                           const TreeRenderNodeArgsPtr& render,
+                           IsIdentityResultsPtr* results) WARN_UNUSED_RETURN;
+protected:
+
+
+    virtual StatusEnum isIdentity(TimeValue /*time*/,
+                                  const RenderScale & /*scale*/,
+                                  const RectI & /*roi*/,
+                                  ViewIdx /*view*/,
+                                  const TreeRenderNodeArgsPtr& /*render*/,
+                                  TimeValue* /*inputTime*/,
+                                  ViewIdx* /*inputView*/,
+                                  int* inputNb) WARN_UNUSED_RETURN
+    {
+        *inputNb = -1;
+        return eStatusOK;
+    }
+    
+public:
+
+    /**
+     * @brief Return the region that the plugin is capable of filling.
+     * This is meaningful for plugins that generate images or transform images.
+     * By default it returns in rod the union of all inputs RoD and eStatusReplyDefault is returned.
+     * In case of failure the plugin should return eStatusFailed.
+     * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
+     **/
+    StatusEnum getRegionOfDefinition_public(TimeValue time,
+                                            const RenderScale & scale,
+                                            ViewIdx view,
+                                            const TreeRenderNodeArgsPtr& render,
+                                            GetRegionOfDefinitionResultsPtr* results) WARN_UNUSED_RETURN;
+
+    StatusEnum getRegionOfDefinitionFromCache(TimeValue time,
+                                              const RenderScale & scale,
+                                              ViewIdx view,
+                                              RectD* rod) WARN_UNUSED_RETURN;
+
+    void calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
+
+
+    /**
+     * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
+     * project format.
+     **/
+    void ifInfiniteApplyHeuristic(TimeValue time,
+                                  const RenderScale & scale,
+                                  ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
+                                  RectD* rod); //!< input/output
+
+
+protected:
+
+
+    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view,
+                                             const TreeRenderNodeArgsPtr& render,
+                                             RectD* rod) WARN_UNUSED_RETURN;
+
+    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD *rod);
+
+public:
+
+    /**
+     * @brief Indicates for each input node what is the region of interest
+     * of the node at time 'time' and render scale 'scale' given a render window.
+     * For exemple a blur plugin would specify what it needs
+     * from inputs in order to do a blur taking into account the size of the blurring kernel.
+     * By default, it returns renderWindow for each input.
+     **/
+    StatusEnum getRegionsOfInterest_public(TimeValue time,
+                                     const RenderScale & scale,
+                                     const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
+                                     ViewIdx view,
+                                     const TreeRenderNodeArgsPtr& render,
+                                     RoIMap* ret);
+
+protected:
+
+
+
+    virtual StatusEnum getRegionsOfInterest(TimeValue time,
+                                      const RenderScale & scale,
+                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
+                                      ViewIdx view,
+                                      const TreeRenderNodeArgsPtr& render,
+                                      RoIMap* ret);
+
+public:
+
+    /**
+     * @brief Computes the frame/view pairs needed by this effect in input for the render action.
+     * @param time The time at which the input should be sampled
+     * @param view the view at which the input should be sampled
+     * @param hash If set this will return the hash of the node for the given time view. In a
+     * render thread, this hash should be cached away
+     **/
+    StatusEnum getFramesNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetFramesNeededResultsPtr* results);
+
+protected:
+
+
+    virtual StatusEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) ;
+
+public:
+
+    /**
+     * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
+     * By default it merges the frame range of the inputs.
+     * In case of failure the plugin should return eStatusFailed.
+     **/
+    StatusEnum getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFrameRangeResultsPtr* results);
+
+
+protected:
+
+
+    virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last);
+
+public:
+
+    virtual void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    virtual void endKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
+
+    /**
+     * @breif Don't override this one, override onKnobValueChanged instead.
+     **/
+    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
+
+    void beginEditKnobs_public();
+
+protected:
+
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once.
+     **/
+    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/) OVERRIDE
+    {
+    }
+
+    /**
+     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
+     * at once.
+     **/
+    virtual void endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/) OVERRIDE
+    {
+    }
+
+    /**
+     * @brief Called right away when the user first opens the settings panel of the node.
+     * This is called after each params had its default value set.
+     **/
+    virtual void beginEditKnobs()
+    {
+    }
+
+
+    /**
+     * @brief Called whenever a param changes
+     **/
+    virtual bool knobChanged(const KnobIPtr& /*k*/,
+                             ValueChangedReasonEnum /*reason*/,
+                             ViewSetSpec /*view*/,
+                             TimeValue /*time*/)
+    {
+        return false;
+    }
+
+public:
+
+    void onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
+
+protected:
+
+
+    /**
+     * @brief Called anytime an input connection is changed
+     **/
+    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
+
+
+public:
+
+    void createInstanceAction_public();
+
+protected:
+
+    virtual void createInstanceAction() {}
+
+public:
+
+
+    /**
+     * @brief Returns the preferred metadata to render with
+     * This should only be called to compute the clip preferences, call the appropriate
+     * getters to get the actual values.
+     * The default implementation gives reasonable values appropriate to the context of the node (the inputs)
+     * and the values reported by the supported components/bitdepth
+     *
+     * This should not be reimplemented except for OpenFX which already has its default specification
+     * for clip Preferences, see setDefaultClipPreferences()
+     * Returns eStatusOK on success, eStatusFailed on failure.
+     *
+     **/
+    StatusEnum getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& render, GetTimeInvariantMetaDatasResultsPtr* results);
+
+    StatusEnum getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata& metadata);
+
+protected:
+
+    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/) { return eStatusOK; }
+
+
+public:
+
+    void purgeCaches_public();
+
+protected:
+
+    /**
+     * @brief Can be overloaded to clear any cache the plugin might be
+     * handling on his side.
+     **/
+    virtual void purgeCaches()
+    {
+    };
+
+
+public:
+
+
+
+    //////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////
+
+    
     /**
      * @brief Returns a pointer to the node holding this effect.
      **/
@@ -324,17 +951,8 @@ public:
         return _node.lock();
     }
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
-    /**
-     * @brief Returns the hash the node had at the start of renderRoI. This will return the same value
-     * at any time during the same render call.
-     **/
-    bool getRenderHash(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, U64* hash) const WARN_UNUSED_RETURN;
-
-private:
-
-    void computeFrameViewHashUsingFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash);
 
 public:
 
@@ -435,21 +1053,6 @@ public:
         return false;
     }
 
-    /**
-     * @brief Returns true if this is our tracking node.
-     **/
-    virtual bool isBuiltinTrackerNode() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    /**
-     * @brief Returns true if this node is a tracker
-     **/
-    virtual bool isRotoPaintNode() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
 
     virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
 
@@ -458,14 +1061,6 @@ public:
      * data and process data on the input as well
      **/
     virtual bool isGeneratorAndFilter() const WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    /**
-     * @brief Is this node an OpenFX node?
-     **/
-    virtual bool isOpenFX() const WARN_UNUSED_RETURN
     {
         return false;
     }
@@ -588,7 +1183,6 @@ public:
                                              bool isDuringPaintStroke,
                                              StorageModeEnum storage,
                                              StorageModeEnum returnStorage,
-                                             const ImageKey & key,
                                              unsigned int mipMapLevel,
                                              const RectI* boundsParam,
                                              const RectD* rodParam,
@@ -601,23 +1195,7 @@ public:
                                              ImagePtr* image);
 
     /**
-     * @brief Converts the given OpenGL texture to a RAM-stored image. The resulting image will be cached.
-     * This function is SLOW as it makes use of glReadPixels.
-     * The OpenGL context should have been made current prior to calling this function.
-     **/
-    ImagePtr convertOpenGLTextureToCachedRAMImage(const ImagePtr& image, bool enableCaching);
-
-    /**
-     * @brief Converts the given RAM-stored image to an OpenGL texture.
-     * THe resulting texture will not be cached and will destroyed when the shared pointer is released.
-     * The OpenGL context should have been made current prior to calling this function.
-     **/
-    static ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image, const OSGLContextPtr& glContext);
-    ImagePtr convertRAMImageToOpenGLTexture(const ImagePtr& image);
-    static ImagePtr convertRAMImageRoIToOpenGLTexture(const ImagePtr& image, const RectI& roi, const OSGLContextPtr& glContext);
-
-    /**
-     * @brief This function is to be called by getImage() when the plug-ins renders more planes than the ones suggested
+     * @brief This function is to be called by getImage() when the plug-in renders more planes than the ones suggested
      * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
      * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
      **/
@@ -656,49 +1234,10 @@ public:
 
     virtual bool getActionsRecursionLevel() const OVERRIDE FINAL;
 
-    EffectTLSDataPtr getTLSObject() const;
-
-    RenderValuesCachePtr getRenderValuesCacheTLS(double* currentRenderTime = 0, ViewIdx* currentRenderView = 0) const;
-
-    //Implem in TreeRender.cpp
-    static StatusEnum getInputsRoIsFunctor(TimeValue time,
-                                           ViewIdx view,
-                                           unsigned originalMipMapLevel,
-                                           const TreeRenderPtr& render,
-                                           const TreeRenderNodeArgsPtr& frameArgs,
-                                           const NodePtr & node,
-                                           const NodePtr& callerNode,
-                                           const NodePtr & treeRoot,
-                                           const RectD & canonicalRenderWindow);
-
 
     static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect);
 
 
-    // Implem is in TreeRender.cpp
-    static RenderRoIRetCode treeRecurseFunctor(bool isRenderFunctor,
-                                               const TreeRenderPtr& render,
-                                               const NodePtr & node,
-                                               const FramesNeededMap & framesNeeded,
-                                               const RoIMap* inputRois, // roi functor specific
-                                               unsigned int originalMipMapLevel,         // roi functor specific
-                                               TimeValue time,
-                                               ViewIdx view,
-                                               const NodePtr & treeRoot,
-                                               InputImagesMap* inputImages,         // render functor specific
-                                               const ComponentsNeededMap* neededComps,         // render functor specific
-                                               bool useScaleOneInputs         // render functor specific
-                                                );
-
-
-    virtual void beginKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
-
-    virtual void endKnobsValuesChanged_public(ValueChangedReasonEnum reason) OVERRIDE FINAL;
-
-    /**
-     * @breif Don't override this one, override onKnobValueChanged instead.
-     **/
-    virtual bool onKnobValueChanged_public(const KnobIPtr& k, ValueChangedReasonEnum reason, TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
 
     /**
      * @brief Returns a pointer to the first non disabled upstream node.
@@ -714,98 +1253,49 @@ public:
      **/
     EffectInstancePtr getNearestNonIdentity(TimeValue time);
 
-    /**
-     * @brief This is purely for the OfxEffectInstance derived class, but passed here for the sake of abstraction
-     **/
-    bool refreshMetaDatas_public(bool recurse);
 
-    void setDefaultMetadata();
-
-protected:
-
-    bool refreshMetaDatas_internal();
-
-    bool setMetaDatasInternal(const NodeMetadata& metadata);
-
-    virtual void onMetaDatasRefreshed(const NodeMetadata& /*metadata*/) {}
-
-    bool refreshMetaDatas_recursive(std::list<Node*> & markedNodes);
-
-    friend class ClipPreferencesRunning_RAII;
-    void setClipPreferencesRunning(bool running);
 
 public:
-
-
-    ///////////////////////Metadatas related////////////////////////
-
-    /**
-     * @brief Returns the preferred metadata to render with
-     * This should only be called to compute the clip preferences, call the appropriate
-     * getters to get the actual values.
-     * The default implementation gives reasonable values appropriate to the context of the node (the inputs)
-     * and the values reported by the supported components/bitdepth
-     *
-     * This should not be reimplemented except for OpenFX which already has its default specification
-     * for clip Preferences, see setDefaultClipPreferences()
-     * Returns eStatusOK on success, eStatusFailed on failure.
-     *
-     **/
-    StatusEnum getPreferredMetaDatas_public(NodeMetadata& metadata);
-
-protected:
-
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& /*metadata*/) { return eStatusOK; }
-
-private:
-
-    StatusEnum getDefaultMetadata(NodeMetadata& metadata);
-
-public:
-
-
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
      **/
-    bool isFrameVarying() const;
+    bool isFrameVarying(const TreeRenderNodeArgsPtr& render) const;
 
-    bool isFrameVaryingOrAnimated() const;
+    bool isFrameVaryingOrAnimated(const TreeRenderNodeArgsPtr& render) const;
 
     /**
      * @brief Returns the preferred output frame rate to render with
      **/
-    double getFrameRate() const;
+    double getFrameRate(const TreeRenderNodeArgsPtr& render) const;
 
     /**
      * @brief Returns the preferred premultiplication flag for the output image
      **/
-    ImagePremultiplicationEnum getPremult() const;
+    ImagePremultiplicationEnum getPremult(const TreeRenderNodeArgsPtr& render) const;
 
     /**
      * @brief If true, the plug-in knows how to render frames at non integer times. If false
      * this is the hint indicating that the plug-ins can only render integer frame times (such as a Reader)
      **/
-    bool canRenderContinuously() const;
+    bool canRenderContinuously(const TreeRenderNodeArgsPtr& render) const;
 
     /**
      * @brief Returns the field ordering of images produced by this plug-in
      **/
-    ImageFieldingOrderEnum getFieldingOrder() const;
+    ImageFieldingOrderEnum getFieldingOrder(const TreeRenderNodeArgsPtr& render) const;
 
     /**
      * @brief Returns the pixel aspect ratio, depth and components for the given input.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    double getAspectRatio(int inputNb) const;
-    ImageComponents getComponents(int inputNb) const;
-    ImageBitDepthEnum getBitDepth(int inputNb) const;
+    double getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb) const;
+    
+    ImageComponents getComponents(const TreeRenderNodeArgsPtr& render, int inputNb) const;
+
+    ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb) const;
 
 
-    void copyMetaData(NodeMetadata* metadata) const;
-
-
-    ///////////////////////End Metadatas related////////////////////////
 
     virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
 
@@ -828,9 +1318,6 @@ public:
     }
 
     RenderScale getOverlayInteractRenderScale() const;
-
-
-    OSGLContextPtr getThreadLocalOpenGLContext() const;
 
     virtual bool isMultiPlanar() const
     {
@@ -866,102 +1353,10 @@ public:
         return eViewInvarianceAllViewsVariant;
     }
 
-
-
-    struct RenderActionArgs
-    {
-        TimeValue time;
-        RenderScale originalScale;
-        RenderScale mappedScale;
-        RectI roi;
-        std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
-        InputImagesMap inputImages;
-        ViewIdx view;
-        bool isSequentialRender;
-        bool isRenderResponseToUserInteraction;
-        bool byPassCache;
-        bool draftMode;
-        bool useOpenGL;
-        EffectOpenGLContextDataPtr glContextData;
-        std::bitset<4> processChannels;
-        OSGLContextPtr glContext;
-        TreeRenderPtr frameArgs;
-    };
-
-
-
-protected:
-    /**
-     * @brief Must fill the image 'output' for the region of interest 'roi' at the given time and
-     * at the given scale.
-     * Pre-condition: render() has been called for all inputs so the portion of the image contained
-     * in output corresponding to the roi is valid.
-     * Note that this function can be called concurrently for the same output image but with different
-     * rois, depending on the threading-affinity of the plug-in.
-     **/
-    virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN
-    {
-        return eStatusOK;
-    }
-
-
-
-    virtual StatusEnum getDistorsion(TimeValue /*time*/,
-                                     const RenderScale & /*renderScale*/,
-                                     ViewIdx /*view*/,
-                                     const TreeRenderPtr& /*render*/,
-                                     DistorsionFunction2D* /*distorsion*/) WARN_UNUSED_RETURN
-    {
-        return eStatusReplyDefault;
-    }
-
 public:
 
 
-    StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
 
-    StatusEnum getDistorsion_public(TimeValue time,
-                                   const RenderScale & renderScale,
-                                   ViewIdx view,
-                                   const TreeRenderNodeArgsPtr& render,
-                                   DistorsionFunction2D* distorsion) WARN_UNUSED_RETURN;
-
-protected:
-/**
- * @brief Can be overloaded to indicates whether the effect is an identity, i.e it doesn't produce
- * any change in output.
- * @param time The time of interest
- * @param scale The scale of interest
- * @param rod The image region of definition, in canonical coordinates
- * @param view The view we 're interested in
- * @param inputTime[out] the input time to which this plugin is identity of
- * @param inputNb[out] the input number of the effect that is identity of.
- * The special value of -2 indicates that the plugin is identity of itself at another time
- **/
-    virtual bool isIdentity(TimeValue /*time*/,
-                            const RenderScale & /*scale*/,
-                            const RectI & /*roi*/,
-                            ViewIdx /*view*/,
-                            const TreeRenderNodeArgsPtr& /*render*/,
-                            double* /*inputTime*/,
-                            ViewIdx* /*inputView*/,
-                            int* /*inputNb*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-public:
-
-
-    bool isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
-                           TimeValue time,
-                           const RenderScale & scale,
-                           const RectI & renderWindow,
-                           ViewIdx view,
-                           const TreeRenderNodeArgsPtr& render,
-                           double* inputTime,
-                           ViewIdx* inputView,
-                           int* inputNb) WARN_UNUSED_RETURN;
 
     /**
      * @brief Indicates how many simultaneous renders the plugin can deal with.
@@ -976,164 +1371,13 @@ public:
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
 
 
-    struct GetImageInArgs
-    {
-        // The input nb to fetch the image from
-        int inputNb;
-
-        // The time to sample on the input
-        TimeValue time;
-
-        // The view to sample on the input
-        ViewIdx view;
-
-        // The scale at which to fetch the images
-        RenderScale scale;
-
-        // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
-        // If not specified, this will ask to render the full region of definition.
-        const RectD* optionalBounds;
-
-        // If set this is the layer to fetch, otherwise we use the meta-data on
-        // the effect.
-        const ImageComponents* layer;
-
-        // The storage that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
-        // the image may not support OpenGL. In this case setting storage to eStorageModeRAM would convert the OpenGL texture to
-        // a RAM image.
-        StorageModeEnum storage;
-
-        // If true the image returned from the input will be mapped against this node requested meta-datas (bitdepth/components)
-        bool mapToMetaDatas;
-
-        TreeRenderPtr render;
-    };
-
-    struct GetImageOutArgs
-    {
-        // The returned image
-        ImagePtr image;
-
-        // The roi of this effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
-        RectI roiPixel;
-
-        // Whether we have a distorsion stack to apply
-        Distorsion2DStackPtr distorsionStack;
-    };
-
-    /** @brief This is the main-entry point to pull images from up-stream of this node. 
-     * There are 2 kind of behaviors: 
-     *
-     * 1) We are currently in the render action of a plug-in and which wish to fetch images from above.
-     * In this case the image in input has probably already been pre-computed and cached away using the 
-     * getFramesNeeded and getRegionsOfInterest actions to drive the algorithm.
-     *
-     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistorsion action:
-     * This image will pull images from upstream that have not yet be pre-computed. In this case the inArgs have an extra
-     * optionalBounds parameter that can be set to specify which portion of the input image is needed.
-     *
-     * @returns This function returns true if the image set in the outArgs is valid.
-     * Note that in the outArgs is returned the distorsion stack to apply if this effect was marked
-     * as getCanDistort().
-     **/
-    bool getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
 
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const;
 
-    /**
-     * @brief Can be derived to get the region that the plugin is capable of filling.
-     * This is meaningful for plugins that generate images or transform images.
-     * By default it returns in rod the union of all inputs RoD and eStatusReplyDefault is returned.
-     * In case of failure the plugin should return eStatusFailed.
-     * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
-     **/
-    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view,
-                                             const TreeRenderNodeArgsPtr& render,
-                                             RectD* rod) WARN_UNUSED_RETURN;
-
-    void calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
-
-protected:
 
 
-    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD *rod);
-
-    /**
-     * @brief If the instance rod is infinite, returns the union of all connected inputs. If there's no input this returns the
-     * project format.
-     **/
-    void ifInfiniteApplyHeuristic(TimeValue time,
-                                  const RenderScale & scale,
-                                  ViewIdx view,
-                                  const TreeRenderNodeArgsPtr& render,
-                                  RectD* rod); //!< input/output
-
-    /**
-     * @brief Can be derived to indicate for each input node what is the region of interest
-     * of the node at time 'time' and render scale 'scale' given a render window.
-     * For exemple a blur plugin would specify what it needs
-     * from inputs in order to do a blur taking into account the size of the blurring kernel.
-     * By default, it returns renderWindow for each input.
-     **/
-    virtual void getRegionsOfInterest(TimeValue time,
-                                      const RenderScale & scale,
-                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
-                                      ViewIdx view,
-                                      const TreeRenderNodeArgsPtr& render,
-                                      RoIMap* ret);
-
-    /**
-     * @brief Can be derived to indicate for each input node what is the frame range(s) (which can be discontinuous)
-     * that this effects need in order to render the frame at the given time.
-     **/
-    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render) WARN_UNUSED_RETURN;
-
-
-    /**
-     * @brief Can be derived to get the frame range wherein the plugin is capable of producing frames.
-     * By default it merges the frame range of the inputs.
-     * In case of failure the plugin should return eStatusFailed.
-     **/
-    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 public:
-
-    StatusEnum getRegionOfDefinition_public(TimeValue time,
-                                            const RenderScale & scale,
-                                            ViewIdx view,
-                                            const TreeRenderNodeArgsPtr& render,
-                                            RectD* rod) WARN_UNUSED_RETURN;
-
-    StatusEnum getRegionOfDefinitionFromCache(TimeValue time,
-                                              const RenderScale & scale,
-                                              ViewIdx view,
-                                              const TreeRenderNodeArgsPtr& render,
-                                              RectD* rod) WARN_UNUSED_RETURN;
-
-public:
-
-
-    void getRegionsOfInterest_public(TimeValue time,
-                                     const RenderScale & scale,
-                                     const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
-                                     ViewIdx view,
-                                     const TreeRenderNodeArgsPtr& render,
-                                     RoIMap* ret);
-
-    /**
-     * @brief Computes the frame/view pairs needed by this effect in input for the render action.
-     * @param time The time at which the input should be sampled
-     * @param view the view at which the input should be sampled
-     * @param hash If set this will return the hash of the node for the given time view. In a 
-     * render thread, this hash should be cached away 
-     **/
-    FramesNeededMap getFramesNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, U64* hash) WARN_UNUSED_RETURN;
-
-    void cacheFramesNeeded(TimeValue time, ViewIdx view, U64 hash, const FramesNeededMap& framesNeeded);
-
-    void cacheIsIdentity(TimeValue time, ViewIdx view, U64 hash, int identityInput, double identityTime, ViewIdx identityView);
-
-    void getFrameRange_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 
     /**
@@ -1166,41 +1410,8 @@ public:
     }
 
 
-
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    virtual void beginKnobsValuesChanged(ValueChangedReasonEnum /*reason*/) OVERRIDE
-    {
-    }
-
-    /**
-     * @brief Used to bracket a series of call to onKnobValueChanged(...) in case many complex changes are done
-     * at once. If not called, onKnobValueChanged() will call automatically bracket its call be a begin/end
-     * but this can lead to worse performance. You can overload this to make all changes to params at once.
-     **/
-    virtual void endKnobsValuesChanged(ValueChangedReasonEnum /*reason*/) OVERRIDE
-    {
-    }
-
-protected:
-    /**
-     * @brief Can be overloaded to clear any cache the plugin might be
-     * handling on his side.
-     **/
-    virtual void purgeCaches()
-    {
-    };
-
-public:
-
-    void purgeCaches_public();
-
     virtual void clearLastRenderedImage();
 
-    void clearActionsCache();
 
     /**
      * @brief Use this function to post a transient message to the user. It will be displayed using
@@ -1259,20 +1470,8 @@ public:
     }
 
     /**
-     * @brief Does this effect supports rendering at a different scale than 1 ?
-     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
-     * or isIdentity with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
-     * If the renderScale support was not set, this throws an exception.
+     * @brief Hint the cache whether this effect can make draft mode renders or not
      **/
-    bool supportsRenderScale() const;
-
-    SupportsEnum supportsRenderScaleMaybe() const;
-
-    /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
-    void setSupportsRenderScaleMaybe(EffectInstance::SupportsEnum s) const;
-
-    void refreshRenderScaleSupport();
-
     virtual bool supportsRenderQuality() const { return false; }
 
     /**
@@ -1322,19 +1521,6 @@ public:
      **/
     PluginMemoryPtr newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
 
-    /// used to count the memory used by a plugin
-    /// Don't call these, they're called by PluginMemory automatically
-    void registerPluginMemory(size_t nBytes);
-    void unregisterPluginMemory(size_t nBytes);
-
-    void addPluginMemoryPointer(const PluginMemoryPtr& mem);
-    void removePluginMemoryPointer(const PluginMemory* mem);
-
-    void clearPluginMemoryChunks();
-
-
-
-
 
     struct RectToRender
     {
@@ -1380,8 +1566,6 @@ public:
     }
 
 
-    void createInstanceAction_public();
-
 
 #ifdef DEBUG
     virtual void checkCanSetValueAndWarn() const
@@ -1389,73 +1573,8 @@ public:
     }
 #endif
 
-    void onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
-
-    void beginEditKnobs_public();
-
-protected:
-
-    /**
-    * @brief Called right away when the user first opens the settings panel of the node.
-    * This is called after each params had its default value set.
-    **/
-    virtual void beginEditKnobs()
-    {
-    }
 
 
-    /**
-    * @brief Called everytimes an input connection is changed
-    **/
-    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
-
-
-
-    virtual void createInstanceAction() {}
-
-
-    /**
-     * @brief Called whenever a param changes. It calls the virtual
-     * portion paramChangedByUser(...) and brackets the call by a begin/end if it was
-     * not done already.
-     **/
-    virtual bool knobChanged(const KnobIPtr& /*k*/,
-                             ValueChangedReasonEnum /*reason*/,
-                             ViewSetSpec /*view*/,
-                             TimeValue /*time*/)
-    {
-        return false;
-    }
-
-    virtual StatusEnum beginSequenceRender(double /*first*/,
-                                           double /*last*/,
-                                           double /*step*/,
-                                           bool /*interactive*/,
-                                           const RenderScale & /*scale*/,
-                                           bool /*isSequentialRender*/,
-                                           bool /*isRenderResponseToUserInteraction*/,
-                                           bool /*draftMode*/,
-                                           ViewIdx /*view*/,
-                                           bool /*isOpenGLRender*/,
-                                           const EffectOpenGLContextDataPtr& /*glContextData*/)
-    {
-        return eStatusOK;
-    }
-
-    virtual StatusEnum endSequenceRender(double /*first*/,
-                                         double /*last*/,
-                                         double /*step*/,
-                                         bool /*interactive*/,
-                                         const RenderScale & /*scale*/,
-                                         bool /*isSequentialRender*/,
-                                         bool /*isRenderResponseToUserInteraction*/,
-                                         bool /*draftMode*/,
-                                         ViewIdx /*view*/,
-                                         bool /*isOpenGLRender*/,
-                                         const EffectOpenGLContextDataPtr& /*glContextData*/)
-    {
-        return eStatusOK;
-    }
 
 public:
 
@@ -1483,43 +1602,11 @@ public:
                                     ValueChangedReasonEnum reason,
                                     TimeValue time,
                                     ViewSetSpec view) OVERRIDE FINAL;
-    StatusEnum beginSequenceRender_public(double first, double last,
-                                          double step, bool interactive, const RenderScale & scale,
-                                          bool isSequentialRender, bool isRenderResponseToUserInteraction,
-                                          bool draftMode,
-                                          ViewIdx view,
-                                          bool isOpenGLRender,
-                                          const EffectOpenGLContextDataPtr& glContextData);
-    StatusEnum endSequenceRender_public(double first, double last,
-                                        double step, bool interactive, const RenderScale & scale,
-                                        bool isSequentialRender, bool isRenderResponseToUserInteraction,
-                                        bool draftMode,
-                                        ViewIdx view,
-                                        bool isOpenGLRender,
-                                        const EffectOpenGLContextDataPtr& glContextData);
+
 
     virtual bool canHandleRenderScaleForOverlays() const { return true; }
 
 
-    void drawOverlay_public(TimeValue time, const RenderScale & renderScale, ViewIdx view);
-
-    bool onOverlayPenDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenMotion_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenDoubleClicked_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
-
-    bool onOverlayPenUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyDown_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyUp_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayKeyRepeat_public(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
-
-    bool onOverlayFocusGained_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
-
-    bool onOverlayFocusLost_public(TimeValue time, const RenderScale & renderScale, ViewIdx view) WARN_UNUSED_RETURN;
 
     void setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
@@ -1529,7 +1616,6 @@ public:
     virtual void onInteractViewportSelectionUpdated(const RectD& /*rectangle*/,
                                                     bool /*onRelease*/) {}
 
-    void setDoingInteractAction(bool doing);
 
     /* @brief Overlay support:
      * Just overload this function in your operator.
@@ -1597,20 +1683,6 @@ public:
     virtual void onEffectCreated(const CreateNodeArgs& /*args*/) {}
 
 
-    /**
-     * @brief This function calls the impementation specific attachOpenGLContext()
-     **/
-    StatusEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
-
-    /**
-     * @brief This function calls the impementation specific dettachOpenGLContext()
-     **/
-    StatusEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
-
-    /**
-     * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
-     **/
-    void dettachAllOpenGLContexts();
 
     /**
      * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
@@ -1620,7 +1692,6 @@ public:
 
 
     void clearRenderInstances();
-
 
 
     /**
@@ -1649,31 +1720,6 @@ private:
 
     void releaseRenderInstance(const EffectInstancePtr& instance);
 
-    /**
-     * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
-     * This function will be called once per context. The function dettachOpenGLContext() will be called
-     * on the value returned by this function to deinitialize all context related data.
-     *
-     * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
-     * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
-     *
-     * Possible return status code:
-     * eStatusOK , the action was trapped and all was well
-     * eStatusReplyDefault , the action was ignored, but all was well anyway
-     * eStatusOutOfMemory , in which case this may be called again after a memory purge
-     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
-     **/
-    virtual StatusEnum attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
-
-    /**
-     * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
-     * Possible return status code:
-     * eStatusOK , the action was trapped and all was well
-     * eStatusReplyDefault , the action was ignored, but all was well anyway
-     * eStatusOutOfMemory , in which case this may be called again after a memory purge
-     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
-     **/
-    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/) { return eStatusReplyDefault; }
 
 
 
@@ -1684,28 +1730,8 @@ private:
                                          ComponentsAvailableMap* comps,
                                          std::list<EffectInstancePtr>* markedNodes);
 
-public:
 
 
-
-    void getComponentsNeededAndProduced_public(TimeValue time, ViewIdx view,
-                                               const TreeRenderNodeArgsPtr& render,
-                                               ComponentsNeededResults* results);
-
-    void setComponentsAvailableDirty(bool dirty);
-
-
-    /**
-     * @brief Check if Transform effects concatenation is possible on the current node and node upstream.
-     **/
-    void tryConcatenateTransforms(TimeValue time,
-                                  ViewIdx view,
-                                  const RenderScale & scale,
-                                  U64 hash,
-                                  InputMatrixMap* inputTransforms);
-
-
-  
 
 protected:
 
@@ -1719,15 +1745,6 @@ protected:
     {
     };
 
-
-    /**
-     * @brief Returns a map of the components produced by this effect and the components needed by the inputs of this effect.
-     * The output is mapped against -1. For all components not produced and if this effect is passthrough, it should use the
-     * passThroughInput to fetch the components needed.
-     **/
-    virtual void getComponentsNeededAndProduced(TimeValue time, ViewIdx view,
-                                                const TreeRenderNodeArgsPtr& render,
-                                                ComponentsNeededResults* results);
 
 
     virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
@@ -1745,95 +1762,6 @@ protected:
         return true;
     }
 
-    virtual void drawOverlay(TimeValue /*time*/,
-                             const RenderScale & /*renderScale*/,
-                             ViewIdx /*view*/)
-    {
-    }
-
-    virtual bool onOverlayPenDown(TimeValue /*time*/,
-                                  const RenderScale & /*renderScale*/,
-                                  ViewIdx /*view*/,
-                                  const QPointF & /*viewportPos*/,
-                                  const QPointF & /*pos*/,
-                                  double /*pressure*/,
-                                  double /*timestamp*/,
-                                  PenType /*pen*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayPenDoubleClicked(TimeValue /*time*/,
-                                           const RenderScale & /*renderScale*/,
-                                           ViewIdx /*view*/,
-                                           const QPointF & /*viewportPos*/,
-                                           const QPointF & /*pos*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayPenMotion(TimeValue /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/,
-                                    const QPointF & /*viewportPos*/,
-                                    const QPointF & /*pos*/,
-                                    double /*pressure*/,
-                                    double /*timestamp*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayPenUp(TimeValue /*time*/,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx /*view*/,
-                                const QPointF & /*viewportPos*/,
-                                const QPointF & /*pos*/,
-                                double /*pressure*/,
-                                double /*timestamp*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayKeyDown(TimeValue /*time*/,
-                                  const RenderScale & /*renderScale*/,
-                                  ViewIdx /*view*/,
-                                  Key /*key*/,
-                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayKeyUp(TimeValue /*time*/,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx /*view*/,
-                                Key /*key*/,
-                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayKeyRepeat(TimeValue /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/,
-                                    Key /*key*/,
-                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayFocusGained(TimeValue /*time*/,
-                                      const RenderScale & /*renderScale*/,
-                                      ViewIdx /*view*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
-    virtual bool onOverlayFocusLost(TimeValue /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
 
     NodeWPtr _node; //< the node holding this effect
 
@@ -1923,8 +1851,7 @@ private:
 
 
 
-    bool allocateImagePlane(const ImageKey & key,
-                            const RectD & rod,
+    bool allocateImagePlane(const RectD & rod,
                             const RectI & downscaleImageBounds,
                             const RectI & fullScaleImageBounds,
                             const ImageComponents & components,
@@ -1942,17 +1869,6 @@ private:
 
 
 
-public:
-
-    enum RenderingFunctorRetEnum
-    {
-        eRenderingFunctorRetFailed, //< must stop rendering
-        eRenderingFunctorRetOK, //< ok, move on
-        eRenderingFunctorRetTakeImageLock, //< take the image lock because another thread is rendering part of something we need
-        eRenderingFunctorRetAborted, // we were aborted
-        eRenderingFunctorRetOutOfGPUMemory
-    };
-
 private:
 
     /**
@@ -1961,23 +1877,6 @@ private:
     int getInputNumber(const EffectInstancePtr& inputEffect) const;
 };
 
-class ClipPreferencesRunning_RAII
-{
-    EffectInstancePtr _effect;
-
-public:
-
-    ClipPreferencesRunning_RAII(const EffectInstancePtr& effect)
-        : _effect(effect)
-    {
-        _effect->setClipPreferencesRunning(true);
-    }
-
-    ~ClipPreferencesRunning_RAII()
-    {
-        _effect->setClipPreferencesRunning(false);
-    }
-};
 
 
 /**

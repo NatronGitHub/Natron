@@ -745,22 +745,22 @@ public:
     /**
      * @brief Get all menu entries
      **/
-    std::vector<std::string> getEntries(ViewIdx view = ViewIdx::current()) const;
+    std::vector<std::string> getEntries(ViewIdx view = ViewIdx(0)) const;
 
     /**
      * @brief Get one menu entry. Throws an invalid_argument exception if index is invalid
      **/
-    std::string getEntry(int v, ViewIdx view = ViewIdx::current()) const;
+    std::string getEntry(int v, ViewIdx view = ViewIdx(0)) const;
 
     /**
      * @brief Get all menu entry tooltips
      **/
-    std::vector<std::string> getEntriesHelp(ViewIdx view = ViewIdx::current()) const;
+    std::vector<std::string> getEntriesHelp(ViewIdx view = ViewIdx(0)) const;
 
     /**
      * @brief Get the active entry text
      **/
-    std::string getActiveEntryText(ViewIdx view = ViewIdx::current());
+    std::string getActiveEntryText(ViewIdx view = ViewIdx(0));
 
     /**
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
@@ -768,7 +768,7 @@ public:
      **/
     void setActiveEntryText(const std::string& entry, ViewSetSpec view = ViewSetSpec::all());
 
-    int getNumEntries(ViewIdx view = ViewIdx::current()) const;
+    int getNumEntries(ViewIdx view = ViewIdx(0)) const;
 
     /// Can this type be animated?
     /// ChoiceParam animation may not be quite perfect yet,
@@ -793,7 +793,7 @@ public:
     bool isCascading() const;
 
     /// set the KnobChoice value from the label
-    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value, ViewSetSpec view = ViewSetSpec::current());
+    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value, ViewSetSpec view = ViewSetSpec::all());
 
     /// set the KnobChoice default value from the label
     void setDefaultValueFromLabel(const std::string & value);
@@ -1535,7 +1535,7 @@ public:
 
     void loadParametricCurves(const std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >& curves);
 
-    virtual void appendToHash(TimeValue time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE FINAL;
 
 
     //////////// Overriden from AnimatingObjectI
@@ -1550,9 +1550,9 @@ public:
     virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
     virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
 

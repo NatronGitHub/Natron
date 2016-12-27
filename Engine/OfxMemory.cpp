@@ -38,11 +38,11 @@ NATRON_NAMESPACE_ENTER;
 
 OfxMemory::OfxMemory(const EffectInstancePtr& effect)
     : OFX::Host::Memory::Instance()
+    , _lock()
+    , _lockedCount(0)
     , _memory( new PluginMemory(effect) )
 {
-    if (effect) {
-        effect->addPluginMemoryPointer(_memory);
-    }
+    
 }
 
 OfxMemory::~OfxMemory()
@@ -60,8 +60,15 @@ OfxMemory::alloc(size_t nBytes)
 {
     bool ret = false;
 
+    QMutexLocker l(&_lock);
+
+    if (_lockedCount) {
+        return false;
+    }
+
+    PluginMemAllocateMemoryArgs args(nBytes);
     try {
-        ret = _memory->alloc(nBytes);
+        ret = _memory->allocateMemory(args);
     } catch (const std::bad_alloc &) {
         return false;
     }
@@ -72,19 +79,28 @@ OfxMemory::alloc(size_t nBytes)
 void
 OfxMemory::freeMem()
 {
-    _memory->freeMem();
+    _memory->deallocateMemory();
 }
 
 void
 OfxMemory::lock()
 {
-    _memory->lock();
+    QMutexLocker l(&_lock);
+
+    ++_lockedCount;
 }
 
 void
 OfxMemory::unlock()
 {
-    _memory->unlock();
+    QMutexLocker l(&_lock);
+
+    // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxImageEffectSuiteV1_imageMemoryUnlock
+    // "Also note, if you unlock a completely unlocked handle, it has no effect (ie: the lock count can't be negative)."
+    if (_lockedCount > 0) {
+        --_lockedCount;
+    }
+
 }
 
 NATRON_NAMESPACE_EXIT;

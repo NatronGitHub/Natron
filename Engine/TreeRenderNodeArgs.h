@@ -39,6 +39,7 @@
 #endif
 #include "Global/GlobalDefines.h"
 
+#include "Engine/EffectInstanceActionResults.h"
 #include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -107,7 +108,9 @@ inline bool findFrameViewHash(TimeValue time, ViewIdx view, const FrameViewHashM
 }
 
 /**
- * @brief These are datas related to a single frame/view render of a node. This is thread-safe.
+ * @brief These are datas related to a single frame/view render of a node.
+ * Each request to a node time/view will increase the visits count on this request.
+ * This is thread-safe.
  **/
 struct FrameViewRequestPrivate;
 class FrameViewRequest
@@ -118,39 +121,81 @@ public:
 
     ~FrameViewRequest();
 
+    /**
+     * @brief Increments the number of requests on this particular time/view for the node.
+     **/
     void incrementVisitsCount();
 
+    /**
+     * @brief Retrieves the bounding box of all region of interest requested for this time/view.
+     * This allows to ensure the render happens only once.
+     **/
     RectD getCurrentRoI() const;
 
+    /**
+     * @brief Set the region of interest for this frame view.
+     **/
     void setCurrentRoI(const RectD& roi);
 
+    /**
+     * @brief Returns the hash for this frame view
+     **/
     bool getHash(U64* hash) const;
 
+    /**
+     * @brief Set the hash for this frame view
+     **/
     void setHash(U64 hash);
 
-    void setFrameRangeResults(const RangeD& range);
+    /**
+     * @brief Returns the identity action results for this frame/view
+     **/
+    IsIdentityResultsPtr getIdentityResults() const;
 
-    bool getFrameRangeResults(RangeD* range) const;
+    /**
+     * @brief Set the identity action results for this frame/view
+     **/
+    void setIdentityResults(const IsIdentityResultsPtr& results);
 
-    bool getIdentityResults(int *identityInputNb, double *identityTime, ViewIdx* identityView) const;
+    /**
+     * @brief Returns the get region of definition action results for this frame/view
+     **/
+    GetRegionOfDefinitionResultsPtr getRegionOfDefinitionResults() const;
 
-    void setIdentityResults(int identityInputNb, double identityTime, ViewIdx identityView);
+    /**
+     * @brief Set the get region of definition action results for this frame/view
+     **/
+    void setRegionOfDefinitionResults(const GetRegionOfDefinitionResultsPtr& results);
 
-    bool getRegionOfDefinitionResults(RectD* rod) const;
+    /**
+     * @brief Returns the frames needed action results for this frame/view
+     **/
+    GetFramesNeededResultsPtr getFramesNeededResults() const;
 
-    void setRegionOfDefinitionResults(const RectD& rod);
+    /**
+     * @brief Set the frames needed action results for this frame/view
+     **/
+    void setFramesNeededResults(const GetFramesNeededResultsPtr& framesNeeded);
 
-    bool getFramesNeededResults(FramesNeededMap* framesNeeded) const;
+    /**
+     * @brief Returns the components needed action results for this frame/view
+     **/
+    GetComponentsNeededResultsPtr getComponentsNeededResults() const;
 
-    void setFramesNeededResults(const FramesNeededMap& framesNeeded);
+    /**
+     * @brief Set the components needed action results for this frame/view
+     **/
+    void setComponentsNeededResults(const GetComponentsNeededResultsPtr& comps);
 
-    ComponentsNeededResultsPtr getComponentsNeededResults() const;
+    /**
+     * @brief Returns the distorsion action results for this frame/view
+     **/
+    GetDistorsionResultsPtr getDistorsionResults() const;
 
-    void setComponentsNeededResults(const ComponentsNeededResultsPtr& comps);
-
-    DistorsionFunction2DPtr getDistorsionResults() const;
-
-    void setDistorsionResults(const DistorsionFunction2DPtr& results);
+    /**
+     * @brief Set the distorsion action results for this frame/view
+     **/
+    void setDistorsionResults(const GetDistorsionResultsPtr& results);
 
 private:
 
@@ -169,13 +214,16 @@ typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFr
  * that created the TreeRender object and then they are no longer changed.
  **/
 struct TreeRenderNodeArgsPrivate;
-class TreeRenderNodeArgs
+class TreeRenderNodeArgs : public boost::enable_shared_from_this<TreeRenderNodeArgs>
 {
-public:
-
     TreeRenderNodeArgs(const TreeRenderPtr& render, const NodePtr& node);
 
-    ~TreeRenderNodeArgs();
+public:
+
+    static TreeRenderNodeArgsPtr create(const TreeRenderPtr& render, const NodePtr& node);
+
+
+    virtual ~TreeRenderNodeArgs();
 
     /**
      * @brief Returns a pointer to the render object owning this object.
@@ -225,9 +273,47 @@ public:
     SequentialPreferenceEnum getCurrentRenderSequentialPreference() const;
 
     /**
-     * @brief Set hash for the given time/view
+     * @brief Returns the node tile support for this render
      **/
-    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
+    bool getCurrentTilesSupport() const;
+
+    /**
+     * @brief Returns the node distorsion support for this render
+     **/
+    bool getCurrentDistortSupport() const;
+
+    /**
+     * @brief Set the results of the getFrameRange action for this render
+     **/
+    void setFrameRangeResults(const GetFrameRangeResultsPtr& range);
+
+    /**
+     * @brief Get the results of the getFrameRange action for this render
+     **/
+    GetFrameRangeResultsPtr getFrameRangeResults() const;
+
+    /**
+     * @brief Set the results of the getMetadata action for this render
+     **/
+    void setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas);
+
+    /**
+     * @brief Get the results of the getFrameRange action for this render
+     **/
+    GetTimeInvariantMetaDatasResultsPtr getTimeInvariantMetadataResults() const;
+
+    /**
+     * @brief Get the time and view invariant hash
+     **/
+    bool getTimeViewInvariantHash(U64* hash) const;
+    void setTimeViewInvariantHash(U64 hash);
+
+
+    /**
+     * @brief Get the time and view invariant hash used for metadatas
+     **/
+    void setTimeInvariantMetadataHash(U64 hash);
+    bool getTimeInvariantMetadataHash(U64* hash) const;
 
     /**
      * @brief Convenience function, same as getFrameViewRequest(time,view)->finalRoi
@@ -251,15 +337,32 @@ public:
      **/
     FrameViewRequest* getOrCreateFrameViewRequest(TimeValue time, ViewIdx view);
 
+    /**
+     * @brief Add the given canonicalRenderWindow to the rectangles requested to image at the given time and view.
+     * The final render will be made on the union of all render windows passed to this function for the given time and view.
+     **/
+    StatusEnum roiVisitFunctor(TimeValue time,
+                               ViewIdx view,
+                               unsigned originalMipMapLevel,
+                               const RectD & canonicalRenderWindow);
+
+
+    /**
+     * @brief Recurse on inputs of the current node using the results of getFramesNeeded
+     * and call renderRoI.
+     **/
+    RenderRoIRetCode preRenderInputImages(TimeValue time,
+                                          ViewIdx view,
+                                          bool useScaleOneInputs,
+                                          unsigned int mipMapLevel,
+                                          const ComponentsNeededMap& neededComps,
+                                          InputImagesMap* inputImages);
+
+
 private:
 
     boost::scoped_ptr<TreeRenderNodeArgsPrivate> _imp;
 };
-
-
-
-
-
 
 NATRON_NAMESPACE_EXIT;
 

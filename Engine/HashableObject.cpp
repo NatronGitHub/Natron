@@ -38,14 +38,26 @@ struct HashableObjectPrivate
     std::list<HashableObjectWPtr> hashListeners;
 
     // The hash cache
-    mutable FrameViewHashMap hashCache;
+    mutable FrameViewHashMap timeViewVariantHashCache;
+
+    U64 timeViewInvariantCache;
+
+    bool timeViewInvariantCacheValid;
+
+    U64 metadataSlaveCache;
+
+    bool metadataSlaveCacheValid;
 
     // protects hashCache
     mutable QMutex hashCacheMutex;
 
     HashableObjectPrivate()
     : hashListeners()
-    , hashCache()
+    , timeViewVariantHashCache()
+    , timeViewInvariantCache(0)
+    , timeViewInvariantCacheValid(false)
+    , metadataSlaveCache(0)
+    , metadataSlaveCacheValid(false)
     , hashCacheMutex(QMutex::Recursive) // It might recurse when calling getValue on a knob with an expression because of randomSeed
     {
 
@@ -53,11 +65,17 @@ struct HashableObjectPrivate
 
     HashableObjectPrivate(const HashableObjectPrivate& other)
     : hashListeners(other.hashListeners)
-    , hashCache() // do not copy the cache! During a render we need a hash that corresponds exactly to the render values.
+    , timeViewVariantHashCache() // do not copy the cache! During a render we need a hash that corresponds exactly to the render values.
+    , timeViewInvariantCache(0)
+    , timeViewInvariantCacheValid(false)
+    , metadataSlaveCache(0)
+    , metadataSlaveCacheValid(false)
     , hashCacheMutex(QMutex::Recursive)
     {
 
     }
+
+    bool findCachedHashInternal(const HashableObject::FindHashArgs& args, U64 *hash) const;
 };
 
 HashableObject::HashableObject()
@@ -84,60 +102,92 @@ HashableObject::addHashListener(const HashableObjectPtr& parent)
 }
 
 bool
-HashableObject::findCachedHash(TimeValue time, ViewIdx view, U64 *hash) const
+HashableObjectPrivate::findCachedHashInternal(const HashableObject::FindHashArgs& args, U64 *hash) const
 {
-    QMutexLocker k(&_imp->hashCacheMutex);;
-    return findFrameViewHash(time, view, _imp->hashCache, hash);
+    switch (args.hashType) {
+        case HashableObject::eComputeHashTypeTimeViewVariant:
+            return findFrameViewHash(args.time, args.view, timeViewVariantHashCache, hash);
+        case HashableObject::eComputeHashTypeTimeViewInvariant:
+            if (!timeViewInvariantCacheValid) {
+                return false;
+            }
+            *hash = timeViewInvariantCache;
+            return true;
+        case HashableObject::eComputeHashTypeOnlyMetadataSlaves:
+            if (!metadataSlaveCacheValid) {
+                return false;
+            }
+            *hash = metadataSlaveCache;
+            return true;
+
+    }
+}
+
+bool
+HashableObject::findCachedHash(const FindHashArgs& args, U64 *hash) const
+{
+    QMutexLocker k(&_imp->hashCacheMutex);
+    return _imp->findCachedHashInternal(args, hash);
 }
 
 
 void
-HashableObject::computeHash_noCache(TimeValue time, ViewIdx view, Hash64* hash)
+HashableObject::computeHash_noCache(const ComputeHashArgs& args, Hash64* hash)
 {
 
     // Call the virtual portion to let implementation add extra fields to the hash
-    appendToHash(time, view, hash);
+    appendToHash(args, hash);
 }
 
-
-void
-HashableObject::addHashToCache(TimeValue time, ViewIdx view, U64 hashValue)
-{
-    assert(hashValue != 0);
-    if (hashValue == 0) {
-        return;
-    }
-    QMutexLocker k(&_imp->hashCacheMutex);
-    FrameViewPair fv = {roundImageTimeToEpsilon(time), view};
-    _imp->hashCache[fv] = hashValue;
-}
 
 U64
-HashableObject::computeHash(TimeValue time, ViewIdx view)
+HashableObject::computeHash(const ComputeHashArgs& args)
 {
     {
-        // Find a hash in the cache..
+        // Find a hash in the cache.
         QMutexLocker k(&_imp->hashCacheMutex);
         U64 hashValue;
-        bool isCached = findFrameViewHash(time, view, _imp->hashCache, &hashValue);
-        if (isCached) {
-            return hashValue;
+        {
+            FindHashArgs findArgs;
+            findArgs.time = args.time;
+            findArgs.view = args.view;
+            findArgs.hashType = args.hashType;
+            if (_imp->findCachedHashInternal(findArgs, &hashValue)) {
+                return hashValue;
+            }
         }
+
 
         // Compute it
         Hash64 hash;
-        computeHash_noCache(time, view, &hash);
+
+        // Identity the hash by the hash type in case for some coincendence 2 hash types are equal
+        hash.append(args.hashType);
+        computeHash_noCache(args, &hash);
         hash.computeHash();
         hashValue = hash.value();
 
-        // Cache it
-        FrameViewPair fv = {roundImageTimeToEpsilon(time), view};
-        _imp->hashCache[fv] = hashValue;
+        switch (args.hashType) {
+            case eComputeHashTypeTimeViewInvariant:
+                _imp->timeViewInvariantCache = hashValue;
+                _imp->timeViewInvariantCacheValid = true;
+                break;
+            case eComputeHashTypeOnlyMetadataSlaves:
+                _imp->metadataSlaveCache = hashValue;
+                _imp->metadataSlaveCacheValid = true;
+                break;
+            case eComputeHashTypeTimeViewVariant:
+                FrameViewPair fv = {roundImageTimeToEpsilon(args.time), args.view};
+                _imp->timeViewVariantHashCache[fv] = hashValue;
+                break;
+        }
+
         return hashValue;
+        
 
     }
 
-}
+} // computeHash
 
 bool
 HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidatedObjects)
@@ -154,10 +204,12 @@ HashableObject::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
         QMutexLocker k(&_imp->hashCacheMutex);
 
         // If the cache hash is empty, then all hash listeners must also have their hash empty. 
-        if (_imp->hashCache.empty()) {
+        if (_imp->timeViewVariantHashCache.empty() && !_imp->timeViewInvariantCacheValid && !_imp->metadataSlaveCacheValid) {
             return false;
         }
-        _imp->hashCache.clear();
+        _imp->timeViewVariantHashCache.clear();
+        _imp->timeViewInvariantCacheValid = false;
+        _imp->metadataSlaveCacheValid = false;
     }
     for (std::list<HashableObjectWPtr>::const_iterator it = _imp->hashListeners.begin(); it != _imp->hashListeners.end(); ++it) {
         HashableObjectPtr listener = it->lock();

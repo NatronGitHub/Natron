@@ -61,7 +61,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Distorsion2D.h"
 #include "Engine/Cache.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobItemsTable.h"
@@ -603,7 +602,7 @@ RenderRoIRetCode
 EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
                                                      const ParallelRenderArgsPtr& frameArgs,
                                                      const FrameViewRequest* requestPassData,
-                                                     SupportsEnum supportsRS,
+                                                     RenderScaleSupportEnum supportsRS,
                                                      U64 frameViewHash,
                                                      double par,
                                                      unsigned int mipMapLevel,
@@ -828,7 +827,7 @@ EffectInstance::Implementation::setupRenderRoIParams(const RenderRoIArgs & args,
                                                      double *par,
                                                      ImageFieldingOrderEnum *fieldingOrder,
                                                      ImagePremultiplicationEnum *thisEffectOutputPremult,
-                                                     SupportsEnum *supportsRS,
+                                                     RenderScaleSupportEnum *supportsRS,
                                                      bool *renderFullScaleThenDownscale,
                                                      unsigned int *renderMappedMipMapLevel,
                                                      RenderScale *renderMappedScale,
@@ -1200,13 +1199,12 @@ EffectInstance::Implementation::renderRoILookupCacheFirstTime(const EffectInstan
     }
 
 
-    const bool draftModeSupported = _publicInterface->getNode()->isDraftModeUsed();
     std::string pluginID = _publicInterface->getNode()->getPluginID();
     key->reset( new ImageKey(pluginID,
                              frameViewHash,
                              args.time,
                              args.view,
-                             draftModeSupported && frameArgs->draftMode ) );
+                             frameArgs->draftMode ) );
     boost::scoped_ptr<ImageKey> nonDraftKey( new ImageKey(pluginID,
                                                           frameViewHash,
                                                           args.time,
@@ -2106,7 +2104,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     OSGLContextPtr glGpuContext, glCpuContext;
     AbortableRenderInfoPtr abortInfo;
     ParallelRenderArgsPtr  frameArgs;
-    SupportsEnum supportsRS;
+    RenderScaleSupportEnum supportsRS;
 
     // This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
     // wether the plug-in should render in the full scale image, and then we downscale afterwards or

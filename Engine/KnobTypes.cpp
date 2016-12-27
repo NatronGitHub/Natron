@@ -2774,15 +2774,18 @@ KnobParametric::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx d
 
 
 void
-KnobParametric::appendToHash(TimeValue /*time*/, ViewIdx view, Hash64* hash)
+KnobParametric::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
 
+    if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
+        return;
+    }
     for (std::size_t i = 0; i < _defaultCurves.size(); ++i) {
         // Parametric params are a corner case:
         // The plug-in will try to call getValue at many parametric times, which are unknown.
         // The only way to identify uniquely the curve as a hash is to append all control points
         // of the curve to the hash.
-        CurvePtr curve = getParametricCurve(DimIdx(i), view);
+        CurvePtr curve = getParametricCurve(DimIdx(i), args.view);
         if (curve) {
             Hash64::appendCurve(curve, hash);
         }

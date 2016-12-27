@@ -55,7 +55,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/ImageParams.h"
 #include "Engine/MergingEnum.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Project.h"

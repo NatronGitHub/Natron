@@ -442,8 +442,8 @@ TrackMarker::resetCenter()
         }
 
         KnobDoublePtr centerKnob = getCenterKnob();
-        centerKnob->setValue(center.x, ViewSetSpec::current(), DimIdx(0));
-        centerKnob->setValue(center.y, ViewSetSpec::current(), DimIdx(1));
+        centerKnob->setValue(center.x, ViewSetSpec::all(), DimIdx(0));
+        centerKnob->setValue(center.y, ViewSetSpec::all(), DimIdx(1));
     }
 }
 
@@ -770,7 +770,7 @@ TrackMarkerPM::trackMarker(bool forward,
             int index = center->getKeyFrameIndex(ViewIdx::current(), DimIdx(i), frame);
             if (index != -1) {
                 centerPoint[i] = center->getValueAtTime(frame, DimIdx(i));
-                markerCenter->setValueAtTime(frame, centerPoint[i], ViewSetSpec::current(), DimIdx(i));
+                markerCenter->setValueAtTime(frame, centerPoint[i], ViewSetSpec::all(), DimIdx(i));
             } else {
                 // No keyframe at this time: tracking failed
                 ret = false;
@@ -781,7 +781,7 @@ TrackMarkerPM::trackMarker(bool forward,
             int index = center->getKeyFrameIndex(ViewIdx::current(), DimIdx(i), refFrame);
             if (index != -1) {
                 double value = center->getValueAtTime(refFrame, DimIdx(i));
-                markerCenter->setValueAtTime(refFrame, value, ViewSetSpec::current(), DimIdx(i));
+                markerCenter->setValueAtTime(refFrame, value, ViewSetSpec::all(), DimIdx(i));
             }
         }
     }
@@ -817,7 +817,7 @@ TrackMarkerPM::trackMarker(bool forward,
                 // Convert to a percentage
                 value /= areaPixels;
 
-                markerError->setValueAtTime(frame, value, ViewSetSpec::current(), DimIdx(0));
+                markerError->setValueAtTime(frame, value, ViewSetSpec::all(), DimIdx(0));
             }
         }
     }

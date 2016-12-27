@@ -863,7 +863,7 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
                     if ( isButton->getIsCheckable() ) {
 
                         // Refresh the button state
-                        isButton->setValue(!isButton->getValue(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited, 0 /*keyframe*/, true /*forceHandlerEvenIfNoChange*/);
+                        isButton->setValue(!isButton->getValue(), ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0 /*keyframe*/, true /*forceHandlerEvenIfNoChange*/);
 
                         ret = true;
                     } else {
@@ -989,7 +989,7 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
 
     if (isModifier) {
         // Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->queueRedrawForAllViewers();
+        app->redrawAllViewers();
     }
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
@@ -1062,7 +1062,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 
     if (isModifier) {
         //Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->queueRedrawForAllViewers();
+        app->redrawAllViewers();
     }
 
 

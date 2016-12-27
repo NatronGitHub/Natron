@@ -244,14 +244,16 @@ public:
     struct ClipTLSData
     {
 
-        // The following data are always valid and do not necessitate a valid flag.
-        // They are used to implement suite functions that return strings
+        // Used to implement suite functions that return strings
+        // to ensure that the string lives as long as the action runs
         std::vector<std::string> componentsPresent;
         std::string unmappedComponents;
+        std::string components;
 
         ClipTLSData()
             : componentsPresent()
             , unmappedComponents()
+            , components()
         {
         }
     };

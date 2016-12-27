@@ -85,7 +85,6 @@ struct TextureInfo
         , format()
         , pixelAspectRatio(1.)
         , lastRenderedTiles(MAX_MIP_MAP_LEVELS)
-        , memoryHeldByLastRenderedImages(0)
         , isPartialImage(false)
         , isVisible(false)
     {
@@ -105,7 +104,6 @@ struct TextureInfo
 
     // Hold shared pointers here because some images might not be held by the cache
     std::vector<ImagePtr> lastRenderedTiles;
-    U64 memoryHeldByLastRenderedImages;
     bool isPartialImage;
 
     // false if this input is disconnected for the viewer
@@ -176,7 +174,7 @@ struct ViewerGL::Implementation
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
     GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
-    mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
+    mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage
     QSize sizeH;
     PenType pointerTypeOnPress;
     double pressureOnPress, pressureOnRelease;

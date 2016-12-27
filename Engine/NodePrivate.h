@@ -177,6 +177,8 @@ public:
     void refreshDefaultViewerKnobsOrder();
 
 
+
+
     ////////////////////////////////////////////////
 
     // Ptr to public interface, can not be a smart ptr
@@ -184,7 +186,7 @@ public:
 
     // The group containing this node
     mutable QMutex groupMutex;
-    boost::weak_ptr<NodeCollection> group;
+    NodeCollectionWPtr group;
 
     // If this node is part of a precomp, this is a pointer to it
     boost::weak_ptr<PrecompNode> precomp;
@@ -194,48 +196,103 @@ public:
 
     // If true, the node is serialized
     bool isPersistent;
+
+    // was initializeinputs() called so far?
     bool inputsInitialized;
+
+    // Protects outputs
     mutable QMutex outputsMutex;
+
+    // List of weak references to the output nodes
     NodesWList outputs;
+
+    // Protects inputs
     mutable QMutex inputsMutex; //< protects inputs so the serialization thread can access them
+
+    // vector of weak references to input nodes
     InputsV inputs;
 
-    //to the inputs in a thread-safe manner.
-    EffectInstancePtr effect;  //< the effect hosted by this node
+    // Pointer to the effect hosted by this node.
+    // This is the main effect and cannot be used to render, instead
+    // small lightweights render clones are created to render.
+    EffectInstancePtr effect;
 
-    ///The accepted components in input and in output of the plug-in
-    ///These two are also protected by inputsMutex
+    // true when we're running inside an interact action
+    // Only valid on the main-thread
+    bool duringInteractAction;
+
+    // Set during interact actions. This is only read/written on the main-thread.
+    OverlaySupport* overlaysViewport;
+
+    // The accepted components in input and in output of the plug-in
+    // These two are also protected by inputsMutex
     std::vector< std::list<ImageComponents> > inputsComponents;
     std::list<ImageComponents> outputComponents;
-    mutable QMutex nameMutex;
-    mutable QMutex inputsLabelsMutex;
-    std::vector<std::string> inputLabels; // inputs name, protected by inputsLabelsMutex
-    std::vector<std::string> inputHints; // protected by inputsLabelsMutex
-    std::vector<bool> inputsVisibility; // protected by inputsMutex
-    std::string scriptName; //node name internally and as visible to python
-    std::string label; // node label as visible in the GUI
 
+    // Protects scriptName and label
+    mutable QMutex nameMutex;
+
+    // Node name internally and as visible to python.
+    // May only be set to a Python compliant variable name (no strange characters)
+    std::string scriptName;
+
+    // Node label as visible in the GUI. Can be set to any-thing.
+    std::string label;
+
+    // Protects inputLabels, inputHints
+    mutable QMutex inputsLabelsMutex;
+
+    // Label of each input arrow
+    std::vector<std::string> inputLabels;
+
+    // Hint for each input arrow (displayed in the documentation)
+    std::vector<std::string> inputHints;
+
+    // Whether an input should be made visible at all in the GUI or not.
+    std::vector<bool> inputsVisibility;
+
+    // When deactivating the node, remembers each node that was connected in output
+    // and its input index which was connected to this node.
     DeactivatedState deactivatedState;
+
+    // Protects activated
     mutable QMutex activatedMutex;
+
+    // When false the node is not part of the nodegraph at all and will not be serialized as well.
     bool activated;
 
-    // the plugin which stores the function to instantiate the effect
+    // The plugin which stores the function to instantiate the effect
     PluginWPtr plugin;
 
+    // If this node was created from a PyPlug this is a pointer to the PyPlug plug-in handle.
     PluginWPtr pyPlugHandle;
+
+    // True if this node is a PyPlug
     bool isPyPlug;
 
+    // True while computing a preview.
     bool computingPreview;
-    bool previewThreadQuit;
-    mutable QMutex computingPreviewMutex;
-    size_t pluginInstanceMemoryUsed; //< global count on all EffectInstance's of the memory they use.
-    QMutex memoryUsedMutex; //< protects _pluginInstanceMemoryUsed
-    int mustQuitPreview;
-    QMutex mustQuitPreviewMutex;
-    QWaitCondition mustQuitPreviewCond;
-    QMutex renderInstancesSharedMutex; //< see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
 
-    //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
+    // True when the preview thread has quit
+    bool previewThreadQuit;
+
+    // Protects computingPreview and previewThreadQuit
+    mutable QMutex computingPreviewMutex;
+
+    // Not 0 when we should abort the preview
+    int mustQuitPreview;
+
+    // Protects mustQuitPreview
+    QMutex mustQuitPreviewMutex;
+
+    // Protected by mustQuitPreviewMutex. The thread aborting the preview rendering
+    // waits in this condition until the preview is aborted
+    QWaitCondition mustQuitPreviewCond;
+
+    // Used to lock out render instances when the plug-in render thread safety is set to eRenderSafetyInstanceSafe
+    QMutex renderInstancesSharedMutex;
+
+    // When creating a Reader or Writer node, this is a pointer to the meta node that the user actually see.
     NodeWPtr ioContainer;
 
 
@@ -284,61 +341,106 @@ public:
     std::map<int, ChannelSelector> channelsSelectors;
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, MaskSelector> maskSelectors;
-    mutable QMutex imagesBeingRenderedMutex;
-    QWaitCondition imageBeingRenderedCond;
-    std::list< ImagePtr > imagesBeingRendered; ///< a list of all the images being rendered simultaneously
+
+    // List of supported bitdepth by the plug-in
     std::list <ImageBitDepthEnum> supportedDepths;
 
-    ///This is to avoid the slots connected to the main-thread to be called too much
-    QMutex lastRenderStartedMutex; //< protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
+
+    // Protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
+    QMutex lastRenderStartedMutex;
+
+    // This is to avoid the slots connected to the main-thread to be called too much
     timeval lastRenderStartedSlotCallTime;
     int renderStartedCounter;
     std::vector<int> inputIsRenderingCounter;
     timeval lastInputNRenderStartedSlotCallTime;
 
+    // The last persistent message posted by the plug-in
     QString persistentMessage;
+
+    // The type of message
     int persistentMessageType;
+
+    // Protects persistentMessage & persistentMessageType
     mutable QMutex persistentMessageMutex;
+
+    // Pointer to the node gui if any
     boost::weak_ptr<NodeGuiI> guiPointer;
+
+    // List of native host overlays used by this node
     std::list<HostOverlayKnobsPtr> nativeOverlays;
+
+    // True when the node has its load() function complete
     bool nodeCreated;
+
+    // True if the node was created with the kCreateNodeArgsPropSilent flag
     bool wasCreatedSilently;
+
+    // Protects created components
     mutable QMutex createdComponentsMutex;
-    std::list<ImageComponents> createdComponents; // comps created by the user
+
+    // Comps created by the user in the stream.
+    std::list<ImageComponents> createdComponents;
+
+    // If this node is part of a RotoPaint item implementation
+    // this is a pointer to the roto item itself
     boost::weak_ptr<RotoDrawableItem> paintStroke;
 
+    // Protects all plug-in properties
     mutable QMutex pluginsPropMutex;
+
+    // pluginSafety is the render thread safety declared by the plug-in.
+    // The currentThreadSafety is either pointing to the same value as pluginSafety
+    // or a lower value. This is used for example by Natron when painting with
+    // a brush to ensure only 1 render thread is running.
     RenderSafetyEnum pluginSafety, currentThreadSafety;
+
+    // Does this node currently support tiled rendering
     bool currentSupportTiles;
+
+    // Does this node currently supports OpenGL render
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
+
+    // Does this node currently renders sequentially or not
     SequentialPreferenceEnum currentSupportSequentialRender;
+
+    // Does this node currently supports render scale
+    RenderScaleSupportEnum supportsRenderScale;
+
+    // Does this node can return a distorsion function ?
     bool currentCanDistort;
-    bool draftModeUsed, mustComputeInputRelatedData;
-    mutable QMutex lastStrokeMovementMutex;
-    bool strokeBitmapCleared;
 
     // During painting we keep track of the image that was rendered
-    // at the previous step;
+    // at the previous step so that we can accumulate the renders
     mutable QMutex lastRenderedImageMutex;
     ImagePtr lastRenderedImage;
 
+    // Protects isBeingDestroyed
     mutable QMutex isBeingDestroyedMutex;
+
+    // true when the node is in the destroyNode function
     bool isBeingDestroyed;
+
+    // Pointer to the thread used to wait for all renders to quit instead
+    // of the main-thread
     boost::shared_ptr<NodeRenderWatcher> renderWatcher;
-    /*
-     Used to block render emitions while modifying nodes links
-     MT-safe: only accessed/used on main thread
-     */
+
+    // Used to bracket calls to onInputChanged to ensure stuff that needs to be recomputed
+    // when inputs are changed is computed once.
     int inputModifiedRecursion;
+
+    // Input indices that changed whilst in the beginInput/endInputChanged bracket
     std::set<int> inputsModified;
 
-    //For readers, this is the name of the views in the file
+    // For readers, this is the name of the views in the file.
+    // This is read from the kReadOIIOAvailableViewsKnobName knob
     std::vector<std::string> createdViews;
 
-    //To concatenate calls to refreshIdentityState, accessed only on main-thread
+    // To concatenate calls to refreshIdentityState, accessed only on main-thread
     mutable QMutex refreshIdentityStateRequestsCountMutex;
     int refreshIdentityStateRequestsCount;
-    int isRefreshingInputRelatedData; // only used by the main thread
+
+    // Map of warnings that should be displayed on the NodeGui indicating issues in the stream
     std::map<Node::StreamWarningEnum, QString> streamWarnings;
 
     // Some plug-ins (mainly Hitfilm Ignite detected for now) use their own OpenGL context that is sharing resources with our OpenGL contexT.
@@ -365,31 +467,11 @@ public:
     // This is used to determine if the ordering has changed or not for serialization purpose
     std::list<std::string> defaultViewerKnobsOrder;
 
+    // True when restoreNodeToDefault is called
     bool restoringDefaults;
 
-    // Used to determine which knobs are presets, so that if the user switch preset we remove them
-    bool isLoadingPreset;
-    std::list<KnobIWPtr> presetKnobs;
-
+    // True if the effect has isHostChannelSelectorSupported() returning true
     bool hostChannelSelectorEnabled;
-};
-
-class RefreshingInputData_RAII
-{
-    NodePrivate *_imp;
-
-public:
-
-    RefreshingInputData_RAII(NodePrivate* imp)
-    : _imp(imp)
-    {
-        ++_imp->isRefreshingInputRelatedData;
-    }
-
-    ~RefreshingInputData_RAII()
-    {
-        --_imp->isRefreshingInputRelatedData;
-    }
 };
 
 
@@ -413,6 +495,9 @@ public:
         Q_UNUSED(mustQuitPreview);
     }
 };
+
+
+
 
 NATRON_NAMESPACE_EXIT
 

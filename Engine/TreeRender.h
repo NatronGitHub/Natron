@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <map>
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -32,6 +34,7 @@
 
 #include "Engine/EngineFwd.h"
 #include "Engine/ImageComponents.h"
+#include "Engine/Timevalue.h"
 #include "Engine/ViewIdx.h"
 
 #include "Global/GlobalDefines.h"
@@ -79,8 +82,9 @@ public:
         // full region of definition wil be rendered.
         const RectD* canonicalRoI;
 
-        // This is the layer to render
-        ImageComponents layer;
+        // If non-null this is the layers to render
+        // Otherwise the layers rendered will be the components needed in output by the plug-in
+        const std::list<ImageComponents>* layers;
 
         // mip-map level at which to Render
         unsigned int mipMapLevel;
@@ -116,7 +120,7 @@ public:
      * Once initialized this will render the image and return it in renderedImage.
      * The return code of render can be obtained in renderStatus
      **/
-    static ImagePtr renderImage(const CtorArgsPtr& inArgs, ImagePtr* renderedImage, RenderRoIRetCode* renderStatus);
+    static RenderRoIRetCode renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes);
 
     virtual ~TreeRender();
 
@@ -144,7 +148,8 @@ public:
      * @brief Returns arguments that are specific to the given node by that remain the same throughout the render of the frame, even if multiple time/view
      * are rendered.
      **/
-    TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;
+    TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;    
+
 
 private Q_SLOTS:
 

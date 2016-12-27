@@ -119,8 +119,6 @@ public:
 
     QString _binaryPath; //< the path to the application's binary
 
-    U64 _nodesGlobalMemoryUse; //< how much memory all the nodes are using (besides the cache)
-
     mutable QMutex errorLogMutex;
 
     std::list<LogEntry> errorLog;

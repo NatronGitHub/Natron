@@ -55,7 +55,6 @@ public:
     }
 
     ViewSetSpec(const ViewIdx& view_i);
-    ViewSetSpec(const ViewIdx& view_get);
 
     // cast to int is implicit
     operator int() const
@@ -81,17 +80,17 @@ public:
 
 
 class ViewIdx
-    : public ViewIdx
+    : public ViewSetSpec
 {
 public:
     ViewIdx()
-        : ViewIdx(0)
+        : ViewSetSpec(0)
     {
     }
 
     // cast from int must be explicit
     explicit ViewIdx(int index)
-        : ViewIdx(index)
+        : ViewSetSpec(index)
     {
         assert(index >= 0);
     }
@@ -104,6 +103,15 @@ public:
 
         return i;
     }
+
+private:
+
+    bool isAll() const { return false; }
+
+    bool isViewIdx() const { return true; }
+
+    static ViewSetSpec all(); // overload with no implementation
+
 
 
 };

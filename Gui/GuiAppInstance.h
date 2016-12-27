@@ -182,10 +182,7 @@ public:
     virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
     virtual void refreshAllPreviews() OVERRIDE FINAL;
     virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const OVERRIDE FINAL;
-    virtual void abortAllViewers() OVERRIDE FINAL;
-    virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
-
-    virtual void dequeueRedrawsOnViewers() OVERRIDE FINAL;
+    virtual void abortAllViewers(bool autoRestartPlayback) OVERRIDE FINAL;
 
     void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewSetSpec view);
     void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewSetSpec* view) const;

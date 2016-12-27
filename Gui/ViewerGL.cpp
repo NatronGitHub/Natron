@@ -1203,7 +1203,6 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         info.mipMapLevel = mipMapLevel;
         info.premult = premult;
         info.time = time;
-        info.memoryHeldByLastRenderedImages = 0;
         info.isPartialImage = true;
         info.isVisible = true;
         _imp->partialUpdateTextures.push_back(info);
@@ -1219,11 +1218,6 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->displayTextures[textureIndex].premult = premult;
         _imp->displayTextures[textureIndex].time = time;
 
-        if (_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages > 0) {
-            internalNode->unregisterPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
-        }
-
 
         if (image) {
             _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
@@ -1231,10 +1225,7 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
                 QMutexLocker k(&_imp->lastRenderedImageMutex);
                 _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] = image;
             }
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
 
-            internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
             Q_EMIT imageChanged(textureIndex, true);
         } else {
             if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] ) {
@@ -1373,10 +1364,6 @@ ViewerGL::clearLastRenderedImage()
     for (int i = 0; i < 2; ++i) {
         for (U32 j = 0; j < _imp->displayTextures[i].lastRenderedTiles.size(); ++j) {
             _imp->displayTextures[i].lastRenderedTiles[j].reset();
-        }
-        if (_imp->displayTextures[i].memoryHeldByLastRenderedImages > 0) {
-            internalNode->unregisterPluginMemory(_imp->displayTextures[i].memoryHeldByLastRenderedImages);
-            _imp->displayTextures[i].memoryHeldByLastRenderedImages = 0;
         }
     }
 }
@@ -3174,11 +3161,8 @@ ViewerGL::clearLastRenderedTexture()
             for (U32 j = 0; j < _imp->displayTextures[i].lastRenderedTiles.size(); ++j) {
                 _imp->displayTextures[i].lastRenderedTiles[j].reset();
             }
-            toUnRegister += _imp->displayTextures[i].memoryHeldByLastRenderedImages;
         }
-        if (toUnRegister > 0) {
-            getInternalNode()->unregisterPluginMemory(toUnRegister);
-        }
+
     }
 }
 

@@ -439,7 +439,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Validate current choice on the knob and in the viewer params
     assert(foundLayerIndex != -1);
-    layerKnob->setValue(foundLayerIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    layerKnob->setValue(foundLayerIndex, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsLayer = (foundCurIt == components.end()) ? ImageComponents::getNoneComponents() : *foundCurIt;
@@ -464,7 +464,7 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
     // Validate current choice on the knob and in the viewer params
     assert(foundAlphaIndex != -1);
-    alphaChannelKnob->setValue(foundAlphaIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    alphaChannelKnob->setValue(foundAlphaIndex, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     {
         QMutexLocker l(&_imp->viewerParamsMutex);
         _imp->viewerParamsAlphaLayer = (foundCurAlphaIt == components.end() || foundAlphaChannel.empty()) ? ImageComponents::getNoneComponents() : *foundCurAlphaIt;
@@ -1003,7 +1003,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
     const RenderScale scaleOne(1.);
 
     // This may be eSupportsMaybe
-    EffectInstance::SupportsEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
+    EffectInstance::RenderScaleSupportEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
 
 
     // Get the hash to see if we can lookup the cache. We may not have a valid hash computed yet in which case its value is 0
@@ -1108,6 +1108,7 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
     EffectInstancePtr upstreamInput = getInput(textureIndex);
     outArgs->activeInputToRender.reset();
     if (upstreamInput) {
+#pragma message WARN("Is this really needed ? isIdentity will anyway fix this in renderRoI")
         outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled(time, view);
     }
 
@@ -2844,8 +2845,8 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 
 
 
-void
-ViewerInstance::onMetaDatasRefreshed(const NodeMetadata& /*metadata*/)
+StatusEnum
+ViewerInstance::getTimeInvariantMetadatas(const NodeMetadata& /*metadata*/)
 {
     ViewerNodePtr node = getViewerNodeGroup();
     node->refreshFps();

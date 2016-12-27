@@ -260,7 +260,10 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             bool isCached = false;
             if (args.cachePolicy == eCacheAccessModeReadWrite || args.cachePolicy == eCacheAccessModeWriteOnly) {
 
-                for (int draft_i = 0; draft_i < 2; ++draft_i) {
+                // Only look for a draft tile in the cache if the image allows draft
+                int nLookups = args.isDraft ? 2 : 1;
+
+                for (int draft_i = 0; draft_i < nLookups; ++draft_i) {
 
                     const bool useDraft = (const bool)draft_i;
 

@@ -58,6 +58,7 @@
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/Settings.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/StandardPaths.h"
 
@@ -89,7 +90,6 @@ AppManagerPrivate::AppManagerPrivate()
     , _backgroundIPC()
     , _loaded(false)
     , _binaryPath()
-    , _nodesGlobalMemoryUse(0)
     , errorLogMutex()
     , errorLog()
     , idealThreadCount(0)
@@ -333,7 +333,7 @@ void
 AppManagerPrivate::setMaxCacheFiles()
 {
     /*Default to something reasonnable if the code below would happen to not work for some reason*/
-    size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
+    size_t hardMax = 10000;
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -412,7 +412,6 @@ AppManagerPrivate::setMaxCacheFiles()
      */
 #endif
 
-    maxCacheFiles = hardMax * 0.9;
 }
 
 #ifdef DEBUG

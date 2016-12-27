@@ -4509,19 +4509,9 @@ KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob) const
 void
 KnobHolder::requestOverlayInteractRefresh()
 {
-    if ( getActionsRecursionLevel() > 0 ) {
-        getApp()->queueRedrawForAllViewers();
-    } else {
-        getApp()->redrawAllViewers();
-    }
+    getApp()->redrawAllViewers();
 }
 
-void
-KnobHolder::checkAndRedrawOverlayInteractsIfNeeded()
-{
-    getApp()->dequeueRedrawsOnViewers();
-
-}
 
 
 bool
@@ -5415,14 +5405,14 @@ KnobHolder::updateHasAnimation()
 }
 
 void
-KnobHolder::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
+KnobHolder::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         if (!(*it)->getEvaluateOnChange()) {
             continue;
         }
-        U64 knobHash = (*it)->computeHash(time, view);
+        U64 knobHash = (*it)->computeHash(args);
         hash->append(knobHash);
 
     }

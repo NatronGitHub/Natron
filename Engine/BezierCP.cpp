@@ -540,8 +540,8 @@ BezierCP::cuspPoint(TimeValue time,
         std::set<double> times;
         getKeyframeTimes(&times);
         for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
-            setLeftBezierPointAtTime(*it, newLeftX, newLeftY);
-            setRightBezierPointAtTime(*it, newRightX, newRightY);
+            setLeftBezierPointAtTime(TimeValue(*it), newLeftX, newLeftY);
+            setRightBezierPointAtTime(TimeValue(*it), newRightX, newRightY);
         }
     }
 
@@ -592,8 +592,8 @@ BezierCP::smoothPoint(TimeValue time,
         std::set<double> times;
         getKeyframeTimes(&times);
         for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
-            setLeftBezierPointAtTime(*it, left.x, left.y);
-            setRightBezierPointAtTime(*it, right.x, right.y);
+            setLeftBezierPointAtTime(TimeValue(*it), left.x, left.y);
+            setRightBezierPointAtTime(TimeValue(*it), right.x, right.y);
         }
     }
 

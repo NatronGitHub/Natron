@@ -101,7 +101,6 @@ struct GuiAppInstancePrivate
     NodePtr lastTimelineViewer;
     LoadProjectSplashScreen* loadProjectSplash;
     std::string declareAppAndParamsString;
-    int overlayRedrawRequests;
     mutable QMutex rotoDataMutex;
 
     // When drawing a stroke, this is a pointer to the stroke being painted.
@@ -121,7 +120,6 @@ struct GuiAppInstancePrivate
         , lastTimelineViewer()
         , loadProjectSplash(0)
         , declareAppAndParamsString()
-        , overlayRedrawRequests(0)
         , rotoDataMutex()
         , strokeBeingPainted()
         , knobDnd()
@@ -992,9 +990,9 @@ GuiAppInstance::refreshAllPreviews()
 }
 
 void
-GuiAppInstance::abortAllViewers()
+GuiAppInstance::abortAllViewers(bool autoRestartPlayback)
 {
-    _imp->_gui->abortAllViewers();
+    _imp->_gui->abortAllViewers(autoRestartPlayback);
 }
 
 void
@@ -1013,25 +1011,6 @@ GuiAppInstance::reloadStylesheet()
         _imp->_gui->reloadStylesheet();
     }
 }
-
-void
-GuiAppInstance::queueRedrawForAllViewers()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    ++_imp->overlayRedrawRequests;
-}
-
-void
-GuiAppInstance::dequeueRedrawsOnViewers()
-{
-    if (_imp->overlayRedrawRequests == 0) {
-        return;
-    }
-    _imp->overlayRedrawRequests = 0;
-    redrawAllViewers();
-}
-
-
 
 void
 GuiAppInstance::createGroupGui(const NodePtr & group, const CreateNodeArgs& args)

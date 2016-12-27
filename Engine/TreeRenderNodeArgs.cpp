@@ -28,7 +28,15 @@
 #include <stdexcept>
 
 #include <QDebug>
+#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 
+
+#if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -45,6 +53,7 @@
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/TreeRender.h"
+#include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -85,62 +94,36 @@ struct FrameViewRequestPrivate
     int nRequests;
 
     // The required frame/views in input, set on first request
-    FramesNeededMap frameViewsNeeded;
+    GetFramesNeededResultsPtr frameViewsNeeded;
 
     U64 frameViewHash;
 
-    // Set when the first request is made
-    RectD rod;
+    // The RoD of the effect at this frame/view
+    GetRegionOfDefinitionResultsPtr rod;
 
-    // Identity data, set on first request
-    bool isIdentity;
-    int identityInputNb;
-    ViewIdx identityView;
-    double inputIdentityTime;
+    // Identity data at this frame/view
+    IsIdentityResultsPtr identityData;
 
-    // The needed components
-    ComponentsNeededResultsPtr neededComps;
+    // The needed components at this frame/view
+    GetComponentsNeededResultsPtr neededComps;
 
-    // The distorsion
-    DistorsionFunction2DPtr distorsion;
-
-    // The result of getTimeDomain
-    RangeD frameRange;
+    // The distorsion at this frame/view
+    GetDistorsionResultsPtr distorsion;
 
     // True if the frameViewHash at least is valid
     bool hashValid;
 
-    // True if the frameViewsNeeded is set
-    bool framesViewsNeededValid;
 
-    // True if the RoD is valid
-    bool rodValid;
-
-    // True if the identity datas are set
-    bool identityValid;
-
-    // True if the frame range datas are valid
-    bool frameRangeValid;
-
-    
     FrameViewRequestPrivate()
     : finalRoi()
     , nRequests(0)
     , frameViewsNeeded()
     , frameViewHash(0)
     , rod()
-    , isIdentity(false)
-    , identityInputNb(-1)
-    , identityView()
-    , inputIdentityTime(0)
+    , identityData()
     , neededComps()
     , distorsion()
-    , frameRange()
     , hashValid(false)
-    , framesViewsNeededValid(false)
-    , rodValid(false)
-    , identityValid(false)
-    , frameRangeValid(false)
     {
         
     }
@@ -197,88 +180,52 @@ FrameViewRequest::setHash(U64 hash)
     _imp->hashValid = true;
 }
 
-void
-FrameViewRequest::setFrameRangeResults(const RangeD& range)
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->frameRangeValid = true;
-    _imp->frameRange = range;
-}
 
-bool
-FrameViewRequest::getFrameRangeResults(RangeD* range) const
+IsIdentityResultsPtr
+FrameViewRequest::getIdentityResults() const
 {
     QMutexLocker k(&_imp->lock);
-    if (!_imp->frameRangeValid) {
-        return false;
-    }
-    *range = _imp->frameRange;
-    return true;
-}
+    return _imp->identityData;
 
-bool
-FrameViewRequest::getIdentityResults(int *identityInputNb, double *identityTime, ViewIdx* identityView) const
-{
-    QMutexLocker k(&_imp->lock);
-    if (!_imp->identityValid) {
-        return false;
-    }
-    *identityInputNb = _imp->identityInputNb;
-    *identityTime = _imp->inputIdentityTime;
-    *identityView = _imp->identityView;
-    return true;
 }
 
 void
-FrameViewRequest::setIdentityResults(int identityInputNb, double identityTime, ViewIdx identityView)
+FrameViewRequest::setIdentityResults(const IsIdentityResultsPtr& results)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->identityValid = true;
-    _imp->identityInputNb = identityInputNb;
-    _imp->inputIdentityTime = identityTime;
-    _imp->identityView = identityView;
+    _imp->identityData = results;
 }
 
-bool
-FrameViewRequest::getRegionOfDefinitionResults(RectD* rod) const
+GetRegionOfDefinitionResultsPtr
+FrameViewRequest::getRegionOfDefinitionResults() const
 {
     QMutexLocker k(&_imp->lock);
-    if (!_imp->rodValid) {
-        return false;
-    }
-    *rod = _imp->rod;
-    return true;
+    return _imp->rod;
 }
 
 void
-FrameViewRequest::setRegionOfDefinitionResults(const RectD& rod)
+FrameViewRequest::setRegionOfDefinitionResults(const GetRegionOfDefinitionResultsPtr& rod)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->rodValid = true;
     _imp->rod = rod;
 }
 
-bool
-FrameViewRequest::getFramesNeededResults(FramesNeededMap* framesNeeded) const
+GetFramesNeededResultsPtr
+FrameViewRequest::getFramesNeededResults() const
 {
     QMutexLocker k(&_imp->lock);
-    if (!_imp->framesViewsNeededValid) {
-        return false;
-    }
-    *framesNeeded = _imp->frameViewsNeeded;
-    return true;
+    return _imp->frameViewsNeeded;
 
 }
 
 void
-FrameViewRequest::setFramesNeededResults(const FramesNeededMap& framesNeeded)
+FrameViewRequest::setFramesNeededResults(const GetFramesNeededResultsPtr& framesNeeded)
 {
     QMutexLocker k(&_imp->lock);
     _imp->frameViewsNeeded = framesNeeded;
-    _imp->framesViewsNeededValid = true;
 }
 
-ComponentsNeededResultsPtr
+GetComponentsNeededResultsPtr
 FrameViewRequest::getComponentsNeededResults() const
 {
     QMutexLocker k(&_imp->lock);
@@ -286,13 +233,13 @@ FrameViewRequest::getComponentsNeededResults() const
 }
 
 void
-FrameViewRequest::setComponentsNeededResults(const ComponentsNeededResultsPtr& comps)
+FrameViewRequest::setComponentsNeededResults(const GetComponentsNeededResultsPtr& comps)
 {
     QMutexLocker k(&_imp->lock);
     _imp->neededComps = comps;
 }
 
-DistorsionFunction2DPtr
+GetDistorsionResultsPtr
 FrameViewRequest::getDistorsionResults() const
 {
     QMutexLocker k(&_imp->lock);
@@ -300,7 +247,7 @@ FrameViewRequest::getDistorsionResults() const
 }
 
 void
-FrameViewRequest::setDistorsionResults(const DistorsionFunction2DPtr& results)
+FrameViewRequest::setDistorsionResults(const GetDistorsionResultsPtr& results)
 {
     QMutexLocker k(&_imp->lock);
     _imp->distorsion = results;
@@ -326,7 +273,7 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const Effect
         return EffectInstancePtr();
     }
 
-    // Redirect for transforms if needed
+
     EffectInstancePtr inputEffect;
     inputEffect = thisEffect->getInput(inputNb);
     
@@ -339,406 +286,11 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb, const Effect
     return inputEffect;
 }
 
-// Same as FramesNeededMap but we also get a pointer to EffectInstancePtr as key
-typedef std::map<EffectInstancePtr, std::pair</*inputNb*/ int, FrameRangesMap> > PreRenderFrames;
-
-RenderRoIRetCode
-EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
-                                   const TreeRenderPtr& render,
-                                   const NodePtr& node,
-                                   const FramesNeededMap& framesNeeded,
-                                   const RoIMap* inputRois, // roi functor specific
-                                   unsigned int originalMipMapLevel, // roi functor specific
-                                   TimeValue time,
-                                   ViewIdx /*view*/,
-                                   const NodePtr& treeRoot,
-                                   InputImagesMap* inputImages, // render functor specific
-                                   const ComponentsNeededMap* neededComps, // render functor specific
-                                   bool useScaleOneInputs)// render functor specific
-{
-    // For all frames/views needed, call recursively on inputs with the appropriate RoI
-
-    EffectInstancePtr effect = node->getEffectInstance();
-
-    PreRenderFrames framesToRender;
-
-
-    //Add frames needed to the frames to render
-    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
-        int inputNb = it->first;
-        EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(inputNb, effect.get());
-        if (inputEffect) {
-
-            framesToRender[inputEffect] = std::make_pair(inputNb, it->second);
-        }
-    }
-
-
-    for (PreRenderFrames::const_iterator it = framesToRender.begin(); it != framesToRender.end(); ++it) {
-        const EffectInstancePtr& inputEffect = it->first;
-        NodePtr inputNode = inputEffect->getNode();
-        assert(inputNode);
-
-        int inputNb = it->second.first;
-        assert(inputNb != -1);
-
-        ImageList* inputImagesList = 0;
-        if (isRenderFunctor) {
-            InputImagesMap::iterator foundInputImages = inputImages->find(inputNb);
-            if ( foundInputImages == inputImages->end() ) {
-                std::pair<InputImagesMap::iterator, bool> ret = inputImages->insert( std::make_pair( inputNb, ImageList() ) );
-                inputImagesList = &ret.first->second;
-                assert(ret.second);
-            }
-        }
-
-        // When we are not in the render functor, the RoI on the input is given by getRegionsOfInterest action.
-        // When we are rendering, we ask in input the merge of all getRegionsOfInterest calls that were made on each
-        // branch leading to that node.
-        RectD roi;
-        TreeRenderNodeArgsPtr frameArgs;
-        if (isRenderFunctor) {
-            assert(render);
-            frameArgs = render->getNodeRenderArgs(inputNode);
-        }
-
-        if (!isRenderFunctor) {
-            assert(inputRois);
-
-            RoIMap::const_iterator foundInputRoI = inputRois->find(inputEffect);
-            if ( foundInputRoI == inputRois->end() ) {
-                continue;
-            }
-            if ( foundInputRoI->second.isInfinite() ) {
-                effect->setPersistentMessage( eMessageTypeError, tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
-
-                return eRenderRoIRetCodeFailed;
-            }
-
-            if ( foundInputRoI->second.isNull() ) {
-                continue;
-            }
-            roi = foundInputRoI->second;
-        }
-
-        ///There cannot be frames needed without components needed.
-        const std::vector<ImageComponents>* compsNeeded = 0;
-
-        if (neededComps) {
-            ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
-            if ( foundCompsNeeded == neededComps->end() ) {
-                continue;
-            } else {
-                compsNeeded = &foundCompsNeeded->second;
-            }
-        }
-
-
-        const double inputPar = inputEffect->getAspectRatio(-1);
-
-
-        {
-            ///Notify the node that we're going to render something with the input
-            boost::shared_ptr<EffectInstance::NotifyInputNRenderingStarted_RAII> inputNIsRendering_RAII;
-            if (isRenderFunctor) {
-                assert(it->second.first != -1); //< see getInputNumber
-                inputNIsRendering_RAII.reset( new EffectInstance::NotifyInputNRenderingStarted_RAII(node.get(), inputNb) );
-            }
-
-            // For all views requested in input
-            for (FrameRangesMap::const_iterator viewIt = it->second.second.begin(); viewIt != it->second.second.end(); ++viewIt) {
-
-                // For all ranges in this view
-                for (U32 range = 0; range < viewIt->second.size(); ++range) {
-
-                    int nbFramesPreFetched = 0;
-
-                    if (isRenderFunctor) {
-                        // If the range bounds are no integers and the range covers more than 1 frame (min != max),
-                        // we have no clue of the interval we should use between the min and max.
-                        if (viewIt->second[range].min != viewIt->second[range].max && viewIt->second[range].min != (int)viewIt->second[range].min) {
-                            qDebug() << "WARNING:" <<  effect->getScriptName_mt_safe().c_str() << "is requesting a non integer frame range [" << viewIt->second[range].min << ","
-                            << viewIt->second[range].max <<"], this is border-line and not specified if this is supported by OpenFX. Natron will render "
-                            "this range assuming an interval of 1 between frame times.";
-                        }
-                    }
-                    
-                    // For all frames in the range
-                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
-                        if (!isRenderFunctor) {
-
-                            StatusEnum stat = EffectInstance::getInputsRoIsFunctor(f,
-                                                                                   viewIt->first,
-                                                                                   originalMipMapLevel,
-                                                                                   render,
-                                                                                   frameArgs,
-                                                                                   inputNode,
-                                                                                   node,
-                                                                                   treeRoot,
-                                                                                   roi);
-
-                            if (stat == eStatusFailed) {
-                                return eRenderRoIRetCodeFailed;
-                            }
-
-                            ///Do not count frames pre-fetched in RoI functor mode, it is harmless and may
-                            ///limit calculations that will be done later on anyway.
-                        } else {
-                            
-                            // Sanity check
-                            if (nbFramesPreFetched >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
-                                break;
-                            }
-
-                            RenderScale scaleOne(1.);
-                            RenderScale scale( Image::getScaleFromMipMapLevel(originalMipMapLevel) );
-
-
-                            std::list<ImageComponents> componentsToRender;
-
-                            assert(compsNeeded);
-                            if (!compsNeeded) {
-                                continue;
-                            }
-                            for (U32 k = 0; k < compsNeeded->size(); ++k) {
-                                if (compsNeeded->at(k).getNumComponents() > 0) {
-                                    componentsToRender.push_back( compsNeeded->at(k) );
-                                }
-                            }
-                            if ( componentsToRender.empty() ) {
-                                continue;
-                            }
-
-                            assert(frameArgs);
-                            if (frameArgs) {
-                                // Use the final roi (merged from all branches leading to that node) for that frame/view pair
-                                frameArgs->getFrameViewCanonicalRoI(f, viewIt->first, &roi);
-                            }
-
-                            if (roi.isNull()) {
-                                continue;
-                            }
-
-                            RectI inputRoIPixelCoords;
-                            const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : originalMipMapLevel;
-                            const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
-                            roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
-
-                            RenderRoIResults inputResults;
-                            {
-                                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-                                renderArgs.reset( new EffectInstance::RenderRoIArgs( f, //< time
-                                                                                    upstreamScale, //< scale
-                                                                                    upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
-                                                                                    viewIt->first, //< view
-                                                                                    inputRoIPixelCoords, //< roi in pixel coordinates
-                                                                                    componentsToRender, //< requested comps
-                                                                                    false,
-                                                                                    effect,
-                                                                                    inputNb,
-                                                                                    time /*callerRenderTime*/) );
-
-                                RenderRoIRetCode ret;
-                                ret = inputEffect->renderRoI(*renderArgs, &inputResults); //< requested bitdepth
-                                if (ret != eRenderRoIRetCodeOk) {
-                                    return ret;
-                                }
-                            }
-                            for (std::map<ImageComponents, ImagePtr>::iterator it3 = inputResults.outputPlanes.begin(); it3 != inputResults.outputPlanes.end(); ++it3) {
-                                if (inputImagesList && it3->second) {
-                                    inputImagesList->push_back(it3->second);
-                                }
-                            }
-
-                            if ( render->isAborted() ) {
-                                return eRenderRoIRetCodeAborted;
-                            }
-
-                            if ( !inputResults.outputPlanes.empty() ) {
-                                ++nbFramesPreFetched;
-                            }
-                        } // if (!isRenderFunctor) {
-                    } // for all frames
-                    
-                } // for all ranges
-            } // for all views
-        } // EffectInstance::NotifyInputNRenderingStarted_RAII
-    } // for all inputs
-    return eRenderRoIRetCodeOk;
-} // EffectInstance::treeRecurseFunctor
-
-StatusEnum
-EffectInstance::getInputsRoIsFunctor(double inArgsTime,
-                                     ViewIdx view,
-                                     unsigned originalMipMapLevel,
-                                     const TreeRenderPtr& render,
-                                     const TreeRenderNodeArgsPtr& frameArgs,
-                                     const NodePtr& node,
-                                     const NodePtr& /*callerNode*/,
-                                     const NodePtr& treeRoot,
-                                     const RectD& canonicalRenderWindow)
-{
-
-    if (!node || !frameArgs) {
-        return eStatusFailed;
-    }
-    EffectInstancePtr effect = node->getEffectInstance();
-
-
-
-    // Round time to nearest integer if the effect is not continuous
-
-    TimeValue time = inArgsTime;
-    {
-        int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !effect->canRenderContinuously()) {
-            time = roundedTime;
-        }
-    }
-
-    if (effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
-        /*
-           If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
-           We safely fail here
-         */
-        return eStatusFailed;
-    }
-
-
-    assert(effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsNo || effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes);
-    bool supportsRs = effect->supportsRenderScale();
-
-    const unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
-
-    RenderScale mappedScale = RenderScale(Image::getScaleFromMipMapLevel(mappedLevel));
-    frameArgs->setMappedRenderScale(mappedScale);
-
-
-    FrameViewPair frameView;
-    // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
-    frameView.time = roundImageTimeToEpsilon(time);
-    frameView.view = view;
-
-    FrameViewRequest* fvRequest = frameArgs->getOrCreateFrameViewRequest(frameView.time, frameView.view);
-
-
-    // Get frames needed to recurse upstream. This will also compute the hash if needed
-    U64 frameViewHash;
-    FramesNeededMap framesNeeded = effect->getFramesNeeded_public(time, view, frameArgs, &frameViewHash);
-
-
-    // Increment the number of visits for this frame/view
-    fvRequest->incrementVisitsCount();
-
-    double par = effect->getAspectRatio(-1);
-    ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
-
-    // Check if identity on the render window
-    int identityInputNb;
-    double identityTime;
-    ViewIdx identityView;
-    RectI identityRegionPixel;
-    canonicalRenderWindow.toPixelEnclosing(mappedLevel, par, &identityRegionPixel);
-    bool isIdentity = effect->isIdentity_public(true, time, mappedScale, identityRegionPixel, view, frameArgs, &identityTime, &identityView, &identityInputNb);
-    (void)isIdentity;
-
-    // Upon first request of this frame/view, set the finalRoI, otherwise union it to the existing RoI.
-
-    {
-        RectD finalRoi = fvRequest->getCurrentRoI();
-        bool finalRoIEmpty = finalRoi.isNull();
-        if (!finalRoIEmpty && finalRoi.contains(canonicalRenderWindow)) {
-            // Do not recurse if the roi did not add anything new to render
-            return eStatusOK;
-        }
-        if (finalRoIEmpty) {
-            fvRequest->setCurrentRoI(canonicalRenderWindow);
-        } else {
-            finalRoi.merge(canonicalRenderWindow);
-            fvRequest->setCurrentRoI(finalRoi);
-        }
-    }
-
-    if (identityInputNb == -2) {
-        assert(identityTime != time || viewInvariance == eViewInvarianceAllViewsInvariant);
-        // be safe in release mode otherwise we hit an infinite recursion
-        if ( (identityTime != time) || (viewInvariance == eViewInvarianceAllViewsInvariant) ) {
-            
-            ViewIdx inputView = (view != 0 && viewInvariance == eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
-            StatusEnum stat = getInputsRoIsFunctor(identityTime,
-                                                   inputView,
-                                                   originalMipMapLevel,
-                                                   render,
-                                                   frameArgs,
-                                                   node,
-                                                   node,
-                                                   treeRoot,
-                                                   canonicalRenderWindow);
-
-            return stat;
-        }
-
-        //Should fail on the assert above
-        return eStatusFailed;
-    } else if (identityInputNb != -1) {
-        EffectInstancePtr inputEffectIdentity = effect->getInput(identityInputNb);
-        if (inputEffectIdentity) {
-
-            
-            NodePtr inputIdentityNode = inputEffectIdentity->getNode();
-
-            TreeRenderNodeArgsPtr inputFrameArgs = render->getNodeRenderArgs(inputIdentityNode);
-
-            StatusEnum stat = getInputsRoIsFunctor(identityTime,
-                                                   identityView,
-                                                   originalMipMapLevel,
-                                                   render,
-                                                   inputFrameArgs,
-                                                   inputIdentityNode,
-                                                   node,
-                                                   treeRoot,
-                                                   canonicalRenderWindow);
-
-            return stat;
-        }
-
-        // Aalways accept if identity has no input, it will produce a black image in the worst case scenario.
-        return eStatusOK;
-    }
-
-
-    
-    // Compute the regions of interest in input for this RoI.
-    // The RoI returned is only valid for this canonicalRenderWindow, we don't cache it. Rather we cache on the input the bounding box
-    // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
-    RoIMap inputsRoi;
-    effect->getRegionsOfInterest_public(time, mappedScale, canonicalRenderWindow, view, frameArgs, &inputsRoi);
-
-
-    RenderRoIRetCode ret = treeRecurseFunctor(false,
-                                              render,
-                                              node,
-                                              framesNeeded,
-                                              &inputsRoi,
-                                              originalMipMapLevel,
-                                              time,
-                                              view,
-                                              treeRoot,
-                                              0,
-                                              0,
-                                              false);
-    if (ret == eRenderRoIRetCodeFailed) {
-        return eStatusFailed;
-    }
-
-    return eStatusOK;
-} // EffectInstance::getInputsRoIsFunctor
-
-
-
 
 struct TreeRenderNodeArgsPrivate
 {
+    mutable QMutex lock;
+
     // A parent to the render holding this struct
     TreeRenderWPtr parentRender;
 
@@ -755,6 +307,12 @@ struct TreeRenderNodeArgsPrivate
     // The render-scale at which this effect can render
     RenderScale mappedScale;
 
+    // The results of the get frame range action for this render
+    GetFrameRangeResultsPtr frameRangeResults;
+
+    // The time invariant metadas for the render
+    GetTimeInvariantMetaDatasResultsPtr metadatasResults;
+
     // Local copies of render data such as knob values, node inputs etc...
     // that should remain the same throughout the render of the frame.
     RenderValuesCachePtr valuesCache;
@@ -769,8 +327,18 @@ struct TreeRenderNodeArgsPrivate
     // Current sequential support
     SequentialPreferenceEnum currentSequentialPref;
 
+    // This is the hash used to cache time and view invariant stuff
+    U64 timeViewInvariantHash;
+
+    U64 metadataTimeInvariantHash;
+
     // The number of times this node has been visited (i.e: the number of times we called renderRoI on it)
     int nVisits;
+
+    // True if hash is valid
+    bool timeViewInvariantHashValid;
+
+    bool metadataTimeInvariantHashValid;
 
     // The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported;
@@ -779,16 +347,22 @@ struct TreeRenderNodeArgsPrivate
     bool canDistort;
 
     TreeRenderNodeArgsPrivate(const TreeRenderPtr& render, const NodePtr& node)
-    : parentRender(render)
+    : lock()
+    , parentRender(render)
     , node(node)
     , inputRenderArgs(node->getMaxInputCount())
     , frames()
     , mappedScale(1.)
+    , frameRangeResults()
     , valuesCache(new RenderValuesCache)
     , currentThreadSafety(node->getCurrentRenderThreadSafety())
     , currentOpenglSupport(node->getCurrentOpenGLRenderSupport())
     , currentSequentialPref(node->getCurrentSequentialRenderSupport())
+    , timeViewInvariantHash(0)
+    , metadataTimeInvariantHash(0)
     , nVisits(0)
+    , timeViewInvariantHashValid(false)
+    , metadataTimeInvariantHashValid(false)
     , tilesSupported(node->getCurrentSupportTiles())
     , canDistort(node->getCurrentCanDistort())
     {
@@ -800,14 +374,6 @@ struct TreeRenderNodeArgsPrivate
             attachedRotoItem->getOrCreateCachedDrawable(render);
         }
 
-
-        {
-#pragma message WARN("Meta datas should be cached like all other action results in the global cache")
-            // Cache the meta-datas now
-            NodeMetadata metadata;
-            node->getEffectInstance()->copyMetaData(&metadata);
-            valuesCache->setCachedNodeMetadatas(metadata);
-        }
         {
             // Also cache all inputs
             for (int i = 0; i < node->getMaxInputCount(); ++i) {
@@ -818,6 +384,8 @@ struct TreeRenderNodeArgsPrivate
 
     }
 
+    
+
 };
 
 
@@ -825,6 +393,13 @@ TreeRenderNodeArgs::TreeRenderNodeArgs(const TreeRenderPtr& render, const NodePt
 : _imp(new TreeRenderNodeArgsPrivate(render, node))
 {
     
+}
+
+TreeRenderNodeArgsPtr
+TreeRenderNodeArgs::create(const TreeRenderPtr& render, const NodePtr& node)
+{
+    TreeRenderNodeArgsPtr ret(new TreeRenderNodeArgs(render, node));
+    return ret;
 }
 
 TreeRenderNodeArgs::~TreeRenderNodeArgs()
@@ -835,24 +410,28 @@ TreeRenderNodeArgs::~TreeRenderNodeArgs()
 TreeRenderPtr
 TreeRenderNodeArgs::getParentRender() const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     return _imp->parentRender.lock();
 }
 
 bool
 TreeRenderNodeArgs::isAborted() const
 {
+    // MT-safe: is aborted is MT-safe on the TreeRender class.
     return _imp->parentRender.lock()->isAborted();
 }
 
 NodePtr
 TreeRenderNodeArgs::getNode() const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     return _imp->node;
 }
 
 void
 TreeRenderNodeArgs::setInputRenderArgs(int inputNb, const TreeRenderNodeArgsPtr& inputRenderArgs)
 {
+    // MT-safe: never changes throughout the lifetime of the object
     if (inputNb < 0 || inputNb >= (int)_imp->inputRenderArgs.size()) {
         throw std::invalid_argument("TreeRenderNodeArgs::setInputRenderArgs: input index out of range");
     }
@@ -862,6 +441,7 @@ TreeRenderNodeArgs::setInputRenderArgs(int inputNb, const TreeRenderNodeArgsPtr&
 TreeRenderNodeArgsPtr
 TreeRenderNodeArgs::getInputRenderArgs(int inputNb) const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     if (inputNb < 0 || inputNb >= (int)_imp->inputRenderArgs.size()) {
         return TreeRenderNodeArgsPtr();
     }
@@ -873,6 +453,9 @@ const FrameViewRequest*
 TreeRenderNodeArgs::getFrameViewRequest(TimeValue time,
                                       ViewIdx view) const
 {
+    // Needs to be locked: frame requests may be added spontaneously by the plug-in
+    QMutexLocker k(&_imp->lock);
+
     FrameViewPair p = {time,view};
     NodeFrameViewRequestData::const_iterator found = _imp->frames.find(p);
     if (found == _imp->frames.end()) {
@@ -884,6 +467,9 @@ TreeRenderNodeArgs::getFrameViewRequest(TimeValue time,
 FrameViewRequest*
 TreeRenderNodeArgs::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view)
 {
+    // Needs to be locked: frame requests may be added spontaneously by the plug-in
+    QMutexLocker k(&_imp->lock);
+
     FrameViewPair p = {time, view};
     return &_imp->frames[p];
 }
@@ -891,18 +477,21 @@ TreeRenderNodeArgs::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view)
 void
 TreeRenderNodeArgs::setMappedRenderScale(const RenderScale& scale)
 {
+    // MT-safe: never changes throughout the lifetime of the object
     _imp->mappedScale = scale;
 }
 
 const RenderScale&
 TreeRenderNodeArgs::getMappedRenderScale() const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     return _imp->mappedScale;
 }
 
 RenderSafetyEnum
 TreeRenderNodeArgs::getCurrentRenderSafety() const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     return _imp->currentThreadSafety;
 }
 
@@ -910,21 +499,97 @@ TreeRenderNodeArgs::getCurrentRenderSafety() const
 PluginOpenGLRenderSupport
 TreeRenderNodeArgs::getCurrentRenderOpenGLSupport() const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     return _imp->currentOpenglSupport;
+}
+
+bool
+TreeRenderNodeArgs::getCurrentTilesSupport() const
+{
+    // MT-safe: never changes throughout the lifetime of the object
+    return _imp->tilesSupported;
+}
+
+bool
+TreeRenderNodeArgs::getCurrentDistortSupport() const
+{
+    // MT-safe: never changes throughout the lifetime of the object
+    return _imp->canDistort;
 }
 
 SequentialPreferenceEnum
 TreeRenderNodeArgs::getCurrentRenderSequentialPreference() const
 {
+    // MT-safe: never changes throughout the lifetime of the object
     return _imp->currentSequentialPref;
 }
 
 void
-TreeRenderNodeArgs::setFrameViewHash(TimeValue time, ViewIdx view, U64 hash)
+TreeRenderNodeArgs::setFrameRangeResults(const GetFrameRangeResultsPtr& range)
 {
-    FrameViewPair id = {roundImageTimeToEpsilon(time), view};
-    FrameViewRequest& fv = _imp->frames[id];
-    fv.setHash(hash);
+    QMutexLocker k(&_imp->lock);
+    _imp->frameRangeResults = range;
+}
+
+GetFrameRangeResultsPtr
+TreeRenderNodeArgs::getFrameRangeResults() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->frameRangeResults;
+}
+
+void
+TreeRenderNodeArgs::setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->metadatasResults = metadatas;
+}
+
+
+GetTimeInvariantMetaDatasResultsPtr
+TreeRenderNodeArgs::getTimeInvariantMetadataResults() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->metadatasResults;
+}
+
+bool
+TreeRenderNodeArgs::getTimeViewInvariantHash(U64* hash) const
+{
+    QMutexLocker k(&_imp->lock);
+    if (!_imp->timeViewInvariantHashValid) {
+        return false;
+    }
+    *hash = _imp->timeViewInvariantHash;
+    return true;
+}
+
+void
+TreeRenderNodeArgs::setTimeInvariantMetadataHash(U64 hash)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->metadataTimeInvariantHashValid = true;
+    _imp->metadataTimeInvariantHash = hash;
+}
+
+bool
+TreeRenderNodeArgs::getTimeInvariantMetadataHash(U64* hash) const
+{
+    QMutexLocker k(&_imp->lock);
+    if (!_imp->metadataTimeInvariantHashValid) {
+        return false;
+    }
+    *hash = _imp->metadataTimeInvariantHash;
+    return true;
+
+}
+
+void
+TreeRenderNodeArgs::setTimeViewInvariantHash(U64 hash)
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->timeViewInvariantHash = hash;
+    _imp->timeViewInvariantHashValid = true;
 }
 
 bool
@@ -954,6 +619,440 @@ TreeRenderNodeArgs::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) co
     return found->second.getHash(hash);
 }
 
+StatusEnum
+TreeRenderNodeArgs::roiVisitFunctor(TimeValue inArgsTime,
+                                    ViewIdx view,
+                                    unsigned originalMipMapLevel,
+                                    const RectD& canonicalRenderWindow)
+{
+
+    NodePtr node = getNode();
+    EffectInstancePtr effect = node->getEffectInstance();
+
+    TreeRenderNodeArgsPtr thisShared = shared_from_this();
+
+
+    // Round time to nearest integer if the effect is not continuous
+
+    TimeValue time = inArgsTime;
+    {
+        int roundedTime = std::floor(time + 0.5);
+        if (roundedTime != time && !effect->canRenderContinuously(thisShared)) {
+            time = TimeValue(roundedTime);
+        }
+    }
+
+    if (node->supportsRenderScaleMaybe() == eSupportsMaybe) {
+        /*
+         If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
+         We safely fail here
+         */
+        return eStatusFailed;
+    }
+
+
+    assert(node->supportsRenderScaleMaybe() == eSupportsNo || node->supportsRenderScaleMaybe() == eSupportsYes);
+
+    bool supportsRs = node->supportsRenderScale();
+
+    const unsigned int mappedLevel = supportsRs ? originalMipMapLevel : 0;
+
+    RenderScale mappedScale = RenderScale(Image::getScaleFromMipMapLevel(mappedLevel));
+    setMappedRenderScale(mappedScale);
+
+
+    FrameViewPair frameView;
+    // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
+    frameView.time = roundImageTimeToEpsilon(time);
+    frameView.view = view;
+
+    FrameViewRequest* fvRequest = getOrCreateFrameViewRequest(frameView.time, frameView.view);
+
+    // Increment the number of visits for this frame/view
+    fvRequest->incrementVisitsCount();
+
+    double par = effect->getAspectRatio(thisShared, -1);
+    EffectInstance::ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
+
+    // Check if identity on the render window
+    int identityInputNb;
+    TimeValue identityTime;
+    ViewIdx identityView;
+    RectI identityRegionPixel;
+    canonicalRenderWindow.toPixelEnclosing(mappedLevel, par, &identityRegionPixel);
+
+    {
+        IsIdentityResultsPtr results;
+        StatusEnum stat = effect->isIdentity_public(true, time, mappedScale, identityRegionPixel, view, thisShared, &results);
+        if (stat == eStatusFailed) {
+            return eStatusFailed;
+        }
+        results->getIdentityData(&identityInputNb, &identityTime, &identityView);
+    }
+
+    // Upon first request of this frame/view, set the finalRoI, otherwise union it to the existing RoI.
+
+    {
+        RectD finalRoi = fvRequest->getCurrentRoI();
+        bool finalRoIEmpty = finalRoi.isNull();
+        if (!finalRoIEmpty && finalRoi.contains(canonicalRenderWindow)) {
+            // Do not recurse if the roi did not add anything new to render
+            return eStatusOK;
+        }
+        if (finalRoIEmpty) {
+            fvRequest->setCurrentRoI(canonicalRenderWindow);
+        } else {
+            finalRoi.merge(canonicalRenderWindow);
+            fvRequest->setCurrentRoI(finalRoi);
+        }
+    }
+
+    if (identityInputNb == -2) {
+        assert(identityTime != time || viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant);
+        // be safe in release mode otherwise we hit an infinite recursion
+        if ( (identityTime != time) || (viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ) {
+
+            ViewIdx inputView = (view != 0 && viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
+            StatusEnum stat = roiVisitFunctor(identityTime,
+                                              inputView,
+                                              originalMipMapLevel,
+                                              canonicalRenderWindow);
+
+            return stat;
+        }
+
+        //Should fail on the assert above
+        return eStatusFailed;
+    } else if (identityInputNb != -1) {
+        EffectInstancePtr inputEffectIdentity = effect->getInput(identityInputNb);
+        if (inputEffectIdentity) {
+
+
+            NodePtr inputIdentityNode = inputEffectIdentity->getNode();
+
+            TreeRenderNodeArgsPtr inputFrameArgs = getInputRenderArgs(identityInputNb);
+            assert(inputFrameArgs);
+
+            StatusEnum stat = inputFrameArgs->roiVisitFunctor(identityTime,
+                                                              identityView,
+                                                              originalMipMapLevel,
+                                                              canonicalRenderWindow);
+            
+            return stat;
+        }
+
+        // Aalways accept if identity has no input, it will produce a black image in the worst case scenario.
+        return eStatusOK;
+    }
+
+
+
+    // Compute the regions of interest in input for this RoI.
+    // The RoI returned is only valid for this canonicalRenderWindow, we don't cache it. Rather we cache on the input the bounding box
+    // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
+    RoIMap inputsRoi;
+    {
+        StatusEnum stat = effect->getRegionsOfInterest_public(time, mappedScale, canonicalRenderWindow, view, thisShared, &inputsRoi);
+        if (stat == eStatusFailed) {
+            return stat;
+        }
+    }
+
+
+    // Get frames needed to recurse upstream.
+    FramesNeededMap framesNeeded;
+    {
+        GetFramesNeededResultsPtr results;
+        StatusEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
+        if (stat == eStatusFailed) {
+            return eStatusFailed;
+        }
+        results->getFramesNeeded(&framesNeeded);
+    }
+
+    // Recurse upstream
+    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+        int inputNb = it->first;
+        assert(inputNb != -1);
+
+        EffectInstancePtr inputEffect = EffectInstance::resolveInputEffectForFrameNeeded(inputNb, effect.get());
+        if (!inputEffect) {
+            continue;
+        }
+        NodePtr inputNode = inputEffect->getNode();
+        assert(inputNode);
+
+
+        TreeRenderNodeArgsPtr inputRenderArgs = getInputRenderArgs(inputNb);
+
+        RoIMap::const_iterator foundInputRoI = inputsRoi.find(inputEffect);
+        if ( foundInputRoI == inputsRoi.end() ) {
+            continue;
+        }
+        if ( foundInputRoI->second.isInfinite() ) {
+            effect->setPersistentMessage( eMessageTypeError, effect->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
+
+            return eStatusFailed;
+        }
+        if ( foundInputRoI->second.isNull() ) {
+            continue;
+        }
+        RectD roi = foundInputRoI->second;
+
+        // For all views requested in input
+        for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+
+            // For all ranges in this view
+            for (U32 range = 0; range < viewIt->second.size(); ++range) {
+
+                // For all frames in the range
+                for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+
+                    StatusEnum stat = inputRenderArgs->roiVisitFunctor(TimeValue(f),
+                                                                       viewIt->first,
+                                                                       originalMipMapLevel,
+                                                                       roi);
+
+                    if (stat == eStatusFailed) {
+                        return eStatusFailed;
+                    }
+                }
+
+            }
+        }
+    }
+
+
+    return eStatusOK;
+} // roiVisitFunctor
+
+struct PreRenderFrame
+{
+    EffectInstancePtr effect;
+    int inputNb;
+    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+};
+
+struct PreRenderResult
+{
+    EffectInstance::RenderRoIResults results;
+    RenderRoIRetCode retCode;
+    int inputNb;
+};
+
+static
+PreRenderResult
+preRenderFrameFunctor(const PreRenderFrame& args)
+{
+    PreRenderResult results;
+    results.inputNb = args.inputNb;
+    results.retCode = args.effect->renderRoI(*args.renderArgs, &results.results);
+    return results;
+}
+
+RenderRoIRetCode
+TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
+                                         ViewIdx view,
+                                         bool useScaleOneInputs,
+                                         unsigned int mipMapLevel,
+                                         const ComponentsNeededMap& neededComps,
+                                         InputImagesMap* inputImages)
+{
+    // For all frames/views needed, recurse on inputs with the appropriate RoI
+
+    NodePtr node = getNode();
+    EffectInstancePtr effect = node->getEffectInstance();
+
+    TreeRenderNodeArgsPtr thisShared = shared_from_this();
+
+
+    // Get frames needed to recurse upstream. This will also compute the hash if needed
+    FramesNeededMap framesNeeded;
+    {
+        GetFramesNeededResultsPtr results;
+        StatusEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
+        if (stat == eStatusFailed) {
+            return eRenderRoIRetCodeFailed;
+        }
+        results->getFramesNeeded(&framesNeeded);
+    }
+
+    std::vector<PreRenderFrame> preRenderFrames;
+
+    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+
+        int inputNb = it->first;
+        EffectInstancePtr inputEffect = EffectInstance::resolveInputEffectForFrameNeeded(inputNb, effect.get());
+        if (!inputEffect) {
+            continue;
+        }
+        NodePtr inputNode = inputEffect->getNode();
+        assert(inputNode);
+
+        assert(inputNb != -1);
+
+
+        TreeRenderNodeArgsPtr inputRenderArgs = getInputRenderArgs(inputNb);
+
+        ///There cannot be frames needed without components needed.
+        std::vector<ImageComponents> outputCompsNeeded;
+        ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps.find(inputNb);
+        if ( foundCompsNeeded == neededComps.end() ) {
+            continue;
+        } else {
+            outputCompsNeeded = foundCompsNeeded->second;
+        }
+
+        assert(!outputCompsNeeded.empty());
+        if (outputCompsNeeded.empty()) {
+            continue;
+        }
+
+        const double inputPar = inputEffect->getAspectRatio(inputRenderArgs, -1);
+
+
+        {
+            // Notify the node that we're going to render something with the input
+            EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(node.get(), inputNb);
+
+            // For all views requested in input
+            for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+
+                // For all ranges in this view
+                for (U32 range = 0; range < viewIt->second.size(); ++range) {
+
+                    int nbFramesPreFetched = 0;
+
+                    // If the range bounds are no integers and the range covers more than 1 frame (min != max),
+                    // we have no clue of the interval we should use between the min and max.
+                    if (viewIt->second[range].min != viewIt->second[range].max && viewIt->second[range].min != (int)viewIt->second[range].min) {
+                        qDebug() << "WARNING:" <<  effect->getScriptName_mt_safe().c_str() << "is requesting a non integer frame range [" << viewIt->second[range].min << ","
+                        << viewIt->second[range].max <<"], this is border-line and not specified if this is supported by OpenFX. Natron will render "
+                        "this range assuming an interval of 1 between frame times.";
+                    }
+
+
+                    // For all frames in the range
+                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+
+                        // Sanity check
+                        if (nbFramesPreFetched >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                            break;
+                        }
+
+                        RenderScale scaleOne(1.);
+                        RenderScale scale( Image::getScaleFromMipMapLevel(mipMapLevel));
+
+
+                        std::list<ImageComponents> componentsToRender;
+                        componentsToRender.insert(componentsToRender.end(), outputCompsNeeded.begin(), outputCompsNeeded.end());
+
+                        // Use the final roi (merged from all branches leading to that node) for that frame/view pair
+                        RectD roi;
+                        inputRenderArgs->getFrameViewCanonicalRoI(TimeValue(f), viewIt->first, &roi);
+
+                        if (roi.isNull()) {
+                            continue;
+                        }
+
+                        const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
+                        const unsigned int upstreamMipMapLevel = useScaleOneInputs ? 0 : mipMapLevel;
+
+
+                        RectI inputRoIPixelCoords;
+                        roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
+
+
+
+                        EffectInstance::RenderRoIResults inputResults;
+                        {
+                            boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                            renderArgs.reset( new EffectInstance::RenderRoIArgs(TimeValue(f), //< time
+                                                                                viewIt->first, //< view
+                                                                                upstreamScale, //< scale
+                                                                                upstreamMipMapLevel, //< mipmapLevel (redundant with the scale)
+                                                                                inputRoIPixelCoords, //< roi in pixel coordinates
+                                                                                componentsToRender, //< requested comps
+                                                                                effect,
+                                                                                inputNb,
+                                                                                time /*callerRenderTime*/) );
+
+
+                            PreRenderFrame preRender;
+                            preRender.effect = inputEffect;
+                            preRender.renderArgs = renderArgs;
+                            preRenderFrames.push_back(preRender);
+                        }
+
+                        ++nbFramesPreFetched;
+
+                    } // for all frames
+                    
+                } // for all ranges
+            } // for all views
+        } // EffectInstance::NotifyInputNRenderingStarted_RAII
+    } // for all inputs
+
+
+    if (preRenderFrames.empty()) {
+        // Nothing to pre-render in input
+        return eRenderRoIRetCodeOk;
+    }
+
+    // If the current thread is a thread-pool thread, make it also do an iteration instead
+    // of waiting for other threads
+    bool isThreadPoolThread = isRunningInThreadPoolThread();
+    PreRenderFrame currentThreadPreRender;
+
+    if (isThreadPoolThread) {
+        currentThreadPreRender = preRenderFrames.back();
+        preRenderFrames.pop_back();
+    }
+
+    std::vector<PreRenderResult> allResults;
+    QFuture<PreRenderResult> future = QtConcurrent::mapped(preRenderFrames, boost::bind(&preRenderFrameFunctor, _1));
+
+    if (isThreadPoolThread) {
+        PreRenderResult thisThreadResults = preRenderFrameFunctor(currentThreadPreRender);
+        allResults.push_back(thisThreadResults);
+    }
+
+    // Wait for other threads to be finished
+    future.waitForFinished();
+
+    for (QFuture<PreRenderResult>::const_iterator it = future.begin(); it != future.end(); ++it) {
+        allResults.push_back(*it);
+    }
+
+    // Check if we are aborted
+    if (isAborted()) {
+        return eRenderRoIRetCodeAborted;
+    }
+
+    for (std::vector<PreRenderResult>::const_iterator it = allResults.begin(); it != allResults.end(); ++it) {
+        if (it->retCode != eRenderRoIRetCodeOk) {
+            return it->retCode;
+        }
+
+        ImageList* inputImagesList = 0;
+        // We may not have pre-rendered any input images for this input, make sure we at least have an empty list.
+        InputImagesMap::iterator foundInputImages = inputImages->find(it->inputNb);
+        if ( foundInputImages == inputImages->end() ) {
+            std::pair<InputImagesMap::iterator, bool> ret = inputImages->insert( std::make_pair( it->inputNb, ImageList() ) );
+            inputImagesList = &ret.first->second;
+            assert(ret.second);
+        }
+
+        for (std::map<ImageComponents, ImagePtr>::const_iterator it2 = it->results.outputPlanes.begin(); it2 != it->results.outputPlanes.end(); ++it2) {
+            if (inputImagesList && it2->second) {
+                inputImagesList->push_back(it2->second);
+            }
+        }
+
+    }
+
+    return eRenderRoIRetCodeOk;
+} // preRenderInputImages
 
 
 NATRON_NAMESPACE_EXIT;

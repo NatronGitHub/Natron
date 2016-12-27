@@ -3146,14 +3146,14 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                 p.y -= (center.y + offset.y);
 
                 if ( searchWndBtmLeft->hasAnimation() ) {
-                    searchWndBtmLeft->setValueAtTime(time, p.y, ViewSetSpec::current(), DimIdx(1));
+                    searchWndBtmLeft->setValueAtTime(time, p.y, ViewSetSpec::all(), DimIdx(1));
                 } else {
                     searchWndBtmLeft->setValue(p.y, view, DimIdx(1));
                 }
                 if ( searchWndTopRight->hasAnimation() ) {
-                    searchWndTopRight->setValueAtTime(time, p.x, ViewSetSpec::current(), DimIdx(0));
+                    searchWndTopRight->setValueAtTime(time, p.x, ViewSetSpec::all(), DimIdx(0));
                 } else {
-                    searchWndTopRight->setValue(p.x, ViewSetSpec::current(), DimIdx(0));
+                    searchWndTopRight->setValue(p.x, ViewSetSpec::all(), DimIdx(0));
                 }
 
                 _imp->ui->refreshSelectedMarkerTexture();

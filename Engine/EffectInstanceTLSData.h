@@ -53,7 +53,8 @@ class GenericActionTLSArgs
 public:
 
     GenericActionTLSArgs()
-    : time(0)
+    : renderArgs()
+    , time(0)
     , view()
     , scale()
 #ifdef DEBUG
@@ -65,6 +66,8 @@ public:
 
     virtual ~GenericActionTLSArgs() {}
 
+    // If during a render, this is a pointer to the render data for the node
+    TreeRenderNodeArgsPtr renderArgs;
 
     // The time parameter passed to an OpenFX action
     TimeValue time;
@@ -83,6 +86,7 @@ public:
     virtual GenericActionTLSArgsPtr createCopy()
     {
         GenericActionTLSArgsPtr ret(new GenericActionTLSArgs);
+        ret->renderArgs = renderArgs;
         ret->time = time;
         ret->scale = scale;
         ret->view = view;
@@ -137,6 +141,7 @@ public:
     virtual GenericActionTLSArgsPtr createCopy() OVERRIDE FINAL
     {
         RenderActionTLSDataPtr ret(new RenderActionTLSData);
+        ret->renderArgs = renderArgs;
         ret->time = time;
         ret->scale = scale;
         ret->view = view;
@@ -168,7 +173,7 @@ public:
      * @brief Push TLS for an action that is not the render action. Mainly this will be needed by OfxClipInstance::getRegionOfDefinition and OfxClipInstance::getImage
      * This should only be needed for OpenFX plug-ins, as the Natron A.P.I already pass all required arguments in parameter.
      **/
-    void pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
+    void pushActionArgs(const TreeRenderNodeArgsPtr& renderArgs, TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                         , bool canSetValue
                         , bool canBeCalledRecursively
@@ -178,7 +183,7 @@ public:
     /**
      * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
      **/
-    void pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
+    void pushRenderActionArgs(const TreeRenderNodeArgsPtr& renderArgs, TimeValue time, ViewIdx view, RenderScale& scale,
                               const RectI& renderWindowPixel,
                               const InputImagesMap& preRenderedInputImages,
                               const std::map<ImageComponents, PlaneToRender>& outputPlanes);
@@ -206,12 +211,13 @@ public:
      * @brief Retrieve the current thread action args. This will return true on success, false if we are not
      * between a push/pop bracket.
      **/
-    bool getCurrentActionArgs(double* time, ViewIdx* view, RenderScale* scale) const;
+    bool getCurrentActionArgs(TreeRenderNodeArgsPtr* renderArgs, double* time, ViewIdx* view, RenderScale* scale) const;
 
     /**
      * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
      **/
-    bool getCurrentRenderActionArgs(double* time, ViewIdx* view, RenderScale* scale,
+    bool getCurrentRenderActionArgs(TreeRenderNodeArgsPtr* renderArgs,
+                                    double* time, ViewIdx* view, RenderScale* scale,
                                     RectI* renderWindowPixel,
                                     InputImagesMap* preRenderedInputImages,
                                     std::map<ImageComponents, PlaneToRender>* outputPlanes) const;
@@ -250,11 +256,11 @@ private:
 class EffectActionArgsSetter_RAII
 {
     EffectTLSDataPtr tls;
-    EffectInstancePtr effect;
+    TreeRenderNodeArgsPtr renderArgs;
 public:
 
     EffectActionArgsSetter_RAII(const EffectTLSDataPtr& tls,
-                                const EffectInstancePtr& effect,
+                                const TreeRenderNodeArgsPtr& renderArgs,
                                 TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                                 , bool canSetValue
@@ -262,7 +268,7 @@ public:
 #endif
     )
     : tls(tls)
-    , effect(effect)
+    , renderArgs(renderArgs)
     {
         tls->pushActionArgs(time, view, scale
 #ifdef DEBUG
@@ -275,9 +281,6 @@ public:
     ~EffectActionArgsSetter_RAII()
     {
         tls->popArgs();
-
-        // An action might have requested overlay interacts refresh, check it now at the end of the action.
-        effect->checkAndRedrawOverlayInteractsIfNeeded();
     }
 
 };

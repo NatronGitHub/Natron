@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/TimeValue.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -268,7 +269,7 @@ private:
     bool _firstRedoCalled;
 
     // The timeline time at which initially we called redo() the first time
-    double _timelineTime;
+    TimeValue _timelineTime;
 };
 
 

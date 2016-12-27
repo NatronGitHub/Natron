@@ -148,9 +148,7 @@ CacheDeleterThread::run()
                 front = _imp->entriesQueue.front();
                 _imp->entriesQueue.pop_front();
             }
-            if (front) {
-                front->scheduleForDestruction();
-            }
+     
         } // front. After this scope, the image is guarenteed to be freed
       
     }
@@ -275,7 +273,7 @@ CacheCleanerThread::run()
             }
             CachePtr c = _imp->cache.lock();
             if (c) {
-                c->removeAllEntriesForPluginPrivate(front.pluginID, 0);
+                c->removeAllEntriesForPluginBlocking(front.pluginID);
             }
 
         }

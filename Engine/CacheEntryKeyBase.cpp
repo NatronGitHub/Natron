@@ -171,7 +171,7 @@ ImageTileKey::getNodeFrameViewHashKey() const
 int
 ImageTileKey::getUniqueID() const
 {
-    return "ITK";
+    return kCacheKeyUniqueIDImageTile;
 }
 
 void

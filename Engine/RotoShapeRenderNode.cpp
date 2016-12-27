@@ -136,22 +136,25 @@ RotoShapeRenderNode::initializeKnobs()
 }
 
 void
-RotoShapeRenderNode::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
+RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
     assert(item);
 
-    // The render of the Roto shape/stroke depends on the points at the current time/view
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-    if (isBezier) {
-        U64 bh = isBezier->computeHash(time, view);
-        hash->append(bh);
+    if (args.hashType == HashableObject::eComputeHashTypeTimeViewVariant) {
+        // The render of the Roto shape/stroke depends on the points at the current time/view
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+        if (isBezier) {
+            U64 bh = isBezier->computeHash(args);
+            hash->append(bh);
 
-    } else if (isStroke) {
-        U64 sh = isStroke->computeHash(time, view);
-        hash->append(sh);
+        } else if (isStroke) {
+            U64 sh = isStroke->computeHash(args);
+            hash->append(sh);
+        }
     }
+
 
     RotoPaintPtr rotoPaintNode;
     KnobItemsTablePtr model = item->getModel();
@@ -163,17 +166,17 @@ RotoShapeRenderNode::appendToHash(TimeValue time, ViewIdx view, Hash64* hash)
     // If we had a knob that would be linked to it we wouldn't need this, but since
     // we directly refer to this knob, we must explicitly add it to the hash.
     if  (rotoPaintNode) {
-        U64 sh = rotoPaintNode->getMotionBlurTypeKnob()->computeHash(time, view);
+        U64 sh = rotoPaintNode->getMotionBlurTypeKnob()->computeHash(args);
         hash->append(sh);
     }
 
 
-    EffectInstance::appendToHash(time, view, hash);
+    EffectInstance::appendToHash(args, hash);
 
 }
 
 StatusEnum
-RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
+RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
 
 

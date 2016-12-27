@@ -2478,7 +2478,7 @@ ViewerNodePrivate::refreshInputChoiceMenu(int internalIndex, int groupInputIndex
     if (index == -1) {
         index = 0;
     }
-    inputChoiceKnob->setValue(index, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    inputChoiceKnob->setValue(index, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
 }
 
@@ -2617,7 +2617,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                 if (it->getComponentsNames().size() == 4) {
 
                     // Use setValueFromPlugin so we don't recurse
-                    _imp->alphaChannelKnob.lock()->setValue(chanCount - 1, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+                    _imp->alphaChannelKnob.lock()->setValue(chanCount - 1, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
                     internalViewerNode->setAlphaChannel(*it, it->getComponentsNames()[3]);
                 }
@@ -2626,7 +2626,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             }
         }
 
-        _imp->alphaChannelKnob.lock()->setValue(0, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->alphaChannelKnob.lock()->setValue(0, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
         internalViewerNode->setAlphaChannel(ImageComponents::getNoneComponents(), std::string());
         internalViewerNode->setCurrentLayer(ImageComponents::getNoneComponents());
 
@@ -2786,8 +2786,8 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickHideAll.lock()) {
         bool allHidden = _imp->rightClickHideAll.lock()->getValue();
-        _imp->rightClickHideAllTop.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-        _imp->rightClickHideAllBottom.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickHideAllTop.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickHideAllBottom.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
             if (!getApp()->getActiveRotoDrawingStroke()) {
                 _imp->uiContext->fitImageToFormat();
@@ -2795,9 +2795,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickHideAllTop.lock()) {
         bool allHidden = _imp->rightClickHideAllTop.lock()->getValue();
-        _imp->rightClickShowHideTopToolbar.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-        _imp->rightClickShowHideLeftToolbar.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-        _imp->rightClickShowHideTabHeader.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideTopToolbar.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideLeftToolbar.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideTabHeader.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
             if (!getApp()->getActiveRotoDrawingStroke()) {
                 _imp->uiContext->fitImageToFormat();
@@ -2805,9 +2805,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->rightClickHideAllBottom.lock()) {
         bool allHidden = _imp->rightClickHideAllBottom.lock()->getValue();
-        _imp->rightClickShowHidePlayer.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-        _imp->rightClickShowHideTimeline.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-        _imp->enableInfoBarButtonKnob.lock()->setValue(!allHidden, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHidePlayer.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->rightClickShowHideTimeline.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->enableInfoBarButtonKnob.lock()->setValue(!allHidden, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
         if (reason != eValueChangedReasonPluginEdited) {
             if (!getApp()->getActiveRotoDrawingStroke()) {
                 _imp->uiContext->fitImageToFormat();
@@ -2956,7 +2956,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
         if (currentIndex >= 0) {
             // User edited so the handler is executed
-            knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
+            knob->setValue(currentIndex, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
         }
 
     } else if (k == _imp->rightClickNextLayer.lock()) {
@@ -2969,7 +2969,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         if ( (currentIndex == 0) && (nChoices > 1) ) {
             currentIndex = 1;
         }
-        knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
+        knob->setValue(currentIndex, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
     } else if (k == _imp->rightClickPreviousView.lock()) {
         KnobChoicePtr knob = _imp->activeViewKnob.lock();
         int currentIndex = knob->getValue();
@@ -2982,7 +2982,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
         if (currentIndex >= 0) {
             // User edited so the handler is executed
-            knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
+            knob->setValue(currentIndex, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
         }
     } else if (k == _imp->rightClickNextView.lock()) {
         KnobChoicePtr knob = _imp->activeViewKnob.lock();
@@ -2995,7 +2995,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
             currentIndex = currentIndex + 1;
         }
 
-        knob->setValue(currentIndex, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited);
+        knob->setValue(currentIndex, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
     } else if (k == _imp->enableFpsKnob.lock()) {
         _imp->fpsKnob.lock()->setEnabled(_imp->enableFpsKnob.lock()->getValue());
         refreshFps();
@@ -3070,9 +3070,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->abortRenderingAction.lock()) {
         _imp->abortAllViewersRendering();
     } else if (k == _imp->setInPointButtonKnob.lock()) {
-        _imp->inPointKnob.lock()->setValue(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->inPointKnob.lock()->setValue(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     } else if (k == _imp->setOutPointButtonKnob.lock()) {
-        _imp->outPointKnob.lock()->setValue(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        _imp->outPointKnob.lock()->setValue(getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
     } else if (k == _imp->inPointKnob.lock()) {
         _imp->uiContext->setTimelineBounds(_imp->inPointKnob.lock()->getValue(), _imp->outPointKnob.lock()->getValue());
@@ -3964,7 +3964,7 @@ ViewerNode::onOverlayPenMotion(TimeValue /*time*/, const RenderScale & /*renderS
         case eViewerNodeInteractMouseStateDraggingWipeCenter: {
             KnobDoublePtr centerKnob = _imp->wipeCenter.lock();
             centerKnob->setValue(centerKnob->getValue() + dx);
-            centerKnob->setValue(centerKnob->getValue(DimIdx(1)) + dy, ViewSetSpec::current(), DimIdx(1));
+            centerKnob->setValue(centerKnob->getValue(DimIdx(1)) + dy, ViewSetSpec::all(), DimIdx(1));
             overlayCaught = true;
             break;
         }
@@ -4362,10 +4362,10 @@ ViewerNode::setUserRoI(const RectD& rect)
     std::vector<double> values(2);
     values[0] = rect.x1;
     values[1] = rect.y1;
-    btmLeft->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::current(), eValueChangedReasonUserEdited);
+    btmLeft->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonUserEdited);
     values[0] = rect.x2 - rect.x1;
     values[1] = rect.y2 - rect.y1;
-    size->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::current(), eValueChangedReasonUserEdited);
+    size->setValueAcrossDimensions(values, DimIdx(0), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -4439,8 +4439,8 @@ ViewerNodePrivate::abortAllViewersRendering()
     std::list<ViewerNodePtr> viewers;
     getAllViewerNodes(false, viewers);
 
-    playForwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-    playBackwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    playForwardButtonKnob.lock()->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+    playBackwardButtonKnob.lock()->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
 
     if ( _publicInterface->getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
@@ -4519,8 +4519,8 @@ ViewerNode::onEngineStarted(bool forward)
     std::list<ViewerNodePtr> viewers;
     _imp->getAllViewerNodes(false, viewers);
     for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->_imp->playForwardButtonKnob.lock()->setValue(forward, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-        (*it)->_imp->playBackwardButtonKnob.lock()->setValue(!forward, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+        (*it)->_imp->playForwardButtonKnob.lock()->setValue(forward, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+        (*it)->_imp->playBackwardButtonKnob.lock()->setValue(!forward, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     }
 
     if (!getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
@@ -4540,7 +4540,7 @@ ViewerNode::onEngineStopped()
     std::list<ViewerNodePtr> viewers;
     _imp->getAllViewerNodes(false, viewers);
 
-    _imp->curFrameKnob.lock()->setValue( getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    _imp->curFrameKnob.lock()->setValue( getInternalViewerNode()->getTimeline()->currentFrame(), ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
     if (!getApp()->isGuiFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
         getApp()->setGuiFrozen(false);
@@ -4558,8 +4558,8 @@ ViewerNode::onSetDownPlaybackButtonsTimeout()
         std::list<ViewerNodePtr> viewers;
         _imp->getAllViewerNodes(false, viewers);
         for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->_imp->playForwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-            (*it)->_imp->playBackwardButtonKnob.lock()->setValue(false, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+            (*it)->_imp->playForwardButtonKnob.lock()->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+            (*it)->_imp->playBackwardButtonKnob.lock()->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
         }
     }
 }

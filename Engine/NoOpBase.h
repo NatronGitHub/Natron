@@ -85,13 +85,14 @@ private:
     /**
      * @brief A NoOp is always an identity on its input.
      **/
-    virtual bool isIdentity(TimeValue time,
-                            const RenderScale & scale,
-                            const RectI & renderWindow,
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum isIdentity(TimeValue time,
+                                  const RenderScale & scale,
+                                  const RectI & renderWindow,
+                                  ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
+                                  TimeValue* inputTime,
+                                  ViewIdx* inputView,
+                                  int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 inline NoOpBasePtr

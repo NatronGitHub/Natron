@@ -834,15 +834,33 @@ Gui::renderAllViewers(bool canAbort)
 }
 
 void
-Gui::abortAllViewers()
+Gui::abortAllViewers(bool autoRestartPlayback)
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->getNode()->abortAnyProcessing_non_blocking();
+        if ( !(*it)->isVisible() ) {
+            continue;
+        }
+        ViewerNodePtr viewerGroup = (*it)->getInternalNode();
+        if (!viewerGroup) {
+            continue;
+        }
+        ViewerInstancePtr viewerProcess = viewerGroup->getInternalViewerNode();
+        if (!viewerProcess) {
+            continue;
+        }
+        RenderEnginePtr engine = viewerProcess->getRenderEngine();
+        if (!engine) {
+            continue;
+        }
+
+        if (autoRestartPlayback) {
+            engine->abortRenderingAutoRestart();
+        } else {
+            engine->abortRenderingNoRestart(false);
         }
     }
-}
+} // abortAllViewers
 
 void
 Gui::toggleAutoHideGraphInputs()

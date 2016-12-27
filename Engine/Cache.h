@@ -118,7 +118,7 @@ class Cache
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    friend class CacheDeleterThread;
+    friend class CacheCleanerThread;
     friend class MemoryMappedCacheEntry;
     friend class MemoryBufferedCacheEntryBase;
     

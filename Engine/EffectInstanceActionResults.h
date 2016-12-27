@@ -27,11 +27,18 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <bitset>
+#include <map>
+#include <list>
+#include <vector>
+
 #include "Engine/EngineFwd.h"
 
 #include "Global/GlobalDefines.h"
 
 #include "Engine/CacheEntryBase.h"
+#include "Engine/Distorsion2D.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/RectD.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -135,9 +142,8 @@ class IsIdentityKey : public EffectInstanceActionKeyBase
 public:
 
     IsIdentityKey(U64 nodeFrameViewHash,
-                             const RenderScale& scale,
-                             const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, scale, pluginID)
+                  const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
     {
 
     }
@@ -203,9 +209,8 @@ class GetFramesNeededKey : public EffectInstanceActionKeyBase
 public:
 
     GetFramesNeededKey(U64 nodeFrameViewHash,
-                  const RenderScale& scale,
                   const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, scale, pluginID)
+    : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
     {
 
     }
@@ -264,6 +269,283 @@ toGetFramesNeededResults(const CacheEntryBasePtr& entry)
 {
     return boost::dynamic_pointer_cast<GetFramesNeededResults>(entry);
 }
+
+
+class GetDistorsionKey : public EffectInstanceActionKeyBase
+{
+public:
+
+    GetDistorsionKey(U64 nodeFrameViewHash,
+                       const RenderScale& scale,
+                       const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeFrameViewHash, scale, pluginID)
+    {
+
+    }
+
+    virtual ~GetDistorsionKey()
+    {
+
+    }
+
+private:
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDGetDistorsionResults;
+    }
+    
+};
+
+class GetDistorsionResults : public CacheEntryBase
+{
+    GetDistorsionResults();
+
+public:
+
+    static GetDistorsionResultsPtr create(const GetDistorsionKeyPtr& key);
+
+    virtual ~GetDistorsionResults()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    // To ensure this you may call
+    // assert(getCacheBucketIndex() == -1) in any setter function.
+    void getDistorsionResults(DistorsionFunction2D* disto) const;
+    void setDistorsionResults(const DistorsionFunction2D& disto);
+
+    virtual std::size_t getSize() const OVERRIDE FINAL;
+
+private:
+
+    DistorsionFunction2D _distorsion;
+
+};
+
+inline GetDistorsionResultsPtr
+toGetDistorsionResults(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<GetDistorsionResults>(entry);
+}
+
+
+class GetFrameRangeKey : public EffectInstanceActionKeyBase
+{
+public:
+
+    GetFrameRangeKey(U64 nodeTimeViewInvariantHash,
+                     const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewInvariantHash, RenderScale(1.), pluginID)
+    {
+
+    }
+
+    virtual ~GetFrameRangeKey()
+    {
+
+    }
+
+private:
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDGetFrameRangeResults;
+    }
+    
+};
+
+
+class GetFrameRangeResults : public CacheEntryBase
+{
+    GetFrameRangeResults();
+
+public:
+
+    static GetFrameRangeResultsPtr create(const GetFrameRangeKeyPtr& key);
+
+    virtual ~GetFrameRangeResults()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    // To ensure this you may call
+    // assert(getCacheBucketIndex() == -1) in any setter function.
+    void getFrameRangeResults(RangeD* range) const;
+    void setFrameRangeResults(const RangeD& range);
+
+    virtual std::size_t getSize() const OVERRIDE FINAL;
+
+private:
+
+    RangeD _range;
+
+};
+
+inline GetFrameRangeResultsPtr
+toGetFrameRangeResults(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<GetFrameRangeResults>(entry);
+}
+
+
+class GetTimeInvariantMetaDatasKey : public EffectInstanceActionKeyBase
+{
+public:
+
+    GetTimeInvariantMetaDatasKey(U64 nodeTimeViewInvariantHash,
+                                 const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewInvariantHash, RenderScale(1.), pluginID)
+    {
+
+    }
+
+    virtual ~GetTimeInvariantMetaDatasKey()
+    {
+
+    }
+
+private:
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDGetTimeInvariantMetaDatasResults;
+    }
+
+};
+
+
+class GetTimeInvariantMetaDatasResults : public CacheEntryBase
+{
+    GetTimeInvariantMetaDatasResults();
+
+public:
+
+    static GetTimeInvariantMetaDatasResultsPtr create(const GetTimeInvariantMetaDatasKeyPtr& key);
+
+    virtual ~GetTimeInvariantMetaDatasResults()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    // To ensure this you may call
+    // assert(getCacheBucketIndex() == -1) in any setter function.
+    const NodeMetadataPtr& getMetadatasResults() const;
+    void setMetadatasResults(const NodeMetadataPtr& metadatas);
+
+    virtual std::size_t getSize() const OVERRIDE FINAL;
+
+private:
+
+    NodeMetadataPtr _metadatas;
+
+};
+
+inline GetTimeInvariantMetaDatasResultsPtr
+toGetTimeInvariantMetaDatasResults(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<GetTimeInvariantMetaDatasResults>(entry);
+}
+
+
+class GetComponentsNeededKey : public EffectInstanceActionKeyBase
+{
+public:
+
+    GetComponentsNeededKey(U64 nodeFrameViewHash,
+                     const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
+    {
+
+    }
+
+    virtual ~GetComponentsNeededKey()
+    {
+
+    }
+
+private:
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDGetComponentsNeededResults;
+    }
+
+};
+
+typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
+
+
+class GetComponentsNeededResults : public CacheEntryBase
+{
+    GetComponentsNeededResults();
+
+public:
+
+    static GetComponentsNeededResultsPtr create(const GetComponentsNeededKeyPtr& key);
+
+    virtual ~GetComponentsNeededResults()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    // To ensure this you may call
+    // assert(getCacheBucketIndex() == -1) in any setter function.
+    void getComponentsNeededResults(ComponentsNeededMap* compsNeeded,
+                                    int *passThroughInputNb,
+                                    TimeValue *passThroughTime,
+                                    ViewIdx *passThroughView,
+                                    std::bitset<4> *processChannels,
+                                    bool *processAllLayers) const;
+
+    void setComponentsNeededResults(const ComponentsNeededMap& compsNeeded,
+                                    int passThroughInputNb,
+                                    TimeValue passThroughTime,
+                                    ViewIdx passThroughView,
+                                    std::bitset<4> processChannels,
+                                    bool processAllLayers);
+
+
+    virtual std::size_t getSize() const OVERRIDE FINAL;
+
+private:
+
+    ComponentsNeededMap _compsNeeded;
+    int _passThroughInputNb;
+    TimeValue _passThroughTime;
+    ViewIdx _passThroughView;
+    std::bitset<4> _processChannels;
+    bool _processAllLayers;
+
+
+};
+
+inline GetComponentsNeededResultsPtr
+toGetComponentsNeededResults(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<GetComponentsNeededResults>(entry);
+}
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_EFFECTINSTANCEACTIONRESULTS_H

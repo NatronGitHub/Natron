@@ -106,7 +106,7 @@ public:
 
 private:
 
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
@@ -118,9 +118,9 @@ private:
     virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual void getComponentsNeededAndProduced(TimeValue time, ViewIdx view,
                                                 ComponentsNeededMap* comps,
-                                                SequenceTime* passThroughTime,
-                                                int* passThroughView,
-                                                NodePtr* passThroughInput) OVERRIDE;
+                                                TimeValue* passThroughTime,
+                                                ViewIdx* passThroughView,
+                                                int* passThroughInputNb) OVERRIDE;
     virtual StatusEnum beginSequenceRender(double first,
                                            double last,
                                            double step,

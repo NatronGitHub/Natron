@@ -190,6 +190,8 @@ struct OfxEffectInstancePrivate
         , multiplanar(other.multiplanar)
     {
     }
+
+    void pushMetadatasToClips(const NodeMetadata& metadata);
 };
 
 OfxEffectInstance::OfxEffectInstance(const NodePtr& node)
@@ -379,7 +381,7 @@ OfxEffectInstance::createInstanceAction()
 {
 
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TreeRenderNodeArgsPtr(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ false
@@ -456,12 +458,6 @@ OfxEffectInstance::createRenderClone()
 
 
     return clone;
-}
-
-bool
-OfxEffectInstance::isEffectCreated() const
-{
-    return _imp->initialized;
 }
 
 
@@ -937,7 +933,7 @@ OfxEffectInstance::onInputChanged(int inputNo, const NodePtr& /*oldNode*/, const
     assert(_imp->effect);
 
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TreeRenderNodeArgsPtr(),getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
@@ -1025,14 +1021,14 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
 }
 
 void
-OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
+OfxEffectInstancePrivate::pushMetadatasToClips(const NodeMetadata& metadata)
 {
     //Actually push to the clips the preferences and set the flags on the effect
 
-    if (!_imp->effect) {
+    if (!effect) {
         return;
     }
-    const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = _imp->effect->getClips();
+    const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
     for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
          ; it != clips.end(); ++it) {
         OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
@@ -1048,16 +1044,16 @@ OfxEffectInstance::onMetaDatasRefreshed(const NodeMetadata& metadata)
         clip->setAspectRatio( metadata.getPixelAspectRatio(inputNb) );
     }
 
-    effectInstance()->updatePreferences_safe( metadata.getOutputFrameRate(),
-                                             OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ),
-                                             OfxClipInstance::natronsPremultToOfxPremult( metadata.getOutputPremult() ),
-                                             metadata.getIsContinuous(),
-                                             metadata.getIsFrameVarying() );
+    effect->updatePreferences_safe( metadata.getOutputFrameRate(),
+                                   OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ),
+                                   OfxClipInstance::natronsPremultToOfxPremult( metadata.getOutputPremult() ),
+                                   metadata.getIsContinuous(),
+                                   metadata.getIsFrameVarying() );
 
 }
 
 StatusEnum
-OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
+OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
     if (!_imp->initialized || !_imp->effect) {
         return eStatusFailed;
@@ -1065,20 +1061,28 @@ OfxEffectInstance::getPreferredMetaDatas(NodeMetadata& metadata)
     assert(_imp->context != eContextNone);
 
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), getApp()->getTimeLine()->currentFrame(), ViewIdx(0), RenderScale(1.)
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TreeRenderNodeArgsPtr(), 0 /*time*/, ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
 #endif
                                               );
 
-    ///First push the "default" meta-datas to the clips so that they get proper values
-    onMetaDatasRefreshed(metadata);
+    // First push the "default" meta-datas to the clips so that they get proper values
+    // EDIT: this is not needed as we no longer use any thread unsafe clips data anymore
+    //_imp->pushMetadatasToClips(metadata);
 
-    ///It has been overriden and no data is actually set on the clip, everything will be set into the
-    ///metadata object
+    // It has been overriden and no data is actually set on the clip, everything will be set into the
+    // metadata object
     StatusEnum stat = _imp->effect->getClipPreferences_safe(metadata);
-    return stat;
+    if (stat == eStatusFailed) {
+        return stat;
+    }
+
+    // Push the modified datas to clips now
+    // EDIT: this is not needed as we no longer use any thread unsafe clips data anymore
+    //_imp->pushMetadatasToClips(metadata);
+    return eStatusOK;
 }
 
 
@@ -1105,6 +1109,7 @@ StatusEnum
 OfxEffectInstance::getRegionOfDefinition(TimeValue time,
                                          const RenderScale & scale,
                                          ViewIdx view,
+                                         const TreeRenderNodeArgsPtr& render,
                                          RectD* rod)
 {
     assert(_imp->context != eContextNone);
@@ -1116,7 +1121,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 
     // getRegionOfDefinition may be the first action with renderscale called on any effect.
     // it may have to check for render scale support.
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
+    RenderScaleSupportEnum supportsRS = supportsRenderScaleMaybe();
     bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
     if ( (supportsRS == eSupportsNo) && !scaleIsOne ) {
         qDebug() << "getRegionOfDefinition called with render scale != 1, but effect does not support render scale!";
@@ -1134,7 +1139,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 
 
     {
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, scale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, render,time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -1160,7 +1165,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 
                 assert(_imp->effect);
 
-                EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, halfScale
+                EffectActionArgsSetter_RAII actionArgsTls(tls, render,time, view, halfScale
 #ifdef DEBUG
                                                           , /*canSetValue*/ false
                                                           , /*canBeCalledRecursively*/ true
@@ -1189,7 +1194,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 
                 assert(_imp->effect);
 
-                EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, scaleOne
+                EffectActionArgsSetter_RAII actionArgsTls(tls, render,time, view, scaleOne
 #ifdef DEBUG
                                                           , /*canSetValue*/ false
                                                           , /*canBeCalledRecursively*/ true
@@ -1243,6 +1248,7 @@ void
 OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
                                                  const RenderScale & scale,
                                                  ViewIdx view,
+                                                 const TreeRenderNodeArgsPtr& render,
                                                  RectD *rod)
 {
     assert(_imp->context != eContextNone);
@@ -1256,7 +1262,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
     assert(_imp->effect);
 
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, scale
+    EffectActionArgsSetter_RAII actionArgsTls(tls, render, time, view, scale
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ true
@@ -1298,6 +1304,7 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
                                         const RenderScale & scale,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                         ViewIdx view,
+                                        const TreeRenderNodeArgsPtr& render,
                                         RoIMap* ret)
 {
     assert(_imp->context != eContextNone);
@@ -1319,7 +1326,7 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
     {
 
         EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, scale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, render,time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1366,17 +1373,17 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
     }
 } // getRegionsOfInterest
 
-FramesNeededMap
+StatusEnum
 OfxEffectInstance::getFramesNeeded(TimeValue time,
-                                   ViewIdx view)
+                                   ViewIdx view,
+                                   const TreeRenderNodeArgsPtr& render,
+                                   FramesNeededMap* results)
 {
     assert(_imp->context != eContextNone);
-    FramesNeededMap ret;
     if (!_imp->initialized) {
-        return ret;
+        return eStatusFailed;
     }
     assert(_imp->effect);
-    OfxStatus stat;
 
     if ( isViewAware() ) {
         OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
@@ -1384,72 +1391,71 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
             assert(_imp->effect);
 
             EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-            EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, RenderScale(1.)
+            EffectActionArgsSetter_RAII actionArgsTls(tls, render,time, view, RenderScale(1.)
 #ifdef DEBUG
                                                       , /*canSetValue*/ false
                                                       , /*canBeCalledRecursively*/ false
 #endif
                                                       );
 
-            stat = _imp->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
+            OfxStatus stat = _imp->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
+            if (stat == kOfxStatFailed) {
+                return eStatusFailed;
+            }
         }
 
-        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            throw std::runtime_error("getFrameViewsNeeded action failed");
-        } else {
-            for (OFX::Host::ImageEffect::ViewsRangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
-                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-                assert(clip);
-                if (clip) {
-                    int inputNb = clip->getInputNb();
-                    if (inputNb != -1) {
-                        // convert HostSupport's std::map<int, std::vector<OfxRangeD> > to  Natron's FrameRangesMap
-                        FrameRangesMap frameRanges;
-                        const std::map<int, std::vector<OfxRangeD> >& ofxRanges = it->second;
-                        for (std::map<int, std::vector<OfxRangeD> >::const_iterator itr = ofxRanges.begin(); itr != ofxRanges.end(); ++itr) {
-                            frameRanges[ViewIdx(itr->first)] = itr->second;
-                        }
-                        ret.insert( std::make_pair(inputNb, frameRanges) );
+
+        for (OFX::Host::ImageEffect::ViewsRangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                int inputNb = clip->getInputNb();
+                if (inputNb != -1) {
+                    // convert HostSupport's std::map<int, std::vector<OfxRangeD> > to  Natron's FrameRangesMap
+                    FrameRangesMap frameRanges;
+                    const std::map<int, std::vector<OfxRangeD> >& ofxRanges = it->second;
+                    for (std::map<int, std::vector<OfxRangeD> >::const_iterator itr = ofxRanges.begin(); itr != ofxRanges.end(); ++itr) {
+                        frameRanges[ViewIdx(itr->first)] = itr->second;
                     }
+                    results->insert( std::make_pair(inputNb, frameRanges) );
                 }
             }
         }
+
     } else {
         OFX::Host::ImageEffect::RangeMap inputRanges;
         {
             assert(_imp->effect);
 
             ///Take the preferences lock so that it cannot be modified throughout the action.
-            stat = _imp->effect->getFrameNeededAction( (OfxTime)time, inputRanges );
+            OfxStatus stat = _imp->effect->getFrameNeededAction( (OfxTime)time, inputRanges );
+            if (stat == kOfxStatFailed) {
+                return eStatusFailed;
+            }
         }
-        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            throw std::runtime_error("getFramesNeeded action failed");
-        } else {
-            for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
-                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-                assert(clip);
-                if (clip) {
-                    int inputNb = clip->getInputNb();
-                    if (inputNb != -1) {
-                        FrameRangesMap viewRangeMap;
-                        viewRangeMap.insert( std::make_pair(view, it->second) );
-                        ret.insert( std::make_pair(inputNb, viewRangeMap) );
-                    }
+
+        for (OFX::Host::ImageEffect::RangeMap::iterator it = inputRanges.begin(); it != inputRanges.end(); ++it) {
+            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+            assert(clip);
+            if (clip) {
+                int inputNb = clip->getInputNb();
+                if (inputNb != -1) {
+                    FrameRangesMap viewRangeMap;
+                    viewRangeMap.insert( std::make_pair(view, it->second) );
+                    results->insert( std::make_pair(inputNb, viewRangeMap) );
                 }
             }
         }
+
     }
 
     //Default is already handled by HostSupport
-//    if (stat == kOfxStatReplyDefault) {
-//        return EffectInstance::getFramesNeeded(time,view);
 
-//    }
-    return ret;
+    return eStatusOK;
 } // OfxEffectInstance::getFramesNeeded
 
-void
-OfxEffectInstance::getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last)
+StatusEnum
+OfxEffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last)
 {
     assert(_imp->context != eContextNone);
     if (!_imp->initialized) {
@@ -1468,7 +1474,7 @@ OfxEffectInstance::getFrameRange(TimeValue time, ViewIdx view, const TreeRenderN
 
 
         EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),time, view, RenderScale(1.)
+        EffectActionArgsSetter_RAII actionArgsTls(tls, render,TimeValue(0), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1482,85 +1488,36 @@ OfxEffectInstance::getFrameRange(TimeValue time, ViewIdx view, const TreeRenderN
         *first = range.min;
         *last = range.max;
     } else if (st == kOfxStatReplyDefault) {
-        assert(_imp->effect);
-        //The default is...
-        int nthClip = _imp->effect->getNClips();
-        if (nthClip == 0) {
-            //infinite if there are no non optional input clips.
-            *first = INT_MIN;
-            *last = INT_MAX;
-        } else {
-            //the union of all the frame ranges of the non optional input clips.
-            bool firstValidInput = true;
-            *first = INT_MIN;
-            *last = INT_MAX;
-
-            int inputsCount = getMaxInputCount();
-
-
-            ///Uncommented the isOptional() introduces a bugs with Genarts Monster plug-ins when 2 generators
-            ///are connected in the pipeline. They must rely on the time domain to maintain an internal state and apparantly
-            ///not taking optional inputs into accounts messes it up.
-            for (int i = 0; i < inputsCount; ++i) {
-                //if (!isInputOptional(i)) {
-                EffectInstancePtr inputEffect = getInput(i);
-                if (inputEffect) {
-                    double f, l;
-                    inputEffect->getFrameRange_public(0, &f, &l);
-                    if (!firstValidInput) {
-                        if ( (f < *first) && (f != INT_MIN) ) {
-                            *first = f;
-                        }
-                        if ( (l > *last) && (l != INT_MAX) ) {
-                            *last = l;
-                        }
-                    } else {
-                        firstValidInput = false;
-                        *first = f;
-                        *last = l;
-                    }
-                }
-                // }
-            }
-        }
+        return EffectInstance::getFrameRange(render, first, last);
     }
 } // getFrameRange
 
-bool
+StatusEnum
 OfxEffectInstance::isIdentity(TimeValue time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
                               ViewIdx view,
-                              double* inputTime,
+                              const TreeRenderNodeArgsPtr& render,
+                              TimeValue* inputTime,
                               ViewIdx* inputView,
                               int* inputNb)
 {
     *inputView = view;
-    if (!_imp->initialized) {
-        *inputNb = -1;
-        *inputTime = 0;
+    *inputNb = -1;
+    *inputTime = time;
 
-        return false;
+    if (!_imp->initialized) {
+        return eStatusFailed;
     }
 
     assert(_imp->context != eContextNone);
+
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
-    OfxTime inputTimeOfx = time;
 
+    assert((getNode()->supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.));
 
-    // isIdentity may be the first action with renderscale called on any effect.
-    // it may have to check for render scale support.
-    SupportsEnum supportsRS = supportsRenderScaleMaybe();
-    bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-    if ( (supportsRS == eSupportsNo) && !scaleIsOne ) {
-        qDebug() << "isIdentity called with render scale != 1, but effect does not support render scale!";
-        assert(false);
-        return false;
-    }
-
-    OfxStatus stat;
-
+    OfxTime identityTimeOfx = time;
     {
 
         OfxRectI ofxRoI;
@@ -1573,7 +1530,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
 
 
         EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, scale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, render, time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -1581,42 +1538,36 @@ OfxEffectInstance::isIdentity(TimeValue time,
                                                   );
 
 
-        stat = _imp->effect->isIdentityAction(inputTimeOfx, field, ofxRoI, scale, view, inputclip);
-
+        OfxStatus stat = _imp->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
+        if (stat == kOfxStatFailed) {
+            return eStatusFailed;
+        } else if (stat == kOfxStatReplyDefault) {
+            return eStatusOK;
+        }
     }
 
-    assert(_imp->effect);
-    if (stat == kOfxStatOK) {
-        OFX::Host::ImageEffect::ClipInstance* clip = _imp->effect->getClip(inputclip);
-        if (!clip) {
-            // this is a plugin-side error, don't crash
-            qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
-
-            return false;
-        }
-        OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
-        assert(natronClip);
-        if (!natronClip) {
-            // coverity[dead_error_line]
-            qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
-
-            return false;
-        }
-        *inputTime = inputTimeOfx;
-
-        if ( natronClip->isOutput() ) {
-            *inputNb = -2;
-        } else {
-            *inputNb = natronClip->getInputNb();
-        }
-
-        return true;
-    } else if (stat == kOfxStatReplyDefault) {
-        return false;
+    OFX::Host::ImageEffect::ClipInstance* clip = _imp->effect->getClip(inputclip);
+    if (!clip) {
+        // this is a plugin-side error, don't crash
+        qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
+        return eStatusFailed;
     }
+    OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
+    assert(natronClip);
+    if (!natronClip) {
+        // coverity[dead_error_line]
+        qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
+        return eStatusFailed;
+    }
+    if ( natronClip->isOutput() ) {
+        *inputNb = -2;
+    } else {
+        *inputNb = natronClip->getInputNb();
+    }
+    *inputTime = identityTimeOfx;
 
-    return false; //< may fail if getRegionOfDefinition has failed in the plug-in code
-    //throw std::runtime_error("isIdentity failed");
+    return eStatusOK;
+
 } // isIdentity
 
 class OfxGLContextEffectData
@@ -1656,7 +1607,8 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool draftMode,
                                        ViewIdx view,
                                        bool isOpenGLRender,
-                                       const EffectOpenGLContextDataPtr& glContextData)
+                                       const EffectOpenGLContextDataPtr& glContextData,
+                                       const TreeRenderNodeArgsPtr& render)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1670,7 +1622,7 @@ OfxEffectInstance::beginSequenceRender(double first,
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
         EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(),first, view, scale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, render,first, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1702,7 +1654,8 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool draftMode,
                                      ViewIdx view,
                                      bool isOpenGLRender,
-                                     const EffectOpenGLContextDataPtr& glContextData)
+                                     const EffectOpenGLContextDataPtr& glContextData,
+                                     const TreeRenderNodeArgsPtr& render)
 {
     {
         bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
@@ -1719,7 +1672,7 @@ OfxEffectInstance::endSequenceRender(double first,
 
 
         EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), first, view, scale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, render, first, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -2576,59 +2529,61 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
     }
 }
 
-void
+StatusEnum
 OfxEffectInstance::getComponentsNeededAndProduced(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& renderArgs,
-                                                  ComponentsNeededResults* result)
+                                                  ComponentsNeededMap* compsNeeded,
+                                                  TimeValue* passThroughTime,
+                                                  ViewIdx* passThroughView,
+                                                  int* passThroughInputNb)
 {
 
 
     EffectTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, shared_from_this(), time, view, RenderScale(1.)
+    EffectActionArgsSetter_RAII actionArgsTls(tls, renderArgs, time, view, RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ false
 #endif
                                               );
 
-    
-    OfxStatus stat;
-    {
 
-        OFX::Host::ImageEffect::ComponentsMap compMap;
-        OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
-        OfxTime ptTime;
-        int ptView_i;
-        stat = effectInstance()->getClipComponentsAction( time, view, compMap, ptClip, ptTime, &ptView_i );
-        if (stat != kOfxStatFailed) {
-            if (ptClip) {
-                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
-                if (clip) {
-                    result->passThroughInputNb = clip->getInputNb();
-                }
-            }
-            result->passThroughTime = ptTime;
-            result->passThroughView = ViewIdx(ptView_i);
-
-            for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
-                OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
-                assert(clip);
-                if (clip) {
-                    int index = clip->getInputNb();
-                    std::vector<ImageComponents> compNeeded;
-                    for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                        ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
-                        if (ofxComp.getNumComponents() > 0) {
-                            compNeeded.push_back(ofxComp);
-                        }
-                    }
-                    result->comps.insert( std::make_pair(index, compNeeded) );
-                }
-            }
+    OFX::Host::ImageEffect::ComponentsMap compMap;
+    OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
+    OfxTime ptTime;
+    int ptView_i;
+    OfxStatus stat = effectInstance()->getClipComponentsAction( time, view, compMap, ptClip, ptTime, &ptView_i );
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
+    }
+    *passThroughInputNb = -1;
+    if (ptClip) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(ptClip);
+        if (clip) {
+            *passThroughInputNb = clip->getInputNb();
         }
-    } // ClipsThreadStorageSetter
-}
+    }
+    *passThroughTime = ptTime;
+    *passThroughView = ViewIdx(ptView_i);
+
+    for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
+        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->first);
+        assert(clip);
+        if (clip) {
+            int index = clip->getInputNb();
+            std::vector<ImageComponents> compsVec;
+            for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
+                if (ofxComp.getNumComponents() > 0) {
+                    compsVec.push_back(ofxComp);
+                }
+            }
+            compsNeeded->insert( std::make_pair(index, compsVec) );
+        }
+    }
+    return eStatusOK;
+} // getComponentsNeededAndProduced
 
 bool
 OfxEffectInstance::isMultiPlanar() const
@@ -2952,6 +2907,12 @@ OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bo
     double propV[4] = {rectangle.x1, rectangle.y1, rectangle.x2, rectangle.y2};
     effectInstance()->getProps().setDoublePropertyN(kNatronOfxImageEffectSelectionRectangle, propV, 4);
     k->setValue(onRelease ? 2 : 1);
+}
+
+EffectTLSDataPtr
+OfxEffectInstance::getTLSObject() const
+{
+    return _imp->tlsData->getTLSData();
 }
 
 NATRON_NAMESPACE_EXIT;

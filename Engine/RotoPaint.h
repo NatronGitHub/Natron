@@ -419,9 +419,6 @@ public:
 
     RotoPaint::RotoPaintTypeEnum getRotoPaintNodeType() const;
 
-    virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
-
-
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -438,7 +435,7 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

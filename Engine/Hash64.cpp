@@ -41,6 +41,9 @@ NATRON_NAMESPACE_ENTER;
 void
 Hash64::computeHash()
 {
+    if (hashValid) {
+        return;
+    }
     if ( node_values.empty() ) {
         return;
     }
@@ -49,6 +52,7 @@ Hash64::computeHash()
     boost::crc_optimal<64, 0x42F0E1EBA9EA3693ULL, 0, 0, false, false> crc_64;
     crc_64 = std::for_each( data, data + node_values.size() * sizeof(node_values[0]), crc_64 );
     hash = crc_64();
+    hashValid = true;
 }
 
 void
@@ -56,6 +60,7 @@ Hash64::reset()
 {
     node_values.clear();
     hash = 0;
+    hashValid = false;
 }
 
 void
