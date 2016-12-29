@@ -484,7 +484,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
         assert(it->second.size() > 0);
 
         for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
-            PluginPtr plugin  = *itver;
+            PluginPtr plugin = *itver;
             assert(plugin);
             if (plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly)) {
                 continue;

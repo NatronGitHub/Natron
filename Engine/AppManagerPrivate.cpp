@@ -266,7 +266,9 @@ AppManagerPrivate::findPluginById(const std::string& newId,
                                   int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin();
+             itver != it->second.rend();
+             ++itver) {
             if ( ( (*itver)->getPluginID() == newId ) &&
                    (major == -1 ||
                     (*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) &&

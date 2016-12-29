@@ -1643,8 +1643,6 @@ AppManager::onAllPluginsLoaded()
             if ( (*itver)->getIsUserCreatable() ) {
                 (*itver)->setLabelWithoutSuffix(labelWithoutSuffix);
                 onPluginLoaded(*itver);
-            } else {
-
             }
         }
     }
@@ -2403,7 +2401,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
 
             // see also OFX::Host::PluginCache::getPluginById()
             // see also AppManager::getPluginBinary()
-            
+
             // Let's be a bit smarter than HostSupport.
             // The best compatible plugin is, by order of preference
             // - the plugin with the same major version and the highest minor
@@ -2494,7 +2492,9 @@ AppManager::getPluginBinary(const QString & pluginId,
         // (thus the reverse iterator)
         PluginPtr nextPlugin = *(foundID->second.rbegin());
         int nextVersion = (int)nextPlugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
-        for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin(); itver != foundID->second.rend(); ++itver) {
+        for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin();
+             itver != foundID->second.rend();
+             ++itver) {
             int thisMajorVersion = (int)(*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
             if (thisMajorVersion == majorVersion) {
                 return *itver;
