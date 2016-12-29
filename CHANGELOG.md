@@ -7,6 +7,7 @@
 ## Version 2.1.10
 
 - Roto & RotoPaint: ellipses and circles are more accurate #1524
+- When a plugin is not available with the right major version, use the smallest major version above for better compatibility (before that change, the highest major version was returned)
 
 ### Plugins
 
