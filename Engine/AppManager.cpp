@@ -2197,10 +2197,8 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
                            thisMajorVersion < nextVersion) {
                     nextPlugin = *itver;
                     nextVersion = thisMajorVersion;
-                } else {
-                    assert(thisMajorVersion < majorVersion);
-                    // no need to continue, there is no version >= majorVersion,
-                    // take the highest available
+                } else if (thisMajorVersion < majorVersion) {
+                    // no need to continue
                     break;
                 }
             }
@@ -2272,10 +2270,8 @@ AppManager::getPluginBinary(const QString & pluginId,
                        thisMajorVersion < nextVersion) {
                 nextPlugin = *itver;
                 nextVersion = thisMajorVersion;
-            } else {
-                assert(thisMajorVersion < majorVersion);
-                // no need to continue, there is no version >= majorVersion,
-                // take the highest available
+            } else if (thisMajorVersion < majorVersion) {
+                // no need to continue
                 break;
             }
         }
