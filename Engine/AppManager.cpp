@@ -2194,7 +2194,7 @@ AppManager::getPluginBinary(const QString & pluginId,
     Q_UNUSED(minorVersion);
     
     if (!convertToLowerCase) {
-        foundID = _imp->_plugins.at(pluginId);
+        foundID = _imp->_plugins.find( pluginId.toStdString() );
     } else {
         foundID = _imp->_plugins.end();
         for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
