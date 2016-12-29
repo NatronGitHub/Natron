@@ -2411,6 +2411,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
             // For example, if versions (1,0) (1,2) (3,1) (3,4) (4,2) are available,
             // - asking for (1,0) returns (1,2)
             // - asking for (2,7) returns (3,4)
+            // - asking for (3,1) returns (3,4)
             // - asking for (6,0) returns (4,2)
 
             // Try to find the exact major version, with the highest minor
@@ -2484,6 +2485,7 @@ AppManager::getPluginBinary(const QString & pluginId,
         // For example, if versions (1,0) (1,2) (3,1) (3,4) (4,2) are available,
         // - asking for (1,0) returns (1,2)
         // - asking for (2,7) returns (3,4)
+        // - asking for (3,1) returns (3,4)
         // - asking for (6,0) returns (4,2)
 
         // Try to find the exact major version, with the highest minor
