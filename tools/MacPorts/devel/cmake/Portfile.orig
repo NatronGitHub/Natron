@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id$
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -54,12 +53,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20161220
+    version         20161226
     set dist_branch 3.7
-    set dist_date   20161220
-    set dist_hash   ga1d71
-    checksums       rmd160 5582e51c0aac20fb3c6ab9f092ae1bc6e9d0579c \
-                    sha256 2b0465b4fcfe8fc6d0330f6cf25c245bae5a5115f1a76e1d3e1f07dcc6d323b8
+    set dist_date   20161223
+    set dist_hash   g189050
+    checksums       rmd160 0ca7e571e938fdc0ca269a711af7ca472ecd4467 \
+                    sha256 851c98377a8a94816570cc36b3b6953ab75c4fa1ffc140d727b54b64db7429e3
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}

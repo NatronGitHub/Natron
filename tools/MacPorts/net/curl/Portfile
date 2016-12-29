@@ -1,10 +1,9 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id$
 
 PortSystem                      1.0
 
 name                            curl
-version                         7.51.0
+version                         7.52.1
 categories                      net www
 platforms                       darwin freebsd
 maintainers                     ryandesign
@@ -28,19 +27,17 @@ set curl_distfile               ${distfiles}
 distfiles                       ${curl_distfile}:curl
 
 checksums                       ${curl_distfile} \
-                                rmd160  234ca5a35fb911ad8428799c7186f07ae5df5965 \
-                                sha256  7f8240048907e5030f67be0a6129bc4b333783b9cca1391026d700835a788dde
+                                rmd160  fa55d67d8a075a49fa3d777bb6c692598886d1f1 \
+                                sha256  d16185a767cb2c1ba3d5b9096ec54e5ec198b213f45864a38b3bda4bbf87389b
 
 if {${name} eq ${subport}} {
     PortGroup                   muniversal 1.0
 
-    revision                    1
+    revision                    0
 
     depends_build               port:pkgconfig
 
     depends_lib                 port:zlib
-
-    patchfiles                  patch-curl.h.diff
 
     configure.args              --disable-silent-rules \
                                 --enable-ipv6 \
@@ -204,10 +201,6 @@ if {${name} eq ${subport}} {
 
     if {![variant_isset gnutls] && ![variant_isset darwinssl] && ![variant_isset wolfssl]} {
         default_variants +ssl
-    }
-
-    if {[string match *gcc* ${configure.cc}]} {
-        patchfiles-append       partial-availability.patch
     }
 
     livecheck.type              regex
