@@ -1768,7 +1768,7 @@ Settings::restorePluginSettings()
         }
         assert(it->second.size() > 0);
 
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             Plugin* plugin  = *it2;
             assert(plugin);
 
@@ -1825,7 +1825,7 @@ Settings::savePluginsSettings()
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert(it->second.size() > 0);
 
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             Plugin* plugin  = *it2;
             assert(plugin);
 

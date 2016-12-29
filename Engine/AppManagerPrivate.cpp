@@ -271,7 +271,7 @@ AppManagerPrivate::findPluginById(const QString& newId,
                                   int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             if ( ( (*it2)->getPluginID() == newId ) && ( (*it2)->getMajorVersion() == major ) && ( (*it2)->getMinorVersion() == minor ) ) {
                 return (*it2);
             }

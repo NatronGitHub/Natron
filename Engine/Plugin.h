@@ -373,17 +373,20 @@ public:
     PluginOpenGLRenderSupport getPluginOpenGLRenderSupport() const;
 };
 
-struct Plugin_compare_major
+struct Plugin_compare_version
 {
     bool operator() (const Plugin* const lhs,
                      const Plugin* const rhs) const
     {
-        return lhs->getMajorVersion() < rhs->getMajorVersion();
+        // see also OFX::Host::Plugin::trumps()
+        return ( ( lhs->getMajorVersion() < rhs->getMajorVersion() ) ||
+                ( ( lhs->getMajorVersion() == rhs->getMajorVersion() ) &&
+                  ( lhs->getMinorVersion() < rhs->getMinorVersion() ) ) );
     }
 };
 
-typedef std::set<Plugin*, Plugin_compare_major> PluginMajorsOrdered;
-typedef std::map<std::string, PluginMajorsOrdered> PluginsMap;
+typedef std::set<Plugin*, Plugin_compare_version> PluginVersionsOrdered;
+typedef std::map<std::string, PluginVersionsOrdered> PluginsMap;
 
 struct IOPluginEvaluation
 {

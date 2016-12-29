@@ -401,7 +401,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& initialFilter,
             ++i;
         } else {
             QString bestMajorName;
-            for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+            for (PluginVersionsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 if ( !(*it2)->getIsUserCreatable() ) {
                     continue;
                 }
@@ -468,7 +468,7 @@ NodeCreationDialog::getNodeName(int *major) const
                 return ret;
             }
         } else {
-            for (PluginMajorsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+            for (PluginVersionsOrdered::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
                 if ( it2 == it->second.rbegin() ) {
                     if ( (*it2)->generateUserFriendlyPluginID() == name ) {
                         *major = (*it2)->getMajorVersion();

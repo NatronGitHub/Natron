@@ -495,7 +495,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
         }
         assert(it->second.size() > 0);
 
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             Plugin* plugin  = *it2;
             assert(plugin);
             if ( plugin->getIsForInternalUseOnly() ) {
