@@ -25,10 +25,12 @@
 #include "OSGLContext.h"
 
 #include <stdexcept>
-#include <QDebug>
-#include <QMutex>
-#include <QWaitCondition>
-#include <QThread>
+#include <sstream> // stringstream
+
+#include <QtCore/QDebug>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QThread>
 
 #include "Engine/OSGLFunctions.h"
 #ifdef __NATRON_WIN32__

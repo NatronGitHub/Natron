@@ -391,17 +391,20 @@ public:
 
 };
 
-struct Plugin_compare_major
+struct Plugin_compare_version
 {
     bool operator() (const PluginPtr& lhs,
                      const PluginPtr& rhs) const
     {
-        return lhs->getMajorVersion() < rhs->getMajorVersion();
+        // see also OFX::Host::Plugin::trumps()
+        return ( ( lhs->getMajorVersion() < rhs->getMajorVersion() ) ||
+                ( ( lhs->getMajorVersion() == rhs->getMajorVersion() ) &&
+                  ( lhs->getMinorVersion() < rhs->getMinorVersion() ) ) );
     }
 };
 
-typedef std::set<PluginPtr, Plugin_compare_major> PluginMajorsOrdered;
-typedef std::map<std::string, PluginMajorsOrdered> PluginsMap;
+typedef std::set<PluginPtr, Plugin_compare_version> PluginVersionsOrdered;
+typedef std::map<std::string, PluginVersionsOrdered> PluginsMap;
 
 struct IOPluginEvaluation
 {

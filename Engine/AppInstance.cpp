@@ -28,6 +28,7 @@
 #include <list>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>

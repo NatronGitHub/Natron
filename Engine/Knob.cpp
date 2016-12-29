@@ -28,6 +28,26 @@
 #include "KnobGetValueImpl.h"
 #include "KnobSetValueImpl.h"
 
+#include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
+#include <sstream> // stringstream
+
+#include <QtCore/QDataStream>
+#include <QtCore/QDateTime>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
+#include <QtCore/QDebug>
+
+#include "Global/GlobalDefines.h"
+
+#include "Engine/AppInstance.h"
+#include "Engine/AppManager.h"
+#include "Engine/Curve.h"
+#include "Engine/DockablePanelI.h"
+#include "Engine/Hash64.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobGuiI.h"
 #include "Engine/KnobTypes.h"
 
 SERIALIZATION_NAMESPACE_USING

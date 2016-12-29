@@ -25,7 +25,6 @@
 #include "Gui.h"
 
 #include <cassert>
-#include <sstream> // stringstream
 #include <algorithm> // min, max
 #include <map>
 #include <list>

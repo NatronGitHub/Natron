@@ -25,7 +25,7 @@
 #include "OSGLContext_win.h"
 
 #ifdef __NATRON_WIN32__
-#include <sstream>
+#include <sstream> // stringstream
 
 #include <QtCore/QtGlobal>      // for Q_UNUSED
 

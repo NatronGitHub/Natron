@@ -29,6 +29,7 @@
 #include <bitset>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>

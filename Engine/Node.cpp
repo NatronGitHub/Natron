@@ -30,6 +30,7 @@
 #include <bitset>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include "Global/Macros.h"
 

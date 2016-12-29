@@ -26,7 +26,7 @@
 #include "EffectInstancePrivate.h"
 
 #include <map>
-#include <sstream>
+#include <sstream> // stringstream
 #include <algorithm> // min, max
 #include <fstream>
 #include <bitset>

@@ -26,6 +26,7 @@
 #include "NodeGraph.h"
 
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QDebug>
 

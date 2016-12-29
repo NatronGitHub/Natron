@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

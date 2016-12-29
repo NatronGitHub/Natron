@@ -24,7 +24,7 @@
 
 #include "Markdown.h"
 
-#include <sstream>
+#include <sstream> // stringstream
 
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)

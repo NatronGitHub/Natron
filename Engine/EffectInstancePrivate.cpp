@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"

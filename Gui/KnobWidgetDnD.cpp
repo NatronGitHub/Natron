@@ -24,6 +24,8 @@
 
 #include "KnobWidgetDnD.h"
 
+#include <sstream> // stringstream
+
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QDrag>

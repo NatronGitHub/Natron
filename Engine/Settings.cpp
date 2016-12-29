@@ -2055,8 +2055,8 @@ Settings::restorePluginSettings()
         }
         assert(it->second.size() > 0);
 
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            PluginPtr plugin  = *it2;
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            PluginPtr plugin  = *itver;
             assert(plugin);
 
             if ( plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly) ) {
@@ -2112,8 +2112,8 @@ Settings::savePluginsSettings()
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert(it->second.size() > 0);
 
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            PluginPtr plugin  = *it2;
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            PluginPtr plugin  = *itver;
             assert(plugin);
 
             QString pluginID = QString::fromUtf8(plugin->getPluginID().c_str()) + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
