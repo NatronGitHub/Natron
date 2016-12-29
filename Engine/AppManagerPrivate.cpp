@@ -265,15 +265,23 @@ AppManagerPrivate::loadBuiltinFormats()
     }
 } // loadBuiltinFormats
 
+//
+// only used for Natron internal plugins (ViewerGroup, Dot, DiskCache, BackDrop, Roto)
+// see also AppManager::getPluginBinary(), OFX::Host::PluginCache::getPluginById()
+//
 Plugin*
 AppManagerPrivate::findPluginById(const QString& newId,
                                   int major,
                                   int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( ( (*it2)->getPluginID() == newId ) && ( (*it2)->getMajorVersion() == major ) && ( (*it2)->getMinorVersion() == minor ) ) {
-                return (*it2);
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin();
+             itver != it->second.rend();
+             ++itver) {
+            if ( ( (*itver)->getPluginID() == newId ) &&
+                 ( (*itver)->getMajorVersion() == major ) &&
+                 ( (*itver)->getMinorVersion() == minor ) ) {
+                return (*itver);
             }
         }
     }

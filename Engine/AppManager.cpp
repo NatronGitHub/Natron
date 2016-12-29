@@ -529,8 +529,8 @@ AppManager::~AppManager()
     }
 
     for (PluginsMap::iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
-        for (PluginVersionsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            delete *it2;
+        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            delete *itver;
         }
     }
 
@@ -1466,13 +1466,13 @@ AppManager::onAllPluginsLoaded()
         if (it->second.empty()) {
             continue;
         }
-        PluginVersionsOrdered::iterator first = it->second.begin();
+        PluginVersionsOrdered::reverse_iterator first = it->second.rbegin();
         bool isUserCreatable = false;
-        for (PluginVersionsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( (*it2)->getIsUserCreatable() ) {
+        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            if ( (*itver)->getIsUserCreatable() ) {
                 isUserCreatable = true;
             } else {
-                (*it2)->setLabelWithoutSuffix((*it2)->getPluginLabel());
+                (*itver)->setLabelWithoutSuffix( (*itver)->getPluginLabel() );
             }
         }
         if (!isUserCreatable) {
@@ -1488,10 +1488,10 @@ AppManager::onAllPluginsLoaded()
             }
 
 
-            PluginVersionsOrdered::iterator other = it2->second.begin();
+            PluginVersionsOrdered::reverse_iterator other = it2->second.rbegin();
             bool isOtherUserCreatable = false;
-            for (PluginVersionsOrdered::iterator it3 = it2->second.begin(); it3 != it2->second.end(); ++it3) {
-                if ( (*it3)->getIsUserCreatable() ) {
+            for (PluginVersionsOrdered::reverse_iterator it2ver = it2->second.rbegin(); it2ver != it2->second.rend(); ++it2ver) {
+                if ( (*it2ver)->getIsUserCreatable() ) {
                     isOtherUserCreatable = true;
                     break;
                 }
@@ -1514,10 +1514,10 @@ AppManager::onAllPluginsLoaded()
         }
 
 
-        for (PluginVersionsOrdered::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( (*it2)->getIsUserCreatable() ) {
-                (*it2)->setLabelWithoutSuffix(labelWithoutSuffix);
-                onPluginLoaded(*it2);
+        for (PluginVersionsOrdered::reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            if ( (*itver)->getIsUserCreatable() ) {
+                (*itver)->setLabelWithoutSuffix(labelWithoutSuffix);
+                onPluginLoaded(*itver);
             }
         }
     }
@@ -2154,9 +2154,9 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
     ///Try remapping these ids to old ids we had in Natron < 1.0 for backward-compat
     for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
         assert( !it->second.empty() );
-        PluginVersionsOrdered::const_iterator it2 = it->second.begin();
-        QString friendlyLabel = (*it2)->getPluginLabel();
-        const QStringList& s = (*it2)->getGrouping();
+        PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin();
+        QString friendlyLabel = (*itver)->getPluginLabel();
+        const QStringList& s = (*itver)->getGrouping();
         QString grouping;
         if (s.size() > 0) {
             grouping = s[0];
@@ -2169,15 +2169,46 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
                 return *( it->second.rbegin() );
             }
 
-            //Look for the exact version
-            for (; it2 != it->second.end(); ++it2) {
-                if ( (*it2)->getMajorVersion() == majorVersion ) {
-                    return *it2;
+            PluginsMap::const_iterator foundID = it;
+            
+            // see also OFX::Host::PluginCache::getPluginById()
+            // see also AppManager::getPluginBinary()
+
+            // Let's be a bit smarter than HostSupport.
+            // The best compatible plugin is, by order of preference
+            // - the plugin with the same major version and the highest minor
+            // - the plugin with the closest major above and the highest minor
+            // - the plugin with the highest major and the highest minor
+            //
+            // For example, if versions (1,0) (1,2) (3,1) (3,4) (4,2) are available,
+            // - asking for (1,0) returns (1,2)
+            // - asking for (2,7) returns (3,4)
+            // - asking for (6,0) returns (4,2)
+
+            // Try to find the exact major version, with the highest minor
+            // (thus the reverse iterator)
+            Plugin* nextPlugin = *(foundID->second.rbegin());
+            int nextVersion = nextPlugin->getMajorVersion();
+            for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin(); itver != foundID->second.rend(); ++itver) {
+                int thisMajorVersion = (*itver)->getMajorVersion();
+                if (thisMajorVersion == majorVersion) {
+                    return *itver;
+                } else if (thisMajorVersion > majorVersion &&
+                           thisMajorVersion < nextVersion) {
+                    nextPlugin = *itver;
+                    nextVersion = thisMajorVersion;
+                } else {
+                    assert(thisMajorVersion < majorVersion);
+                    // no need to continue, there is no version >= majorVersion,
+                    // take the highest available
+                    break;
                 }
             }
+            assert(nextPlugin != NULL); // there should be at least one version
 
-            ///Could not find the exact version... let's just use the highest version found
-            return *( it->second.rbegin() );
+            // Could not find the exact version... get the major version above,
+            // else the highest version.
+            return nextPlugin;
         }
     }
 
@@ -2190,12 +2221,10 @@ AppManager::getPluginBinary(const QString & pluginId,
                             int minorVersion,
                             bool convertToLowerCase) const
 {
-    PluginsMap::const_iterator foundID;
     Q_UNUSED(minorVersion);
     
-    if (!convertToLowerCase) {
-        foundID = _imp->_plugins.find( pluginId.toStdString() );
-    } else {
+    PluginsMap::const_iterator foundID = _imp->_plugins.find( pluginId.toStdString() );
+    if ( convertToLowerCase && foundID == _imp->_plugins.end() ) {
         foundID = _imp->_plugins.end();
         for (PluginsMap::const_iterator it = _imp->_plugins.begin(); it != _imp->_plugins.end(); ++it) {
             QString pID = QString::fromUtf8( it->first.c_str() );
@@ -2206,11 +2235,6 @@ AppManager::getPluginBinary(const QString & pluginId,
                     break;
                 }
             }
-
-            if (pID == pluginId) {
-                foundID = it;
-                break;
-            }
         }
     }
 
@@ -2218,6 +2242,7 @@ AppManager::getPluginBinary(const QString & pluginId,
         assert( !foundID->second.empty() );
 
         // see also OFX::Host::PluginCache::getPluginById()
+        // see also AppManager::getPluginBinaryFromOldID()
 
         if (majorVersion == -1) {
             // -1 means we want to load the highest version existing
@@ -2239,13 +2264,13 @@ AppManager::getPluginBinary(const QString & pluginId,
         // (thus the reverse iterator)
         Plugin* nextPlugin = *(foundID->second.rbegin());
         int nextVersion = nextPlugin->getMajorVersion();
-        for (PluginVersionsOrdered::const_reverse_iterator it = foundID->second.rbegin(); it != foundID->second.rend(); ++it) {
-            int thisMajorVersion = (*it)->getMajorVersion();
+        for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin(); itver != foundID->second.rend(); ++itver) {
+            int thisMajorVersion = (*itver)->getMajorVersion();
             if (thisMajorVersion == majorVersion) {
-                return *it;
+                return *itver;
             } else if (thisMajorVersion > majorVersion &&
                        thisMajorVersion < nextVersion) {
-                nextPlugin = *it;
+                nextPlugin = *itver;
                 nextVersion = thisMajorVersion;
             } else {
                 assert(thisMajorVersion < majorVersion);

@@ -1768,8 +1768,8 @@ Settings::restorePluginSettings()
         }
         assert(it->second.size() > 0);
 
-        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            Plugin* plugin  = *itver;
             assert(plugin);
 
             if ( plugin->getIsForInternalUseOnly() ) {
@@ -1825,8 +1825,8 @@ Settings::savePluginsSettings()
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
         assert(it->second.size() > 0);
 
-        for (PluginVersionsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            Plugin* plugin  = *it2;
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            Plugin* plugin  = *itver;
             assert(plugin);
 
             QString pluginID = plugin->getPluginID() + QString::fromUtf8("_") + QString::number( plugin->getMajorVersion() ) + QString::fromUtf8("_") + QString::number( plugin->getMinorVersion() );
