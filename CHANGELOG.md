@@ -17,7 +17,7 @@
 - ColorLookup: fix a bug where output was always clamped to (0,1) #1533
 - Grade: fix a bug where negative values were clamped even when gamma=1 #1533
 - STMap, IDistort, LensDistortion, Transform, CornerPin: reduce supersampling to avoid artifacts
-- LensDistortion: add STMap output mode, add undistort output, add PFBarrel distortion model.
+- LensDistortion: add STMap output mode, add undistort output, add PFBarrel and 3DEqualizer distortions model, add proper region of definition support.
 
 ## Version 2.1.9
 
