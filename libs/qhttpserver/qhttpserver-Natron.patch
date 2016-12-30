@@ -342,3 +342,15 @@ diff -ur qhttpserver/src/src.pro Natron/libs/qhttpserver/src/src.pro
 -headers.path = $$INCLUDEDIR
 -headers.files = $$PUBLIC_HEADERS
 -INSTALLS += target headers
+diff -ur qhttpserver/src/qhttpconnection.cpp Natron/libs/qhttpserver/src/qhttpconnection.cpp
+index e23959bc9..b5b472c90 100644
+--- qhttpserver/src/qhttpconnection.cpp
++++ Natron/libs/qhttpserver/src/qhttpconnection.cpp
+@@ -22,6 +22,7 @@
+ 
+ #include "qhttpconnection.h"
+ 
++#include <stdlib.h> // malloc, free
+ #include <QTcpSocket>
+ #include <QHostAddress>
+ 
