@@ -83,7 +83,7 @@ If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) pl
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    sudo port -v install ImageMagick +natron poppler librevenge libcdr-0.1
+    sudo port -v install ImageMagick +natron poppler librevenge libcdr-0.1 libzip
 
 ### Homebrew
 
