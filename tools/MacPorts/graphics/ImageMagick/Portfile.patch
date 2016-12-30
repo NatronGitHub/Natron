@@ -1,5 +1,5 @@
---- Portfile.orig	2016-11-28 16:26:52.000000000 +0100
-+++ Portfile	2016-11-28 16:31:39.000000000 +0100
+--- Portfile.orig	2016-11-29 09:41:54.000000000 +0100
++++ Portfile	2016-12-30 09:32:21.000000000 +0100
 @@ -65,6 +65,8 @@
                              port:expat \
                              port:libxml2
@@ -23,11 +23,20 @@
                              --with-openjp2 \
                              --with-png \
                              --with-tiff \
-@@ -113,6 +117,79 @@
+@@ -113,6 +117,74 @@
                              --without-x \
                              --with-gs-font-dir=${prefix}/share/fonts/urw-fonts
  
-+variant natron conflicts x11 requires pango rsvg q32 hdri gcc49 universal description {Natron version} {
++variant natron conflicts x11 requires pango rsvg q32 hdri universal description {Natron version} {
++    if {${configure.cxx_stdlib} eq "libstdc++"} {
++        # configure with GCC 4.9 for proper OpenMP support
++        configure.compiler macports-gcc-4.9
++    } else {
++        # libc++-based build
++        # configure with clang-3.9 for proper OpenMP support
++        configure.compiler macports-clang-3.9
++    }
++    configure.args-append --enable-openmp
 +    patchfiles-append pango-align-hack.diff
 +    depends_lib-delete      port:ghostscript
 +    configure.args-replace  --with-dps --without-dps
@@ -68,20 +77,6 @@
 +    }
 +}
 +
-+variant gcc49 description {Compile with GCC/G++ 4.9} {
-+    # configure with GCC 4.9 for proper OpenMP support
-+    configure.compiler macports-gcc-4.9
-+    configure.args-append --enable-openmp
-+    #if {[variant_isset universal]} {
-+    #    # use the driverdriver (built using https://github.com/devernay/macportsGCCfixup) to be able to build universal binaries
-+    #    if {[file tail ${configure.cmd}] != "cmake"} {
-+    #        configure.args-append   CC=${configure.cc}-dd CXX=${configure.cxx}-dd
-+    #    } else {
-+    #        configure.args-append   -DCMAKE_C_COMPILER=${configure.cc}-dd -DCMAKE_CXX_COMPILER=${configure.cxx}-dd
-+    #    }
-+    #}
-+}
-+
 +# OpenMP support seems to be broken in gcc 4.2.1 and llvm-gcc-4.2 (OpenMP can only be used in the main thread):
 +# http://sourceforge.net/tracker/index.php?func=detail&aid=1964341&group_id=170962&atid=856209
 +# http://gcc.gnu.org/bugzilla/show_bug.cgi?id=36242
@@ -103,10 +98,19 @@
  test.run                    yes
  test.target                 check
  test.env                    DYLD_LIBRARY_PATH=${worksrcpath}/magick/.libs
-@@ -120,6 +197,14 @@
+@@ -120,6 +192,23 @@
  # ImageMagick uses .la files at runtime to find its coder modules.
  destroot.delete_la_files    no
  
++post-destroot {
++    if {${configure.cxx_stdlib} eq "libc++"} {
++        # The pkg-config files contain -lgomp instead of -L/opt/local/lib/libomp -omp
++        foreach f [glob -directory ${destroot}${prefix}/lib/pkgconfig Magick*pc Wand*pc ImageMagick*pc] {
++            reinplace -locale C {/Libs: /s:-lgomp:-L{prefix}/lib/libomp -lomp:g} ${f}
++        }
++    }
++}
++
 +variant q32 description {Use Q32 quantum depth} {
 +    configure.args-append   --with-quantum-depth=32
 +}
@@ -118,7 +122,7 @@
  variant graphviz description {Support Graphviz} {
      depends_lib-append      path:bin/dot:graphviz
      configure.args-replace  --without-gvc --with-gvc
-@@ -154,6 +239,11 @@
+@@ -154,6 +243,11 @@
  
  default_variants            +x11
  
