@@ -27,6 +27,7 @@
 
 #include "StubNode.h"
 
+#include <sstream> // stringstream
 #include <QMutex>
 
 #include "Engine/AppManager.h"

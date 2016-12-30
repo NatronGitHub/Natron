@@ -20,6 +20,7 @@
 #include <cfloat>
 #include <climits>
 #include <iostream>
+#include <sstream> // stringstream
 
 #include <yaml-cpp/yaml.h>
 

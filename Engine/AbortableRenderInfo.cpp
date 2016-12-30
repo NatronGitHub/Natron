@@ -25,7 +25,7 @@
 #include "AbortableRenderInfo.h"
 
 #include <set>
-#include <sstream>
+#include <sstream> // stringstream
 #include <string>
 #include <cassert>
 

@@ -23,7 +23,7 @@
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
 
-#include <sstream>
+#include <sstream> // stringstream
 
 #include "Global/Macros.h"
 

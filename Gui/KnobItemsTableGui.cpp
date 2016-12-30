@@ -26,6 +26,7 @@
 #include "KnobItemsTableGui.h"
 
 #include <map>
+#include <sstream> // stringstream
 
 #include <QApplication>
 #include <QHBoxLayout>
