@@ -2476,7 +2476,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     // We may have copied the TLS from a thread that spawned us. The other thread might have already started the render actino:
     // ensure that we start this thread with a clean state.
     tls->actionRecursionLevel = 0;
+#ifdef DEBUG
     tls->canSetValue.clear();
+#endif
     tls->currentRenderArgs = RenderArgs();
 
     // renderMappedRectToRender is in the mapped mipmap level, i.e the expected mipmap level of the render action of the plug-in
