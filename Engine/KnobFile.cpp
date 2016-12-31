@@ -77,7 +77,7 @@ KnobFile::reloadFile()
         effect->purgeCaches();
         effect->clearPersistentMessage(false);
     }
-    evaluateValueChange(DimSpec(0), getCurrentTime(), ViewSetSpec(0), eValueChangedReasonUserEdited);
+    evaluateValueChange(DimSpec(0), getHolder()->getTimelineCurrentTime(), ViewSetSpec(0), eValueChangedReasonUserEdited);
 }
 
 bool
@@ -109,7 +109,7 @@ KnobFile::getRawFileName(DimIdx dimension, ViewIdx view)
 std::string
 KnobFile::getValue(DimIdx dimension, ViewIdx view, bool clampToMinMax)
 {
-    return getValueAtTime(getCurrentTime(), dimension, view, clampToMinMax);
+    return getValueAtTime(getCurrentTime_TLS(), dimension, view, clampToMinMax);
 }
 
 std::string

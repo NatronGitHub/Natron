@@ -82,12 +82,11 @@ public:
         // full region of definition wil be rendered.
         const RectD* canonicalRoI;
 
-        // If non-null this is the layers to render
-        // Otherwise the layers rendered will be the components needed in output by the plug-in
+        // The layers to render
         const std::list<ImageComponents>* layers;
 
-        // mip-map level at which to Render
-        unsigned int mipMapLevel;
+        // scale at which to Render
+        RenderScale scale;
         
         // True if the render should be draft (i.e: low res) because user is anyway
         // scrubbing timeline or a slider
@@ -120,9 +119,20 @@ public:
      * Once initialized this will render the image and return it in renderedImage.
      * The return code of render can be obtained in renderStatus
      **/
-    static RenderRoIRetCode renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes);
+    static RenderRoIRetCode launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes);
+
 
     virtual ~TreeRender();
+
+    /**
+    * @brief Get the frame of the render
+    **/
+    TimeValue getTime() const;
+
+    /**
+     * @brief Get the view of the render
+     **/
+    ViewIdx getView() const;
 
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
@@ -145,11 +155,31 @@ public:
     bool isDraftRender() const;
 
     /**
+     * @brief If true, effects should always render at least once during the render of the tree
+     **/
+    bool isByPassCacheEnabled() const;
+
+    /**
      * @brief Returns arguments that are specific to the given node by that remain the same throughout the render of the frame, even if multiple time/view
      * are rendered.
      **/
-    TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;    
+    TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;
 
+    /**
+     * @brief The root node in the tree (i.e: the effect from which we want the results)
+     **/
+    NodePtr getTreeRoot() const;
+
+    /**
+     * @brief Returns the object used to gather stats for this rende
+     **/
+    RenderStatsPtr getStatsObject() const;
+
+    /**
+     * @brief Get the OpenGL context associated to this render
+     **/
+    OSGLContextPtr getGPUOpenGLContext() const;
+    OSGLContextPtr getCPUOpenGLContext() const;
 
 private Q_SLOTS:
 

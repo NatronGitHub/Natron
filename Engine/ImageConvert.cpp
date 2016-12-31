@@ -1120,13 +1120,69 @@ convertGLTextureToRGBAPackedCPUBuffer(const GLCacheEntryPtr& texture,
     }
 }
 
+
+class CopyPixelsProcessor : public ImageMultiThreadProcessorBase
+{
+    Image::CPUTileData _srcTileData, _dstTileData;
+    Image::CopyPixelsArgs _copyArgs;
+public:
+
+    CopyPixelsProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    : ImageMultiThreadProcessorBase(renderArgs)
+    , _srcTileData()
+    , _dstTileData()
+    , _copyArgs()
+    {
+
+    }
+
+    virtual ~CopyPixelsProcessor()
+    {
+    }
+
+    void setValues(const Image::CPUTileData& srcTileData,
+                   const Image::CPUTileData& dstTileData,
+                   const Image::CopyPixelsArgs& copyArgs)
+    {
+        _srcTileData = srcTileData;
+        _dstTileData = dstTileData;
+        _copyArgs = copyArgs;
+    }
+
+private:
+
+    virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    {
+        // This function is very optimized and templated for most common cases
+        // In the best optimized case, memcpy is used
+        ImagePrivate::convertCPUImage(renderWindow,
+                                      _copyArgs.srcColorspace,
+                                      _copyArgs.dstColorspace,
+                                      _copyArgs.unPremultIfNeeded,
+                                      _copyArgs.conversionChannel,
+                                      _copyArgs.alphaHandling,
+                                      _copyArgs.monoConversion,
+                                      (const void**)_srcTileData.ptrs,
+                                      _srcTileData.nComps,
+                                      _srcTileData.bitDepth,
+                                      _srcTileData.tileBounds,
+                                      (void**)_dstTileData.ptrs,
+                                      _dstTileData.nComps,
+                                      _dstTileData.bitDepth,
+                                      _dstTileData.tileBounds,
+                                      renderArgs);
+        return eStatusOK;
+    }
+};
+
+
 void
 ImagePrivate::copyRectangle(const Image::Tile& fromTile,
                             StorageModeEnum fromStorage,
-                            Image::ImageBufferLayoutEnum fromLayout,
+                            ImageBufferLayoutEnum fromLayout,
                             const Image::Tile& toTile,
                             StorageModeEnum toStorage,
-                            Image::ImageBufferLayoutEnum toLayout,
+                            ImageBufferLayoutEnum toLayout,
                             const Image::CopyPixelsArgs& args,
                             const TreeRenderNodeArgsPtr& renderArgs)
 {
@@ -1141,8 +1197,8 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         }
 
         // GL texture to GL texture
-        assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect &&
-               toLayout == Image::eImageBufferLayoutRGBAPackedFullRect);
+        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
+               toLayout == eImageBufferLayoutRGBAPackedFullRect);
 
         GLCacheEntryPtr fromIsGLTexture = toGLCacheEntry(fromTile.perChannelTile[0].buffer);
         GLCacheEntryPtr toIsGLTexture = toGLCacheEntry(toTile.perChannelTile[0].buffer);
@@ -1170,8 +1226,8 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         }
 
         // GL texture to CPU
-        assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect &&
-               toLayout == Image::eImageBufferLayoutRGBAPackedFullRect);
+        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
+               toLayout == eImageBufferLayoutRGBAPackedFullRect);
 
         GLCacheEntryPtr fromIsGLTexture = toGLCacheEntry(fromTile.perChannelTile[0].buffer);
         RAMCacheEntryPtr toIsRAMBuffer = toRAMCacheEntry(toTile.perChannelTile[0].buffer);
@@ -1179,7 +1235,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.
         assert(fromIsGLTexture && toIsRAMBuffer);
-        assert(toLayout == Image::eImageBufferLayoutRGBAPackedFullRect && toIsRAMBuffer->getNumComponents() == 4);
+        assert(toLayout == eImageBufferLayoutRGBAPackedFullRect && toIsRAMBuffer->getNumComponents() == 4);
 
         // Save the current context
         OSGLContextSaver saveCurrentContext;
@@ -1199,8 +1255,8 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         }
 
         // CPU to GL texture
-        assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect &&
-               toLayout == Image::eImageBufferLayoutRGBAPackedFullRect);
+        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
+               toLayout == eImageBufferLayoutRGBAPackedFullRect);
 
         GLCacheEntryPtr toIsGLTexture = toGLCacheEntry(toTile.perChannelTile[0].buffer);
         RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(fromTile.perChannelTile[0].buffer);
@@ -1208,7 +1264,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.
         assert(toIsGLTexture && fromIsRAMBuffer);
-        assert(fromLayout == Image::eImageBufferLayoutRGBAPackedFullRect && fromIsRAMBuffer->getNumComponents() == 4);
+        assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect && fromIsRAMBuffer->getNumComponents() == 4);
 
         // Save the current context
         OSGLContextSaver saveCurrentContext;
@@ -1227,7 +1283,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         if (args.skipDestinationTilesMarkedCached) {
             // Don't write over cached tiles
             // Currently it only skips if all channels are mark cached, otherwise it will write over.
-            // This not very important whilst the effects anyway always compute all channels at once.
+            // This not very important: effects for now always compute all channels at once.
             bool hasUncachedTile = false;
             for (std::size_t i = 0; i < toTile.perChannelTile.size(); ++i) {
                 if (!toTile.perChannelTile[i].isCached) {
@@ -1242,123 +1298,14 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         // The pointer to the RGBA channels.
         // If layout is RGBAPacked only the first pointer is valid and points to the RGBA buffer.
         // If layout is RGBACoplanar or mono channel tiled all pointers are set (if they exist).
-        const void* srcPtrs[4] = {0, 0, 0, 0};
-        RectI srcBounds;
-        ImageBitDepthEnum srcBitDepth = eImageBitDepthNone;
-        int srcNComps = 0;
-        void* dstPtrs[4] = {0, 0, 0, 0};
-        RectI dstBounds;
-        ImageBitDepthEnum dstBitDepth = eImageBitDepthNone;
-        int dstNComps = 0;
+        Image::CPUTileData srcTileData, dstTileData;
+        Image::getCPUTileData(fromTile, fromLayout, &srcTileData);
+        Image::getCPUTileData(toTile, toLayout, &dstTileData);
 
-        for (std::size_t i = 0; i < fromTile.perChannelTile.size(); ++i) {
-
-            RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(fromTile.perChannelTile[i].buffer);
-            MemoryMappedCacheEntryPtr fromIsMMAPBuffer = toMemoryMappedCacheEntry(fromTile.perChannelTile[i].buffer);
-
-            if (i == 0) {
-                if (fromIsRAMBuffer) {
-                    srcPtrs[0] = fromIsRAMBuffer->getData();
-                    srcBounds = fromIsRAMBuffer->getBounds();
-                    srcBitDepth = fromIsRAMBuffer->getBitDepth();
-                    srcNComps = fromIsRAMBuffer->getNumComponents();
-
-                    if (fromLayout == Image::eImageBufferLayoutRGBACoplanarFullRect) {
-                        // Coplanar requires offsetting
-                        assert(fromTile.perChannelTile.size() == 1);
-                        std::size_t planeSize = srcNComps * srcBounds.area() * getSizeOfForBitDepth(srcBitDepth);
-                        if (srcNComps > 1) {
-                            srcPtrs[1] = (const char*)srcPtrs[0] + planeSize;
-                            if (srcNComps > 2) {
-                                srcPtrs[2] = (const char*)srcPtrs[1] + planeSize;
-                                if (srcNComps > 3) {
-                                    srcPtrs[3] = (const char*)srcPtrs[2] + planeSize;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    srcPtrs[0] = fromIsMMAPBuffer->getData();
-                    srcBounds = fromIsMMAPBuffer->getBounds();
-                    srcBitDepth = fromIsMMAPBuffer->getBitDepth();
-
-                    // MMAP based storage only support mono channel images
-                    srcNComps = 1;
-                }
-            } else {
-                int channelIndex = fromTile.perChannelTile[i].channelIndex;
-                assert(channelIndex >= 0 && channelIndex < 4);
-                if (fromIsRAMBuffer) {
-                    srcPtrs[channelIndex] = fromIsRAMBuffer->getData();
-                } else {
-                    srcPtrs[channelIndex] = fromIsMMAPBuffer->getData();
-                }
-            }
-        }
-
-        for (std::size_t i = 0; i < toTile.perChannelTile.size(); ++i) {
-            RAMCacheEntryPtr toIsRAMBuffer = toRAMCacheEntry(toTile.perChannelTile[i].buffer);
-            MemoryMappedCacheEntryPtr toIsMMAPBuffer = toMemoryMappedCacheEntry(toTile.perChannelTile[i].buffer);
-
-            if (i == 0) {
-                if (toIsRAMBuffer) {
-                    dstPtrs[0] = toIsRAMBuffer->getData();
-                    dstBounds = toIsRAMBuffer->getBounds();
-                    dstBitDepth = toIsRAMBuffer->getBitDepth();
-                    dstNComps = toIsRAMBuffer->getNumComponents();
-
-                    if (toLayout == Image::eImageBufferLayoutRGBACoplanarFullRect) {
-                        // Coplanar requires offsetting
-                        assert(toTile.perChannelTile.size() == 1);
-                        std::size_t planeSize = dstNComps * dstBounds.area() * getSizeOfForBitDepth(dstBitDepth);
-                        if (dstNComps > 1) {
-                            dstPtrs[1] = (char*)dstPtrs[0] + planeSize;
-                            if (dstNComps > 2) {
-                                dstPtrs[2] = (char*)dstPtrs[1] + planeSize;
-                                if (dstNComps > 3) {
-                                    dstPtrs[3] = (char*)dstPtrs[2] + planeSize;
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    dstPtrs[0] = toIsMMAPBuffer->getData();
-                    dstBounds = toIsMMAPBuffer->getBounds();
-                    dstBitDepth = toIsMMAPBuffer->getBitDepth();
-
-                    // MMAP based storage only support mono channel images
-                    dstNComps = 1;
-                }
-            } else {
-                int channelIndex = fromTile.perChannelTile[i].channelIndex;
-                assert(channelIndex >= 0 && channelIndex < 4);
-                if (toIsRAMBuffer) {
-                    dstPtrs[channelIndex] = toIsRAMBuffer->getData();
-                } else {
-                    dstPtrs[channelIndex] = toIsMMAPBuffer->getData();
-                }
-            }
-        }
-
-        // This function is very optimized and templated for each cases.
-        // In the best optimize case memcpy is used
-#pragma message WARN("We should make use of the multi-thread suite here")
-        convertCPUImage(args.roi,
-                        args.srcColorspace,
-                        args.dstColorspace,
-                        false /*unPremult*/,
-                        args.conversionChannel,
-                        args.alphaHandling,
-                        args.monoConversion,
-                        srcPtrs,
-                        srcNComps,
-                        srcBitDepth,
-                        srcBounds,
-                        dstPtrs,
-                        dstNComps,
-                        dstBitDepth,
-                        dstBounds,
-                        renderArgs);
+        CopyPixelsProcessor processor(renderArgs);
+        processor.setRenderWindow(args.roi);
+        processor.setValues(srcTileData, dstTileData, args);
+        processor.process();
 
     } // storage cases
 } // copyRectangle

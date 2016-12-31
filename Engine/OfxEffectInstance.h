@@ -239,7 +239,7 @@ public:
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, ComponentsNeededMap* result, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
+    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, std::map<int, std::list<ImageComponents> >* inputLayersNeeded, std::list<ImageComponents>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -277,8 +277,6 @@ public:
     void onClipLabelChanged(int inputNb, const std::string& label);
     void onClipHintChanged(int inputNb, const std::string& hint);
     void onClipSecretChanged(int inputNb, bool isSecret);
-
-    EffectTLSDataPtr getTLSObject() const;
 
 public Q_SLOTS:
 

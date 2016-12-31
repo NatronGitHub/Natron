@@ -1139,8 +1139,9 @@ WriteNode::isViewAware() const
     return false;
 }
 
-void
-WriteNode::getFrameRange(double *first,
+StatusEnum
+WriteNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
+                         double *first,
                          double *last)
 {
     NodePtr writer = _imp->embeddedPlugin.lock();
@@ -1148,11 +1149,10 @@ WriteNode::getFrameRange(double *first,
     if (writer) {
         EffectInstancePtr effect = writer->getEffectInstance();
         if (effect) {
-            effect->getFrameRange(first, last);
-            return;
+            return effect->getFrameRange(render, first, last);
         }
     }
-    EffectInstance::getFrameRange(first, last);
+    return EffectInstance::getFrameRange(render, first, last);
     
 }
 

@@ -132,7 +132,7 @@ public:
 
     void refreshSelectionBboxAndRedrawView();
 
-    int getTimelineCurrentTime() const;
+    TimeValue getTimelineCurrentTime() const;
 
     AnimationModuleView* getView() const;
 

@@ -235,6 +235,7 @@ public:
      * @return true if the view was unsplit, false otherwise.
      **/
     virtual bool unSplitView(ViewIdx view);
+    
 
     /**
      * @brief Convenience function, same as calling unSplitView for all views returned by
@@ -243,8 +244,15 @@ public:
     void unSplitAllViews();
 
     /**
+     * @brief Must return the current view in the object context. If the calling thread
+     * is a render thread, this can be the view being rendered by this thread, otherwise this
+     * can be the current view visualized by the UI.
+     **/
+    virtual ViewIdx getCurrentView_TLS() const = 0;
+
+    /**
      * @brief Helper function to use in any getter/setter function when the user gives a ViewIdx
-     * to figure out which view to address.
+     * to figure out which view to address if the view does not exists.
      **/
     ViewIdx getViewIdxFromGetSpec(ViewIdx view) const WARN_UNUSED_RETURN;
 

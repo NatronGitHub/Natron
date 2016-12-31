@@ -57,14 +57,14 @@ struct ImagePrivate
     // The layer represented by this image
     ImageComponents layer;
 
-    // The mipmap level of the image
-    unsigned int mipMapLevel;
+    // The scale of the image
+    RenderScale scale;
 
     // Controls the cache access for the image
-    Image::CacheAccessModeEnum cachePolicy;
+    CacheAccessModeEnum cachePolicy;
 
     // The buffer format
-    Image::ImageBufferLayoutEnum bufferFormat;
+    ImageBufferLayoutEnum bufferFormat;
 
     // A pointer to another image that should be updated when this image dies.
     // Since tiled mono-channel format may not be ideal for most processing formats
@@ -86,9 +86,9 @@ struct ImagePrivate
     : bounds()
     , tiles()
     , layer()
-    , mipMapLevel(0)
-    , cachePolicy(Image::eCacheAccessModeNone)
-    , bufferFormat(Image::eImageBufferLayoutRGBAPackedFullRect)
+    , scale(1.)
+    , cachePolicy(eCacheAccessModeNone)
+    , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
     , mirrorImage()
     , mirrorImageRoI()
     , renderArgs()
@@ -137,10 +137,10 @@ struct ImagePrivate
      **/
     static void copyRectangle(const Image::Tile& fromTile,
                               StorageModeEnum fromStorage,
-                              Image::ImageBufferLayoutEnum fromLayout,
+                              ImageBufferLayoutEnum fromLayout,
                               const Image::Tile& toTile,
                               StorageModeEnum toStorage,
-                              Image::ImageBufferLayoutEnum toLayout,
+                              ImageBufferLayoutEnum toLayout,
                               const Image::CopyPixelsArgs& args,
                               const TreeRenderNodeArgsPtr& renderArgs);
 

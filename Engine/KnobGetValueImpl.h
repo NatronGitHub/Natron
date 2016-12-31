@@ -26,10 +26,41 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Knob.h"
+#include "KnobPrivate.h"
+
+#include "Engine/EffectInstance.h"
+#include "Engine/KnobItemsTable.h"
 #include "Engine/RenderValuesCache.h"
+#include "Engine/TreeRenderNodeArgs.h"
 
 NATRON_NAMESPACE_ENTER
+
+template <typename T>
+getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, T* result)
+{
+    double value;
+    cachedValue->getResult(&value, 0);
+    *result = (T)value;
+}
+
+template <>
+getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, std::string* result)
+{
+    cachedValue->getResult(0, result);
+}
+
+template <typename T>
+setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, const T& result)
+{
+    double value = (double)result;
+    cachedValue->setResult(value, std::string());
+}
+
+template <>
+setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, const std::string& result)
+{
+    cachedValue->setResult(0, result);
+}
 
 template <typename T>
 bool
@@ -50,21 +81,43 @@ Knob<T>::getValueFromExpression(TimeValue time,
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
-    ///Check first if a value was already computed:
+    // Check for a cached expression result
 
-    {
-        QMutexLocker k(&_defaultValueMutex);
-        typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
-        if (foundView != _exprRes[dimension].end()) {
-            typename FrameValueMap::iterator foundValue = foundView->second.find(time);
-            if ( foundValue != foundView->second.end() ) {
-                *ret = foundValue->second;
 
-                return true;
-            }
-        }
-
+    KnobHolderPtr holder = getHolder();
+    EffectInstancePtr effect = toEffectInstance(holder);
+    KnobTableItemPtr tableItem = toKnobTableItem(holder);
+    if (tableItem) {
+        effect = tableItem->getModel()->getNode()->getEffectInstance();
     }
+    U64 effectHash = 0;
+    assert(effect);
+    if (effect) {
+        TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
+        if (render) {
+            render->getTimeViewInvariantHash(&effectHash);
+        }
+        if (effectHash == 0) {
+            ComputeHashArgs hashArgs;
+            hashArgs.render = render;
+            hashArgs.time = time;
+            hashArgs.view = view;
+            hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewInvariant;
+            effectHash = effect->computeHash(hashArgs);
+        }
+    }
+
+
+    KnobExpressionKey cacheKey(effectHash, dimension, time, view, getName());
+    CacheFetcher cacheAccess(cacheKey);
+
+    KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess.isCached());
+    if (cachedResult) {
+        getValueFromCachedExpressionResult(cachedResult, ret);
+        return true;
+    }
+
+    cachedResult = KnobExpressionResult::create(cacheKey);
 
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
@@ -86,8 +139,8 @@ Knob<T>::getValueFromExpression(TimeValue time,
         *ret =  clampToMinMax(*ret, dimension);
     }
 
-    QMutexLocker k(&_defaultValueMutex);
-    _exprRes[dimension][view_i][time] = *ret;
+    setValueFromCachedExpressionResult(cachedResult, *ret);
+    cacheAccess.setEntry(cachedResult);
 
     return true;
 } // getValueFromExpression
@@ -261,10 +314,10 @@ Knob<T>::getValue(DimIdx dimension,
 
 
     // If an expression is set, read from expression
-    std::string hasExpr = getExpression(dimension);
+    std::string hasExpr = getExpression(dimension, view_i);
     if ( !hasExpr.empty() ) {
         T ret;
-        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime();
+        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime_TLS();
         if ( getValueFromExpression(time, view, dimension, clamp, &ret) ) {
             if (valuesCache) {
                 valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
@@ -275,7 +328,7 @@ Knob<T>::getValue(DimIdx dimension,
 
     // If animated, call getValueAtTime instead
     if ( isAnimated(dimension, view) ) {
-        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime();
+        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime_TLS();
         return getValueAtTime(time, dimension, view, clamp);
     }
 

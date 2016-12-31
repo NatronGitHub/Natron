@@ -357,8 +357,8 @@ public:
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual TimeValue getCurrentTime_TLS() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;

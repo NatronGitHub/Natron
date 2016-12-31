@@ -300,7 +300,7 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
         }
     }
 
-    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, TimeValue(times.front()), view, eValueChangedReasonUserEdited);
 
     return ret;
 
@@ -342,7 +342,7 @@ KnobHelper::cloneCurve(ViewIdx view,
     }
 
     if (hasChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view,  eValueChangedReasonUserEdited);
     }
 
 
@@ -651,7 +651,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
     }
     
     
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 } // removeAnimation
 
 NATRON_NAMESPACE_EXIT

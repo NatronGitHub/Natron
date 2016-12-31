@@ -75,8 +75,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-//#define NATRON_ALWAYS_ALLOCATE_FULL_IMAGE_BOUNDS
-
 
 NATRON_NAMESPACE_ENTER;
 

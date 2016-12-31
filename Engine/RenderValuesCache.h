@@ -53,10 +53,6 @@ public:
 
     ~RenderValuesCache();
 
-    bool getCachedInput(int inputNb, NodePtr* node) const;
-
-    void setCachedInput(int inputNb, const NodePtr& node);
-
     template <typename T>
     bool getCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, T* value) const;
 

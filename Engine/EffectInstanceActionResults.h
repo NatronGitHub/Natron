@@ -317,14 +317,14 @@ public:
     //
     // To ensure this you may call
     // assert(getCacheBucketIndex() == -1) in any setter function.
-    void getDistorsionResults(DistorsionFunction2D* disto) const;
-    void setDistorsionResults(const DistorsionFunction2D& disto);
+    DistorsionFunction2DPtr getDistorsionResults() const;
+    void setDistorsionResults(const DistorsionFunction2DPtr& disto);
 
     virtual std::size_t getSize() const OVERRIDE FINAL;
 
 private:
 
-    DistorsionFunction2D _distorsion;
+    DistorsionFunction2DPtr _distorsion;
 
 };
 
@@ -463,18 +463,18 @@ toGetTimeInvariantMetaDatasResults(const CacheEntryBasePtr& entry)
 }
 
 
-class GetComponentsNeededKey : public EffectInstanceActionKeyBase
+class GetComponentsKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetComponentsNeededKey(U64 nodeFrameViewHash,
+    GetComponentsKey(U64 nodeFrameViewHash,
                      const std::string& pluginID)
     : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
     {
 
     }
 
-    virtual ~GetComponentsNeededKey()
+    virtual ~GetComponentsKey()
     {
 
     }
@@ -483,23 +483,21 @@ private:
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {
-        return kCacheKeyUniqueIDGetComponentsNeededResults;
+        return kCacheKeyUniqueIDGetComponentsResults;
     }
 
 };
 
-typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
 
-
-class GetComponentsNeededResults : public CacheEntryBase
+class GetComponentsResults : public CacheEntryBase
 {
-    GetComponentsNeededResults();
+    GetComponentsResults();
 
 public:
 
-    static GetComponentsNeededResultsPtr create(const GetComponentsNeededKeyPtr& key);
+    static GetComponentsResultsPtr create(const GetComponentsKeyPtr& key);
 
-    virtual ~GetComponentsNeededResults()
+    virtual ~GetComponentsResults()
     {
 
     }
@@ -511,26 +509,32 @@ public:
     //
     // To ensure this you may call
     // assert(getCacheBucketIndex() == -1) in any setter function.
-    void getComponentsNeededResults(ComponentsNeededMap* compsNeeded,
-                                    int *passThroughInputNb,
-                                    TimeValue *passThroughTime,
-                                    ViewIdx *passThroughView,
-                                    std::bitset<4> *processChannels,
-                                    bool *processAllLayers) const;
+    void getResults(std::map<int, std::list<ImageComponents> >* neededInputLayers,
+                    std::list<ImageComponents>* producedLayers,
+                    std::list<ImageComponents>* passThroughPlanes,
+                    int *passThroughInputNb,
+                    TimeValue *passThroughTime,
+                    ViewIdx *passThroughView,
+                    std::bitset<4> *processChannels,
+                    bool *processAllLayers) const;
 
-    void setComponentsNeededResults(const ComponentsNeededMap& compsNeeded,
-                                    int passThroughInputNb,
-                                    TimeValue passThroughTime,
-                                    ViewIdx passThroughView,
-                                    std::bitset<4> processChannels,
-                                    bool processAllLayers);
+    void setResults(const std::map<int, std::list<ImageComponents> >& neededInputLayers,
+                    const std::list<ImageComponents>& producedLayers,
+                    const std::list<ImageComponents>& passThroughPlanes,
+                    int passThroughInputNb,
+                    TimeValue passThroughTime,
+                    ViewIdx passThroughView,
+                    std::bitset<4> processChannels,
+                    bool processAllLayers);
 
 
     virtual std::size_t getSize() const OVERRIDE FINAL;
 
 private:
 
-    ComponentsNeededMap _compsNeeded;
+    std::map<int, std::list<ImageComponents> > _neededInputLayers;
+    std::list<ImageComponents> _producedLayers;
+    std::list<ImageComponents> _passThroughPlanes;
     int _passThroughInputNb;
     TimeValue _passThroughTime;
     ViewIdx _passThroughView;
@@ -540,10 +544,10 @@ private:
 
 };
 
-inline GetComponentsNeededResultsPtr
-toGetComponentsNeededResults(const CacheEntryBasePtr& entry)
+inline GetComponentsResultsPtr
+toGetComponentsResults(const CacheEntryBasePtr& entry)
 {
-    return boost::dynamic_pointer_cast<GetComponentsNeededResults>(entry);
+    return boost::dynamic_pointer_cast<GetComponentsResults>(entry);
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -338,7 +338,7 @@ public:
      * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render
      * is ongoing in that thread.
      **/
-    int getCurrentTime() const;
+    double getCurrentTime() const;
 
     /**
      * @brief Set the position of the top left corner of the node in the nodegraph. This is ignored in background mode.

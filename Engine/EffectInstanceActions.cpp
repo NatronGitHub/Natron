@@ -49,55 +49,204 @@ NATRON_NAMESPACE_ENTER;
 StatusEnum
 EffectInstance::getComponentsNeededAndProduced(TimeValue time,
                                                ViewIdx view,
-                                               const TreeRenderNodeArgsPtr& /*render*/,
-                                               ComponentsNeededMap* comps,
+                                               const TreeRenderNodeArgsPtr& render,
+                                               std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                               std::list<ImageComponents>* layersProduced,
                                                TimeValue* passThroughTime,
                                                ViewIdx* passThroughView,
                                                int* passThroughInputNb)
 {
-    *passThroughTime = time;
-    *passThroughView = view;
-    *passThroughInputNb = -1;
-
-
-    
-    ImageComponents outputComp = getComponents(-1);
-    std::vector<ImageComponents> outputCompVec;
-    outputCompVec.push_back(outputComp);
-
-    comps->insert( std::make_pair(-1, outputCompVec) );
-
-    int firstConnectedOptional = -1;
-
-    int nInputs = getMaxInputCount();
-    for (int i = 0; i < nInputs; ++i) {
-        NodePtr node = getNode()->getInput(i);
-        if (!node) {
-            continue;
-        }
-
-        ImageComponents comp = getComponents(i);
-        std::vector<ImageComponents> compVect;
-        compVect.push_back(comp);
-
-        comps->insert( std::make_pair(i, compVect) );
-
-        if ( !isInputOptional(i) ) {
-            *passThroughInputNb = i;
-        } else {
-            if (firstConnectedOptional == -1) {
-                firstConnectedOptional = i;
-            }
-        }
-    }
-    if (*passThroughInputNb == -1) {
-        *passThroughInputNb = firstConnectedOptional;
-    }
+    bool processAllRequested;
+    std::bitset<4> processChannels;
+    getDefaultComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
     return eStatusOK;
 } // getComponentsNeededAndProduced
 
+void
+EffectInstance::getDefaultComponentsNeededAndProduced(TimeValue time,
+                                                      ViewIdx view,
+                                                      const TreeRenderNodeArgsPtr& render,
+                                                      std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                      std::list<ImageComponents>* layersProduced,
+                                                      TimeValue* passThroughTime,
+                                                      ViewIdx* passThroughView,
+                                                      int* passThroughInputNb,
+                                                      bool* processAllRequested,
+                                                      std::bitset<4>* processChannels)
+{
+    *passThroughTime = time;
+    *passThroughView = view;
+    *passThroughInputNb = getNode()->getPreferredInput();
+    *processAllRequested = false;
+
+
+    // Get the output needed components
+    {
+        // Check if the node has a OutputLayer choice
+        ImageComponents layer;
+
+        bool ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
+
+        // If the user did not select any components or the layer is the color-plane, fallback on
+        // meta-data color plane
+        if (layer.getNumComponents() == 0 || layer.isColorPlane()) {
+            ok = false;
+        }
+
+        std::vector<ImageComponents> clipPrefsAllComps;
+        ImageComponents clipPrefsComps = getComponents(render, -1);
+        {
+            if ( clipPrefsComps.isPairedComponents() ) {
+                ImageComponents first, second;
+                clipPrefsComps.getPlanesPair(&first, &second);
+                clipPrefsAllComps.push_back(first);
+                clipPrefsAllComps.push_back(second);
+            } else {
+                clipPrefsAllComps.push_back(clipPrefsComps);
+            }
+        }
+
+        if (ok) {
+            layersProduced->push_back(layer);
+
+            if ( !clipPrefsComps.isColorPlane() ) {
+                layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+            }
+        } else {
+            layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+        }
+
+    }
+
+    // For each input get their needed components
+    int maxInput = getMaxInputCount();
+    for (int i = 0; i < maxInput; ++i) {
+
+        EffectInstancePtr input = getInput(i);
+        if (!input) {
+            continue;
+        }
+
+        std::list<ImageComponents> &componentsSet = (*inputLayersNeeded)[i];
+
+        // Get the selected layer from the source channels menu
+        std::bitset<4> inputProcChannels;
+        ImageComponents layer;
+        bool isAll;
+        bool ok = getNode()->getSelectedLayer(i, &inputProcChannels, &isAll, &layer);
+
+        // When color plane or all choice then request the default metadata components
+        if (isAll || layer.isColorPlane()) {
+            ok = false;
+        }
+
+        // For a mask get its selected channel
+        ImageComponents maskComp;
+        NodePtr maskInput;
+        int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);
+
+
+        std::vector<ImageComponents> clipPrefsAllComps;
+        {
+            ImageComponents clipPrefsComps = getComponents(render, i);
+            if ( clipPrefsComps.isPairedComponents() ) {
+                ImageComponents first, second;
+                clipPrefsComps.getPlanesPair(&first, &second);
+                clipPrefsAllComps.push_back(first);
+                clipPrefsAllComps.push_back(second);
+            } else {
+                clipPrefsAllComps.push_back(clipPrefsComps);
+            }
+        }
+
+        if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
+
+            // If this is a mask, ask for the selected mask layer
+            componentsSet.push_back(maskComp);
+
+        } else if (ok) {
+            componentsSet.push_back(layer);
+        } else {
+            //Use regular clip preferences
+            componentsSet.insert( componentsSet.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+        }
+
+    } // for each input
+} // getDefaultComponentsNeededAndProduced
+
 StatusEnum
-EffectInstance::getComponentsNeededAndProduced_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsNeededResultsPtr* results)
+EffectInstance::getComponentsNeededInternal(TimeValue time,
+                                            ViewIdx view,
+                                            const TreeRenderNodeArgsPtr& render,
+                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                            std::list<ImageComponents>* layersProduced,
+                                            TimeValue* passThroughTime,
+                                            ViewIdx* passThroughView,
+                                            int* passThroughInputNb,
+                                            bool* processAllRequested,
+                                            std::bitset<4>* processChannels)
+{
+
+    if ( !isMultiPlanar() ) {
+        getDefaultComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
+    } else {
+
+        // call the getClipComponents action
+
+        StatusEnum stat = getComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+        if (stat == eStatusFailed) {
+            return stat;
+        }
+
+        for (int i = 0; i < 4; ++i) {
+            (*processChannels)[i] = getNode()->getProcessChannel(i);
+        }
+
+        *processAllRequested = false;
+    }
+    return eStatusOK;
+
+}
+
+
+
+/**
+ * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
+ * For the color plane, if it already existed in toList it is replaced by the value in inputList
+ **/
+static void mergeLayersList(const std::list<ImageComponents>& inputList,
+                                std::list<ImageComponents>* toList)
+{
+    for (std::list<ImageComponents>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
+
+        std::list<ImageComponents>::iterator foundMatch = ImageComponents::findEquivalentLayer(*it, toList->begin(), toList->end());
+
+        // If we found the color plane, replace it by this color plane which may have changed (e.g: input was Color.RGB but this node Color.RGBA)
+        if (foundMatch != toList->end()) {
+            toList->erase(foundMatch);
+        }
+        toList->push_back(*it);
+
+    } // for each input components
+} // mergeLayersList
+
+/**
+ * @brief Remove any layer from the toRemove list from toList.
+ **/
+static void removeFromLayersList(const std::list<ImageComponents>& toRemove,
+                                 std::list<ImageComponents>* toList)
+{
+    for (std::list<ImageComponents>::const_iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
+        std::list<ImageComponents>::iterator foundMatch = ImageComponents::findEquivalentLayer(*it, toList->begin(), toList->end());
+        if (foundMatch != toList->end()) {
+            toList->erase(foundMatch);
+        }
+    } // for each input components
+
+} // removeFromLayersList
+
+StatusEnum
+EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
 
 {
     // Round time for non continuous effects
@@ -111,23 +260,24 @@ EffectInstance::getComponentsNeededAndProduced_public(TimeValue inArgsTime, View
 
 
     // Get the render local args
-    FrameViewRequest* fvRequest = 0;
+    FrameViewRequestPtr fvRequest;
     if (render) {
 
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
 
         // We may not have created a request object for this frame/view yet. Create it.
-        fvRequest = render->getOrCreateFrameViewRequest(time, view);
+        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
+        (void)created;
     }
 
     U64 hash = 0;
 
     if (fvRequest) {
-        GetComponentsNeededResultsPtr cached = fvRequest->getComponentsNeededResults();
+        GetComponentsResultsPtr cached = fvRequest->getComponentsResults();
         if (cached) {
             *results = cached;
-            return;
+            return eStatusOK;
         }
         fvRequest->getHash(&hash);
     }
@@ -136,6 +286,7 @@ EffectInstance::getComponentsNeededAndProduced_public(TimeValue inArgsTime, View
     // Get a hash to cache the results
     if (hash == 0) {
         ComputeHashArgs hashArgs;
+        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
@@ -144,147 +295,92 @@ EffectInstance::getComponentsNeededAndProduced_public(TimeValue inArgsTime, View
 
     assert(hash != 0);
 
-    GetComponentsNeededKeyPtr cacheKey(new GetComponentsNeededKey(hash, getNode()->getPluginID()));
+    GetComponentsKeyPtr cacheKey(new GetComponentsKey(hash, getNode()->getPluginID()));
 
     // Ensure the cache fetcher lives as long as we compute the action
     CacheFetcher cacheAccess(cacheKey);
 
-    GetComponentsNeededResultsPtr ret = toGetComponentsNeededResults(cacheAccess.isCached());
+    GetComponentsResultsPtr ret = toGetComponentsResults(cacheAccess.isCached());
     if (ret) {
         *results = ret;
-        return;
+        return eStatusOK;
     }
-    ret = GetComponentsNeededResults::create(cacheKey);
+    ret = GetComponentsResults::create(cacheKey);
 
-    ComponentsNeededMap compsNeeded;
+
+    // For each input index what layers are required
+    std::map<int, std::list<ImageComponents> > inputLayersNeeded;
+
+    // The layers that are produced by this effect
+    std::list<ImageComponents> outputLayersProduced;
+
+    // The layers that this effect can fetch from the pass-through input but does not produce itself
+    std::list<ImageComponents> passThroughPlanes;
+
     int passThroughInputNb = -1;
     TimeValue passThroughTime(0);
     ViewIdx passThroughView(0);
     std::bitset<4> processChannels;
     bool processAllRequested = false;
+    {
 
-    if ( isMultiPlanar() ) {
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
 
-        // call the getClipComponents action
-
-        StatusEnum stat = getComponentsNeededAndProduced(time, view, render, &compsNeeded, &passThroughTime, &passThroughView, &passThroughInputNb);
+        StatusEnum stat = getComponentsNeededInternal(time, view, render, &inputLayersNeeded, &outputLayersProduced, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
         if (stat == eStatusFailed) {
             return stat;
         }
-
-        for (int i = 0; i < 4; ++i) {
-            processChannels[i] = getNode()->getProcessChannel(i);
-        }
-
-        processAllRequested = false;
-    } else {
-
-        // Default fallback
-
-        passThroughTime = time;
-        passThroughView = view;
-        passThroughInputNb = getNode()->getPreferredInput();
-        processAllRequested = false;
+    }
 
 
-        // Get the output needed components
-        {
-            // Check if the node has a OutputLayer choice
-            ImageComponents layer;
-            std::vector<ImageComponents> compVec;
-            bool ok = getNode()->getSelectedLayer(-1, &processChannels, &processAllRequested, &layer);
+    // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
+    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
+        ( passThrough == ePassThroughRenderAllRequestedPlanes) ) {
 
-            // If the user did not select any components or the layer is the color-plane, fallback on
-            // meta-data color plane
-            if (layer.getNumComponents() == 0 || layer.isColorPlane()) {
-                ok = false;
+        assert(passThroughInputNb != -1);
+
+        EffectInstancePtr passThroughInput = getInput(passThroughInputNb);
+        if (passThroughInput) {
+            TreeRenderNodeArgsPtr inputRenderArgs;
+            if (render) {
+                inputRenderArgs = render->getInputRenderArgs(passThroughInputNb);
+            }
+            GetComponentsResultsPtr upstreamResults;
+            StatusEnum stat = getComponents_public(time, view, inputRenderArgs, &upstreamResults);
+            if (stat == eStatusFailed) {
+                return eStatusFailed;
             }
 
-            std::vector<ImageComponents> clipPrefsAllComps;
-            ImageComponents clipPrefsComps = getComponents(-1);
-            {
-                if ( clipPrefsComps.isPairedComponents() ) {
-                    ImageComponents first, second;
-                    clipPrefsComps.getPlanesPair(&first, &second);
-                    clipPrefsAllComps.push_back(first);
-                    clipPrefsAllComps.push_back(second);
-                } else {
-                    clipPrefsAllComps.push_back(clipPrefsComps);
-                }
-            }
+            std::map<int, std::list<ImageComponents> > upstreamInputLayersNeeded;
+            std::list<ImageComponents> upstreamOutputLayersProduced;
+            std::list<ImageComponents> upstreamAvailableLayers;
+            TimeValue upstreamPassThroughTime;
+            ViewIdx upstreamPassThroughView;
+            int upstreamPassThroughInputNb;
+            std::bitset<4> upstreamProcessChannels;
+            bool upstreamProcessAll;
+            upstreamResults->getResults(&upstreamInputLayersNeeded, &upstreamOutputLayersProduced, &upstreamAvailableLayers, &upstreamPassThroughInputNb, &upstreamPassThroughTime, &upstreamPassThroughView, &upstreamProcessChannels, &upstreamProcessAll);
 
-            if (ok) {
-                compVec.push_back(layer);
+            // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
+            // if they are not produced by this node
+            mergeLayersList(upstreamOutputLayersProduced, &upstreamAvailableLayers);
 
-                if ( !clipPrefsComps.isColorPlane() ) {
-                    compVec.insert( compVec.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-                }
-            } else {
-                compVec.insert( compVec.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-            }
-
-            compsNeeded.insert( std::make_pair(-1, compVec) );
-        }
-
-        // For each input get their needed components
-        int maxInput = getMaxInputCount();
-        for (int i = 0; i < maxInput; ++i) {
-            EffectInstancePtr input = getInput(i);
-            if (!input) {
-                continue;
-            }
-
-            // Get the selected layer from the source channels menu
-            std::vector<ImageComponents> compVec;
-            std::bitset<4> inputProcChannels;
-            ImageComponents layer;
-            bool isAll;
-            bool ok = getNode()->getSelectedLayer(i, &inputProcChannels, &isAll, &layer);
-
-            // When color plane or all choice then request the default metadata components
-            if (isAll || layer.isColorPlane()) {
-                ok = false;
-            }
-
-            // For a mask get its selected channel
-            ImageComponents maskComp;
-            NodePtr maskInput;
-            int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);
-
-
-            std::vector<ImageComponents> clipPrefsAllComps;
-            {
-                ImageComponents clipPrefsComps = getComponents(i);
-                if ( clipPrefsComps.isPairedComponents() ) {
-                    ImageComponents first, second;
-                    clipPrefsComps.getPlanesPair(&first, &second);
-                    clipPrefsAllComps.push_back(first);
-                    clipPrefsAllComps.push_back(second);
-                } else {
-                    clipPrefsAllComps.push_back(clipPrefsComps);
-                }
-            }
-
-            if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
-
-                // If this is a mask, ask for the selected mask layer
-                std::vector<ImageComponents> compVec;
-                compVec.push_back(maskComp);
-                compsNeeded.insert( std::make_pair(i, compVec) );
-
-            } else if (ok) {
-                compVec.push_back(layer);
-            } else {
-                //Use regular clip preferences
-                compVec.insert( compVec.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-            }
-            compsNeeded.insert( std::make_pair(i, compVec) );
+            // upstreamAvailableLayers now contain all available planes in input of this node
+            // Remove from this list all layers produced from this node to get the pass-through planes list
+            removeFromLayersList(outputLayersProduced, &upstreamAvailableLayers);
             
-        } // for each input
-        
-    } // isMultiPlanar
-    
-    ret->setComponentsNeededResults(compsNeeded, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
+            passThroughPlanes = upstreamAvailableLayers;
+        }
+    } // if pass-through for planes
+
+    ret->setResults(inputLayersNeeded, outputLayersProduced, passThroughPlanes, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
 
     if (fvRequest) {
         fvRequest->setComponentsNeededResults(ret);
@@ -293,7 +389,7 @@ EffectInstance::getComponentsNeededAndProduced_public(TimeValue inArgsTime, View
 
     return eStatusOK;
     
-} // getComponentsNeededAndProduced_public
+} // getComponents_public
 
 
 StatusEnum
@@ -322,6 +418,13 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
         return eStatusOK;
     }
 
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
     StatusEnum ret = attachOpenGLContext(time, view, scale, renderArgs, glContext, data);
 
@@ -385,6 +488,14 @@ EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderA
         _imp->attachedContexts.erase(found);
     }
 
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     StatusEnum ret = dettachOpenGLContext(renderArgs, glContext, data);
     if (mustUnlock) {
         _imp->attachedContextsMutex.unlock();
@@ -426,6 +537,17 @@ EffectInstance::beginSequenceRender_public(double first,
 
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
 
+
+
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
+
     return beginSequenceRender(first, last, step, interactive, scale,
                                isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
 } // beginSequenceRender_public
@@ -447,6 +569,14 @@ EffectInstance::endSequenceRender_public(double first,
 
 
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
+
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
 
     return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
@@ -472,7 +602,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     }
 
     // Get the render local args
-    FrameViewRequest* fvRequest = 0;
+    FrameViewRequestPtr fvRequest;
     if (render) {
 
         assert(render->getCurrentDistortSupport());
@@ -481,7 +611,8 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
         assert(render->getNode() == getNode());
 
         // We may not have created a request object for this frame/view yet. Create it.
-        fvRequest = render->getOrCreateFrameViewRequest(time, view);
+        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
+        (void)created;
     } else {
         assert(getNode()->getCurrentCanDistort());
     }
@@ -502,6 +633,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     // Get a hash to cache the results
     if (hash == 0) {
         ComputeHashArgs hashArgs;
+        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
@@ -525,7 +657,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     // If the effect is identity, do not call the getDistorsion action, instead just return an identity
     // identity time and view.
 
-    DistorsionFunction2D distorsion;
+    DistorsionFunction2DPtr distorsion(new DistorsionFunction2D);
     bool isIdentity;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
@@ -536,12 +668,21 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     }
 
     if (isIdentity) {
-        distorsion.transformMatrix.reset(new Transform::Matrix3x3);
-        distorsion.transformMatrix->setIdentity();
+        distorsion->transformMatrix.reset(new Transform::Matrix3x3);
+        distorsion->transformMatrix->setIdentity();
     } else {
 
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+
+                                                  );
+
         // Call the action
-        StatusEnum stat = getDistorsion(time, renderScale, view, render, &distorsion);
+        StatusEnum stat = getDistorsion(time, renderScale, view, render, distorsion.get());
         if (stat == eStatusFailed) {
             return stat;
         }
@@ -569,8 +710,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   const TreeRenderNodeArgsPtr& render,
                                   IsIdentityResultsPtr* results)
 {
-    assert( ( (getNode()->supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.) ) );
-
+    
 
     {
         int roundedTime = std::floor(time + 0.5);
@@ -596,14 +736,15 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
 
     // Get the render local args
-    FrameViewRequest* fvRequest = 0;
+    FrameViewRequestPtr fvRequest;
     if (render) {
 
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
 
         // We may not have created a request object for this frame/view yet. Create it.
-        fvRequest = render->getOrCreateFrameViewRequest(time, view);
+        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
+        (void)created;
     }
 
     U64 hash = 0;
@@ -618,6 +759,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     // Get a hash to cache the results
     if (useIdentityCache && hash == 0) {
         ComputeHashArgs hashArgs;
+        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
@@ -647,11 +789,36 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     // Call the isIdentity plug-in action
     if (!caught) {
 
+        RectI mappedRenderWindow;
+        RenderScale scaleOne(1.);
+        RenderScale mappedScale;
+
+        if (getNode()->supportsRenderScaleMaybe() == eSupportsNo) {
+            mappedScale = scaleOne;
+            RectD canonicalRenderWindow;
+            double thisEffectPar = getAspectRatio(render, -1);
+            renderWindow.toCanonical_noClipping(scale, thisEffectPar, &canonicalRenderWindow);
+            canonicalRenderWindow.toPixelEnclosing(mappedScale, thisEffectPar, &mappedRenderWindow);
+        } else {
+            mappedScale = scale;
+            mappedRenderWindow = renderWindow;
+        }
+
+
+
+
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, mappedScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
 
         TimeValue identityTime;
         ViewIdx identityView;
         int identityInputNb;
-        StatusEnum stat = isIdentity(time, scale, renderWindow, view, render, &identityTime, &identityView, &identityInputNb);
+        StatusEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, render, &identityTime, &identityView, &identityInputNb);
         if (stat != eStatusOK && stat != eStatusReplyDefault) {
             return stat;
         }
@@ -746,14 +913,15 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
 
     // Get the render local args
-    FrameViewRequest* fvRequest = 0;
+    FrameViewRequestPtr fvRequest;
     if (render) {
 
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
 
         // We may not have created a request object for this frame/view yet. Create it.
-        fvRequest = render->getOrCreateFrameViewRequest(time, view);
+        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
+        (void)created;
     }
     U64 hash = 0;
 
@@ -772,6 +940,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     // Get a hash to cache the results
     if (useCache && hash == 0) {
         ComputeHashArgs hashArgs;
+        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
@@ -836,6 +1005,15 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
             RenderScale scaleOne(1.);
             RenderScale mappedScale = getNode()->supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale;
 
+            EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+
+            EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+#ifdef DEBUG
+                                                      , /*canSetValue*/ false
+                                                      , /*canBeCalledRecursively*/ true
+#endif
+                                                      );
+
 
             RectD rod;
             StatusEnum stat = getRegionOfDefinition(time, mappedScale, view, render, &rod);
@@ -866,6 +1044,15 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 void
 EffectInstance::calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view,const TreeRenderNodeArgsPtr& render, RectD *rod)
 {
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+
     return calcDefaultRegionOfDefinition(time, scale, view, render, rod);
 }
 
@@ -873,13 +1060,13 @@ void
 EffectInstance::calcDefaultRegionOfDefinition(TimeValue /*time*/,
                                               const RenderScale & scale,
                                               ViewIdx /*view*/,
-                                              const TreeRenderNodeArgsPtr& /*render*/,
+                                              const TreeRenderNodeArgsPtr& render,
                                               RectD *rod)
 {
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
     RectI format = getOutputFormat();
-    double par = getAspectRatio(-1);
+    double par = getAspectRatio(render, -1);
     format.toCanonical_noClipping(mipMapLevel, par, rod);
 } // calcDefaultRegionOfDefinition
 
@@ -971,7 +1158,7 @@ EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
         RectI format = getOutputFormat();
         assert(!format.isNull());
-        double par = getAspectRatio(-1);
+        double par = getAspectRatio(render, -1);
         unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
         format.toCanonical_noClipping(mipMapLevel, par, &canonicalFormat);
     }
@@ -1033,6 +1220,15 @@ EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
     }
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
+
+
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
     return getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
 
@@ -1129,14 +1325,15 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     }
 
     // Get the render local args
-    FrameViewRequest* fvRequest = 0;
+    FrameViewRequestPtr fvRequest;
     if (render) {
 
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
 
         // We may not have created a request object for this frame/view yet. Create it.
-        fvRequest = render->getOrCreateFrameViewRequest(time, view);
+        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
+        (void)created;
     }
     U64 hashValue = 0;
     if (fvRequest) {
@@ -1171,6 +1368,15 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     // Call the action
     FramesNeededMap framesNeeded;
     {
+
+
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
 
         StatusEnum stat = getFramesNeeded(time, view, render, &framesNeeded);
         if (stat == eStatusFailed) {
@@ -1297,6 +1503,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     if (hash == 0) {
 
         ComputeHashArgs hashArgs;
+        hashArgs.render = render;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewInvariant;
         hash = computeHash(hashArgs);
     }
@@ -1313,6 +1520,16 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     // Call the action
     RangeD range;
     {
+
+
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,TimeValue(0), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
         StatusEnum stat = getFrameRange(render, &range.min, &range.max);
         if (stat == eStatusFailed) {
             return stat;
@@ -1442,6 +1659,14 @@ EffectInstance::onInputChanged_public(int inputNo, const NodePtr& oldNode, const
     REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
 
 
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
     onInputChanged(inputNo, oldNode, newNode);
 } // onInputChanged_public
 
@@ -1463,6 +1688,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     if (hash == 0) {
 
         ComputeHashArgs hashArgs;
+        hashArgs.render = render;
         hashArgs.hashType = HashableObject::eComputeHashTypeOnlyMetadataSlaves;
         hash = computeHash(hashArgs);
     }
@@ -1485,9 +1711,19 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     *results = GetTimeInvariantMetaDatasResults::create(cacheKey);
 
     if (!getNode()->getDisabledKnobValue()) {
+
+
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
+
         // If the node is disabled, don't call getClipPreferences on the plug-in:
         // we don't want it to change output Format or other metadatas
-        StatusEnum stat = getTimeInvariantMetaDatas(render, metadata);
+        StatusEnum stat = getTimeInvariantMetaDatas(metadata);
         if (stat == eStatusFailed) {
             return stat;
         }
@@ -1502,13 +1738,13 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 static ImageComponents
 getUnmappedComponentsForInput(const EffectInstancePtr& self,
                               int inputNb,
-                              const std::vector<EffectInstancePtr>& inputs,
+                              const std::vector<NodeMetadataPtr>& inputs,
                               const ImageComponents& firstNonOptionalConnectedInputComps)
 {
     ImageComponents rawComps;
 
     if (inputs[inputNb]) {
-        rawComps = inputs[inputNb]->getComponents(-1);
+        rawComps = inputs[inputNb]->getImageComponents(-1);
     } else {
         ///The node is not connected but optional, return the closest supported components
         ///of the first connected non optional input.
@@ -1550,17 +1786,6 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
 
     //Default to the project frame rate
     double frameRate = getApp()->getProjectFrameRate();
-    std::vector<EffectInstancePtr> inputs(nInputs);
-
-    // Find the components of the first non optional connected input
-    // They will be used for disconnected input
-    ImageComponents firstNonOptionalConnectedInputComps;
-    for (std::size_t i = 0; i < inputs.size(); ++i) {
-        inputs[i] = getInput(i);
-        if ( !firstNonOptionalConnectedInputComps && inputs[i] && !isInputOptional(i) ) {
-            firstNonOptionalConnectedInputComps = inputs[i]->getComponents(-1);
-        }
-    }
 
     double inputPar = 1.;
     bool inputParSet = false;
@@ -1570,30 +1795,58 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
     bool hasOneInputContinuous = false;
     bool hasOneInputFrameVarying = false;
 
+    // Find the components of the first non optional connected input
+    // They will be used for disconnected inpu
+    ImageComponents firstNonOptionalConnectedInputComps;
+
+
+    std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
     for (int i = 0; i < nInputs; ++i) {
-        const EffectInstancePtr& input = inputs[i];
+        const EffectInstancePtr& input = getInput(i);
         if (input) {
-            frameRate = std::max( frameRate, input->getFrameRate() );
+            TreeRenderNodeArgsPtr inputArgs;
+            if (render) {
+                inputArgs = render->getInputRenderArgs(i);
+            }
+            GetTimeInvariantMetaDatasResultsPtr results;
+            StatusEnum stat = input->getTimeInvariantMetaDatas_public(inputArgs, &results);
+            if (stat != eStatusFailed) {
+                inputMetadatas[i] = results->getMetadatasResults();
+
+                if ( !firstNonOptionalConnectedInputComps && !isInputOptional(i) ) {
+                    firstNonOptionalConnectedInputComps = inputMetadatas[i]->getImageComponents(-1);
+                }
+            }
+
+
+        }
+    }
+
+    for (int i = 0; i < nInputs; ++i) {
+
+        const NodeMetadataPtr& input = inputMetadatas[i];
+        if (input) {
+            frameRate = std::max( frameRate, input->getOutputFrameRate() );
         }
 
 
         if (input) {
             if (!inputParSet) {
-                inputPar = input->getAspectRatio(-1);
+                inputPar = input->getPixelAspectRatio(-1);
                 inputParSet = true;
             }
 
             if (!hasOneInputContinuous) {
-                hasOneInputContinuous |= input->canRenderContinuously();
+                hasOneInputContinuous |= input->getIsContinuous();
             }
             if (!hasOneInputFrameVarying) {
-                hasOneInputFrameVarying |= input->isFrameVarying();
+                hasOneInputFrameVarying |= input->getIsFrameVarying();
             }
         }
 
-        ImageComponents rawComp = getUnmappedComponentsForInput(shared_from_this(), i, inputs, firstNonOptionalConnectedInputComps);
+        ImageComponents rawComp = getUnmappedComponentsForInput(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
         ImageBitDepthEnum rawDepth = input ? input->getBitDepth(-1) : eImageBitDepthFloat;
-        ImagePremultiplicationEnum rawPreMult = input ? input->getPremult() : eImagePremultiplicationPremultiplied;
+        ImagePremultiplicationEnum rawPreMult = input ? input->getOutputPremult() : eImagePremultiplicationPremultiplied;
 
         if ( rawComp.isColorPlane() ) {
             // Note: first chromatic input gives the default output premult too, even if not connected
@@ -1658,13 +1911,7 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
     bool firstOptionalInputFormatSet = false, firstNonOptionalInputFormatSet = false;
 
     // now add the input gubbins to the per inputs metadatas
-    for (int i = -1; i < (int)inputs.size(); ++i) {
-        EffectInstancePtr effect;
-        if (i >= 0) {
-            effect = inputs[i];
-        } else {
-            effect = shared_from_this();
-        }
+    for (int i = -1; i < nInputs; ++i) {
 
         double par;
         if (!multipleClipsPAR) {
@@ -1673,7 +1920,11 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
             if (inputParSet) {
                 par = inputPar;
             } else {
-                par = effect ? effect->getAspectRatio(-1) : projectPAR;
+                if (i >= 0 && inputMetadatas[i]) {
+                    par = inputMetadatas[i]->getPixelAspectRatio(-1);
+                } else {
+                    par = projectPAR;
+                }
             }
         }
         metadata.setPixelAspectRatio(i, par);
@@ -1681,13 +1932,13 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
         bool isOptional = i >= 0 && isInputOptional(i);
         if (i >= 0) {
             if (isOptional) {
-                if (!firstOptionalInputFormatSet && effect) {
-                    firstOptionalInputFormat = effect->getOutputFormat();
+                if (!firstOptionalInputFormatSet && inputMetadatas[i]) {
+                    firstOptionalInputFormat = inputMetadatas[i]->getOutputFormat();
                     firstOptionalInputFormatSet = true;
                 }
             } else {
-                if (!firstNonOptionalInputFormatSet && effect) {
-                    firstNonOptionalInputFormat = effect->getOutputFormat();
+                if (!firstNonOptionalInputFormatSet && inputMetadatas[i]) {
+                    firstNonOptionalInputFormat = inputMetadatas[i]->getOutputFormat();
                     firstNonOptionalInputFormatSet = true;
                 }
             }
@@ -1715,8 +1966,13 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
             metadata.setBitDepth(i, depth);
         } else {
 
-            ImageComponents rawComps = getUnmappedComponentsForInput(shared_from_this(), i, inputs, firstNonOptionalConnectedInputComps);
-            ImageBitDepthEnum rawDepth = effect ? effect->getBitDepth(-1) : eImageBitDepthFloat;
+            ImageComponents rawComps = getUnmappedComponentsForInput(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
+            ImageBitDepthEnum rawDepth;
+            if (i >= 0 && inputMetadatas[i]) {
+                rawDepth = inputMetadatas[i]->getBitDepth(-1);
+            } else {
+                rawDepth = eImageBitDepthFloat;
+            }
 
             if ( rawComps.isColorPlane() ) {
                 ImageBitDepthEnum depth = multiBitDepth ? node->getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
@@ -1776,26 +2032,24 @@ EffectInstance::Implementation::refreshMetadaWarnings(const NodeMetadata &metada
     }
 
 
-    ImageBitDepthEnum outputDepth = md.getBitDepth(-1);
-    double outputPAR = md.getPixelAspectRatio(-1);
+    ImageBitDepthEnum outputDepth = metadata.getBitDepth(-1);
+    double outputPAR = metadata.getPixelAspectRatio(-1);
     bool outputFrameRateSet = false;
-    double outputFrameRate = md.getOutputFrameRate();
+    double outputFrameRate = metadata.getOutputFrameRate();
     bool mustWarnFPS = false;
     bool mustWarnPAR = false;
 
     int nbConnectedInputs = 0;
     for (int i = 0; i < nInputs; ++i) {
         //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
-        if ( !supportsMultipleClipDepths && (md.getBitDepth(i) != outputDepth) ) {
-            md.setBitDepth(i, outputDepth);
+        if ( !supportsMultipleClipDepths && (metadata.getBitDepth(i) != outputDepth) ) {
         }
 
-        const double pixelAspect = md.getPixelAspectRatio(i);
+        const double pixelAspect = metadata.getPixelAspectRatio(i);
 
         if (!supportsMultipleClipPARs) {
             if (pixelAspect != outputPAR) {
                 mustWarnPAR = true;
-                md.setPixelAspectRatio(i, outputPAR);
             }
         }
 
@@ -1805,7 +2059,7 @@ EffectInstance::Implementation::refreshMetadaWarnings(const NodeMetadata &metada
 
         ++nbConnectedInputs;
 
-        const double fps = inputs[i]->getFrameRate();
+        const double fps = inputs[i]->getFrameRate(TreeRenderNodeArgsPtr());
 
 
 
@@ -1820,15 +2074,15 @@ EffectInstance::Implementation::refreshMetadaWarnings(const NodeMetadata &metada
         }
 
 
-        ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(-1);
+        ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(TreeRenderNodeArgsPtr(), -1);
 
         //If the bit-depth conversion will be lossy, warn the user
-        if ( Image::isBitDepthConversionLossy( inputOutputDepth, md.getBitDepth(i) ) ) {
+        if ( Image::isBitDepthConversionLossy( inputOutputDepth, metadata.getBitDepth(i) ) ) {
             bitDepthWarning.append( QString::fromUtf8( inputs[i]->getNode()->getLabel_mt_safe().c_str() ) );
             bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString(inputOutputDepth).c_str() ) + QChar::fromLatin1(')') );
             bitDepthWarning.append( QString::fromUtf8(" ----> ") );
             bitDepthWarning.append( QString::fromUtf8( node->getLabel_mt_safe().c_str() ) );
-            bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString( md.getBitDepth(i) ).c_str() ) + QChar::fromLatin1(')') );
+            bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString( metadata.getBitDepth(i) ).c_str() ) + QChar::fromLatin1(')') );
             bitDepthWarning.append( QChar::fromLatin1('\n') );
             setBitDepthWarning = true;
         }
@@ -1836,7 +2090,7 @@ EffectInstance::Implementation::refreshMetadaWarnings(const NodeMetadata &metada
 
         if ( !supportsMultipleClipPARs && (pixelAspect != outputPAR) ) {
             qDebug() << node->getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getNode()->getScriptName_mt_safe().c_str()
-            << ") has a pixel aspect ratio (" << md.getPixelAspectRatio(i)
+            << ") has a pixel aspect ratio (" << metadata.getPixelAspectRatio(i)
             << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "
             << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
         }
@@ -1880,11 +2134,21 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         return;
     }
 
+    const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
+    const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
+
     int nInputs = node->getMaxInputCount();
+
+    double outputPAR = md.getPixelAspectRatio(-1);
+
+    ImageBitDepthEnum outputDepth = md.getBitDepth(-1);
 
     // First fix incorrect metadatas that could have been set by the plug-in
     for (int i = -1; i < nInputs; ++i) {
-        md.setBitDepth( i, node->getClosestSupportedBitDepth( md.getBitDepth(i) ) );
+
+        ImageBitDepthEnum depth = md.getBitDepth(i);
+        md.setBitDepth( i, node->getClosestSupportedBitDepth(depth));
+
         ImageComponents comps = md.getImageComponents(i);
         bool isAlpha = false;
         bool isRGB = false;
@@ -1898,13 +2162,30 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         if ( comps.isColorPlane() ) {
             comps = node->findClosestSupportedComponents(i, comps);
         }
+
         md.setImageComponents(i, comps);
+
         if (i == -1) {
             // Force opaque for RGB and unpremult for alpha
             if (isRGB) {
                 md.setOutputPremult(eImagePremultiplicationOpaque);
             } else if (isAlpha) {
                 md.setOutputPremult(eImagePremultiplicationUnPremultiplied);
+            }
+        }
+
+        if (i >= 0) {
+            //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
+            if ( !supportsMultipleClipDepths && (md.getBitDepth(i) != outputDepth) ) {
+                md.setBitDepth(i, outputDepth);
+            }
+
+            const double pixelAspect = md.getPixelAspectRatio(i);
+
+            if (!supportsMultipleClipPARs) {
+                if (pixelAspect != outputPAR) {
+                    md.setPixelAspectRatio(i, outputPAR);
+                }
             }
         }
     }
@@ -1921,6 +2202,14 @@ EffectInstance::purgeCaches_public()
 void
 EffectInstance::createInstanceAction_public()
 {
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,  TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
 
     createInstanceAction();
 
@@ -1950,7 +2239,13 @@ EffectInstance::drawOverlay_public(TimeValue time,
     }
 
 
-
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
     DuringInteractActionSetter_RAII _setter(getNode());
     bool drawHostOverlay = shouldDrawHostOverlay();
@@ -1985,7 +2280,13 @@ EffectInstance::onOverlayPenDown_public(TimeValue time,
 
     bool ret;
     {
-
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
 
         DuringInteractActionSetter_RAII _setter(getNode());
         bool drawHostOverlay = shouldDrawHostOverlay();
@@ -2028,7 +2329,13 @@ EffectInstance::onOverlayPenDoubleClicked_public(TimeValue time,
 
     bool ret;
     {
-
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
 
         DuringInteractActionSetter_RAII _setter(getNode());
         bool drawHostOverlay = shouldDrawHostOverlay();
@@ -2071,6 +2378,13 @@ EffectInstance::onOverlayPenMotion_public(TimeValue time,
         actualScale = renderScale;
     }
 
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
 
     DuringInteractActionSetter_RAII _setter(getNode());
     bool ret;
@@ -2116,6 +2430,13 @@ EffectInstance::onOverlayPenUp_public(TimeValue time,
     bool ret;
     {
 
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -2158,7 +2479,13 @@ EffectInstance::onOverlayKeyDown_public(TimeValue time,
 
     bool ret;
     {
-
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -2191,7 +2518,14 @@ EffectInstance::onOverlayKeyUp_public(TimeValue time,
 
     bool ret;
     {
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
 
+                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -2224,7 +2558,14 @@ EffectInstance::onOverlayKeyRepeat_public(TimeValue time,
 
     bool ret;
     {
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
 
+                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -2256,6 +2597,14 @@ EffectInstance::onOverlayFocusGained_public(TimeValue time,
     bool ret;
     {
 
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+
+                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayFocusGained(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
@@ -2288,6 +2637,15 @@ EffectInstance::onOverlayFocusLost_public(TimeValue time,
 
     bool ret;
     {
+
+        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+
+                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayFocusLost(time, actualScale, view);
         if (shouldDrawHostOverlay()) {

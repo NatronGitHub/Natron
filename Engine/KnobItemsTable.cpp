@@ -1996,13 +1996,13 @@ KnobTableItem::unSplitView(ViewIdx view)
 } // unSplitView
 
 ViewIdx
-KnobTableItem::getCurrentView() const
+KnobTableItem::getCurrentView_TLS() const
 {
     KnobItemsTablePtr m = _imp->model.lock();
     if (!m) {
         return ViewIdx(0);
     }
-    return m->getNode()->getEffectInstance()->getCurrentView();
+    return m->getNode()->getEffectInstance()->getCurrentView_TLS();
 }
 
 

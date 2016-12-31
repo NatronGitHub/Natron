@@ -1625,16 +1625,16 @@ private:
                 std::list<ImageComponents> components;
 
                 //Use needed components to figure out what we need to render
-                ComponentsNeededMap neededComps;
+                ComponentsMap neededComps;
                 bool processAll;
                 SequenceTime ptTime;
                 int ptView;
                 std::bitset<4> processChannels;
                 NodePtr ptInput;
-                activeInputToRender->getComponentsNeededAndProduced_public(true, true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+                activeInputToRender->getComponents_public(true, true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
                 components.clear();
 
-                ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
+                ComponentsMap::iterator foundOutput = neededComps.find(-1);
                 if ( foundOutput != neededComps.end() ) {
                     for (std::size_t j = 0; j < foundOutput->second.size(); ++j) {
                         components.push_back(foundOutput->second[j]);

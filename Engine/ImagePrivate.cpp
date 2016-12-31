@@ -42,8 +42,8 @@ void
 ImagePrivate::insertTilesInCache()
 {
     // The image must have cache enabled, otherwise don't call this function.
-    assert(cachePolicy == Image::eCacheAccessModeWriteOnly ||
-           cachePolicy == Image::eCacheAccessModeReadWrite);
+    assert(cachePolicy == eCacheAccessModeWriteOnly ||
+           cachePolicy == eCacheAccessModeReadWrite);
 
     CachePtr cache = appPTR->getCache();
 
@@ -141,7 +141,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
 {
     // Copying from a tiled buffer is not trivial unless we are not tiled.
     // If both are tiled, convert the original image to a packed format first
-    if (fromImage._imp->bufferFormat == Image::eImageBufferLayoutMonoChannelTiled && toImage._imp->bufferFormat == Image::eImageBufferLayoutMonoChannelTiled) {
+    if (fromImage._imp->bufferFormat == eImageBufferLayoutMonoChannelTiled && toImage._imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
         ImagePtr tmpImage;
         Image::InitStorageArgs args;
         args.renderArgs = fromImage._imp->renderArgs;
@@ -181,7 +181,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         }
 
         // Converting from OpenGL to CPU requires a RGBA buffer with the same bounds
-        if (toImage._imp->bufferFormat != Image::eImageBufferLayoutRGBAPackedFullRect || toImage.getComponentsCount() != 4 || toImage.getBounds() != fromImage.getBounds()) {
+        if (toImage._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || toImage.getComponentsCount() != 4 || toImage.getBounds() != fromImage.getBounds()) {
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
             args.renderArgs = fromImage._imp->renderArgs;
@@ -204,7 +204,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
     if (toImage.getStorageMode() == eStorageModeGLTex) {
 
         // Converting to OpenGl requires an RGBA buffer
-        if (fromImage._imp->bufferFormat != Image::eImageBufferLayoutRGBAPackedFullRect || fromImage.getComponentsCount() != 4) {
+        if (fromImage._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || fromImage.getComponentsCount() != 4) {
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
             args.renderArgs = fromImage._imp->renderArgs;
@@ -226,11 +226,11 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
 void
 ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args)
 {
-    assert(bufferFormat == Image::eImageBufferLayoutMonoChannelTiled);
+    assert(bufferFormat == eImageBufferLayoutMonoChannelTiled);
     assert(bounds.contains(args.roi) && fromImage._imp->bounds.contains(args.roi));
 
     // If this image is tiled, the other image must not be tiled
-    assert(fromImage._imp->bufferFormat != Image::eImageBufferLayoutMonoChannelTiled);
+    assert(fromImage._imp->bufferFormat != eImageBufferLayoutMonoChannelTiled);
 
     assert(fromImage._imp->tiles[0].perChannelTile[0].channelIndex == -1);
 
@@ -253,7 +253,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
 
             thisTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy);
+            ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderArgs);
 
         } // for all tiles horizontally
     } // for all tiles vertically
@@ -264,7 +264,7 @@ void
 ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args)
 {
     // The input image may or may not be tiled, but we surely are not.
-    assert(bufferFormat != Image::eImageBufferLayoutMonoChannelTiled);
+    assert(bufferFormat != eImageBufferLayoutMonoChannelTiled);
     assert(bounds.contains(args.roi) && fromImage._imp->bounds.contains(args.roi));
     assert(tiles[0].perChannelTile.size() == 1 && tiles[0].perChannelTile[0].channelIndex == -1);
     assert(tiles[0].perChannelTile[0].channelIndex == -1);
@@ -287,7 +287,7 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
 
             fromTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles[0], toStorage, bufferFormat, argsCpy);
+            ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles[0], toStorage, bufferFormat, argsCpy, renderArgs);
 
         } // for all tiles horizontally
     } // for all tiles vertically
@@ -299,7 +299,7 @@ void
 ImagePrivate::copyUntiledImageToUntiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args)
 {
     // The input image may or may not be tiled, but we surely are not.
-    assert(bufferFormat != Image::eImageBufferLayoutMonoChannelTiled);
+    assert(bufferFormat != eImageBufferLayoutMonoChannelTiled);
     assert(bounds.contains(args.roi) && fromImage._imp->bounds.contains(args.roi));
     assert(fromImage._imp->tiles.size() == 1 && tiles.size() == 1);
     assert(tiles[0].perChannelTile.size() == 1 && tiles[0].perChannelTile[0].channelIndex == -1);
@@ -308,7 +308,7 @@ ImagePrivate::copyUntiledImageToUntiledImage(const Image& fromImage, const Image
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
     const StorageModeEnum toStorage = tiles[0].perChannelTile[0].buffer->getStorageMode();
 
-    ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, tiles[0], toStorage, bufferFormat, args);
+    ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, tiles[0], toStorage, bufferFormat, args, renderArgs);
 
 } // copyUntiledImageToUntiledImage
 

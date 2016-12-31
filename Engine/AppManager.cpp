@@ -816,9 +816,6 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
     qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    //Set it once setApplicationName is set since it relies on it
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-
     // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
@@ -897,17 +894,6 @@ AppManager::isSpawnedFromCrashReporter() const
 #endif
 }
 
-void
-AppManager::setPluginsUseInputImageCopyToRender(bool b)
-{
-    _imp->pluginsUseInputImageCopyToRender = b;
-}
-
-bool
-AppManager::isCopyInputImageForPluginRenderEnabled() const
-{
-    return _imp->pluginsUseInputImageCopyToRender;
-}
 
 bool
 AppManager::isOpenGLLoaded() const
@@ -2449,80 +2435,12 @@ AppManager::setNumberOfThreads(int threadsNb)
 }
 
 bool
-AppManager::getImage(const ImageKey & key,
-                     std::list<ImagePtr >* returnValue) const
-{
-    return _imp->_nodeCache->get(key, returnValue);
-}
-
-bool
-AppManager::getImageOrCreate(const ImageKey & key,
-                             const ImageParamsPtr& params,
-                             ImageLocker* locker,
-                             ImagePtr* returnValue) const
-{
-    return _imp->_nodeCache->getOrCreate(key, params, locker, returnValue);
-}
-
-bool
-AppManager::getImage_diskCache(const ImageKey & key,
-                               std::list<ImagePtr >* returnValue) const
-{
-    return _imp->_diskCache->get(key, returnValue);
-}
-
-bool
-AppManager::getImageOrCreate_diskCache(const ImageKey & key,
-                                       const ImageParamsPtr& params,
-                                       ImagePtr* returnValue) const
-{
-    return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
-}
-
-bool
-AppManager::getTexture(const FrameKey & key,
-                       std::list<FrameEntryPtr>* returnValue) const
-{
-    std::list<FrameEntryPtr > retList;
-    bool ret =  _imp->_viewerCache->get(key, &retList);
-
-    *returnValue = retList;
-
-    return ret;
-}
-
-bool
-AppManager::getTextureOrCreate(const FrameKey & key,
-                               const boost::shared_ptr<FrameParams>& params,
-                               FrameEntryLocker* locker,
-                               FrameEntryPtr* returnValue) const
-{
-    return _imp->_viewerCache->getOrCreate(key, params, locker, returnValue);
-}
-
-bool
 AppManager::isAggressiveCachingEnabled() const
 {
     return _imp->_settings->isAggressiveCachingEnabled();
 }
 
-U64
-AppManager::getCachesTotalMemorySize() const
-{
-    return  _imp->_nodeCache->getMemoryCacheSize();
-}
 
-U64
-AppManager::getCachesTotalDiskSize() const
-{
-    return  _imp->_diskCache->getDiskCacheSize() + _imp->_viewerCache->getDiskCacheSize();
-}
-
-boost::shared_ptr<CacheSignalEmitter>
-AppManager::getOrActivateViewerCacheSignalEmitter() const
-{
-    return _imp->_viewerCache->activateSignalEmitter();
-}
 
 SettingsPtr AppManager::getCurrentSettings() const
 {

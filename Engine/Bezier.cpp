@@ -32,6 +32,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QThread>
+#include <QCoreApplication>
 #include <QtCore/QLineF>
 #include <QtCore/QDebug>
 
@@ -1741,7 +1743,7 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
     }
     
     resetTransformCenter();
-    refreshPolygonOrientation(false, view);
+    refreshPolygonOrientation(getCurrentTime_TLS(), view);
     evaluateCurveModified();
 }
 
@@ -1798,7 +1800,7 @@ Bezier::removeControlPointByIndex(int index, ViewSetSpec view)
         removeControlPointByIndexInternal(index, view_i);
     }
 
-    refreshPolygonOrientation(false, view);
+    refreshPolygonOrientation(getCurrentTime_TLS(), view);
     evaluateCurveModified();
 }
 
@@ -1914,9 +1916,9 @@ Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view,
                 }
                 if (!onlyFeather) {
                     assert(cp);
-                    cp->getPositionAtTime(*it2, &p.x, &p.y);
-                    cp->getLeftBezierPointAtTime(*it2,  &left.x, &left.y);
-                    cp->getRightBezierPointAtTime(*it2,  &right.x, &right.y);
+                    cp->getPositionAtTime(TimeValue(*it2), &p.x, &p.y);
+                    cp->getLeftBezierPointAtTime(TimeValue(*it2),  &left.x, &left.y);
+                    cp->getRightBezierPointAtTime(TimeValue(*it2),  &right.x, &right.y);
 
                     p = Transform::matApply(trans, p);
                     left = Transform::matApply(trans, left);
@@ -1934,15 +1936,15 @@ Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view,
                     left = Transform::matApply(invTrans, left);
 
 
-                    cp->setPositionAtTime(*it2, p.x, p.y );
-                    cp->setLeftBezierPointAtTime(*it2, left.x, left.y);
-                    cp->setRightBezierPointAtTime(*it2, right.x, right.y);
+                    cp->setPositionAtTime(TimeValue(*it2), p.x, p.y );
+                    cp->setLeftBezierPointAtTime(TimeValue(*it2), left.x, left.y);
+                    cp->setRightBezierPointAtTime(TimeValue(*it2), right.x, right.y);
                 }
                 if (moveFeather && useFeather) {
                     assert(fp);
-                    fp->getPositionAtTime(*it2, &pF.x, &pF.y);
-                    fp->getLeftBezierPointAtTime(*it2,  &leftF.x, &leftF.y);
-                    fp->getRightBezierPointAtTime(*it2, &rightF.x, &rightF.y);
+                    fp->getPositionAtTime(TimeValue(*it2), &pF.x, &pF.y);
+                    fp->getLeftBezierPointAtTime(TimeValue(*it2),  &leftF.x, &leftF.y);
+                    fp->getRightBezierPointAtTime(TimeValue(*it2), &rightF.x, &rightF.y);
 
                     pF = Transform::matApply(trans, pF);
                     rightF = Transform::matApply(trans, rightF);
@@ -1960,9 +1962,9 @@ Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view,
                     leftF = Transform::matApply(invTrans, leftF);
                     
                     
-                    fp->setPositionAtTime(*it2, pF.x, pF.y);
-                    fp->setLeftBezierPointAtTime(*it2, leftF.x, leftF.y);
-                    fp->setRightBezierPointAtTime(*it2, rightF.x, rightF.y);
+                    fp->setPositionAtTime(TimeValue(*it2), pF.x, pF.y);
+                    fp->setLeftBezierPointAtTime(TimeValue(*it2), leftF.x, leftF.y);
+                    fp->setRightBezierPointAtTime(TimeValue(*it2), rightF.x, rightF.y);
                 }
             }
         }
@@ -2249,33 +2251,33 @@ Bezier::moveBezierPointInternalForView(BezierCP* cpParam,
 
                 if (isLeft || moveBoth) {
                     if (moveControlPoint) {
-                        (cp)->getLeftBezierPointAtTime(*it2, &left.x, &left.y);
+                        (cp)->getLeftBezierPointAtTime(TimeValue(*it2), &left.x, &left.y);
                         left = Transform::matApply(trans, left);
                         left.x += lx; left.y += ly;
                         left = Transform::matApply(invTrans, left);
-                        (cp)->setLeftBezierPointAtTime(*it2, left.x, left.y);
+                        (cp)->setLeftBezierPointAtTime(TimeValue(*it2), left.x, left.y);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (fp)->getLeftBezierPointAtTime(*it2,  &leftF.x, &leftF.y);
+                        (fp)->getLeftBezierPointAtTime(TimeValue(*it2),  &leftF.x, &leftF.y);
                         leftF = Transform::matApply(trans, leftF);
                         leftF.x += flx; leftF.y += fly;
                         leftF = Transform::matApply(invTrans, leftF);
-                        (fp)->setLeftBezierPointAtTime(*it2, leftF.x, leftF.y);
+                        (fp)->setLeftBezierPointAtTime(TimeValue(*it2), leftF.x, leftF.y);
                     }
                 } else {
                     if (moveControlPoint) {
-                        (cp)->getRightBezierPointAtTime(*it2,  &right.x, &right.y);
+                        (cp)->getRightBezierPointAtTime(TimeValue(*it2),  &right.x, &right.y);
                         right = Transform::matApply(trans, right);
                         right.x += rx; right.y += ry;
                         right = Transform::matApply(invTrans, right);
-                        (cp)->setRightBezierPointAtTime(*it2, right.x, right.y);
+                        (cp)->setRightBezierPointAtTime(TimeValue(*it2), right.x, right.y);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (cp)->getRightBezierPointAtTime(*it2, &rightF.x, &rightF.y);
+                        (cp)->getRightBezierPointAtTime(TimeValue(*it2), &rightF.x, &rightF.y);
                         rightF = Transform::matApply(trans, rightF);
                         rightF.x += frx; rightF.y += fry;
                         rightF = Transform::matApply(invTrans, rightF);
-                        (cp)->setRightBezierPointAtTime(*it2, rightF.x, rightF.y);
+                        (cp)->setRightBezierPointAtTime(TimeValue(*it2), rightF.x, rightF.y);
                     }
                 }
             }
@@ -2420,21 +2422,21 @@ Bezier::setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoin
             getMasterKeyFrameTimes(view, &keyframes);
             for (std::set<double>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
                 if (setPoint) {
-                    (*fp)->setPositionAtTime(*it2, x, y);
+                    (*fp)->setPositionAtTime(TimeValue(*it2), x, y);
                     if (featherAndCp) {
-                        (*cp)->setPositionAtTime(*it2, x, y);
+                        (*cp)->setPositionAtTime(TimeValue(*it2), x, y);
                     }
                 }
                 if (setLeft) {
-                    (*fp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                    (*fp)->setLeftBezierPointAtTime(TimeValue(*it2), lx, ly);
                     if (featherAndCp) {
-                        (*cp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                        (*cp)->setLeftBezierPointAtTime(TimeValue(*it2), lx, ly);
                     }
                 }
                 if (setRight) {
-                    (*fp)->setRightBezierPointAtTime(*it2, rx, ry);
+                    (*fp)->setRightBezierPointAtTime(TimeValue(*it2), rx, ry);
                     if (featherAndCp) {
-                        (*cp)->setRightBezierPointAtTime(*it2, rx, ry);
+                        (*cp)->setRightBezierPointAtTime(TimeValue(*it2), rx, ry);
                     }
                 }
             }
@@ -3659,7 +3661,7 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 
     }
     evaluateCurveModified();
-    refreshPolygonOrientation(false, ViewSetSpec::all());
+    refreshPolygonOrientation(getCurrentTime_TLS(), ViewSetSpec::all());
     RotoDrawableItem::fromSerialization(obj);
 }
 
@@ -3757,10 +3759,10 @@ Bezier::refreshPolygonOrientationForView(ViewIdx view)
 
     QMutexLocker k(&_imp->itemMutex);
     if ( kfs.empty() ) {
-        computePolygonOrientation(0, view, true);
+        computePolygonOrientation(TimeValue(0), view, true);
     } else {
         for (std::set<double>::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-            computePolygonOrientation(*it, view, false);
+            computePolygonOrientation(TimeValue(*it), view, false);
         }
     }
 
@@ -3959,7 +3961,7 @@ Bezier::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     if (!cps.empty()) {
 
         if (!_imp->isOpenBezier) {
-            hash->append(isCurveFinished(view));
+            hash->append(isCurveFinished(args.view));
         }
 
         std::list<BezierCPPtr>::const_iterator fIt = fps.begin();
@@ -3969,7 +3971,7 @@ Bezier::appendToHash(const ComputeHashArgs& args, Hash64* hash)
             (*it)->getLeftBezierPointAtTime(args.time, &lx, &ly);
             (*it)->getRightBezierPointAtTime(args.time, &rx, &ry);
             double fx, fy, flx, fly, frx, fry;
-            (*fIt)->getPositionAtTime(time, &fx, &fy);
+            (*fIt)->getPositionAtTime(args.time, &fx, &fy);
             (*fIt)->getLeftBezierPointAtTime(args.time, &flx, &fly);
             (*fIt)->getRightBezierPointAtTime(args.time, &frx, &fry);
 

@@ -100,16 +100,17 @@ public:
 
     unsigned long long nodeHashKey; // the hash of the node this image corresponds to
     std::string layerChannelName; // e.g: Disparity.X
-    unsigned int mipMapLevel; // the mipmap level of the tile
+    double scale[2]; // the scale of the tile
     bool draft; // was it computed in draft mode ?
 
     ImageTileSerialization()
     : MMAPBufferedEntrySerialization()
     , nodeHashKey(0)
     , layerChannelName()
-    , mipMapLevel(0)
+    , scale()
     , draft(false)
     {
+        scale[0] = scale[1] = 1.;
         verbatimTag = kSerializationImageTileTag;
     }
 

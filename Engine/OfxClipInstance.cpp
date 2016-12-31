@@ -596,7 +596,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time,
     if (associatedNode) {
         EffectInstancePtr holderNode = getEffectHolder();
         if (holderNode) {
-            EffectTLSDataPtr holderNodeTLS = holderNode->getTLSObject();
+            EffectInstanceTLSDataPtr holderNodeTLS = holderNode->getTLSObject();
             if (holderNodeTLS) {
                 RenderScale scale;
                 holderNodeTLS->getCurrentActionArgs(0, 0, &scale);
@@ -625,7 +625,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (associatedNode) {
         EffectInstancePtr holderNode = getEffectHolder();
         if (holderNode) {
-            EffectTLSDataPtr holderNodeTLS = holderNode->getTLSObject();
+            EffectInstanceTLSDataPtr holderNodeTLS = holderNode->getTLSObject();
             if (holderNodeTLS) {
                 RenderScale scale;
                 holderNodeTLS->getCurrentActionArgs(0, &view, &scale);
@@ -770,9 +770,9 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         return false;
     }
 
-    EffectTLSDataPtr effectTLS = effect->getTLSObject();
+    EffectInstanceTLSDataPtr effectTLS = effect->getTLSObject();
 
-    ComponentsNeededMapPtr neededComps;
+    ComponentsMapPtr neededComps;
     ViewIdx tlsView;
     RenderScale tlsScale;
     RectI tlsRenderWindow;
@@ -791,7 +791,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         bool foundCompsInTLS = false;
         if (gotTLS) {
             assert(neededComps);
-            ComponentsNeededMap::iterator found = neededComps->find(inputnb);
+            ComponentsMap::iterator found = neededComps->find(inputnb);
             if ( found != neededComps->end() ) {
                 if ( found->second.empty() ) {
                     ///We are in the case of a multi-plane effect who did not specify correctly the needed components for an input
@@ -936,9 +936,9 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     if (!effect) {
         return false;
     }
-    EffectTLSDataPtr effectTLS = effect->getTLSObject();
+    EffectInstanceTLSDataPtr effectTLS = effect->getTLSObject();
 
-    ComponentsNeededMapPtr neededComps;
+    ComponentsMapPtr neededComps;
     ViewIdx tlsView;
     RenderScale tlsScale;
     RectI tlsRenderWindow;

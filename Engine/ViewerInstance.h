@@ -138,7 +138,6 @@ private:
                                                          ViewIdx view,
                                                          int textureIndex,
                                                          const RotoStrokeItemPtr& activeStrokeItem,
-                                                         const AbortableRenderInfoPtr& abortInfo,
                                                          const RenderStatsPtr& stats,
                                                          ViewerArgs* outArgs);
 
@@ -149,7 +148,6 @@ private:
     void setupMinimalUpdateViewerParams(const SequenceTime time,
                                         const ViewIdx view,
                                         const int textureIndex,
-                                        const AbortableRenderInfoPtr& abortInfo,
                                         const bool isSequential,
                                         ViewerArgs* outArgs);
 
@@ -232,7 +230,7 @@ public:
 
     int getLastRenderedTime() const;
 
-    virtual double getTimelineCurrentTime() const OVERRIDE FINAL;
+    virtual TimeValue getTimelineCurrentTime() const OVERRIDE FINAL;
 
     TimeLinePtr getTimeline() const;
 
@@ -240,7 +238,7 @@ public:
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual StatusEnum getTimeInvariantMetadatas(const NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
     bool isViewerUIVisible() const;
 

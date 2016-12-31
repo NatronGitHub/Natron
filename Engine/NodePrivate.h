@@ -326,7 +326,6 @@ public:
     KnobPageWPtr infoPage;
     KnobStringWPtr nodeInfos;
     KnobButtonWPtr refreshInfoButton;
-    KnobBoolWPtr useFullScaleImagesWhenRenderScaleUnsupported;
     KnobBoolWPtr forceCaching;
     KnobBoolWPtr hideInputs;
     KnobStringWPtr beforeFrameRender;

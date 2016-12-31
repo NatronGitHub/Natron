@@ -45,8 +45,9 @@
 #define kCacheKeyUniqueIDFramesNeededResults 4
 #define kCacheKeyUniqueIDGetDistorsionResults 5
 #define kCacheKeyUniqueIDGetTimeInvariantMetaDatasResults 6
-#define kCacheKeyUniqueIDGetComponentsNeededResults 7
+#define kCacheKeyUniqueIDGetComponentsResults 7
 #define kCacheKeyUniqueIDGetFrameRangeResults 8
+#define kCacheKeyUniqueIDExpressionResult 9
 
 NATRON_NAMESPACE_ENTER;
 
@@ -123,7 +124,7 @@ public:
 
     ImageTileKey(U64 nodeFrameViewHashKey,
                  const std::string& layerChannel,
-                 unsigned int mipMapLevel,
+                 const RenderScale& scale,
                  bool draftMode,
                  ImageBitDepthEnum bitdepth,
                  int tileX,
@@ -139,7 +140,7 @@ public:
 
     int getTileY() const;
 
-    unsigned int getMipMapLevel() const;
+    RenderScale getScale() const;
 
     bool isDraftMode() const;
 

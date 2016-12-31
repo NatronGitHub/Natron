@@ -705,7 +705,7 @@ public:
 
 protected:
 
-    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) = 0;
+    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool failIfInvalid) = 0;
 
 public:
 
@@ -714,7 +714,7 @@ public:
                            const std::string& expression,
                            bool hasRetVariable)
     {
-        setExpressionCommon(dimension, view, expression, hasRetVariable, false, false);
+        setExpressionCommon(dimension, view, expression, hasRetVariable, false);
     }
 
     void setExpression(DimSpec dimension,
@@ -723,7 +723,7 @@ public:
                        bool hasRetVariable,
                        bool failIfInvalid)
     {
-        setExpressionCommon(dimension, view, expression, hasRetVariable, true, failIfInvalid);
+        setExpressionCommon(dimension, view, expression, hasRetVariable, failIfInvalid);
     }
 
     /**
@@ -751,8 +751,7 @@ public:
                                              ViewSetSpec view,
                                              const std::string& oldName,
                                              const std::string& newName) = 0;
-    virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) = 0;
-    virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) = 0;
+    virtual void clearExpression(DimSpec dimension, ViewSetSpec view) = 0;
     virtual std::string getExpression(DimIdx dimension, ViewIdx view) const = 0;
 
     /**
@@ -1199,6 +1198,11 @@ public:
     virtual void setOfxParamHandle(void* ofxParamHandle) = 0;
     virtual void* getOfxParamHandle() const = 0;
 
+    /**
+     * @brief Returns the current time if attached to a timeline or the time being rendered
+     **/
+    virtual TimeValue getCurrentTime_TLS() const = 0;
+
     virtual boost::shared_ptr<KnobSignalSlotHandler> getSignalSlotHandler() const = 0;
 
 
@@ -1621,7 +1625,7 @@ public:
 
 protected:
 
-    void setExpressionInternal(DimIdx dimension, ViewIdx view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid);
+    void setExpressionInternal(DimIdx dimension, ViewIdx view, const std::string& expression, bool hasRetVariable, bool failIfInvalid);
 
 private:
 
@@ -1635,7 +1639,7 @@ private:
     bool clearExpressionInternal(DimIdx dimension, ViewIdx view);
 public:
 
-    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool clearResults, bool failIfInvalid) OVERRIDE FINAL;
+    virtual void setExpressionCommon(DimSpec dimension, ViewSetSpec view, const std::string& expression, bool hasRetVariable, bool failIfInvalid) OVERRIDE FINAL;
 
     virtual void restoreKnobLinks(const SERIALIZATION_NAMESPACE::KnobSerializationBasePtr& serialization,
                                   const std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >& allCreatedNodesInGroup) OVERRIDE FINAL;
@@ -1655,7 +1659,7 @@ public:
                                              ViewSetSpec view,
                                              const std::string& oldName,
                                              const std::string& newName) OVERRIDE FINAL;
-    virtual void clearExpression(DimSpec dimension, ViewSetSpec view, bool clearResults) OVERRIDE FINAL;
+    virtual void clearExpression(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
     virtual std::string validateExpression(const std::string& expression, DimIdx dimension, ViewIdx view, bool hasRetVariable, std::string* resultAsString) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension = DimSpec::all(), DimSpec otherDimension = DimSpec::all(), ViewSetSpec thisView = ViewSetSpec::all(), ViewSetSpec otherView = ViewSetSpec::all()) OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1768,6 +1772,8 @@ public:
     virtual int getStringWidthForCurrentFont(const std::string& string) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setOfxParamHandle(void* ofxParamHandle) OVERRIDE FINAL;
     virtual void* getOfxParamHandle() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual TimeValue getCurrentTime_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getDimensionName(DimIdx dimension) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setDimensionName(DimIdx dim, const std::string & name) OVERRIDE FINAL;
     virtual bool hasModifications() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -1819,7 +1825,6 @@ public:
                              const ViewIdx listenedToView, const KnobIPtr& knob) OVERRIDE FINAL;
     virtual void getAllExpressionDependenciesRecursive(std::set<NodePtr >& nodes) const OVERRIDE FINAL;
     virtual void getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags = ListenersTypeFlags(eListenersTypeExpression | eListenersTypeSharedValue)) const OVERRIDE FINAL;
-    virtual void clearExpressionsResults(DimSpec /*dimension*/, ViewSetSpec /*view*/) OVERRIDE {}
 
 private:
 
@@ -1864,7 +1869,7 @@ protected:
 
     void refreshCurveMinMax(ViewSetSpec view, DimSpec dimension);
 
-    RenderValuesCachePtr getHolderRenderValuesCache(double* currentTime = 0, ViewIdx* currentView = 0) const;
+    RenderValuesCachePtr getHolderRenderValuesCache(TimeValue* currentTime = 0, ViewIdx* currentView = 0) const;
 
     virtual void copyValuesFromCurve(DimIdx /*dim*/, ViewIdx /*view*/) {}
 
@@ -1877,12 +1882,6 @@ private:
 
 public:
 
-
-    virtual void cloneExpressionsResults(const KnobIPtr& /*other*/,
-                                         ViewSetSpec /*view*/,
-                                         ViewSetSpec /*otherView*/,
-                                         DimSpec /*dimension */,
-                                         DimSpec /*otherDimension */) {}
 
 
     /**
@@ -1926,16 +1925,6 @@ class Knob
 public:
 
     typedef T DataType;
-
-
-    /*
-       For each dimension, the results of the expressions at a given pair <frame, time> is stored so
-       that we're able to get the same value again for the same render.
-       Of course, this saved in the project to retrieve the same values between 2 runs of the project.
-     */
-    typedef std::map<double, T> FrameValueMap;
-    typedef std::map<ViewIdx, FrameValueMap> PerViewFrameValueMap;
-    typedef std::vector<PerViewFrameValueMap> PerDimensionFrameValueMap;
 
 protected: // derives from KnobI, parent of KnobInt, KnobBool
     // TODO: enable_shared_from_this
@@ -2273,8 +2262,6 @@ public:
     T getDisplayMinimum(DimIdx dimension = DimIdx(0)) const;
     T getDisplayMaximum(DimIdx dimension = DimIdx(0)) const;
 
-    void getExpressionResults(DimIdx dim, ViewIdx view, FrameValueMap& map) const;
-
     bool getValueFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 
     virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE FINAL;
@@ -2314,17 +2301,9 @@ private:
     T clampToMinMax(const T& value, DimIdx dimension) const;
 
 
-    virtual void cloneExpressionsResults(const KnobIPtr& other,
-                                         ViewSetSpec view,
-                                         ViewSetSpec otherView,
-                                         DimSpec dimension,
-                                         DimSpec otherDimension) OVERRIDE FINAL;
-
     void makeKeyFrame(TimeValue time, const T& v, ViewIdx view, KeyFrame* key);
 
     void queueSetValue(const T& v, ViewSetSpec view, DimSpec dimension);
-
-    virtual void clearExpressionsResults(DimSpec dimension, ViewSetSpec view) OVERRIDE FINAL;
 
     bool evaluateExpression(TimeValue time, ViewIdx view, DimIdx dimension, T* ret, std::string* error);
 
@@ -2352,7 +2331,6 @@ private:
         bool defaultValueSet;
     };
     std::vector<DefaultValue> _defaultValues;
-    mutable PerDimensionFrameValueMap _exprRes;
 
     // Only for double and int
     mutable QMutex _minMaxMutex;
@@ -2631,7 +2609,7 @@ public:
 
     void refreshAfterTimeChange(bool isPlayback, TimeValue time);
 
-    virtual double getTimelineCurrentTime() const;
+    virtual TimeValue getTimelineCurrentTime() const;
 
     /**
      * @brief Same as refreshAfterTimeChange but refreshes only the knobs
@@ -2792,6 +2770,9 @@ public:
     void setItemsTable(const KnobItemsTablePtr& table, const std::string& paramScriptNameBefore);
     KnobItemsTablePtr getItemsTable() const;
     std::string getItemsTablePreviousKnobScriptName() const;
+
+    virtual TimeValue getCurrentTime_TLS() const;
+    virtual ViewIdx getCurrentView_TLS() const;
 
 protected:
 

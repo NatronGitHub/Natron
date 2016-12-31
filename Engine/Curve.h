@@ -99,7 +99,7 @@ public:
 
     void setValue(double v);
 
-    void setTime(double time);
+    void setTime(TimeValue time);
 
     void setInterpolation(KeyframeTypeEnum interp);
 
@@ -286,11 +286,11 @@ public:
      * The interpolated curve value.
      * An empty curve has a value of zero everywhere/
      */
-    double getValueAt(double t, bool clamp = true) const WARN_UNUSED_RETURN;
+    double getValueAt(TimeValue t, bool clamp = true) const WARN_UNUSED_RETURN;
 
-    double getDerivativeAt(double t) const WARN_UNUSED_RETURN;
+    double getDerivativeAt(TimeValue t) const WARN_UNUSED_RETURN;
 
-    double getIntegrateFromTo(double t1, double t2) const WARN_UNUSED_RETURN;
+    double getIntegrateFromTo(TimeValue t1, TimeValue t2) const WARN_UNUSED_RETURN;
 
     KeyFrameSet getKeyFrames_mt_safe() const WARN_UNUSED_RETURN;
 

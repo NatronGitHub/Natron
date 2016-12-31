@@ -2186,7 +2186,6 @@ Settings::restoreSettings(const KnobsVec& knobs)
             saveSetting(_imp->_defaultAppearanceVersion );
         }
 
-        appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
     } catch (std::logic_error) {
         // ignore
     }

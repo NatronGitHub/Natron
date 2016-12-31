@@ -164,7 +164,7 @@ KnobHelper::deleteKnob()
         holder->getApp()->recheckInvalidExpressions();
     }
 
-    clearExpression(DimSpec::all(), ViewSetSpec::all(), true);
+    clearExpression(DimSpec::all(), ViewSetSpec::all());
 
 
     resetParent();
@@ -913,9 +913,6 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
 
     // Refresh modifications state
     computeHasModifications();
-
-    // Clear expression now before anything else gets updated
-    clearExpressionsResults(dimension, view);
 
     // Invalidate the hash cache
     invalidateHashCache();
@@ -2408,10 +2405,6 @@ KnobHelper::cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpe
         }
     }
 
-    if (hasChanged) {
-        cloneExpressionsResults(other, view, otherView, dimension, otherDimension);
-    }
-
     return hasChanged;
 }
 
@@ -2486,6 +2479,22 @@ KnobHelper::getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags)
         }
     }
 
+}
+
+double
+KnobHelper::getCurrentTime_TLS() const
+{
+    KnobHolderPtr holder = getHolder();
+
+    return holder && holder->getApp() ? holder->getCurrentTime_TLS() : 0;
+}
+
+ViewIdx
+KnobHelper::getCurrentView_TLS() const
+{
+    KnobHolderPtr holder = getHolder();
+
+    return ( holder && holder->getApp() ) ? holder->getCurrentView_TLS() : ViewIdx(0);
 }
 
 
@@ -2617,7 +2626,7 @@ KnobHelper::refreshCurveMinMax(ViewSetSpec view, DimSpec dimension)
 }
 
 RenderValuesCachePtr
-KnobHelper::getHolderRenderValuesCache(double* currentTime, ViewIdx* currentView) const
+KnobHelper::getHolderRenderValuesCache(TimeValue* currentTime, ViewIdx* currentView) const
 {
     KnobHolderPtr holder = getHolder();
     if (!holder) {
@@ -2640,7 +2649,7 @@ KnobHelper::getHolderRenderValuesCache(double* currentTime, ViewIdx* currentView
     if (!isEffect) {
         return RenderValuesCachePtr();
     }
-    return isEffect->getRenderValuesCacheTLS(currentTime, currentView);
+    return isEffect->getRenderValuesCache_TLS(currentTime, currentView);
 }
 
 bool
@@ -2900,7 +2909,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
 
                 try {
                     std::string script = ss.str();
-                    clearExpression(DimSpec::all(), ViewSetSpec::all(), true);
+                    clearExpression(DimSpec::all(), ViewSetSpec::all());
                     setExpression(DimSpec::all(), ViewSetSpec::all(), script, false /*hasRetVariable*/, false /*failIfInvalid*/);
                 } catch (...) {
                 }
@@ -5208,15 +5217,27 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
     refreshExtraStateAfterTimeChanged(isPlayback, time);
 }
 
-double
+TimeValue
 KnobHolder::getTimelineCurrentTime() const
 {
     AppInstancePtr app = getApp();
     if (app) {
-        return app->getTimeLine()->currentFrame();
+        return TimeValue(app->getTimeLine()->currentFrame());
     } else {
-        return 0;
+        return TimeValue(0);
     }
+}
+
+TimeValue
+KnobHolder::getCurrentTime_TLS() const
+{
+    return TimeValue(getTimelineCurrentTime());
+}
+
+ViewIdx
+KnobHolder::getCurrentView_TLS() const
+{
+    return ViewIdx(0);
 }
 
 void

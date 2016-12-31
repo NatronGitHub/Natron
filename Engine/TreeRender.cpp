@@ -75,6 +75,9 @@ struct TreeRenderPrivate
     // the view to render
     ViewIdx view;
 
+    // Rneder statistics
+    RenderStatsPtr statsObject;
+
     // the OpenGL contexts
     OSGLContextWPtr openGLContext, cpuOpenGLContext;
 
@@ -109,6 +112,7 @@ struct TreeRenderPrivate
     , treeRoot()
     , time(0)
     , view()
+    , statsObject()
     , openGLContext()
     , cpuOpenGLContext()
     , aborted()
@@ -183,6 +187,24 @@ TreeRender::getNodeRenderArgs(const NodePtr& node) const
     return it->second;
 }
 
+NodePtr
+TreeRender::getTreeRoot() const
+{
+    return _imp->treeRoot;
+}
+
+OSGLContextPtr
+TreeRender::getGPUOpenGLContext() const
+{
+    return _imp->openGLContext.lock();
+}
+
+OSGLContextPtr
+TreeRender::getCPUOpenGLContext() const
+{
+    return _imp->cpuOpenGLContext.lock();
+}
+
 
 bool
 TreeRender::isAborted() const
@@ -224,6 +246,31 @@ bool
 TreeRender::isDraftRender() const
 {
     return _imp->isDraft;
+}
+
+bool
+TreeRender::isByPassCacheEnabled() const
+{
+    return _imp->byPassCache;
+}
+
+
+TimeValue
+TreeRender::getTime() const
+{
+    return _imp->time;
+}
+
+ViewIdx
+TreeRender::getView() const
+{
+    return _imp->view;
+}
+
+RenderStatsPtr
+TreeRender::getStatsObject() const
+{
+    return _imp->statsObject;
 }
 
 void
@@ -438,7 +485,8 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
         if (foundArgs != perNodeArgs.end()) {
             frameArgs = foundArgs->second;
         } else {
-            frameArgs.reset(new TreeRenderNodeArgs(_publicInterface->shared_from_this(), node));
+            frameArgs = TreeRenderNodeArgs::create(_publicInterface->shared_from_this(), node);
+            node->getEffectInstance()->setCurrentRender_TLS(frameArgs);
             perNodeArgs[node] = frameArgs;
         }
     }
@@ -477,6 +525,7 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
 
     time = inArgs->time;
     view = inArgs->view;
+    statsObject = inArgs->stats;
     treeRoot = inArgs->treeRoot;
     isPlayback = inArgs->playback;
     isDraft = inArgs->draftMode;
@@ -502,7 +551,7 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
 } // init
 
 RenderRoIRetCode
-TreeRender::renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes)
+TreeRender::launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
     TreeRenderPtr render(new TreeRender());
 
@@ -521,12 +570,11 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, Ima
 
     // Use the provided RoI, otherwise render the RoD
     RectD canonicalRoi;
-    RenderScale scale = Image::getScaleFromMipMapLevel(inArgs->mipMapLevel);
     if (inArgs->canonicalRoI) {
         canonicalRoi = *inArgs->canonicalRoI;
     } else {
         GetRegionOfDefinitionResultsPtr results;
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, scale, inArgs->view, rootNodeRenderArgs, &results);
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, inArgs->scale, inArgs->view, rootNodeRenderArgs, &results);
         if (stat == eStatusFailed) {
             return eRenderRoIRetCodeFailed;
         }
@@ -539,44 +587,28 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, Ima
     if (inArgs->layers) {
         componentsToRender = *inArgs->layers;
     } else {
-        GetComponentsNeededResultsPtr results;
-        StatusEnum stat = effectToRender->getComponentsNeededAndProduced_public(inArgs->time, inArgs->view, rootNodeRenderArgs, &results);
+        GetComponentsResultsPtr results;
+        StatusEnum stat = effectToRender->getComponents_public(inArgs->time, inArgs->view, rootNodeRenderArgs, &results);
         if (stat == eStatusFailed) {
             return eRenderRoIRetCodeFailed;
         }
         assert(results);
 
-        ComponentsNeededMap neededComps;
+        std::map<int, std::list<ImageComponents> > neededInputLayers;
+        std::list<ImageComponents> producedLayers, availableLayers;
         int passThroughInputNb;
         TimeValue passThroughTime;
         ViewIdx passThroughView;
         std::bitset<4> processChannels;
         bool processAll;
-        results->getComponentsNeededResults(&neededComps, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-        
-        ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
-        if ( foundOutput != neededComps.end() ) {
-            for (std::size_t j = 0; j < foundOutput->second.size(); ++j) {
-                componentsToRender.push_back(foundOutput->second[j]);
-            }
-        }
+        results->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
+        componentsToRender = producedLayers;
     }
 
     // Cycle through the tree to make sure all nodes render once with the appropriate RoI
     {
 
-        TreeRenderNodeArgsPtr nodeFrameArgs = render->getNodeRenderArgs(inArgs->treeRoot);
-
-        // Should have been set in init() when calling getFramesNeeded
-        assert(nodeFrameArgs);
-        
-        StatusEnum stat = EffectInstance::getInputsRoIsFunctor(inArgs->time,
-                                                               inArgs->view,
-                                                               inArgs->mipMapLevel,
-                                                               nodeFrameArgs,
-                                                               inArgs->treeRoot,
-                                                               inArgs->treeRoot,
-                                                               canonicalRoi);
+        StatusEnum stat = rootNodeRenderArgs->roiVisitFunctor(inArgs->time, inArgs->view, inArgs->scale, canonicalRoi, effectToRender);
 
         if (stat == eStatusFailed) {
             return eRenderRoIRetCodeFailed;
@@ -586,24 +618,23 @@ TreeRender::renderImage(const CtorArgsPtr& inArgs, std::map<ImageComponents, Ima
     double outputPar = effectToRender->getAspectRatio(rootNodeRenderArgs, -1);
 
     RectI pixelRoI;
-    canonicalRoi.toPixelEnclosing(scale, outputPar, &pixelRoI);
+    canonicalRoi.toPixelEnclosing(inArgs->scale, outputPar, &pixelRoI);
 
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(inArgs->time,
                                                                                                      inArgs->view,
-                                                                                                     scale,
-                                                                                                     inArgs->mipMapLevel,
+                                                                                                     inArgs->scale,
                                                                                                      pixelRoI,
                                                                                                      componentsToRender,
                                                                                                      effectToRender,
                                                                                                      -1,
                                                                                                      inArgs->time,
-                                                                                                     InputImagesMap()));
+                                                                                                     rootNodeRenderArgs));
     
     EffectInstance::RenderRoIResults results;
     RenderRoIRetCode stat = effectToRender->renderRoI(*renderRoiArgs, &results);
     *outputPlanes = results.outputPlanes;
     return stat;
 
-} // renderImage
+} // launchRender
 
 NATRON_NAMESPACE_EXIT;

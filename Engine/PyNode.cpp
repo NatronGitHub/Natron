@@ -663,7 +663,7 @@ Effect::getParam(const QString& name) const
     }
 }
 
-int
+double
 Effect::getCurrentTime() const
 {
     NodePtr n = getInternalNode();
@@ -672,7 +672,7 @@ Effect::getCurrentTime() const
         PythonSetNullError();
         return 0.;
     }
-    return n->getEffectInstance()->getCurrentTime();
+    return n->getEffectInstance()->getCurrentTime_TLS();
 }
 
 void

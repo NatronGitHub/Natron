@@ -79,7 +79,6 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , infoPage()
 , nodeInfos()
 , refreshInfoButton()
-, useFullScaleImagesWhenRenderScaleUnsupported()
 , forceCaching()
 , hideInputs()
 , beforeFrameRender()

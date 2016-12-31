@@ -172,8 +172,10 @@ public:
         return ret;
     }
 
+    void toCanonical(const RenderScale& thisScale, double par, const RectD & rod, RectD *rect) const;
     void toCanonical(unsigned int thisLevel, double par, const RectD & rod, RectD *rect) const;
     void toCanonical_noClipping(unsigned int thisLevel, double par, RectD *rect) const;
+    void toCanonical_noClipping(const RenderScale& thisScale, double par, RectD *rect) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**

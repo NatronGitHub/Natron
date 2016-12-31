@@ -678,6 +678,7 @@ TileCacheFilePtr
 Cache::allocTile(std::size_t *dataOffset) 
 {
 
+#pragma message WARN("Also split the tileCacheMutex across all cache buckets")
     QMutexLocker k(&_imp->tileCacheMutex);
 
     // First, search for a file with available space.
@@ -1067,7 +1068,9 @@ Cache::evictLRUEntries(std::size_t nBytesToFree, StorageModeEnum storage)
         mustEvictEntries = residentSetBytes >= _imp->maxPhysicalRAMAttainable;
     }
     while (mustEvictEntries) {
+        
         bool foundBucketThatCanEvict = false;
+
         // Check each bucket
         for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
             CacheBucket& bucket = _imp->buckets[bucket_i];

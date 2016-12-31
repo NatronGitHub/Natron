@@ -80,9 +80,9 @@ Image::InitStorageArgs::InitStorageArgs()
 , bitdepth(eImageBitDepthFloat)
 , layer(ImageComponents::getRGBAComponents())
 , components()
-, cachePolicy(Image::eCacheAccessModeNone)
-, bufferFormat(Image::eImageBufferLayoutRGBAPackedFullRect)
-, mipMapLevel(0)
+, cachePolicy(eCacheAccessModeNone)
+, bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
+, scale(1.)
 , isDraft(false)
 , nodeHashKey(0)
 , glContext()
@@ -113,7 +113,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     _imp->cachePolicy = args.cachePolicy;
     _imp->bufferFormat = args.bufferFormat;
     _imp->layer = args.layer;
-    _imp->mipMapLevel = args.mipMapLevel;
+    _imp->scale = args.scale;
     _imp->mirrorImage = args.mirrorImage;
     _imp->mirrorImageRoI = args.mirrorImageRoI;
     _imp->renderArgs = args.renderArgs;
@@ -137,6 +137,13 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     assert(args.storage != eStorageModeDisk || args.bufferFormat == eImageBufferLayoutMonoChannelTiled);
     if (args.storage == eStorageModeDisk && args.bufferFormat != eImageBufferLayoutMonoChannelTiled) {
         throw std::bad_alloc();
+    }
+
+    // If allocating OpenGL textures, ensure the context is current
+    OSGLContextAttacherPtr contextLocker;
+    if (args.storage == eStorageModeGLTex) {
+        contextLocker = OSGLContextAttacher::create(args.glContext);
+        contextLocker->attach();
     }
 
 
@@ -231,7 +238,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             // Make-up the key for this tile 
             ImageTileKeyPtr key(new ImageTileKey(args.nodeHashKey,
                                                  channelName,
-                                                 args.mipMapLevel,
+                                                 args.scale,
                                                  args.isDraft,
                                                  args.bitdepth,
                                                  tx,
@@ -260,39 +267,64 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             bool isCached = false;
             if (args.cachePolicy == eCacheAccessModeReadWrite || args.cachePolicy == eCacheAccessModeWriteOnly) {
 
-                // Only look for a draft tile in the cache if the image allows draft
-                int nLookups = args.isDraft ? 2 : 1;
+                const bool supportsFetchingHigherScaleTiles = (args.storage == eStorageModeDisk || args.storage == eStorageModeRAM);
 
-                for (int draft_i = 0; draft_i < nLookups; ++draft_i) {
+#pragma message WARN("Full-scale images are assumed to have a render scale of 1 here.")
+                const RenderScale fullScale = RenderScale(1.);
 
-                    const bool useDraft = (const bool)draft_i;
+                // This is the default cache lookup scale: for OpenGL textures, always assume them at scale 1
+                // since downscaling is handled by OpenGL itself
+                const RenderScale defaultScale = args.storage == eStorageModeGLTex ? fullScale : args.scale;
 
-                    ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeHashKey,
-                                                                    channelName,
-                                                                    args.mipMapLevel,
-                                                                    useDraft,
-                                                                    args.bitdepth,
-                                                                    tx,
-                                                                    ty));
+                // First look for a tile at the given scale, if not found look for a tile at scale 1 and downscale it.
+                const int nScaleLookups = (defaultScale.x < fullScale.x || defaultScale.y < fullScale.y) && supportsFetchingHigherScaleTiles ? 2 : 1;
 
-                    // In eCacheAccessModeWriteOnly mode, we already accessed the cache. If we got an entry locker because the entry
-                    // was not cached, do not read a second time.
-                    if (!entryLocker) {
-                        isCached = cache->get(keyToReadCache, &cacheEntry, &entryLocker);
-                        assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
+                for (int scale_i = 0; scale_i < nScaleLookups; ++scale_i) {
+
+                    const RenderScale lookupScale = scale_i == 0 ? defaultScale : fullScale;
+
+                    // Only look for a draft tile in the cache if the image allows draft
+                    const int nDraftLookups = args.isDraft ? 2 : 1;
+
+                    for (int draft_i = 0; draft_i < nDraftLookups; ++draft_i) {
+
+                        const bool useDraft = (const bool)draft_i;
+
+                        ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeHashKey,
+                                                                        channelName,
+                                                                        lookupScale,
+                                                                        useDraft,
+                                                                        args.bitdepth,
+                                                                        tx,
+                                                                        ty));
+
+                        // In eCacheAccessModeWriteOnly mode, we already accessed the cache. If we got an entry locker because the entry
+                        // was not cached, do not read a second time.
+                        if (!entryLocker) {
+                            isCached = cache->get(keyToReadCache, &cacheEntry, &entryLocker);
+                            assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
+                        }
+                        if (isCached) {
+                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
+                            assert(isBufferedEntry);
+                            thisChannelTile.buffer = isBufferedEntry;
+                            thisChannelTile.isCached = true;
+                            
+                            // We found a cache entry, don't continue to look for a tile computed in draft mode.
+                            break;
+                            
+                        }
                     }
                     if (isCached) {
-                        MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
-                        assert(isBufferedEntry);
-                        thisChannelTile.buffer = isBufferedEntry;
-                        thisChannelTile.isCached = true;
 
-                        // We found a cache entry, don't continue to look for a tile computed in draft mode.
+                        // If the image fetched is at a upper scale, we must downscale
+                        if (supportsFetchingHigherScaleTiles && (args.scale.x != lookupScale.x || args.scale.y != lookupScale.y)) {
+#pragma message WARN("downscale cached tile here")
+                        }
                         break;
-
                     }
                 }
-            }
+            } // useCache
             
             if (!isCached) {
 
@@ -427,7 +459,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
     } // isTiled
 } // copyPixels
 
-Image::ImageBufferLayoutEnum
+ImageBufferLayoutEnum
 Image::getBufferFormat() const
 {
     return _imp->bufferFormat;
@@ -449,10 +481,10 @@ Image::getBounds() const
     return _imp->bounds;
 }
 
-unsigned int
-Image::getMipMapLevel() const
+const RenderScale&
+Image::getScale() const
 {
-    return _imp->mipMapLevel;
+    return _imp->scale;
 }
 
 
@@ -498,13 +530,12 @@ Image::getBitDepth() const
 }
 
 void
-Image::getCPUTileData(const Image::Tile& tile,
-                      Image::CPUTileData* data) const
+Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data)
 {
     memset(data->ptrs, 0, sizeof(void*) * 4);
     data->nComps = 0;
     data->bitDepth = eImageBitDepthNone;
-    
+
     for (std::size_t i = 0; i < tile.perChannelTile.size(); ++i) {
         RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(tile.perChannelTile[i].buffer);
         MemoryMappedCacheEntryPtr fromIsMMAPBuffer = toMemoryMappedCacheEntry(tile.perChannelTile[i].buffer);
@@ -519,7 +550,7 @@ Image::getCPUTileData(const Image::Tile& tile,
                 data->bitDepth = fromIsRAMBuffer->getBitDepth();
                 data->nComps = fromIsRAMBuffer->getNumComponents();
 
-                if (_imp->bufferFormat == Image::eImageBufferLayoutRGBACoplanarFullRect) {
+                if (layout == eImageBufferLayoutRGBACoplanarFullRect) {
                     // Coplanar requires offsetting
                     assert(tile.perChannelTile.size() == 1);
                     std::size_t planeSize = data->nComps * data->tileBounds.area() * getSizeOfForBitDepth(data->bitDepth);
@@ -550,6 +581,13 @@ Image::getCPUTileData(const Image::Tile& tile,
             }
         }
     } // for each channel
+} // getCPUTileData
+
+void
+Image::getCPUTileData(const Image::Tile& tile,
+                      Image::CPUTileData* data) const
+{
+    getCPUTileData(tile, _imp->bufferFormat, data);
 }
 
 int
@@ -557,6 +595,48 @@ Image::getNumTiles() const
 {
     return (int)_imp->tiles.size();
 }
+
+bool
+Image::isCached() const
+{
+    if (_imp->cachePolicy != eCacheAccessModeReadWrite) {
+        return false;
+    }
+    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
+            if (!_imp->tiles[i].perChannelTile[c].isCached) {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+std::list<RectI>
+Image::getRestToRender() const
+{
+
+    std::list<RectI> ret;
+    if (_imp->cachePolicy != eCacheAccessModeReadWrite) {
+        return std::list<RectI>();
+    }
+
+    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        bool hasChannelNotCached = true;
+        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
+            if (!_imp->tiles[i].perChannelTile[c].isCached) {
+                hasChannelNotCached = true;
+                break;
+            }
+        }
+        if (hasChannelNotCached) {
+            if (!_imp->tiles[i].tileBounds.isNull()) {
+                ret.push_back(_imp->tiles[i].tileBounds);
+            }
+        }
+    }
+    return ret;
+} // getRestToRender
 
 bool
 Image::getTileAt(int tileIndex, Image::Tile* tile) const
@@ -845,7 +925,9 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         args.renderArgs = _imp->renderArgs;
         args.layer = previousLevelImage->_imp->layer;
         args.bitdepth = previousLevelImage->getBitDepth();
-        args.mipMapLevel = previousLevelImage->getMipMapLevel();
+        const RenderScale& previousScale = previousLevelImage->getScale();
+        args.scale.x = previousScale.x;
+        args.scale.y = previousScale.y;
         ImagePtr tmpImg = Image::create(args);
 
         CopyPixelsArgs cpyArgs;
@@ -869,7 +951,9 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
             args.renderArgs = _imp->renderArgs;
             args.layer = previousLevelImage->_imp->layer;
             args.bitdepth = previousLevelImage->getBitDepth();
-            args.mipMapLevel = previousLevelImage->getMipMapLevel() + 1;
+            const RenderScale& previousScale = previousLevelImage->getScale();
+            args.scale.x = previousScale.x / 2.;
+            args.scale.y = previousScale.y / 2.;
             mipmapImage = Image::create(args);
         }
 

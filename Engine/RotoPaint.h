@@ -435,7 +435,6 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 

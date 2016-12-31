@@ -1169,10 +1169,6 @@ private:
 public:
 
 
-    void onSetSupportRenderScaleMaybeSet(int support);
-
-    bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
-
     /**
      * @brief Returns true if the parallel render args thread-storage is set
      **/

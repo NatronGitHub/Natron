@@ -559,10 +559,10 @@ AnimationModuleEditor::refreshSelectionBboxAndRedrawView()
     _imp->view->refreshSelectionBboxAndRedraw();
 }
 
-int
+TimeValue
 AnimationModuleEditor::getTimelineCurrentTime() const
 {
-    return getGui()->getApp()->getTimeLine()->currentFrame();
+    return TimeValue(getGui()->getApp()->getTimeLine()->currentFrame());
 }
 
 AnimationModulePtr

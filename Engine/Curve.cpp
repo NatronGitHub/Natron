@@ -156,7 +156,7 @@ KeyFrame::setValue(double value)
 }
 
 void
-KeyFrame::setTime(double time)
+KeyFrame::setTime(TimeValue time)
 {
     _time = time;
     assert( !boost::math::isnan(_time) && !boost::math::isinf(_time) );
@@ -324,7 +324,7 @@ Curve::cloneAndCheckIfChanged(const Curve& other, double offset, const RangeD* r
         }
         KeyFrame k(*it);
         if (offset != 0) {
-            k.setTime(time + offset);
+            k.setTime(TimeValue(time + offset));
         }
         if (!hasChanged && oit != tmpSet.end() && *oit != *it) {
             hasChanged = true;
@@ -357,7 +357,7 @@ Curve::clone(const Curve & other,
         }
         KeyFrame k(*it);
         if (offset != 0) {
-            k.setTime(time + offset);
+            k.setTime(TimeValue(time + offset));
         }
         _imp->keyFrames.insert(k);
     }
@@ -815,13 +815,13 @@ interParams(const KeyFrameSet &keyFrames,
             bool isPeriodic,
             double xMin,
             double xMax,
-            double *t,
+            TimeValue *t,
             KeyFrameSet::const_iterator itup,
-            double *tcur,
+            TimeValue *tcur,
             double *vcur,
             double *vcurDerivRight,
             KeyframeTypeEnum *interp,
-            double *tnext,
+            TimeValue *tnext,
             double *vnext,
             double *vnextDerivLeft,
             KeyframeTypeEnum *interpNext)
@@ -836,9 +836,9 @@ interParams(const KeyFrameSet &keyFrames,
         assert(xMin < xMax);
         if (*t < minKeyFrameX || *t > minKeyFrameX + period) {
             // This will bring t either in minTime <= t <= maxTime or t in the range minTime - (maxTime - minTime) < t < minTime
-            *t = std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX;
+            *t = TimeValue(std::fmod(*t - minKeyFrameX, period ) + minKeyFrameX);
             if (*t < minKeyFrameX) {
-                *t += period;
+                *t = TimeValue(*t + period);
             }
             assert(*t >= minKeyFrameX && *t <= minKeyFrameX + period);
         }
@@ -853,7 +853,7 @@ interParams(const KeyFrameSet &keyFrames,
             *vnextDerivLeft = itup->getLeftDerivative();
             *interpNext = itup->getInterpolation();
             KeyFrameSet::const_reverse_iterator last =  keyFrames.rbegin();
-            *tcur = last->getTime() - period;
+            *tcur = TimeValue(last->getTime() - period);
             *vcur = last->getValue();
             *vcurDerivRight = last->getRightDerivative();
             *interp = last->getInterpolation();
@@ -862,7 +862,7 @@ interParams(const KeyFrameSet &keyFrames,
             *vnext = itup->getValue();
             *vnextDerivLeft = itup->getLeftDerivative();
             *interpNext = itup->getInterpolation();
-            *tcur = *tnext - 1.;
+            *tcur = TimeValue(*tnext - 1.);
             *vcur = *vnext;
             *vcurDerivRight = 0.;
             *interp = eKeyframeTypeNone;
@@ -879,7 +879,7 @@ interParams(const KeyFrameSet &keyFrames,
             *vcur = prev->getValue();
             *vcurDerivRight = prev->getRightDerivative();
             *interp = prev->getInterpolation();
-            *tnext = next->getTime() + period;
+            *tnext = TimeValue(next->getTime() + period);
             *vnext = next->getValue();
             *vnextDerivLeft = next->getLeftDerivative();
             *interpNext = next->getInterpolation();
@@ -890,7 +890,7 @@ interParams(const KeyFrameSet &keyFrames,
             *vcur = itlast->getValue();
             *vcurDerivRight = itlast->getRightDerivative();
             *interp = itlast->getInterpolation();
-            *tnext = *tcur + 1.;
+            *tnext = TimeValue(*tcur + 1.);
             *vnext = *vcur;
             *vnextDerivLeft = 0.;
             *interpNext = eKeyframeTypeNone;
@@ -914,7 +914,7 @@ interParams(const KeyFrameSet &keyFrames,
 }
 
 double
-Curve::getValueAt(double t,
+Curve::getValueAt(TimeValue t,
                   bool doClamp) const
 {
     QMutexLocker l(&_imp->_lock);
@@ -944,7 +944,7 @@ Curve::getValueAt(double t,
         //    //if there's only 1 keyframe, don't bother interpolating
         //    return (*_imp->keyFrames.begin()).getValue();
         //}
-        double tcur, tnext;
+        TimeValue tcur, tnext;
         double vcurDerivRight, vnextDerivLeft, vcur, vnext;
         KeyframeTypeEnum interp, interpNext;
         KeyFrame k(t, 0.);
@@ -997,7 +997,7 @@ Curve::getValueAt(double t,
 } // getValueAt
 
 double
-Curve::getDerivativeAt(double t) const
+Curve::getDerivativeAt(TimeValue t) const
 {
     QMutexLocker l(&_imp->_lock);
 
@@ -1011,7 +1011,7 @@ Curve::getDerivativeAt(double t) const
     //    //if there's only 1 keyframe, don't bother interpolating
     //    return (*_imp->keyFrames.begin()).getValue();
     //}
-    double tcur, tnext;
+    TimeValue tcur, tnext;
     double vcurDerivRight, vnextDerivLeft, vcur, vnext;
     KeyframeTypeEnum interp, interpNext;
     KeyFrame k(t, 0.);
@@ -1058,8 +1058,8 @@ Curve::getDerivativeAt(double t) const
 } // getDerivativeAt
 
 double
-Curve::getIntegrateFromTo(double t1,
-                          double t2) const
+Curve::getIntegrateFromTo(TimeValue t1,
+                          TimeValue t2) const
 {
     QMutexLocker l(&_imp->_lock);
     bool opposite = false;
@@ -1080,7 +1080,7 @@ Curve::getIntegrateFromTo(double t1,
     //    //if there's only 1 keyframe, don't bother interpolating
     //    return (*_imp->keyFrames.begin()).getValue();
     //}
-    double tcur, tnext;
+    TimeValue tcur, tnext;
     double vcurDerivRight, vnextDerivLeft, vcur, vnext;
     KeyframeTypeEnum interp, interpNext;
     KeyFrame k(t1, 0.);
@@ -1112,7 +1112,7 @@ Curve::getIntegrateFromTo(double t1,
                                                   vcurDerivRight,
                                                   vnextDerivLeft,
                                                   tnext, vnext,
-                                                  t1, itup->getTime(),
+                                                  TimeValue(t1), itup->getTime(),
                                                   _imp->yMin, _imp->yMax,
                                                   interp,
                                                   interpNext);
@@ -1121,7 +1121,7 @@ Curve::getIntegrateFromTo(double t1,
                                             vcurDerivRight,
                                             vnextDerivLeft,
                                             tnext, vnext,
-                                            t1, itup->getTime(),
+                                            TimeValue(t1), itup->getTime(),
                                             interp,
                                             interpNext);
         }
@@ -1151,7 +1151,7 @@ Curve::getIntegrateFromTo(double t1,
                                               vcurDerivRight,
                                               vnextDerivLeft,
                                               tnext, vnext,
-                                              t1, t2,
+                                              TimeValue(t1), TimeValue(t2),
                                               _imp->yMin, _imp->yMax,
                                               interp,
                                               interpNext);
@@ -1160,7 +1160,7 @@ Curve::getIntegrateFromTo(double t1,
                                         vcurDerivRight,
                                         vnextDerivLeft,
                                         tnext, vnext,
-                                        t1, t2,
+                                        TimeValue(t1), TimeValue(t2),
                                         interp,
                                         interpNext);
     }
@@ -1305,7 +1305,7 @@ Curve::transformKeyframesValueAndTime(const std::list<double>& times,
         if (newKeys) {
             for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
                 KeyFrame k;
-                if (getKeyFrameWithTime(*it, &k)) {
+                if (getKeyFrameWithTime(TimeValue(*it), &k)) {
                     newKeys->push_back(k);
                 }
             }
@@ -1955,7 +1955,7 @@ Curve::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
     _imp->keyFrames.clear();
     for (std::list<SERIALIZATION_NAMESPACE::KeyFrameSerialization>::const_iterator it = s->keys.begin(); it != s->keys.end(); ++it) {
         KeyFrame k;
-        k.setTime(it->time);
+        k.setTime(TimeValue(it->time));
         k.setValue(it->value);
         KeyframeTypeEnum t = eKeyframeTypeSmooth;
         if (it->interpolation == kKeyframeSerializationTypeBroken) {

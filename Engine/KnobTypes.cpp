@@ -476,7 +476,7 @@ KnobButton::typeName() const
 bool
 KnobButton::trigger()
 {
-    return evaluateValueChange(DimSpec(0), getCurrentTime(), ViewSetSpec(0),  eValueChangedReasonUserEdited);
+    return evaluateValueChange(DimSpec(0), getCurrentTime_TLS(), ViewSetSpec(0),  eValueChangedReasonUserEdited);
 }
 
 /******************************KnobChoice**************************************/
@@ -2267,7 +2267,7 @@ KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewIdx view, Param
 
     EffectInstancePtr holder = toEffectInstance(getHolder());
     if (holder) {
-        RenderValuesCachePtr cache = holder->getRenderValuesCacheTLS();
+        RenderValuesCachePtr cache = holder->getRenderValuesCache_TLS();
         if (cache) {
             KnobParametricPtr thisShared = boost::const_pointer_cast<KnobParametric>(boost::dynamic_pointer_cast<const KnobParametric>(shared_from_this()));
             return cache->getOrCreateCachedParametricKnobCurve(thisShared, data->parametricCurve, dimension);
@@ -2323,7 +2323,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     CurvePtr curve = getParametricCurveInternal(dimension, ViewIdx(0), &data);
     assert(curve);
     curve->addKeyFrame(k);
-    evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
+    evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
     signalCurveChanged(dimension, data);
     return eStatusOK;
 }
@@ -2353,7 +2353,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     assert(curve);
     curve->addKeyFrame(k);
     signalCurveChanged(dimension, data);
-    evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
+    evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
 
     return eStatusOK;
 }
@@ -2491,7 +2491,7 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
     return eStatusOK;
 }
@@ -2525,7 +2525,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
             return eStatusFailed;
         }
         try {
-            curve->setKeyFrameValueAndTime(key, value, nthCtl);
+            curve->setKeyFrameValueAndTime(TimeValue(key), value, nthCtl);
         } catch (...) {
             return eStatusFailed;
         }
@@ -2533,7 +2533,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
     }
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
     return eStatusOK;
 }
@@ -2569,7 +2569,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         }
         int newIdx;
         try {
-            curve->setKeyFrameValueAndTime(key, value, nthCtl, &newIdx);
+            curve->setKeyFrameValueAndTime(TimeValue(key), value, nthCtl, &newIdx);
         } catch (...) {
             return eStatusFailed;
         }
@@ -2577,7 +2577,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         signalCurveChanged(dimension, data);
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
     return eStatusOK;
 } // setNthControlPoint
@@ -2615,7 +2615,7 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
         signalCurveChanged(dimension, data);
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
     return eStatusOK;
 }
@@ -2649,7 +2649,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
 
     }
 
-    evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
+    evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
 
     return eStatusOK;
 }
@@ -2809,7 +2809,7 @@ KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, d
     bool ret = thisCurve->cloneAndCheckIfChanged(curve, offset, range);
     if (ret) {
         signalCurveChanged(dimension, data);
-        evaluateValueChange(dimension, getCurrentTime(), ViewSetSpec(view), eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getCurrentTime_TLS(), ViewSetSpec(view), eValueChangedReasonUserEdited);
     }
     return ret;
 }
@@ -2850,7 +2850,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
     }
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 }
 
 bool
@@ -2889,7 +2889,7 @@ KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec vie
 
 
     if (ok) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
         return true;
     }
     return false;
@@ -2928,7 +2928,7 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReaso
     }
 
 
-    evaluateValueChange(dim, getCurrentTime(), view, reason);
+    evaluateValueChange(dim, getCurrentTime_TLS(), view, reason);
 
 }
 
@@ -2964,7 +2964,7 @@ KnobParametric::deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimS
         
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
 
 }
 
@@ -3000,7 +3000,7 @@ KnobParametric::deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSp
     }
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
 }
 
 void
@@ -3041,7 +3041,7 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
 }
 
 bool
@@ -3083,7 +3083,7 @@ KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimen
         
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
     return true;
 }
 
@@ -3130,7 +3130,7 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeVal
 
         }
     }
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
     return true;
 }
 
@@ -3178,7 +3178,7 @@ KnobParametric::setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec v
     }
 
     if (ret != eValueChangedReturnCodeNothingChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view, reason);
+        evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
     }
     return ret;
 }
@@ -3220,7 +3220,7 @@ KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 }
 
 void
@@ -3252,7 +3252,7 @@ KnobParametric::setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::
         }
     }
 
-    evaluateValueChange(DimSpec::all(), getCurrentTime(), view, reason);
+    evaluateValueChange(DimSpec::all(), getCurrentTime_TLS(), view, reason);
 
 }
 
@@ -3272,7 +3272,7 @@ KnobParametric::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubl
 
     }
 
-    evaluateValueChange(DimSpec::all(), getCurrentTime(), ViewSetSpec(0), reason);
+    evaluateValueChange(DimSpec::all(), getCurrentTime_TLS(), ViewSetSpec(0), reason);
 }
 
 bool

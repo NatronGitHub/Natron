@@ -2846,7 +2846,7 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 
 
 StatusEnum
-ViewerInstance::getTimeInvariantMetadatas(const NodeMetadata& /*metadata*/)
+ViewerInstance::getTimeInvariantMetadatas(NodeMetadata& /*metadata*/)
 {
     ViewerNodePtr node = getViewerNodeGroup();
     node->refreshFps();
@@ -2924,11 +2924,11 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     return std::log(closestPowerOf2) / M_LN2;
 }
 
-double
+TimeValue
 ViewerInstance::getTimelineCurrentTime() const
 {
     TimeLinePtr timeline = getTimeline();
-    return timeline->currentFrame();
+    return TimeValue(timeline->currentFrame());
 }
 
 bool

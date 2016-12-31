@@ -1681,10 +1681,20 @@ AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
 {
     ///validate the frame range to render
     if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
-        double firstFrameD, lastFrameD;
-        w.writer->getFrameRange_public(0, &firstFrameD, &lastFrameD);
+        double firstFrameD = INT_MIN;
+        double lastFrameD = INT_MAX;
+        {
+            GetFrameRangeResultsPtr results;
+            StatusEnum stat = w.writer->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            if (stat != eStatusFailed) {
+                RangeD range;
+                results->getFrameRangeResults(&range);
+                firstFrameD = range.min;
+                lastFrameD = range.max;
+            }
+        }
         if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
-            _publicInterface->getFrameRange(&firstFrameD, &lastFrameD);
+            _publicInterface->getProject()->getFrameRange(&firstFrameD, &lastFrameD);
         }
 
         if (firstFrameD > lastFrameD) {

@@ -120,7 +120,6 @@ Knob<T>::Knob(const KnobHolderPtr& holder,
     : KnobHelper(holder, description, dimension, declaredByPlugin)
     , _defaultValueMutex()
     , _defaultValues(dimension)
-    , _exprRes(dimension)
     , _minMaxMutex(QMutex::Recursive)
     , _minimums(dimension)
     , _maximums(dimension)
@@ -889,67 +888,6 @@ Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisV
 }
 
 
-
-
-
-
-template <typename T>
-void
-Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
-                                 ViewSetSpec view,
-                                 ViewSetSpec otherView,
-                                 DimSpec dimension,
-                                 DimSpec otherDimension)
-{
-    if (!other) {
-        return;
-    }
-    assert((view.isAll() && otherView.isAll()) || (view.isViewIdx() && view.isViewIdx()));
-    assert((dimension.isAll() && otherDimension.isAll()) || (!dimension.isAll() && !otherDimension.isAll()));
-
-    boost::shared_ptr<Knob<T> > otherKnob = boost::dynamic_pointer_cast<Knob<T> >(other);
-    if (!otherKnob) {
-        return;
-    }
-
-    std::list<ViewIdx> views = other->getViewsList();
-    if (dimension.isAll()) {
-        int dimMin = std::min( getNDimensions(), other->getNDimensions() );
-        for (int i = 0; i < dimMin; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                    FrameValueMap results;
-                    otherKnob->getExpressionResults(DimIdx(i), *it, results);
-                    QMutexLocker k(&_defaultValueMutex);
-                    _exprRes[i][*it] = results;
-                }
-            } else {
-                FrameValueMap results;
-                otherKnob->getExpressionResults(DimIdx(i), ViewIdx(otherView), results);
-                QMutexLocker k(&_defaultValueMutex);
-                _exprRes[i][ViewIdx(view)] = results;
-            }
-        }
-    } else {
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                FrameValueMap results;
-                otherKnob->getExpressionResults(DimIdx(otherDimension), *it, results);
-                QMutexLocker k(&_defaultValueMutex);
-                _exprRes[dimension][*it] = results;
-            }
-        } else {
-            FrameValueMap results;
-            otherKnob->getExpressionResults(DimIdx(otherDimension), ViewIdx(otherView), results);
-            QMutexLocker k(&_defaultValueMutex);
-            _exprRes[dimension][ViewIdx(view)] = results;
-        }
-
-
-    }
-}
-
-
 template <typename T>
 void
 Knob<T>::cloneDefaultValues(const KnobIPtr& other)
@@ -1177,65 +1115,8 @@ Knob<std::string>::getKeyFrameDataType() const
     return AnimatingObjectI::eKeyframeDataTypeString;
 }
 
-template <typename T>
-void
-Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
-{
-    QMutexLocker k(&_defaultValueMutex);
-
-    if (dimension.isAll()) {
-        for (int i = 0; i < getNDimensions(); ++i) {
-            if (view.isAll()) {
-                for (typename PerViewFrameValueMap::iterator it = _exprRes[i].begin(); it!=_exprRes[i].end(); ++it) {
-                    it->second.clear();
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-                typename PerViewFrameValueMap::iterator foundView = _exprRes[i].find(view_i);
-                if (foundView == _exprRes[i].end()) {
-                    return;
-                }
-                foundView->second.clear();
-            }
-        }
-    } else {
-        if (dimension < 0 || dimension >= getNDimensions()) {
-            throw std::invalid_argument("Knob::clearExpressionsResults: Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (typename PerViewFrameValueMap::iterator it = _exprRes[dimension].begin(); it!=_exprRes[dimension].end(); ++it) {
-                it->second.clear();
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
-            typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
-            if (foundView == _exprRes[dimension].end()) {
-                return;
-            }
-            foundView->second.clear();
-        }
-    }
-
-}
-
-template <typename T>
-void
-Knob<T>::getExpressionResults(DimIdx dim, ViewIdx view, FrameValueMap& map) const
-{
-    if (dim < 0 || dim >= getNDimensions()) {
-        throw std::invalid_argument("Knob::getExpressionResults: Dimension out of range");
-    }
-
-    QMutexLocker k(&_defaultValueMutex);
 
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
-    typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dim].find(view_i);
-    if (foundView == _exprRes[dim].end()) {
-        return;
-    }
-    map = foundView->second;
-}
 
 template <typename T>
 bool

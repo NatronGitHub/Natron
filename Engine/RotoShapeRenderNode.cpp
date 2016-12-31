@@ -40,7 +40,6 @@
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoShapeRenderGL.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/ParallelRenderArgs.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -68,7 +67,6 @@ RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 : EffectInstance(n)
 , _imp(new RotoShapeRenderNodePrivate())
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 RotoShapeRenderNode::~RotoShapeRenderNode()
@@ -207,7 +205,7 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
         RectD maskRod;
         try {
             double t = divisions > 1 ? range.min + i * interval : time;
-            maskRod = item->getBoundingBox(t, view);
+            maskRod = item->getBoundingBox(TimeValue(t), view);
         } catch (...) {
         }
 
@@ -222,11 +220,11 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
 
 
 StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod)
 {
    
 
-    StatusEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
+    StatusEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, render, rod);
     if (st != eStatusOK && st != eStatusReplyDefault) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
@@ -239,18 +237,19 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & s
 
 }
 
-bool
+StatusEnum
 RotoShapeRenderNode::isIdentity(TimeValue time,
-                const RenderScale & scale,
-                const RectI & roi,
-                ViewIdx view,
-                double* inputTime,
-                ViewIdx* inputView,
-                int* inputNb)
+                                const RenderScale & scale,
+                                const RectI & roi,
+                                ViewIdx view,
+                                const TreeRenderNodeArgsPtr& render,
+                                TimeValue* inputTime,
+                                ViewIdx* inputView,
+                                int* inputNb)
 {
     *inputView = view;
     NodePtr node = getNode();
-
+    
 
     RotoDrawableItemPtr rotoItem = node->getAttachedRotoItem();
     assert(rotoItem);
@@ -259,22 +258,20 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
         *inputTime = time;
         *inputNb = 0;
 
-        return true;
+        return eStatusOK;
     }
 
     RectD maskRod;
     getRoDFromItem(rotoItem, time, view, &maskRod);
 
     RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
+    maskRod.toPixelEnclosing(scale, getAspectRatio(render, -1), &maskPixelRod);
     if ( !maskPixelRod.intersects(roi) ) {
         *inputTime = time;
         *inputNb = 0;
-        
-        return true;
     }
     
-    return false;
+    return eStatusOK;
 }
 
 
@@ -319,14 +316,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
     assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || (isBezier->isCurveFinished(args.view) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
 
-    ParallelRenderArgsPtr frameArgs = getParallelRenderArgsTLS();
     const OSGLContextPtr& glContext = args.glContext;
-    AbortableRenderInfoPtr abortInfo;
-    if (frameArgs) {
-        abortInfo = frameArgs->abortInfo.lock();
-    }
-    assert( abortInfo && (!args.useOpenGL || glContext) );
-    if (args.useOpenGL && (!glContext || !abortInfo)) {
+
+    assert(!args.useOpenGL || glContext);
+    if (args.useOpenGL && !glContext) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
         return eStatusFailed;
     }
@@ -378,7 +371,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // First first time we draw this clear the background.
     if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
-        outputPlane.second->fillBoundsZero(glContext);
+        outputPlane.second->fillBoundsZero();
     }
 
     switch (type) {
@@ -531,7 +524,7 @@ RotoShapeRenderNode::purgeCaches()
 
 
 StatusEnum
-RotoShapeRenderNode::attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+RotoShapeRenderNode::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
     *data = ret;

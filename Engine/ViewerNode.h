@@ -155,7 +155,7 @@ public:
 
     void setCurrentView(ViewIdx view);
 
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL;
 
     void setZoomComboBoxText(const std::string& text);
 

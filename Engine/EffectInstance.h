@@ -125,30 +125,15 @@ NATRON_NAMESPACE_ENTER;
 
 struct PlaneToRender
 {
-    //Points to the fullscale image if render scale is not supported by the plug-in, or downscaleImage otherwise
-    ImagePtr fullscaleImage;
-
-    //Points to the image to be rendered
-    ImagePtr downscaleImage;
-
-    //Points to the image that the plug-in can render (either fullScale or downscale)
-    ImagePtr renderMappedImage;
+    // Points to the image composed of mono channel tiles stored with mmap 
+    ImagePtr cacheImage;
 
     // Points to a temporary image that the plug-in will render
     ImagePtr tmpImage;
 
-    /**
-     * This is set to true if this plane is allocated with allocateImagePlaneAndSetInThreadLocalStorage()
-     **/
-    bool isAllocatedOnTheFly;
-
-
     PlaneToRender()
-    : fullscaleImage()
-    , downscaleImage()
-    , renderMappedImage()
+    : cacheImage()
     , tmpImage()
-    , isAllocatedOnTheFly(false)
     {
     }
 };
@@ -165,8 +150,25 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
-    typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
+
+    enum RenderRoITypeEnum
+    {
+        // The frame view was only requested via getFramesNeeded by a node downstream the usual way.
+        // In this case we know exactly how many times a frame is requested and can correctly union
+        // all region of interests to do a single render pass.
+        // In this case we just have to lock the image in the cache until all downstream nodes have rendered
+        // their image.
+        eRenderRoITypeKnownFrame,
+
+        // If the plug-in called getImage without advertising first that it would need the image from
+        // getFramesNeeded, then this frame is considered "unknown":
+        // We don't know if it's going to be requested again by another branch of the tree and we don't know
+        // if the RoI so far is going to enclose all requests.
+        // This flag indicates that we MUST lock the image in the cache through the whole render of the frame.
+        eRenderRoITypeUnknownFrame
+    };
+    
+
 
 
     struct RenderRoIArgs
@@ -183,25 +185,17 @@ public:
         // The scale at which to render
         RenderScale scale;
 
-        // The mipmap level (for now redundant with scale)
-        unsigned int mipMapLevel;
-
         // The rectangle to render (in pixel coordinates)
         RectI roi;
 
         // The image planes to render
         std::list<ImageComponents> components;
 
-        // When called from getImage() the calling node  will have already computed input images, hence the image of this node
-        // might already be in this list
-        InputImagesMap inputImagesList;
-
         // The effect calling renderRoI if within getImage
         EffectInstancePtr caller;
 
         // The input number of this node in the caller node
         int inputNbInCaller;
-
 
         // Set to false if you don't want the node to render using the GPU at all
         // This is useful if the previous render failed because GPU memory was maxed out
@@ -210,42 +204,45 @@ public:
         // the time that was passed to the original renderRoI call of the caller node
         TimeValue callerRenderTime;
 
+        // Is this a known frame or not
+        RenderRoITypeEnum type;
+
+        TreeRenderNodeArgsPtr renderArgs;
+
         RenderRoIArgs()
         : time(0)
         , view(0)
         , scale(1.)
-        , mipMapLevel(0)
         , roi()
         , components()
-        , inputImagesList()
         , caller()
         , inputNbInCaller(-1)
         , allowGPURendering(true)
         , callerRenderTime(0.)
+        , type(eRenderRoITypeKnownFrame)
+        , renderArgs()
         {
         }
 
         RenderRoIArgs(TimeValue time_,
                       ViewIdx view_,
                       const RenderScale & scale_,
-                      unsigned int mipMapLevel_,
                       const RectI & roi_,
                       const std::list<ImageComponents> & components_,
                       EffectInstancePtr caller,
                       int inputNbInCaller,
                       TimeValue callerRenderTime,
-                      const InputImagesMap & inputImages = InputImagesMap() )
+                      const TreeRenderNodeArgsPtr& renderArgs )
         : time(time_)
         , view(view_)
         , scale(scale_)
-            , mipMapLevel(mipMapLevel_)
-            , roi(roi_)
-            , components(components_)
-            , inputImagesList(inputImages)
-            , caller(caller)
-            , inputNbInCaller(inputNbInCaller)
-            , allowGPURendering(true)
-            , callerRenderTime(callerRenderTime)
+        , roi(roi_)
+        , components(components_)
+        , caller(caller)
+        , inputNbInCaller(inputNbInCaller)
+        , allowGPURendering(true)
+        , callerRenderTime(callerRenderTime)
+        , renderArgs(renderArgs)
         {
         }
     };
@@ -291,41 +288,56 @@ public:
     struct GetImageInArgs
     {
         // The input nb to fetch the image from
+        //
+        // Default - 0
         int inputNb;
 
         // The time to sample on the input
+        //
+        // Default - 0
         TimeValue time;
 
         // The view to sample on the input
+        //
+        // Default - 0
         ViewIdx view;
 
         // The scale at which the resulting image should be
+        //
+        // Default - 1.
         RenderScale scale;
 
         // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
         // If not specified, this will ask to render the full region of definition.
+        //
+        // Default - NULL
         const RectD* optionalBounds;
 
-        // If set this is the layer to fetch, otherwise we use the meta-data on
-        // the effect.
-        const ImageComponents* layer;
+        // If set this is the layers to fetch, otherwise we use the result of
+        // the getClipComponents action
+        //
+        // Default - NULL
+        const std::list<ImageComponents>* layers;
 
-        // The storage that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
-        // the image may not support OpenGL. In this case setting storage to eStorageModeRAM would convert the OpenGL texture to
-        // a RAM image.
-        StorageModeEnum storage;
+        // The backend that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
+        // the image may not support OpenGL. In this case setting storage to eRenderBackendTypeCPU would convert the OpenGL texture to
+        // a RAM image. If NULL, the image returned from the upstream plug-in will not be changed.
+        //
+        // Default - NULL
+        const RenderBackendTypeEnum* renderBackend;
 
-        // If true the image returned from the input will be mapped against this node requested meta-datas (bitdepth/components)
-        bool mapToMetaDatas;
-
-        // A pointer to the render args of this node
+        // A pointer to the render args of this node. MUST BE SET
+        //
+        // Default - NULL
         TreeRenderNodeArgsPtr renderArgs;
+
+        GetImageInArgs();
     };
 
     struct GetImageOutArgs
     {
-        // The returned image
-        ImagePtr image;
+        // For each plane requested the associated image.
+        std::map<ImageComponents, ImagePtr> imagePlanes;
 
         // The roi of the input effect effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
         RectI roiPixel;
@@ -341,45 +353,104 @@ public:
      * In this case the image in input has probably already been pre-computed and cached away using the
      * getFramesNeeded and getRegionsOfInterest actions to drive the algorithm.
      *
-     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistorsion action:
-     * This image will pull images from upstream that have not yet be pre-computed. In this case the inArgs have an extra
+     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistorsion or drawOverlay action:
+     * This image will pull images from upstream that have not yet be pre-computed.
+     * Internally it will call TreeRender::launchRender.
+     * In this case the inArgs have an extra
      * optionalBounds parameter that can be set to specify which portion of the input image is needed.
      *
      * Note that this is very important in the case 1) that all images that are accessed via getImage() are
-     * declared to Natron with getFramesNeeded otherwise Natron has to fallback on situation 2 which can lead 
-     * to worse performance.
+     * declared to Natron with getFramesNeeded otherwise Natron has to fallback to a less optimized pipeline 
+     * that keeps image longer in memory and it may risk to render twice an effect.
      *
      * @returns This function returns true if the image set in the outArgs is valid.
      * Note that in the outArgs is returned the distorsion stack to apply if this effect was marked
      * as getCanDistort().
+     *
      **/
-    bool getImage(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
+    bool getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
+
+private:
+
+    bool resolveRoIForGetImage(const GetImageInArgs& inArgs, RectD* roiCanonical, RenderRoITypeEnum* type);
+
+public:
 
     //////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////
     /////////////// Actions to be overriden by the effect   //////////////
 
     /**
-     * @brief Returns the components needed for the plug-in for each input and in output at the given time and view.
+     * @brief Wrapper around getComponentsNeededAndProduced, see getComponentsNeededAndProduced.
      **/
-    StatusEnum getComponentsNeededAndProduced_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsNeededResultsPtr* results);
+    StatusEnum getComponents_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
 
 protected:
 
     /**
-     * @brief Called by getComponentsNeededAndProduced_public, to be overriden. Default implementation
-     * returns the components returned by getMetadatas on the color plane.
+     * @brief Called by getComponents_public, to be overriden.
+     * Must return the layers needed for each input and the layers produced in output of the effect.
+     * If this effect allows some layers to pass-through the effect (i.e: does this effect inherits layers from upstream?)
+     * then it must specify the pass-through inputNb and the time and view at which to fetch the pass-through plane.
+     * Default implementation returns the components returned by getTimeInvariantMetadatas on the color plane.
      **/
     virtual StatusEnum getComponentsNeededAndProduced(TimeValue time,
-                                                ViewIdx view,
-                                                const TreeRenderNodeArgsPtr& render,
-                                                ComponentsNeededMap* comps,
-                                                TimeValue* passThroughTime,
-                                                ViewIdx* passThroughView,
-                                                int* passThroughInputNb);
+                                                      ViewIdx view,
+                                                      const TreeRenderNodeArgsPtr& render,
+                                                      std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                      std::list<ImageComponents>* layersProduced,
+                                                      TimeValue* passThroughTime,
+                                                      ViewIdx* passThroughView,
+                                                      int* passThroughInputNb);
+
+private:
+
+    void getDefaultComponentsNeededAndProduced(TimeValue time,
+                                               ViewIdx view,
+                                               const TreeRenderNodeArgsPtr& render,
+                                               std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                               std::list<ImageComponents>* layersProduced,
+                                               TimeValue* passThroughTime,
+                                               ViewIdx* passThroughView,
+                                               int* passThroughInputNb,
+                                               bool* processAll,
+                                               std::bitset<4>* processChannels);
+
+
+    StatusEnum getComponentsNeededInternal(TimeValue time,
+                                           ViewIdx view,
+                                           const TreeRenderNodeArgsPtr& render,
+                                           std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                           std::list<ImageComponents>* layersProduced,
+                                           TimeValue* passThroughTime,
+                                           ViewIdx* passThroughView,
+                                           int* passThroughInputNb,
+                                           bool* processAll,
+                                           std::bitset<4>* processChannels);
+
+
 
 public:
 
+
+
+    /**
+     * @brief Wrapper around attachOpenGLContext, see attachOpenGLContext
+     **/
+    StatusEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+
+    /**
+     * @brief Wrapper around dettachOpenGLContext, see dettachOpenGLContext
+     **/
+    StatusEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+
+    /**
+     * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
+     **/
+    void dettachAllOpenGLContexts();
+
+
+protected:
 
     /**
      * @brief This function must initialize all OpenGL context related data such as shaders, LUTs, etc...
@@ -395,7 +466,7 @@ public:
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    StatusEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+    virtual StatusEnum attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
 
     /**
      * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
@@ -404,24 +475,6 @@ public:
      * eStatusReplyDefault , the action was ignored, but all was well anyway
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
-     **/
-    StatusEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
-
-    /**
-     * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
-     **/
-    void dettachAllOpenGLContexts();
-
-
-protected:
-
-    /**
-     * @brief Called by attachOpenGLContext_public, to be overriden for effects that support OpenGL
-     **/
-    virtual StatusEnum attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
-
-    /**
-     * @brief Called by dettachOpenGLContext_public, to be overriden for effects that support OpenGL
      **/
     virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/) { return eStatusReplyDefault; }
 
@@ -580,23 +633,24 @@ public:
         // The view to render
         ViewIdx view;
 
-        // The original scale that was requested to this effect
-        RenderScale originalScale;
+        // The scale at which this effect is rendering
+        RenderScale renderScale;
 
-        // The scale at which this effect is actually rendering
-        RenderScale mappedScale;
-
-        // The render window
+        // The render window: this is the portion to render for each output plane
         RectI roi;
 
         // The list of output planes: these are the images to write to in output
         std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
 
-        // The frame render args for this node.
-        TreeRenderNodeArgsPtr frameRenderArgs;
+        // The render args for this node.
+        TreeRenderNodeArgsPtr renderArgs;
 
-        // Should render use OpenGL ? If the effect supports OSMesa too this will be set to true as well.
-        bool useOpenGL;
+        // Should render use OpenGL or CPU 
+        RenderBackendTypeEnum backendType;
+
+        // The OpenGL context to used to render if backend type is set to eRenderBackendTypeOpenGL
+        // or eRenderBackendTypeOSMesa
+        OSGLContextAttacherPtr glContextAttacher;
 
         // The effect data attached to the current OpenGL context. These are the data that were returned by
         // attachOpenGLContext.
@@ -605,8 +659,6 @@ public:
         // The RGBA channels to process. This can optimize render times for un-needed channels.
         std::bitset<4> processChannels;
 
-        // The OpenGL context to use to render
-        OSGLContextPtr glContext;
     };
 
 
@@ -967,6 +1019,12 @@ private:
 
 public:
 
+    virtual TimeValue getCurrentTime_TLS() const OVERRIDE;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE;
+    RenderValuesCachePtr getRenderValuesCache_TLS(TimeValue* currentTime, ViewIdx* currentView) const;
+    void setCurrentRender_TLS(const TreeRenderNodeArgsPtr& render);
+    TreeRenderNodeArgsPtr getCurrentRender_TLS() const;
+
     /**
      * @brief Forwarded to the node's name
      **/
@@ -1178,22 +1236,53 @@ public:
      **/
     RenderRoIRetCode renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
 
+    struct RectToRender
+    {
+        EffectInstancePtr identityInput;
+        int identityInputNumber;
+        RectI rect;
+        double identityTime;
+        ViewIdx identityView;
+    };
 
-    void getImageFromCacheAndConvertIfNeeded(bool useCache,
-                                             bool isDuringPaintStroke,
-                                             StorageModeEnum storage,
-                                             StorageModeEnum returnStorage,
-                                             unsigned int mipMapLevel,
-                                             const RectI* boundsParam,
-                                             const RectD* rodParam,
-                                             const RectI& roi,
-                                             ImageBitDepthEnum bitdepth,
-                                             const ImageComponents & components,
-                                             const InputImagesMap & inputImages,
-                                             const RenderStatsPtr & stats,
-                                             const OSGLContextAttacherPtr& glContextAttacher,
-                                             ImagePtr* image);
+    struct ImagePlanesToRender
+    {
+        std::list<RectToRender> rectsToRender;
+        InputImagesMap inputImages;
+        std::map<ImageComponents, PlaneToRender> planes;
+        std::map<int, ImagePremultiplicationEnum> inputPremult;
+        ImagePremultiplicationEnum outputPremult;
+        RenderBackendTypeEnum backendType;
+        EffectOpenGLContextDataPtr glContextData;
 
+        ImagePlanesToRender()
+        : rectsToRender()
+        , planes()
+        , inputPremult()
+        , outputPremult(eImagePremultiplicationPremultiplied)
+        , backendType(eRenderBackendTypeCPU)
+        , glContextData()
+        {
+        }
+    };
+
+    typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
+    
+private:
+
+    void optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
+                               const RectI & inputsRoDIntersection,
+                               const std::list<RectI> & rectsToRender,
+                               const TimeValue time,
+                               const ViewIdx view,
+                               const RenderScale & renderMappedScale,
+                               std::list<EffectInstance::RectToRender>* finalRectsToRender);
+    
+    
+public:
+    
+    
+    
     /**
      * @brief This function is to be called by getImage() when the plug-in renders more planes than the ones suggested
      * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
@@ -1235,7 +1324,7 @@ public:
     virtual bool getActionsRecursionLevel() const OVERRIDE FINAL;
 
 
-    static EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, const EffectInstance* thisEffect);
+    EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, int* channelForMask);
 
 
 
@@ -1261,8 +1350,6 @@ public:
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
      **/
     bool isFrameVarying(const TreeRenderNodeArgsPtr& render) const;
-
-    bool isFrameVaryingOrAnimated(const TreeRenderNodeArgsPtr& render) const;
 
     /**
      * @brief Returns the preferred output frame rate to render with
@@ -1447,6 +1534,14 @@ public:
     void clearPersistentMessage(bool recurse);
 
     /**
+     * @brief Must return the preferred layout of images that are received with getImage
+     **/
+    virtual ImageBufferLayoutEnum getPreferredBufferLayout() const
+    {
+        return eImageBufferLayoutRGBAPackedFullRect;
+    }
+
+    /**
      * @brief Does this effect supports tiling ?
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
      * If a clip or plugin does not support tiled images, then the host should supply
@@ -1522,40 +1617,7 @@ public:
     PluginMemoryPtr newMemoryInstance(size_t nBytes) WARN_UNUSED_RETURN;
 
 
-    struct RectToRender
-    {
-        EffectInstancePtr identityInput;
-        int identityInputNumber;
-        RectI rect;
-        double identityTime;
-        bool isIdentity;
-        ViewIdx identityView;
-    };
 
-    struct ImagePlanesToRender
-    {
-        std::list<RectToRender> rectsToRender;
-        InputImagesMap inputImages;
-        std::map<ImageComponents, PlaneToRender> planes;
-        std::map<int, ImagePremultiplicationEnum> inputPremult;
-        ImagePremultiplicationEnum outputPremult;
-        bool isBeingRenderedElsewhere;
-        bool useOpenGL;
-        EffectOpenGLContextDataPtr glContextData;
-
-        ImagePlanesToRender()
-            : rectsToRender()
-            , planes()
-            , inputPremult()
-            , outputPremult(eImagePremultiplicationPremultiplied)
-            , isBeingRenderedElsewhere(false)
-            , useOpenGL(false)
-            , glContextData()
-        {
-        }
-    };
-
-    typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
 
 
     /**
@@ -1568,9 +1630,7 @@ public:
 
 
 #ifdef DEBUG
-    virtual void checkCanSetValueAndWarn() const
-    {
-    }
+    void checkCanSetValueAndWarn() const;
 #endif
 
 
@@ -1629,12 +1689,6 @@ public:
         return false;
     }
 
-
-    /**
-     * @brief Returns the components available on each input for this effect at the given time.
-     **/
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, TimeValue time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, TimeValue time, ComponentsAvailableMap* comps, std::list<EffectInstancePtr>* markedNodes);
 
     /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
@@ -1722,17 +1776,6 @@ private:
 
 
 
-
-    void getComponentsAvailableRecursive(bool useLayerChoice,
-                                         bool useThisNodeComponentsNeeded,
-                                         TimeValue time,
-                                         ViewIdx view,
-                                         ComponentsAvailableMap* comps,
-                                         std::list<EffectInstancePtr>* markedNodes);
-
-
-
-
 protected:
 
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE;
@@ -1775,7 +1818,6 @@ private:
 
     enum RenderRoIStatusEnum
     {
-        eRenderRoIStatusImageAlreadyRendered = 0, // there was nothing left to render
         eRenderRoIStatusImageRendered, // we rendered what was missing
         eRenderRoIStatusRenderFailed, // render failed
         eRenderRoIStatusRenderOutOfGPUMemory, // The render failed because the GPU did not have enough memory
@@ -1784,48 +1826,13 @@ private:
 
     /**
      * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
-     * @param time The time at which to render
-     * @param scale The scale at which to render
-     * @param mipMapLevel Redundant with scale
-     * @param view The view on which to render
-     * @param renderWindow The rectangle to render of the image, in pixel coordinates
-     * @param cachedImgParams The parameters of the image to render as they are in the cache.
-     * @param image This is the "full-scale" image, if the effect does support the render scale, then
-     * image and downscaledImage are pointing to the SAME image.
-     * @param downscaledImage If the effect doesn't support the render scale, then this is a pointer to the
-     * downscaled image. If the effect doesn't support render scale then it will render in the "image" parameter
-     * and then downscale the results into downscaledImage.
-     * @param isSequentialRender True when the render is sequential
-     * @param isRenderMadeInResponseToUserInteraction True when the render is made due to user interaction
-     * @param byPassCache Cache look-ups have been already handled by renderRoI(...) but we pass it here because
-     * we need to call renderRoI() on the input effects with this parameter too.
-     * @param nodeHash The hash of the node used to render. This might no longer be equal to the value returned by
-     * getHash() because the user might have changed something in the project (parameters...links..)
-     * @param channelForAlpha This is passed here so that we can remember it later when converting the mask
-     * which channel we wanted for the alpha channel.
-     * @param renderFullScaleThenDownscale means that rendering should be done at full resolution and then
-     * downscaled, because the plugin does not support render scale.
-     * @returns True if the render call succeeded, false otherwise.
      **/
-    static RenderRoIStatusEnum renderRoIInternal(const EffectInstancePtr& self,
-                                                 const U64 frameViewHash,
-                                                 const OSGLContextPtr& glContext,
-                                                 TimeValue time,
-                                                 const TreeRenderNodeArgsPtr & frameArgs,
-                                                 RenderSafetyEnum safety,
-                                                 unsigned int mipMapLevel,
-                                                 ViewIdx view,
-                                                 const RectD & rod, //!< rod in canonical coordinates
-                                                 const double par,
-                                                 const ImagePlanesToRenderPtr & planes,
-                                                 bool isSequentialRender,
-                                                 bool isRenderMadeInResponseToUserInteraction,
-                                                 bool renderFullScaleThenDownscale,
-                                                 bool byPassCache,
-                                                 ImageBitDepthEnum outputClipPrefDepth,
-                                                 const ImageComponents& outputClipPrefsComps,
-                                                 const ComponentsNeededResultsPtr & compsNeeded,
-                                                 std::bitset<4> processChannels);
+    RenderRoIStatusEnum renderRoIInternal(const OSGLContextAttacherPtr& glContext,
+                                          const RenderRoIArgs& args,
+                                          const RenderScale& renderMappedScale,
+                                          const RectD & rod, //!< rod in canonical coordinates
+                                          const ImagePlanesToRenderPtr & planes,
+                                          const std::bitset<4> processChannels);
 
 
     /// \returns false if rendering was aborted
@@ -1836,18 +1843,7 @@ private:
                                              bool useScaleOneInputImages,
                                              bool byPassCache,
                                              const FramesNeededMap & framesNeeded,
-                                             const ComponentsNeededMap & compsNeeded,
                                              InputImagesMap *inputImages);
-
-    static ImagePtr convertPlanesFormatsIfNeeded(const AppInstancePtr& app,
-                                                                 const ImagePtr& inputImage,
-                                                                 const RectI& roi,
-                                                                 const ImageComponents& targetComponents,
-                                                                 ImageBitDepthEnum targetDepth,
-                                                                 bool useAlpha0ForRGBToRGBAConversion,
-                                                                 ImagePremultiplicationEnum outputPremult,
-                                                                 int channelForAlpha);
-
 
 
 

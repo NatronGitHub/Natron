@@ -119,7 +119,7 @@ public Q_SLOTS:
 
 private:
 
-    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,

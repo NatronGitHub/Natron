@@ -100,8 +100,10 @@ ImageTileSerialization::encode(YAML::Emitter& em) const
     em << nodeHashKey;
     em << YAML::Key << "Channel" << YAML::Value;
     em << layerChannelName;
-    em << YAML::Key << "MipMapLevel" << YAML::Value;
-    em << mipMapLevel;
+    em << YAML::Key << "Scale" << YAML::Value;
+    em << YAML::Flow << YAML::BeginSeq;
+    em << scale[0] << scale[1];
+    em << YAML::EndSeq;
     em << YAML::Key << "Draft" << YAML::Value;
     em << draft;
     em << YAML::EndMap;
@@ -121,8 +123,13 @@ ImageTileSerialization::decode(const YAML::Node& node)
     if (node["Channel"]) {
         layerChannelName = node["Channel"].as<std::string>();
     }
-    if (node["MipMapLevel"]) {
-        mipMapLevel = node["MipMapLevel"].as<unsigned int>();
+    if (node["Scale"]) {
+        YAML::Node scaleNode = node["Scale"];
+        if (scaleNode.size() != 2) {
+            throw YAML::InvalidNode();
+        }
+        scale[0] = scaleNode[0].as<double>();
+        scale[1] = scaleNode[1].as<double>();
     }
     if (node["Draft"]) {
         draft = node["Draft"].as<bool>();

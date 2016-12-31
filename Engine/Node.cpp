@@ -59,7 +59,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/MemoryInfo.h"
 
 #include "Engine/NodePrivate.h"
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Backdrop.h"
@@ -105,6 +104,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"
+#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -762,7 +762,14 @@ Node::refreshDynamicProperties()
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canDistort = _imp->effect->getCanDistort();
     _imp->pluginSafety = _imp->effect->getCurrentRenderThreadSafety();
-    setRenderThreadSafety(_imp->pluginSafety);
+
+    if (!tilesSupported && _imp->pluginSafety == eRenderSafetyFullySafeFrame) {
+        // an effect which does not support tiles cannot support host frame threading
+        setRenderThreadSafety(eRenderSafetyFullySafe);
+    } else {
+        setRenderThreadSafety(_imp->pluginSafety);
+    }
+
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanDistort(canDistort);
@@ -3317,22 +3324,6 @@ Node::createNodePage(const KnobPagePtr& settingsPage)
         _imp->keepInAnimationModuleKnob = param;
     }
 
-    KnobBoolPtr useFullScaleImagesWhenRenderScaleUnsupported = AppManager::createKnob<KnobBool>(_imp->effect, tr("Render high def. upstream"), 1, false);
-    useFullScaleImagesWhenRenderScaleUnsupported->setAnimationEnabled(false);
-    useFullScaleImagesWhenRenderScaleUnsupported->setDefaultValue(false);
-    useFullScaleImagesWhenRenderScaleUnsupported->setName("highDefUpstream");
-    useFullScaleImagesWhenRenderScaleUnsupported->setHintToolTip( tr("This node does not support rendering images at a scale lower than 1, it "
-                                                                     "can only render high definition images. When checked this parameter controls "
-                                                                     "whether the rest of the graph upstream should be rendered with a high quality too or at "
-                                                                     "the most optimal resolution for the current viewer's viewport. Typically checking this "
-                                                                     "means that an image will be slow to be rendered, but once rendered it will stick in the cache "
-                                                                     "whichever zoom level you are using on the Viewer, whereas when unchecked it will be much "
-                                                                     "faster to render but will have to be recomputed when zooming in/out in the Viewer.") );
-    if ( ( isRenderScaleSupportEnabledForPlugin() ) && (getEffectInstance()->supportsRenderScaleMaybe() == EffectInstance::eSupportsYes) ) {
-        useFullScaleImagesWhenRenderScaleUnsupported->setSecret(true);
-    }
-    settingsPage->addKnob(useFullScaleImagesWhenRenderScaleUnsupported);
-    _imp->useFullScaleImagesWhenRenderScaleUnsupported = useFullScaleImagesWhenRenderScaleUnsupported;
 
 
     KnobIntPtr lifeTimeKnob = AppManager::createKnob<KnobInt>(_imp->effect, tr("Lifetime Range"), 2, false);
@@ -4629,24 +4620,6 @@ Node::setForceCachingEnabled(bool value)
     b->setValue(value);
 }
 
-void
-Node::onSetSupportRenderScaleMaybeSet(int support)
-{
-    if ( (EffectInstance::RenderScaleSupportEnum)support == EffectInstance::eSupportsYes ) {
-        KnobBoolPtr b = _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
-        if (b) {
-            b->setSecret(true);
-        }
-    }
-}
-
-bool
-Node::useScaleOneImagesWhenRenderScaleSupportIsDisabled() const
-{
-    KnobBoolPtr b =  _imp->useFullScaleImagesWhenRenderScaleUnsupported.lock();
-
-    return b ? b->getValue() : false;
-}
 
 void
 Node::beginEditKnobs()
@@ -4952,6 +4925,16 @@ Node::initializeInputs()
 NodePtr
 Node::getInput(int index) const
 {
+    if (!_imp->effect) {
+        return NodePtr();
+    }
+    // If during a render, return the render local graph.
+    // In the future we should make small lightweights copies of EffectInstance
+    // to avoid the usage of TLS.
+    TreeRenderNodeArgsPtr render = _imp->effect->getCurrentRender_TLS();
+    if (render) {
+        return render->getInput(index);
+    }
     return getInputInternal(true, index);
 }
 
@@ -4970,7 +4953,7 @@ Node::getInputInternal(bool useGroupRedirections,
         if (!effect) {
             return NodePtr();
         }
-        RenderValuesCachePtr renderCache = effect->getRenderValuesCacheTLS();
+        RenderValuesCachePtr renderCache = effect->getRenderValuesCache_TLS();
         if (renderCache) {
             NodePtr input;
             bool wasCached;
@@ -8838,7 +8821,7 @@ Node::getDisabledKnobValue() const
 
     int lifeTimeFirst, lifeTimeEnd;
     bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
-    double curFrame = _imp->effect->getCurrentTime();
+    double curFrame = _imp->effect->getCurrentTime_TLS();
     bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) );
 
     return !enabled;
@@ -9004,219 +8987,80 @@ Node::canOthersConnectToThisNode() const
 }
 
 
-
-static void
-addIdentityNodesRecursively(NodeConstPtr caller,
-                            NodeConstPtr node,
-                            TimeValue time,
-                            ViewIdx view,
-                            std::list<NodeConstPtr>* outputs,
-                            std::list<NodeConstPtr>* markedNodes)
-{
-    if ( std::find(markedNodes->begin(), markedNodes->end(), node) != markedNodes->end() ) {
-        return;
-    }
-
-    markedNodes->push_back(node);
-
-
-    if (caller != node) {
-        ParallelRenderArgsPtr inputFrameArgs = node->getEffectInstance()->getParallelRenderArgsTLS();
-        const FrameViewRequest* request = 0;
-        bool isIdentity = false;
-        if (inputFrameArgs && inputFrameArgs->request) {
-            request = inputFrameArgs->request->getFrameViewRequest(time, view);
-            if (request) {
-                isIdentity = request->identityInputNb != -1;
-            }
-        }
-
-        if (!request) {
-            /*
-               Very unlikely that there's no request pass. But we still check
-             */
-            RenderScale scale(1.);
-            double inputTimeId;
-            ViewIdx identityView;
-            int inputNbId;
-            U64 renderHash = 0;
-
-
-            RectI format = node->getEffectInstance()->getOutputFormat();
-
-            isIdentity = node->getEffectInstance()->isIdentity_public(true, renderHash, time, scale, format, view, &inputTimeId, &identityView, &inputNbId);
-        }
-
-
-        if (!isIdentity) {
-            outputs->push_back(node);
-
-            return;
-        }
-    }
-
-    ///Append outputs of this node instead
-    NodesWList nodeOutputs;
-    node->getOutputs_mt_safe(nodeOutputs);
-    NodesWList outputsToAdd;
-    for (NodesWList::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
-        NodePtr output = it->lock();
-        if (!output) {
-            continue;
-        }
-        GroupOutputPtr isGroupOutput = output->isEffectGroupOutput();
-        //If the node is an output node, add all the outputs of the group node instead
-        if (isGroupOutput) {
-            NodeCollectionPtr collection = output->getGroup();
-            assert(collection);
-            NodeGroupPtr isGrp = toNodeGroup(collection);
-            if (isGrp) {
-                NodesWList groupOutputs;
-                isGrp->getNode()->getOutputs_mt_safe(groupOutputs);
-                for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-                    outputsToAdd.push_back(*it2);
-                }
-            }
-        }
-
-        //If the node is a group, add all its inputs
-        NodeGroupPtr isGrp = output->isEffectNodeGroup();
-        if (isGrp) {
-            NodesList inputOutputs;
-            isGrp->getInputsOutputs(&inputOutputs);
-            for (NodesList::iterator it2 = inputOutputs.begin(); it2 != inputOutputs.end(); ++it2) {
-                outputsToAdd.push_back(*it2);
-            }
-
-        }
-
-    }
-    nodeOutputs.insert( nodeOutputs.end(), outputsToAdd.begin(), outputsToAdd.end() );
-    for (NodesWList::iterator it = nodeOutputs.begin(); it != nodeOutputs.end(); ++it) {
-        NodePtr node = it->lock();
-        if (node) {
-            addIdentityNodesRecursively(caller, node, time, view, outputs, markedNodes);
-        }
-    }
-} // addIdentityNodesRecursively
-
 bool
 Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
                         TimeValue time,
                         ViewIdx view,
-                        int /*visitsCount*/) const
+                        int visitsCount) const
 {
-    /*
-     * Here is a list of reasons when caching is enabled for a node:
-     * - It is references multiple times below in the graph
-     * - Its single output has its settings panel opened,  meaning the user is actively editing the output
-     * - The force caching parameter in the "Node" tab is checked
-     * - The aggressive caching preference of Natron is checked
-     * - We are in a recursive action (such as an analysis)
-     * - The plug-in does temporal clip access
-     * - Preview image is enabled (and Natron is not running in background)
-     * - The node is a direct input of a viewer, this is to overcome linear graphs where all nodes would not be cached
-     * - The node is not frame varying, meaning it will always produce the same image at any time
-     * - The node is a roto node and it is being edited
-     * - The node does not support tiles
-     */
 
-    std::list<NodeConstPtr> outputs;
-    {
-        std::list<NodeConstPtr> markedNodes;
-        NodeConstPtr thisShared = shared_from_this();
-        addIdentityNodesRecursively(thisShared, thisShared, time, view, &outputs, &markedNodes);
-    }
-    std::size_t sz = outputs.size();
 
-    if (sz > 1) {
-        ///The node is referenced multiple times below, cache it
+    if (visitsCount > 1) {
+        // The node is referenced multiple times by getFramesNeeded of downstream nodes, cache it
         return true;
-    } else {
-        if (sz == 1) {
-            NodeConstPtr output = outputs.front();
-            ViewerNodePtr isViewer = output->isEffectViewerNode();
-            if (isViewer) {
-
-                if (isViewer->getCurrentAInput().get() == this ||
-                    isViewer->getCurrentBInput().get() == this) {
-                    ///The node is a direct input of the viewer. Cache it because it is likely the user will make
-
-                    ///changes to the viewer that will need this image.
-                    return true;
-                }
-            }
-
-            RotoPaintPtr isRoto = toRotoPaint( output->getEffectInstance() );
-            if (isRoto) {
-                // THe roto internally makes multiple references to the input so cache it
-                return true;
-            }
-
-            if (!isFrameVaryingOrAnimated) {
-                //This image never changes, cache it once.
-                return true;
-            }
-            if ( output->isSettingsPanelVisible() ) {
-                //Output node has panel opened, meaning the user is likely to be heavily editing
-
-                //that output node, hence requesting this node a lot. Cache it.
-                return true;
-            }
-            if ( _imp->effect->doesTemporalClipAccess() ) {
-                //Very heavy to compute since many frames are fetched upstream. Cache it.
-                return true;
-            }
-            if ( !_imp->effect->supportsTiles() ) {
-                //No tiles, image is going to be produced fully, cache it to prevent multiple access
-
-                //with different RoIs
-                return true;
-            }
-            if (_imp->effect->getRecursionLevel() > 0) {
-                //We are in a call from getImage() and the image needs to be computed, so likely in an
-
-                //analysis pass. Cache it because the image is likely to get asked for severla times.
-                return true;
-            }
-            if ( isForceCachingEnabled() ) {
-                //Users wants it cached
-                return true;
-            }
-            NodeGroupPtr parentIsGroup = toNodeGroup( getGroup() );
-            if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput().get() == this) ) {
-                //if the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
-                return true;
-            }
-
-            if ( appPTR->isAggressiveCachingEnabled() ) {
-                ///Users wants all nodes cached
-                return true;
-            }
-
-            if ( isPreviewEnabled() && !appPTR->isBackground() ) {
-                ///The node has a preview, meaning the image will be computed several times between previews & actual renders. Cache it.
-                return true;
-            }
-
-            if ( isDuringPaintStrokeCreation() ) {
-                // When painting we must always cache 
-                return true;
-            }
-
-            RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
-            if ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() ) {
-                ///Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
-                return true;
-            }
-        } else {
-            // outputs == 0, never cache, unless explicitly set or rotopaint internal node
-            RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
-
-            return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
-                   ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
-        }
     }
+
+    std::size_t nOutputNodes = getOutputs().size();
+
+    if (nOutputNodes == 0) {
+        // outputs == 0, never cache, unless explicitly set or rotopaint internal node
+        RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
+
+        return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
+        ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
+
+    }
+
+    if (!isFrameVaryingOrAnimated) {
+        // This image never changes, cache it once.
+        return true;
+    }
+    if ( output->isSettingsPanelVisible() ) {
+        // Output node has panel opened, meaning the user is likely to be heavily editing
+        // that output node, hence requesting this node a lot. Cache it.
+        return true;
+    }
+    if ( _imp->effect->doesTemporalClipAccess() ) {
+        // Very heavy to compute since many frames are fetched upstream. Cache it.
+        return true;
+    }
+    if ( !_imp->effect->supportsTiles() ) {
+        // No tiles, image is going to be produced fully, cache it to prevent multiple access
+        // with different RoIs
+        return true;
+    }
+    if ( isForceCachingEnabled() ) {
+        // Users wants it cached
+        return true;
+    }
+
+    NodeGroupPtr parentIsGroup = toNodeGroup( getGroup() );
+    if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput().get() == this) ) {
+        // If the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
+        return true;
+    }
+
+    if ( appPTR->isAggressiveCachingEnabled() ) {
+        ///Users wants all nodes cached
+        return true;
+    }
+
+    if ( isPreviewEnabled() && !appPTR->isBackground() ) {
+        // The node has a preview, meaning the image will be computed several times between previews & actual renders. Cache it.
+        return true;
+    }
+
+    if ( isDuringPaintStrokeCreation() ) {
+        // When painting we must always cache
+        return true;
+    }
+
+    RotoDrawableItemPtr attachedStroke = _imp->paintStroke.lock();
+    if ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() ) {
+        // Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
+        return true;
+    }
+
 
     return false;
 } // Node::shouldCacheOutput

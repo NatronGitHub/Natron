@@ -63,20 +63,7 @@ inline TimeValue roundImageTimeToEpsilon(TimeValue time)
 
 NATRON_NAMESPACE_ENTER;
 
-typedef std::map<EffectInstancePtr, RectD> RoIMap; // RoIs are in canonical coordinates
-
-struct InputMatrix
-{
-    EffectInstancePtr newInputEffect;
-    boost::shared_ptr<Transform::Matrix3x3> cat;
-    int newInputNbToFetchFrom;
-};
-
-typedef std::map<int, InputMatrix> InputMatrixMap;
-typedef boost::shared_ptr<InputMatrixMap> InputMatrixMapPtr;
-
-typedef std::map<int, EffectInstancePtr> ReRoutesMap;
-typedef boost::shared_ptr<ReRoutesMap> ReRoutesMapPtr;
+typedef std::map<int, RectD> RoIMap; // RoIs are in canonical coordinates
 
 
 struct FrameViewPair
@@ -117,14 +104,33 @@ class FrameViewRequest
 {
 public:
 
-    FrameViewRequest();
+    FrameViewRequest(const TreeRenderNodeArgsPtr& render);
 
     ~FrameViewRequest();
 
+
     /**
      * @brief Increments the number of requests on this particular time/view for the node.
+     * Requests were made by the given effectRequesting in its getFramesNeeded action.
      **/
-    void incrementVisitsCount();
+    void incrementFramesNeededVisitsCount(const EffectInstancePtr& effectRequesting);
+
+    /**
+     * @brief How many times this image was requested from downstream nodes by getFramesNeeded
+     **/
+    int getFramesNeededVisitsCount() const;
+
+    /**
+     * @brief Returns true if the given effect requested this frame via its getFramesNeeded action
+     **/
+    bool wasFrameViewRequestedByEffect(const EffectInstancePtr& effectRequesting) const;
+
+    /**
+     * @brief  When true, a subsequent render of this frame/view will not be allowed to read the cache
+     * but will still be able to write to the cache. That render should then set this flag to false.
+     * By default this flag is false.
+     **/
+    bool checkIfByPassCacheEnabledAndTurnoff() const;
 
     /**
      * @brief Retrieves the bounding box of all region of interest requested for this time/view.
@@ -180,12 +186,12 @@ public:
     /**
      * @brief Returns the components needed action results for this frame/view
      **/
-    GetComponentsNeededResultsPtr getComponentsNeededResults() const;
+    GetComponentsResultsPtr getComponentsResults() const;
 
     /**
      * @brief Set the components needed action results for this frame/view
      **/
-    void setComponentsNeededResults(const GetComponentsNeededResultsPtr& comps);
+    void setComponentsNeededResults(const GetComponentsResultsPtr& comps);
 
     /**
      * @brief Returns the distorsion action results for this frame/view
@@ -203,7 +209,7 @@ private:
     
 };
 
-typedef std::map<FrameViewPair, FrameViewRequest, FrameView_compare_less> NodeFrameViewRequestData;
+typedef std::map<FrameViewPair, boost::shared_ptr<FrameViewRequest>, FrameView_compare_less> NodeFrameViewRequestData;
 
 
 /**
@@ -225,10 +231,22 @@ public:
 
     virtual ~TreeRenderNodeArgs();
 
+    RenderValuesCachePtr getRenderValuesCache() const;
+
     /**
      * @brief Returns a pointer to the render object owning this object.
      **/
     TreeRenderPtr getParentRender() const;
+
+    /**
+     * @brief Get the frame of the render
+     **/
+    TimeValue getTime() const;
+
+    /**
+     * @brief Get the view of the render
+     **/
+    ViewIdx getView() const;
 
     /**
      * @brief Convenience function for getParentRender()->isAborted()
@@ -249,6 +267,13 @@ public:
      * @brief Get the input node render args at the given input number
      **/
     TreeRenderNodeArgsPtr getInputRenderArgs(int inputNb) const;
+
+    /**
+     * @brief Get the input node corresponding to the given inputnb.
+     * This is guaranteed to remain constant throughout the lifetime of the render
+     * unlike the getInput() method on the Node object.
+     **/
+    NodePtr getInputNode(int inputNb) const;
 
     /**
      * @brief Set/get the mapped render-scale for the node, i.e:
@@ -330,12 +355,13 @@ public:
      * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
      * The time passed in parameter should always be rounded for effects that are not continuous.
      **/
-    const FrameViewRequest* getFrameViewRequest(TimeValue time, ViewIdx view) const;
+    FrameViewRequestPtr getFrameViewRequest(TimeValue time, ViewIdx view) const;
 
     /**
-     * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it
+     * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
+     * @returns True if it was created, false otherwise
      **/
-    FrameViewRequest* getOrCreateFrameViewRequest(TimeValue time, ViewIdx view);
+    bool getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, FrameViewRequestPtr* request);
 
     /**
      * @brief Add the given canonicalRenderWindow to the rectangles requested to image at the given time and view.
@@ -343,8 +369,9 @@ public:
      **/
     StatusEnum roiVisitFunctor(TimeValue time,
                                ViewIdx view,
-                               unsigned originalMipMapLevel,
-                               const RectD & canonicalRenderWindow);
+                               const RenderScale& scale,
+                               const RectD & canonicalRenderWindow,
+                               const EffectInstancePtr& caller);
 
 
     /**
@@ -353,9 +380,8 @@ public:
      **/
     RenderRoIRetCode preRenderInputImages(TimeValue time,
                                           ViewIdx view,
-                                          bool useScaleOneInputs,
-                                          unsigned int mipMapLevel,
-                                          const ComponentsNeededMap& neededComps,
+                                          const RenderScale& scale,
+                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers,
                                           InputImagesMap* inputImages);
 
 

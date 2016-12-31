@@ -392,6 +392,7 @@ ImageComponents::getPairedStereoDisparity()
     return comp;
 }
 
+
 void
 ImageComponents::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
 {

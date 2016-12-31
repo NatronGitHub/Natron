@@ -433,9 +433,6 @@ public:
 
     virtual void reloadScriptEditorFonts() {}
 
-    void setPluginsUseInputImageCopyToRender(bool b);
-    bool isCopyInputImageForPluginRenderEnabled() const;
-
     QString getBoostVersion() const;
 
     QString getQtVersion() const;

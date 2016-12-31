@@ -50,6 +50,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Curve.h"
+#include "Engine/Cache.h"
+#include "Engine/CacheEntryBase.h"
+#include "Engine/CacheEntryKeyBase.h"
 #include "Engine/DockablePanelI.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
@@ -355,6 +358,149 @@ struct KnobHelperPrivate
      * @param addTab, if true, the script should be indented by one tab
      **/
     std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view);
+
+};
+
+
+class KnobExpressionKey : public CacheEntryKeyBase
+{
+public:
+
+    KnobExpressionKey(U64 nodeTimeInvariantHash,
+                      int dimension,
+                      TimeValue time,
+                      ViewIdx view,
+                      const std::string& knobScriptName)
+    : _nodeTimeInvariantHash(nodeTimeInvariantHash)
+    , _dimension(dimension)
+    , _time(time)
+    , _view(view)
+    , _knobScriptName(knobScriptName)
+    {
+
+    }
+
+    virtual ~KnobExpressionKey()
+    {
+
+    }
+
+    virtual void copy(const CacheEntryKeyBase& other) OVERRIDE FINAL
+    {
+        CacheEntryKeyBase::copy(other);
+        const KnobExpressionKey* o = dynamic_cast<const KnobExpressionKey*>(&other);
+        if (!o) {
+            return;
+        }
+        _nodeTimeInvariantHash = o->_nodeTimeInvariantHash;
+        _dimension = o->_dimension;
+        _time = o->_time;
+        _view = o->_view;
+        _knobScriptName = o->_knobScriptName;
+    }
+
+    virtual bool equals(const CacheEntryKeyBase& other) OVERRIDE FINAL
+    {
+        const KnobExpressionKey* o = dynamic_cast<const KnobExpressionKey*>(&other);
+        if (!o) {
+            return false;
+        }
+        if (_nodeTimeInvariantHash != o->_nodeTimeInvariantHash) {
+            return false;
+        }
+        if (_dimension != o->_dimension) {
+            return false;
+        }
+        if (_time != o->_time) {
+            return false;
+        }
+        if (_view != o->_view) {
+            return false;
+        }
+        if (_knobScriptName != o->_knobScriptName) {
+            return false;
+        }
+        return true;
+    }
+
+private:
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDExpressionResult;
+    }
+
+    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL
+    {
+        hash->append(_nodeTimeInvariantHash);
+        hash->append(_dimension);
+        hash->append(_time);
+        hash->append(_view);
+        Hash64::appendQString(QString::fromUtf8(_knobScriptName.c_str()), hash);
+    }
+
+    U64 _nodeTimeInvariantHash;
+    int _dimension;
+    TimeValue _time;
+    ViewIdx _view;
+    std::string _knobScriptName;
+};
+
+typedef boost::shared_ptr<KnobExpressionKey> KnobExpressionKeyPtr;
+
+class KnobExpressionResult;
+typedef boost::shared_ptr<KnobExpressionResult> KnobExpressionResultPtr;
+class KnobExpressionResult : public CacheEntryBase
+{
+    KnobExpressionResult();
+
+public:
+
+    static KnobExpressionResultPtr create(const KnobExpressionKeyPtr& key)
+    {
+        KnobExpressionResultPtr ret(new KnobExpressionResult());
+        ret->setKey(key);
+        return ret;
+    }
+
+    virtual ~KnobExpressionResult()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    // To ensure this you may call
+    // assert(getCacheBucketIndex() == -1) in any setter function.
+    void getResult(double* value, std::string* valueAsString) const
+    {
+        if (value) {
+            *value = _valueResult;
+        }
+        if (valueAsString) {
+            *valueAsString = _stringResult;
+        }
+    }
+
+    void setResult(double value, const std::string& valueAsString)
+    {
+        assert(getCacheBucketIndex() == -1);
+        _stringResult = valueAsString;
+        _valueResult = value;
+    }
+
+    virtual std::size_t getSize() const OVERRIDE FINAL
+    {
+        return 0;
+    }
+
+private:
+    
+    std::string _stringResult;
+    double _valueResult;
 
 };
 

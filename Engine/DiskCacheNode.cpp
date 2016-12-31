@@ -75,7 +75,6 @@ DiskCacheNode::DiskCacheNode(const NodePtr& node)
     : OutputEffectInstance(node)
     , _imp( new DiskCacheNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 DiskCacheNode::~DiskCacheNode()
@@ -194,22 +193,36 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
     return ret;
 }
 
-void
-DiskCacheNode::getFrameRange(double *first,
+StatusEnum
+DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
+                             double *first,
                              double *last)
 {
     int idx = _imp->frameRange.lock()->getValue();
 
     switch (idx) {
     case 0: {
-        EffectInstancePtr input = getInput(0);
+        EffectInstancePtr input = getInput(render, 0);
         if (input) {
-            input->getFrameRange_public(0, first, last);
+            TreeRenderNodeArgsPtr inputRender;
+            if (render) {
+                inputRender = render->getInputRenderArgs(0);
+            }
+            GetFrameRangeResultsPtr results;
+            StatusEnum stat = input->getFrameRange_public(inputRender, &results);
+            if (stat == eStatusFailed) {
+                return stat;
+            }
+            RangeD range;
+            results->getFrameRangeResults(&range);
+            *first = range.min;
+            *last = range.max;
+
         }
         break;
     }
     case 1: {
-        getApp()->getFrameRange(first, last);
+        getApp()->getProject()->getFrameRange(first, last);
         break;
     }
     case 2: {
@@ -219,6 +232,7 @@ DiskCacheNode::getFrameRange(double *first,
     default:
         break;
     }
+    return eStatusOK;
 }
 
 StatusEnum
@@ -226,7 +240,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 {
     assert(args.outputPlanes.size() == 1);
 
-    EffectInstancePtr input = getInput(0);
+    EffectInstancePtr input = getInput(args.render,0);
     if (!input) {
         return eStatusFailed;
     }
@@ -254,22 +268,20 @@ DiskCacheNode::render(const RenderActionArgs& args)
     return eStatusOK;
 }
 
-bool
+StatusEnum
 DiskCacheNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*renderWindow*/,
                           ViewIdx view,
-                          double* inputTime,
+                          TimeValue* inputTime,
                           ViewIdx* inputView,
                           int* inputNb)
 {
-    if (!appPTR->isBackground()) {
-        return false;
-    }
+
     *inputNb = 0;
     *inputTime = time;
     *inputView = view;
-    return true;
+    return eStatusOK;
 
 }
 

@@ -34,7 +34,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-//Template specialization for EffectInstance::EffectTLSData:
+//Template specialization for EffectInstance::EffectInstanceTLSData:
 //We do this  for the following reasons:
 //We may be here in 2 cases: either in a thread from the multi-thread suite or from a thread that just got spawned
 //from the host-frame threading (executing tiledRenderingFunctor).
@@ -45,8 +45,8 @@ NATRON_NAMESPACE_ENTER;
 //set on the TLS, so just copy this instead of the whole TLS.
 
 template <>
-boost::shared_ptr<EffectInstance::EffectTLSData>
-TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
+boost::shared_ptr<EffectInstance::EffectInstanceTLSData>
+TLSHolder<EffectInstance::EffectInstanceTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
                                                               const QThread* toThread) const
 {
     QWriteLocker k(&perThreadDataMutex);
@@ -54,12 +54,12 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
     if ( found == perThreadData.end() ) {
         ///No TLS for fromThread
-        return boost::shared_ptr<EffectInstance::EffectTLSData>();
+        return boost::shared_ptr<EffectInstance::EffectInstanceTLSData>();
     }
 
     ThreadData data;
     //Copy constructor
-    data.value.reset( new EffectInstance::EffectTLSData( *(found->second.value) ) );
+    data.value.reset( new EffectInstance::EffectInstanceTLSData( *(found->second.value) ) );
     perThreadData[toThread] = data;
 
     return data.value;
@@ -67,10 +67,10 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
 template <>
 void
-TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread,
+TLSHolder<EffectInstance::EffectInstanceTLSData>::copyTLS(const QThread* fromThread,
                                                   const QThread* toThread) const
 {
-    boost::shared_ptr<EffectInstance::EffectTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
+    boost::shared_ptr<EffectInstance::EffectInstanceTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
 
     Q_UNUSED(tlsDataPtr);
 }

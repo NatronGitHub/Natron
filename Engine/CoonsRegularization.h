@@ -34,7 +34,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 

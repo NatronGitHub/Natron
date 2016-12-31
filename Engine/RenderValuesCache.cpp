@@ -115,21 +115,6 @@ struct RenderValuesCachePrivate
     std::map<KnobStringBasePtr, StringValueDimTimeViewMap> stringKnobValues;
     std::map<KnobParametricPtr, PerDimensionParametricCurve> parametricKnobCurves;
 
-    // Input nodes at the time of render
-    struct CachedNodeInput
-    {
-        bool inputSet;
-        NodePtr input;
-
-        CachedNodeInput()
-        : inputSet(false)
-        , input()
-        {
-
-        }
-    };
-    std::vector<CachedNodeInput> inputs;
-
     RenderValuesCachePrivate()
     : boolKnobValues()
     , intKnobValues()
@@ -153,29 +138,6 @@ RenderValuesCache::RenderValuesCache()
 RenderValuesCache::~RenderValuesCache()
 {
 
-}
-
-bool
-RenderValuesCache::getCachedInput(int inputNb, NodePtr* node) const
-{
-    if (inputNb < 0 || inputNb >= (int)_imp->inputs.size()) {
-        return NodePtr();
-    }
-    if (!_imp->inputs[inputNb].inputSet) {
-        return false;
-    }
-    *node = _imp->inputs[inputNb].input;
-    return true;
-}
-
-void
-RenderValuesCache::setCachedInput(int inputNb, const NodePtr& node)
-{
-    if (inputNb >= (int)_imp->inputs.size()) {
-        _imp->inputs.resize(inputNb + 1);
-    }
-    _imp->inputs[inputNb].input = node;
-    _imp->inputs[inputNb].inputSet = true;
 }
 
 template <>

@@ -107,17 +107,19 @@ public:
 private:
 
     virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
                              TimeValue time) OVERRIDE FINAL;
-    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
-    virtual void getComponentsNeededAndProduced(TimeValue time, ViewIdx view,
-                                                ComponentsNeededMap* comps,
+    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time,
+                                                ViewIdx view,
+                                                const TreeRenderNodeArgsPtr& render,
+                                                std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                std::list<ImageComponents>* layersProduced,
                                                 TimeValue* passThroughTime,
                                                 ViewIdx* passThroughView,
                                                 int* passThroughInputNb) OVERRIDE;
@@ -131,7 +133,8 @@ private:
                                            bool draftMode,
                                            ViewIdx view,
                                            bool isOpenGLRender,
-                                           const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                           const EffectOpenGLContextDataPtr& glContextData,
+                                           const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
                                          double last,
                                          double step,
@@ -142,15 +145,16 @@ private:
                                          bool draftMode,
                                          ViewIdx view,
                                          bool isOpenGLRender,
-                                         const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                         const EffectOpenGLContextDataPtr& glContextData,
+                                         const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getRegionsOfInterest(TimeValue time,
+    virtual StatusEnum getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
-                                      const RectD & outputRoD, //!< full RoD in canonical coordinates
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
+                                      const TreeRenderNodeArgsPtr& render,
                                       RoIMap* ret) OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual StatusEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded) OVERRIDE WARN_UNUSED_RETURN;
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 

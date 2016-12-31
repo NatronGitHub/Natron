@@ -1210,8 +1210,8 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
-double
-NodeGroup::getCurrentTime() const
+TimeValue
+NodeGroup::getCurrentTime_TLS() const
 {
     NodePtr node = getOutputNodeInput();
 
@@ -1220,14 +1220,14 @@ NodeGroup::getCurrentTime() const
         if (!effect) {
             return 0;
         }
-        return effect->getCurrentTime();
+        return effect->getCurrentTime_TLS();
     }
 
-    return EffectInstance::getCurrentTime();
+    return EffectInstance::getCurrentTime_TLS();
 }
 
 ViewIdx
-NodeGroup::getCurrentView() const
+NodeGroup::getCurrentView_TLS() const
 {
     NodePtr node = getOutputNodeInput();
 
@@ -1236,10 +1236,10 @@ NodeGroup::getCurrentView() const
         if (!effect) {
             return ViewIdx(0);
         }
-        return effect->getCurrentView();
+        return effect->getCurrentView_TLS();
     }
 
-    return EffectInstance::getCurrentView();
+    return EffectInstance::getCurrentView_TLS();
 }
 
 bool

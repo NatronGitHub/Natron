@@ -636,8 +636,8 @@ static PyObject* Sbk_EffectFunc_getCurrentTime(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentTime()const
-            int cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            double cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 

@@ -4215,7 +4215,7 @@ ViewerNode::setPickerEnabled(bool enabled)
 }
 
 ViewIdx
-ViewerNode::getCurrentView() const
+ViewerNode::getCurrentView_TLS() const
 {
     return ViewIdx(_imp->activeViewKnob.lock()->getValue());
 }
@@ -4467,7 +4467,7 @@ ViewerNodePrivate::startPlayback(RenderDirectionEnum direction)
     }
     _publicInterface->getApp()->setLastViewerUsingTimeline( getInternalViewerNode() );
     std::vector<ViewIdx> viewsToRender;
-    viewsToRender.push_back(_publicInterface->getCurrentView());
+    viewsToRender.push_back(_publicInterface->getCurrentView_TLS());
     ViewerInstancePtr instance = _publicInterface->getInternalViewerNode();
     if (instance) {
         instance->getRenderEngine()->renderFromCurrentFrame(_publicInterface->getApp()->isRenderStatsActionChecked(), viewsToRender, direction);

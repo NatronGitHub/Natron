@@ -97,18 +97,19 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void getFrameRange(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 
-    virtual bool isIdentity(TimeValue time,
+    virtual StatusEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & renderWindow,
                             ViewIdx view,
-                            double* inputTime,
+                            const TreeRenderNodeArgsPtr& render,
+                            TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 

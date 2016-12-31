@@ -2580,33 +2580,6 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
     _imp->ui->computeSelectedCpsBBOX();
 }
 
-StatusEnum
-RotoPaint::getTimeInvariantMetaDatas(NodeMetadata& metadata)
-{
-    metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
-    /*KnobBoolPtr premultKnob = _imp->premultKnob.lock();
-       assert(premultKnob);
-       bool premultiply = premultKnob->getValue();
-       if (premultiply) {
-        metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-       } else {
-        ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
-        EffectInstancePtr input = getInput(0);
-        if (input) {
-            srcPremult = input->getPremult();
-        }
-        bool processA = getNode()->getProcessChannel(3);
-        if ( (srcPremult == eImagePremultiplicationOpaque) && processA ) {
-            metadata.setOutputPremult(eImagePremultiplicationUnPremultiplied);
-        } else {
-            metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-        }
-       }*/
-    metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-
-    return eStatusOK;
-}
-
 static void adjustChoiceParamOption(const std::string& oldOption, const std::string& newOption, const KnobChoicePtr& knob)
 {
     std::vector<std::string> entries = knob->getEntries();
@@ -2990,7 +2963,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 bool
 RotoPaint::isRotoPaintTreeConcatenatable() const
 {
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime(), getCurrentView(), false);
+    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime_TLS(), getCurrentView_TLS(), false);
     int bop;
     return _imp->isRotoPaintTreeConcatenatableInternal(items, &bop);
 }
@@ -3203,8 +3176,8 @@ RotoPaint::refreshRotoPaintTree()
     if (_imp->treeRefreshBlocked) {
         return;
     }
-    TimeValue time = getCurrentTime();
-    ViewIdx view = getCurrentView();
+    TimeValue time = getCurrentTime_TLS();
+    ViewIdx view = getCurrentView_TLS();
 
     // Get the items by render order. In the GUI they appear from bottom to top.
     std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(time, view, false);
@@ -3651,7 +3624,7 @@ RotoPaint::refreshInputChoices(const std::string& oldInputLabel, const std::stri
 
 
     // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime(), ViewIdx(0), false);
+    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime_TLS(), ViewIdx(0), false);
     for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         {
             KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();

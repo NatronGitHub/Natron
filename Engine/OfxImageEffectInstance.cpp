@@ -379,7 +379,7 @@ OfxImageEffectInstance::getFrameRecursive() const
 {
     assert( getOfxEffectInstance() );
 
-    return getOfxEffectInstance()->getCurrentTime();
+    return getOfxEffectInstance()->getCurrentTime_TLS();
 }
 
 /// This is called whenever a param is changed by the plugin so that

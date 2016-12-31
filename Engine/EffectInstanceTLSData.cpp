@@ -30,7 +30,7 @@
 
 NATRON_NAMESPACE_ENTER
 
-struct EffectTLSDataPrivate
+struct EffectInstanceTLSDataPrivate
 {
     // We use a list here because actions may be recursive.
     // The last element in this list is always the arguments of
@@ -47,7 +47,7 @@ struct EffectTLSDataPrivate
     // Each data member must be protected by this mutex in getters/setters
     mutable QMutex lock;
 
-    EffectTLSDataPrivate()
+    EffectInstanceTLSDataPrivate()
     : actionsArgsStack()
     , frameArgs()
     , lock()
@@ -55,7 +55,7 @@ struct EffectTLSDataPrivate
 
     }
 
-    EffectTLSDataPrivate(const EffectTLSDataPrivate& other)
+    EffectInstanceTLSDataPrivate(const EffectInstanceTLSDataPrivate& other)
     {
         // Lock the other thread TLS (mainly for the current action args)
         QMutexLocker k(&other.lock);
@@ -69,18 +69,18 @@ struct EffectTLSDataPrivate
 
 };
 
-EffectTLSData::EffectTLSData()
-: _imp(new EffectTLSDataPrivate())
+EffectInstanceTLSData::EffectInstanceTLSData()
+: _imp(new EffectInstanceTLSDataPrivate())
 {
 }
 
-EffectTLSData::EffectTLSData(const EffectTLSData& other)
-: _imp(new EffectTLSDataPrivate(*other._imp))
+EffectInstanceTLSData::EffectInstanceTLSData(const EffectInstanceTLSData& other)
+: _imp(new EffectInstanceTLSDataPrivate(*other._imp))
 {
 }
 
 void
-EffectTLSData::pushActionArgs(const TreeRenderNodeArgsPtr& renderArgs, TimeValue time, ViewIdx view, const RenderScale& scale
+EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                               , bool canSetValue
                               , bool canBeCalledRecursively
@@ -88,7 +88,6 @@ EffectTLSData::pushActionArgs(const TreeRenderNodeArgsPtr& renderArgs, TimeValue
                               )
 {
     GenericActionTLSArgsPtr args(new GenericActionTLSArgs);
-    args->renderArgs = renderArgs;
     args->time = time;
     args->view = view;
     args->scale = scale;
@@ -107,13 +106,12 @@ EffectTLSData::pushActionArgs(const TreeRenderNodeArgsPtr& renderArgs, TimeValue
 
 
 void
-EffectTLSData::pushRenderActionArgs(const TreeRenderNodeArgsPtr& renderArgs, TimeValue time, ViewIdx view, RenderScale& scale,
+EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
                           const RectI& renderWindowPixel,
                           const InputImagesMap& preRenderedInputImages,
                           const std::map<ImageComponents, PlaneToRender>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
-    args->renderArgs = renderArgs;
     args->time = time;
     args->view = view;
     args->scale = scale;
@@ -132,7 +130,7 @@ EffectTLSData::pushRenderActionArgs(const TreeRenderNodeArgsPtr& renderArgs, Tim
 }
 
 void
-EffectTLSData::popArgs()
+EffectInstanceTLSData::popArgs()
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -142,7 +140,7 @@ EffectTLSData::popArgs()
 }
 
 int
-EffectTLSData::getActionsRecursionLevel() const
+EffectInstanceTLSData::getActionsRecursionLevel() const
 {
     QMutexLocker k(&_imp->lock);
     return (int)_imp->actionsArgsStack.size();
@@ -150,7 +148,7 @@ EffectTLSData::getActionsRecursionLevel() const
 
 #ifdef DEBUG
 bool
-EffectTLSData::isDuringActionThatCannotSetValue() const
+EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -162,14 +160,14 @@ EffectTLSData::isDuringActionThatCannotSetValue() const
 
 
 TreeRenderNodeArgsPtr
-EffectTLSData::getRenderArgs() const
+EffectInstanceTLSData::getRenderArgs() const
 {
     QMutexLocker k(&_imp->lock);
     return _imp->frameArgs.lock();
 }
 
 void
-EffectTLSData::setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs)
+EffectInstanceTLSData::setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs)
 {
     QMutexLocker k(&_imp->lock);
     _imp->frameArgs = renderArgs;
@@ -177,7 +175,7 @@ EffectTLSData::setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs)
 
 
 void
-EffectTLSData::ensureLastActionInStackIsNotRender()
+EffectInstanceTLSData::ensureLastActionInStackIsNotRender()
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -192,16 +190,14 @@ EffectTLSData::ensureLastActionInStackIsNotRender()
 }
 
 bool
-EffectTLSData::getCurrentActionArgs(TreeRenderNodeArgsPtr* renderArgs, double* time, ViewIdx* view, RenderScale* scale) const
+EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
     const GenericActionTLSArgsPtr& args = _imp->actionsArgsStack.back();
-    if (renderArgs) {
-        *renderArgs = args->renderArgs;
-    }
+
     if (time) {
         *time = args->time;
     }
@@ -215,7 +211,7 @@ EffectTLSData::getCurrentActionArgs(TreeRenderNodeArgsPtr* renderArgs, double* t
 }
 
 void
-EffectTLSData::updateCurrentRenderActionOutputPlanes(const std::map<ImageComponents, PlaneToRender>& outputPlanes)
+EffectInstanceTLSData::updateCurrentRenderActionOutputPlanes(const std::map<ImageComponents, PlaneToRender>& outputPlanes)
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -231,11 +227,10 @@ EffectTLSData::updateCurrentRenderActionOutputPlanes(const std::map<ImageCompone
 
 
 bool
-EffectTLSData::getCurrentRenderActionArgs(TreeRenderNodeArgsPtr* renderArgs,
-                                          double* time, ViewIdx* view, RenderScale* scale,
-                                RectI* renderWindowPixel,
-                                InputImagesMap* preRenderedInputImages,
-                                std::map<ImageComponents, PlaneToRender>* outputPlanes) const
+EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
+                                                  RectI* renderWindowPixel,
+                                                  InputImagesMap* preRenderedInputImages,
+                                                  std::map<ImageComponents, PlaneToRender>* outputPlanes) const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -245,9 +240,7 @@ EffectTLSData::getCurrentRenderActionArgs(TreeRenderNodeArgsPtr* renderArgs,
     if (!args) {
         return false;
     }
-    if (renderArgs) {
-        *renderArgs = args->renderArgs;
-    }
+
     if (time) {
         *time = args->time;
     }
@@ -266,9 +259,7 @@ EffectTLSData::getCurrentRenderActionArgs(TreeRenderNodeArgsPtr* renderArgs,
     if (outputPlanes) {
         *outputPlanes = args->outputPlanes;
     }
-    if (compsNeeded) {
-        *compsNeeded = args->compsNeeded;
-    }
+ 
     return true;
 }
 

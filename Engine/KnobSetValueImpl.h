@@ -185,7 +185,7 @@ Knob<T>::setValue(const T & v,
     // Apply changes
     bool hasChanged = forceHandlerEvenIfNoChange;
 
-    TimeValue time = getCurrentTime();
+    TimeValue time = getCurrentTime_TLS();
 
     // Check if we can add automatically a new keyframe
     if (isAutoKeyingEnabled(dimension, view, reason)) {
@@ -659,7 +659,7 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
 
     resetExtraToDefaultValue(dimension, view);
 
-    TimeValue time = getCurrentTime();
+    TimeValue time = getCurrentTime_TLS();
 
     // Double default values may be normalized so denormalize it
     // see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxParamPropDefaultCoordinateSystem

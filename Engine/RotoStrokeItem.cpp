@@ -331,11 +331,12 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     // In order for the getBoundingBox function to return something decent, we still need
     // to know the bounding box of the full stroke
     if (isCurrentlyDrawing && hasDoneSomething) {
+
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
         // since we are drawing anyway nothing else is happening.
-        TimeValue time = _publicInterface->getCurrentTime();
-        ViewIdx view = _publicInterface->getCurrentView();
+        TimeValue time = _publicInterface->getCurrentTime_TLS();
+        ViewIdx view = _publicInterface->getCurrentView_TLS();
 
         lastStrokeStepBbox = computeBoundingBox(time, view);
         renderCachedBbox = other.computeBoundingBox(time, view);

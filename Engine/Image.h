@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <bitset>
+#include <list>
 
 #include "Global/Macros.h"
 
@@ -109,40 +110,7 @@ public:
         
     };
     
-    enum CacheAccessModeEnum
-    {
-        // The image should not use the cache at all
-        eCacheAccessModeNone,
-        
-        // The image shoud try to look for a match in the cache
-        // if possible. Tiles that are allocated or modified will be
-        // pushed to the cache.
-        eCacheAccessModeReadWrite,
-        
-        // The image should use cached tiles but can write to the cache
-        eCacheAccessModeWriteOnly
-    };
 
-    enum ImageBufferLayoutEnum
-    {
-        // This will make an image with an internal storage composed
-        // of one or multiple tiles, each of which is a single channel buffer.
-        // This is the preferred storage format for the Cache.
-        eImageBufferLayoutMonoChannelTiled,
-
-
-        // This will make an image with an internal storage composed of a single
-        // buffer for all r g b and a channels. The buffer is layout as such:
-        // all red pixels first, then all greens, then blue then alpha:
-        // RRRRRRGGGGGBBBBBAAAAA
-        eImageBufferLayoutRGBACoplanarFullRect,
-
-        // This will make an image with an internal storage composed of a single
-        // packed RGBA buffer. Pixels layout is as such: RGBARGBARGBA
-        // This is the preferred layout by default for OpenFX.
-        // OpenGL textures only support this mode for now.
-        eImageBufferLayoutRGBAPackedFullRect,
-    };
 
     struct InitStorageArgs
     {
@@ -212,10 +180,11 @@ public:
         // Default - eImageBufferLayoutRGBAPackedFullRect
         ImageBufferLayoutEnum bufferFormat;
         
-        // The mipmaplevel of the image
-        //
-        // Default - 0
-        unsigned int mipMapLevel;
+        // The scale of the image: this is useful for an effect to know the scale of an image to determine
+        // if we can downscale or upscale it.
+        // 
+        // Default - (1,1)
+        RenderScale scale;
 
         // Is this image used to perform draft computations ? (i.e that were computed with low samples)
         // This is relevant only if the image is cached
@@ -276,9 +245,9 @@ public:
     const RectI& getBounds() const;
 
     /**
-     * @brief Returns the mip map level of the image.
+     * @brief Returns the scale of the image.
      **/
-    unsigned int getMipMapLevel() const;
+    const RenderScale& getScale() const;
 
     /**
      * @brief Converts the mipmap level to a scale factor
@@ -526,6 +495,8 @@ public:
      **/
     void getCPUTileData(const Tile& tile, CPUTileData* data) const;
 
+    static void getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data);
+
     /**
      * @brief Returns the tile at the given tileIndex.
      * An untiled image has a single tile at index 0.
@@ -536,6 +507,16 @@ public:
      * @brief Returns the number of tiles
      **/
     int getNumTiles() const;
+
+    /**
+     * @brief Returns true if all tiles composing the image are cached
+     **/
+    bool isCached() const;
+
+    /**
+     * @brief If this image is cached, this will return what portion of the image is left to render.
+     **/
+    std::list<RectI> getRestToRender() const;
 
     template <typename PIX>
     static inline void getChannelPointers(const PIX* ptrs[4],

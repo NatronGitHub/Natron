@@ -220,14 +220,14 @@ GetDistorsionResults::create(const GetDistorsionKeyPtr& key)
 }
 
 
-void
-GetDistorsionResults::getDistorsionResults(DistorsionFunction2D *disto) const
+DistorsionFunction2DPtr
+GetDistorsionResults::getDistorsionResults() const
 {
-    *disto = _distorsion;
+    return _distorsion;
 }
 
 void
-GetDistorsionResults::setDistorsionResults(const DistorsionFunction2D &disto)
+GetDistorsionResults::setDistorsionResults(const DistorsionFunction2DPtr &disto)
 {
     assert(getCacheBucketIndex() == -1);
     _distorsion = disto;
@@ -295,7 +295,7 @@ GetTimeInvariantMetaDatasResults::create(const GetTimeInvariantMetaDatasKeyPtr& 
 }
 
 
-NodeMetadataPtr
+const NodeMetadataPtr&
 GetTimeInvariantMetaDatasResults::getMetadatasResults() const
 {
     return _metadatas;
@@ -315,9 +315,11 @@ GetTimeInvariantMetaDatasResults::getSize() const
 }
 
 
-GetComponentsNeededResults::GetComponentsNeededResults()
+GetComponentsResults::GetComponentsResults()
 : CacheEntryBase(appPTR->getCache())
-, _compsNeeded()
+, _neededInputLayers()
+, _producedLayers()
+, _passThroughPlanes()
 , _passThroughInputNb(-1)
 , _passThroughTime(0)
 , _passThroughView(0)
@@ -327,10 +329,10 @@ GetComponentsNeededResults::GetComponentsNeededResults()
 
 }
 
-GetComponentsNeededResultsPtr
-GetComponentsNeededResults::create(const GetComponentsNeededKeyPtr& key)
+GetComponentsResultsPtr
+GetComponentsResults::create(const GetComponentsKeyPtr& key)
 {
-    GetComponentsNeededResultsPtr ret(new GetComponentsNeededResults());
+    GetComponentsResultsPtr ret(new GetComponentsResults());
     ret->setKey(key);
     return ret;
 
@@ -338,14 +340,18 @@ GetComponentsNeededResults::create(const GetComponentsNeededKeyPtr& key)
 
 
 void
-GetComponentsNeededResults::getComponentsNeededResults(ComponentsNeededMap *compsNeeded,
-                                                       int *passThroughInputNb,
-                                                       TimeValue *passThroughTime,
-                                                       ViewIdx *passThroughView,
-                                                       std::bitset<4> *processChannels,
-                                                       bool *processAllLayers) const
+GetComponentsResults::getResults(std::map<int, std::list<ImageComponents> >* neededInputLayers,
+                                 std::list<ImageComponents>* producedLayers,
+                                 std::list<ImageComponents>* passThroughPlanes,
+                                 int *passThroughInputNb,
+                                 TimeValue *passThroughTime,
+                                 ViewIdx *passThroughView,
+                                 std::bitset<4> *processChannels,
+                                 bool *processAllLayers) const
 {
-    *compsNeeded = _compsNeeded;
+    *neededInputLayers = _neededInputLayers;
+    *producedLayers = _producedLayers;
+    *passThroughPlanes = _passThroughPlanes;
     *passThroughInputNb = _passThroughInputNb;
     *passThroughTime = _passThroughTime;
     *passThroughView = _passThroughView;
@@ -354,15 +360,19 @@ GetComponentsNeededResults::getComponentsNeededResults(ComponentsNeededMap *comp
 }
 
 void
-GetComponentsNeededResults::setComponentsNeededResults(const ComponentsNeededMap &compsNeeded,
-                                                       int passThroughInputNb,
-                                                       TimeValue passThroughTime,
-                                                       ViewIdx passThroughView,
-                                                       std::bitset<4> processChannels,
-                                                       bool processAllLayers)
+GetComponentsResults::setResults(const std::map<int, std::list<ImageComponents> >& neededInputLayers,
+                                 const std::list<ImageComponents>& producedLayers,
+                                 const std::list<ImageComponents>& passThroughPlanes,
+                                 int passThroughInputNb,
+                                 TimeValue passThroughTime,
+                                 ViewIdx passThroughView,
+                                 std::bitset<4> processChannels,
+                                 bool processAllLayers)
 {
     assert(getCacheBucketIndex() == -1);
-    _compsNeeded = compsNeeded;
+    _neededInputLayers = neededInputLayers;
+    _producedLayers = producedLayers;
+    _passThroughPlanes = passThroughPlanes;
     _passThroughInputNb = passThroughInputNb;
     _passThroughTime = passThroughTime;
     _passThroughView = passThroughView;
@@ -371,7 +381,7 @@ GetComponentsNeededResults::setComponentsNeededResults(const ComponentsNeededMap
 }
 
 std::size_t
-GetComponentsNeededResults::getSize() const
+GetComponentsResults::getSize() const
 {
     return 0;
 }

@@ -590,7 +590,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime_TLS(), ViewSetSpec(0));
 
         }
 
@@ -949,15 +949,6 @@ ReadNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     return p ? p->getEffectInstance()->getTimeInvariantMetaDatas(metadata) : EffectInstance::getTimeInvariantMetaDatas(metadata);
 }
 
-void
-ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->setMetaDatasInternal(metadata);
-        p->getEffectInstance()->onMetaDatasRefreshed(metadata);
-    }
-}
 
 void
 ReadNode::initializeKnobs()
@@ -1151,6 +1142,7 @@ StatusEnum
 ReadNode::getRegionOfDefinition(TimeValue time,
                                 const RenderScale & scale,
                                 ViewIdx view,
+                                const TreeRenderNodeArgsPtr& render,
                                 RectD* rod)
 {
     if ( !_imp->checkDecoderCreated(time, view) ) {
@@ -1158,36 +1150,40 @@ ReadNode::getRegionOfDefinition(TimeValue time,
     }
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, rod);
+        return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, render, rod);
     } else {
         return eStatusFailed;
     }
 }
 
-void
-ReadNode::getFrameRange(double *first,
+StatusEnum
+ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
+                        double *first,
                         double *last)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getFrameRange(first, last);
+        return p->getEffectInstance()->getFrameRange(render, first, last);
     } else {
         *first = *last = 1;
     }
 }
 
-void
+StatusEnum
 ReadNode::getComponentsNeededAndProduced(TimeValue time,
                                          ViewIdx view,
-                                         ComponentsNeededMap* comps,
-                                         SequenceTime* passThroughTime,
-                                         int* passThroughView,
-                                         NodePtr* passThroughInput)
+                                         const TreeRenderNodeArgsPtr& render,
+                                         std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                         std::list<ImageComponents>* layersProduced,
+                                         TimeValue* passThroughTime,
+                                         ViewIdx* passThroughView,
+                                         int* passThroughInputNb)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+        return p->getEffectInstance()->getComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     }
+    return eStatusFailed;
 }
 
 StatusEnum
@@ -1201,11 +1197,12 @@ ReadNode::beginSequenceRender(double first,
                               bool draftMode,
                               ViewIdx view,
                               bool isOpenGLRender,
-                              const EffectOpenGLContextDataPtr& glContextData)
+                              const EffectOpenGLContextDataPtr& glContextData,
+                              const TreeRenderNodeArgsPtr& render)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
     } else {
         return eStatusFailed;
     }
@@ -1222,11 +1219,12 @@ ReadNode::endSequenceRender(double first,
                             bool draftMode,
                             ViewIdx view,
                             bool isOpenGLRender,
-                            const EffectOpenGLContextDataPtr& glContextData)
+                            const EffectOpenGLContextDataPtr& glContextData,
+                            const TreeRenderNodeArgsPtr& render)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
     } else {
         return eStatusFailed;
     }
@@ -1247,29 +1245,29 @@ ReadNode::render(const RenderActionArgs& args)
     }
 }
 
-void
+StatusEnum
 ReadNode::getRegionsOfInterest(TimeValue time,
                                const RenderScale & scale,
-                               const RectD & outputRoD,    //!< full RoD in canonical coordinates
                                const RectD & renderWindow,    //!< the region to be rendered in the output image, in Canonical Coordinates
                                ViewIdx view,
+                               const TreeRenderNodeArgsPtr& render,
                                RoIMap* ret)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
+        return p->getEffectInstance()->getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, render, ret);
     }
+    return eStatusFailed;
 }
 
-FramesNeededMap
-ReadNode::getFramesNeeded(TimeValue time,
-                          ViewIdx view)
+StatusEnum
+ReadNode::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getFramesNeeded(time, view);
+        return p->getEffectInstance()->getFramesNeeded(time, view, render, framesNeeded);
     } else {
-        return FramesNeededMap();
+        return eStatusFailed;
     }
 }
 
