@@ -335,6 +335,7 @@ static int getLayoutLeftMargin(KnobGui::KnobLayoutTypeEnum type)
         case KnobGui::eKnobLayoutTypeTableItemWidget:
             return 0;
     }
+    return 0;
 }
 static int getLayoutBottomMargin(KnobGui::KnobLayoutTypeEnum type)
 {
@@ -346,6 +347,7 @@ static int getLayoutBottomMargin(KnobGui::KnobLayoutTypeEnum type)
         case KnobGui::eKnobLayoutTypeTableItemWidget:
             return 0;
     }
+    return 0;
 }
 
 static int getLayoutSpacing(KnobGui::KnobLayoutTypeEnum type)
@@ -358,6 +360,7 @@ static int getLayoutSpacing(KnobGui::KnobLayoutTypeEnum type)
         case KnobGui::eKnobLayoutTypeTableItemWidget:
             return 0;
     }
+    return 0;
 }
 
 void

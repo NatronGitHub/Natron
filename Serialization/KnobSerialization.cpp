@@ -65,6 +65,7 @@ static std::string dataTypeToString(SerializationValueVariantTypeEnum type)
         case eSerializationValueVariantTypeNone:
             return kKnobSerializationDataTypeKeyNone;
     }
+    return kKnobSerializationDataTypeKeyNone;
 }
 
 static SerializationValueVariantTypeEnum dataTypeFromString(const std::string& type)
