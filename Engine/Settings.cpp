@@ -1785,7 +1785,15 @@ SettingsPrivate::setDefaultValues()
     _numberOfParallelRenders->setDefaultValue(0);
 #endif
     _nOpenGLContexts->setDefaultValue(2);
+#if NATRON_VERSION_MAJOR < 2 || (NATRON_VERSION_MAJOR == 2 && NATRON_VERSION_MINOR < 2)
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
+#else
+#  if NATRON_VERSION_MAJOR >= 3
     _enableOpenGL->setDefaultValue((int)Settings::eEnableOpenGLEnabled);
+#  else
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabledIfBackground);
+#  endif
+#endif
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false);

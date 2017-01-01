@@ -4,13 +4,31 @@
 
 # History
 
-## Version 2.1.10
+## Version 2.2
 
+- OpenGL rendering is enabled by default for interactive editing in plugins that support it (but still disabled for background rendering)
 - Roto & RotoPaint: ellipses and circles are more accurate #1524
 - When a plugin is not available with the right major version, use the smallest major version above for better compatibility (before that change, the highest major version was returned)
 
 ### Plugins
 
+- The plugins that were made available as beta features in the 2.1 releases are now considered stable:
+    - DenoiseSharpen: new wavelet-based denoising plugin
+    - EdgeBlur: Blur the image where there are edges in the alpha/matte channel.
+    - EdgeDetect: Perform edge detection by computing the image gradient magnitude.
+    - EdgeExtend: Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte.
+    - ErodeBlur: Erode or dilate a mask by smoothing.
+    - HueCorrect: Apply hue-dependent color adjustments using lookup curves.
+    - HueKeyer: Compute a key depending on hue value.
+    - KeyMix: Copies A to B only where Mask is non-zero.
+    - Log2Lin: Convert from/to the logarithmic space used by Cineon files.
+    - PIK: A per-pixel color difference keyer that uses a mix operation instead of a max operation to combine the non-backing screen channels.
+    - PIKColor: Generate a clean plate from each frame for keying with PIK.
+    - PLogLin: Convert between linear and log representations using the Josh Pines log conversion.
+    - Quantize: Reduce the number of color levels with posterization or dithering
+    - SeExprSimple: new simple expression plugin with one expression per channel
+    - Sharpen & Soften: new plugins.
+    - SlitScan: Per-pixel retiming.
 - SeNoise: fix bugs in the Transform parameters #1527
 - PIKColor: do not expand region of definition
 - Shadertoy: support iDate, add presets, fix CPU rendering #1526
@@ -19,6 +37,7 @@
 - Grade: fix a bug where negative values were clamped even when gamma=1 #1533
 - STMap, IDistort, LensDistortion, Transform, CornerPin: reduce supersampling to avoid artifacts
 - LensDistortion: add STMap output mode, add undistort output, add PFBarrel and 3DEqualizer distortions model, add proper region of definition support.
+
 
 ## Version 2.1.9
 
