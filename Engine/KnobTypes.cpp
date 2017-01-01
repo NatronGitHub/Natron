@@ -1038,12 +1038,16 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
+// Choice restoration tries several options to restore a choice value:
+// 1- exact string match, same index
+// 2- exact string match, other index
+// 3- exact string match before the first '\t', other index
+// 4- case-insensistive string match, other index
 void
 KnobChoice::choiceRestoration(KnobChoice* knob,
                               const ChoiceExtraData* data)
 {
     assert(knob && data);
-
 
     ///Clone first and then handle restoration of the static value
     clone(knob);
@@ -1065,15 +1069,40 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
         setValue(serializedIndex);
     } else {
         // try to find the same label at some other index
+
+        const std::string& choice(data->_choiceString);
+        // first, try exact match
         for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if ( boost::iequals(_mergedEntries[i], data->_choiceString) ) {
+            if (_mergedEntries[i] == choice) {
                 setValue(i);
 
                 return;
             }
         }
 
+        // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
+        std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
+        std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
+        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+            const std::string& entry(_mergedEntries[i]);
+            std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
+            std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
 
+            if (entrymain == choicemain) {
+                setValue(i);
+
+                return;
+            }
+        }
+
+        // third, case-insensitive match
+        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
+            if ( boost::iequals(_mergedEntries[i], choice) ) {
+                setValue(i);
+
+                return;
+            }
+        }
         //   setValue(-1);
     }
 }
