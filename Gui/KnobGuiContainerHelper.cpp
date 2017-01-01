@@ -610,41 +610,45 @@ KnobGuiContainerHelper::findKnobGuiOrCreate(const KnobPtr & knob,
             // This is a group inside a group
             assert(parentIsGroup);
             assert(parentGui);
-            TabGroup* groupAsTab = parentGui->getOrCreateTabWidget();
-            assert(groupAsTab);
-            groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
+            if (parentGui) {
+                TabGroup* groupAsTab = parentGui->getOrCreateTabWidget();
+                assert(groupAsTab);
+                if (groupAsTab) {
+                    groupAsTab->addTab( isGroup, QString::fromUtf8( isGroup->getLabel().c_str() ) );
 
-            if ( parentIsGroup && parentIsGroup->isTab() ) {
-                // Insert the tab in the layout of the parent
-                // Find the page in the parentParent group
-                KnobPtr parentParent = parentKnob->getParentKnob();
-                assert(parentParent);
-                boost::shared_ptr<KnobGroup> parentParentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentParent);
-                boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
-                assert(parentParentIsGroup || parentParentIsPage);
-                TabGroup* parentTabGroup = 0;
-                if (parentParentIsPage) {
-                    KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
-                    assert(page);
-                    parentTabGroup = page->groupAsTab;
-                } else {
-                    KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
-                    assert( it != _imp->knobsMap.end() );
-                    KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( it->second.get() );
-                    assert(parentParentGroupGui);
-                    parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
+                    if ( parentIsGroup && parentIsGroup->isTab() ) {
+                        // Insert the tab in the layout of the parent
+                        // Find the page in the parentParent group
+                        KnobPtr parentParent = parentKnob->getParentKnob();
+                        assert(parentParent);
+                        boost::shared_ptr<KnobGroup> parentParentIsGroup = boost::dynamic_pointer_cast<KnobGroup>(parentParent);
+                        boost::shared_ptr<KnobPage> parentParentIsPage = boost::dynamic_pointer_cast<KnobPage>(parentParent);
+                        assert(parentParentIsGroup || parentParentIsPage);
+                        TabGroup* parentTabGroup = 0;
+                        if (parentParentIsPage) {
+                            KnobPageGuiPtr page = getOrCreatePage(parentParentIsPage);
+                            assert(page);
+                            parentTabGroup = page->groupAsTab;
+                        } else {
+                            KnobsGuiMapping::iterator it = _imp->findKnobGui(parentParent);
+                            assert( it != _imp->knobsMap.end() );
+                            KnobGuiGroup* parentParentGroupGui = dynamic_cast<KnobGuiGroup*>( it->second.get() );
+                            assert(parentParentGroupGui);
+                            parentTabGroup = parentParentGroupGui->getOrCreateTabWidget();
+                        }
+
+                        QGridLayout* layout = parentTabGroup->addTab( parentIsGroup, QString::fromUtf8( parentIsGroup->getLabel().c_str() ) );
+                        assert(layout);
+                        layout->addWidget(groupAsTab, 0, 0, 1, 2);
+                    } else {
+                        boost::shared_ptr<KnobPage> topLevelPage = knob->getTopLevelPage();
+                        KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
+                        assert(page);
+                        page->gridLayout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
+                    }
+                    groupAsTab->refreshTabSecretNess( isGroup.get() );
                 }
-
-                QGridLayout* layout = parentTabGroup->addTab( parentIsGroup, QString::fromUtf8( parentIsGroup->getLabel().c_str() ) );
-                assert(layout);
-                layout->addWidget(groupAsTab, 0, 0, 1, 2);
-            } else {
-                boost::shared_ptr<KnobPage> topLevelPage = knob->getTopLevelPage();
-                KnobPageGuiPtr page = getOrCreatePage(topLevelPage);
-                assert(page);
-                page->gridLayout->addWidget(groupAsTab, page->currentRow, 0, 1, 2);
             }
-            groupAsTab->refreshTabSecretNess( isGroup.get() );
         }
     }
     // If widgets for the KnobGui have already been created, don't do the following
