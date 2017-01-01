@@ -4,6 +4,15 @@
 
 # History
 
+## Version 3.0
+
+- Natron now uses a YAML-based format for most files (projects, pyplugs, presets), which makes it easier to read and write by humans or other programs
+- The cache system was completely rewritten, and is is more efficient in terms of cached data reuse and memory usage.
+- Links between parameters are now bi-directionnal: All parameters that are linked now share the same underlying animation curve/value. The notion of slave/master is gone.
+- Clone nodes are now merely just a copy of another node with all parameters sharing values. One may unlink some parameters, in which case a clone is no longer considered as a clone.
+- Python has callbacks to allow drawing and interacting in the viewer with custom drawings written in PyOpenGL. A PyPlug may use these callbacks to interact with parameters directly from the Viewer, much like the Transform node overlay handle.
+- For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
+
 ## Version 2.2
 
 - OpenGL rendering is enabled by default for interactive editing in plugins that support it (but still disabled for background rendering)

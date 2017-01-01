@@ -37,9 +37,10 @@
 			);
 			dependencies = (
 				1E306DFF1C4949BA00BAC6E3 /* PBXTargetDependency */,
-				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
-				1E306E011C4949BE00BAC6E3 /* PBXTargetDependency */,
 				1E306E031C4949C900BAC6E3 /* PBXTargetDependency */,
+				1EADE5FF18AA408B00EF3180 /* PBXTargetDependency */,
+				1ED800511E198C6B0021BEC0 /* PBXTargetDependency */,
+				1E306E011C4949BE00BAC6E3 /* PBXTargetDependency */,
 			);
 			name = all;
 			productName = all;
@@ -266,6 +267,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 1EADE5F818AA407D00EF3180;
 			remoteInfo = Tests;
+		};
+		1ED800501E198C6B0021BEC0 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AC07FADB1D6F65D100A5A9D8 /* NatronProjectConverter.xcodeproj */;
+			proxyType = 1;
+			remoteGlobalIDString = 923D21C3763E39C9804AEAFB;
+			remoteInfo = NatronProjectConverter;
 		};
 		1EDADF321D8B0C6500D47689 /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -1105,6 +1113,11 @@
 			isa = PBXTargetDependency;
 			target = 1EADE5F818AA407D00EF3180 /* Tests */;
 			targetProxy = 1EADE5FE18AA408B00EF3180 /* PBXContainerItemProxy */;
+		};
+		1ED800511E198C6B0021BEC0 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = NatronProjectConverter;
+			targetProxy = 1ED800501E198C6B0021BEC0 /* PBXContainerItemProxy */;
 		};
 		1EDADF331D8B0C6500D47689 /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
