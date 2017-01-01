@@ -521,7 +521,7 @@ KnobItemsTableGui::KnobItemsTableGui(const KnobItemsTablePtr& table, DockablePan
     int nCols = table->getColumnsCount();
 
     KnobItemsTable::KnobItemsTableTypeEnum knobTableType = table->getType();
-    TableModel::TableModelTypeEnum type = eKnobItemsTableTypeTable;
+    TableModel::TableModelTypeEnum type = KnobItemsTable::eKnobItemsTableTypeTable;
     switch (knobTableType) {
         case KnobItemsTable::eKnobItemsTableTypeTable:
             type = TableModel::eTableModelTypeTable;
