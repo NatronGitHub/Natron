@@ -1448,8 +1448,11 @@ Settings::setDefaultValues()
     _numberOfParallelRenders->setDefaultValue(0, 0);
 #endif
     _nOpenGLContexts->setDefaultValue(2);
-#pragma message WARN("enable OpenGL by default after 2.1 release")
+#if NATRON_VERSION_MAJOR < 2 || (NATRON_VERSION_MAJOR == 2 && NATRON_VERSION_MINOR < 2)
     _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabled);
+#else
+    _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabledIfBackground);
+#endif
     _useThreadPool->setDefaultValue(true);
     _nThreadsPerEffect->setDefaultValue(0);
     _renderInSeparateProcess->setDefaultValue(false, 0);
