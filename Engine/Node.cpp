@@ -746,14 +746,15 @@ Node::initNodeScriptName(const NodeSerialization* serialization, const QString& 
         std::string name;
         QString pluginLabel;
         AppManager::AppTypeEnum appType = appPTR->getAppType();
-        if ( _imp->plugin &&
-            ( ( appType == AppManager::eAppTypeBackground) ||
-             ( appType == AppManager::eAppTypeGui) ||
-             ( appType == AppManager::eAppTypeInterpreter) ) ) {
+        if (_imp->plugin) {
+            if ( ( appType == AppManager::eAppTypeBackground) ||
+                 ( appType == AppManager::eAppTypeGui) ||
+                 ( appType == AppManager::eAppTypeInterpreter) ) {
                 pluginLabel = _imp->plugin->getLabelWithoutSuffix();
             } else {
                 pluginLabel = _imp->plugin->getPluginLabel();
             }
+        }
         try {
             if (group) {
                 group->initNodeName(isMultiInstanceChild ? _imp->multiInstanceParentName + '_' : pluginLabel.toStdString(), &name);
