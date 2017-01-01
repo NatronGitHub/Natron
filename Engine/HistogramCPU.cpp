@@ -356,7 +356,7 @@ computeHistogramStatic(const HistogramRequest & request,
         sigma *= request.smoothingKernelSize;
     }
     // smooth the upscaled histogram
-    Smooth1D::iir_gaussianFilter1D(histo_upscaled, request.smoothingKernelSize);
+    Smooth1D::iir_gaussianFilter1D(histo_upscaled, sigma);
 
     // downsample to obtain the final histogram
     histo->resize(request.binsCount);
