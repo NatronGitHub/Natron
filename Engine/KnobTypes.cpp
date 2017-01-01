@@ -1001,10 +1001,9 @@ KnobChoice::setValueFromLabel(const std::string & value,
                               int dimension,
                               bool turnOffAutoKeying)
 {
-    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-        if ( boost::iequals(_mergedEntries[i], value) ) {
-            return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
-        }
+    int i = choiceMatch(value, _mergedEntries);
+    if (i >= 0) {
+        return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
     }
     /*{
         QMutexLocker k(&_entriesMutex);
@@ -1018,10 +1017,9 @@ void
 KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,
                                                     int dimension)
 {
-    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-        if ( boost::iequals(_mergedEntries[i], value) ) {
-            return setDefaultValueWithoutApplying(i, dimension);
-        }
+    int i = choiceMatch(value, _mergedEntries);
+    if (i >= 0) {
+        return setDefaultValueWithoutApplying(i, dimension);
     }
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
@@ -1030,10 +1028,9 @@ void
 KnobChoice::setDefaultValueFromLabel(const std::string & value,
                                      int dimension)
 {
-    for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-        if ( boost::iequals(_mergedEntries[i], value) ) {
-            return setDefaultValue(i, dimension);
-        }
+    int i = choiceMatch(value, _mergedEntries);
+    if (i >= 0) {
+        return setDefaultValue(i, dimension);
     }
     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
@@ -1043,6 +1040,42 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
 // 2- exact string match, other index
 // 3- exact string match before the first '\t', other index
 // 4- case-insensistive string match, other index
+// returns index if choice was matched, -1 if not matched
+int
+KnobChoice::choiceMatch(const std::string& choice,
+                        const std::vector<std::string>& entries)
+{
+    // first, try exact match
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if (entries[i] == choice) {
+            return i;
+        }
+    }
+
+    // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
+    std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
+    std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        const std::string& entry(entries[i]);
+        std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
+        std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
+
+        if (entrymain == choicemain) {
+            return i;
+        }
+    }
+
+    // third, case-insensitive match
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if ( boost::iequals(entries[i], choice) ) {
+            return i;
+        }
+    }
+
+    // no match
+    return -1;
+}
+
 void
 KnobChoice::choiceRestoration(KnobChoice* knob,
                               const ChoiceExtraData* data)
@@ -1067,41 +1100,14 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
     if ( ( serializedIndex < (int)_mergedEntries.size() ) && (_mergedEntries[serializedIndex] == data->_choiceString) ) {
         // we're lucky, entry hasn't changed
         setValue(serializedIndex);
+
     } else {
         // try to find the same label at some other index
 
-        const std::string& choice(data->_choiceString);
-        // first, try exact match
-        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if (_mergedEntries[i] == choice) {
-                setValue(i);
+        int i = choiceMatch(data->_choiceString, _mergedEntries);
 
-                return;
-            }
-        }
-
-        // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
-        std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
-        std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
-        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            const std::string& entry(_mergedEntries[i]);
-            std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
-            std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
-
-            if (entrymain == choicemain) {
-                setValue(i);
-
-                return;
-            }
-        }
-
-        // third, case-insensitive match
-        for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-            if ( boost::iequals(_mergedEntries[i], choice) ) {
-                setValue(i);
-
-                return;
-            }
+        if (i >= 0) {
+            setValue(i);
         }
         //   setValue(-1);
     }
