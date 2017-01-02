@@ -240,36 +240,32 @@ If you want to build in DEBUG mode change the qmake call to this line:
 
 * You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
-### Building with OpenMP support using clang 3.8
+### Building with OpenMP support using clang
 
-It is possible to build Natron using clang 3.8 with OpenMP support on
-MacPorts (homebrew does not yet have llvm/clang 3.8, but it should
-soon be available in the `llvm` recipe, type `brew info llvm` to check
-if the recipe was updated).  OpenMP brings speed improvements in the
+It is possible to build Natron using clang (version 3.8 is required,
+version 3.9.1 is recommended) with OpenMP support on
+MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
-First, install clang 3.8. On OS X 10.6 Snow Leopard 10.6:
+First, install clang 3.9. On OS X 10.9 and later, simply execute:
 
-    sudo port install ld64-136 +llvm38 clang-3.8`
+    sudo port -v install clang-3.9
 
-On OS X 10.7 or later:
+On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)".
 
-    sudo port install ld64-latest +llvm38 clang-3.8`
+Then, configure using the following qmake command:
 
-Then configure using the following qmake command (replace `macx-clang`with `macx-clang-libc++` on OS X 10.9 and later):
+    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-3.9 QMAKE_CXX=clang++-mp-3.9 QMAKE_CC=clang-mp-3.9 QMAKE_OBJECTIVE_CXX=clang++-mp-3.9 QMAKE_OBJECTIVE_CC=clang-mp-3.9 QMAKE_LD=clang++-mp-3.9 -r CONFIG+=openmp
 
-    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang QMAKE_CXX=clang++-mp-3.8 QMAKE_CXX=clang++-mp-3.8 QMAKE_CC=clang-mp-3.8 QMAKE_OBJECTIVE_CXX=clang++-mp-3.8 QMAKE_OBJECTIVE_CC=clang-mp-3.8 QMAKE_LD=clang++-mp-3.8 -r CONFIG+=openmp
+To build the plugins, use the following command-line:
 
-To build the plugins, use the following command-line (on OS X 10.9 and
-later, remove `-stdlib=libstdc++`):
-
-    make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX=clang++-mp-3.9 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX=clang++-mp-3.9 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 ## Build on Xcode
 
