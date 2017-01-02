@@ -128,6 +128,14 @@ configure.post_args
 # CMake's configure script doesn't recognize `--host`.
 array set merger_host {i386 {} x86_64 {} ppc {} ppc64 {}}
 
+# Tiger has issues with system libraries;
+# just use the ones internal to cmake instead.
+platform darwin 8 {
+    configure.args-delete --system-libs \
+                          --no-system-jsoncpp
+    depends_lib-delete    path:lib/pkgconfig/libuv.pc:libuv
+}
+
 # Leopard's Rosetta has some difficulties configuring the ppc slice
 platform darwin 9 {
     global universal_archs_supported
