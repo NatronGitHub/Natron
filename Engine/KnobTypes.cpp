@@ -1330,12 +1330,7 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
-        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if ( boost::iequals(data->menuOptions[i], value) ) {
-                index = i;
-                break;
-            }
-        }
+        index = KnobChoice::choiceMatch(value, data->menuOptions);
     }
     if (index != -1) {
         return setDefaultValue(index, DimSpec(0));
