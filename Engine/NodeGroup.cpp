@@ -1105,6 +1105,7 @@ struct NodeGroupPrivate
         , outputs()
         , isDeactivatingGroup(false)
         , isActivatingGroup(false)
+
     {
     }
 };
@@ -1235,6 +1236,18 @@ NodeGroup::getInputLabel(int inputNb) const
     }
 
     return inputName.toStdString();
+}
+
+boost::shared_ptr<KnobButton>
+NodeGroup::getExportAsPyPlugButton() const
+{
+    return _imp->exportAsTemplate;
+}
+
+boost::shared_ptr<KnobButton>
+NodeGroup::getConvertToGroupButton() const
+{
+    return _imp->convertToGroup;
 }
 
 double

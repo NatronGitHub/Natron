@@ -1254,14 +1254,17 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
         int index = -1;
         {
             QMutexLocker k(&data->valueMutex);
-            int i = choiceMatch(value, data->menuOptions);
+            int i = choiceMatch(value, data->menuOptions, &data->activeEntry);
+            (void)i;
         }
         if (index != -1) {
             return setValue(index, view);
         }
+
     }
 
     throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
+
 }
 
 
@@ -1273,11 +1276,15 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
 // returns index if choice was matched, -1 if not matched
 int
 KnobChoice::choiceMatch(const std::string& choice,
-                        const std::vector<std::string>& entries)
+                        const std::vector<std::string>& entries,
+                        std::string* matchedEntry)
 {
     // first, try exact match
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if (entries[i] == choice) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
             return i;
         }
     }
@@ -1291,6 +1298,9 @@ KnobChoice::choiceMatch(const std::string& choice,
         std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
 
         if (entrymain == choicemain) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
             return i;
         }
     }
@@ -1298,6 +1308,9 @@ KnobChoice::choiceMatch(const std::string& choice,
     // third, case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if ( boost::iequals(entries[i], choice) ) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
             return i;
         }
     }
@@ -1314,7 +1327,7 @@ KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
-        index = choiceMatch(value, data->menuOptions);
+        index = choiceMatch(value, data->menuOptions, 0);
     }
     if (index != -1) {
         return setDefaultValueWithoutApplying(index, DimSpec(0));
@@ -1330,7 +1343,7 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
-        index = KnobChoice::choiceMatch(value, data->menuOptions);
+        index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
     }
     if (index != -1) {
         return setDefaultValue(index, DimSpec(0));

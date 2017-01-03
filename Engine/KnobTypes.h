@@ -781,7 +781,7 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    static int choiceMatch(const std::string& choice, const std::vector<std::string>& entries);
+    static int choiceMatch(const std::string& choice, const std::vector<std::string>& entries, std::string* matchedEntry);
     
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.

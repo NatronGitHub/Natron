@@ -131,6 +131,7 @@ using std::cout; using std::endl;
 using boost::shared_ptr;
 
 
+
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
    the texture format GL_UNSIGNED_INT_8_8_8_8_REV
