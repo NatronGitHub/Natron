@@ -48,6 +48,9 @@ CMAKE_PREFIX_PATH=$(echo /usr/local/Cellar/*/* | sed 's/ /;/g')
 
 git submodule update --init --recursive
 
+# get a minimal OCIO config
+(cd Tests; svn export  https://github.com/imageworks/OpenColorIO-Configs/trunk/nuke-default)
+
 if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
     if [ "${COVERITY_SCAN_BRANCH}" == 1 ]; then
         qmake -r CONFIG+="$BREAKPAD $SILENT precompile_header";
@@ -80,7 +83,7 @@ if [[ ${TRAVIS_OS_NAME} == "linux" ]]; then
         # don't build the tests on coverity, so that we do not exceed the time limit
 	make $J -C Tests;
         make $J
-        if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
+        if [ "$CC" = "gcc" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
     fi
     
 elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
@@ -108,5 +111,5 @@ elif [[ ${TRAVIS_OS_NAME} == "osx" ]]; then
     make -C App; # linking Natron may break the 3Gb limit
     make $J -C Tests;
     make $J
-    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins ./Tests; cd ..; fi
+    if [ "$CC" = "clang" ]; then cd Tests; env OFX_PLUGIN_PATH=Plugins OCIO=./nuke-default/config.ocio ./Tests; cd ..; fi
 fi
