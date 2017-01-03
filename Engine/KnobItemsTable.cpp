@@ -25,6 +25,8 @@
 
 #include "KnobItemsTable.h"
 
+#include <sstream> // stringstream
+
 #include <QMutex>
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>

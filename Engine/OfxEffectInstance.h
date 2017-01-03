@@ -40,12 +40,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QObject>
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
-//ofx
-CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare)
-#include <ofxhImageEffect.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/OutputEffectInstance.h"
 #include "Engine/ViewIdx.h"
@@ -239,7 +233,7 @@ public:
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, std::map<int, std::list<ImageComponents> >* inputLayersNeeded, std::list<ImageComponents>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
+    virtual StatusEnum getComponentsAction(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, std::map<int, std::list<ImageComponents> >* inputLayersNeeded, std::list<ImageComponents>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;

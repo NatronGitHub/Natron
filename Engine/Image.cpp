@@ -706,7 +706,7 @@ Image::getComponentsCount() const
 
 
 const ImageComponents&
-Image::getComponents() const
+Image::getLayer() const
 {
     return _imp->layer;
 }
@@ -1266,7 +1266,7 @@ Image::applyMaskMix(const RectI& roi,
     }
 
     // Mask must be alpha
-    assert( !masked || !maskImg || maskImg->getComponents() == ImageComponents::getAlphaComponents() );
+    assert( !masked || !maskImg || maskImg->getLayer().getNumComponents() == 1 );
 
     if (getStorageMode() == eStorageModeGLTex) {
 
@@ -1318,7 +1318,7 @@ Image::applyMaskMix(const RectI& roi,
 bool
 Image::canCallCopyUnProcessedChannels(const std::bitset<4> processChannels) const
 {
-    int numComp = getComponents().getNumComponents();
+    int numComp = getLayer().getNumComponents();
 
     if (numComp == 0) {
         return false;

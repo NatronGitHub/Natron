@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 //for parametric params properties
 #include <ofxParametricParam.h>
 
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 #include <ofxhUtilities.h> // for StatStr
 #include <ofxhPluginCache.h>
 

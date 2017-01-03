@@ -38,6 +38,7 @@ CLANG_DIAG_ON(deprecated)
 #include <boost/weak_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
+
 //ofx
 // ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
 CLANG_DIAG_OFF(unknown-pragmas)
@@ -111,7 +112,6 @@ public:
     //  The pixel aspect ratio of a clip or image.
     virtual double getAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    void setAspectRatio(double par);
 
     // Frame Rate -
     //
@@ -216,11 +216,13 @@ public:
 
     EffectInstancePtr getAssociatedNode() const WARN_UNUSED_RETURN;
 
-
+private:
     /**
      * @brief Used to convert plane argument as passed to the clipGetImage() function to Natron plane.
      **/
     ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
+public:
+
 
     /**
      * @brief Used to convert Natron planes given to the render() function to OpenFX layer name.

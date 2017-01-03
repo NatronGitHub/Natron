@@ -115,7 +115,7 @@ private:
                              TimeValue time) OVERRIDE FINAL;
     virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
-    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time,
+    virtual StatusEnum getComponentsAction(TimeValue time,
                                                 ViewIdx view,
                                                 const TreeRenderNodeArgsPtr& render,
                                                 std::map<int, std::list<ImageComponents> >* inputLayersNeeded,

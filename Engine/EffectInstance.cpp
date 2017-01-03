@@ -26,7 +26,7 @@
 #include "EffectInstancePrivate.h"
 
 #include <map>
-#include <sstream>
+#include <sstream> // stringstream
 #include <algorithm> // min, max
 #include <fstream>
 #include <bitset>
@@ -764,13 +764,13 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
             mustConvertImage = true;
         }
 
-        ImageComponents preferredLayer = it->second->getComponents();
+        ImageComponents preferredLayer = it->second->getLayer();
 
         // If this node does not support multi-plane or the image is the color plane,
         // map it to this node preferred color plane
-        if (it->second->getComponents().isColorPlane() || !supportsMultiPlane) {
-            ImageComponents thisLayer = getComponents(inArgs.renderArgs, inArgs.inputNb);
-            if (it->second->getComponents() != thisLayer) {
+        if (it->second->getLayer().isColorPlane() || !supportsMultiPlane) {
+            ImageComponents thisLayer = getColorPlaneComponents(inArgs.renderArgs, inArgs.inputNb);
+            if (it->second->getLayer() != thisLayer) {
                 mustConvertImage = true;
                 preferredLayer = thisLayer;
             }
@@ -1014,7 +1014,7 @@ EffectInstance::evaluate(bool isSignificant,
         getApp()->redrawAllViewers();
     }
 
-    // If significant, also refresh previews downstream 
+    // If significant, also refresh previews downstream
     if (isSignificant) {
         node->refreshPreviewsRecursivelyDownstream(time);
     }
@@ -1416,7 +1416,7 @@ EffectInstance::getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb)
 }
 
 ImageComponents
-EffectInstance::getComponents(const TreeRenderNodeArgsPtr& render, int inputNb)
+EffectInstance::getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
     StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);

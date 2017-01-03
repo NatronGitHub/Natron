@@ -1,0 +1,12 @@
+--- SConstruct.FCS	2010-11-12 09:35:52.000000000 -0800
++++ SConstruct	2011-08-09 09:43:20.000000000 -0700
+@@ -38,6 +38,9 @@
+ 
+ env = Environment()
+ 
++env.Replace(CC = "@CC@")
++env.Replace(CXX = "@CXX@")
++
+ Export("env")
+ 
+ SConscript("SConscript")

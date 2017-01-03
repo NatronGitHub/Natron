@@ -1,5 +1,4 @@
 # -*- coding: utf-8; mode: tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:fenc=utf-8:ft=tcl:et:sw=4:ts=4:sts=4
-# $Id$
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
@@ -54,12 +53,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20161130
+    version         20161226
     set dist_branch 3.7
-    set dist_date   20161129
-    set dist_hash   gc97471
-    checksums       rmd160 4d15fb15630f4b35f27e6d25a00f42a4cc22dafd \
-                    sha256 55c9289700696ce92e65db3c62a7a2e90609cfe1377c952c726503db1e0a2758
+    set dist_date   20161223
+    set dist_hash   g189050
+    checksums       rmd160 0ca7e571e938fdc0ca269a711af7ca472ecd4467 \
+                    sha256 851c98377a8a94816570cc36b3b6953ab75c4fa1ffc140d727b54b64db7429e3
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -128,6 +127,14 @@ configure.post_args
 
 # CMake's configure script doesn't recognize `--host`.
 array set merger_host {i386 {} x86_64 {} ppc {} ppc64 {}}
+
+# Tiger has issues with system libraries;
+# just use the ones internal to cmake instead.
+platform darwin 8 {
+    configure.args-delete --system-libs \
+                          --no-system-jsoncpp
+    depends_lib-delete    path:lib/pkgconfig/libuv.pc:libuv
+}
 
 # Leopard's Rosetta has some difficulties configuring the ppc slice
 platform darwin 9 {

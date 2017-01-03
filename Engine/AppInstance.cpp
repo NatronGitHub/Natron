@@ -28,6 +28,7 @@
 #include <list>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDir>
@@ -46,6 +47,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string/predicate.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
+
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
+#include <ofxhImageEffect.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/QtCompat.h" // removeFileExtension
 
@@ -929,6 +937,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         // For newer pyPlugs this is taken care of in the Node::load function when creating
         // the container group
         if (isPyPlugEncodedWithPythonScript) {
+#pragma message WARN("Remove thisCreatingNodeTreeFlag_RAII class: this and the AppInstance::isCreatingNodeTree() function should not exist anymore. We still need it until results of getclippreferences are cached.")
             CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
 
             boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;

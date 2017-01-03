@@ -278,14 +278,14 @@ public:
     static unsigned int getLevelFromScale(double s);
 
     /**
-     * @brief Short for getComponents().getNumComponents()
+     * @brief Short for getLayer().getNumComponents()
      **/
     unsigned int getComponentsCount() const;
 
     /**
      * @brief Returns the layer that was passed to the create() function
      **/
-    const ImageComponents& getComponents() const;
+    const ImageComponents& getLayer() const;
 
     /**
      * @brief Returns the bitdepth of the image as passed to the create() function

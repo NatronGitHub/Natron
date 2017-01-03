@@ -25,6 +25,7 @@
 #include "GuiAppInstance.h"
 
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QDir>
 #include <QSettings>

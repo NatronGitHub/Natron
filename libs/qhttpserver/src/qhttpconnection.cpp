@@ -22,6 +22,7 @@
 
 #include "qhttpconnection.h"
 
+#include <stdlib.h> // malloc, free
 #include <QTcpSocket>
 #include <QHostAddress>
 

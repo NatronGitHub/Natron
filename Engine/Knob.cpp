@@ -28,6 +28,26 @@
 #include "KnobGetValueImpl.h"
 #include "KnobSetValueImpl.h"
 
+#include <algorithm> // min, max
+#include <cassert>
+#include <stdexcept>
+#include <sstream> // stringstream
+
+#include <QtCore/QDataStream>
+#include <QtCore/QDateTime>
+#include <QtCore/QCoreApplication>
+#include <QtCore/QThread>
+#include <QtCore/QDebug>
+
+#include "Global/GlobalDefines.h"
+
+#include "Engine/AppInstance.h"
+#include "Engine/AppManager.h"
+#include "Engine/Curve.h"
+#include "Engine/DockablePanelI.h"
+#include "Engine/Hash64.h"
+#include "Engine/KnobFile.h"
+#include "Engine/KnobGuiI.h"
 #include "Engine/KnobTypes.h"
 
 SERIALIZATION_NAMESPACE_USING
@@ -3210,14 +3230,7 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
         }
 
     } else if (isChoice) {
-        int foundDefault = -1;
-        std::vector<std::string> entries = isChoice->getEntries();
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (boost::iequals(entries[i], defObj.value.isString)) {
-                foundDefault = i;
-                break;
-            }
-        }
+        int foundDefault = KnobChoice::choiceMatch(defObj.value.isString, isChoice->getEntries(), 0);
         if (foundDefault != -1) {
             if (!applyDefaultValue) {
                 isChoice->setDefaultValueWithoutApplying(foundDefault, DimIdx(0));
@@ -3263,19 +3276,12 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
     } else if (isChoice) {
-        int foundValue = -1;
-
-        std::vector<std::string> entries = isChoice->getEntries();
-        for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (boost::iequals(entries[i], obj._value.isString) ) {
-                foundValue = i;
-                break;
-            }
-        }
+        std::string matchedEntry;
+        int foundValue = KnobChoice::choiceMatch(obj._value.isString, isChoice->getEntries(), &matchedEntry);
 
         if (foundValue == -1) {
             // Just remember the active entry if not found
-            isChoice->setActiveEntryText(obj._value.isString, view);
+            isChoice->setActiveEntryText(matchedEntry, view);
         } else {
             isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
         }
@@ -4055,9 +4061,9 @@ KnobHelper::restoreKnobLinks(const boost::shared_ptr<SERIALIZATION_NAMESPACE::Kn
                         if (master->getNDimensions() == 1) {
                             otherDimIndex = 0;
                         } else {
-                            for (int d = 0; d < master->getNDimensions(); ++d) {
-                                if ( boost::iequals(master->getDimensionName(DimIdx(d)), it->second[d]._slaveMasterLink.masterDimensionName) ) {
-                                    otherDimIndex = d;
+                            for (int dm = 0; dm < master->getNDimensions(); ++dm) {
+                                if ( boost::iequals(master->getDimensionName(DimIdx(dm)), it->second[dm]._slaveMasterLink.masterDimensionName) ) {
+                                    otherDimIndex = dm;
                                     break;
                                 }
                             }

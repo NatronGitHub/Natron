@@ -128,6 +128,13 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_MAJOR_30 3
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
+<<<<<<< HEAD
+=======
+
+#define NATRON_VERSION_MAJOR_22 2
+#define NATRON_VERSION_MINOR_22 2
+#define NATRON_VERSION_REVISION_22 0
+>>>>>>> master
 
 #define NATRON_VERSION_MAJOR_21 2
 #define NATRON_VERSION_MINOR_21 1
@@ -214,16 +221,30 @@ namespace NATRON_PYTHON_NAMESPACE { }
         NATRON_VERSION_MINOR, \
         NATRON_VERSION_REVISION)
 
-#define NATRON_VERSION_STRINGIZE_(major, minor, revision) \
+// Natron version string: if revision is 0, use only major.minor, else major.minor.revision
+#if NATRON_VERSION_REVISION > 0
+#define NATRON_VERSION_STRINGIZE__(major, minor, revision) \
     # major "." # minor "." # revision
 
-#define NATRON_VERSION_STRINGIZE(major, minor, revision) \
-    NATRON_VERSION_STRINGIZE_(major, minor, revision)
+#define NATRON_VERSION_STRINGIZE_(major, minor, revision) \
+    NATRON_VERSION_STRINGIZE__(major, minor, revision)
 
-#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE( \
+#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE_( \
         NATRON_VERSION_MAJOR, \
         NATRON_VERSION_MINOR, \
         NATRON_VERSION_REVISION)
+#else
+#define NATRON_VERSION_STRINGIZE__(major, minor) \
+# major "." # minor
+
+#define NATRON_VERSION_STRINGIZE_(major, minor) \
+NATRON_VERSION_STRINGIZE__(major, minor)
+
+#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE_( \
+        NATRON_VERSION_MAJOR, \
+        NATRON_VERSION_MINOR)
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define NATRON_PATH_ENV_VAR "NATRON_PLUGIN_PATH"

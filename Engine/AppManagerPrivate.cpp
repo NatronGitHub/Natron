@@ -35,6 +35,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QDebug>
 #include <QtCore/QProcess>
@@ -244,15 +245,25 @@ AppManagerPrivate::loadBuiltinFormats()
     }
 } // loadBuiltinFormats
 
+//
+// only used for Natron internal plugins (ViewerGroup, Dot, DiskCache, BackDrop, Roto)
+// see also AppManager::getPluginBinary(), OFX::Host::PluginCache::getPluginById()
+//
 PluginPtr
 AppManagerPrivate::findPluginById(const std::string& newId,
                                   int major,
                                   int minor) const
 {
     for (PluginsMap::const_iterator it = _plugins.begin(); it != _plugins.end(); ++it) {
-        for (PluginMajorsOrdered::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            if ( ( (*it2)->getPluginID() == newId ) && (major == -1 || (*it2)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) && (minor == -1 || (*it2)->getProperty<unsigned int>(kNatronPluginPropVersion, 1) == (unsigned int)minor ) ) {
-                return (*it2);
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin();
+             itver != it->second.rend();
+             ++itver) {
+            if ( ( (*itver)->getPluginID() == newId ) &&
+                   (major == -1 ||
+                    (*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) &&
+                   (minor == -1 ||
+                    (*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 1) == (unsigned int)minor ) ) {
+                return (*itver);
             }
         }
     }

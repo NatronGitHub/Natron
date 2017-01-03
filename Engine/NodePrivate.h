@@ -306,6 +306,7 @@ public:
     KnobIntWPtr pyPlugVersionKnob;
     KnobIntWPtr pyPlugShortcutKnob;
     KnobButtonWPtr pyPlugExportButtonKnob;
+    KnobButtonWPtr pyPlugConvertToGroupButtonKnob;
 
     KnobGroupWPtr pyPlugExportDialog;
     KnobFileWPtr pyPlugExportDialogFile;
@@ -403,8 +404,6 @@ public:
     // Does this node currently renders sequentially or not
     SequentialPreferenceEnum currentSupportSequentialRender;
 
-    // Does this node currently supports render scale
-    RenderScaleSupportEnum supportsRenderScale;
 
     // Does this node can return a distorsion function ?
     bool currentCanDistort;

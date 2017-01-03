@@ -24,6 +24,8 @@
 
 #include "ReadNode.h"
 
+#include <sstream> // stringstream
+
 #include "Global/QtCompat.h"
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
@@ -1169,7 +1171,7 @@ ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
 }
 
 StatusEnum
-ReadNode::getComponentsNeededAndProduced(TimeValue time,
+ReadNode::getComponentsAction(TimeValue time,
                                          ViewIdx view,
                                          const TreeRenderNodeArgsPtr& render,
                                          std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
@@ -1180,7 +1182,7 @@ ReadNode::getComponentsNeededAndProduced(TimeValue time,
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+        return p->getEffectInstance()->getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     }
     return eStatusFailed;
 }

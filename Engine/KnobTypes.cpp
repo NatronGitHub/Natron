@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -1253,19 +1254,69 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
         int index = -1;
         {
             QMutexLocker k(&data->valueMutex);
-            for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                if ( boost::iequals(data->menuOptions[i], value) ) {
-                    index = i;
-                    break;
-                }
-            }
+            int i = choiceMatch(value, data->menuOptions, &data->activeEntry);
+            (void)i;
         }
         if (index != -1) {
             return setValue(index, view);
         }
+
     }
 
     throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
+
+}
+
+
+// Choice restoration tries several options to restore a choice value:
+// 1- exact string match, same index
+// 2- exact string match, other index
+// 3- exact string match before the first '\t', other index
+// 4- case-insensistive string match, other index
+// returns index if choice was matched, -1 if not matched
+int
+KnobChoice::choiceMatch(const std::string& choice,
+                        const std::vector<std::string>& entries,
+                        std::string* matchedEntry)
+{
+    // first, try exact match
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if (entries[i] == choice) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
+            return i;
+        }
+    }
+
+    // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
+    std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
+    std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        const std::string& entry(entries[i]);
+        std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
+        std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
+
+        if (entrymain == choicemain) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
+            return i;
+        }
+    }
+
+    // third, case-insensitive match
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        if ( boost::iequals(entries[i], choice) ) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
+            return i;
+        }
+    }
+
+    // no match
+    return -1;
 }
 
 void
@@ -1276,12 +1327,7 @@ KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
-        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if ( boost::iequals(data->menuOptions[i], value) ) {
-                index = i;
-                break;
-            }
-        }
+        index = choiceMatch(value, data->menuOptions, 0);
     }
     if (index != -1) {
         return setDefaultValueWithoutApplying(index, DimSpec(0));
@@ -1297,12 +1343,7 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value)
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
         QMutexLocker k(&data->valueMutex);
-        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if ( boost::iequals(data->menuOptions[i], value) ) {
-                index = i;
-                break;
-            }
-        }
+        index = KnobChoice::choiceMatch(value, data->menuOptions, 0);
     }
     if (index != -1) {
         return setDefaultValue(index, DimSpec(0));

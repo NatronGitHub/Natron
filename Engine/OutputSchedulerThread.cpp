@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/clamp.hpp>

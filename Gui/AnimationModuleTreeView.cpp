@@ -737,7 +737,7 @@ AnimationModuleTreeView::drawRow(QPainter *painter,
     assert(foundType == (AnimatedItemTypeEnum)item->data(0, QT_ROLE_CONTEXT_TYPE).toInt());
 
     // Check if we want an icon
-    bool drawPluginIconToo;
+    bool drawPluginIconToo = false;
     std::string iconFilePath;
     switch (foundType) {
         case eAnimatedItemTypeGroup:

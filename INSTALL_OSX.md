@@ -46,14 +46,17 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
     -x11 +no_x11 +bash_completion +no_gnome +quartz
 
-If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
+If compiling on Mac OS X 10.6 with Xcode 4 (using GCC 4.2.1 and libstdc++), you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
 
     default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
 
+Now, if you want to use turbojpeg instead of jpeg:
+    sudo port -f uninstall jpeg
+    sudo port -v install libjpeg-turbo
+    
 And finally install the required packages:
 
-    sudo port install qt4-mac boost cairo expat gsed
-    sudo port install py27-pyside py27-sphinx
+    sudo port -v install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -79,11 +82,11 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v install openexr ffmpeg opencolorio openimageio seexpr
+    sudo port -v install openexr ffmpeg opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    sudo port -v install ImageMagick +natron poppler
+    sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
 
 ### Homebrew
 
@@ -240,36 +243,32 @@ If you want to build in DEBUG mode change the qmake call to this line:
 
 * You can also enable clang sanitizer by adding CONFIG+=sanitizer
 
-### Building with OpenMP support using clang 3.8
+### Building with OpenMP support using clang
 
-It is possible to build Natron using clang 3.8 with OpenMP support on
-MacPorts (homebrew does not yet have llvm/clang 3.8, but it should
-soon be available in the `llvm` recipe, type `brew info llvm` to check
-if the recipe was updated).  OpenMP brings speed improvements in the
+It is possible to build Natron using clang (version 3.8 is required,
+version 3.9.1 is recommended) with OpenMP support on
+MacPorts (or homebrew for OS X 10.9 or later).  OpenMP brings speed improvements in the
 tracker and in CImg-based plugins.
 
-First, install clang 3.8. On OS X 10.6 Snow Leopard 10.6:
+First, install clang 3.9. On OS X 10.9 and later, simply execute:
 
-    sudo port install ld64-136 +llvm38 clang-3.8`
+    sudo port -v install clang-3.9
 
-On OS X 10.7 or later:
+On older systems, follow the procedure described in "[https://trac.macports.org/wiki/LibcxxOnOlderSystems](Using libc++ on older system)".
 
-    sudo port install ld64-latest +llvm38 clang-3.8`
+Then, configure using the following qmake command:
 
-Then configure using the following qmake command (replace `macx-clang`with `macx-clang-libc++` on OS X 10.9 and later):
+    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang-libc++ QMAKE_CXX=clang++-mp-3.9 QMAKE_CXX=clang++-mp-3.9 QMAKE_CC=clang-mp-3.9 QMAKE_OBJECTIVE_CXX=clang++-mp-3.9 QMAKE_OBJECTIVE_CC=clang-mp-3.9 QMAKE_LD=clang++-mp-3.9 -r CONFIG+=openmp
 
-    /opt/local/libexec/qt4/bin/qmake -spec unsupported/macx-clang QMAKE_CXX=clang++-mp-3.8 QMAKE_CXX=clang++-mp-3.8 QMAKE_CC=clang-mp-3.8 QMAKE_OBJECTIVE_CXX=clang++-mp-3.8 QMAKE_OBJECTIVE_CC=clang-mp-3.8 QMAKE_LD=clang++-mp-3.8 -r CONFIG+=openmp
+To build the plugins, use the following command-line:
 
-To build the plugins, use the following command-line (on OS X 10.9 and
-later, remove `-stdlib=libstdc++`):
-
-    make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
+    make CXX=clang++-mp-3.9 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp"
 
 Or, if you have MangledOSMesa32 installed in `OSMESA_PATH` and LLVM installed in `LLVM_PATH` (MangledOSMesa32 and LLVM build script is available from [https://github.com/devernay/osmesa-install](github:devernay/osmesa-install) :
 
     OSMESA_PATH=/opt/osmesa
     LLVM_PATH=/opt/llvm
-    make CXX=clang++-mp-3.8 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
+    make CXX=clang++-mp-3.9 CXXFLAGS_ADD="-fopenmp" LDFLAGS_ADD="-fopenmp" CXXFLAGS_MESA="-DHAVE_OSMESA" LDFLAGS_MESA="-L${OSMESA_PATH}/lib -lMangledOSMesa32 `${LLVM_PATH}/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler | tr '\n' ' '`" OSMESA_PATH="${OSMESA_PATH}"
 
 ## Build on Xcode
 

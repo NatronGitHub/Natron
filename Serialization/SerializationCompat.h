@@ -22,6 +22,9 @@
 // This file contains all implementation of old boost serialization involving Engine and Gui classes
 
 #ifdef NATRON_BOOST_SERIALIZATION_COMPAT
+
+#include <sstream> // stringstream
+
 #include "Global/Macros.h"
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF

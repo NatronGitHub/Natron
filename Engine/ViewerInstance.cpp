@@ -190,7 +190,6 @@ ViewerInstance::ViewerInstance(const NodePtr& node)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 
 }
 

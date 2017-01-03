@@ -25,6 +25,9 @@
 
 #include "Knob.h"
 #include "KnobPrivate.h"
+
+#include <sstream> // stringstream
+
 #include "Engine/KnobItemsTable.h"
 
 NATRON_NAMESPACE_ENTER

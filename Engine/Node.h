@@ -86,6 +86,9 @@ CLANG_DIAG_ON(deprecated)
 #define kNatronNodeKnobExportPyPlugButton "exportPyPlug"
 #define kNatronNodeKnobExportPyPlugButtonLabel "Export"
 
+#define kNatronNodeKnobConvertToGroupButton "convertToGroup"
+#define kNatronNodeKnobConvertToGroupButtonLabel "Convert to Group"
+
 #define kNatronNodeKnobPyPlugPluginID "pyPlugPluginID"
 #define kNatronNodeKnobPyPlugPluginIDLabel "PyPlug ID"
 #define kNatronNodeKnobPyPlugPluginIDHint "When exporting a group to PyPlug, this will be the plug-in ID of the PyPlug.\n" \
@@ -580,21 +583,6 @@ public:
 
     NodePtr getPreferredInputNode() const;
 
-
-    /**
-     * @brief Does this effect supports rendering at a different scale than 1 ?
-     * There is no OFX property for this purpose. The only solution found for OFX is that if a render
-     * or isIdentity with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
-     * If the renderScale support was not set, this throws an exception.
-     **/
-    bool supportsRenderScale() const;
-
-    RenderScaleSupportEnum supportsRenderScaleMaybe() const;
-
-    /// should be set during effect initialization, but may also be set by the first getRegionOfDefinition with scale != 1 that succeeds
-    void setSupportsRenderScaleMaybe(RenderScaleSupportEnum s) const;
-
-    void refreshRenderScaleSupport();
 
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
@@ -1461,21 +1449,7 @@ private:
 
     void refreshCreatedViews(const KnobIPtr& knob);
 
-    void refreshInputRelatedDataRecursiveInternal(std::set<NodePtr>& markedNodes);
-
-    void refreshInputRelatedDataRecursive();
-
-    void refreshAllInputRelatedData(bool canChangeValues);
-
     bool refreshMaskEnabledNess(int inpubNb);
-
-    void markInputRelatedDataDirtyRecursive();
-
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<NodePtr>& markedNodes, bool recurse);
-
-    bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
-
-    bool refreshInputRelatedDataInternal(bool domarking, std::set<NodePtr>& markedNodes);
 
     void setNameInternal(const std::string& name, bool throwErrors);
 

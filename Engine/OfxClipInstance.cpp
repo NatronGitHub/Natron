@@ -29,6 +29,7 @@
 #include <bitset>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QTextStream>
 #include <QtCore/QDebug>
@@ -173,7 +174,7 @@ OfxClipInstance::getUnmappedComponents() const
     if (effect) {
 
         TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
-        ImageComponents comp = effect->getComponents(render, -1);
+        ImageComponents comp = effect->getColorPlaneComponents(render, -1);
 
         // Default to RGBA
         if (comp.getNumComponents() == 0) {
@@ -190,7 +191,7 @@ OfxClipInstance::getUnmappedComponents() const
             assert(effect);
             int nInputs = effect->getMaxInputCount();
             for (int i = 0; i < nInputs; ++i) {
-                ImageComponents comps = effect->getComponents(render, i);
+                ImageComponents comps = effect->getColorPlaneComponents(render, i);
                 if (comps.getNumComponents() > 0) {
                     ret = natronsComponentsToOfxComponents(comps);
                 }
@@ -304,11 +305,29 @@ OfxClipInstance::getDimension(const std::string &name) const OFX_EXCEPTION_SPEC
 const std::string &
 OfxClipInstance::getComponents() const
 {
-    /*
-       The property returned by the clip might differ from the one held on the image if the associated effect
-       is identity or if the effect is multi-planar
-     */
-    return _components;
+    EffectInstancePtr effect = getEffectHolder();
+
+    std::string ret;
+    if (!effect) {
+        ret = natronsComponentsToOfxComponents(ImageComponents::getRGBAComponents());
+    } else {
+
+        TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
+        int inputNb = getInputNb();
+        ImageComponents comp = effect->getColorPlaneComponents(render, inputNb);
+
+        // Default to RGBA
+        if (comp.getNumComponents() == 0) {
+            comp = ImageComponents::getRGBAComponents();
+        }
+        ret = natronsComponentsToOfxComponents(comp);
+    }
+
+    ClipDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    tls->components = ret;
+    return tls->components;
+    
+
 }
 
 // overridden from OFX::Host::ImageEffect::ClipInstance
@@ -318,19 +337,19 @@ OfxClipInstance::getComponents() const
 double
 OfxClipInstance::getAspectRatio() const
 {
-    /*
-       The property returned by the clip might differ from the one held on the image if the associated effect
-       is identity
-     */
-    return _imp->aspectRatio;
+    EffectInstancePtr effect = getEffectHolder();
+
+    if (!effect) {
+        return 1.;
+    } else {
+
+        TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
+        int inputNb = getInputNb();
+        return effect->getAspectRatio(render, inputNb);
+    }
+
 }
 
-void
-OfxClipInstance::setAspectRatio(double par)
-{
-    //This is protected by the clip preferences read/write lock in OfxEffectInstance
-    _imp->aspectRatio = par;
-}
 
 OfxRectI
 OfxClipInstance::getFormat() const
@@ -734,7 +753,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         std::map<int, std::list<ImageComponents> > ::const_iterator foundNeededLayers = neededInputLayers.find(inputNb);
         // The components should have been specified for this clip
         if (foundNeededLayers == neededInputLayers.end() || foundNeededLayers->second.empty()) {
-            layer = effect->getComponents(renderArgs, inputNb);
+            layer = effect->getColorPlaneComponents(renderArgs, inputNb);
         } else {
             layer = foundNeededLayers->second.front();
         }
@@ -786,7 +805,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     std::string componentsStr;
     int nComps;
     {
-        const ImageComponents& imageLayer = image->getComponents();
+        const ImageComponents& imageLayer = image->getLayer();
         nComps = imageLayer.getNumComponents();
 
         if (multiPlanar) {
@@ -794,7 +813,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             componentsStr = natronsComponentsToOfxComponents(layer);
         } else {
             // Non multi-planar: map the layer name to the clip preferences layer name
-            ImageComponents clipPreferenceComponents = effect->getComponents(renderArgs, inputNb);
+            ImageComponents clipPreferenceComponents = effect->getColorPlaneComponents(renderArgs, inputNb);
             assert(clipPreferenceComponents.getNumComponents() == imageLayer.getNumComponents());
             componentsStr = natronsComponentsToOfxComponents(clipPreferenceComponents);
         }
@@ -889,7 +908,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
         } else {
             //  If the plugin is multi-planar, we are in the situation where it called the regular clipGetImage without a plane in argument
             // so the components will not have been set on the TLS hence just use regular components.
-            layer = effect->getComponents(renderArgs, -1);
+            layer = effect->getColorPlaneComponents(renderArgs, -1);
         }
     } else {
         layer = ofxPlaneToNatronPlane(*ofxPlane);
@@ -940,7 +959,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     std::string componentsStr;
     int nComps;
     {
-        const ImageComponents& imageLayer = image->getComponents();
+        const ImageComponents& imageLayer = image->getLayer();
         nComps = imageLayer.getNumComponents();
 
         if (multiPlanar) {
@@ -948,7 +967,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
             componentsStr = natronsComponentsToOfxComponents(layer);
         } else {
             // Non multi-planar: map the layer name to the clip preferences layer name
-            ImageComponents clipPreferenceComponents = effect->getComponents(renderArgs, -1);
+            ImageComponents clipPreferenceComponents = effect->getColorPlaneComponents(renderArgs, -1);
             assert(clipPreferenceComponents.getNumComponents() == imageLayer.getNumComponents());
             componentsStr = natronsComponentsToOfxComponents(clipPreferenceComponents);
         }

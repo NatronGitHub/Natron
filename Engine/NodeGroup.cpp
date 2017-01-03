@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QTextStream>
@@ -1029,6 +1030,11 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
             if (pyPlugPage) {
                 pyPlugPage->setSecret(!edited);
             }
+
+            KnobIPtr convertToGroupKnob = isGrp->getNode()->getKnobByName(kNatronNodeKnobConvertToGroupButton);
+            if (convertToGroupKnob) {
+                convertToGroupKnob->setSecret(edited || isSubGraphEditable());
+            }
         }
 
         const KnobsVec& knobs = isGrp->getKnobs();
@@ -1078,6 +1084,7 @@ struct NodeGroupPrivate
         , outputs()
         , isDeactivatingGroup(false)
         , isActivatingGroup(false)
+
     {
     }
 };
@@ -1123,7 +1130,6 @@ NodeGroup::NodeGroup(const NodePtr &node)
     , NodeCollection( node ? node->getApp() : AppInstancePtr() )
     , _imp( new NodeGroupPrivate() )
 {
-    setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 }
 
 bool
@@ -1210,8 +1216,15 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
+<<<<<<< HEAD
 TimeValue
 NodeGroup::getCurrentTime_TLS() const
+=======
+
+
+double
+NodeGroup::getCurrentTime() const
+>>>>>>> master
 {
     NodePtr node = getOutputNodeInput();
 

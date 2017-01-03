@@ -415,6 +415,7 @@ public:
     virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
                               const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization);
 
+
 Q_SIGNALS:
 
     void graphEditableChanged(bool);

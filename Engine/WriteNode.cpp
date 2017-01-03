@@ -24,6 +24,8 @@
 
 #include "WriteNode.h"
 
+#include <sstream> // stringstream
+
 #include "Global/QtCompat.h"
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
@@ -264,7 +266,6 @@ WriteNode::WriteNode(const NodePtr& n)
     : NodeGroup(n)
     , _imp( new WriteNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 WriteNode::~WriteNode()

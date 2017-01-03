@@ -35,7 +35,6 @@ NATRON_NAMESPACE_ENTER;
 NoOpBase::NoOpBase(const NodePtr& n)
     : OutputEffectInstance(n)
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 void

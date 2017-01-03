@@ -27,6 +27,7 @@
 #include <vector>
 #include <cmath>
 #include <cstdlib>
+#include <sstream> // stringstream
 
 #include <gtest/gtest.h>
 

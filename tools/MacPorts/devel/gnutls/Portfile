@@ -1,12 +1,10 @@
 # -*- Mode: Tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:et:sw=4:ts=4:sts=4
-# $Id$
 
 PortSystem      1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.4.16
-revision        1
+version         3.4.17
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -26,8 +24,8 @@ master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://archive.hmug.org/src/gnutls/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  a9ec303e93396ab8f7b0ddf57c9a19e7fd0a0322 \
-                sha256  d99abb1b320771b58c949bab85e4b654dd1e3e9d92e2572204b7dc479d923927
+checksums       rmd160  6308d362a29b908ea08b1219a8b7d2c0fd482b3a \
+                sha256  9b50e8a670d5e950425d96935c7ddd415eb6f8079615a36df425f09a3143172e
 
 use_xz          yes
 

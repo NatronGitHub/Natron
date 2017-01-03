@@ -63,7 +63,6 @@ JoinViewsNode::JoinViewsNode(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new JoinViewsNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
     if (node) {
         ProjectPtr project = node->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );

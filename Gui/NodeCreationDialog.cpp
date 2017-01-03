@@ -377,37 +377,37 @@ NodeCreationDialog::NodeCreationDialog(const QString& _defaultPluginID,
 
     for (PluginsMap::const_iterator it = plugins.begin(); it != plugins.end(); ++it) {
 
-        for (PluginMajorsOrdered::const_reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
-            if ( !(*it2)->getIsUserCreatable() ) {
+        for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
+            if ( !(*itver)->getIsUserCreatable() ) {
                 continue;
             }
 
 
             CompleterLineEdit::PluginDesc desc;
-            QString pluginID = QString::fromUtf8((*it2)->getPluginID().c_str());
+            QString pluginID = QString::fromUtf8((*itver)->getPluginID().c_str());
 
             {
-                desc.plugin = *it2;
+                desc.plugin = *itver;
 
                 // This is the highest major version of the plug-in
-                if ( it2 == it->second.rbegin() ) {
-                    desc.comboLabel = QString::fromUtf8((*it2)->generateUserFriendlyPluginID().c_str());
-                    desc.lineEditLabel = QString::fromUtf8((*it2)->getLabelWithoutSuffix().c_str());
+                if ( itver == it->second.rbegin() ) {
+                    desc.comboLabel = QString::fromUtf8((*itver)->generateUserFriendlyPluginID().c_str());
+                    desc.lineEditLabel = QString::fromUtf8((*itver)->getLabelWithoutSuffix().c_str());
                     if (it->first == defaultPluginID) {
                         initialFilter = desc.lineEditLabel;
                     }
                 } else {
-                    desc.comboLabel = QString::fromUtf8((*it2)->generateUserFriendlyPluginIDMajorEncoded().c_str());
-                    desc.lineEditLabel = QString::fromUtf8((*it2)->getLabelVersionMajorEncoded().c_str());
+                    desc.comboLabel = QString::fromUtf8((*itver)->generateUserFriendlyPluginIDMajorEncoded().c_str());
+                    desc.lineEditLabel = QString::fromUtf8((*itver)->getLabelVersionMajorEncoded().c_str());
 
                 }
 
-                int weight = getPluginWeight(pluginID, QString(), (*it2)->getMajorVersion() );
+                int weight = getPluginWeight(pluginID, QString(), (*itver)->getMajorVersion() );
                 pluginsMap.insert( std::make_pair(weight, desc) );
             }
 
             // Add also an entry for each preset
-            const std::vector<PluginPresetDescriptor>& presets = (*it2)->getPresetFiles();
+            const std::vector<PluginPresetDescriptor>& presets = (*itver)->getPresetFiles();
             for (std::vector<PluginPresetDescriptor>::const_iterator it3 = presets.begin(); it3 != presets.end(); ++it3) {
                 CompleterLineEdit::PluginDesc presetDesc = desc;
                 presetDesc.presetName = it3->presetLabel;
@@ -416,7 +416,7 @@ NodeCreationDialog::NodeCreationDialog(const QString& _defaultPluginID,
                 presetDesc.comboLabel += presetSuffix;
                 presetDesc.lineEditLabel += presetSuffix;
 
-                int weight = getPluginWeight(pluginID, it3->presetLabel, (*it2)->getMajorVersion() );
+                int weight = getPluginWeight(pluginID, it3->presetLabel, (*itver)->getMajorVersion() );
                 pluginsMap.insert( std::make_pair(weight, presetDesc) );
             }
 

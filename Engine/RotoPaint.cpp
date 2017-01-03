@@ -25,7 +25,7 @@
 #include "RotoPaint.h"
 #include "RotoPaintPrivate.h"
 
-#include <sstream>
+#include <sstream> // stringstream
 #include <cassert>
 #include <stdexcept>
 
@@ -205,7 +205,6 @@ RotoPaint::RotoPaint(const NodePtr& node,
     : NodeGroup(node)
     , _imp( new RotoPaintPrivate(this, type) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 RotoPaint::~RotoPaint()

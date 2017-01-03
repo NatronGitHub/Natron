@@ -47,7 +47,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 StatusEnum
-EffectInstance::getComponentsNeededAndProduced(TimeValue time,
+EffectInstance::getComponentsAction(TimeValue time,
                                                ViewIdx view,
                                                const TreeRenderNodeArgsPtr& render,
                                                std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
@@ -94,7 +94,7 @@ EffectInstance::getDefaultComponentsNeededAndProduced(TimeValue time,
         }
 
         std::vector<ImageComponents> clipPrefsAllComps;
-        ImageComponents clipPrefsComps = getComponents(render, -1);
+        ImageComponents clipPrefsComps = getColorPlaneComponents(render, -1);
         {
             if ( clipPrefsComps.isPairedComponents() ) {
                 ImageComponents first, second;
@@ -147,7 +147,7 @@ EffectInstance::getDefaultComponentsNeededAndProduced(TimeValue time,
 
         std::vector<ImageComponents> clipPrefsAllComps;
         {
-            ImageComponents clipPrefsComps = getComponents(render, i);
+            ImageComponents clipPrefsComps = getColorPlaneComponents(render, i);
             if ( clipPrefsComps.isPairedComponents() ) {
                 ImageComponents first, second;
                 clipPrefsComps.getPlanesPair(&first, &second);
@@ -192,7 +192,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
         // call the getClipComponents action
 
-        StatusEnum stat = getComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+        StatusEnum stat = getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
         if (stat == eStatusFailed) {
             return stat;
         }
@@ -637,7 +637,15 @@ EffectInstance::endSequenceRender_public(double first,
 
 } // endSequenceRender_public
 
-
+StatusEnum
+EffectInstance::getDistorsion(TimeValue /*time*/,
+                                 const RenderScale & /*renderScale*/,
+                                 ViewIdx /*view*/,
+                                 const TreeRenderNodeArgsPtr& /*render*/,
+                                 DistorsionFunction2D* /*distorsion*/) WARN_UNUSED_RETURN
+{
+    return eStatusReplyDefault;
+}
 
 StatusEnum
 EffectInstance::getDistorsion_public(TimeValue inArgsTime,
@@ -1637,6 +1645,14 @@ EffectInstance::beginEditKnobs_public()
     beginEditKnobs();
 }
 
+bool
+EffectInstance::knobChanged(const KnobIPtr& /*k*/,
+                         ValueChangedReasonEnum /*reason*/,
+                         ViewSetSpec /*view*/,
+                         TimeValue /*time*/)
+{
+    return false;
+}
 
 bool
 EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
@@ -2757,5 +2773,105 @@ EffectInstance::onOverlayFocusLost_public(TimeValue time,
     
     return ret;
 } // onOverlayFocusLost_public
+
+void
+EffectInstance::drawOverlay(TimeValue /*time*/,
+                         const RenderScale & /*renderScale*/,
+                         ViewIdx /*view*/)
+{
+}
+
+bool
+EffectInstance::onOverlayPenDown(TimeValue /*time*/,
+                              const RenderScale & /*renderScale*/,
+                              ViewIdx /*view*/,
+                              const QPointF & /*viewportPos*/,
+                              const QPointF & /*pos*/,
+                              double /*pressure*/,
+                              TimeValue /*timestamp*/,
+                              PenType /*pen*/) 
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayPenDoubleClicked(TimeValue /*time*/,
+                                       const RenderScale & /*renderScale*/,
+                                       ViewIdx /*view*/,
+                                       const QPointF & /*viewportPos*/,
+                                       const QPointF & /*pos*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayPenMotion(TimeValue /*time*/,
+                                const RenderScale & /*renderScale*/,
+                                ViewIdx /*view*/,
+                                const QPointF & /*viewportPos*/,
+                                const QPointF & /*pos*/,
+                                double /*pressure*/,
+                                TimeValue /*timestamp*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayPenUp(TimeValue /*time*/,
+                            const RenderScale & /*renderScale*/,
+                            ViewIdx /*view*/,
+                            const QPointF & /*viewportPos*/,
+                            const QPointF & /*pos*/,
+                            double /*pressure*/,
+                            TimeValue /*timestamp*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayKeyDown(TimeValue /*time*/,
+                              const RenderScale & /*renderScale*/,
+                              ViewIdx /*view*/,
+                              Key /*key*/,
+                              KeyboardModifiers /*modifiers*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayKeyUp(TimeValue /*time*/,
+                            const RenderScale & /*renderScale*/,
+                            ViewIdx /*view*/,
+                            Key /*key*/,
+                            KeyboardModifiers /*modifiers*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayKeyRepeat(TimeValue /*time*/,
+                                const RenderScale & /*renderScale*/,
+                                ViewIdx /*view*/,
+                                Key /*key*/,
+                                KeyboardModifiers /*modifiers*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayFocusGained(TimeValue /*time*/,
+                                  const RenderScale & /*renderScale*/,
+                                  ViewIdx /*view*/)
+{
+    return false;
+}
+
+bool
+EffectInstance::onOverlayFocusLost(TimeValue /*time*/,
+                                const RenderScale & /*renderScale*/,
+                                ViewIdx /*view*/)
+{
+    return false;
+}
 
 NATRON_NAMESPACE_EXIT;

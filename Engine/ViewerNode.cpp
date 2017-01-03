@@ -735,7 +735,6 @@ ViewerNode::ViewerNode(const NodePtr& node)
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 
     QObject::connect( this, SIGNAL(disconnectTextureRequest(int,bool)), this, SLOT(executeDisconnectTextureRequestOnMainThread(int,bool)) );
     QObject::connect( this, SIGNAL(redrawOnMainThread()), this, SLOT(redrawViewer()) );

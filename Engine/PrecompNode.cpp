@@ -26,6 +26,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include "Global/GlobalDefines.h"
 #include "Global/QtCompat.h"
@@ -149,7 +150,6 @@ PrecompNode::PrecompNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new PrecompNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 PrecompNode::~PrecompNode()

@@ -390,14 +390,14 @@ protected:
      * then it must specify the pass-through inputNb and the time and view at which to fetch the pass-through plane.
      * Default implementation returns the components returned by getTimeInvariantMetadatas on the color plane.
      **/
-    virtual StatusEnum getComponentsNeededAndProduced(TimeValue time,
-                                                      ViewIdx view,
-                                                      const TreeRenderNodeArgsPtr& render,
-                                                      std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                      std::list<ImageComponents>* layersProduced,
-                                                      TimeValue* passThroughTime,
-                                                      ViewIdx* passThroughView,
-                                                      int* passThroughInputNb);
+    virtual StatusEnum getComponentsAction(TimeValue time,
+                                           ViewIdx view,
+                                           const TreeRenderNodeArgsPtr& render,
+                                           std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                           std::list<ImageComponents>* layersProduced,
+                                           TimeValue* passThroughTime,
+                                           ViewIdx* passThroughView,
+                                           int* passThroughInputNb);
 
 private:
 
@@ -501,96 +501,66 @@ public:
 
 protected:
 
-    virtual void drawOverlay(TimeValue /*time*/,
-                             const RenderScale & /*renderScale*/,
-                             ViewIdx /*view*/)
-    {
-    }
+    virtual void drawOverlay(TimeValue time,
+                             const RenderScale & renderScale,
+                             ViewIdx view);
 
-    virtual bool onOverlayPenDown(TimeValue /*time*/,
-                                  const RenderScale & /*renderScale*/,
-                                  ViewIdx /*view*/,
-                                  const QPointF & /*viewportPos*/,
-                                  const QPointF & /*pos*/,
-                                  double /*pressure*/,
-                                  TimeValue /*timestamp*/,
-                                  PenType /*pen*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayPenDown(TimeValue time,
+                                  const RenderScale & renderScale,
+                                  ViewIdx view,
+                                  const QPointF & viewportPos,
+                                  const QPointF & pos,
+                                  double pressure,
+                                  TimeValue timestamp,
+                                  PenType pen) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenDoubleClicked(TimeValue /*time*/,
-                                           const RenderScale & /*renderScale*/,
-                                           ViewIdx /*view*/,
-                                           const QPointF & /*viewportPos*/,
-                                           const QPointF & /*pos*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayPenDoubleClicked(TimeValue time,
+                                           const RenderScale & renderScale,
+                                           ViewIdx view,
+                                           const QPointF & viewportPos,
+                                           const QPointF & pos) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenMotion(TimeValue /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/,
-                                    const QPointF & /*viewportPos*/,
-                                    const QPointF & /*pos*/,
-                                    double /*pressure*/,
-                                    TimeValue /*timestamp*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayPenMotion(TimeValue time,
+                                    const RenderScale & renderScale,
+                                    ViewIdx view,
+                                    const QPointF & viewportPos,
+                                    const QPointF & pos,
+                                    double pressure,
+                                    TimeValue timestamp) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayPenUp(TimeValue /*time*/,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx /*view*/,
-                                const QPointF & /*viewportPos*/,
-                                const QPointF & /*pos*/,
-                                double /*pressure*/,
-                                TimeValue /*timestamp*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayPenUp(TimeValue time,
+                                const RenderScale & renderScale,
+                                ViewIdx view,
+                                const QPointF & viewportPos,
+                                const QPointF & pos,
+                                double pressure,
+                                TimeValue timestamp) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayKeyDown(TimeValue /*time*/,
-                                  const RenderScale & /*renderScale*/,
-                                  ViewIdx /*view*/,
-                                  Key /*key*/,
-                                  KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayKeyDown(TimeValue time,
+                                  const RenderScale & renderScale,
+                                  ViewIdx view,
+                                  Key key,
+                                  KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayKeyUp(TimeValue /*time*/,
-                                const RenderScale & /*renderScale*/,
-                                ViewIdx /*view*/,
-                                Key /*key*/,
-                                KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayKeyUp(TimeValue time,
+                                const RenderScale & renderScale,
+                                ViewIdx view,
+                                Key key,
+                                KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayKeyRepeat(TimeValue /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/,
-                                    Key /*key*/,
-                                    KeyboardModifiers /*modifiers*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayKeyRepeat(TimeValue time,
+                                    const RenderScale & renderScale,
+                                    ViewIdx view,
+                                    Key key,
+                                    KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayFocusGained(TimeValue /*time*/,
-                                      const RenderScale & /*renderScale*/,
-                                      ViewIdx /*view*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
+    virtual bool onOverlayFocusGained(TimeValue time,
+                                      const RenderScale & renderScale,
+                                      ViewIdx view) WARN_UNUSED_RETURN;
 
-    virtual bool onOverlayFocusLost(TimeValue /*time*/,
-                                    const RenderScale & /*renderScale*/,
-                                    ViewIdx /*view*/) WARN_UNUSED_RETURN
-    {
-        return false;
-    }
-
+    virtual bool onOverlayFocusLost(TimeValue time,
+                                    const RenderScale & renderScale,
+                                    ViewIdx view) WARN_UNUSED_RETURN;
 
 public:
 
@@ -714,14 +684,11 @@ protected:
 
 
 
-    virtual StatusEnum getDistorsion(TimeValue /*time*/,
-                                     const RenderScale & /*renderScale*/,
-                                     ViewIdx /*view*/,
-                                     const TreeRenderNodeArgsPtr& /*render*/,
-                                     DistorsionFunction2D* /*distorsion*/) WARN_UNUSED_RETURN
-    {
-        return eStatusReplyDefault;
-    }
+    virtual StatusEnum getDistorsion(TimeValue time,
+                                     const RenderScale & renderScale,
+                                     ViewIdx view,
+                                     const TreeRenderNodeArgsPtr& render,
+                                     DistorsionFunction2D* distorsion) WARN_UNUSED_RETURN;
     
 public:
 
@@ -900,13 +867,10 @@ protected:
     /**
      * @brief Called whenever a param changes
      **/
-    virtual bool knobChanged(const KnobIPtr& /*k*/,
-                             ValueChangedReasonEnum /*reason*/,
-                             ViewSetSpec /*view*/,
-                             TimeValue /*time*/)
-    {
-        return false;
-    }
+    virtual bool knobChanged(const KnobIPtr& knob,
+                             ValueChangedReasonEnum reason,
+                             ViewSetSpec view,
+                             TimeValue time);
 
 public:
 
@@ -1330,8 +1294,13 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     double getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb);
-    
-    ImageComponents getComponents(const TreeRenderNodeArgsPtr& render, int inputNb);
+
+    /**
+     * @brief Returns the expected color plane components by this node on the given input.
+     * If inputNb is -1, it returns the expected components for the color plane in output.
+     * For multi-planar effects, they must support all kind of components.
+     **/
+    ImageComponents getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int inputNb);
 
     ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb);
 

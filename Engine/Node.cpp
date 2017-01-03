@@ -30,6 +30,7 @@
 #include <bitset>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include "Global/Macros.h"
 
@@ -128,6 +129,7 @@ NATRON_NAMESPACE_ENTER;
 using std::make_pair;
 using std::cout; using std::endl;
 using boost::shared_ptr;
+
 
 
 /**
@@ -529,92 +531,6 @@ Node::getCurrentNodePresets() const
     QMutexLocker k(&_imp->nodePresetMutex);
     return _imp->initialNodePreset;
 }
-
-/**
- * @brief Does this effect supports rendering at a different scale than 1 ?
- * There is no OFX property for this purpose. The only solution found for OFX is that if a isIdentity
- * with renderscale != 1 fails, the host retries with renderscale = 1 (and upscaled images).
- * If the renderScale support was not set, this throws an exception.
- **/
-bool
-Node::supportsRenderScale() const
-{
-    if (_imp->supportsRenderScale == eSupportsMaybe) {
-        qDebug() << "EffectInstance::supportsRenderScale should be set before calling supportsRenderScale(), or use supportsRenderScaleMaybe() instead";
-        throw std::runtime_error("supportsRenderScale not set");
-    }
-
-    return _imp->supportsRenderScale == eSupportsYes;
-}
-
-RenderScaleSupportEnum
-Node::supportsRenderScaleMaybe() const
-{
-    QMutexLocker l(&_imp->pluginsPropMutex);
-
-    return _imp->supportsRenderScale;
-}
-
-/// should be set during effect initialization, but may also be set by the first getRegionOfDefinition that succeeds
-void
-Node::setSupportsRenderScaleMaybe(EffectInstance::RenderScaleSupportEnum s) const
-{
-    {
-        QMutexLocker l(&_imp->pluginsPropMutex);
-
-        _imp->supportsRenderScale = s;
-    }
-    NodePtr node = getNode();
-
-    if (node) {
-        node->onSetSupportRenderScaleMaybeSet( (int)s );
-    }
-}
-
-void
-Node::refreshRenderScaleSupport()
-{
-
-
-    // Try to set renderscale support at plugin creation.
-    // This is not always possible (e.g. if a param has a wrong value).
-    if (supportsRenderScaleMaybe() != eSupportsMaybe) {
-        return;
-    }
-
-    if ( !isRenderScaleSupportEnabledForPlugin() ) {
-        setSupportsRenderScaleMaybe(eSupportsNo);
-        return;
-    }
-
-    RenderScale scaleOne;
-    scaleOne.x = 1.;
-    scaleOne.y = 1.;
-
-    double first = INT_MIN, last = INT_MAX;
-    _imp->effect->getFrameRange(&first, &last);
-    if ( (first == INT_MIN) || (last == INT_MAX) ) {
-        first = last = getApp()->getTimeLine()->currentFrame();
-    }
-
-    TimeValue time = first;
-    RectD rod;
-    StatusEnum stat = _imp->effect->getRegionOfDefinition_public(0, time, scaleOne, ViewIdx(0), &rod);
-
-    if (stat == eStatusOK || stat == eStatusReplyDefault) {
-        RenderScale scale;
-        scale.x = 0.5;
-        scale.y = 0.5;
-        stat = _imp->effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
-        if (stat == eStatusOK || stat == eStatusReplyDefault) {
-            setSupportsRenderScaleMaybe(eSupportsYes);
-        } else {
-            setSupportsRenderScaleMaybe(eSupportsNo);
-        }
-    }
-
-} // refreshRenderScaleSupport
-
 
 
 void
@@ -3664,6 +3580,7 @@ Node::createPyPlugPage()
         _imp->pyPlugExportButtonKnob = param;
     }
 
+
 }
 
 void
@@ -4124,12 +4041,21 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     NodeGroupPtr isGrpNode = isEffectNodeGroup();
     if (!isGrpNode && !isBackdropNode) {
         createInfoPage();
-    } else {
+    } else if (isGrpNode) {
         if (isGrpNode->isSubGraphPersistent()) {
             createPyPlugPage();
 
             if (hasGUI) {
                 createPyPlugExportGroup();
+            }
+
+            {
+                KnobButtonPtr param = AppManager::createKnob<KnobButton>(_imp->effect, tr(kNatronNodeKnobConvertToGroupButtonLabel), 1, false);
+                param->setName(kNatronNodeKnobConvertToGroupButton);
+                param->setEvaluateOnChange(false);
+                param->setHintToolTip( tr("Converts this node to a Group: the internal node-graph and the user parameters will become editable") );
+                settingsPage->addKnob(param);
+                _imp->pyPlugConvertToGroupButtonKnob = param;
             }
         }
     }
@@ -8359,6 +8285,11 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         if (k) {
             k->setValue(!k->getValue());
         }
+    } else if (what == _imp->pyPlugConvertToGroupButtonKnob.lock() && reason != eValueChangedReasonRestoreDefault) {
+        NodeGroupPtr isGroup = isEffectNodeGroup();
+        if (isGroup) {
+            isGroup->setSubGraphEditedByUser(true);
+        }
     } else if (what == _imp->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
         try {
             exportNodeToPyPlug(_imp->pyPlugExportDialogFile.lock()->getValue());
@@ -9117,33 +9048,6 @@ Node::refreshMaskEnabledNess(int inputNb)
     return changed;
 }
 
-bool
-Node::refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs)
-{
-    bool hasDraftInput = false;
-
-    for (std::size_t i = 0; i < inputs.size(); ++i) {
-        NodePtr input = inputs[i].lock();
-        if (input) {
-            hasDraftInput |= input->isDraftModeUsed();
-        }
-    }
-    hasDraftInput |= _imp->effect->supportsRenderQuality();
-    bool changed;
-    {
-        QMutexLocker k(&_imp->pluginsPropMutex);
-        changed = _imp->draftModeUsed != hasDraftInput;
-        _imp->draftModeUsed = hasDraftInput;
-    }
-
-    return changed;
-}
-
-void
-Node::refreshAllInputRelatedData(bool canChangeValues)
-{
-    refreshAllInputRelatedData( canChangeValues, getInputs_copy() );
-}
 
 bool
 Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
@@ -9160,24 +9064,6 @@ Node::refreshAllInputRelatedData(bool /*canChangeValues*/,
     const bool canCallRefreshMetaData = true; // = !hasMandatoryInputDisconnected();
 
     if (canCallRefreshMetaData) {
-
-
-        TimeValue time = (double)getApp()->getTimeLine()->currentFrame();
-        RenderScale scaleOne(1.);
-        ///Render scale support might not have been set already because getRegionOfDefinition could have failed until all non optional inputs were connected
-        if (_imp->effect->supportsRenderScaleMaybe() == EffectInstance::eSupportsMaybe) {
-            RectD rod;
-            StatusEnum stat = _imp->effect->getRegionOfDefinition(time, scaleOne, ViewIdx(0), &rod);
-            if (stat != eStatusFailed) {
-                RenderScale scale(0.5);
-                stat = _imp->effect->getRegionOfDefinition(time, scale, ViewIdx(0), &rod);
-                if (stat != eStatusFailed) {
-                    _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
-                } else {
-                    _imp->effect->setSupportsRenderScaleMaybe(EffectInstance::eSupportsNo);
-                }
-            }
-        }
         hasChanged |= _imp->effect->refreshMetaDatas_public(false);
     }
 

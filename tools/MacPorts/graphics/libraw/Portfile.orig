@@ -4,7 +4,7 @@ PortSystem 1.0
 
 name             libraw
 version          0.17.2
-revision         1
+revision         2
 homepage         http://www.libraw.org/
 description      library for RAW images manipulation
 long_description      a library for reading RAW files obtained from digital photo cameras (CRW/CR2, NEF, RAF, DNG, and others)

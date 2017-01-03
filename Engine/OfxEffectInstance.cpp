@@ -38,20 +38,17 @@
 CLANG_DIAG_OFF(unknown-pragmas)
 CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhPluginCache.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhPluginAPICache.h>
-CLANG_DIAG_OFF(unknown-pragmas)
-CLANG_DIAG_OFF(tautological-undefined-compare)
 #include <ofxhImageEffect.h>
-CLANG_DIAG_ON(tautological-undefined-compare)
-CLANG_DIAG_ON(unknown-pragmas)
+#include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxOpenGLRender.h>
 #include <ofxhHost.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 
 #include <tuttle/ofxReadWrite.h>
-#include "ofxNatron.h"
+#include <ofxNatron.h>
 #include <nuke/fnOfxExtensions.h>
 
 #include "Engine/AppInstance.h"
@@ -243,14 +240,7 @@ OfxEffectInstance::initializeDataAfterCreate()
         _imp->isOutput = true;
     }
 
-    if (_imp->context == eContextReader) {
-        // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
-        // TuttleAVReader crashes on an assert in copy_and_convert_pixels( avSrcView, this->_dstView );
-        std::string prefix("tuttle.");
-        if ( !ofxPlugin->getIdentifier().compare(0, prefix.size(), prefix) ) {
-            setSupportsRenderScaleMaybe(eSupportsNo);
-        }
-    }
+
 
     _imp->effect.reset( new OfxImageEffectInstance(ofxPlugin, *desc, mapContextToString(_imp->context), false) );
     assert(_imp->effect);
@@ -1060,7 +1050,7 @@ StatusEnum
 OfxEffectInstance::getRegionOfDefinition(TimeValue time,
                                          const RenderScale & scale,
                                          ViewIdx view,
-                                         const TreeRenderNodeArgsPtr& render,
+                                         const TreeRenderNodeArgsPtr& /*render*/,
                                          RectD* rod)
 {
     assert(_imp->context != eContextNone);
@@ -1072,76 +1062,13 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 
 
     OfxRectD ofxRod;
-    OfxStatus stat;
-
-
-    assert(_imp->effect);
-
-
-    {
-        stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
+    OfxStatus stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
+    if (stat == kOfxStatFailed) {
+        return eStatusFailed;
     }
 
-    if (supportsRS == eSupportsMaybe) {
-        OfxRectD tmpRod;
-        if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-            if (!scaleIsOne) {
-                // we got at least one success with RS != 1
-                setSupportsRenderScaleMaybe(eSupportsYes);
-            } else {
-                //try with scale != 1
-                // maybe the effect does not support renderscale
-                // try again with scale one
-                OfxPointD halfScale;
-                halfScale.x = halfScale.y = .5;
-
-                assert(_imp->effect);
-
-                stat = _imp->effect->getRegionOfDefinitionAction(time, halfScale, view, tmpRod);
-
-
-                if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                    setSupportsRenderScaleMaybe(eSupportsYes);
-                } else {
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                }
-            }
-        } else if (stat == kOfxStatFailed) {
-            if (scaleIsOne) {
-                //scale one failed, we can't say anything
-                return eStatusFailed;
-            } else {
-                // maybe the effect does not support renderscale
-                // try again with scale one
-                OfxPointD scaleOne;
-                scaleOne.x = scaleOne.y = 1.;
-
-
-                assert(_imp->effect);
-
-                stat = _imp->effect->getRegionOfDefinitionAction(time, scaleOne, view, tmpRod);
-
-
-
-                if ( (stat == kOfxStatOK) || (stat == kOfxStatReplyDefault) ) {
-                    // we got success with scale = 1, which means it doesn't support renderscale after all
-                    setSupportsRenderScaleMaybe(eSupportsNo);
-                } else {
-                    // if both actions failed, we can't say anything
-                    return eStatusFailed;
-                }
-            }
-        }
-
-        if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-            return eStatusFailed;
-        }
-
-    }
-
-
-    ///If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
-    ///1 pixel large image
+    // If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
+    // 1 pixel large image
     if ( (ofxRod.x2 == 1.) && (ofxRod.y2 == 1.) && (ofxRod.x1 == 0.) && (ofxRod.y1 == 0.) ) {
         int maxInputs = getMaxInputCount();
         for (int i = 0; i < maxInputs; ++i) {
@@ -1166,7 +1093,7 @@ void
 OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
                                                  const RenderScale & scale,
                                                  ViewIdx view,
-                                                 const TreeRenderNodeArgsPtr& render,
+                                                 const TreeRenderNodeArgsPtr& /*render*/,
                                                  RectD *rod)
 {
     assert(_imp->context != eContextNone);
@@ -1578,7 +1505,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
          it != args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
             // When not multi-planar, the components of the image will be the colorplane
-            OfxClipInstance::natronsPlaneToOfxPlane(it->second->getComponents(), &ofxPlanes);
+            OfxClipInstance::natronsPlaneToOfxPlane(it->second->getLayer(), &ofxPlanes);
         } else {
             OfxClipInstance::natronsPlaneToOfxPlane(it->first, &ofxPlanes);
         }
@@ -2295,7 +2222,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 }
 
 StatusEnum
-OfxEffectInstance::getComponentsNeededAndProduced(TimeValue time,
+OfxEffectInstance::getComponentsAction(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& renderArgs,
                                                   std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
