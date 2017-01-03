@@ -78,12 +78,9 @@ CLANG_DIAG_ON(deprecated)
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
 
-#define NATRON_TIME_ELASPED_BEFORE_PROGRESS_REPORT 4. //!< do not display the progress report if estimated total time is less than this (in seconds)
 
 NATRON_NAMESPACE_ENTER;
 
-using std::make_pair;
-using boost::shared_ptr;
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
