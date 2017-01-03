@@ -546,7 +546,7 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    static int choiceMatch(const std::string& choice, const std::vector<std::string>& entries);
+    static int choiceMatch(const std::string& choice, const std::vector<std::string>& entries, std::string* matchedEntry);
     
     void choiceRestoration(KnobChoice* knob, const ChoiceExtraData* data);
 
