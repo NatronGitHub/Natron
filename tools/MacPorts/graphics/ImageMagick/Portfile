@@ -196,7 +196,7 @@ post-destroot {
     if {${configure.cxx_stdlib} eq "libc++"} {
         # The pkg-config files contain -lgomp instead of -L/opt/local/lib/libomp -omp
         foreach f [glob -directory ${destroot}${prefix}/lib/pkgconfig Magick*pc Wand*pc ImageMagick*pc] {
-            reinplace -locale C {/Libs.private: /s:-lgomp:-L{prefix}/lib/libomp -lomp:g} ${f}
+            reinplace -locale C {/Libs.private: /s:-lgomp:-L${prefix}/lib/libomp -lomp:g} ${f}
         }
     }
 }
