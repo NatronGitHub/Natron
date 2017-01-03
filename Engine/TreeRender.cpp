@@ -75,6 +75,16 @@ struct TreeRenderPrivate
     // the view to render
     ViewIdx view;
 
+    // The scale to apply to all parameters to obtain the final render
+    RenderScale proxyScale;
+
+    // The render mipmap level: this is an additional scale applied on top of the proxy scale.
+    // A level of 0 is a factor of 1, a level 1 = 0.5, 2 = 0.25, etc...
+    unsigned int mipMapLevel;
+
+    // proxyScale * mipmap scale
+    RenderScale proxyMipMapScale;
+
     // Rneder statistics
     RenderStatsPtr statsObject;
 
@@ -112,6 +122,9 @@ struct TreeRenderPrivate
     , treeRoot()
     , time(0)
     , view()
+    , proxyScale()
+    , mipMapLevel(0)
+    , proxyMipMapScale()
     , statsObject()
     , openGLContext()
     , cpuOpenGLContext()
@@ -254,6 +267,18 @@ TreeRender::isByPassCacheEnabled() const
     return _imp->byPassCache;
 }
 
+bool
+TreeRender::isNaNHandlingEnabled() const
+{
+    return _imp->handleNaNs;
+}
+
+
+bool
+TreeRender::isConcatenationEnabled() const
+{
+    return _imp->useConcatenations;
+}
 
 TimeValue
 TreeRender::getTime() const
@@ -265,6 +290,24 @@ ViewIdx
 TreeRender::getView() const
 {
     return _imp->view;
+}
+
+RenderScale
+TreeRender::getProxyScale() const
+{
+    return _imp->proxyScale;
+}
+
+unsigned int
+TreeRender::getMipMapLevel() const
+{
+    return _imp->mipMapLevel;
+}
+
+RenderScale
+TreeRender::getProxyMipMapScale() const
+{
+    return _imp->proxyMipMapScale;
 }
 
 RenderStatsPtr
@@ -525,6 +568,11 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
 
     time = inArgs->time;
     view = inArgs->view;
+    proxyScale = inArgs->proxyScale;
+    mipMapLevel = inArgs->mipMapLevel;
+    double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
+    proxyMipMapScale.x = proxyScale.x * mipMapScale;
+    proxyMipMapScale.y = proxyScale.y * mipMapScale;
     statsObject = inArgs->stats;
     treeRoot = inArgs->treeRoot;
     isPlayback = inArgs->playback;
@@ -574,7 +622,7 @@ TreeRender::launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, Im
         canonicalRoi = *inArgs->canonicalRoI;
     } else {
         GetRegionOfDefinitionResultsPtr results;
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, inArgs->scale, inArgs->view, rootNodeRenderArgs, &results);
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, render->getProxyMipMapScale(), inArgs->view, rootNodeRenderArgs, &results);
         if (stat == eStatusFailed) {
             return eRenderRoIRetCodeFailed;
         }
@@ -608,7 +656,7 @@ TreeRender::launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, Im
     // Cycle through the tree to make sure all nodes render once with the appropriate RoI
     {
 
-        StatusEnum stat = rootNodeRenderArgs->roiVisitFunctor(inArgs->time, inArgs->view, inArgs->scale, canonicalRoi, effectToRender);
+        StatusEnum stat = rootNodeRenderArgs->roiVisitFunctor(inArgs->time, inArgs->view, render->getProxyMipMapScale(), canonicalRoi, effectToRender);
 
         if (stat == eStatusFailed) {
             return eRenderRoIRetCodeFailed;
@@ -618,11 +666,10 @@ TreeRender::launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, Im
     double outputPar = effectToRender->getAspectRatio(rootNodeRenderArgs, -1);
 
     RectI pixelRoI;
-    canonicalRoi.toPixelEnclosing(inArgs->scale, outputPar, &pixelRoI);
+    canonicalRoi.toPixelEnclosing(render->getProxyMipMapScale(), outputPar, &pixelRoI);
 
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(inArgs->time,
                                                                                                      inArgs->view,
-                                                                                                     inArgs->scale,
                                                                                                      pixelRoI,
                                                                                                      componentsToRender,
                                                                                                      effectToRender,

@@ -142,8 +142,7 @@ EffectInstance::getDefaultComponentsNeededAndProduced(TimeValue time,
 
         // For a mask get its selected channel
         ImageComponents maskComp;
-        NodePtr maskInput;
-        int channelMask = getNode()->getMaskChannel(i, &maskComp, &maskInput);
+        int channelMask = getNode()->getMaskChannel(i, &maskComp);
 
 
         std::vector<ImageComponents> clipPrefsAllComps;
@@ -470,6 +469,19 @@ EffectInstance::dettachAllOpenGLContexts()
 
 } // dettachAllOpenGLContexts
 
+StatusEnum
+EffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/)
+{
+    return eStatusReplyDefault;
+}
+
+
+StatusEnum
+EffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/)
+{
+    return eStatusReplyDefault;
+}
+
 
 StatusEnum
 EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
@@ -507,6 +519,48 @@ EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderA
 
 
 StatusEnum
+EffectInstance::beginSequenceRender(double /*first*/,
+                                       double /*last*/,
+                                       double /*step*/,
+                                       bool /*interactive*/,
+                                       const RenderScale & /*scale*/,
+                                       bool /*isSequentialRender*/,
+                                       bool /*isRenderResponseToUserInteraction*/,
+                                       bool /*draftMode*/,
+                                       ViewIdx /*view*/,
+                                       RenderBackendTypeEnum /*backendType*/,
+                                       const EffectOpenGLContextDataPtr& /*glContextData*/,
+                                       const TreeRenderNodeArgsPtr& /*render*/)
+{
+    return eStatusOK;
+}
+
+StatusEnum
+EffectInstance::endSequenceRender(double /*first*/,
+                                     double /*last*/,
+                                     double /*step*/,
+                                     bool /*interactive*/,
+                                     const RenderScale & /*scale*/,
+                                     bool /*isSequentialRender*/,
+                                     bool /*isRenderResponseToUserInteraction*/,
+                                     bool /*draftMode*/,
+                                     ViewIdx /*view*/,
+                                     RenderBackendTypeEnum /*backendType*/,
+                                     const EffectOpenGLContextDataPtr& /*glContextData*/,
+                                     const TreeRenderNodeArgsPtr& /*render*/)
+{
+    return eStatusOK;
+}
+
+
+StatusEnum
+EffectInstance::render(const RenderActionArgs & /*args*/)
+{
+    return eStatusOK;
+}
+
+
+StatusEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
 
@@ -530,7 +584,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
                                            ViewIdx view,
-                                           bool isOpenGLRender,
+                                           RenderBackendTypeEnum backendType,
                                            const EffectOpenGLContextDataPtr& glContextData,
                                            const TreeRenderNodeArgsPtr& render)
 {
@@ -549,7 +603,7 @@ EffectInstance::beginSequenceRender_public(double first,
 
 
     return beginSequenceRender(first, last, step, interactive, scale,
-                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
+                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData, render);
 } // beginSequenceRender_public
 
 StatusEnum
@@ -562,7 +616,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
                                          ViewIdx view,
-                                         bool isOpenGLRender,
+                                         RenderBackendTypeEnum backendType,
                                          const EffectOpenGLContextDataPtr& glContextData,
                                          const TreeRenderNodeArgsPtr& render)
 {
@@ -579,7 +633,7 @@ EffectInstance::endSequenceRender_public(double first,
                                               );
 
 
-    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
+    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData, render);
 
 } // endSequenceRender_public
 
@@ -661,7 +715,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     bool isIdentity;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
+        RectI format = getOutputFormat(render);
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
         isIdentity = isIdentity_public(true, time, scale, format, view, render, &identityResults);
@@ -700,6 +754,21 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     return eStatusOK;
 
 } // getDistorsion_public
+
+StatusEnum
+EffectInstance::isIdentity(TimeValue /*time*/,
+                      const RenderScale & /*scale*/,
+                      const RectI & /*roi*/,
+                      ViewIdx /*view*/,
+                      const TreeRenderNodeArgsPtr& /*render*/,
+                      TimeValue* /*inputTime*/,
+                      ViewIdx* /*inputView*/,
+                      int* inputNb) WARN_UNUSED_RETURN
+{
+    *inputNb = -1;
+    return eStatusOK;
+}
+
 
 StatusEnum
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
@@ -966,7 +1035,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
+        RectI format = getOutputFormat(render);
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
         StatusEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
@@ -1065,7 +1134,7 @@ EffectInstance::calcDefaultRegionOfDefinition(TimeValue /*time*/,
 {
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    RectI format = getOutputFormat();
+    RectI format = getOutputFormat(render);
     double par = getAspectRatio(render, -1);
     format.toCanonical_noClipping(mipMapLevel, par, rod);
 } // calcDefaultRegionOfDefinition
@@ -1156,7 +1225,7 @@ EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
     RectD canonicalFormat;
 
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
-        RectI format = getOutputFormat();
+        RectI format = getOutputFormat(render);
         assert(!format.isNull());
         double par = getAspectRatio(render, -1);
         unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
@@ -1393,7 +1462,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     IsIdentityResultsPtr identityResults;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat();
+        RectI format = getOutputFormat(render);
         RenderScale scale(1.);
         StatusEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
         if (stat == eStatusFailed) {
@@ -1701,6 +1770,30 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         return eStatusOK;
     }
 
+    // If the node is disabled return the meta-datas of the main input.
+    // Don't do that for an identity node: a render may be identity but not the metadatas (e.g: NoOp)
+    // A disabled generator still has to return some meta-datas, so let it return the default meta-datas.
+    bool isDisabled = getNode()->getDisabledKnobValue();
+    if (isDisabled) {
+        int mainInput = getNode()->getPreferredInput();
+        if (mainInput != -1) {
+            EffectInstancePtr input = getInput(mainInput);
+            if (input) {
+                TreeRenderNodeArgsPtr inputRenderArgs;
+                if (render) {
+                    inputRenderArgs = render->getInputRenderArgs(mainInput);
+                }
+                GetTimeInvariantMetaDatasResultsPtr inputResults;
+                StatusEnum stat = input->getTimeInvariantMetaDatas_public(inputRenderArgs, &inputResults);
+                if (stat == eStatusFailed) {
+                    return stat;
+                }
+                *results = inputResults;
+                return eStatusOK;
+            }
+        }
+    }
+
     NodeMetadata metadata;
     StatusEnum stat = getDefaultMetadata(render, metadata);
 
@@ -1710,7 +1803,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
     *results = GetTimeInvariantMetaDatasResults::create(cacheKey);
 
-    if (!getNode()->getDisabledKnobValue()) {
+    if (!isDisabled) {
 
 
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
@@ -1728,6 +1821,15 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
             return stat;
         }
         _imp->checkMetadata(metadata);
+    }
+
+
+    // For a Reader, try to add the output format to the project formats.
+    if (isReader()) {
+        Format format;
+        format.set(metadata.getOutputFormat());
+        format.setPixelAspectRatio(metadata.getPixelAspectRatio(-1));
+        getApp()->getProject()->setOrAddProjectFormat(format, true);
     }
 
     cacheAccess.setEntry(*results);

@@ -117,7 +117,6 @@ public:
     // General/Rendering
     KnobPagePtr _renderingPage;
     KnobBoolPtr _convertNaNValues;
-    KnobBoolPtr _pluginUseImageCopyForSource;
     KnobBoolPtr _activateRGBSupport;
     KnobBoolPtr _activateTransformConcatenationSupport;
 
@@ -626,16 +625,6 @@ SettingsPrivate::initializeKnobsRendering()
                                           "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
                                           "undefined behavior.") );
     _renderingPage->addKnob(_convertNaNValues);
-
-    _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>( thisShared, tr("Copy input image before rendering any plug-in") );
-    _pluginUseImageCopyForSource->setName("copyInputImage");
-    _pluginUseImageCopyForSource->setHintToolTip( tr("If checked, when before rendering any node, %1 will copy "
-                                                     "the input image to a local temporary image. This is to work-around some plug-ins "
-                                                     "that write to the source image, thus modifying the output of the node upstream in "
-                                                     "the cache. This is a known bug of an old version of RevisionFX REMap for instance. "
-                                                     "By default, this parameter should be leaved unchecked, as this will require an extra "
-                                                     "image allocation and copy before rendering any plug-in.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _renderingPage->addKnob(_pluginUseImageCopyForSource);
 
     _activateRGBSupport = AppManager::createKnob<KnobBool>( thisShared, tr("RGB components support") );
     _activateRGBSupport->setHintToolTip( tr("When checked %1 is able to process images with only RGB components "
@@ -1668,7 +1657,6 @@ SettingsPrivate::setDefaultValues()
     _maxUndoRedoNodeGraph->setDefaultValue(20);
     _linearPickers->setDefaultValue(true);
     _convertNaNValues->setDefaultValue(true);
-    _pluginUseImageCopyForSource->setDefaultValue(false);
     _snapNodesToConnections->setDefaultValue(true);
     _useBWIcons->setDefaultValue(false);
     _loadProjectsWorkspace->setDefaultValue(false);
@@ -2493,8 +2481,6 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                    }
                } else if ( ( k == _imp->_scriptEditorFontChoice ) || ( k == _imp->_scriptEditorFontSize ) ) {
                    appPTR->reloadScriptEditorFonts();
-               } else if ( k == _imp->_pluginUseImageCopyForSource ) {
-                   appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
                } else if ( k == _imp->_enableOpenGL ) {
                    appPTR->refreshOpenGLRenderingFlagOnAllInstances();
                    if (!_imp->_restoringSettings) {
@@ -3625,12 +3611,6 @@ bool
 Settings::isNaNHandlingEnabled() const
 {
     return _imp->_convertNaNValues->getValue();
-}
-
-bool
-Settings::isCopyInputImageForPluginRenderEnabled() const
-{
-    return _imp->_pluginUseImageCopyForSource->getValue();
 }
 
 void

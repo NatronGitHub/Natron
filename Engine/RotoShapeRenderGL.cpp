@@ -25,6 +25,8 @@
 
 #include "RotoShapeRenderGL.h"
 
+#include <QDebug>
+
 #include "Engine/OSGLContext.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"

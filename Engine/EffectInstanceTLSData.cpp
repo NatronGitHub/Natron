@@ -108,7 +108,6 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
 void
 EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
                           const RectI& renderWindowPixel,
-                          const InputImagesMap& preRenderedInputImages,
                           const std::map<ImageComponents, PlaneToRender>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
@@ -116,7 +115,6 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, Render
     args->view = view;
     args->scale = scale;
     args->renderWindowPixel = renderWindowPixel;
-    args->inputImages = preRenderedInputImages;
     args->outputPlanes = outputPlanes;
 #ifdef DEBUG
     args->canSetValue = false;
@@ -229,7 +227,6 @@ EffectInstanceTLSData::updateCurrentRenderActionOutputPlanes(const std::map<Imag
 bool
 EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
                                                   RectI* renderWindowPixel,
-                                                  InputImagesMap* preRenderedInputImages,
                                                   std::map<ImageComponents, PlaneToRender>* outputPlanes) const
 {
     QMutexLocker k(&_imp->lock);
@@ -253,9 +250,7 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
     if (renderWindowPixel) {
         *renderWindowPixel = args->renderWindowPixel;
     }
-    if (preRenderedInputImages) {
-        *preRenderedInputImages = args->inputImages;
-    }
+
     if (outputPlanes) {
         *outputPlanes = args->outputPlanes;
     }

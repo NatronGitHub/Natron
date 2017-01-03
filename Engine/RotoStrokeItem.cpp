@@ -847,14 +847,14 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         int ki; // index of the new keyframe (normally nk, but just in case)
         {
             KeyFrame k;
-            k.setTime(t);
+            k.setTime(TimeValue(t));
             k.setValue(p.pos().x);
             addKeyFrameOk = stroke->xCurve->addKeyFrame(k);
             ki = ( addKeyFrameOk ? nk : (nk - 1) );
         }
         {
             KeyFrame k;
-            k.setTime(t);
+            k.setTime(TimeValue(t));
             k.setValue(p.pos().y);
             bool aok = stroke->yCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
@@ -865,7 +865,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
 
         {
             KeyFrame k;
-            k.setTime(t);
+            k.setTime(TimeValue(t));
             k.setValue( p.pressure() );
             bool aok = stroke->pressureCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
@@ -1287,7 +1287,6 @@ RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
 std::list<CurvePtr >
 RotoStrokeItem::getXControlPoints() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
     std::list<CurvePtr > ret;
     QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
@@ -1300,7 +1299,6 @@ RotoStrokeItem::getXControlPoints() const
 std::list<CurvePtr >
 RotoStrokeItem::getYControlPoints() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
     std::list<CurvePtr > ret;
     QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {

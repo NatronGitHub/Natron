@@ -182,9 +182,6 @@ public:
         // The view to render
         ViewIdx view;
 
-        // The scale at which to render
-        RenderScale scale;
-
         // The rectangle to render (in pixel coordinates)
         RectI roi;
 
@@ -212,7 +209,6 @@ public:
         RenderRoIArgs()
         : time(0)
         , view(0)
-        , scale(1.)
         , roi()
         , components()
         , caller()
@@ -226,7 +222,6 @@ public:
 
         RenderRoIArgs(TimeValue time_,
                       ViewIdx view_,
-                      const RenderScale & scale_,
                       const RectI & roi_,
                       const std::list<ImageComponents> & components_,
                       EffectInstancePtr caller,
@@ -235,7 +230,6 @@ public:
                       const TreeRenderNodeArgsPtr& renderArgs )
         : time(time_)
         , view(view_)
-        , scale(scale_)
         , roi(roi_)
         , components(components_)
         , caller(caller)
@@ -247,14 +241,6 @@ public:
         }
     };
 
-
-    enum RenderingFunctorRetEnum
-    {
-        eRenderingFunctorRetFailed, //< must stop rendering
-        eRenderingFunctorRetOK, //< ok, move on
-        eRenderingFunctorRetAborted, // we were aborted
-        eRenderingFunctorRetOutOfGPUMemory // GPU render failed, retry with CPU
-    };
 
 protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint
     // TODO: enable_shared_from_this
@@ -295,17 +281,24 @@ public:
         // The time to sample on the input
         //
         // Default - 0
-        TimeValue time;
+        TimeValue inputTime;
 
         // The view to sample on the input
         //
         // Default - 0
-        ViewIdx view;
+        ViewIdx inputView;
 
-        // The scale at which the resulting image should be
-        //
-        // Default - 1.
-        RenderScale scale;
+        // The current action scale
+        // - Must be set
+        RenderScale currentScale;
+
+        // The current action time
+        // - Must be set
+        TimeValue currentTime;
+
+        // The current action view
+        // - Must be set
+        ViewIdx currentView;
 
         // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
         // If not specified, this will ask to render the full region of definition.
@@ -372,7 +365,10 @@ public:
 
 private:
 
-    bool resolveRoIForGetImage(const GetImageInArgs& inArgs, RectD* roiCanonical, RenderRoITypeEnum* type);
+    bool resolveRoIForGetImage(const GetImageInArgs& inArgs,
+                               TimeValue inputTime,
+                               RectD* roiCanonical,
+                               RenderRoITypeEnum* type);
 
 public:
 
@@ -466,7 +462,7 @@ protected:
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual StatusEnum attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/) { return eStatusReplyDefault; }
+    virtual StatusEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
 
     /**
      * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
@@ -476,7 +472,7 @@ protected:
      * eStatusOutOfMemory , in which case this may be called again after a memory purge
      * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/) { return eStatusReplyDefault; }
+    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
 
 public:
@@ -607,7 +603,7 @@ public:
                                           bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                           bool draftMode,
                                           ViewIdx view,
-                                          bool isOpenGLRender,
+                                          RenderBackendTypeEnum backendType,
                                           const EffectOpenGLContextDataPtr& glContextData,
                                           const TreeRenderNodeArgsPtr& render);
 
@@ -621,7 +617,7 @@ public:
                                         bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                         bool draftMode,
                                         ViewIdx view,
-                                        bool isOpenGLRender,
+                                        RenderBackendTypeEnum backendType,
                                         const EffectOpenGLContextDataPtr& glContextData,
                                         const TreeRenderNodeArgsPtr& render);
 
@@ -670,44 +666,33 @@ public:
 
 protected:
 
-    virtual StatusEnum beginSequenceRender(double /*first*/,
-                                           double /*last*/,
-                                           double /*step*/,
-                                           bool /*interactive*/,
-                                           const RenderScale & /*scale*/,
-                                           bool /*isSequentialRender*/,
-                                           bool /*isRenderResponseToUserInteraction*/,
-                                           bool /*draftMode*/,
-                                           ViewIdx /*view*/,
-                                           bool /*isOpenGLRender*/,
-                                           const EffectOpenGLContextDataPtr& /*glContextData*/,
-                                          const TreeRenderNodeArgsPtr& /*render*/)
-    {
-        return eStatusOK;
-    }
+    virtual StatusEnum beginSequenceRender(double first,
+                                           double last,
+                                           double step,
+                                           bool interactive,
+                                           const RenderScale & scale,
+                                           bool isSequentialRender,
+                                           bool isRenderResponseToUserInteraction,
+                                           bool draftMode,
+                                           ViewIdx view,
+                                           RenderBackendTypeEnum backendType,
+                                           const EffectOpenGLContextDataPtr& glContextData,
+                                           const TreeRenderNodeArgsPtr& render);
 
-    virtual StatusEnum endSequenceRender(double /*first*/,
-                                         double /*last*/,
-                                         double /*step*/,
-                                         bool /*interactive*/,
-                                         const RenderScale & /*scale*/,
-                                         bool /*isSequentialRender*/,
-                                         bool /*isRenderResponseToUserInteraction*/,
-                                         bool /*draftMode*/,
-                                         ViewIdx /*view*/,
-                                         bool /*isOpenGLRender*/,
-                                         const EffectOpenGLContextDataPtr& /*glContextData*/,
-                                         const TreeRenderNodeArgsPtr& /*render*/)
-    {
-        return eStatusOK;
-    }
+    virtual StatusEnum endSequenceRender(double first,
+                                         double last,
+                                         double step,
+                                         bool interactive,
+                                         const RenderScale & scale,
+                                         bool isSequentialRender,
+                                         bool isRenderResponseToUserInteraction,
+                                         bool draftMode,
+                                         ViewIdx view,
+                                         RenderBackendTypeEnum backendType,
+                                         const EffectOpenGLContextDataPtr& glContextData,
+                                         const TreeRenderNodeArgsPtr& render);
 
-
-    virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN
-    {
-        return eStatusOK;
-    }
-
+    virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN;
 
 public:
 
@@ -762,18 +747,14 @@ public:
 protected:
 
 
-    virtual StatusEnum isIdentity(TimeValue /*time*/,
-                                  const RenderScale & /*scale*/,
-                                  const RectI & /*roi*/,
-                                  ViewIdx /*view*/,
-                                  const TreeRenderNodeArgsPtr& /*render*/,
-                                  TimeValue* /*inputTime*/,
-                                  ViewIdx* /*inputView*/,
-                                  int* inputNb) WARN_UNUSED_RETURN
-    {
-        *inputNb = -1;
-        return eStatusOK;
-    }
+    virtual StatusEnum isIdentity(TimeValue time,
+                                  const RenderScale & scale,
+                                  const RectI & roi,
+                                  ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
+                                  TimeValue* inputTime,
+                                  ViewIdx* inputView,
+                                  int* inputNb) WARN_UNUSED_RETURN;
     
 public:
 
@@ -1024,6 +1005,7 @@ public:
     RenderValuesCachePtr getRenderValuesCache_TLS(TimeValue* currentTime, ViewIdx* currentView) const;
     void setCurrentRender_TLS(const TreeRenderNodeArgsPtr& render);
     TreeRenderNodeArgsPtr getCurrentRender_TLS() const;
+    EffectInstanceTLSDataPtr getTLSObject() const;
 
     /**
      * @brief Forwarded to the node's name
@@ -1032,10 +1014,6 @@ public:
     virtual std::string getScriptName_mt_safe() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onScriptNameChanged(const std::string& /*fullyQualifiedName*/) {}
 
-    /**
-     * @brief Returns the node output format
-     **/
-    RectI getOutputFormat() const;
 
     /**
      * @brief Forwarded to the node's render views count
@@ -1149,16 +1127,6 @@ public:
     virtual bool getCreateChannelSelectorKnob() const;
 
     /**
-     * @brief Returns the index of the channel to use to produce the mask and the components.
-     * None = -1
-     * R = 0
-     * G = 1
-     * B = 2
-     * A = 3
-     **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
-
-    /**
      * @brief Returns whether masking is enabled or not
      **/
     bool isMaskEnabled(int inputNb) const;
@@ -1236,12 +1204,18 @@ public:
      **/
     RenderRoIRetCode renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
 
+    enum RenderRoIStatusEnum
+    {
+        eRenderRoIStatusImageRendered, // we rendered what was missing
+        eRenderRoIStatusRenderFailed, // render failed
+        eRenderRoIStatusRenderOutOfGPUMemory, // The render failed because the GPU did not have enough memory
+    };
+    
     struct RectToRender
     {
-        EffectInstancePtr identityInput;
         int identityInputNumber;
         RectI rect;
-        double identityTime;
+        TimeValue identityTime;
         ViewIdx identityView;
     };
 
@@ -1281,14 +1255,6 @@ private:
     
 public:
     
-    
-    
-    /**
-     * @brief This function is to be called by getImage() when the plug-in renders more planes than the ones suggested
-     * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
-     * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
-     **/
-    ImagePtr allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
 
 
     class NotifyRenderingStarted_RAII
@@ -1326,61 +1292,48 @@ public:
 
     EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, int* channelForMask);
 
-
-
-    /**
-     * @brief Returns a pointer to the first non disabled upstream node.
-     * When cycling through the tree, we prefer non optional inputs and we span inputs
-     * from last to first.
-     * If this not is not disabled, it will return a pointer to this.
-     **/
-    EffectInstancePtr getNearestNonDisabled(TimeValue time, ViewIdx view) const;
-
-    /**
-     * @brief Same as getNearestNonDisabled except that it looks for the nearest non identity node.
-     * This function calls the action isIdentity and getRegionOfDefinition and can be expensive!
-     **/
-    EffectInstancePtr getNearestNonIdentity(TimeValue time);
-
-
-
 public:
+
+    /**
+     * @brief Returns the node output format
+     **/
+    RectI getOutputFormat(const TreeRenderNodeArgsPtr& render);
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
      **/
-    bool isFrameVarying(const TreeRenderNodeArgsPtr& render) const;
+    bool isFrameVarying(const TreeRenderNodeArgsPtr& render);
 
     /**
      * @brief Returns the preferred output frame rate to render with
      **/
-    double getFrameRate(const TreeRenderNodeArgsPtr& render) const;
+    double getFrameRate(const TreeRenderNodeArgsPtr& render);
 
     /**
      * @brief Returns the preferred premultiplication flag for the output image
      **/
-    ImagePremultiplicationEnum getPremult(const TreeRenderNodeArgsPtr& render) const;
+    ImagePremultiplicationEnum getPremult(const TreeRenderNodeArgsPtr& render);
 
     /**
      * @brief If true, the plug-in knows how to render frames at non integer times. If false
      * this is the hint indicating that the plug-ins can only render integer frame times (such as a Reader)
      **/
-    bool canRenderContinuously(const TreeRenderNodeArgsPtr& render) const;
+    bool canRenderContinuously(const TreeRenderNodeArgsPtr& render);
 
     /**
      * @brief Returns the field ordering of images produced by this plug-in
      **/
-    ImageFieldingOrderEnum getFieldingOrder(const TreeRenderNodeArgsPtr& render) const;
+    ImageFieldingOrderEnum getFieldingOrder(const TreeRenderNodeArgsPtr& render);
 
     /**
      * @brief Returns the pixel aspect ratio, depth and components for the given input.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    double getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb) const;
+    double getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb);
     
-    ImageComponents getComponents(const TreeRenderNodeArgsPtr& render, int inputNb) const;
+    ImageComponents getComponents(const TreeRenderNodeArgsPtr& render, int inputNb);
 
-    ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb) const;
+    ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb);
 
 
 
@@ -1404,7 +1357,6 @@ public:
         return false;
     }
 
-    RenderScale getOverlayInteractRenderScale() const;
 
     virtual bool isMultiPlanar() const
     {
@@ -1474,12 +1426,6 @@ public:
     virtual void initializeOverlayInteract()
     {
     }
-
-    void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
-
-    OverlaySupport* getCurrentViewportForOverlays() const;
-
-protected:
 
     virtual void setCurrentViewportForOverlays(OverlaySupport* /*viewport*/)
     {
@@ -1816,52 +1762,18 @@ private:
     friend class ReadNode;
     friend class WriteNode;
 
-    enum RenderRoIStatusEnum
-    {
-        eRenderRoIStatusImageRendered, // we rendered what was missing
-        eRenderRoIStatusRenderFailed, // render failed
-        eRenderRoIStatusRenderOutOfGPUMemory, // The render failed because the GPU did not have enough memory
-    };
+
 
 
     /**
-     * @brief The internal of renderRoI, mainly it calls render and handles the thread safety of the effect.
+     * @brief Launch the render action for a given render clone
      **/
-    RenderRoIStatusEnum renderRoIInternal(const OSGLContextAttacherPtr& glContext,
+    RenderRoIStatusEnum renderForClone(const OSGLContextAttacherPtr& glContext,
                                           const RenderRoIArgs& args,
                                           const RenderScale& renderMappedScale,
-                                          const RectD & rod, //!< rod in canonical coordinates
                                           const ImagePlanesToRenderPtr & planes,
-                                          const std::bitset<4> processChannels);
-
-
-    /// \returns false if rendering was aborted
-    RenderRoIRetCode renderInputImagesForRoI(StorageModeEnum renderStorageMode,
-                                             TimeValue time,
-                                             ViewIdx view,
-                                             unsigned int mipMapLevel,
-                                             bool useScaleOneInputImages,
-                                             bool byPassCache,
-                                             const FramesNeededMap & framesNeeded,
-                                             InputImagesMap *inputImages);
-
-
-
-    bool allocateImagePlane(const RectD & rod,
-                            const RectI & downscaleImageBounds,
-                            const RectI & fullScaleImageBounds,
-                            const ImageComponents & components,
-                            ImageBitDepthEnum depth,
-                            ImagePremultiplicationEnum premult,
-                            ImageFieldingOrderEnum fielding,
-                            double par,
-                            unsigned int mipmapLevel,
-                            bool renderFullScaleThenDownscale,
-                            const OSGLContextPtr& glContext,
-                            StorageModeEnum storage,
-                            bool createInCache,
-                            ImagePtr* fullScaleImage,
-                            ImagePtr* downscaleImage);
+                                          const std::bitset<4> processChannels,
+                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers);
 
 
 

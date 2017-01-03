@@ -108,6 +108,36 @@ public:
 
     ~FrameViewRequest();
 
+    /**
+     * @brief When an input image of this request is rendered, we hold a pointer to it in this object
+     * until the image of this object's frame/view has been rendered.
+     **/
+    void appendPreRenderedInputs(int inputNb,
+                                 TimeValue time,
+                                 ViewIdx view,
+                                 const std::map<ImageComponents, ImagePtr>& planes,
+                                 const Distorsion2DStackPtr& distorsionStack);
+
+
+    /**
+     * @brief Get results that were previously appended in appendPreRenderedInputs
+     **/
+    void getPreRenderedInputs(int inputNb,
+                              TimeValue time,
+                              ViewIdx view,
+                              const RectI& roi,
+                              const std::list<ImageComponents>& layers,
+                              std::map<ImageComponents, ImagePtr>* planes,
+                              std::list<ImageComponents>* planesLeftToRendered,
+                              Distorsion2DStackPtr* distorsionStack) const;
+
+    /**
+     * @brief Clear any data held by a call to appendPreRenderedInputs.
+     * If images are backed in the cache they will not be destroyed yet, otherwise they will be deleted.
+     **/
+    void clearPreRenderedInputs();
+
+
 
     /**
      * @brief Increments the number of requests on this particular time/view for the node.
@@ -380,9 +410,7 @@ public:
      **/
     RenderRoIRetCode preRenderInputImages(TimeValue time,
                                           ViewIdx view,
-                                          const RenderScale& scale,
-                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers,
-                                          InputImagesMap* inputImages);
+                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers);
 
 
 private:

@@ -101,6 +101,7 @@ public:
     unsigned long long nodeHashKey; // the hash of the node this image corresponds to
     std::string layerChannelName; // e.g: Disparity.X
     double scale[2]; // the scale of the tile
+    unsigned int mipMapLevel;
     bool draft; // was it computed in draft mode ?
 
     ImageTileSerialization()
@@ -108,6 +109,7 @@ public:
     , nodeHashKey(0)
     , layerChannelName()
     , scale()
+    , mipMapLevel(0)
     , draft(false)
     {
         scale[0] = scale[1] = 1.;

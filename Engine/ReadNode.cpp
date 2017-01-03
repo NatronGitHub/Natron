@@ -296,7 +296,6 @@ ReadNode::ReadNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new ReadNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 ReadNode::~ReadNode()
@@ -520,7 +519,7 @@ ReadNodePrivate::checkDecoderCreated(TimeValue time,
     if (!fileKnob) {
         return false;
     }
-    std::string pattern = fileKnob->getValueAtTime(std::floor(time + 0.5), DimIdx(0), view);
+    std::string pattern = fileKnob->getValueAtTime(TimeValue(std::floor(time + 0.5)), DimIdx(0), view);
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
 
@@ -1196,13 +1195,13 @@ ReadNode::beginSequenceRender(double first,
                               bool isRenderResponseToUserInteraction,
                               bool draftMode,
                               ViewIdx view,
-                              bool isOpenGLRender,
+                              RenderBackendTypeEnum backend,
                               const EffectOpenGLContextDataPtr& glContextData,
                               const TreeRenderNodeArgsPtr& render)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
+        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
     } else {
         return eStatusFailed;
     }
@@ -1218,13 +1217,13 @@ ReadNode::endSequenceRender(double first,
                             bool isRenderResponseToUserInteraction,
                             bool draftMode,
                             ViewIdx view,
-                            bool isOpenGLRender,
+                            RenderBackendTypeEnum backend,
                             const EffectOpenGLContextDataPtr& glContextData,
                             const TreeRenderNodeArgsPtr& render)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData, render);
+        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
     } else {
         return eStatusFailed;
     }
@@ -1255,7 +1254,7 @@ ReadNode::getRegionsOfInterest(TimeValue time,
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, render, ret);
+        return p->getEffectInstance()->getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
     }
     return eStatusFailed;
 }

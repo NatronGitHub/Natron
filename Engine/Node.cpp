@@ -457,9 +457,6 @@ Node::load(const CreateNodeArgsPtr& args)
     // if we have initial values set for Knobs in the CreateNodeArgs object, deserialize them now
     setValuesFromSerialization(*args);
 
-    // Setup default-metadata
-    _imp->effect->setDefaultMetadata();
-
     // For OpenFX we create the image effect now
     _imp->effect->createInstanceAction_public();
 
@@ -5703,6 +5700,7 @@ Node::clearLastRenderedImage()
 void
 Node::setLastRenderedImage(const ImagePtr& lastRenderedImage)
 {
+#pragma message WARN("Check if we still neeed this ?")
 
     ImagePtr curLastRenderedImage;
     {
@@ -7587,6 +7585,37 @@ Node::isDoingInteractAction() const
     return _imp->duringInteractAction;
 }
 
+RenderScale
+Node::getOverlayInteractRenderScale() const
+{
+    RenderScale renderScale(1.);
+
+    if (isDoingInteractAction() && _imp->overlaysViewport) {
+        unsigned int mmLevel = _imp->overlaysViewport->getCurrentRenderScale();
+        renderScale.x = renderScale.y = 1 << mmLevel;
+    }
+
+    return renderScale;
+}
+
+void
+Node::setCurrentViewportForOverlays_public(OverlaySupport* viewport)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    setCurrentViewportForHostOverlays(viewport);
+    _imp->overlaysViewport = viewport;
+    _imp->effect->setCurrentViewportForOverlays(viewport);
+}
+
+OverlaySupport*
+Node::getCurrentViewportForOverlays() const
+{
+    assert( QThread::currentThread() == qApp->thread() );
+
+    return _imp->overlaysViewport;
+}
+
+
 bool
 Node::shouldDrawOverlay(TimeValue time, ViewIdx view) const
 {
@@ -9000,7 +9029,8 @@ Node::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         return true;
     }
 
-    std::size_t nOutputNodes = getOutputs().size();
+    std::list<NodeWPtr> outputs = getOutputs();
+    std::size_t nOutputNodes = outputs.size();
 
     if (nOutputNodes == 0) {
         // outputs == 0, never cache, unless explicitly set or rotopaint internal node
@@ -10249,8 +10279,7 @@ static bool channelNamesEqualFunctor(const std::string& a, const std::string& b)
 
 int
 Node::getMaskChannel(int inputNb,
-                     ImageComponents* comps,
-                     NodePtr* maskInput) const
+                     ImageComponents* comps) const
 {
     *comps = ImageComponents::getNoneComponents();
     maskInput->reset();

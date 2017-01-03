@@ -111,7 +111,8 @@ struct ImageTileKeyPrivate
 {
     U64 nodeFrameViewHashKey;
     std::string layerChannel;
-    RenderScale scale;
+    RenderScale proxyScale;
+    unsigned int mipMapLevel;
     bool draftMode;
     ImageBitDepthEnum bitdepth;
     int tileX;
@@ -120,7 +121,8 @@ struct ImageTileKeyPrivate
     ImageTileKeyPrivate()
     : nodeFrameViewHashKey(0)
     , layerChannel()
-    , scale(1.)
+    , proxyScale(1.)
+    , mipMapLevel(0)
     , draftMode(false)
     , bitdepth(eImageBitDepthNone)
     , tileX(0)
@@ -134,6 +136,7 @@ struct ImageTileKeyPrivate
 ImageTileKey::ImageTileKey(U64 nodeFrameViewHashKey,
                            const std::string& layerChannel,
                            const RenderScale& scale,
+                           unsigned int mipMapLevel,
                            bool draftMode,
                            ImageBitDepthEnum bitdepth,
                            int tileX,
@@ -143,7 +146,8 @@ ImageTileKey::ImageTileKey(U64 nodeFrameViewHashKey,
 {
     _imp->nodeFrameViewHashKey = nodeFrameViewHashKey;
     _imp->layerChannel = layerChannel;
-    _imp->scale = scale;
+    _imp->proxyScale = scale;
+    _imp->mipMapLevel = mipMapLevel;
     _imp->draftMode = draftMode;
     _imp->bitdepth = bitdepth;
     _imp->tileX = tileX;
@@ -178,8 +182,9 @@ void
 ImageTileKey::appendToHash(Hash64* hash) const
 {
     Hash64::appendQString(QString::fromUtf8(_imp->layerChannel.c_str()), hash);
-    hash->append(_imp->scale.x);
-    hash->append(_imp->scale.y);
+    hash->append(_imp->proxyScale.x);
+    hash->append(_imp->proxyScale.y);
+    hash->append(_imp->mipMapLevel);
     hash->append(_imp->draftMode);
     hash->append((int)_imp->bitdepth);
     hash->append(_imp->tileX);
@@ -203,10 +208,13 @@ ImageTileKey::equals(const CacheEntryKeyBase& other)
     if (_imp->layerChannel != otherKey->_imp->layerChannel) {
         return false;
     }
-    if (_imp->scale.x != otherKey->_imp->scale.x) {
+    if (_imp->proxyScale.x != otherKey->_imp->proxyScale.x) {
         return false;
     }
-    if (_imp->scale.y != otherKey->_imp->scale.y) {
+    if (_imp->proxyScale.y != otherKey->_imp->proxyScale.y) {
+        return false;
+    }
+    if (_imp->mipMapLevel != otherKey->_imp->mipMapLevel) {
         return false;
     }
     if (_imp->draftMode != otherKey->_imp->draftMode) {
@@ -243,9 +251,15 @@ ImageTileKey::getTileY() const
 }
 
 RenderScale
-ImageTileKey::getScale() const
+ImageTileKey::getProxyScale() const
 {
-    return _imp->scale;
+    return _imp->proxyScale;
+}
+
+unsigned int
+ImageTileKey::getMipMapLevel() const
+{
+    return _imp->mipMapLevel;
 }
 
 bool
@@ -302,8 +316,9 @@ ImageTileKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* 
     serialization->layerChannelName = _imp->layerChannel;
     serialization->tileX = _imp->tileX;
     serialization->tileY = _imp->tileY;
-    serialization->scale[0] = _imp->scale.x;
-    serialization->scale[1] = _imp->scale.y;
+    serialization->scale[0] = _imp->proxyScale.x;
+    serialization->scale[1] = _imp->proxyScale.y;
+    serialization->mipMapLevel = _imp->mipMapLevel;
     serialization->draft = _imp->draftMode;
     serialization->bitdepth = bitDepthToString(_imp->bitdepth);
 }
@@ -319,8 +334,9 @@ ImageTileKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObje
     _imp->layerChannel = serialization->layerChannelName;
     _imp->tileX = serialization->tileX;
     _imp->tileY = serialization->tileY;
-    _imp->scale.x = serialization->scale[0];
-    _imp->scale.y = serialization->scale[1];
+    _imp->proxyScale.x = serialization->scale[0];
+    _imp->proxyScale.y = serialization->scale[1];
+    _imp->mipMapLevel = serialization->mipMapLevel;
     _imp->draftMode = serialization->draft;
     _imp->bitdepth = bitDepthFromString(serialization->bitdepth);
 }

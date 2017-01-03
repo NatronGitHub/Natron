@@ -104,20 +104,12 @@ public:
 
 private:
 
-    virtual StatusEnum isIdentity(TimeValue time,
-                            const RenderScale & scale,
-                            const RectI & renderWindow,
-                            ViewIdx view,
-                            const TreeRenderNodeArgsPtr& render,
-                            TimeValue* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE FINAL;
 
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
                              TimeValue time) OVERRIDE FINAL;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };

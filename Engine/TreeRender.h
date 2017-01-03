@@ -85,8 +85,14 @@ public:
         // The layers to render
         const std::list<ImageComponents>* layers;
 
-        // scale at which to Render
-        RenderScale scale;
+        // Proxy scale is the scale to apply to the parameters (that are expressed in the full format)
+        // to obtain their value in the proxy format.
+        // A value of 1 indicate that parameters should not be scaled.
+        RenderScale proxyScale;
+
+        // The mipMapScale is a scale factor applied after the proxy scale.
+        // Level 0 = 1, level 1 = 0.5, level 2 = 0.25 etc..
+        unsigned int mipMapLevel;
         
         // True if the render should be draft (i.e: low res) because user is anyway
         // scrubbing timeline or a slider
@@ -135,6 +141,21 @@ public:
     ViewIdx getView() const;
 
     /**
+     * @brief Get the proxy scale of the render
+     **/
+    RenderScale getProxyScale() const;
+
+    /**
+     * @brief Get the mipmaplevel of the render
+     **/
+    unsigned int getMipMapLevel() const;
+
+    /**
+     * @brief Get proxy scale + mipmap scale combined
+     **/
+    RenderScale getProxyMipMapScale() const;
+
+    /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
      **/
     bool isAborted() const;
@@ -158,6 +179,16 @@ public:
      * @brief If true, effects should always render at least once during the render of the tree
      **/
     bool isByPassCacheEnabled() const;
+
+    /**
+     * @brief Should nodes check for NaN pixels ?
+     **/
+    bool isNaNHandlingEnabled() const;
+
+    /**
+     * @brief Should nodes concatenate if possible
+     **/
+    bool isConcatenationEnabled() const;
 
     /**
      * @brief Returns arguments that are specific to the given node by that remain the same throughout the render of the frame, even if multiple time/view

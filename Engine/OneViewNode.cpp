@@ -60,7 +60,6 @@ OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
     if (n) {
         ProjectPtr project = n->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
@@ -115,12 +114,13 @@ OneViewNode::initializeKnobs()
     _imp->viewKnob = viewKnob;
 }
 
-bool
+StatusEnum
 OneViewNode::isIdentity(TimeValue time,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
                         ViewIdx /*view*/,
-                        double* inputTime,
+                        const TreeRenderNodeArgsPtr& /*render*/,
+                        TimeValue* inputTime,
                         ViewIdx* inputView,
                         int* inputNb)
 {
@@ -131,15 +131,17 @@ OneViewNode::isIdentity(TimeValue time,
     *inputNb = 0;
     *inputTime = time;
 
-    return true;
+    return eStatusOK;
 }
 
-FramesNeededMap
+StatusEnum
 OneViewNode::getFramesNeeded(TimeValue time,
-                             ViewIdx /*view*/)
+                             ViewIdx /*view*/,
+                             const TreeRenderNodeArgsPtr& /*render*/,
+                             FramesNeededMap* ret)
 {
-    FramesNeededMap ret;
-    FrameRangesMap& rangeMap = ret[0];
+
+    FrameRangesMap& rangeMap = (*ret)[0];
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
     std::vector<RangeD>& ranges = rangeMap[ViewIdx(view_i)];
@@ -147,7 +149,7 @@ OneViewNode::getFramesNeeded(TimeValue time,
     ranges.resize(1);
     ranges[0].min = ranges[0].max = time;
 
-    return ret;
+    return eStatusOK;
 }
 
 void

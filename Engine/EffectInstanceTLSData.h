@@ -123,13 +123,6 @@ public:
     // getRegionsOfInterest on the renderwindow would compute.
     RectI renderWindowPixel;
 
-    // Input images that were pre-fetched in renderRoI so that they can
-    // be accessed from getImage(): this ensure that input images are not de-allocated until
-    // we don't need them anymore.
-    // As a general note, all expensive actions that may not be cached should always have a shared pointer
-    // on the TLS throughout the action to ensure at least we don't cycle through the graph with exponential cost.
-    InputImagesMap inputImages;
-
     // For each plane to render, the pointers to the internal images used during render: this is used when calling
     // clipGetImage on the output clip.
     std::map<ImageComponents, PlaneToRender> outputPlanes;
@@ -144,7 +137,6 @@ public:
         ret->canSetValue = canSetValue;
 #endif
         ret->renderWindowPixel = renderWindowPixel;
-        ret->inputImages = inputImages;
         ret->outputPlanes  = outputPlanes;
         return ret;
     }
@@ -180,7 +172,6 @@ public:
      **/
     void pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
                               const RectI& renderWindowPixel,
-                              const InputImagesMap& preRenderedInputImages,
                               const std::map<ImageComponents, PlaneToRender>& outputPlanes);
 
     /**
@@ -213,7 +204,6 @@ public:
      **/
     bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
                                     RectI* renderWindowPixel,
-                                    InputImagesMap* preRenderedInputImages,
                                     std::map<ImageComponents, PlaneToRender>* outputPlanes) const;
 
     /**
@@ -284,11 +274,10 @@ public:
     RenderActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
                                 TimeValue time, ViewIdx view, RenderScale& scale,
                                 const RectI& renderWindowPixel,
-                                const InputImagesMap& preRenderedInputImages,
                                 const std::map<ImageComponents, PlaneToRender>& outputPlanes)
     : tls(tls)
     {
-        tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, preRenderedInputImages, outputPlanes);
+        tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, outputPlanes);
     }
 
     ~RenderActionArgsSetter_RAII()

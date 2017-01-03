@@ -64,6 +64,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Format.h"
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
+#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxOverlayInteract.h"
@@ -1026,11 +1027,6 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-
-    ///Calling seek will force a re-render of the frame T so we wipe the overlay redraw needed counter
-    bool redrawNeeded = effect->checkIfOverlayRedrawNeeded();
-    Q_UNUSED(redrawNeeded);
-
     effect->getApp()->getTimeLine()->seekFrame( (int)t, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek );
 }
 
@@ -1041,7 +1037,7 @@ OfxImageEffectInstance::timeLineGetBounds(double &t1,
 {
     double first, last;
 
-    _ofxEffectInstance.lock()->getApp()->getFrameRange(&first, &last);
+    _ofxEffectInstance.lock()->getApp()->getProject()->getFrameRange(&first, &last);
     t1 = first;
     t2 = last;
 }
@@ -1050,7 +1046,11 @@ OfxImageEffectInstance::timeLineGetBounds(double &t1,
 int
 OfxImageEffectInstance::abort()
 {
-    return (int)getOfxEffectInstance()->aborted();
+    TreeRenderNodeArgsPtr currentRender = getOfxEffectInstance()->getCurrentRender_TLS();
+    if (!currentRender) {
+        return 0;
+    }
+    return (int)currentRender->isAborted();
 }
 
 OFX::Host::Memory::Instance*

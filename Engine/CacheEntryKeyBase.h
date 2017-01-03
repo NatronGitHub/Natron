@@ -124,7 +124,8 @@ public:
 
     ImageTileKey(U64 nodeFrameViewHashKey,
                  const std::string& layerChannel,
-                 const RenderScale& scale,
+                 const RenderScale& proxyScale,
+                 unsigned int mipMapLevel,
                  bool draftMode,
                  ImageBitDepthEnum bitdepth,
                  int tileX,
@@ -140,7 +141,9 @@ public:
 
     int getTileY() const;
 
-    RenderScale getScale() const;
+    RenderScale getProxyScale() const;
+
+    unsigned int getMipMapLevel() const;
 
     bool isDraftMode() const;
 

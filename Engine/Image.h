@@ -180,11 +180,17 @@ public:
         // Default - eImageBufferLayoutRGBAPackedFullRect
         ImageBufferLayoutEnum bufferFormat;
         
-        // The scale of the image: this is useful for an effect to know the scale of an image to determine
-        // if we can downscale or upscale it.
-        // 
+        // The scale of the image: This is the scale of the render: for a proxy render, this should be (1,1)
+        // and for a proxy render, the scale to convert from the full format to proxy format
+        //
         // Default - (1,1)
-        RenderScale scale;
+        RenderScale proxyScale;
+
+        // This is the mip map level of the image: it is a scale factor applied to the proxyScale.
+        // For a mipMapLevel of 0, the factor is 1, level 1=0.5, level 2= 0.25, etc...
+        //
+        // Default - 0
+        unsigned int mipMapLevel;
 
         // Is this image used to perform draft computations ? (i.e that were computed with low samples)
         // This is relevant only if the image is cached
@@ -206,7 +212,13 @@ public:
         //
         // Default - GL_TEXTURE_2D
         U32 textureTarget;
-        
+
+        // If set, the internal storage of the image will be set to this buffer instead of allocating a new one
+        // In this case, this is expected that the image is single tiled with bounds exactly covering the bounds
+        // of the memory buffer and storage, bitdepth etc... matching the provided buffer properties.
+        //
+        // Default - NULL
+        MemoryBufferedCacheEntryBasePtr externalBuffer;
 
         InitStorageArgs();
     };
@@ -247,7 +259,12 @@ public:
     /**
      * @brief Returns the scale of the image.
      **/
-    const RenderScale& getScale() const;
+    const RenderScale& getProxyScale() const;
+
+    /**
+     * @brief Return the mipmap level of the image
+     **/
+    unsigned int getMipMapLevel() const;
 
     /**
      * @brief Converts the mipmap level to a scale factor
@@ -359,6 +376,14 @@ public:
         //
         // Default - false
         bool skipDestinationTilesMarkedCached;
+
+        // If this image and the other image have the same number of components,
+        // same buffer layout, same bitdepth and same bounds
+        // by default the memory buffer pointers will be copied instead of all pixels.
+        // This can be turned off by setting this flag to true
+        //
+        // Default - false
+        bool forceCopyEvenIfBuffersHaveSameLayout;
 
         CopyPixelsArgs();
     };
@@ -491,6 +516,11 @@ public:
     };
 
     /**
+     * @brief For an image that is represented as an OpenGL texture, returns the associated texture.
+     **/
+    GLCacheEntryPtr getGLCacheEntry() const;
+
+    /**
      * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
      **/
     void getCPUTileData(const Tile& tile, CPUTileData* data) const;
@@ -512,6 +542,17 @@ public:
      * @brief Returns true if all tiles composing the image are cached
      **/
     bool isCached() const;
+
+    /**
+     * @brief Returns the cache access policy for this image
+     **/
+    CacheAccessModeEnum getCachePolicy() const;
+
+    /**
+     * @brief If this image has cache write access, push the tiles to the cache,
+     * making them available to other threads waiting for it (and waking them up).
+     **/
+    void pushTilesToCacheIfNotAborted();
 
     /**
      * @brief If this image is cached, this will return what portion of the image is left to render.

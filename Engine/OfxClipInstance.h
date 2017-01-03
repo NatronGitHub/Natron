@@ -263,12 +263,33 @@ public:
 private:
     EffectInstancePtr getEffectHolder() const;
 
-    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstancePtr associatedNode,
+    void getRegionOfDefinitionInternal(OfxTime time,
+                                       ViewIdx view,
+                                       const RenderScale& scale,
+                                       EffectInstancePtr associatedNode,
+                                       const TreeRenderNodeArgsPtr& associatedNodeRenderArgs,
                                        OfxRectD* rod) const;
 
-    bool getInputImageInternal(const OfxTime time, const ViewIdx view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
-    bool getOutputImageInternal(const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
-    bool getImagePlaneInternal(OfxTime time, ViewIdx view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
+    bool getInputImageInternal(const OfxTime time,
+                               const ViewIdx* view,
+                               const OfxRectD *optionalBounds,
+                               const std::string* ofxPlane,
+                               const ImageBitDepthEnum* textureDepth,
+                               OFX::Host::ImageEffect::Image** image,
+                               OFX::Host::ImageEffect::Texture** texture);
+
+    bool getOutputImageInternal(const std::string* ofxPlane,
+                                const ImageBitDepthEnum* textureDepth,
+                                OFX::Host::ImageEffect::Image** image,
+                                OFX::Host::ImageEffect::Texture** texture);
+
+    bool getImagePlaneInternal(OfxTime time,
+                               const ViewIdx* view,
+                               const OfxRectD *optionalBounds,
+                               const std::string* ofxPlane,
+                               const ImageBitDepthEnum* textureDepth,
+                               OFX::Host::ImageEffect::Image** image,
+                               OFX::Host::ImageEffect::Texture** texture);
 
 private:
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
@@ -279,10 +300,13 @@ class OfxImageCommon
 {
 public:
     explicit OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
-                            const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                            bool isSrcImage,
+                            const ImagePtr& internalImage,
+                            const RectD& rod,
+                            ImagePremultiplicationEnum premult,
+                            ImageFieldingOrderEnum fielding,
+                            U64 nodeFrameViewHash,
                             const RectI& renderWindow,
-                            const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                            const Distorsion2DStackPtr& distorsion,
                             const std::string& components,
                             int nComps,
                             double par);
@@ -302,15 +326,18 @@ class OfxImage
       , public OfxImageCommon
 {
 public:
-    explicit OfxImage( const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                       bool isSrcImage,
-                       const RectI& renderWindow,
-                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                       const std::string& components,
-                       int nComps,
+    explicit OfxImage(const ImagePtr& internalImage,
+                      const RectD& rod,
+                      ImagePremultiplicationEnum premult,
+                      ImageFieldingOrderEnum fielding,
+                      U64 nodeFrameViewHash,
+                      const RectI& renderWindow,
+                      const Distorsion2DStackPtr& distorsion,
+                      const std::string& components,
+                      int nComps,
                       double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(this, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(this, internalImage, rod,  premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
     {
     }
 };
@@ -320,15 +347,18 @@ class OfxTexture
       , public OfxImageCommon
 {
 public:
-    explicit OfxTexture( const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                         bool isSrcImage,
-                         const RectI& renderWindow,
-                         const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                         const std::string& components,
-                         int nComps,
+    explicit OfxTexture(const ImagePtr& internalImage,
+                        const RectD& rod,
+                        ImagePremultiplicationEnum premult,
+                        ImageFieldingOrderEnum fielding,
+                        U64 nodeFrameViewHash,
+                        const RectI& renderWindow,
+                        const Distorsion2DStackPtr& distorsion,
+                        const std::string& components,
+                        int nComps,
                         double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(this, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(this, internalImage, rod, premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
     {
     }
 };

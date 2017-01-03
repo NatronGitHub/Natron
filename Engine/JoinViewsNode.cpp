@@ -124,12 +124,13 @@ JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-bool
+StatusEnum
 JoinViewsNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,
-                          double* inputTime,
+                          const TreeRenderNodeArgsPtr& render,
+                          TimeValue* inputTime,
                           ViewIdx* inputView,
                           int* inputNb)
 {
@@ -137,7 +138,7 @@ JoinViewsNode::isIdentity(TimeValue time,
     *inputNb = getMaxInputCount() - 1 - view.value();
     *inputView = view;
 
-    return true;
+    return eStatusOK;
 }
 
 void

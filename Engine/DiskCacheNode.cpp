@@ -31,6 +31,7 @@
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
@@ -102,6 +103,7 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
                                  ViewIdx /*view*/,
                                  int /*visitsCount*/) const
 {
+    // The disk cache node always caches.
     return true;
 }
 
@@ -202,7 +204,7 @@ DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
 
     switch (idx) {
     case 0: {
-        EffectInstancePtr input = getInput(render, 0);
+        EffectInstancePtr input = getInput(0);
         if (input) {
             TreeRenderNodeArgsPtr inputRender;
             if (render) {
@@ -238,52 +240,37 @@ DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
 StatusEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
-    assert(args.outputPlanes.size() == 1);
-
-    EffectInstancePtr input = getInput(args.render,0);
-    if (!input) {
-        return eStatusFailed;
-    }
-
-
-    const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
+    // fetch source images and copy them
 
     for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
-        RectI roiPixel;
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
-        if (!srcImg) {
+        std::list<ImageComponents> layersToFetch;
+        layersToFetch.push_back(it->first);
+
+        GetImageInArgs inArgs;
+        inArgs.inputNb = 0;
+        inArgs.inputTime = args.time;
+        inArgs.inputView = args.view;
+        inArgs.currentTime = args.time;
+        inArgs.currentView = args.view;
+        inArgs.currentScale = args.renderScale;
+        inArgs.layers = &layersToFetch;
+        inArgs.renderBackend = &args.backendType;
+        GetImageOutArgs outArgs;
+        if (!getImagePlanes(inArgs, &outArgs)) {
+            setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
             return eStatusFailed;
         }
-        if ( srcImg->getMipMapLevel() != output.second->getMipMapLevel() ) {
-            throw std::runtime_error("Host gave image with wrong scale");
-        }
-        if ( ( srcImg->getComponents() != output.second->getComponents() ) || ( srcImg->getBitDepth() != output.second->getBitDepth() ) ) {
-            srcImg->convertToFormat( args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                     getApp()->getDefaultColorSpaceForBitDepth( output.second->getBitDepth() ), 3, true, false, output.second.get() );
-        } else {
-            output.second->pasteFrom( *srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap() );
-        }
+
+        ImagePtr inputImage = outArgs.imagePlanes.begin()->second;
+
+        Image::CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = args.roi;
+        it->second->copyPixels(*inputImage, cpyArgs);
     }
-
-    return eStatusOK;
-}
-
-StatusEnum
-DiskCacheNode::isIdentity(TimeValue time,
-                          const RenderScale & /*scale*/,
-                          const RectI & /*renderWindow*/,
-                          ViewIdx view,
-                          TimeValue* inputTime,
-                          ViewIdx* inputView,
-                          int* inputNb)
-{
-
-    *inputNb = 0;
-    *inputTime = time;
-    *inputView = view;
     return eStatusOK;
 
-}
+} // render
+
 
 bool
 DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,

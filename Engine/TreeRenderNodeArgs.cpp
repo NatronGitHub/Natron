@@ -82,6 +82,41 @@ FrameView_compare_less::operator() (const FrameViewPair & lhs,
     }
 }
 
+struct PreRenderedDataKey
+{
+    TimeValue time;
+    ViewIdx view;
+    int inputNb;
+};
+
+struct PreRenderedDataKey_Compare
+{
+    bool operator() (const PreRenderedDataKey& lhs, const PreRenderedDataKey& rhs) const
+    {
+        if (lhs.inputNb < rhs.inputNb) {
+            return true;
+        } else if (lhs.inputNb > rhs.inputNb) {
+            return false;
+        } else {
+            if (lhs.time < rhs.time) {
+                return true;
+            } else if (lhs.time > rhs.time) {
+                return false;
+            } else {
+                return lhs.view < rhs.view;
+            }
+        }
+    }
+};
+
+struct PreRenderedDataStuff
+{
+    std::map<ImageComponents, ImagePtr> planes;
+    Distorsion2DStackPtr distorsion;
+};
+
+typedef std::map<PreRenderedDataKey, PreRenderedDataStuff, PreRenderedDataKey_Compare> PreRenderedDataMap;
+
 struct FrameViewRequestPrivate
 {
     // Protects all data members;
@@ -96,7 +131,11 @@ struct FrameViewRequestPrivate
     // The required frame/views in input, set on first request
     GetFramesNeededResultsPtr frameViewsNeeded;
 
+    // The hash for this frame view
     U64 frameViewHash;
+
+    // The pre-rendered input images
+    PreRenderedDataMap inputImages;
 
     // The RoD of the effect at this frame/view
     GetRegionOfDefinitionResultsPtr rod;
@@ -123,6 +162,7 @@ struct FrameViewRequestPrivate
     , requesters()
     , frameViewsNeeded()
     , frameViewHash(0)
+    , inputImages()
     , rod()
     , identityData()
     , neededComps()
@@ -148,6 +188,109 @@ FrameViewRequest::~FrameViewRequest()
 {
 
 }
+
+void
+FrameViewRequest::appendPreRenderedInputs(int inputNb,
+                                          TimeValue time,
+                                          ViewIdx view,
+                                          const std::map<ImageComponents, ImagePtr>& planes,
+                                          const Distorsion2DStackPtr& distorsionStack)
+{
+    QMutexLocker k(&_imp->lock);
+
+    PreRenderedDataKey key;
+    key.time = time;
+    key.view = view;
+    key.inputNb = inputNb;
+
+    PreRenderedDataStuff& data = _imp->inputImages[key];
+    data.distorsion = distorsionStack;
+
+    for (std::map<ImageComponents, ImagePtr>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
+        bool isColorPlane = it->first.isColorPlane();
+
+        std::map<ImageComponents, ImagePtr>::iterator foundImage = data.planes.end();
+        for (std::map<ImageComponents, ImagePtr>::iterator it2 = data.planes.begin(); it2 != data.planes.end(); ++it2) {
+            if (it2->first.isColorPlane() && isColorPlane) {
+                foundImage = it2;
+                break;
+            } else if (it->first == it2->first) {
+                foundImage = it2;
+                break;
+            }
+        }
+        // If we already have a pre-rendered corresponding image, replace it only if the new image
+        // is at least equal in bounds or greater
+        if (foundImage != data.planes.end()) {
+            if (it->second->getBounds().contains(foundImage->second->getBounds())) {
+                foundImage->second = it->second;
+            }
+        } else {
+            data.planes.insert(*it);
+        }
+    }
+} // appendPreRenderedInputs
+
+
+
+void
+FrameViewRequest::getPreRenderedInputs(int inputNb,
+                                       TimeValue time,
+                                       ViewIdx view,
+                                       const RectI& roi,
+                                       const std::list<ImageComponents>& layers,
+                                       std::map<ImageComponents, ImagePtr>* planes,
+                                       std::list<ImageComponents>* planesLeftToRendered,
+                                       Distorsion2DStackPtr* distorsionStack) const
+{
+    QMutexLocker k(&_imp->lock);
+    PreRenderedDataKey key;
+    key.time = time;
+    key.view = view;
+    key.inputNb = inputNb;
+
+    PreRenderedDataMap::const_iterator foundData = _imp->inputImages.find(key);
+    if (foundData == _imp->inputImages.end()) {
+        return;
+    }
+
+    for (std::list<ImageComponents>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+
+        bool isColorPlane = it->isColorPlane();
+
+        std::map<ImageComponents, ImagePtr>::const_iterator foundImage = foundData->second.planes.end();
+        for (std::map<ImageComponents, ImagePtr>::const_iterator it2 = foundData->second.planes.begin(); it2 != foundData->second.planes.end(); ++it2) {
+            if (it2->first.isColorPlane() && isColorPlane) {
+                foundImage = it2;
+                break;
+            } else if (*it == it2->first) {
+                foundImage = it2;
+                break;
+            }
+        }
+        if (foundImage != foundData->second.planes.end()) {
+            if (foundImage->second->getBounds().contains(roi)) {
+                planes->insert(*foundImage);
+            }
+        } else {
+            planesLeftToRendered->push_back(*it);
+        }
+    }
+
+    if (foundData->second.distorsion) {
+        *distorsionStack = foundData->second.distorsion;
+    }
+
+} // getPreRenderedInputs
+
+
+void
+FrameViewRequest::clearPreRenderedInputs()
+{
+
+    QMutexLocker k(&_imp->lock);
+    _imp->inputImages.clear();
+} // clearPreRenderedInputs
 
 RectD
 FrameViewRequest::getCurrentRoI() const
@@ -301,38 +444,30 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb,
     if (channelForMask) {
         *channelForMask = -1;
     }
-    bool inputIsMask = isInputMask(inputNb);
+    if (isInputMask(inputNb)) {
 
-    // If the mask is disabled, don't even bother
-    if ( inputIsMask && !isMaskEnabled(inputNb) ) {
-        return EffectInstancePtr();
+        // If the mask is disabled, don't even bother
+        if (!isMaskEnabled(inputNb) ) {
+            return EffectInstancePtr();
+        }
+
+        ImageComponents maskComps;
+        int channelForAlphaInput = getNode()->getMaskChannel(inputNb, &maskComps);
+
+        if (channelForMask) {
+            *channelForMask = channelForAlphaInput;
+        }
+
+        // No mask or no layer selected for the mask
+        if ((channelForAlphaInput == -1) || (maskComps.getNumComponents() == 0)) {
+            return EffectInstancePtr();
+        }
+
     }
 
-    ImageComponents maskComps;
-    NodePtr maskInput;
-    int channelForAlphaInput = getMaskChannel(inputNb, &maskComps, &maskInput);
+    return getInput(inputNb);
 
-    if (channelForMask) {
-        *channelForMask = channelForAlphaInput;
-    }
-
-    // No mask or no layer selected for the mask
-    if ( inputIsMask && ( (channelForAlphaInput == -1) || (maskComps.getNumComponents() == 0) ) ) {
-        return EffectInstancePtr();
-    }
-
-
-    EffectInstancePtr inputEffect;
-    inputEffect = getInput(inputNb);
-    
-
-    // Redirect the mask input
-    if (maskInput) {
-        inputEffect = maskInput->getEffectInstance();
-    }
-
-    return inputEffect;
-}
+} // resolveInputEffectForFrameNeeded
 
 
 struct TreeRenderNodeArgsPrivate
@@ -905,15 +1040,15 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
 
 struct PreRenderFrame
 {
-    EffectInstancePtr caller;
-    boost::shared_ptr<EffectInstance::GetImageInArgs> renderArgs;
+    EffectInstancePtr inputNode;
+    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
 };
 
 struct PreRenderResult
 {
-    EffectInstance::GetImageOutArgs results;
-    int inputNb;
-    StatusEnum stat;
+    EffectInstance::RenderRoIResults results;
+    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+    RenderRoIRetCode stat;
 };
 
 static
@@ -921,21 +1056,25 @@ PreRenderResult
 preRenderFrameFunctor(const PreRenderFrame& args)
 {
     // Notify the node that we're going to render something with the input
-    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(args.caller->getNode().get(), args.renderArgs->inputNb);
+    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(args.renderArgs->caller->getNode().get(), args.renderArgs->inputNbInCaller);
 
     PreRenderResult results;
-    results.inputNb = args.renderArgs->inputNb;
-    bool ok = args.caller->getImagePlanes(*args.renderArgs, &results.results);
-    results.stat = ok ? eStatusOK : eStatusFailed;
+    results.renderArgs = args.renderArgs;
+
+    // Call renderRoI on the input: not that in output the planes may not be used directly by the caller effect:
+    // The image backend may not be the backend used by this image, or the memory layout (coplanar, RGBA packed etc..)
+    // or the components may not be expected by the caller effect.
+    // We keep the unmapped input image pointer around so that the image does not get destroyed (if it is no longer cached).
+    //
+    // The mapping of the image to a format appropriate for the caller effect is done in EffectInstance::getImagePlanes
+    results.stat = args.inputNode->renderRoI(*args.renderArgs, &results.results);
     return results;
 }
 
 RenderRoIRetCode
 TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
                                          ViewIdx view,
-                                         const RenderScale& scale,
-                                         const std::map<int, std::list<ImageComponents> >& neededInputLayers,
-                                         InputImagesMap* inputImages)
+                                         const std::map<int, std::list<ImageComponents> >& neededInputLayers)
 {
     // For all frames/views needed, recurse on inputs with the appropriate RoI
 
@@ -955,6 +1094,8 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
         }
         results->getFramesNeeded(&framesNeeded);
     }
+
+    const RenderScale& renderCombinedScale = getParentRender()->getProxyMipMapScale();
 
     std::vector<PreRenderFrame> preRenderFrames;
 
@@ -982,6 +1123,9 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
         if (foundCompsNeeded->second.empty()) {
             continue;
         }
+
+        double inputPar = inputEffect->getAspectRatio(inputRenderArgs, -1);
+        bool inputIsContinuous = inputEffect->canRenderContinuously(inputRenderArgs);
 
         {
 
@@ -1011,20 +1155,38 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
                             break;
                         }
 
+                        TimeValue inputTime(f);
                         {
-                            boost::shared_ptr<EffectInstance::GetImageInArgs> renderArgs;
-                            renderArgs.reset( new EffectInstance::GetImageInArgs);
+                            int roundedInputTime = std::floor(f + 0.5);
+                            if (roundedInputTime != inputTime && !inputIsContinuous) {
+                                inputTime = TimeValue(roundedInputTime);
+                            }
+                        }
 
+                        // Use the final roi (merged from all branches leading to that node) for that frame/view pair
+                        RectD roi;
+                        inputRenderArgs->getFrameViewCanonicalRoI(inputTime, viewIt->first, &roi);
 
-                            renderArgs->time = TimeValue(f);
+                        if (roi.isNull()) {
+                            continue;
+                        }
+
+                        RectI inputRoIPixelCoords;
+                        roi.toPixelEnclosing(renderCombinedScale, inputPar, &inputRoIPixelCoords);
+
+                        {
+                            boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
+                            renderArgs.reset( new EffectInstance::RenderRoIArgs);
+
+                            renderArgs->time = inputTime;
                             renderArgs->view = viewIt->first;
-                            renderArgs->scale = scale;
-                            renderArgs->layers = &foundCompsNeeded->second;
-                            renderArgs->inputNb = inputNb;
+                            renderArgs->roi =  inputRoIPixelCoords;
+                            renderArgs->components = foundCompsNeeded->second;
+                            renderArgs->caller = effect;
+                            renderArgs->inputNbInCaller = inputNb;
                             renderArgs->renderArgs = renderArgs;
 
                             PreRenderFrame preRender;
-                            preRender.caller = effect;
                             preRender.renderArgs = renderArgs;
                             preRenderFrames.push_back(preRender);
                         }
@@ -1075,30 +1237,24 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
         return eRenderRoIRetCodeAborted;
     }
 
+    // Append the pre-rendered input images to the frame view request.
+
+    FrameViewRequestPtr thisFrameViewRequest = getFrameViewRequest(time, view);
+
     for (std::vector<PreRenderResult>::const_iterator it = allResults.begin(); it != allResults.end(); ++it) {
 
         // If a pre-render failed, fail all the render
-        if (it->stat != eStatusOK) {
-            if (isAborted()) {
-                return eRenderRoIRetCodeAborted;
-            }
-            return eRenderRoIRetCodeFailed;
+        if (it->stat != eRenderRoIRetCodeOk) {
+            return it->stat;
         }
 
-        ImageList* inputImagesList = 0;
-        // We may not have pre-rendered any input images for this input, make sure we at least have an empty list.
-        InputImagesMap::iterator foundInputImages = inputImages->find(it->inputNb);
-        if ( foundInputImages == inputImages->end() ) {
-            std::pair<InputImagesMap::iterator, bool> ret = inputImages->insert( std::make_pair( it->inputNb, ImageList() ) );
-            inputImagesList = &ret.first->second;
-            assert(ret.second);
-        }
-
-        for (std::map<ImageComponents, ImagePtr>::const_iterator it2 = it->results.imagePlanes.begin(); it2 != it->results.imagePlanes.end(); ++it2) {
-            if (inputImagesList && it2->second) {
-                inputImagesList->push_back(it2->second);
-            }
-        }
+        // Hold a pointer to the rendered results until this effect render is finished: subsequent calls to getImagePlanes for this frame/view
+        // should return these pointers immediately.
+        thisFrameViewRequest->appendPreRenderedInputs(it->renderArgs->inputNbInCaller,
+                                                      it->renderArgs->time,
+                                                      it->renderArgs->view,
+                                                      it->results.outputPlanes,
+                                                      it->results.distorsionStack);
 
     }
 

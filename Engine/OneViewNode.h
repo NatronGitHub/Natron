@@ -109,12 +109,13 @@ public Q_SLOTS:
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(TimeValue time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isIdentity(TimeValue time,
+    virtual StatusEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual StatusEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            double* inputTime,
+                            const TreeRenderNodeArgsPtr& render,
+                            TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<OneViewNodePrivate> _imp;

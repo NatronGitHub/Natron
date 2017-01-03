@@ -132,7 +132,7 @@ private:
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
                                            ViewIdx view,
-                                           bool isOpenGLRender,
+                                           RenderBackendTypeEnum backend,
                                            const EffectOpenGLContextDataPtr& glContextData,
                                            const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
@@ -144,7 +144,7 @@ private:
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
                                          ViewIdx view,
-                                         bool isOpenGLRender,
+                                         RenderBackendTypeEnum backend,
                                          const EffectOpenGLContextDataPtr& glContextData,
                                          const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

@@ -95,11 +95,12 @@ public Q_SLOTS:
 private:
 
 
-    virtual bool isIdentity(TimeValue time,
+    virtual StatusEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            double* inputTime,
+                            const TreeRenderNodeArgsPtr& render,
+                            TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<JoinViewsNodePrivate> _imp;

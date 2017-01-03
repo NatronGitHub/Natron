@@ -64,14 +64,43 @@ Image::~Image()
             cpyArgs.roi = _imp->mirrorImageRoI;
             _imp->mirrorImage->copyPixels(*this, cpyArgs);
         }
+    }
 
+    // If this image is the last image holding a pointer to memory buffers, ensure these buffers
+    // gets deallocated in a specific thread and not a render thread
+    std::list<CacheEntryBasePtr> toDeleteInDeleterThread;
+    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        for (std::size_t c = 0;  c < _imp->tiles[i].perChannelTile.size(); ++c) {
+            toDeleteInDeleterThread.push_back(_imp->tiles[i].perChannelTile[c].buffer);
+        }
+    }
+
+    _imp->tiles.clear();
+    
+    if (!toDeleteInDeleterThread.empty()) {
+        appPTR->deleteCacheEntriesInSeparateThread(toDeleteInDeleterThread);
+    }
+
+}
+
+void
+Image::pushTilesToCacheIfNotAborted()
+{
+    QMutexLocker k(&_imp->tilesInsertedInCacheMutex);
+    if (_imp->tilesInsertedInCache) {
+        return;
+    }
+    
+    _imp->tilesInsertedInCache = true;
+
+    // Only push data to the cache if we are not aborted.
+    if (!_imp->renderArgs || !_imp->renderArgs->isAborted()) {
         // Push tiles to cache if needed
         if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
             _imp->cachePolicy == eCacheAccessModeWriteOnly) {
             _imp->insertTilesInCache();
         }
     }
-
 }
 
 Image::InitStorageArgs::InitStorageArgs()
@@ -82,7 +111,8 @@ Image::InitStorageArgs::InitStorageArgs()
 , components()
 , cachePolicy(eCacheAccessModeNone)
 , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
-, scale(1.)
+, proxyScale(1.)
+, mipMapLevel(0)
 , isDraft(false)
 , nodeHashKey(0)
 , glContext()
@@ -91,6 +121,66 @@ Image::InitStorageArgs::InitStorageArgs()
     // By default make all channels
     components[0] = components[1] = components[2] = components[3] = 1;
 }
+
+void
+ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
+{
+    assert(args.externalBuffer);
+
+    if (tiles.size() != 1) {
+        // When providing an external buffer, there must be a single tile!
+        throw std::bad_alloc();
+    }
+    if (args.bitdepth != args.externalBuffer->getBitDepth()) {
+        // When providing an external buffer, the bitdepth must be the same as the requested depth
+        throw std::bad_alloc();
+    }
+
+    tiles[0].perChannelTile.resize(1);
+    tiles[0].tileBounds = args.bounds;
+
+    Image::MonoChannelTile& perChannelTile = tiles[0].perChannelTile[0];
+
+    GLCacheEntryPtr isGLBuffer = toGLCacheEntry(args.externalBuffer);
+    MemoryMappedCacheEntryPtr isMMAPBuffer = toMemoryMappedCacheEntry(args.externalBuffer);
+    RAMCacheEntryPtr isRAMBuffer = toRAMCacheEntry(args.externalBuffer);
+    if (isGLBuffer) {
+        if (args.storage != eStorageModeGLTex) {
+            throw std::bad_alloc();
+        }
+        if (isGLBuffer->getBounds() != args.bounds) {
+            throw std::bad_alloc();
+        }
+        perChannelTile.buffer = isGLBuffer;
+    } else if(isMMAPBuffer) {
+        if (args.storage != eStorageModeDisk) {
+            throw std::bad_alloc();
+        }
+        if (isMMAPBuffer->getBounds() != args.bounds) {
+            throw std::bad_alloc();
+        }
+        // Mmap tiles are mono channel
+        if (args.layer.getNumComponents() != 1) {
+            throw std::bad_alloc();
+        }
+        perChannelTile.buffer = isMMAPBuffer;
+    } else if (isRAMBuffer) {
+        if (args.storage != eStorageModeRAM) {
+            throw std::bad_alloc();
+        }
+        if (isRAMBuffer->getBounds() != args.bounds) {
+            throw std::bad_alloc();
+        }
+        if (isRAMBuffer->getNumComponents() != (std::size_t)args.layer.getNumComponents()) {
+            throw std::bad_alloc();
+        }
+        perChannelTile.buffer = isRAMBuffer;
+    } else {
+        // Unrecognized storage
+        throw std::bad_alloc();
+    }
+
+} // initFromExternalBuffer
 
 void
 Image::initializeStorage(const Image::InitStorageArgs& args)
@@ -109,11 +199,19 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
         throw std::bad_alloc();
     }
 
+    RenderScale proxyPlusMipMapScale = args.proxyScale;
+    {
+        double mipMapScale = getScaleFromMipMapLevel(args.mipMapLevel);
+        proxyPlusMipMapScale.x *= mipMapScale;
+        proxyPlusMipMapScale.y *= mipMapScale;
+    }
+
     _imp->bounds = args.bounds;
     _imp->cachePolicy = args.cachePolicy;
     _imp->bufferFormat = args.bufferFormat;
     _imp->layer = args.layer;
-    _imp->scale = args.scale;
+    _imp->proxyScale = args.proxyScale;
+    _imp->mipMapLevel = args.mipMapLevel;
     _imp->mirrorImage = args.mirrorImage;
     _imp->mirrorImageRoI = args.mirrorImageRoI;
     _imp->renderArgs = args.renderArgs;
@@ -133,7 +231,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
         throw std::bad_alloc();
     }
 
-    // MMAP storage only support mono channel tiles.
+    // MMAP storage only supports mono channel tiles.
     assert(args.storage != eStorageModeDisk || args.bufferFormat == eImageBufferLayoutMonoChannelTiled);
     if (args.storage == eStorageModeDisk && args.bufferFormat != eImageBufferLayoutMonoChannelTiled) {
         throw std::bad_alloc();
@@ -169,6 +267,11 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     assert(nTiles > 0);
 
     _imp->tiles.resize(nTiles);
+
+    if (args.externalBuffer) {
+        _imp->initFromExternalBuffer(args);
+        return;
+    } // args.externalBuffer
 
     // Initialize each tile
     int tx = 0, ty = 0;
@@ -238,7 +341,8 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             // Make-up the key for this tile 
             ImageTileKeyPtr key(new ImageTileKey(args.nodeHashKey,
                                                  channelName,
-                                                 args.scale,
+                                                 args.proxyScale,
+                                                 args.mipMapLevel,
                                                  args.isDraft,
                                                  args.bitdepth,
                                                  tx,
@@ -267,22 +371,25 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             bool isCached = false;
             if (args.cachePolicy == eCacheAccessModeReadWrite || args.cachePolicy == eCacheAccessModeWriteOnly) {
 
-                const bool supportsFetchingHigherScaleTiles = (args.storage == eStorageModeDisk || args.storage == eStorageModeRAM);
 
-#pragma message WARN("Full-scale images are assumed to have a render scale of 1 here.")
-                const RenderScale fullScale = RenderScale(1.);
 
-                // This is the default cache lookup scale: for OpenGL textures, always assume them at scale 1
+                // First look for a tile at the proxy + mipmap scale, if not found look for a tile at proxy scale and downscale it.
+                // This is the default cache lookup scale: for OpenGL textures, always assume them at full proxy scale
                 // since downscaling is handled by OpenGL itself
-                const RenderScale defaultScale = args.storage == eStorageModeGLTex ? fullScale : args.scale;
+                int nMipMapLookups;
+                unsigned firstLookupLevel;
+                if (args.storage != eStorageModeRAM && args.storage != eStorageModeDisk) {
+                    nMipMapLookups = 1;
+                    firstLookupLevel = 0;
+                } else {
+                    nMipMapLookups = (args.mipMapLevel != 0) ? 2 : 1;
+                    firstLookupLevel = args.mipMapLevel;
+                }
 
-                // First look for a tile at the given scale, if not found look for a tile at scale 1 and downscale it.
-                const int nScaleLookups = (defaultScale.x < fullScale.x || defaultScale.y < fullScale.y) && supportsFetchingHigherScaleTiles ? 2 : 1;
+                for (int mipmap_i = 0; mipmap_i < nMipMapLookups; ++mipmap_i) {
 
-                for (int scale_i = 0; scale_i < nScaleLookups; ++scale_i) {
-
-                    const RenderScale lookupScale = scale_i == 0 ? defaultScale : fullScale;
-
+                    const unsigned int lookupLevel = mipmap_i == 0 ? firstLookupLevel : 0;
+                    
                     // Only look for a draft tile in the cache if the image allows draft
                     const int nDraftLookups = args.isDraft ? 2 : 1;
 
@@ -292,7 +399,8 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
 
                         ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeHashKey,
                                                                         channelName,
-                                                                        lookupScale,
+                                                                        args.proxyScale,
+                                                                        lookupLevel,
                                                                         useDraft,
                                                                         args.bitdepth,
                                                                         tx,
@@ -317,9 +425,39 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                     }
                     if (isCached) {
 
-                        // If the image fetched is at a upper scale, we must downscale
-                        if (supportsFetchingHigherScaleTiles && (args.scale.x != lookupScale.x || args.scale.y != lookupScale.y)) {
-#pragma message WARN("downscale cached tile here")
+                        if (args.storage == eStorageModeRAM || args.storage == eStorageModeDisk) {
+                            // If the image fetched is at a upper scale, we must downscale
+                            if (lookupLevel != firstLookupLevel) {
+                                assert(firstLookupLevel > lookupLevel);
+
+                                const unsigned int downscaleLevels = firstLookupLevel - lookupLevel;
+
+                                // Make a new view of this tile with a format that downscaleMipMap understands
+                                // The copy will not actually copy the pixels, just the buffer memory pointer
+                                ImagePtr fullScaleImage;
+                                {
+                                    InitStorageArgs tmpArgs;
+                                    tmpArgs.bounds = tile.tileBounds;
+                                    tmpArgs.renderArgs = _imp->renderArgs;
+                                    tmpArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+                                    tmpArgs.layer = channelIndices.size() > 1 ? ImageComponents::getAlphaComponents() : _imp->layer;
+                                    tmpArgs.bitdepth = args.bitdepth;
+                                    tmpArgs.proxyScale = args.proxyScale;
+                                    tmpArgs.mipMapLevel = args.mipMapLevel;
+                                    tmpArgs.externalBuffer = thisChannelTile.buffer;
+                                    fullScaleImage = Image::create(args);
+                                }
+
+                                ImagePtr downscaledImage = fullScaleImage->downscaleMipMap(tile.tileBounds, downscaleLevels);
+
+                                assert(downscaledImage->_imp->tiles.size() == 1);
+                                assert(downscaledImage->_imp->tiles[0].perChannelTile.size() == 1);
+
+                                // Since we downscaled a single tile of the same size and same number of components and same bitdepth
+                                // as this tile, we can just copy the pointer
+                                thisChannelTile.buffer = downscaledImage->_imp->tiles[0].perChannelTile[0].buffer;
+
+                            } // must downscale
                         }
                         break;
                     }
@@ -409,6 +547,7 @@ Image::CopyPixelsArgs::CopyPixelsArgs()
 , dstColorspace(eViewerColorSpaceLinear)
 , unPremultIfNeeded(false)
 , skipDestinationTilesMarkedCached(false)
+, forceCopyEvenIfBuffersHaveSameLayout(false)
 {
 
 }
@@ -430,6 +569,54 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
     if (!_imp->bounds.intersect(args.roi, &roi)) {
         return;
     }
+
+
+    // Optimize: try to just copy the memory buffer pointers instead of copying the memory itself
+    if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->bounds) {
+
+        bool copyPointers = true;
+        if (_imp->tiles.size() != other._imp->tiles.size()) {
+            copyPointers = false;
+        }
+        if (copyPointers) {
+            StorageModeEnum thisStorage = getStorageMode();
+            StorageModeEnum otherStorage = other.getStorageMode();
+            if ((thisStorage == eStorageModeGLTex || otherStorage == eStorageModeGLTex)) {
+                copyPointers = false;
+            }
+        }
+        if (copyPointers && _imp->bounds != other._imp->bounds) {
+            copyPointers = false;
+        }
+        if (copyPointers && getBitDepth() != other.getBitDepth()) {
+            copyPointers = false;
+        }
+        if (copyPointers && _imp->tiles[0].perChannelTile.size() != other._imp->tiles[0].perChannelTile.size()) {
+            copyPointers = false;
+        }
+        if (copyPointers && _imp->layer.getNumComponents() != other._imp->layer.getNumComponents()) {
+            copyPointers = false;
+        }
+        // Only support copying buffers with different layouts if they have 1 component only
+        if (copyPointers) {
+            ImageBufferLayoutEnum thisLayout = _imp->bufferFormat;
+            ImageBufferLayoutEnum otherFormat = other._imp->bufferFormat;
+            if (thisLayout != otherFormat && _imp->layer.getNumComponents() != 1) {
+                copyPointers = false;
+            }
+        }
+
+        if (copyPointers) {
+            assert(_imp->tiles.size() == other._imp->tiles.size());
+            for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+                assert(_imp->tiles[i].perChannelTile.size() == other._imp->tiles[i].perChannelTile.size());
+                for (std::size_t c = 0; c < _imp->tiles[c].perChannelTile.size(); ++c) {
+                    _imp->tiles[i].perChannelTile[c].buffer = other._imp->tiles[i].perChannelTile[c].buffer;
+                }
+            }
+        }
+
+    } // !args.forceCopyEvenIfBuffersHaveSameLayout
 
     ImagePtr tmpImage = ImagePrivate::checkIfCopyToTempImageIsNeeded(other, *this, roi);
 
@@ -482,9 +669,15 @@ Image::getBounds() const
 }
 
 const RenderScale&
-Image::getScale() const
+Image::getProxyScale() const
 {
-    return _imp->scale;
+    return _imp->proxyScale;
+}
+
+unsigned int
+Image::getMipMapLevel() const
+{
+    return _imp->mipMapLevel;
 }
 
 
@@ -527,6 +720,19 @@ Image::getBitDepth() const
     }
     assert(!_imp->tiles[0].perChannelTile.empty() && _imp->tiles[0].perChannelTile[0].buffer);
     return _imp->tiles[0].perChannelTile[0].buffer->getBitDepth();
+}
+
+GLCacheEntryPtr
+Image::getGLCacheEntry() const
+{
+    if (_imp->tiles.empty()) {
+        return GLCacheEntryPtr();
+    }
+    if (_imp->tiles[0].perChannelTile.empty()) {
+        return GLCacheEntryPtr();
+    }
+    GLCacheEntryPtr isGLEntry = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+    return isGLEntry;
 }
 
 void
@@ -610,6 +816,12 @@ Image::isCached() const
         }
     }
     return true;
+}
+
+CacheAccessModeEnum
+Image::getCachePolicy() const
+{
+    return _imp->cachePolicy;
 }
 
 std::list<RectI>
@@ -925,9 +1137,8 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         args.renderArgs = _imp->renderArgs;
         args.layer = previousLevelImage->_imp->layer;
         args.bitdepth = previousLevelImage->getBitDepth();
-        const RenderScale& previousScale = previousLevelImage->getScale();
-        args.scale.x = previousScale.x;
-        args.scale.y = previousScale.y;
+        args.proxyScale = previousLevelImage->getProxyScale();
+        args.mipMapLevel = previousLevelImage->getMipMapLevel();
         ImagePtr tmpImg = Image::create(args);
 
         CopyPixelsArgs cpyArgs;
@@ -951,9 +1162,8 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
             args.renderArgs = _imp->renderArgs;
             args.layer = previousLevelImage->_imp->layer;
             args.bitdepth = previousLevelImage->getBitDepth();
-            const RenderScale& previousScale = previousLevelImage->getScale();
-            args.scale.x = previousScale.x / 2.;
-            args.scale.y = previousScale.y / 2.;
+            args.proxyScale = previousLevelImage->getProxyScale();
+            args.mipMapLevel = previousLevelImage->getMipMapLevel() + 1;
             mipmapImage = Image::create(args);
         }
 

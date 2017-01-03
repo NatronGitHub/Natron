@@ -67,13 +67,18 @@ Distorsion2DStack::pushDistorsion(const DistorsionFunction2DPtr& distorsion)
     }
 }
 
+const std::list<DistorsionFunction2DPtr>&
+Distorsion2DStack::getStack() const
+{
+    return _imp->stack;
+}
 
 
 void
-Distorsion2DStack::applyDistorsionStack(double distortedX, double distortedY, const Distorsion2DStackPtr& stack, double* undistortedX, double* undistortedY)
+Distorsion2DStack::applyDistorsionStack(double distortedX, double distortedY, const Distorsion2DStack& stack, double* undistortedX, double* undistortedY)
 {
     Transform::Point3D p(distortedX, distortedY, 1.);
-    for (std::list<DistorsionFunction2DPtr>::const_iterator it = stack->_imp->stack.begin(); it != stack->_imp->stack.end(); ++it) {
+    for (std::list<DistorsionFunction2DPtr>::const_iterator it = stack._imp->stack.begin(); it != stack._imp->stack.end(); ++it) {
         // If there's a matrix, apply, otherwise call the distorsion function
         if ((*it)->transformMatrix) {
             p = Transform::matApply(*(*it)->transformMatrix, p);

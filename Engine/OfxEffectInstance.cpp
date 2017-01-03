@@ -242,11 +242,6 @@ OfxEffectInstance::initializeDataAfterCreate()
     if (_imp->context == eContextWriter) {
         _imp->isOutput = true;
     }
-    if (_imp->context == eContextWriter) {
-        // Writers don't support render scale (full-resolution images are written to disk)
-        setSupportsRenderScaleMaybe(eSupportsNo);
-    }
-
 
     if (_imp->context == eContextReader) {
         // Tuttle readers don't support render scale as of 11/8/2014, but may crash (at least in debug configuration).
@@ -1483,13 +1478,13 @@ StatusEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
                                        double step,
-                                       bool interactive,
+                                       bool interactive*,
                                        const RenderScale & scale,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
                                        bool draftMode,
                                        ViewIdx view,
-                                       bool isOpenGLRender,
+                                       RenderBackendTypeEnum backendType,
                                        const EffectOpenGLContextDataPtr& glContextData,
                                        const TreeRenderNodeArgsPtr& render)
 {
@@ -1522,13 +1517,13 @@ StatusEnum
 OfxEffectInstance::endSequenceRender(double first,
                                      double last,
                                      double step,
-                                     bool interactive,
+                                     bool interactive*,
                                      const RenderScale & scale,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
                                      bool draftMode,
                                      ViewIdx view,
-                                     bool isOpenGLRender,
+                                     RenderBackendTypeEnum backendType,
                                      const EffectOpenGLContextDataPtr& glContextData,
                                      const TreeRenderNodeArgsPtr& render)
 {

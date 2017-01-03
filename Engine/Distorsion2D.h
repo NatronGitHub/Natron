@@ -87,10 +87,12 @@ public:
      **/
     void pushDistorsion(const DistorsionFunction2DPtr& distorsion);
 
+    const std::list<DistorsionFunction2DPtr>& getStack() const;
+
     /**
      * @brief Applies a distorsion stack onto a 2D position in canonical coordinates.
      **/
-    static void applyDistorsionStack(double distortedX, double distortedY, const Distorsion2DStackPtr& stack, double* undistortedX, double* undistortedY);
+    static void applyDistorsionStack(double distortedX, double distortedY, const Distorsion2DStack& stack, double* undistortedX, double* undistortedY);
 
 private:
 

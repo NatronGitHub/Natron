@@ -1105,12 +1105,8 @@ ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
 
 
     // The active input providing the image is the first upstream non disabled node
-    EffectInstancePtr upstreamInput = getInput(textureIndex);
-    outArgs->activeInputToRender.reset();
-    if (upstreamInput) {
-#pragma message WARN("Is this really needed ? isIdentity will anyway fix this in renderRoI")
-        outArgs->activeInputToRender = upstreamInput->getNearestNonDisabled(time, view);
-    }
+    outArgs->activeInputToRender = getInput(textureIndex);
+
 
     // Before rendering we check that all mandatory inputs in the graph are connected else we fail
     if (!outArgs->activeInputToRender) {

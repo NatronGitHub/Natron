@@ -57,8 +57,11 @@ struct ImagePrivate
     // The layer represented by this image
     ImageComponents layer;
 
-    // The scale of the image
-    RenderScale scale;
+    // The proxy scale of the image
+    RenderScale proxyScale;
+
+    // The mipmap level of the image
+    unsigned int mipMapLevel;
 
     // Controls the cache access for the image
     CacheAccessModeEnum cachePolicy;
@@ -82,19 +85,30 @@ struct ImagePrivate
     // their render aborted.
     TreeRenderNodeArgsPtr renderArgs;
 
+    // Protects tilesInsertedInCache
+    mutable QMutex tilesInsertedInCacheMutex;
+
+    // When true, pushTilesToCacheIfNotAborted has been called and cannot be called again
+    bool tilesInsertedInCache;
+
     ImagePrivate()
     : bounds()
     , tiles()
     , layer()
-    , scale(1.)
+    , proxyScale(1.)
+    , mipMapLevel(0)
     , cachePolicy(eCacheAccessModeNone)
     , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
     , mirrorImage()
     , mirrorImageRoI()
     , renderArgs()
+    , tilesInsertedInCacheMutex()
+    , tilesInsertedInCache(false)
     {
 
     }
+
+    void initFromExternalBuffer(const Image::InitStorageArgs& args);
 
     /**
      * @brief Called in the destructor to insert tiles that were processed in the cache.

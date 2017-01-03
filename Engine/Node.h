@@ -486,7 +486,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
+    int getMaskChannel(int inputNb, ImageComponents* comps) const;
 
     int isMaskChannelKnob(const KnobIConstPtr& knob) const;
 
@@ -1273,6 +1273,13 @@ private:
     void setDuringInteractAction(bool b);
 
 public:
+
+
+    void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
+
+    OverlaySupport* getCurrentViewportForOverlays() const;
+
+    RenderScale getOverlayInteractRenderScale() const;
 
     bool isDoingInteractAction() const;
 

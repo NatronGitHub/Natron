@@ -220,7 +220,7 @@ public:
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
                                            ViewIdx view,
-                                           bool isOpenGLRender,
+                                           RenderBackendTypeEnum backendType,
                                            const EffectOpenGLContextDataPtr& glContextData,
                                            const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual StatusEnum endSequenceRender(double first,
@@ -232,7 +232,7 @@ public:
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
                                          ViewIdx view,
-                                         bool isOpenGLRender,
+                                         RenderBackendTypeEnum backendType,
                                          const EffectOpenGLContextDataPtr& glContextData,
                                          const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;

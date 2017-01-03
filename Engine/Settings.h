@@ -325,8 +325,6 @@ public:
 
     bool isNaNHandlingEnabled() const;
 
-    bool isCopyInputImageForPluginRenderEnabled() const;
-
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();
 
