@@ -3233,7 +3233,7 @@ KnobHelper::restoreDefaultValueFromSerialization(const SERIALIZATION_NAMESPACE::
         }
 
     } else if (isChoice) {
-        int foundDefault = KnobChoice::choiceMatch(defObj.value.isString, isChoice->getEntries());
+        int foundDefault = KnobChoice::choiceMatch(defObj.value.isString, isChoice->getEntries(), 0);
         if (foundDefault != -1) {
             if (!applyDefaultValue) {
                 isChoice->setDefaultValueWithoutApplying(foundDefault, DimIdx(0));
@@ -3279,11 +3279,12 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
     } else if (isChoice) {
-        int foundValue = KnobChoice::choiceMatch(obj._value.isString, isChoice->getEntries());
+        std::string matchedEntry;
+        int foundValue = KnobChoice::choiceMatch(obj._value.isString, isChoice->getEntries(), &matchedEntry);
 
         if (foundValue == -1) {
             // Just remember the active entry if not found
-            isChoice->setActiveEntryText(obj._value.isString, view);
+            isChoice->setActiveEntryText(matchedEntry, view);
         } else {
             isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
         }
