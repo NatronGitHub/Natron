@@ -5280,8 +5280,11 @@ EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
     if (stat == eStatusFailed) {
         return stat;
     }
+    if (!getNode()->isNodeDisabled()) {
+        return getPreferredMetaDatas(metadata);
+    }
+    return stat;
 
-    return getPreferredMetaDatas(metadata);
 }
 
 static ImageComponents
