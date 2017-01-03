@@ -258,8 +258,6 @@ public:
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
 
-    virtual void checkCanSetValueAndWarn() const OVERRIDE FINAL;
-
     /********OVERRIDEN FROM EFFECT INSTANCE: END*************/
     OfxClipInstance* getClipCorrespondingToInput(int inputNo) const;
     static ContextEnum mapToContextEnum(const std::string &s);

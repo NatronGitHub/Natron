@@ -35,6 +35,7 @@
 
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/TimeLine.h"
@@ -149,7 +150,7 @@ AnimationModuleViewPrivate::drawTimelineMarkers(const ZoomContext& ctx)
         GL_GPU::Color4f(boundsR, boundsG, boundsB, 1.);
 
         double leftBound, rightBound;
-        _gui->getApp()->getFrameRange(&leftBound, &rightBound);
+        _gui->getApp()->getProject()->getFrameRange(&leftBound, &rightBound);
         GL_GPU::Begin(GL_LINES);
         GL_GPU::Vertex2f( leftBound, btmRight.y() );
         GL_GPU::Vertex2f( leftBound, topLeft.y() );

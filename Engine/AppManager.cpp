@@ -78,6 +78,7 @@
 #include "Global/GLIncludes.h"
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
+#include "Global/MemoryInfo.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -111,6 +112,7 @@
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/StubNode.h"
+#include "Engine/Settings.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
@@ -2171,11 +2173,6 @@ AppManager::setOFXHostHandle(void* handle)
     _imp->ofxHost->setOfxHostOSHandle(handle);
 }
 
-void
-AppManager::clearExceedingEntriesFromNodeCache()
-{
-    _imp->_nodeCache->clearExceedingEntries();
-}
 
 const PluginsMap&
 AppManager::getPluginsList() const
@@ -2486,13 +2483,7 @@ AppManager::getApplicationBinaryPath() const
     return _imp->_binaryPath;
 }
 
-void
-AppManager::setNumberOfThreads(int threadsNb)
-{
-    if (_imp->_settings) {
-        _imp->_settings->setNumberOfThreads(threadsNb);
-    }
-}
+
 
 bool
 AppManager::isAggressiveCachingEnabled() const
@@ -2692,26 +2683,6 @@ AppManager::qt_tildeExpansion(const QString &path,
 
 #endif
 
-void
-AppManager::checkCacheFreeMemoryIsGoodEnough()
-{
-    ///Before allocating the memory check that there's enough space to fit in memory
-    size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
-    size_t totalFreeRAM = getAmountFreePhysicalRAM();
-
-    while (totalFreeRAM <= systemRAMToKeepFree) {
-#ifdef NATRON_DEBUG_CACHE
-        qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-        << ", clearing least recently used NodeCache image...";
-#endif
-        if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
-            break;
-        }
-
-
-        totalFreeRAM = getAmountFreePhysicalRAM();
-    }
-}
 
 void
 AppManager::onOCIOConfigPathChanged(const std::string& path)

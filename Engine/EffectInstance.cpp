@@ -132,7 +132,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         if (frameVarying) {
             // Make sure the time is rounded to the image equality epsilon to account for double precision if we want to reproduce the
             // same hash
-            hash->append(roundImageTimeToEpsilon(args.time));
+            hash->append((double)roundImageTimeToEpsilon(args.time));
         }
 
         if (isViewInvariant() == eViewInvarianceAllViewsVariant) {

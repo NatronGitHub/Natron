@@ -236,7 +236,10 @@ GetDistorsionResults::setDistorsionResults(const DistorsionFunction2DPtr &disto)
 std::size_t
 GetDistorsionResults::getSize() const
 {
-    return (std::size_t)_distorsion.customDataSizeHintInBytes;
+    if (!_distorsion) {
+        return 0;
+    }
+    return (std::size_t)_distorsion->customDataSizeHintInBytes;
 }
 
 

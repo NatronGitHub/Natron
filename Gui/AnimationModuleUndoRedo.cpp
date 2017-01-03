@@ -70,7 +70,7 @@ static void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& i
                                                   std::list<TimeValuePair<T> >* outList)
 {
     for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<T> p(it->key.getTime() + offset, it->key.getValue());
+        TimeValuePair<T> p(TimeValue(it->key.getTime() + offset), it->key.getValue());
         outList->push_back(p);
     }
 }
@@ -81,7 +81,7 @@ void convertVariantKeyStringSetToTypedList(const KeyFrameWithStringSet& inList,
                                            std::list<TimeValuePair<std::string> >* outList)
 {
     for (KeyFrameWithStringSet::const_iterator it = inList.begin(); it!=inList.end(); ++it) {
-        TimeValuePair<std::string> p(it->key.getTime() + offset, it->string);
+        TimeValuePair<std::string> p(TimeValue(it->key.getTime() + offset), it->string);
         outList->push_back(p);
     }
 }
@@ -490,7 +490,7 @@ moveGroupNode(const NodePtr& node,
                         keysToMove.push_back(it3->getTime());
                     }
                     for (std::list<double> ::iterator kfIt = keysToMove.begin(); kfIt != keysToMove.end(); ++kfIt) {
-                        knob->moveValueAtTime(*kfIt, *it2, DimIdx(dim), dt, 0 /*dv*/, 0);
+                        knob->moveValueAtTime(TimeValue(*kfIt), *it2, DimIdx(dim), dt, 0 /*dv*/, 0);
                     }
                 }
 

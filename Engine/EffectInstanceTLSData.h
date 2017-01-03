@@ -103,7 +103,6 @@ public:
     RenderActionTLSData()
     : GenericActionTLSArgs()
     , renderWindowPixel()
-    , inputImages()
     , outputPlanes()
     {
 

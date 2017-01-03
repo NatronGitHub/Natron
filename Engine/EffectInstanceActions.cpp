@@ -642,7 +642,7 @@ EffectInstance::getDistorsion(TimeValue /*time*/,
                                  const RenderScale & /*renderScale*/,
                                  ViewIdx /*view*/,
                                  const TreeRenderNodeArgsPtr& /*render*/,
-                                 DistorsionFunction2D* /*distorsion*/) WARN_UNUSED_RETURN
+                                 DistorsionFunction2D* /*distorsion*/)
 {
     return eStatusReplyDefault;
 }
@@ -771,7 +771,7 @@ EffectInstance::isIdentity(TimeValue /*time*/,
                       const TreeRenderNodeArgsPtr& /*render*/,
                       TimeValue* /*inputTime*/,
                       ViewIdx* /*inputView*/,
-                      int* inputNb) WARN_UNUSED_RETURN
+                      int* inputNb)
 {
     *inputNb = -1;
     return eStatusOK;
@@ -866,26 +866,9 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     // Call the isIdentity plug-in action
     if (!caught) {
 
-        RectI mappedRenderWindow;
-        RenderScale scaleOne(1.);
-        RenderScale mappedScale;
-
-        if (getNode()->supportsRenderScaleMaybe() == eSupportsNo) {
-            mappedScale = scaleOne;
-            RectD canonicalRenderWindow;
-            double thisEffectPar = getAspectRatio(render, -1);
-            renderWindow.toCanonical_noClipping(scale, thisEffectPar, &canonicalRenderWindow);
-            canonicalRenderWindow.toPixelEnclosing(mappedScale, thisEffectPar, &mappedRenderWindow);
-        } else {
-            mappedScale = scale;
-            mappedRenderWindow = renderWindow;
-        }
-
-
-
 
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, mappedScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -895,7 +878,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         TimeValue identityTime;
         ViewIdx identityView;
         int identityInputNb;
-        StatusEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, render, &identityTime, &identityView, &identityInputNb);
+        StatusEnum stat = isIdentity(time, scale, renderWindow, view, render, &identityTime, &identityView, &identityInputNb);
         if (stat != eStatusOK && stat != eStatusReplyDefault) {
             return stat;
         }
@@ -1079,8 +1062,6 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         } else {
             // Not identity
 
-            RenderScale scaleOne(1.);
-            RenderScale mappedScale = getNode()->supportsRenderScaleMaybe() == eSupportsNo ? scaleOne : scale;
 
             EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
 
@@ -1093,7 +1074,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
 
             RectD rod;
-            StatusEnum stat = getRegionOfDefinition(time, mappedScale, view, render, &rod);
+            StatusEnum stat = getRegionOfDefinition(time, scale, view, render, &rod);
 
             if (stat == eStatusFailed) {
                 return eStatusFailed;
@@ -1156,8 +1137,6 @@ EffectInstance::getRegionOfDefinition(TimeValue time,
 {
     bool firstInput = true;
     RenderScale renderMappedScale = scale;
-
-    assert( ( (getNode()->supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.) ) );
 
     // By default, union the region of definition of all non mask inputs.
     int nInputs = getMaxInputCount();
