@@ -92,6 +92,7 @@ patchfiles \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
+    oiio-1.6.18-fix-safe_tiffgetfield.patch \
     oiio-nothreads.patch
 
 cmake.out_of_source yes
