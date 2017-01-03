@@ -3611,6 +3611,7 @@ Node::createPyPlugPage()
         _imp->pyPlugExportButtonKnob = param;
     }
 
+
 }
 
 void
@@ -4071,12 +4072,21 @@ Node::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     NodeGroupPtr isGrpNode = isEffectNodeGroup();
     if (!isGrpNode && !isBackdropNode) {
         createInfoPage();
-    } else {
+    } else if (isGrpNode) {
         if (isGrpNode->isSubGraphPersistent()) {
             createPyPlugPage();
 
             if (hasGUI) {
                 createPyPlugExportGroup();
+            }
+
+            {
+                KnobButtonPtr param = AppManager::createKnob<KnobButton>(_imp->effect, tr(kNatronNodeKnobConvertToGroupButtonLabel), 1, false);
+                param->setName(kNatronNodeKnobConvertToGroupButton);
+                param->setEvaluateOnChange(false);
+                param->setHintToolTip( tr("Converts this node to a Group: the internal node-graph and the user parameters will become editable") );
+                settingsPage->addKnob(param);
+                _imp->pyPlugConvertToGroupButtonKnob = param;
             }
         }
     }
@@ -8323,6 +8333,11 @@ Node::onEffectKnobValueChanged(const KnobIPtr& what,
         KnobGroupPtr k = _imp->pyPlugExportDialog.lock();
         if (k) {
             k->setValue(!k->getValue());
+        }
+    } else if (what == _imp->pyPlugConvertToGroupButtonKnob.lock() && reason != eValueChangedReasonRestoreDefault) {
+        NodeGroupPtr isGroup = isEffectNodeGroup();
+        if (isGroup) {
+            isGroup->setSubGraphEditedByUser(true);
         }
     } else if (what == _imp->pyPlugExportDialogOkButton.lock() && reason == eValueChangedReasonUserEdited) {
         try {

@@ -86,6 +86,9 @@ CLANG_DIAG_ON(deprecated)
 #define kNatronNodeKnobExportPyPlugButton "exportPyPlug"
 #define kNatronNodeKnobExportPyPlugButtonLabel "Export"
 
+#define kNatronNodeKnobConvertToGroupButton "convertToGroup"
+#define kNatronNodeKnobConvertToGroupButtonLabel "Convert to Group"
+
 #define kNatronNodeKnobPyPlugPluginID "pyPlugPluginID"
 #define kNatronNodeKnobPyPlugPluginIDLabel "PyPlug ID"
 #define kNatronNodeKnobPyPlugPluginIDHint "When exporting a group to PyPlug, this will be the plug-in ID of the PyPlug.\n" \

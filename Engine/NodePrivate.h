@@ -249,6 +249,7 @@ public:
     KnobIntWPtr pyPlugVersionKnob;
     KnobIntWPtr pyPlugShortcutKnob;
     KnobButtonWPtr pyPlugExportButtonKnob;
+    KnobButtonWPtr pyPlugConvertToGroupButtonKnob;
 
     KnobGroupWPtr pyPlugExportDialog;
     KnobFileWPtr pyPlugExportDialogFile;

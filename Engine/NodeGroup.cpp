@@ -1056,6 +1056,11 @@ NodeCollection::setSubGraphEditedByUser(bool edited)
             if (pyPlugPage) {
                 pyPlugPage->setSecret(!edited);
             }
+
+            KnobIPtr convertToGroupKnob = isGrp->getNode()->getKnobByName(kNatronNodeKnobConvertToGroupButton);
+            if (convertToGroupKnob) {
+                convertToGroupKnob->setSecret(edited || isSubGraphEditable());
+            }
         }
 
         const KnobsVec& knobs = isGrp->getKnobs();
