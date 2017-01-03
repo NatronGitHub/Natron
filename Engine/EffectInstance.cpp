@@ -592,7 +592,8 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         rargs->playback = false;
         rargs->byPassCache = false;
 
-        RenderRoIRetCode status = TreeRender::launchRender(rargs, &outArgs->imagePlanes);
+        TreeRenderPtr renderObject = TreeRender::create(rargs);
+        RenderRoIRetCode status = renderObject->launchRender(&outArgs->imagePlanes);
         if (status != eRenderRoIRetCodeOk || outArgs->imagePlanes.empty()) {
             return false;
         }

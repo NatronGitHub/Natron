@@ -406,7 +406,7 @@ CurveGui::nextPointForSegment(const double x, // < in curve coordinates
         // x2 is the position of the next keyframe with the period removed
         *x2WidgetCoords = xWidgetCoords + deltaXtoNext;
         x1Key->setValue(vnext);
-        x1Key->setTime(x + (tnext - xClamped));
+        x1Key->setTime(TimeValue(x + (tnext - xClamped)));
         *isx1Key = true;
     } else {
         // just add the delta to the x widget coord

@@ -76,7 +76,7 @@ Hash64::appendCurve(const CurvePtr& curve, Hash64* hash)
 {
     KeyFrameSet keys = curve->getKeyFrames_mt_safe();
     for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-        hash->append(it->getTime());
+        hash->append((double)it->getTime());
         hash->append(it->getValue());
         hash->append(it->getLeftDerivative());
         hash->append(it->getRightDerivative());

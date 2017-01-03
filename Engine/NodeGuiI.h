@@ -34,6 +34,7 @@
 #include "Engine/HostOverlaySupport.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 

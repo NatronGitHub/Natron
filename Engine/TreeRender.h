@@ -117,15 +117,20 @@ private:
 
 
 public:
-
+    
     /**
      * @brief Create a new render and initialize some data such as OpenGL context.
      * For OpenFX this also set thread-local storage on all nodes that will be visited to ensure OpenFX
      * does not loose context.
-     * Once initialized this will render the image and return it in renderedImage.
-     * The return code of render can be obtained in renderStatus
+     * This function may throw an exception in case of failure
      **/
-    static RenderRoIRetCode launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes);
+    static TreeRenderPtr create(const CtorArgsPtr& inArgs);
+
+    /**
+     * @brief Render the planes from the output of the node passed as root node in the inArgs of the create function
+     * and return it in the output planes.
+     **/
+    RenderRoIRetCode launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes);
 
 
     virtual ~TreeRender();

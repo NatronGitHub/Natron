@@ -106,8 +106,6 @@ SOURCES += \
     FileSystemModel.cpp \
     FitCurve.cpp \
     Format.cpp \
-    FrameEntry.cpp \
-    FrameKey.cpp \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
@@ -328,8 +326,6 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
-    FrameEntry.h \
-    FrameKey.h \
     FrameParams.h \
     FStreamsSupport.h \
     fstream_mingw.h \

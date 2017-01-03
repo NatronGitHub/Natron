@@ -487,9 +487,6 @@ struct TreeRenderNodeArgsPrivate
     // for this frame/view pair with the overall RoI to avoid rendering several times with this node.
     NodeFrameViewRequestData frames;
 
-    // The render-scale at which this effect can render
-    RenderScale mappedScale;
-
     // The results of the get frame range action for this render
     GetFrameRangeResultsPtr frameRangeResults;
 
@@ -535,7 +532,6 @@ struct TreeRenderNodeArgsPrivate
     , node(node)
     , inputRenderArgs(node->getMaxInputCount())
     , frames()
-    , mappedScale(1.)
     , frameRangeResults()
     , valuesCache(new RenderValuesCache)
     , currentThreadSafety(node->getCurrentRenderThreadSafety())
@@ -687,19 +683,6 @@ TreeRenderNodeArgs::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, Fr
     return true;
 }
 
-void
-TreeRenderNodeArgs::setMappedRenderScale(const RenderScale& scale)
-{
-    // MT-safe: never changes throughout the lifetime of the object
-    _imp->mappedScale = scale;
-}
-
-const RenderScale&
-TreeRenderNodeArgs::getMappedRenderScale() const
-{
-    // MT-safe: never changes throughout the lifetime of the object
-    return _imp->mappedScale;
-}
 
 RenderSafetyEnum
 TreeRenderNodeArgs::getCurrentRenderSafety() const
@@ -844,23 +827,6 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     EffectInstancePtr effect = node->getEffectInstance();
 
     TreeRenderNodeArgsPtr thisShared = shared_from_this();
-
-    if (node->supportsRenderScaleMaybe() == eSupportsMaybe) {
-        /*
-         If this flag was not set already that means it probably failed all calls to getRegionOfDefinition.
-         We safely fail here
-         */
-        return eStatusFailed;
-    }
-
-
-    assert(node->supportsRenderScaleMaybe() == eSupportsNo || node->supportsRenderScaleMaybe() == eSupportsYes);
-
-    bool supportsRs = node->supportsRenderScale();
-
-    RenderScale mappedScale = supportsRs ? scale : RenderScale(1.);
-    setMappedRenderScale(mappedScale);
-
 
     FrameViewPair frameView;
     // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision

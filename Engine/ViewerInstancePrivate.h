@@ -45,7 +45,6 @@
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ImageComponents.h"
-#include "Engine/FrameEntry.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Settings.h"
 #include "Engine/Image.h"

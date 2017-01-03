@@ -840,10 +840,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     assert(args.renderArgs && args.renderArgs->getNode() == getNode());
 
 
-
-    // Does this render supports render-scale ? OpenGL always supports it
-    const bool supportsRenderScale = args.renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNone ? getNode()->supportsRenderScale() : true;
-
     TreeRenderPtr parentRender = args.renderArgs->getParentRender();
     const RenderScale& renderProxyScale = parentRender->getProxyScale();
     unsigned int renderMipMapLevel = parentRender->getMipMapLevel();
@@ -853,7 +849,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     // wether the plug-in should render in the full scale image, and then we downscale afterwards or
     // if the plug-in can just use the downscaled image to render.
     const RenderScale scaleOne(1.);
-    const bool renderScaleOneThenResize = !supportsRenderScale && (renderProxyScale.x != scaleOne.x || renderProxyScale.y != scaleOne.y || renderMipMapLevel != 0);
+    const bool renderScaleOneThenResize = false;
 
 
     const RenderScale mappedProxyScale = renderScaleOneThenResize ? scaleOne : renderProxyScale;

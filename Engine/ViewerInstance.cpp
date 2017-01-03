@@ -264,7 +264,6 @@ ViewerInstance::clearLastRenderedImage()
     }
 }
 
-
 int
 ViewerInstance::getMaxInputCount() const
 {

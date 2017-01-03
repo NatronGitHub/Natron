@@ -306,13 +306,6 @@ public:
     NodePtr getInputNode(int inputNb) const;
 
     /**
-     * @brief Set/get the mapped render-scale for the node, i.e:
-     * the scale at which the node wants to render.
-     **/
-    void setMappedRenderScale(const RenderScale& scale);
-    const RenderScale& getMappedRenderScale() const;
-
-    /**
      * @brief Returns the node thread-safety for this render
      **/
     RenderSafetyEnum getCurrentRenderSafety() const;

@@ -53,12 +53,19 @@ NATRON_NAMESPACE_ENTER;
 
 typedef std::set<AbortableThread*> ThreadSet;
 
-
+enum TreeRenderStateEnum
+{
+    eTreeRenderStateOK,
+    eTreeRenderStateInitFailed,
+};
 
 struct TreeRenderPrivate
 {
 
     TreeRender* _publicInterface;
+    
+    // The state of the object to avoid calling render on a failed tree
+    TreeRenderStateEnum state;
 
     // A map of the per node tree render args set on each node
     std::map<NodePtr, TreeRenderNodeArgsPtr> perNodeArgs;
@@ -68,6 +75,9 @@ struct TreeRenderPrivate
 
     // The main root of the tree from which we want the image
     NodePtr treeRoot;
+    
+    // Render args of the root node
+    TreeRenderNodeArgsWPtr rootNodeRenderArgs;
 
     // the time to render
     TimeValue time;
@@ -75,6 +85,12 @@ struct TreeRenderPrivate
     // the view to render
     ViewIdx view;
 
+    // The RoI to render
+    RectD canonicalRoI;
+    
+    // The list of layers to ender
+    std::list<ImageComponents> layers;
+    
     // The scale to apply to all parameters to obtain the final render
     RenderScale proxyScale;
 
@@ -117,11 +133,15 @@ struct TreeRenderPrivate
 
     TreeRenderPrivate(TreeRender* publicInterface)
     : _publicInterface(publicInterface)
+    , state(eTreeRenderStateOK)
     , perNodeArgs()
     , nodes()
     , treeRoot()
+    , rootNodeRenderArgs()
     , time(0)
     , view()
+    , canonicalRoI()
+    , layers()
     , proxyScale()
     , mipMapLevel(0)
     , proxyMipMapScale()
@@ -153,7 +173,7 @@ struct TreeRenderPrivate
      * specific to this render.
      * This returns a pointer to the render data for the tree root node.
      **/
-    TreeRenderNodeArgsPtr init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface);
+    void init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface);
 
     /**
      * @brief Should be called before launching any call to renderRoI to optimize the render
@@ -561,13 +581,19 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
 } // buildRenderTreeRecursive
 
 
-TreeRenderNodeArgsPtr
+void
 TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface)
 {
     assert(inArgs->treeRoot);
 
     time = inArgs->time;
     view = inArgs->view;
+    if (inArgs->canonicalRoI) {
+        canonicalRoI = *inArgs->canonicalRoI;
+    }
+    if (inArgs->layers) {
+        layers = *inArgs->layers;
+    }
     proxyScale = inArgs->proxyScale;
     mipMapLevel = inArgs->mipMapLevel;
     double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
@@ -593,55 +619,34 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
 
     // Build the render tree
     std::set<NodePtr> visitedNodes;
-    TreeRenderNodeArgsPtr rootNodeRenderArgs = buildRenderTreeRecursive(inArgs->treeRoot, &visitedNodes);
-    return rootNodeRenderArgs;
-
-} // init
-
-RenderRoIRetCode
-TreeRender::launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, ImagePtr>* outputPlanes)
-{
-    TreeRenderPtr render(new TreeRender());
-
-    TreeRenderNodeArgsPtr rootNodeRenderArgs;
-    try {
-        // Setup the render tree and make local copy of knob values for the render.
-        // This will also set the per node render object in the TLS for OpenFX effects.
-        rootNodeRenderArgs = render->_imp->init(inArgs, render);
-    } catch (...) {
-        return eRenderRoIRetCodeFailed;
-    }
-
-    assert(rootNodeRenderArgs);
-
-    EffectInstancePtr effectToRender = inArgs->treeRoot->getEffectInstance();
+    TreeRenderNodeArgsPtr rootNodeArgs = buildRenderTreeRecursive(inArgs->treeRoot, &visitedNodes);
+    rootNodeRenderArgs = rootNodeArgs;
+    
+    EffectInstancePtr effectToRender = treeRoot->getEffectInstance();
 
     // Use the provided RoI, otherwise render the RoD
-    RectD canonicalRoi;
-    if (inArgs->canonicalRoI) {
-        canonicalRoi = *inArgs->canonicalRoI;
-    } else {
+    if (canonicalRoI.isNull()) {
         GetRegionOfDefinitionResultsPtr results;
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(inArgs->time, render->getProxyMipMapScale(), inArgs->view, rootNodeRenderArgs, &results);
+        StatusEnum stat = effectToRender->getRegionOfDefinition_public(time, proxyMipMapScale, view, rootNodeArgs, &results);
         if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+            state = eTreeRenderStateInitFailed;
+            return;
         }
         assert(results);
-        canonicalRoi = results->getRoD();
+        canonicalRoI = results->getRoD();
     }
-
+    
     // Use the provided components otherwise fallback on all components needed by the output
-    std::list<ImageComponents> componentsToRender;
-    if (inArgs->layers) {
-        componentsToRender = *inArgs->layers;
-    } else {
+    if (layers.empty()) {
+        
         GetComponentsResultsPtr results;
-        StatusEnum stat = effectToRender->getComponents_public(inArgs->time, inArgs->view, rootNodeRenderArgs, &results);
+        StatusEnum stat = effectToRender->getComponents_public(time, view, rootNodeArgs, &results);
         if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+            state = eTreeRenderStateInitFailed;
+            return;
         }
         assert(results);
-
+        
         std::map<int, std::list<ImageComponents> > neededInputLayers;
         std::list<ImageComponents> producedLayers, availableLayers;
         int passThroughInputNb;
@@ -650,31 +655,63 @@ TreeRender::launchRender(const CtorArgsPtr& inArgs, std::map<ImageComponents, Im
         std::bitset<4> processChannels;
         bool processAll;
         results->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-        componentsToRender = producedLayers;
+        layers = producedLayers;
     }
-
+    
     // Cycle through the tree to make sure all nodes render once with the appropriate RoI
     {
-
-        StatusEnum stat = rootNodeRenderArgs->roiVisitFunctor(inArgs->time, inArgs->view, render->getProxyMipMapScale(), canonicalRoi, effectToRender);
-
+        
+        StatusEnum stat = rootNodeArgs->roiVisitFunctor(time, view, proxyMipMapScale, canonicalRoI, effectToRender);
+        
         if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+            state = eTreeRenderStateInitFailed;
+            return;
         }
     }
 
+
+} // init
+
+TreeRenderPtr
+TreeRender::create(const CtorArgsPtr& inArgs)
+{
+    TreeRenderPtr render(new TreeRender());
+    
+    try {
+        // Setup the render tree and make local copy of knob values for the render.
+        // This will also set the per node render object in the TLS for OpenFX effects.
+        render->_imp->init(inArgs, render);
+    } catch (...) {
+        render->_imp->state = eTreeRenderStateInitFailed;
+    }
+    
+    return render;
+}
+
+RenderRoIRetCode
+TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
+{
+
+    if (_imp->state == eTreeRenderStateInitFailed) {
+        return eRenderRoIRetCodeFailed;
+    }
+    
+    EffectInstancePtr effectToRender = _imp->treeRoot->getEffectInstance();
+    TreeRenderNodeArgsPtr rootNodeRenderArgs = _imp->rootNodeRenderArgs.lock();
+    
+   
     double outputPar = effectToRender->getAspectRatio(rootNodeRenderArgs, -1);
 
     RectI pixelRoI;
-    canonicalRoi.toPixelEnclosing(render->getProxyMipMapScale(), outputPar, &pixelRoI);
+    _imp->canonicalRoI.toPixelEnclosing(getProxyMipMapScale(), outputPar, &pixelRoI);
 
-    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(inArgs->time,
-                                                                                                     inArgs->view,
+    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(_imp->time,
+                                                                                                     _imp->view,
                                                                                                      pixelRoI,
-                                                                                                     componentsToRender,
+                                                                                                     _imp->layers,
                                                                                                      effectToRender,
                                                                                                      -1,
-                                                                                                     inArgs->time,
+                                                                                                     _imp->time,
                                                                                                      rootNodeRenderArgs));
     
     EffectInstance::RenderRoIResults results;

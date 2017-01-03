@@ -1313,7 +1313,7 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
             continue;
         }
         if (tilesSupported) {
-            ret->insert( std::make_pair(input, renderWindow) );
+            ret->insert( std::make_pair(i, renderWindow) );
         } else {
             // Tiles not supported: get the RoD as RoI
             GetRegionOfDefinitionResultsPtr inputResults;
@@ -1329,7 +1329,7 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
             }
             const RectD& inputRoD = inputResults->getRoD();
 
-            ret->insert( std::make_pair(input, inputRoD) );
+            ret->insert( std::make_pair(i, inputRoD) );
         }
 
     }
