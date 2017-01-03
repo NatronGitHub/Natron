@@ -46,14 +46,17 @@ It is also recommended to add the  following line to `/opt/local/etc/macports/va
 
     -x11 +no_x11 +bash_completion +no_gnome +quartz
 
-If compiling on Mac OS X 10.6 with Xcode 4, you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
+If compiling on Mac OS X 10.6 with Xcode 4 (using GCC 4.2.1 and libstdc++), you should also revert to the default compilers list of Xcode 3.2.6 (MacPort's `/opt/local/libexec/macports/lib/port1.0/portconfigure.tcl` sets it to a different value for an unknown reason, resulting in llvm-gcc-4.2 being used to compile everything in MacPorts). Add the following line to `/opt/local/etc/macports/macports.conf`:
 
     default_compilers gcc-4.2 clang llvm-gcc-4.2 macports-clang-3.4 macports-clang-3.3 macports-llvm-gcc-4.2 apple-gcc-4.2 gcc-4.0
 
+Now, if you want to use turbojpeg instead of jpeg:
+    sudo port -f uninstall jpeg
+    sudo port -v install libjpeg-turbo
+    
 And finally install the required packages:
 
-    sudo port install qt4-mac boost cairo expat gsed
-    sudo port install py27-pyside py27-sphinx
+    sudo port -v install qt4-mac boost cairo expat gsed py27-pyside py27-sphinx
     sudo ln -s python2.7-config /opt/local/bin/python2-config
 
 Create the file /opt/local/lib/pkgconfig/glu.pc containing GLU
@@ -79,11 +82,11 @@ EOF
 
 If you intend to build the [openfx-io](https://github.com/MrKepzie/openfx-io) plugins too, you will need these additional packages:
 
-    sudo port -v install openexr ffmpeg opencolorio openimageio seexpr
+    sudo port -v install openexr ffmpeg opencolorio openimageio +natron seexpr
 
 and for [openfx-arena](https://github.com/olear/openfx-arena) (note that it installs a version of ImageMagick without support for many image I/O libraries):
 
-    sudo port -v install ImageMagick +natron poppler librevenge libcdr-0.1 libzip
+    sudo port -v install librsvg ImageMagick +natron poppler librevenge libcdr-0.1 libzip
 
 ### Homebrew
 
