@@ -1059,18 +1059,19 @@ struct NodeGroupPrivate
     bool isDeactivatingGroup;
     bool isActivatingGroup;
     bool isEditable;
-    boost::shared_ptr<KnobButton> exportAsTemplate;
+    boost::shared_ptr<KnobButton> exportAsTemplate, convertToGroup;
 
     NodeGroupPrivate()
-        : nodesLock(QMutex::Recursive)
-        , inputs()
-        , guiInputs()
-        , outputs()
-        , guiOutputs()
-        , isDeactivatingGroup(false)
-        , isActivatingGroup(false)
-        , isEditable(true)
-        , exportAsTemplate()
+    : nodesLock(QMutex::Recursive)
+    , inputs()
+    , guiInputs()
+    , outputs()
+    , guiOutputs()
+    , isDeactivatingGroup(false)
+    , isActivatingGroup(false)
+    , isEditable(true)
+    , exportAsTemplate()
+    , convertToGroup()
     {
     }
 };
@@ -1173,6 +1174,18 @@ NodeGroup::getInputLabel(int inputNb) const
     }
 
     return inputName.toStdString();
+}
+
+boost::shared_ptr<KnobButton>
+NodeGroup::getExportAsPyPlugButton() const
+{
+    return _imp->exportAsTemplate;
+}
+
+boost::shared_ptr<KnobButton>
+NodeGroup::getConvertToGroupButton() const
+{
+    return _imp->convertToGroup;
 }
 
 double
@@ -1293,6 +1306,15 @@ NodeGroup::initializeKnobs()
     if (isPage) {
         isPage->addKnob(_imp->exportAsTemplate);
     }
+
+    _imp->convertToGroup = AppManager::createKnob<KnobButton>( this, tr("Convert to Group") );
+    _imp->convertToGroup->setName("convertToGroup");
+    _imp->convertToGroup->setHintToolTip( tr("Converts this node to a Group: the internal node-graph and the user parameters will become editable") );
+    if (isPage) {
+        isPage->addKnob(_imp->convertToGroup);
+    }
+    _imp->convertToGroup->setSecret(true);
+
 }
 
 void
@@ -1556,6 +1578,8 @@ NodeGroup::knobChanged(KnobI* k,
         if (gui_i) {
             gui_i->exportGroupAsPythonScript();
         }
+    } else if (k == _imp->convertToGroup.get() ) {
+        getNode()->setPyPlugEdited(true);
     } else {
         ret = false;
     }

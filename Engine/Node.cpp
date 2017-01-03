@@ -201,7 +201,6 @@ struct PyPlugInfo
     std::string pluginPythonModule; // the absolute filename of the python script
 
     //Set to true when the user has edited a PyPlug
-    bool pyplugChangedSinceScript;
     bool isPyPlug;
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
     std::string pyPlugLabel;
@@ -211,8 +210,7 @@ struct PyPlugInfo
     int pyPlugVersion;
 
     PyPlugInfo()
-    : pyplugChangedSinceScript(false)
-    , isPyPlug(false)
+    : isPyPlug(false)
     , pyPlugVersion(0)
     {
 
@@ -8466,9 +8464,9 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
     assert( QThread::currentThread() == qApp->thread() );
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
 
+    setPyPlugEdited(false);
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        _imp->pyPlugInfo.isPyPlug = true;
         _imp->pyPlugInfo.pyPlugVersion = version;
         _imp->pyPlugInfo.pyPlugID = pluginID;
         _imp->pyPlugInfo.pyPlugDesc = pluginDesc;
@@ -8489,16 +8487,29 @@ Node::hasPyPlugBeenEdited() const
 {
     QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    return _imp->pyPlugInfo.pyplugChangedSinceScript || _imp->pyPlugInfo.pluginPythonModule.empty();
+    return !_imp->pyPlugInfo.isPyPlug || _imp->pyPlugInfo.pluginPythonModule.empty();
 }
 
 void
 Node::setPyPlugEdited(bool edited)
 {
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    _imp->pyPlugInfo.pyplugChangedSinceScript = edited;
-    _imp->pyPlugInfo.isPyPlug = false;
+        _imp->pyPlugInfo.isPyPlug = !edited;
+    }
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->effect.get());
+    if (isGroup) {
+        boost::shared_ptr<KnobButton> convertToGroupButton = isGroup->getConvertToGroupButton();
+        boost::shared_ptr<KnobButton> exportPyPlugButton = isGroup->getExportAsPyPlugButton();
+        if (convertToGroupButton) {
+            convertToGroupButton->setSecret(edited);
+        }
+        if (exportPyPlugButton) {
+            exportPyPlugButton->setSecret(!edited);
+        }
+
+    }
 }
 
 bool

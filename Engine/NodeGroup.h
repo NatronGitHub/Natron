@@ -391,6 +391,9 @@ public:
         return true;
     }
 
+    boost::shared_ptr<KnobButton> getExportAsPyPlugButton() const;
+    boost::shared_ptr<KnobButton> getConvertToGroupButton() const;
+
 Q_SIGNALS:
 
     void graphEditableChanged(bool);
