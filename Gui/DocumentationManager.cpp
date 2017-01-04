@@ -276,7 +276,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
                                          .arg( tr( group.toUtf8().constData() ) )
-                                         .arg( tr("This manual is intended as a reference for all the parameters within each node in %1.")
+                                         .arg( tr("The following sections contain documentation about every node in the  %1 group.") + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
                                                .arg( tr( group.toUtf8().constData() ) )
                                                );
                 html.append(groupHeader);
@@ -312,14 +312,14 @@ DocumentationManager::handler(QHttpRequest *req,
                                                        "<div class=\"toctree-wrapper compound\">"
                                                        "<ul>")
                                      .arg( tr("Reference Guide") )
-                                     .arg ( tr("This manual is intended as a reference for all the parameters within each node in %1.")
+                                     .arg ( tr("The following sections describe the various options available from the %1 preference settings, followed by one section for each node group in %1.") + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
                                             .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
             html.append(groupHeader);
             html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );
             html.append(navHeader);
             html.append(navFooter);
             html.append(groupBodyStart);
-            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("Preferences") ) );
+            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("%1 preferences").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) ) );
 
             QStringList groups;
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
