@@ -1,5 +1,5 @@
-Reference
-=========
+Reference Guide
+===============
 
 Contents:
 
@@ -7,16 +7,16 @@ Contents:
     :maxdepth: 1
 
     _prefs.rst
+    _groupImage.rst
+    _groupColor.rst
+    _groupChannel.rst
+    _groupMerge.rst
     _groupFilter.rst
+    _groupTransform.rst
+    _groupTime.rst
     _groupDraw.rst
     _groupKeyer.rst
-    _groupOther.rst
     _groupViews.rst
-    _groupImage.rst
-    _groupTransform.rst
-    _groupColor.rst
-    _groupMerge.rst
+    _groupOther.rst
     _groupExtra.rst
-    _groupTime.rst
-    _groupChannel.rst
 
