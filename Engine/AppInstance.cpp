@@ -57,14 +57,12 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/QtCompat.h" // removeFileExtension
 
-#include "Engine/BlockingBackgroundRender.h"
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/FileDownloader.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
@@ -144,13 +142,7 @@ FlagIncrementer::~FlagIncrementer()
     }
 }
 
-struct RenderQueueItem
-{
-    AppInstance::RenderWork work;
-    QString sequenceName;
-    QString savePath;
-    ProcessHandlerPtr process;
-};
+
 
 class CreateNodeStackItem;
 typedef boost::shared_ptr<CreateNodeStackItem> CreateNodeStackItemPtr;
@@ -234,11 +226,6 @@ public:
     // whilst it is undergoing massive changes
     int _creatingTree;
 
-    mutable QMutex renderQueueMutex;
-
-    // Used to block the calling threads while there are active renders
-    QWaitCondition activeRendersNotEmptyCond;
-    std::list<RenderQueueItem> renderQueue, activeRenders;
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobIWPtr> invalidExprKnobs;
 
@@ -260,9 +247,6 @@ public:
         , creatingGroupMutex()
         , createNodeStack()
         , _creatingTree(0)
-        , renderQueueMutex()
-        , renderQueue()
-        , activeRenders()
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , mainWindow(0)
@@ -274,17 +258,8 @@ public:
 
     void declareCurrentAppVariable_Python();
 
-
     void executeCommandLinePythonCommands(const CLArgs& args);
 
-    bool validateRenderOptions(const AppInstance::RenderWork& w,
-                               int* firstFrame,
-                               int* lastFrame,
-                               int* frameStep);
-
-    void getSequenceNameFromWriter(const OutputEffectInstancePtr& writer, QString* sequenceName);
-
-    void renderSequentialInternal(const RenderQueueItem& writerWork);
 
     void checkNumberOfNonFloatingPanes();
 
@@ -523,78 +498,6 @@ AppInstance::newVersionCheckError()
     assert(downloader);
     downloader->deleteLater();
 }
-
-void
-AppInstance::getWritersWorkForCL(const CLArgs& cl,
-                                 std::list<AppInstance::RenderWork>& requests)
-{
-    const std::list<CLArgs::WriterArg>& writers = cl.getWriterArgs();
-
-    for (std::list<CLArgs::WriterArg>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        NodePtr writerNode;
-        if (!it->mustCreate) {
-            std::string writerName = it->name.toStdString();
-            writerNode = getNodeByFullySpecifiedName(writerName);
-
-            if (!writerNode) {
-                QString s = tr("%1 does not belong to the project file. Please enter a valid Write node script-name.").arg(it->name);
-                throw std::invalid_argument( s.toStdString() );
-            } else {
-                if ( !writerNode->isOutputNode() ) {
-                    QString s = tr("%1 is not an output node! It cannot render anything.").arg(it->name);
-                    throw std::invalid_argument( s.toStdString() );
-                }
-            }
-
-            if ( !it->filename.isEmpty() ) {
-                KnobIPtr fileKnob = writerNode->getKnobByName(kOfxImageEffectFileParamName);
-                if (fileKnob) {
-                    KnobFilePtr outFile = toKnobFile(fileKnob);
-                    if (outFile) {
-                        outFile->setValue(it->filename.toStdString());
-                    }
-                }
-            }
-        } else {
-            CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_WRITE, getProject()));
-            args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
-            args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
-            writerNode = createWriter( it->filename.toStdString(), args );
-            if (!writerNode) {
-                throw std::runtime_error( tr("Failed to create writer for %1.").arg(it->filename).toStdString() );
-            }
-
-            //Connect the writer to the corresponding Output node input
-            NodePtr output = getProject()->getNodeByFullySpecifiedName( it->name.toStdString() );
-            if (!output) {
-                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
-            }
-            GroupOutputPtr isGrpOutput = toGroupOutput( output->getEffectInstance() );
-            if (!isGrpOutput) {
-                throw std::invalid_argument( tr("%1 is not the name of a valid Output node of the script").arg(it->name).toStdString() );
-            }
-            NodePtr outputInput = output->getRealInput(0);
-            if (outputInput) {
-                writerNode->connectInput(outputInput, 0);
-            }
-        }
-
-        assert(writerNode);
-        OutputEffectInstancePtr effect = writerNode->isEffectOutput();
-
-        if ( cl.hasFrameRange() ) {
-            const std::list<std::pair<int, std::pair<int, int> > >& frameRanges = cl.getFrameRanges();
-            for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                AppInstance::RenderWork r( effect, it2->second.first, it2->second.second, it2->first, cl.areRenderStatsEnabled() );
-                requests.push_back(r);
-            }
-        } else {
-            AppInstance::RenderWork r( effect, INT_MIN, INT_MAX, INT_MIN, cl.areRenderStatsEnabled() );
-            requests.push_back(r);
-        }
-    }
-} // AppInstance::getWritersWorkForCL
 
 void
 AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
@@ -1477,355 +1380,7 @@ AppInstance::triggerAutoSave()
     _imp->_currentProject->triggerAutoSave();
 }
 
-void
-AppInstance::startWritersRenderingFromNames(bool enableRenderStats,
-                                            bool doBlockingRender,
-                                            const std::list<std::string>& writers,
-                                            const std::list<std::pair<int, std::pair<int, int> > >& frameRanges)
-{
-    std::list<RenderWork> renderers;
 
-    if ( !writers.empty() ) {
-        for (std::list<std::string>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-            const std::string& writerName = *it;
-            NodePtr node = getNodeByFullySpecifiedName(writerName);
-
-            if (!node) {
-                std::string exc(writerName);
-                exc.append( tr(" does not belong to the project file. Please enter a valid Write node script-name.").toStdString() );
-                throw std::invalid_argument(exc);
-            } else {
-                if ( !node->isOutputNode() ) {
-                    std::string exc(writerName);
-                    exc.append( tr(" is not an output node! It cannot render anything.").toStdString() );
-                    throw std::invalid_argument(exc);
-                }
-                ViewerInstancePtr isViewer = node->isEffectViewerInstance();
-                if (isViewer) {
-                    throw std::invalid_argument("Internal issue with the project loader...viewers should have been evicted from the project.");
-                }
-
-                OutputEffectInstancePtr effect = node->isEffectOutput();
-                assert(effect);
-
-                for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it2 = frameRanges.begin(); it2 != frameRanges.end(); ++it2) {
-                    RenderWork w(effect, it2->second.first, it2->second.second, it2->first, enableRenderStats);
-                    renderers.push_back(w);
-                }
-
-                if ( frameRanges.empty() ) {
-                    RenderWork r(effect, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
-                    renderers.push_back(r);
-                }
-            }
-        }
-    } else {
-        //start rendering for all writers found in the project
-        std::list<OutputEffectInstancePtr> writers;
-        getProject()->getWriters(&writers);
-
-        for (std::list<OutputEffectInstancePtr>::const_iterator it2 = writers.begin(); it2 != writers.end(); ++it2) {
-            assert(*it2);
-            if (*it2) {
-                for (std::list<std::pair<int, std::pair<int, int> > >::const_iterator it3 = frameRanges.begin(); it3 != frameRanges.end(); ++it3) {
-                    RenderWork w(*it2, it3->second.first, it3->second.second, it3->first, enableRenderStats);
-                    renderers.push_back(w);
-                }
-
-                if ( frameRanges.empty() ) {
-                    RenderWork r(*it2, INT_MIN, INT_MAX, INT_MIN, enableRenderStats);
-                    renderers.push_back(r);
-                }
-            }
-        }
-    }
-
-
-    if ( renderers.empty() ) {
-        throw std::invalid_argument("Project file is missing a writer node. This project cannot render anything.");
-    }
-    if (doBlockingRender) {
-        renderWritersBlocking(renderers);
-    } else {
-        renderWritersNonBlocking(renderers);
-    }
-
-} // AppInstance::startWritersRenderingFromNames
-
-void
-AppInstance::renderWritersInternal(bool doBlockingRender,
-                                   const std::list<RenderWork>& writers)
-{
-    if ( writers.empty() ) {
-        return;
-    }
-
-    // If queueing is enabled and we have to render multiple writers, render them in order
-    bool isQueuingEnabled = appPTR->getCurrentSettings()->isRenderQueuingEnabled();
-
-    // If enabled, we launch the render in a separate process launching NatronRenderer
-    bool renderInSeparateProcess = appPTR->getCurrentSettings()->isRenderInSeparatedProcessEnabled();
-
-    // When launching in a separate process, make a temporary save file that we pass to NatronRenderer
-    QString savePath;
-    if (renderInSeparateProcess) {
-        getProject()->saveProject_imp(QString(), QString(), true /*isAutoSave*/, false /*updateprojectProperties*/, &savePath);
-    }
-
-    // For all items to render, create the background process if needed or connect signals to enable the queue
-    // Also notify the GUI that an item was added to the queue
-    std::list<RenderQueueItem> itemsToQueue;
-    for (std::list<RenderWork>::const_iterator it = writers.begin(); it != writers.end(); ++it) {
-        RenderQueueItem item;
-        item.work = *it;
-
-        // Check that the render options are OK
-        if ( !_imp->validateRenderOptions(item.work, &item.work.firstFrame, &item.work.lastFrame, &item.work.frameStep) ) {
-            continue;
-        }
-
-        _imp->getSequenceNameFromWriter(it->writer, &item.sequenceName);
-        item.savePath = savePath;
-
-        if (renderInSeparateProcess) {
-            item.process.reset( new ProcessHandler(savePath, item.work.writer) );
-            QObject::connect( item.process.get(), SIGNAL(processFinished(int)), this, SLOT(onBackgroundRenderProcessFinished()) );
-        } else {
-            QObject::connect(item.work.writer->getRenderEngine().get(), SIGNAL(renderFinished(int)), this, SLOT(onQueuedRenderFinished(int)), Qt::UniqueConnection);
-        }
-
-        bool canPause = !item.work.writer->isVideoWriter();
-
-        if (!it->isRestart) {
-            notifyRenderStarted(item.sequenceName, item.work.firstFrame, item.work.lastFrame, item.work.frameStep, canPause, item.work.writer, item.process);
-        } else {
-            notifyRenderRestarted(item.work.writer, item.process);
-        }
-        itemsToQueue.push_back(item);
-    }
-
-    // No valid render, bail out
-    if ( itemsToQueue.empty() ) {
-        return;
-    }
-
-    if (!isQueuingEnabled) {
-        // Just launch everything
-        for (std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin(); it != itemsToQueue.end(); ++it) {
-            _imp->renderSequentialInternal(*it);
-        }
-    } else {
-        QMutexLocker k(&_imp->renderQueueMutex);
-        if ( !_imp->activeRenders.empty() ) {
-            _imp->renderQueue.insert( _imp->renderQueue.end(), itemsToQueue.begin(), itemsToQueue.end() );
-
-            return;
-        } else {
-            std::list<RenderQueueItem>::const_iterator it = itemsToQueue.begin();
-            const RenderQueueItem& firstWork = *it;
-            ++it;
-            for (; it != itemsToQueue.end(); ++it) {
-                _imp->renderQueue.push_back(*it);
-            }
-            k.unlock();
-            _imp->renderSequentialInternal(firstWork);
-        }
-    }
-    if (doBlockingRender) {
-        QMutexLocker k(&_imp->renderQueueMutex);
-        while (!_imp->activeRenders.empty()) {
-            // check every 50ms if the queue is not empty
-            k.unlock();
-            // process events so that the onQueuedRenderFinished slot can be called
-            // to clear the activeRenders queue if needed
-            QCoreApplication::processEvents();
-            k.relock();
-            _imp->activeRendersNotEmptyCond.wait(&_imp->renderQueueMutex, 50);
-        }
-    }
-
-
-} // AppInstance::startWritersRendering
-
-void
-AppInstance::renderWritersBlocking(const std::list<RenderWork>& writers)
-{
-    renderWritersInternal(true, writers);
-}
-
-void
-AppInstance::renderWritersNonBlocking(const std::list<RenderWork>& writers)
-{
-    bool blocking = appPTR->isBackground();
-    renderWritersInternal(blocking, writers);
-}
-
-void
-AppInstancePrivate::getSequenceNameFromWriter(const OutputEffectInstancePtr& writer,
-                                              QString* sequenceName)
-{
-    ///get the output file knob to get the name of the sequence
-    DiskCacheNodePtr isDiskCache = boost::dynamic_pointer_cast<DiskCacheNode>(writer);
-
-    if (isDiskCache) {
-        *sequenceName = tr("Caching");
-    } else {
-        *sequenceName = QString();
-        KnobIPtr fileKnob = writer->getKnobByName(kOfxImageEffectFileParamName);
-        if (fileKnob) {
-            KnobStringBasePtr isString = toKnobStringBase(fileKnob);
-            assert(isString);
-            if (isString) {
-                *sequenceName = QString::fromUtf8( isString->getValue().c_str() );
-            }
-        }
-    }
-}
-
-bool
-AppInstancePrivate::validateRenderOptions(const AppInstance::RenderWork& w,
-                                          int* firstFrame,
-                                          int* lastFrame,
-                                          int* frameStep)
-{
-    ///validate the frame range to render
-    if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
-        double firstFrameD = INT_MIN;
-        double lastFrameD = INT_MAX;
-        {
-            GetFrameRangeResultsPtr results;
-            StatusEnum stat = w.writer->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
-            if (stat != eStatusFailed) {
-                RangeD range;
-                results->getFrameRangeResults(&range);
-                firstFrameD = range.min;
-                lastFrameD = range.max;
-            }
-        }
-        if ( (firstFrameD == INT_MIN) || (lastFrameD == INT_MAX) ) {
-            _publicInterface->getProject()->getFrameRange(&firstFrameD, &lastFrameD);
-        }
-
-        if (firstFrameD > lastFrameD) {
-            Dialogs::errorDialog(w.writer->getNode()->getLabel_mt_safe(),
-                                 tr("First frame index in the sequence is greater than the last frame index.").toStdString(), false );
-
-            return false;
-        }
-        *firstFrame = (int)firstFrameD;
-        *lastFrame = (int)lastFrameD;
-    } else {
-        *firstFrame = w.firstFrame;
-        *lastFrame = w.lastFrame;
-    }
-
-    if ( (w.frameStep == INT_MAX) || (w.frameStep == INT_MIN) ) {
-        ///Get the frame step from the frame step parameter of the Writer
-        *frameStep = w.writer->getNode()->getFrameStepKnobValue();
-    } else {
-        *frameStep = std::max(1, w.frameStep);
-    }
-
-    return true;
-}
-#if 0
-void
-AppInstancePrivate::renderSequentialBlockingInternal(const RenderQueueItem& w)
-{
-    BlockingBackgroundRender backgroundRender(w.work.writer);
-
-    // This function doesn't return before rendering is finished
-    backgroundRender.blockingRender(w.work.useRenderStats, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
-}
-#endif
-
-void
-AppInstancePrivate::renderSequentialInternal(const RenderQueueItem& w)
-{
-    {
-        QMutexLocker k(&renderQueueMutex);
-        activeRenders.push_back(w);
-    }
-    if (w.process) {
-        w.process->startProcess();
-    } else {
-        w.work.writer->renderSequential(false, w.work.useRenderStats, NULL, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
-    }
-}
-
-/**
- * @brief Called when a render started with renderWritersInternal is finished
- **/
-void
-AppInstance::onQueuedRenderFinished(int /*retCode*/)
-{
-    RenderEngine* engine = qobject_cast<RenderEngine*>( sender() );
-
-    if (!engine) {
-        return;
-    }
-    OutputEffectInstancePtr effect = engine->getOutput();
-    if (!effect) {
-        return;
-    }
-    startNextQueuedRender(effect);
-}
-
-void
-AppInstance::removeRenderFromQueue(const OutputEffectInstancePtr& writer)
-{
-    QMutexLocker k(&_imp->renderQueueMutex);
-
-    for (std::list<RenderQueueItem>::iterator it = _imp->renderQueue.begin(); it != _imp->renderQueue.end(); ++it) {
-        if (it->work.writer == writer) {
-            _imp->renderQueue.erase(it);
-            break;
-        }
-    }
-}
-
-void
-AppInstance::startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter)
-{
-    RenderQueueItem nextWork;
-
-    // Do not make the process die under the mutex otherwise we may deadlock
-    ProcessHandlerPtr processDying;
-    {
-        QMutexLocker k(&_imp->renderQueueMutex);
-        for (std::list<RenderQueueItem>::iterator it = _imp->activeRenders.begin(); it != _imp->activeRenders.end(); ++it) {
-            if (it->work.writer == finishedWriter) {
-                processDying = it->process;
-                _imp->activeRenders.erase(it);
-                _imp->activeRendersNotEmptyCond.wakeAll();
-                break;
-            }
-        }
-        if ( !_imp->renderQueue.empty() ) {
-            nextWork = _imp->renderQueue.front();
-            _imp->renderQueue.pop_front();
-        } else {
-            return;
-        }
-    }
-    processDying.reset();
-
-    _imp->renderSequentialInternal(nextWork);
-}
-
-void
-AppInstance::onBackgroundRenderProcessFinished()
-{
-    ProcessHandler* proc = qobject_cast<ProcessHandler*>( sender() );
-    OutputEffectInstancePtr effect;
-
-    if (proc) {
-        effect = proc->getWriter();
-    }
-    if (effect) {
-        startNextQueuedRender(effect);
-    }
-}
 
 
 void

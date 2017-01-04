@@ -87,7 +87,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     }
     RenderScale s(1.);
     EffectInstancePtr input;
-    StatusEnum stat = eStatusReplyDefault;
+    ActionRetCodeEnum stat = eStatusReplyDefault;
     Transform::Matrix3x3 mat;
     // call getTransform even of effects that claim not to support it, because it may still return
     // a transform to apply to the overlays (eg for Reformat).

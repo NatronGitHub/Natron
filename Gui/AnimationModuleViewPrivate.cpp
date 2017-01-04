@@ -1096,7 +1096,7 @@ AnimationModuleViewPrivate::moveCurrentFrameIndicator(int frame)
     _gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
 
     _gui->setDraftRenderEnabled(true);
-    timeline->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonAnimationModuleSeek);
+    timeline->seekFrame(frame, false, EffectInstancePtr(), eTimelineChangeReasonAnimationModuleSeek);
 }
 
 void

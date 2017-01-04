@@ -149,17 +149,10 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
 
 CacheAccessModeEnum
 EffectInstance::Implementation::shouldRenderUseCache(const RenderRoIArgs & args,
-                                                     const FrameViewRequestPtr& requestPassData,
-                                                     RenderBackendTypeEnum backend)
+                                                     const FrameViewRequestPtr& requestPassData)
 {
     bool retSet = false;
     CacheAccessModeEnum ret = eCacheAccessModeNone;
-
-    // Do not use the cache for OpenGL on GPU: there is no swap
-    if (backend == eRenderBackendTypeOpenGL) {
-        retSet = true;
-        ret = eCacheAccessModeNone;
-    }
 
     // A writer never caches!
     if (!retSet && _publicInterface->isWriter()) {
@@ -205,7 +198,7 @@ EffectInstance::Implementation::shouldRenderUseCache(const RenderRoIArgs & args,
 
 
 
-EffectInstance::RenderRoIStatusEnum
+ActionRetCodeEnum
 EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementation::TiledRenderingFunctorArgs & args,
                                                       const RectToRender & specificData,
                                                       QThread* callingThread)
@@ -221,13 +214,13 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
     }
 
 
-    EffectInstance::RenderRoIStatusEnum ret = tiledRenderingFunctor(specificData,
-                                                                    args.args,
-                                                                    args.renderMappedScale,
-                                                                    args.processChannels,
-                                                                    args.mainInputImage,
-                                                                    args.planesToRender,
-                                                                    args.glContext);
+    ActionRetCodeEnum ret = tiledRenderingFunctor(specificData,
+                                                  args.args,
+                                                  args.renderMappedScale,
+                                                  args.processChannels,
+                                                  args.mainInputImage,
+                                                  args.planesToRender,
+                                                  args.glContext);
 
     //Exit of the host frame threading thread
     if (callingThread != curThread) {
@@ -239,7 +232,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
 
 
 
-EffectInstance::RenderRoIStatusEnum
+ActionRetCodeEnum
 EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectToRender,
                                                       const RenderRoIArgs* args,
                                                       RenderScale renderMappedScale,
@@ -286,9 +279,9 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     {
 
 
-        RenderRoIStatusEnum internalRet = renderHandlerInternal(tls, rectToRender, args, renderMappedScale, glContext, planesToRender, processChannels);
-        if (internalRet != eRenderRoIStatusImageRendered) {
-            return internalRet;
+        ActionRetCodeEnum stat = renderHandlerInternal(tls, rectToRender, args, renderMappedScale, glContext, planesToRender, processChannels);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
     }
 
@@ -299,11 +292,11 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     if (timeRecorder) {
         stats->addRenderInfosForNode(_publicInterface->getNode(), timeRecorder->getTimeSinceCreation());
     }
-    return eRenderRoIStatusImageRendered;
+    return eActionStatusOK;
 } // EffectInstance::tiledRenderingFunctor
 
 
-EffectInstance::RenderRoIStatusEnum
+ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectToRender,
                                                       const RenderRoIArgs* args,
                                                       const RenderScale &renderMappedScale,
@@ -332,7 +325,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     {
         bool gotPlanes = _publicInterface->getImagePlanes(*renderArgs, &inputResults);
         if (!gotPlanes) {
-            return eRenderRoIStatusRenderFailed;
+            return eActionStatusFailed;
         }
     }
 
@@ -347,7 +340,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         it->second.tmpImage->copyPixels(*foundIdentityPlane->second, cpyArgs);
     }
 
-    return eRenderRoIStatusImageRendered;
+    return eActionStatusOK;
 } // renderHandlerIdentity
 
 template <typename GL>
@@ -430,7 +423,7 @@ static void finishGLRender()
     glCheckError(GL);
 }
 
-EffectInstance::RenderRoIStatusEnum
+ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDataPtr& tls,
                                                       const RectToRender & rectToRender,
                                                       const RenderRoIArgs* args,
@@ -491,7 +484,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
                 setupGLForRender<GL_CPU>(mainImagePlane, openGLContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
             }
         }
-        StatusEnum st;
+        ActionRetCodeEnum stat;
         {
 
             ///This RAII struct controls the lifetime of the render action arguments
@@ -502,7 +495,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
                                                       actionArgs.roi,
                                                       planesToRender->planes);
 
-            st = _publicInterface->render_public(actionArgs);
+            stat = _publicInterface->render_public(actionArgs);
         }
 
         if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
@@ -517,19 +510,13 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
             }
         }
 
-        switch (st) {
-            case eStatusFailed:
-                return eRenderRoIStatusRenderFailed;
-            case eStatusOutOfMemory:
-                return eRenderRoIStatusRenderOutOfGPUMemory;
-            case eStatusOK:
-            default:
-                break;
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
 
     } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
-    return eRenderRoIStatusImageRendered;
+    return eActionStatusOK;
 } // EffectInstance::Implementation::renderHandlerInternal
 
 

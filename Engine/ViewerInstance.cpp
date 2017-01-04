@@ -181,7 +181,7 @@ ViewerInstance::createPlugin()
 }
 
 ViewerInstance::ViewerInstance(const NodePtr& node)
-    : OutputEffectInstance(node)
+    : EffectInstance(node)
     , _imp( new ViewerInstancePrivate(this) )
 {
     // always running in the main thread
@@ -206,13 +206,7 @@ ViewerInstance::getViewerNodeGroup() const
     return ret;
 }
 
-RenderEngine*
-ViewerInstance::createRenderEngine()
-{
-    boost::shared_ptr<ViewerInstance> thisShared = toViewerInstance( shared_from_this() );
 
-    return new ViewerRenderEngine(thisShared);
-}
 
 OpenGLViewerI*
 ViewerInstance::getUiContext() const
@@ -335,6 +329,62 @@ ViewerInstance::getInputRecursive(int inputIndex) const
         return inputRet;
     }
 }
+
+bool
+ViewerInstance::isMultiPlanar() const
+{
+    return false;
+}
+
+EffectInstance::PassThroughEnum
+ViewerInstance::isPassThroughForNonRenderedPlanes() const
+{
+    return ePassThroughPassThroughNonRenderedPlanes;
+}
+
+ActionRetCodeEnum
+ViewerInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+{
+
+} // attachOpenGLContext
+
+ActionRetCodeEnum
+ViewerInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
+{
+
+} // dettachOpenGLContext
+
+ActionRetCodeEnum
+ViewerInstance::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod)
+{
+
+} // getRegionOfDefinition
+
+ActionRetCodeEnum
+ViewerInstance::getRegionsOfInterest(TimeValue time,
+                                     const RenderScale & scale,
+                                     const RectD & renderWindow,
+                                     ViewIdx view,
+                                     const TreeRenderNodeArgsPtr& render,
+                                     RoIMap* ret)
+{
+
+} // getRegionsOfInterest
+
+
+ActionRetCodeEnum
+ViewerInstance::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results)
+{
+
+} // getFramesNeeded
+
+ActionRetCodeEnum
+ViewerInstance::render(const RenderActionArgs& args)
+{
+
+} // render
+
+
 
 void
 ViewerInstance::refreshLayerAndAlphaChannelComboBox()
@@ -574,68 +624,6 @@ ViewerInstance::renderViewer(ViewIdx view,
 } // ViewerInstance::renderViewer
 
 
-static unsigned char*
-getTexPixel(int x,
-            int y,
-            const TextureRect& bounds,
-            std::size_t pixelDepth,
-            unsigned char* bufStart)
-{
-    if ( ( x < bounds.x1 ) || ( x >= bounds.x2 ) || ( y < bounds.y1 ) || ( y >= bounds.y2 ) ) {
-        return NULL;
-    } else {
-        int compDataSize = pixelDepth * 4;
-
-        return (unsigned char*)(bufStart)
-               + (qint64)( y - bounds.y1 ) * compDataSize * bounds.width()
-               + (qint64)( x - bounds.x1 ) * compDataSize;
-    }
-}
-
-static bool
-copyAndSwap(const TextureRect& srcRect,
-            const TextureRect& dstRect,
-            std::size_t dstBytesCount,
-            ImageBitDepthEnum bitdepth,
-            unsigned char* srcBuf,
-            unsigned char** dstBuf)
-{
-    // Ensure it has the correct size, resize it if needed
-    if ( (srcRect.x1 == dstRect.x1) &&
-         ( srcRect.y1 == dstRect.y1) &&
-         ( srcRect.x2 == dstRect.x2) &&
-         ( srcRect.y2 == dstRect.y2) ) {
-        *dstBuf = srcBuf;
-
-        return false;
-    }
-
-    // Use calloc so that newly allocated areas are already black and transparent
-    unsigned char* tmpBuf = (unsigned char*)calloc(dstBytesCount, 1);
-
-    if (!tmpBuf) {
-        *dstBuf = 0;
-
-        return true;
-    }
-
-    std::size_t pixelDepth = getSizeOfForBitDepth(bitdepth);
-    unsigned char* dstPixels = getTexPixel(srcRect.x1, srcRect.y1, dstRect, pixelDepth, tmpBuf);
-    assert(dstPixels);
-    const unsigned char* srcPixels = getTexPixel(srcRect.x1, srcRect.y1, srcRect, pixelDepth, srcBuf);
-    assert(srcPixels);
-
-    std::size_t srcRowSize = srcRect.width() * 4 * pixelDepth;
-    std::size_t dstRowSize = dstRect.width() * 4 * pixelDepth;
-
-    for (int y = srcRect.y1; y < srcRect.y2;
-         ++y, srcPixels += srcRowSize, dstPixels += dstRowSize) {
-        std::memcpy(dstPixels, srcPixels, srcRowSize);
-    }
-    *dstBuf = tmpBuf;
-
-    return true;
-}
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::getRenderViewerArgsAndCheckCache_public(SequenceTime time,
@@ -1020,7 +1008,7 @@ ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
         // Get the RoD here to be able to figure out what is the RoI of the Viewer.
         // Note that we are in the main-thread (OpenGL) thread here to optimize the code path when all textures are cached
         // so we cannot afford computing the actual RoD. If it's not cached then we will actually compute the RoD in the render thread.
-        StatusEnum stat;
+        ActionRetCodeEnum stat;
 
         if (useOnlyRoDCache) {
             stat = eStatusFailed;
@@ -1756,41 +1744,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
     return eViewerRenderRetCodeRender;
 } // renderViewer_internal
 
-void
-ViewerInstance::aboutToUpdateTextures()
-{
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->clearPartialUpdateTextures();
-    }
-}
 
-bool
-ViewerInstance::isViewerUIVisible() const
-{
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        return uiContext->isViewerUIVisible();
-    }
-    return false;
-}
-
-void
-ViewerInstance::updateViewer(boost::shared_ptr<UpdateViewerParams> & frame)
-{
-    if (!frame) {
-        return;
-    }
-    if (frame->isViewerPaused) {
-        return;
-    }
-    if ( getViewerNodeGroup()->isViewerPaused(frame->textureIndex) ) {
-        return;
-    }
-    _imp->updateViewer( boost::dynamic_pointer_cast<UpdateViewerParams>(frame) );
-}
 
 void
 renderFunctor(const RectI& roi,
@@ -2319,33 +2273,6 @@ ViewerInstance::interpolateGammaLut(float value)
     return _imp->lookupGammaLut(value);
 }
 
-void
-ViewerInstance::markAllOnGoingRendersAsAborted(bool keepOldestRender)
-{
-    //Do not abort the oldest render while scrubbing timeline or sliders so that the user gets some feedback
-    bool keepOldest = getApp()->isDraftRenderEnabled() || isDoingPartialUpdates() || keepOldestRender;
-    QMutexLocker k(&_imp->renderAgeMutex);
-
-    for (int i = 0; i < 2; ++i) {
-        if ( _imp->currentRenderAges[i].empty() ) {
-            continue;
-        }
-
-        //Do not abort the oldest render, let it finish
-        OnGoingRenders::iterator it = _imp->currentRenderAges[i].begin();
-
-        if (keepOldest) {
-            // Only keep the oldest render active if it is worth displaying!
-            if ((*it)->getRenderAge() >= _imp->displayAge[i]) {
-                ++it;
-            }
-        }
-
-        for (; it != _imp->currentRenderAges[i].end(); ++it) {
-            (*it)->setAborted();
-        }
-    }
-}
 
 template <typename PIX, int maxValue, bool opaque, bool applyMatte, int rOffset, int gOffset, int bOffset>
 void
@@ -2763,43 +2690,7 @@ ViewerInstance::isInputOptional(int /*n*/) const
     return true;
 }
 
-void
-ViewerInstance::disconnectViewer()
-{
-    // always running in the render thread
-    OpenGLViewerI* uiContext = getUiContext();
-    ViewerNodePtr node = getViewerNodeGroup();
-    if (uiContext) {
-        node->s_viewerDisconnected();
-    }
-}
 
-void
-ViewerInstance::disconnectTexture(int index,bool clearRod)
-{
-    OpenGLViewerI* uiContext = getUiContext();
-    ViewerNodePtr node = getViewerNodeGroup();
-    if (uiContext) {
-        node->s_disconnectTextureRequest(index, clearRod);
-    }
-}
-
-void
-ViewerInstance::redrawViewer()
-{
-    getViewerNodeGroup()->redrawViewer();
-}
-
-void
-ViewerInstance::redrawViewerNow()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->redrawNow();
-    }
-}
 
 void
 ViewerInstance::callRedrawOnMainThread()
@@ -2836,7 +2727,7 @@ ViewerInstance::isInputChangeRequestedFromViewer() const
 
 
 
-StatusEnum
+ActionRetCodeEnum
 ViewerInstance::getTimeInvariantMetadatas(NodeMetadata& /*metadata*/)
 {
     ViewerNodePtr node = getViewerNodeGroup();
@@ -2876,34 +2767,6 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthByte);
 }
 
-int
-ViewerInstance::getLastRenderedTime() const
-{
-    OpenGLViewerI* uiContext = getUiContext();
-
-    return uiContext ? uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
-}
-
-TimeLinePtr
-ViewerInstance::getTimeline() const
-{
-    OpenGLViewerI* uiContext = getUiContext();
-
-    return uiContext ? uiContext->getTimeline() : getApp()->getTimeLine();
-}
-
-void
-ViewerInstance::getTimelineBounds(int* first,
-                                  int* last) const
-{
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->getViewerFrameRange(first, last);
-    } else {
-        *first = 0;
-        *last = 0;
-    }
-}
 
 int
 ViewerInstance::getMipMapLevelFromZoomFactor() const
@@ -2915,12 +2778,7 @@ ViewerInstance::getMipMapLevelFromZoomFactor() const
     return std::log(closestPowerOf2) / M_LN2;
 }
 
-TimeValue
-ViewerInstance::getTimelineCurrentTime() const
-{
-    TimeLinePtr timeline = getTimeline();
-    return TimeValue(timeline->currentFrame());
-}
+
 
 bool
 ViewerInstance::isLatestRender(int textureIndex,
@@ -2982,14 +2840,7 @@ ViewerInstance::isDoingPartialUpdates() const
     return _imp->isDoingPartialUpdates;
 }
 
-void
-ViewerInstance::reportStats(int time,
-                            ViewIdx view,
-                            double wallTime,
-                            const RenderStatsMap& stats)
-{
-    getViewerNodeGroup()->reportStats(time, view, wallTime, stats);
-}
+
 
 NATRON_NAMESPACE_EXIT;
 NATRON_NAMESPACE_USING

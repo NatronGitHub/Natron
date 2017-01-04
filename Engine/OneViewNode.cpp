@@ -114,7 +114,7 @@ OneViewNode::initializeKnobs()
     _imp->viewKnob = viewKnob;
 }
 
-StatusEnum
+ActionRetCodeEnum
 OneViewNode::isIdentity(TimeValue time,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
@@ -131,10 +131,10 @@ OneViewNode::isIdentity(TimeValue time,
     *inputNb = 0;
     *inputTime = time;
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 OneViewNode::getFramesNeeded(TimeValue time,
                              ViewIdx /*view*/,
                              const TreeRenderNodeArgsPtr& /*render*/,
@@ -149,7 +149,7 @@ OneViewNode::getFramesNeeded(TimeValue time,
     ranges.resize(1);
     ranges[0].min = ranges[0].max = time;
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 void

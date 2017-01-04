@@ -1489,16 +1489,16 @@ public:
     std::pair<double, double> getParametricRange() const WARN_UNUSED_RETURN;
     CurvePtr getParametricCurve(DimIdx dimension, ViewIdx view) const;
     CurvePtr getDefaultParametricCurve(DimIdx dimension) const;
-    StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
-    StatusEnum evaluateCurve(DimIdx dimension, ViewIdx view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNControlPoints(DimIdx dimension, ViewIdx view, int *returnValue) const WARN_UNUSED_RETURN;
-    StatusEnum getNthControlPoint(DimIdx dimension,
+    ActionRetCodeEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum addControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, double key, double value, double leftDerivative, double rightDerivative, KeyframeTypeEnum interpolation = eKeyframeTypeSmooth) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum evaluateCurve(DimIdx dimension, ViewIdx view, double parametricPosition, double *returnValue) const WARN_UNUSED_RETURN;
+    ActionRetCodeEnum getNControlPoints(DimIdx dimension, ViewIdx view, int *returnValue) const WARN_UNUSED_RETURN;
+    ActionRetCodeEnum getNthControlPoint(DimIdx dimension,
                                   ViewIdx view,
                                   int nthCtl,
                                   double *key,
                                   double *value) const WARN_UNUSED_RETURN;
-    StatusEnum getNthControlPoint(DimIdx dimension,
+    ActionRetCodeEnum getNthControlPoint(DimIdx dimension,
                                   ViewIdx view,
                                   int nthCtl,
                                   double *key,
@@ -1506,20 +1506,20 @@ public:
                                   double *leftDerivative,
                                   double *rightDerivative) const WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPointInterpolation(ValueChangedReasonEnum reason,
+    ActionRetCodeEnum setNthControlPointInterpolation(ValueChangedReasonEnum reason,
                                                DimIdx dimension,
                                                ViewSetSpec view,
                                                int nThCtl,
                                                KeyframeTypeEnum interpolation) WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
+    ActionRetCodeEnum setNthControlPoint(ValueChangedReasonEnum reason,
                                   DimIdx dimension,
                                   ViewSetSpec view,
                                   int nthCtl,
                                   double key,
                                   double value) WARN_UNUSED_RETURN;
 
-    StatusEnum setNthControlPoint(ValueChangedReasonEnum reason,
+    ActionRetCodeEnum setNthControlPoint(ValueChangedReasonEnum reason,
                                   DimIdx dimension,
                                   ViewSetSpec view,
                                   int nthCtl,
@@ -1529,8 +1529,8 @@ public:
                                   double rightDerivative) WARN_UNUSED_RETURN;
 
 
-    StatusEnum deleteControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view, int nthCtl) WARN_UNUSED_RETURN;
-    StatusEnum deleteAllControlPoints(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum deleteControlPoint(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view, int nthCtl) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum deleteAllControlPoints(ValueChangedReasonEnum reason, DimIdx dimension, ViewSetSpec view) WARN_UNUSED_RETURN;
     static const std::string & typeNameStatic() WARN_UNUSED_RETURN;
 
     void saveParametricCurves(std::map<std::string,std::list< SERIALIZATION_NAMESPACE::CurveSerialization > >* curves) const;

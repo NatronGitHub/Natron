@@ -63,7 +63,7 @@ TimeLine::getLastSeekReason() const
 void
 TimeLine::seekFrame(SequenceTime frame,
                     bool updateLastCaller,
-                    const OutputEffectInstancePtr& caller,
+                    const EffectInstancePtr& caller,
                     TimelineChangeReasonEnum reason)
 {
     if (reason != eTimelineChangeReasonPlaybackSeek) {

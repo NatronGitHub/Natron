@@ -95,7 +95,7 @@ public Q_SLOTS:
 private:
 
 
-    virtual StatusEnum isIdentity(TimeValue time,
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,

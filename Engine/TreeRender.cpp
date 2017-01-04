@@ -41,6 +41,7 @@
 #include "Engine/Timer.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/TreeRenderNodeArgs.h"
+#include "Engine/TLSHolder.h"
 
 // After this amount of time, if any thread identified in this render is still remaining
 // that means they are stuck probably doing a long processing that cannot be aborted or in a separate thread
@@ -65,7 +66,7 @@ struct TreeRenderPrivate
     TreeRender* _publicInterface;
     
     // The state of the object to avoid calling render on a failed tree
-    TreeRenderStateEnum state;
+    ActionRetCodeEnum state;
 
     // A map of the per node tree render args set on each node
     std::map<NodePtr, TreeRenderNodeArgsPtr> perNodeArgs;
@@ -133,7 +134,7 @@ struct TreeRenderPrivate
 
     TreeRenderPrivate(TreeRender* publicInterface)
     : _publicInterface(publicInterface)
-    , state(eTreeRenderStateOK)
+    , state(eActionStatusOK)
     , perNodeArgs()
     , nodes()
     , treeRoot()
@@ -175,10 +176,6 @@ struct TreeRenderPrivate
      **/
     void init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface);
 
-    /**
-     * @brief Should be called before launching any call to renderRoI to optimize the render
-     **/
-    StatusEnum optimizeRoI(unsigned int mipMapLevel, const RectD& canonicalRoI);
 
     void fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs);
 
@@ -627,9 +624,9 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     // Use the provided RoI, otherwise render the RoD
     if (canonicalRoI.isNull()) {
         GetRegionOfDefinitionResultsPtr results;
-        StatusEnum stat = effectToRender->getRegionOfDefinition_public(time, proxyMipMapScale, view, rootNodeArgs, &results);
-        if (stat == eStatusFailed) {
-            state = eTreeRenderStateInitFailed;
+        ActionRetCodeEnum stat = effectToRender->getRegionOfDefinition_public(time, proxyMipMapScale, view, rootNodeArgs, &results);
+        if (isFailureRetCode(stat)) {
+            state = stat;
             return;
         }
         assert(results);
@@ -640,9 +637,9 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     if (layers.empty()) {
         
         GetComponentsResultsPtr results;
-        StatusEnum stat = effectToRender->getComponents_public(time, view, rootNodeArgs, &results);
-        if (stat == eStatusFailed) {
-            state = eTreeRenderStateInitFailed;
+        ActionRetCodeEnum stat = effectToRender->getComponents_public(time, view, rootNodeArgs, &results);
+        if (isFailureRetCode(stat)) {
+            state = stat;
             return;
         }
         assert(results);
@@ -661,10 +658,10 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     // Cycle through the tree to make sure all nodes render once with the appropriate RoI
     {
         
-        StatusEnum stat = rootNodeArgs->roiVisitFunctor(time, view, proxyMipMapScale, canonicalRoI, effectToRender);
+        ActionRetCodeEnum stat = rootNodeArgs->roiVisitFunctor(time, view, proxyMipMapScale, canonicalRoI, effectToRender);
         
-        if (stat == eStatusFailed) {
-            state = eTreeRenderStateInitFailed;
+        if (isFailureRetCode(stat)) {
+            state = stat;
             return;
         }
     }
@@ -682,18 +679,20 @@ TreeRender::create(const CtorArgsPtr& inArgs)
         // This will also set the per node render object in the TLS for OpenFX effects.
         render->_imp->init(inArgs, render);
     } catch (...) {
-        render->_imp->state = eTreeRenderStateInitFailed;
+        render->_imp->state = eActionStatusFailed;
+        appPTR->getAppTLS()->cleanupTLSForThread();
+
     }
     
     return render;
 }
 
-RenderRoIRetCode
+ActionRetCodeEnum
 TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
 
-    if (_imp->state == eTreeRenderStateInitFailed) {
-        return eRenderRoIRetCodeFailed;
+    if (isFailureRetCode(_imp->state)) {
+        return _imp->state;
     }
     
     EffectInstancePtr effectToRender = _imp->treeRoot->getEffectInstance();
@@ -715,8 +714,17 @@ TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
                                                                                                      rootNodeRenderArgs));
     
     EffectInstance::RenderRoIResults results;
-    RenderRoIRetCode stat = effectToRender->renderRoI(*renderRoiArgs, &results);
+    ActionRetCodeEnum stat = eActionStatusFailed;
+    try {
+        stat = effectToRender->renderRoI(*renderRoiArgs, &results);
+    } catch (...) {
+        
+    }
     *outputPlanes = results.outputPlanes;
+
+
+    appPTR->getAppTLS()->cleanupTLSForThread();
+
     return stat;
 
 } // launchRender

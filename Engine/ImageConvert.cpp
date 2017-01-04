@@ -1151,7 +1151,7 @@ public:
 
 private:
 
-    virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
     {
         // This function is very optimized and templated for most common cases
         // In the best optimized case, memcpy is used
@@ -1171,7 +1171,7 @@ private:
                                       _dstTileData.bitDepth,
                                       _dstTileData.tileBounds,
                                       renderArgs);
-        return eStatusOK;
+        return eActionStatusOK;
     }
 };
 

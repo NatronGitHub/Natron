@@ -850,7 +850,7 @@ Param::curve(double time,
         PythonSetInvalidViewName(viewName);
         return 0.;
     }
-    return thisKnob->getRawCurveValueAt(time, thisViewSpec, DimIdx(dimension));
+    return thisKnob->getRawCurveValueAt(TimeValue(time), thisViewSpec, DimIdx(dimension));
 }
 
 bool
@@ -1035,7 +1035,7 @@ AnimatedParam::getKeyIndex(double time,
         return -1;
     }
 
-    return knob->getKeyFrameIndex(thisViewSpec, DimIdx(dimension), time);
+    return knob->getKeyFrameIndex(thisViewSpec, DimIdx(dimension), TimeValue(time));
 }
 
 bool
@@ -1083,7 +1083,7 @@ AnimatedParam::deleteValueAtTime(double time,
     }
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
 
-    knob->deleteValueAtTime(time, thisViewSpec, dim, eValueChangedReasonUserEdited);
+    knob->deleteValueAtTime(TimeValue(time), thisViewSpec, dim, eValueChangedReasonUserEdited);
 
 }
 
@@ -3876,7 +3876,7 @@ ParametricParam::getCurveColor(int dimension,
     ret.a = 1.;
 }
 
-StatusEnum
+bool
 ParametricParam::addControlPoint(int dimension,
                                  double key,
                                  double value,
@@ -3885,16 +3885,16 @@ ParametricParam::addControlPoint(int dimension,
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
     return knob->addControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), key, value, interpolation);
 }
 
-StatusEnum
+bool
 ParametricParam::addControlPoint(int dimension,
                                  double key,
                                  double value,
@@ -3905,11 +3905,11 @@ ParametricParam::addControlPoint(int dimension,
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
     return knob->addControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), key, value, leftDerivative, rightDerivative, interpolation);
 }
@@ -3928,9 +3928,9 @@ ParametricParam::getValue(int dimension,
         return 0.;
     }
     double ret;
-    StatusEnum stat =  knob->evaluateCurve(DimIdx(dimension), ViewIdx(0), parametricPosition, &ret);
+    ActionRetCodeEnum stat =  knob->evaluateCurve(DimIdx(dimension), ViewIdx(0), parametricPosition, &ret);
 
-    if (stat == eStatusFailed) {
+    if (isFailureRetCode(stat)) {
         ret =  0.;
     }
 
@@ -3950,16 +3950,16 @@ ParametricParam::getNControlPoints(int dimension) const
         return 0;
     }
     int ret;
-    StatusEnum stat =  knob->getNControlPoints(DimIdx(dimension), ViewIdx(0), &ret);
+    ActionRetCodeEnum stat =  knob->getNControlPoints(DimIdx(dimension), ViewIdx(0), &ret);
 
-    if (stat == eStatusFailed) {
+    if (isFailureRetCode(stat)) {
         ret = 0;
     }
 
     return ret;
 }
 
-StatusEnum
+bool
 ParametricParam::getNthControlPoint(int dimension,
                                     int nthCtl,
                                     double *key,
@@ -3970,16 +3970,17 @@ ParametricParam::getNthControlPoint(int dimension,
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
-    return knob->getNthControlPoint(DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
+    ActionRetCodeEnum stat = knob->getNthControlPoint(DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
+    return !isFailureRetCode(stat)
 }
 
-StatusEnum
+bool
 ParametricParam::setNthControlPoint(int dimension,
                                     int nthCtl,
                                     double key,
@@ -3990,16 +3991,17 @@ ParametricParam::setNthControlPoint(int dimension,
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
-    return knob->setNthControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
+    ActionRetCodeEnum stat = knob->setNthControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
+    return !isFailureRetCode(stat)
 }
 
-StatusEnum
+bool
 ParametricParam::setNthControlPointInterpolation(int dimension,
                                                  int nThCtl,
                                                  KeyframeTypeEnum interpolation)
@@ -4007,44 +4009,47 @@ ParametricParam::setNthControlPointInterpolation(int dimension,
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
-    return knob->setNthControlPointInterpolation(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nThCtl, interpolation);
+    ActionRetCodeEnum stat = knob->setNthControlPointInterpolation(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nThCtl, interpolation);
+    return !isFailureRetCode(stat)
 }
 
-StatusEnum
+bool
 ParametricParam::deleteControlPoint(int dimension,
                                     int nthCtl)
 {
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
-    return knob->deleteControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl);
+    ActionRetCodeEnum stat = knob->deleteControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl);
+    return !isFailureRetCode(stat)
 }
 
-StatusEnum
+bool
 ParametricParam::deleteAllControlPoints(int dimension)
 {
     KnobParametricPtr knob = _parametricKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return eStatusFailed;
+        return false;
     }
     if (dimension < 0 || dimension >= knob->getNDimensions()) {
         PythonSetInvalidDimensionError(dimension);
-        return eStatusFailed;
+        return false;
     }
-    return _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonUserEdited, DimIdx(dimension),ViewIdx(0));
+    ActionRetCodeEnum stat = _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonUserEdited, DimIdx(dimension),ViewIdx(0));
+    return !isFailureRetCode(stat)
 }
 
 void

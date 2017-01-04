@@ -73,7 +73,7 @@ DiskCacheNode::createPlugin()
 
 
 DiskCacheNode::DiskCacheNode(const NodePtr& node)
-    : OutputEffectInstance(node)
+    : EffectInstance(node)
     , _imp( new DiskCacheNodePrivate() )
 {
 }
@@ -179,7 +179,8 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
         }
     } else if (_imp->preRender.lock() == k) {
         AppInstance::RenderWork w;
-        w.writer = toOutputEffectInstance( shared_from_this() );
+        w.renderLabel = tr("Caching").toStdString();
+        w.writer = shared_from_this();
         assert(w.writer);
         w.firstFrame = INT_MIN;
         w.lastFrame = INT_MAX;
@@ -195,7 +196,7 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
     return ret;
 }
 
-StatusEnum
+ActionRetCodeEnum
 DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
                              double *first,
                              double *last)
@@ -211,8 +212,8 @@ DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
                 inputRender = render->getInputRenderArgs(0);
             }
             GetFrameRangeResultsPtr results;
-            StatusEnum stat = input->getFrameRange_public(inputRender, &results);
-            if (stat == eStatusFailed) {
+            ActionRetCodeEnum stat = input->getFrameRange_public(inputRender, &results);
+            if (isFailureRetCode(stat)) {
                 return stat;
             }
             RangeD range;
@@ -234,10 +235,10 @@ DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
     default:
         break;
     }
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
     // fetch source images and copy them
@@ -257,8 +258,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
         inArgs.renderBackend = &args.backendType;
         GetImageOutArgs outArgs;
         if (!getImagePlanes(inArgs, &outArgs)) {
-            setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
-            return eStatusFailed;
+            return eActionStatusInputDisconnected;
         }
 
         ImagePtr inputImage = outArgs.imagePlanes.begin()->second;
@@ -267,7 +267,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
         cpyArgs.roi = args.roi;
         it->second->copyPixels(*inputImage, cpyArgs);
     }
-    return eStatusOK;
+    return eActionStatusOK;
 
 } // render
 

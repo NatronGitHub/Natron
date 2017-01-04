@@ -1140,7 +1140,7 @@ WriteNode::isViewAware() const
     return false;
 }
 
-StatusEnum
+ActionRetCodeEnum
 WriteNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
                          double *first,
                          double *last)

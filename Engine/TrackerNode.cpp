@@ -1582,8 +1582,8 @@ TrackerNodePrivate::getInputRoD(TimeValue time, ViewIdx view) const
     if (!inputEffect) {
         useProjFormat = true;
     } else {
-        StatusEnum stat = inputEffect->getRegionOfDefinition_public(0, time, RenderScale(1.), view, &ret);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(0, time, RenderScale(1.), view, &ret);
+        if (isFailureRetCode(stat)) {
             useProjFormat = true;
         } else {
             return ret;

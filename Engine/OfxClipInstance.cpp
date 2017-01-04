@@ -245,8 +245,8 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
     TreeRenderNodeArgsPtr renderArgs = effect->getCurrentRender_TLS();
 
     GetComponentsResultsPtr actionResults;
-    StatusEnum stat = effect->getComponents_public(time, view, renderArgs, &actionResults);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = effect->getComponents_public(time, view, renderArgs, &actionResults);
+    if (isFailureRetCode(stat)) {
         return tls->componentsPresent;
     }
     std::map<int, std::list<ImageComponents> > neededInputLayers;
@@ -401,8 +401,8 @@ OfxClipInstance::getFrameRange(double &startFrame,
     } else {
         TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
         GetFrameRangeResultsPtr results;
-        StatusEnum stat = effect->getFrameRange_public(render, &results);
-        if (stat != eStatusFailed) {
+        ActionRetCodeEnum stat = effect->getFrameRange_public(render, &results);
+        if (!isFailureRetCode(stat)) {
             RangeD range;
             results->getFrameRangeResults(&range);
             startFrame = range.min;
@@ -507,8 +507,8 @@ OfxClipInstance::getRegionOfDefinitionInternal(OfxTime time,
     }
 
     GetRegionOfDefinitionResultsPtr rodResults;
-    StatusEnum st = associatedNode->getRegionOfDefinition_public(TimeValue(time), scale, view, associatedNodeRenderArgs, &rodResults);
-    if (st == eStatusFailed) {
+    ActionRetCodeEnum stat = associatedNode->getRegionOfDefinition_public(TimeValue(time), scale, view, associatedNodeRenderArgs, &rodResults);
+    if (isFailureRetCode(stat)) {
         ret->x1 = 0.;
         ret->x2 = 0.;
         ret->y1 = 0.;
@@ -736,8 +736,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     } else {
 
         GetComponentsResultsPtr actionResults;
-        StatusEnum stat = effect->getComponents_public(currentActionTime, currentActionView, renderArgs, &actionResults);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = effect->getComponents_public(currentActionTime, currentActionView, renderArgs, &actionResults);
+        if (isFailureRetCode(stat)) {
             return false;
         }
 
@@ -847,8 +847,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     {
 
         GetRegionOfDefinitionResultsPtr rodResults;
-        StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, currentActionScale, inputView, inputRenderArgs, &rodResults);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, currentActionScale, inputView, inputRenderArgs, &rodResults);
+        if (isFailureRetCode(stat)) {
             return false;
         }
         rod = rodResults->getRoD();
@@ -988,8 +988,8 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     {
 
         GetRegionOfDefinitionResultsPtr rodResults;
-        StatusEnum stat = effect->getRegionOfDefinition_public(currentActionTime, currentActionScale, currentActionView, renderArgs, &rodResults);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(currentActionTime, currentActionScale, currentActionView, renderArgs, &rodResults);
+        if (isFailureRetCode(stat)) {
             return false;
         }
         rod = rodResults->getRoD();

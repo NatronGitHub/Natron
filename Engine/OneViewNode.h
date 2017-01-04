@@ -109,8 +109,8 @@ public Q_SLOTS:
 private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual StatusEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum isIdentity(TimeValue time,
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,

@@ -815,7 +815,7 @@ TreeRenderNodeArgs::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) co
     return found->second->getHash(hash);
 }
 
-StatusEnum
+ActionRetCodeEnum
 TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
                                     ViewIdx view,
                                     const RenderScale& scale,
@@ -858,9 +858,9 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
 
     {
         IsIdentityResultsPtr results;
-        StatusEnum stat = effect->isIdentity_public(true, time, mappedScale, identityRegionPixel, view, thisShared, &results);
-        if (stat == eStatusFailed) {
-            return eStatusFailed;
+        ActionRetCodeEnum stat = effect->isIdentity_public(true, time, mappedScale, identityRegionPixel, view, thisShared, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         results->getIdentityData(&identityInputNb, &identityTime, &identityView);
     }
@@ -872,7 +872,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
         bool finalRoIEmpty = finalRoi.isNull();
         if (!finalRoIEmpty && finalRoi.contains(canonicalRenderWindow)) {
             // Do not recurse if the roi did not add anything new to render
-            return eStatusOK;
+            return eActionStatusOK;
         }
         if (finalRoIEmpty) {
             fvRequest->setCurrentRoI(canonicalRenderWindow);
@@ -888,17 +888,17 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
         if ( (identityTime != time) || (viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ) {
 
             ViewIdx inputView = (view != 0 && viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
-            StatusEnum stat = roiVisitFunctor(identityTime,
-                                              inputView,
-                                              scale,
-                                              canonicalRenderWindow,
-                                              effect);
+            ActionRetCodeEnum stat = roiVisitFunctor(identityTime,
+                                                     inputView,
+                                                     scale,
+                                                     canonicalRenderWindow,
+                                                     effect);
 
             return stat;
         }
 
         //Should fail on the assert above
-        return eStatusFailed;
+        return eActionStatusFailed;
     } else if (identityInputNb != -1) {
         EffectInstancePtr inputEffectIdentity = effect->getInput(identityInputNb);
         if (inputEffectIdentity) {
@@ -909,7 +909,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
             TreeRenderNodeArgsPtr inputFrameArgs = getInputRenderArgs(identityInputNb);
             assert(inputFrameArgs);
 
-            StatusEnum stat = inputFrameArgs->roiVisitFunctor(identityTime,
+            ActionRetCodeEnum stat = inputFrameArgs->roiVisitFunctor(identityTime,
                                                               identityView,
                                                               scale,
                                                               canonicalRenderWindow,
@@ -919,7 +919,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
         }
 
         // Aalways accept if identity has no input, it will produce a black image in the worst case scenario.
-        return eStatusOK;
+        return eActionStatusInputDisconnected;
     }
 
 
@@ -929,8 +929,8 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
     RoIMap inputsRoi;
     {
-        StatusEnum stat = effect->getRegionsOfInterest_public(time, mappedScale, canonicalRenderWindow, view, thisShared, &inputsRoi);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = effect->getRegionsOfInterest_public(time, mappedScale, canonicalRenderWindow, view, thisShared, &inputsRoi);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
     }
@@ -940,9 +940,9 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     FramesNeededMap framesNeeded;
     {
         GetFramesNeededResultsPtr results;
-        StatusEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
-        if (stat == eStatusFailed) {
-            return eStatusFailed;
+        ActionRetCodeEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         results->getFramesNeeded(&framesNeeded);
     }
@@ -969,7 +969,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
         if ( foundInputRoI->second.isInfinite() ) {
             effect->setPersistentMessage( eMessageTypeError, effect->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
 
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         if ( foundInputRoI->second.isNull() ) {
             continue;
@@ -985,14 +985,14 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
                 // For all frames in the range
                 for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
 
-                    StatusEnum stat = inputRenderArgs->roiVisitFunctor(TimeValue(f),
+                    ActionRetCodeEnum stat = inputRenderArgs->roiVisitFunctor(TimeValue(f),
                                                                        viewIt->first,
                                                                        scale,
                                                                        roi,
                                                                        effect);
 
-                    if (stat == eStatusFailed) {
-                        return eStatusFailed;
+                    if (isFailureRetCode(stat)) {
+                        return stat;
                     }
                 }
 
@@ -1001,7 +1001,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     }
 
 
-    return eStatusOK;
+    return eActionStatusOK;
 } // roiVisitFunctor
 
 struct PreRenderFrame
@@ -1014,7 +1014,7 @@ struct PreRenderResult
 {
     EffectInstance::RenderRoIResults results;
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-    RenderRoIRetCode stat;
+    ActionRetCodeEnum stat;
 };
 
 static
@@ -1037,7 +1037,7 @@ preRenderFrameFunctor(const PreRenderFrame& args)
     return results;
 }
 
-RenderRoIRetCode
+ActionRetCodeEnum
 TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
                                          ViewIdx view,
                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers)
@@ -1054,9 +1054,9 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
     FramesNeededMap framesNeeded;
     {
         GetFramesNeededResultsPtr results;
-        StatusEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
-        if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+        ActionRetCodeEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         results->getFramesNeeded(&framesNeeded);
     }
@@ -1169,7 +1169,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
 
     if (preRenderFrames.empty()) {
         // Nothing to pre-render in input
-        return eRenderRoIRetCodeOk;
+        return eActionStatusOK;
     }
 
     // Launch all pre-renders in concurrent threads using the global thread pool.
@@ -1210,7 +1210,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
     for (std::vector<PreRenderResult>::const_iterator it = allResults.begin(); it != allResults.end(); ++it) {
 
         // If a pre-render failed, fail all the render
-        if (it->stat != eRenderRoIRetCodeOk) {
+        if (isFailureRetCode(it->first)) {
             return it->stat;
         }
 

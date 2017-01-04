@@ -587,23 +587,23 @@ Gui::updateLastOpenedProjectPath(const QString & project)
 
 void
 Gui::onRenderStarted(const QString & sequenceName,
-                     int firstFrame,
-                     int lastFrame,
-                     int frameStep,
+                     TimeValue firstFrame,
+                     TimeValue lastFrame,
+                     TimeValue frameStep,
                      bool canPause,
-                     const OutputEffectInstancePtr& writer,
+                     const NodePtr& writer,
                      const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->_progressPanel->startTask(writer->getNode(), firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
+    _imp->_progressPanel->startTask(writer, firstFrame, lastFrame, frameStep, canPause, true, sequenceName, process);
 }
 
 void
-Gui::onRenderRestarted(const OutputEffectInstancePtr& writer,
+Gui::onRenderRestarted(const NodePtr& writer,
                        const ProcessHandlerPtr & process)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    _imp->_progressPanel->onTaskRestarted(writer->getNode(), process);
+    _imp->_progressPanel->onTaskRestarted(writer, process);
 }
 
 void
@@ -711,11 +711,11 @@ Gui::renderSelectedNode()
             continue;
         }
         if ( effect->isWriter() ) {
-            if ( !effect->areKnobsFrozen() ) {
+            if ( !internalNode->isDoingSequentialRender() ) {
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
                 AppInstance::RenderWork w;
-                w.writer = toOutputEffectInstance(effect);
+                w.writer = effect;
                 assert(w.writer);
                 w.firstFrame = INT_MIN;
                 w.lastFrame = INT_MAX;
@@ -735,7 +735,7 @@ Gui::renderSelectedNode()
                 NodePtr writer = getApp()->createWriter( std::string(), args );
                 if (writer) {
                     AppInstance::RenderWork w;
-                    w.writer = toOutputEffectInstance( writer->getEffectInstance() );
+                    w.writer = writer->getEffectInstance();
                     assert(w.writer);
                     w.firstFrame = INT_MIN;
                     w.lastFrame = INT_MAX;
@@ -851,7 +851,7 @@ Gui::onMustRefreshViewersAndKnobsLaterReceived()
     }
 
 
-    ViewerInstancePtr leadViewer = getApp()->getLastViewerUsingTimeline();
+    ViewerNodePtr leadViewer = getApp()->getLastViewerUsingTimeline();
     const std::list<ViewerTab*>& viewers = getViewersList();
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {

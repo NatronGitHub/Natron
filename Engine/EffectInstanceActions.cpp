@@ -46,7 +46,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getComponentsAction(TimeValue time,
                                                ViewIdx view,
                                                const TreeRenderNodeArgsPtr& render,
@@ -59,7 +59,7 @@ EffectInstance::getComponentsAction(TimeValue time,
     bool processAllRequested;
     std::bitset<4> processChannels;
     getDefaultComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 } // getComponentsNeededAndProduced
 
 void
@@ -173,7 +173,7 @@ EffectInstance::getDefaultComponentsNeededAndProduced(TimeValue time,
     } // for each input
 } // getDefaultComponentsNeededAndProduced
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getComponentsNeededInternal(TimeValue time,
                                             ViewIdx view,
                                             const TreeRenderNodeArgsPtr& render,
@@ -192,8 +192,8 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
         // call the getClipComponents action
 
-        StatusEnum stat = getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
 
@@ -203,7 +203,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
         *processAllRequested = false;
     }
-    return eStatusOK;
+    return eActionStatusOK;
 
 }
 
@@ -244,7 +244,7 @@ static void removeFromLayersList(const std::list<ImageComponents>& toRemove,
 
 } // removeFromLayersList
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
 
 {
@@ -276,7 +276,7 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
         GetComponentsResultsPtr cached = fvRequest->getComponentsResults();
         if (cached) {
             *results = cached;
-            return eStatusOK;
+            return eActionStatusOK;
         }
         fvRequest->getHash(&hash);
     }
@@ -302,7 +302,7 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
     GetComponentsResultsPtr ret = toGetComponentsResults(cacheAccess.isCached());
     if (ret) {
         *results = ret;
-        return eStatusOK;
+        return eActionStatusOK;
     }
     ret = GetComponentsResults::create(cacheKey);
 
@@ -331,8 +331,8 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
 #endif
                                                   );
 
-        StatusEnum stat = getComponentsNeededInternal(time, view, render, &inputLayersNeeded, &outputLayersProduced, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getComponentsNeededInternal(time, view, render, &inputLayersNeeded, &outputLayersProduced, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
     }
@@ -352,9 +352,9 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
                 inputRenderArgs = render->getInputRenderArgs(passThroughInputNb);
             }
             GetComponentsResultsPtr upstreamResults;
-            StatusEnum stat = getComponents_public(time, view, inputRenderArgs, &upstreamResults);
-            if (stat == eStatusFailed) {
-                return eStatusFailed;
+            ActionRetCodeEnum stat = getComponents_public(time, view, inputRenderArgs, &upstreamResults);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
 
             std::map<int, std::list<ImageComponents> > upstreamInputLayersNeeded;
@@ -386,12 +386,12 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
     }
     cacheAccess.setEntry(ret);
 
-    return eStatusOK;
+    return eActionStatusOK;
     
 } // getComponents_public
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale,
                                            const TreeRenderNodeArgsPtr& renderArgs,
                                            const OSGLContextPtr& glContext,
@@ -414,7 +414,7 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
         // The context is already attached
         *data = found->second;
 
-        return eStatusOK;
+        return eActionStatusOK;
     }
 
     EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
@@ -425,9 +425,9 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
 #endif
                                               );
 
-    StatusEnum ret = attachOpenGLContext(time, view, scale, renderArgs, glContext, data);
+    ActionRetCodeEnum stat = attachOpenGLContext(time, view, scale, renderArgs, glContext, data);
 
-    if ( (ret == eStatusOK) || (ret == eStatusReplyDefault) ) {
+    if (!isFailureRetCode(stat)) {
         if (!concurrentGLRender) {
             (*data)->setHasTakenLock(true);
         }
@@ -437,7 +437,7 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
     }
 
     // Take the lock until dettach is called for plug-ins that do not support concurrent GL renders
-    return ret;
+    return stat;
 
 } // attachOpenGLContext_public
 
@@ -469,21 +469,21 @@ EffectInstance::dettachAllOpenGLContexts()
 
 } // dettachAllOpenGLContexts
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/)
 {
-    return eStatusReplyDefault;
+    return eActionStatusReplyDefault;
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/)
 {
-    return eStatusReplyDefault;
+    return eActionStatusReplyDefault;
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
 {
 
@@ -508,7 +508,7 @@ EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderA
 #endif
                                               );
 
-    StatusEnum ret = dettachOpenGLContext(renderArgs, glContext, data);
+    ActionRetCodeEnum ret = dettachOpenGLContext(renderArgs, glContext, data);
     if (mustUnlock) {
         _imp->attachedContextsMutex.unlock();
     }
@@ -518,7 +518,7 @@ EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderA
 } // dettachOpenGLContext_public
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::beginSequenceRender(double /*first*/,
                                        double /*last*/,
                                        double /*step*/,
@@ -532,10 +532,10 @@ EffectInstance::beginSequenceRender(double /*first*/,
                                        const EffectOpenGLContextDataPtr& /*glContextData*/,
                                        const TreeRenderNodeArgsPtr& /*render*/)
 {
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 }
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::endSequenceRender(double /*first*/,
                                      double /*last*/,
                                      double /*step*/,
@@ -549,32 +549,28 @@ EffectInstance::endSequenceRender(double /*first*/,
                                      const EffectOpenGLContextDataPtr& /*glContextData*/,
                                      const TreeRenderNodeArgsPtr& /*render*/)
 {
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::render(const RenderActionArgs & /*args*/)
 {
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
 
     REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
-    try {
-        return render(args);
-    } catch (...) {
-        // Any exception thrown here will fail render
-        return eStatusFailed;
-    }
+    return render(args);
+
 } // render_public
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::beginSequenceRender_public(double first,
                                            double last,
                                            double step,
@@ -606,7 +602,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData, render);
 } // beginSequenceRender_public
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::endSequenceRender_public(double first,
                                          double last,
                                          double step,
@@ -637,17 +633,17 @@ EffectInstance::endSequenceRender_public(double first,
 
 } // endSequenceRender_public
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getDistorsion(TimeValue /*time*/,
                                  const RenderScale & /*renderScale*/,
                                  ViewIdx /*view*/,
                                  const TreeRenderNodeArgsPtr& /*render*/,
                                  DistorsionFunction2D* /*distorsion*/)
 {
-    return eStatusReplyDefault;
+    return eActionStatusReplyDefault;
 }
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getDistorsion_public(TimeValue inArgsTime,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
@@ -685,7 +681,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
         GetDistorsionResultsPtr cachedDisto = fvRequest->getDistorsionResults();
         if (cachedDisto) {
             *outDisto = cachedDisto;
-            return eStatusOK;
+            return eActionStatusOK;
         }
         fvRequest->getHash(&hash);
     }
@@ -712,7 +708,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     GetDistorsionResultsPtr ret = toGetDistorsionResults(cacheAccess.isCached());
     if (ret) {
         *outDisto = ret;
-        return eStatusOK;
+        return eActionStatusOK;
     }
     ret = GetDistorsionResults::create(cacheKey);
 
@@ -744,8 +740,8 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
                                                   );
 
         // Call the action
-        StatusEnum stat = getDistorsion(time, renderScale, view, render, distorsion.get());
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getDistorsion(time, renderScale, view, render, distorsion.get());
+        if (isFailureRetCode(stat)) {
             return stat;
         }
 
@@ -759,11 +755,11 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     
     *outDisto = ret;
     cacheAccess.setEntry(ret);
-    return eStatusOK;
+    return eActionStatusOK;
 
 } // getDistorsion_public
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::isIdentity(TimeValue /*time*/,
                       const RenderScale & /*scale*/,
                       const RectI & /*roi*/,
@@ -774,11 +770,11 @@ EffectInstance::isIdentity(TimeValue /*time*/,
                       int* inputNb)
 {
     *inputNb = -1;
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                                   TimeValue time,
                                   const RenderScale & scale,
@@ -798,7 +794,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             // valid frame times
             *results = IsIdentityResults::create(IsIdentityKeyPtr());
             (*results)->setIdentityData(-2, TimeValue(roundedTime), view);
-            return eStatusOK;
+            return eActionStatusOK;
         }
     }
 
@@ -808,7 +804,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // valid views
         *results = IsIdentityResults::create(IsIdentityKeyPtr());
         (*results)->setIdentityData(-2, time, ViewIdx(0));
-        return eStatusOK;
+        return eActionStatusOK;
     }
 
 
@@ -828,7 +824,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     if (fvRequest) {
         *results = fvRequest->getIdentityResults();
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
         fvRequest->getHash(&hash);
     }
@@ -850,7 +846,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         cacheAccess.reset(new CacheFetcher(cacheKey));
         *results = toIsIdentityResults(cacheAccess->isCached());
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
     }
 
@@ -878,8 +874,8 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         TimeValue identityTime;
         ViewIdx identityView;
         int identityInputNb;
-        StatusEnum stat = isIdentity(time, scale, renderWindow, view, render, &identityTime, &identityView, &identityInputNb);
-        if (stat != eStatusOK && stat != eStatusReplyDefault) {
+        ActionRetCodeEnum stat = isIdentity(time, scale, renderWindow, view, render, &identityTime, &identityView, &identityInputNb);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
 
@@ -914,10 +910,10 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         cacheAccess->setEntry(identityData);
     }
     *results = identityData;
-    return eStatusOK;
+    return eActionStatusOK;
 } // isIdentity_public
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
                                                const RenderScale & scale,
                                                ViewIdx view,
@@ -935,7 +931,7 @@ EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
         bool gotHash = findCachedHash(findArgs, &hash);
 
         if (!gotHash) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
     }
     assert(hash != 0);
@@ -947,22 +943,21 @@ EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
 
     GetRegionOfDefinitionResultsPtr ret = toGetRegionOfDefinitionResults(cacheAccess.isCached());
     if (!ret) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     *results = ret->getRoD();
     
-    return eStatusOK;
+    return eActionStatusOK;
 } // getRegionOfDefinitionFromCache
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
                                              const RenderScale & scale,
                                              ViewIdx view,
                                              const TreeRenderNodeArgsPtr& render,
                                              GetRegionOfDefinitionResultsPtr* results)
 {
-
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
@@ -988,7 +983,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     if (fvRequest) {
         *results = fvRequest->getRegionOfDefinitionResults();
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
         fvRequest->getHash(&hash);
     }
@@ -1015,7 +1010,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         cacheAccess.reset(new CacheFetcher(cacheKey));
         *results = toGetRegionOfDefinitionResults(cacheAccess->isCached());
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
     }
 
@@ -1029,8 +1024,8 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         RectI format = getOutputFormat(render);
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        StatusEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
         assert(identityResults);
@@ -1044,7 +1039,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
             // This effect is identity
             EffectInstancePtr identityInputNode = getInput(inputIdentityNb);
             if (!identityInputNode) {
-                return eStatusFailed;
+                return eActionStatusInputDisconnected;
             }
 
             // Get the render args for the input
@@ -1054,14 +1049,24 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
             }
 
             GetRegionOfDefinitionResultsPtr inputResults;
-            StatusEnum stat = identityInputNode->getRegionOfDefinition_public(identityTime, scale, identityView, inputRenderArgs, &inputResults);
-            if (stat == eStatusFailed) {
-                return eStatusFailed;
+            ActionRetCodeEnum stat = identityInputNode->getRegionOfDefinition_public(identityTime, scale, identityView, inputRenderArgs, &inputResults);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
             (*results)->setRoD(inputResults->getRoD());
         } else {
             // Not identity
 
+            // Check if all mandatory inputs are connected, otherwise return an error
+            int nInputs = getMaxInputCount();
+            for (int i = 0; i < nInputs; ++i) {
+                if (isInputOptional(i)) {
+                    continue;
+                }
+                if (!getInput(i)) {
+                    return eActionStatusInputDisconnected;
+                }
+            }
 
             EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
 
@@ -1074,10 +1079,10 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
 
             RectD rod;
-            StatusEnum stat = getRegionOfDefinition(time, scale, view, render, &rod);
+            ActionRetCodeEnum stat = getRegionOfDefinition(time, scale, view, render, &rod);
 
-            if (stat == eStatusFailed) {
-                return eStatusFailed;
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
             ifInfiniteApplyHeuristic(time, scale, view, render, &rod);
 
@@ -1094,7 +1099,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         cacheAccess->setEntry(*results);
     }
     
-    return eStatusOK;
+    return eActionStatusOK;
     
 } // getRegionOfDefinition_public
 
@@ -1128,7 +1133,7 @@ EffectInstance::calcDefaultRegionOfDefinition(TimeValue /*time*/,
     format.toCanonical_noClipping(mipMapLevel, par, rod);
 } // calcDefaultRegionOfDefinition
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getRegionOfDefinition(TimeValue time,
                                       const RenderScale & scale,
                                       ViewIdx view,
@@ -1153,9 +1158,9 @@ EffectInstance::getRegionOfDefinition(TimeValue time,
                 assert(inputRenderArgs);
             }
 
-            StatusEnum st = input->getRegionOfDefinition_public(time, renderMappedScale, view, inputRenderArgs, &inputResults);
-            if (st == eStatusFailed) {
-                return st;
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, renderMappedScale, view, inputRenderArgs, &inputResults);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
             assert(inputResults);
 
@@ -1175,7 +1180,7 @@ EffectInstance::getRegionOfDefinition(TimeValue time,
     }
 
     // if rod was not set, return default, else return OK
-    return firstInput ? eStatusReplyDefault : eStatusOK;
+    return firstInput ? eActionStatusReplyDefault : eActionStatusOK;
 } // getRegionOfDefinition
 
 void
@@ -1259,7 +1264,7 @@ EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
 } // ifInfiniteApplyHeuristic
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
                                             const RenderScale & scale,
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -1290,7 +1295,7 @@ EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
 
 } // getRegionsOfInterest_public
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getRegionsOfInterest(TimeValue time,
                                      const RenderScale & scale,
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -1323,8 +1328,8 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
                 inputRenderArgs = render->getInputRenderArgs(i);
             }
 
-            StatusEnum stat = input->getRegionOfDefinition_public(time, scale, view, inputRenderArgs, &inputResults);
-            if (stat == eStatusFailed) {
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, scale, view, inputRenderArgs, &inputResults);
+            if (isFailureRetCode(stat)) {
                 return stat;
             }
             const RectD& inputRoD = inputResults->getRoD();
@@ -1333,11 +1338,11 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
         }
 
     }
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 } // getRegionsOfInterest
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getFramesNeeded(TimeValue time,
                                 ViewIdx view,
                                 const TreeRenderNodeArgsPtr& /*render*/,
@@ -1361,10 +1366,10 @@ EffectInstance::getFramesNeeded(TimeValue time,
 
     }
     
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 } // getFramesNeeded
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
                                        ViewIdx view,
                                        const TreeRenderNodeArgsPtr& render,
@@ -1396,7 +1401,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         *results = fvRequest->getFramesNeededResults();
         fvRequest->getHash(&hashValue);
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
         fvRequest->getHash(&hashValue);
     }
@@ -1416,7 +1421,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         cacheAccess.reset(new CacheFetcher(cacheKey));
         *results = toGetFramesNeededResults(cacheAccess->isCached());
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
     }
 
@@ -1425,6 +1430,16 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     FramesNeededMap framesNeeded;
     {
 
+        // Check if all mandatory inputs are connected, otherwise return an error
+        int nInputs = getMaxInputCount();
+        for (int i = 0; i < nInputs; ++i) {
+            if (isInputOptional(i)) {
+                continue;
+            }
+            if (!getInput(i)) {
+                return eActionStatusInputDisconnected;
+            }
+        }
 
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
         EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, RenderScale(1.)
@@ -1434,8 +1449,8 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 #endif
                                                   );
 
-        StatusEnum stat = getFramesNeeded(time, view, render, &framesNeeded);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getFramesNeeded(time, view, render, &framesNeeded);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
     }
@@ -1451,8 +1466,8 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI format = getOutputFormat(render);
         RenderScale scale(1.);
-        StatusEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
         identityResults->getIdentityData(&inputIdentityNb, &inputIdentityTime, &inputIdentityView);
@@ -1492,14 +1507,14 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     
     cacheAccess->setEntry(*results);
 
-    return eStatusOK;
+    return eActionStatusOK;
 
 } // getFramesNeeded_public
 
 
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
                               double *first,
                               double *last)
@@ -1520,8 +1535,8 @@ EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
         if (input) {
             //if (!isInputOptional(i))
             GetFrameRangeResultsPtr inputResults;
-            StatusEnum stat = input->getFrameRange_public(render, &inputResults);
-            if (stat == eStatusFailed) {
+            ActionRetCodeEnum stat = input->getFrameRange_public(render, &inputResults);
+            if (isFailureRetCode(stat)) {
                 return stat;
             }
             assert(inputResults);
@@ -1536,11 +1551,11 @@ EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
             }
         }
     }
-    return eStatusOK;
+    return eActionStatusReplyDefault;
 } // getFrameRange
 
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFrameRangeResultsPtr* results)
 {
 
@@ -1550,7 +1565,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     if (render) {
         *results = render->getFrameRangeResults();
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
         render->getTimeViewInvariantHash(&hash);
     }
@@ -1569,7 +1584,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
 
     *results = toGetFrameRangeResults(cacheAccess.isCached());
     if (*results) {
-        return eStatusOK;
+        return eActionStatusOK;
     }
 
 
@@ -1586,8 +1601,8 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
 #endif
                                                   );
 
-        StatusEnum stat = getFrameRange(render, &range.min, &range.max);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getFrameRange(render, &range.min, &range.max);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
     }
@@ -1599,7 +1614,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     if (render) {
         render->setFrameRangeResults(*results);
     }
-    return eStatusOK;
+    return eActionStatusOK;
     
 } // getFrameRange_public
 
@@ -1734,7 +1749,7 @@ EffectInstance::onInputChanged_public(int inputNo, const NodePtr& oldNode, const
     onInputChanged(inputNo, oldNode, newNode);
 } // onInputChanged_public
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& render, GetTimeInvariantMetaDatasResultsPtr* results)
 {
     // Get a hash to cache the results
@@ -1743,7 +1758,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     if (render) {
         *results = render->getTimeInvariantMetadataResults();
         if (*results) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
         render->getTimeInvariantMetadataHash(&hash);
     }
@@ -1762,7 +1777,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
     *results = toGetTimeInvariantMetaDatasResults(cacheAccess.isCached());
     if (*results) {
-        return eStatusOK;
+        return eActionStatusOK;
     }
 
     // If the node is disabled return the meta-datas of the main input.
@@ -1779,20 +1794,20 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
                     inputRenderArgs = render->getInputRenderArgs(mainInput);
                 }
                 GetTimeInvariantMetaDatasResultsPtr inputResults;
-                StatusEnum stat = input->getTimeInvariantMetaDatas_public(inputRenderArgs, &inputResults);
-                if (stat == eStatusFailed) {
+                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(inputRenderArgs, &inputResults);
+                if (isFailureRetCode(stat)) {
                     return stat;
                 }
                 *results = inputResults;
-                return eStatusOK;
+                return eActionStatusOK;
             }
         }
     }
 
     NodeMetadata metadata;
-    StatusEnum stat = getDefaultMetadata(render, metadata);
+    ActionRetCodeEnum stat = getDefaultMetadata(render, metadata);
 
-    if (stat == eStatusFailed) {
+    if (isFailureRetCode(stat)) {
         return stat;
     }
 
@@ -1811,8 +1826,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
         // If the node is disabled, don't call getClipPreferences on the plug-in:
         // we don't want it to change output Format or other metadatas
-        StatusEnum stat = getTimeInvariantMetaDatas(metadata);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getTimeInvariantMetaDatas(metadata);
+        if (isFailureRetCode(stat)) {
             return stat;
         }
         _imp->checkMetadata(metadata);
@@ -1828,7 +1843,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     }
 
     cacheAccess.setEntry(*results);
-    return eStatusOK;
+    return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public
 
 
@@ -1862,13 +1877,13 @@ getUnmappedComponentsForInput(const EffectInstancePtr& self,
     return rawComps;
 } // getUnmappedComponentsForInput
 
-StatusEnum
+ActionRetCodeEnum
 EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata &metadata)
 {
     NodePtr node = getNode();
 
     if (!node) {
-        return eStatusFailed;
+        return eActionStatusInputDisconnected;
     }
 
     const bool multiBitDepth = supportsMultipleClipDepths();
@@ -1906,8 +1921,8 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
                 inputArgs = render->getInputRenderArgs(i);
             }
             GetTimeInvariantMetaDatasResultsPtr results;
-            StatusEnum stat = input->getTimeInvariantMetaDatas_public(inputArgs, &results);
-            if (stat != eStatusFailed) {
+            ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(inputArgs, &results);
+            if (!isFailureRetCode(stat)) {
                 inputMetadatas[i] = results->getMetadatasResults();
 
                 if ( !firstNonOptionalConnectedInputComps && !isInputOptional(i) ) {
@@ -2101,7 +2116,7 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
     
     metadata.setOutputFormat(outputFormat);
     
-    return eStatusOK;
+    return eActionStatusOK;
 } // getDefaultMetadata
 
 void

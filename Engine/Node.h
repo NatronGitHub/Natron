@@ -377,27 +377,34 @@ public:
      **/
     const std::vector< KnobIPtr > & getKnobs() const;
 
-    /**
-     * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
-     * @brief This function will be called on all input nodes aswell
-     **/
-    void setKnobsFrozen(bool frozen);
-
 
     /*Returns in viewers the list of all the viewers connected to this node*/
     void hasViewersConnected(std::list<ViewerInstancePtr>* viewers) const;
 
-    void hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const;
+    void hasOutputNodesConnected(std::list<EffectInstancePtr>* writers) const;
 
 private:
 
     void hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
                                      std::list<const Node*>* markedNodes) const;
 
-    void hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* writers,
+    void hasOutputNodesConnectedInternal(std::list<EffectInstancePtr >* writers,
                                          std::list<const Node*>* markedNodes) const;
 
 public:
+
+
+    /**
+     * @brief If this node is an output node, return the render engine
+     **/
+    RenderEnginePtr getRenderEngine() const;
+
+    /**
+     * @brief Is this node render engine currently doing playback ?
+     **/
+    bool isDoingSequentialRender() const;
+
+  
 
     /**
      * @brief Forwarded to the live effect instance
@@ -436,8 +443,6 @@ public:
     StubNodePtr isEffectStubNode() const;
 
     PrecompNodePtr isEffectPrecompNode() const;
-
-    OutputEffectInstancePtr isEffectOutput() const;
 
     GroupInputPtr isEffectGroupInput() const;
 
@@ -873,16 +878,7 @@ public:
      **/
     void destroyNode(bool blockingDestroy, bool autoReconnect);
 
-    /**
-     * @brief Wrapper around EffectInstance::renderRoI that setup things correctly for a render
-     **/
-    RenderRoIRetCode renderFrame(const TimeValue time,
-                                 const ViewIdx view,
-                                 const unsigned int mipMapLevel,
-                                 const bool isPlayback,
-                                 const RectI* roiParam,
-                                 const std::list<ImageComponents>& layersToRender,
-                                 std::map<ImageComponents, ImagePtr> *planes);
+
 
 private:
     

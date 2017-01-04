@@ -374,7 +374,7 @@ public:
     bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
 
     /**
-     * @brief Returns a previously requested frame/view request from optimizeRoI. This contains most actions
+     * @brief Returns a previously requested frame/view request from roiVisitFunctor. This contains most actions
      * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
      * The time passed in parameter should always be rounded for effects that are not continuous.
      **/
@@ -390,20 +390,20 @@ public:
      * @brief Add the given canonicalRenderWindow to the rectangles requested to image at the given time and view.
      * The final render will be made on the union of all render windows passed to this function for the given time and view.
      **/
-    StatusEnum roiVisitFunctor(TimeValue time,
-                               ViewIdx view,
-                               const RenderScale& scale,
-                               const RectD & canonicalRenderWindow,
-                               const EffectInstancePtr& caller);
+    ActionRetCodeEnum roiVisitFunctor(TimeValue time,
+                                      ViewIdx view,
+                                      const RenderScale& scale,
+                                      const RectD & canonicalRenderWindow,
+                                      const EffectInstancePtr& caller);
 
 
     /**
      * @brief Recurse on inputs of the current node using the results of getFramesNeeded
      * and call renderRoI.
      **/
-    RenderRoIRetCode preRenderInputImages(TimeValue time,
-                                          ViewIdx view,
-                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers);
+    ActionRetCodeEnum preRenderInputImages(TimeValue time,
+                                           ViewIdx view,
+                                           const std::map<int, std::list<ImageComponents> >& neededInputLayers);
 
 
 private:

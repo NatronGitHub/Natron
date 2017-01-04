@@ -755,18 +755,18 @@ GuiAppInstance::setViewersCurrentView(ViewIdx view)
 
 void
 GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
-                                    int firstFrame,
-                                    int lastFrame,
-                                    int frameStep,
+                                    TimeValue firstFrame,
+                                    TimeValue lastFrame,
+                                    TimeValue frameStep,
                                     bool canPause,
-                                    const OutputEffectInstancePtr& writer,
+                                    const NodePtr& writer,
                                     const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
 void
-GuiAppInstance::notifyRenderRestarted( const OutputEffectInstancePtr& writer,
+GuiAppInstance::notifyRenderRestarted( const NodePtr& writer,
                                        const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderRestarted(writer, process);
@@ -901,16 +901,16 @@ GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
     }
 }
 
-ViewerInstancePtr
+ViewerNodePtr
 GuiAppInstance::getLastViewerUsingTimeline() const
 {
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
 
     if (!_imp->lastTimelineViewer) {
-        return ViewerInstancePtr();
+        return ViewerNodePtr();
     }
 
-    return _imp->lastTimelineViewer->isEffectViewerInstance();
+    return _imp->lastTimelineViewer->isEffectViewerNode();
 }
 
 void
@@ -1148,7 +1148,7 @@ GuiAppInstance::goToPreviousKeyframe()
     }
     for (TimeLineKeysSet::const_reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
         if (it->frame < currentFrame) {
-            timeline->seekFrame(it->frame, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            timeline->seekFrame(it->frame, true, EffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
             break;
         }
     }
@@ -1167,7 +1167,7 @@ GuiAppInstance::goToNextKeyframe()
     }
     for (TimeLineKeysSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         if (it->frame > currentFrame) {
-            timeline->seekFrame(it->frame, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            timeline->seekFrame(it->frame, true, EffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
             break;
         }
     }

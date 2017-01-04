@@ -1419,8 +1419,8 @@ Effect::getRegionOfDefinition(double time,
     }
     RenderScale s(1.);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(0, time, s, ViewIdx(view), &rod);
-    if (stat != eStatusOK) {
+    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(0, time, s, ViewIdx(view), &rod);
+    if (isFailureRetCode(stat)) {
         return RectD();
     }
 

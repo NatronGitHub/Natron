@@ -123,7 +123,7 @@ JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-StatusEnum
+ActionRetCodeEnum
 JoinViewsNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
@@ -137,7 +137,7 @@ JoinViewsNode::isIdentity(TimeValue time,
     *inputNb = getMaxInputCount() - 1 - view.value();
     *inputView = view;
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 void

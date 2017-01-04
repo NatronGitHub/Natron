@@ -173,7 +173,7 @@ RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 }
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
 
@@ -190,7 +190,7 @@ RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     metadata.setImageComponents(-1, comps);
     metadata.setImageComponents(0, comps);
     metadata.setIsContinuous(true);
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, ViewIdx view, RectD* rod)
@@ -219,13 +219,13 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod)
 {
    
 
-    StatusEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, render, rod);
-    if (st != eStatusOK && st != eStatusReplyDefault) {
+    ActionRetCodeEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, render, rod);
+    if (isFailureRetCode(st)) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
 
@@ -233,11 +233,11 @@ RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & s
     assert(item);
     getRoDFromItem(item, time, view, rod);
 
-    return eStatusOK;
+    return eActionStatusOK;
 
 }
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::isIdentity(TimeValue time,
                                 const RenderScale & scale,
                                 const RectI & roi,
@@ -258,7 +258,7 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
         *inputTime = time;
         *inputNb = 0;
 
-        return eStatusOK;
+        return eActionStatusOK;
     }
 
     RectD maskRod;
@@ -271,12 +271,12 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
         *inputNb = 0;
     }
     
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
 
@@ -286,16 +286,16 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #endif
 
 #if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO)
-    if (!args.useOpenGL) {
+    if (args.backendType == eRenderBackendTypeCPU) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node. This might be because you are trying to render an image too big for OpenGL.").toStdString());
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 #endif
 
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     // To be thread-safe we can only operate on a render clone.
@@ -503,7 +503,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 
 
-    return eStatusOK;
+    return eActionStatusOK;
 
 } // RotoShapeRenderNode::render
 
@@ -523,21 +523,21 @@ RotoShapeRenderNode::purgeCaches()
 
 
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
     *data = ret;
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(data);
     assert(ret);
     ret->cleanup();
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 NATRON_NAMESPACE_EXIT;

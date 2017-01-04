@@ -41,7 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -234,7 +234,7 @@ public:
     /**
      * @brief Get all Writers in the group and sub groups
      **/
-    void getWriters(std::list<OutputEffectInstancePtr>* writers) const;
+    void getWriters(std::list<EffectInstancePtr>* writers) const;
 
     /**
      * @brief Controls whether the user can ever edit this graph from the UI. 
@@ -310,7 +310,7 @@ private:
 
 struct NodeGroupPrivate;
 class NodeGroup
-    : public OutputEffectInstance
+    : public EffectInstance
     , public NodeCollection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -425,9 +425,10 @@ private:
     virtual void onNodeRemoved(const Node* node) OVERRIDE FINAL;
 
     // A group render function should never get called
-    virtual StatusEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual ActionRetCodeEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return eStatusOK;
+        assert(false);
+        return eActionStatusFailed;
     }
 
     virtual void onGraphEditableChanged(bool changed) OVERRIDE FINAL

@@ -2528,16 +2528,16 @@ Project::isFrameRangeLocked() const
 }
 
 void
-Project::getFrameRange(double* first,
-                       double* last) const
+Project::getFrameRange(TimeValue* first,
+                       TimeValue* last) const
 {
-    *first = _imp->frameRange->getValue();
-    *last = _imp->frameRange->getValue(DimIdx(1));
+    *first = TimeValue(_imp->frameRange->getValue());
+    *last = TimeValue(_imp->frameRange->getValue(DimIdx(1)));
 }
 
 void
-Project::unionFrameRangeWith(int first,
-                             int last)
+Project::unionFrameRangeWith(TimeValue first,
+                             TimeValue last)
 {
     int curFirst, curLast;
     bool mustSet = !_imp->frameRange->hasModifications() && first != last;
@@ -2966,7 +2966,7 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
     }
 
     // Restore the timeline
-    _imp->timeline->seekFrame(serialization->_timelineCurrent, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+    _imp->timeline->seekFrame(serialization->_timelineCurrent, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
 
     // Restore the nodes

@@ -34,7 +34,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -65,7 +65,7 @@ struct ViewerArgs
 
 
 class ViewerInstance
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -91,35 +91,7 @@ public:
 
     ViewerNodePtr getViewerNodeGroup() const;
 
-    OpenGLViewerI* getUiContext() const WARN_UNUSED_RETURN;
-
-    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL
-    {
-        return true;
-    }
-
-    virtual bool supportsMultipleClipFPSs() const OVERRIDE FINAL
-    {
-        return true;
-    }
-
-    enum ViewerRenderRetCode
-    {
-        //The render failed and should clear to black the viewer and stop any ongoing playback
-        eViewerRenderRetCodeFail = 0,
-
-        //The render did nothing requiring updating the current texture
-        //but just requires a redraw (something like aborted generally)
-        eViewerRenderRetCodeRedraw,
-
-        //The viewer needs to be cleared out to black but should not interrupt playback
-        eViewerRenderRetCodeBlack,
-
-        //The viewer did update or requires and update to the texture displayed
-        eViewerRenderRetCodeRender,
-    };
-
-
+#if 0
     ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
                                                                 bool isSequential,
                                                                 ViewIdx view,
@@ -199,23 +171,18 @@ public:
                                      const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
                                      const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
 
+#endif
 
-
-    void aboutToUpdateTextures();
-
-    void updateViewer(boost::shared_ptr<UpdateViewerParams> & frame);
-
+    
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
 
     /**
-     *@brief Bypasses the cache so the next frame will be rendered fully
+     * @brief Bypasses the cache so the next frame will be rendered fully
      **/
     void forceFullComputationOnNextFrame();
+    
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
-    void disconnectViewer();
-
-    void disconnectTexture(int index, bool clearRod);
 
     int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
 
@@ -228,25 +195,15 @@ public:
 
     bool isLatestRender(int textureIndex, U64 renderAge) const;
 
-    int getLastRenderedTime() const;
-
-    virtual TimeValue getTimelineCurrentTime() const OVERRIDE FINAL;
-
-    TimeLinePtr getTimeline() const;
-
-    void getTimelineBounds(int* first, int* last) const;
-
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
-    bool isViewerUIVisible() const;
 
     struct ViewerInstancePrivate;
 
     float interpolateGammaLut(float value);
 
-    void markAllOnGoingRendersAsAborted(bool keepOldestRender);
 
     /**
      * @brief Used to re-render only selected portions of the texture.
@@ -261,8 +218,6 @@ public:
     void setDoingPartialUpdates(bool doing);
     bool isDoingPartialUpdates() const;
 
-    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
-
     ///Only callable on MT
     void setActivateInputChangeRequestedFromViewer(bool fromViewer);
 
@@ -276,9 +231,6 @@ public:
 
     void setAlphaChannel(const ImageComponents& layer, const std::string& channelName);
 
-    void redrawViewer();
-
-    void redrawViewerNow();
 
     void callRedrawOnMainThread();
 
@@ -290,10 +242,6 @@ private:
 
     void refreshLayerAndAlphaChannelComboBox();
 
-    
-    /*******************************************
-       *******OVERRIDEN FROM EFFECT INSTANCE******
-     *******************************************/
 
 
     virtual bool isOutput() const OVERRIDE FINAL
@@ -309,8 +257,16 @@ private:
 
     virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    /*******************************************/
 
+    virtual bool isMultiPlanar() const OVERRIDE FINAL;
+
+    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     ViewerRenderRetCode renderViewer_internal(ViewIdx view,
                                               bool singleThreaded,
@@ -321,7 +277,6 @@ private:
                                               ViewerArgs& inArgs) WARN_UNUSED_RETURN;
 
 
-    virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 private:
 

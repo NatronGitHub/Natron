@@ -943,7 +943,7 @@ ReadNode::purgeCaches()
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
@@ -1139,7 +1139,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
     return ret;
 } // ReadNode::knobChanged
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::getRegionOfDefinition(TimeValue time,
                                 const RenderScale & scale,
                                 ViewIdx view,
@@ -1157,7 +1157,7 @@ ReadNode::getRegionOfDefinition(TimeValue time,
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
                         double *first,
                         double *last)
@@ -1170,7 +1170,7 @@ ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::getComponentsAction(TimeValue time,
                                          ViewIdx view,
                                          const TreeRenderNodeArgsPtr& render,
@@ -1187,7 +1187,7 @@ ReadNode::getComponentsAction(TimeValue time,
     return eStatusFailed;
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::beginSequenceRender(double first,
                               double last,
                               double step,
@@ -1209,7 +1209,7 @@ ReadNode::beginSequenceRender(double first,
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::endSequenceRender(double first,
                             double last,
                             double step,
@@ -1231,7 +1231,7 @@ ReadNode::endSequenceRender(double first,
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::render(const RenderActionArgs& args)
 {
     if ( !_imp->checkDecoderCreated(args.time, args.view) ) {
@@ -1246,7 +1246,7 @@ ReadNode::render(const RenderActionArgs& args)
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::getRegionsOfInterest(TimeValue time,
                                const RenderScale & scale,
                                const RectD & renderWindow,    //!< the region to be rendered in the output image, in Canonical Coordinates
@@ -1261,7 +1261,7 @@ ReadNode::getRegionsOfInterest(TimeValue time,
     return eStatusFailed;
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded)
 {
     NodePtr p = getEmbeddedReader();

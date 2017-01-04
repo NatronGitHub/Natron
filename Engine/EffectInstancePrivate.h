@@ -97,7 +97,7 @@ public:
      * what planes can actually be rendered from this node. Pass-through planes are rendered from upstream
      * nodes.
      **/
-    RenderRoIRetCode determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
+    ActionRetCodeEnum determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
                                              std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
                                              std::list<ImageComponents> *planesToRender,
                                              std::bitset<4>* processChannels,
@@ -106,7 +106,7 @@ public:
     /**
      * @brief Helper function in the implementation of renderRoI to handle identity effects
      **/
-    RenderRoIRetCode handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
+    ActionRetCodeEnum handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
                                           double par,
                                           const RectD& rod,
                                           const RenderScale& scale,
@@ -118,7 +118,7 @@ public:
     /**
      * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distorsion etc...)
      **/
-    RenderRoIRetCode handleConcatenation(const EffectInstance::RenderRoIArgs& args,
+    ActionRetCodeEnum handleConcatenation(const EffectInstance::RenderRoIArgs& args,
                                          const RenderScale& renderScale,
                                          RenderRoIResults* results,
                                          bool *concatenated);
@@ -128,7 +128,7 @@ public:
     /**
      * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
      **/
-    RenderRoIRetCode resolveRenderBackend(const RenderRoIArgs & args,
+    ActionRetCodeEnum resolveRenderBackend(const RenderRoIArgs & args,
                                           const FrameViewRequestPtr& requestPassData,
                                           const RectI& roi,
                                           RenderBackendTypeEnum* renderBackend,
@@ -139,8 +139,7 @@ public:
      * @returns The cache access type, i.e: none, write only or read/write
      **/
     CacheAccessModeEnum shouldRenderUseCache(const RenderRoIArgs & args,
-                                             const FrameViewRequestPtr& requestPassData,
-                                             RenderBackendTypeEnum backend);
+                                             const FrameViewRequestPtr& requestPassData);
 
     bool canSplitRenderWindowWithIdentityRectangles(const RenderRoIArgs& args,
                                                     const RenderScale& renderMappedScale,
@@ -158,19 +157,19 @@ public:
 
 
 
-    EffectInstance::RenderRoIStatusEnum renderRoILaunchInternalRender(const RenderRoIArgs & args,
-                                                                      const ImagePlanesToRenderPtr &planesToRender,
-                                                                      const OSGLContextAttacherPtr& glRenderContext,
-                                                                      const RenderScale& renderMappedScale,
-                                                                      const std::bitset<4> &processChannels,
-                                                                      const std::map<int, std::list<ImageComponents> >& neededInputLayers);
+    ActionRetCodeEnum renderRoILaunchInternalRender(const RenderRoIArgs & args,
+                                                    const ImagePlanesToRenderPtr &planesToRender,
+                                                    const OSGLContextAttacherPtr& glRenderContext,
+                                                    const RenderScale& renderMappedScale,
+                                                    const std::bitset<4> &processChannels,
+                                                    const std::map<int, std::list<ImageComponents> >& neededInputLayers);
 
     void resizeImagesIfNeeded(const RenderRoIArgs & args,
                               const ImagePlanesToRenderPtr &planesToRender,
                               const RectI& roi,
                               std::map<ImageComponents, ImagePtr>* outputPlanes);
-    
-    
+
+
 
     struct TiledRenderingFunctorArgs
     {
@@ -184,12 +183,12 @@ public:
 
 
 
-    RenderRoIStatusEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,
+    ActionRetCodeEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,
                                               const RectToRender & specificData,
                                               QThread* callingThread);
 
 
-    RenderRoIStatusEnum tiledRenderingFunctor(const RectToRender & rectToRender,
+    ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
                                               const RenderRoIArgs* args,
                                               RenderScale renderMappedScale,
                                               std::bitset<4> processChannels,
@@ -198,12 +197,12 @@ public:
                                               OSGLContextAttacherPtr glContext);
 
 
-    RenderRoIStatusEnum renderHandlerIdentity(const RectToRender & rectToRender,
+    ActionRetCodeEnum renderHandlerIdentity(const RectToRender & rectToRender,
                                               const RenderRoIArgs* args,
                                               const RenderScale &renderMappedScale,
                                               const ImagePlanesToRenderPtr& planes);
 
-    RenderRoIStatusEnum renderHandlerInternal(const EffectInstanceTLSDataPtr& tls,
+    ActionRetCodeEnum renderHandlerInternal(const EffectInstanceTLSDataPtr& tls,
                                               const RectToRender & rectToRender,
                                               const RenderRoIArgs* args,
                                               const RenderScale& renderMappedScale,

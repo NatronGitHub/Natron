@@ -42,7 +42,6 @@
 #include <QtCore/QThread>
 #include <QtCore/QCoreApplication>
 
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/KnobTypes.h"
@@ -55,17 +54,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
-struct AbortableRenderInfo_CompareAge
-{
-    bool operator() (const AbortableRenderInfoPtr & lhs,
-                     const AbortableRenderInfoPtr & rhs) const
-    {
-        return lhs->getRenderAge() < rhs->getRenderAge();
-    }
-};
-
-typedef std::set<AbortableRenderInfoPtr, AbortableRenderInfo_CompareAge> OnGoingRenders;
 
 
 struct RenderViewerArgs
@@ -138,62 +126,12 @@ public:
         , viewportCenter()
         , viewportCenterSet(false)
         , isDoingPartialUpdates(false)
-        , renderAgeMutex()
-        , renderAge()
-        , displayAge()
     {
-        for (int i = 0; i < 2; ++i) {
-            forceRender[i] = false;
-            renderAge[i] = 1;
-            displayAge[i] = 0;
-        }
+
     }
 
 public:
 
-    virtual void lock(const FrameEntryPtr& entry) OVERRIDE FINAL
-    {
-        QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
-            std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
-
-        while ( it != textureBeingRendered.end() ) {
-            textureBeingRenderedCond.wait(&textureBeingRenderedMutex);
-            it = std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
-        }
-        ///Okay the image is not used by any other thread, claim that we want to use it
-        assert( it == textureBeingRendered.end() );
-        textureBeingRendered.push_back(entry);
-    }
-
-    virtual bool tryLock(const FrameEntryPtr& entry) OVERRIDE FINAL
-    {
-        QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
-            std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
-
-        if ( it != textureBeingRendered.end() ) {
-            return false;
-        }
-        ///Okay the image is not used by any other thread, claim that we want to use it
-        assert( it == textureBeingRendered.end() );
-        textureBeingRendered.push_back(entry);
-
-        return true;
-    }
-
-    virtual void unlock(const FrameEntryPtr& entry) OVERRIDE FINAL
-    {
-        QMutexLocker l(&textureBeingRenderedMutex);
-        std::list<FrameEntryPtr >::iterator it =
-            std::find(textureBeingRendered.begin(), textureBeingRendered.end(), entry);
-
-        ///The image must exist, otherwise this is a bug
-        assert( it != textureBeingRendered.end() );
-        textureBeingRendered.erase(it);
-        ///Notify all waiting threads that we're finished
-        textureBeingRenderedCond.wakeAll();
-    }
 
     /**
      * @brief Returns the current render age of the viewer (a simple counter incrementing at each request).
@@ -361,9 +299,6 @@ public:
 
     ///Only accessed from MT
     bool activateInputChangedFromViewer;
-    mutable QMutex textureBeingRenderedMutex;
-    QWaitCondition textureBeingRenderedCond;
-    std::list<FrameEntryPtr > textureBeingRendered; ///< a list of all the texture being rendered simultaneously
     mutable QReadWriteLock gammaLookupMutex;
     std::vector<float> gammaLookup; // protected by gammaLookupMutex
 
@@ -386,13 +321,6 @@ public:
 
     //True if during tracking
     bool isDoingPartialUpdates;
-    mutable QMutex renderAgeMutex; // protects renderAge lastRenderAge currentRenderAges
-    U64 renderAge[2];
-    U64 displayAge[2];
-
-    //A priority list recording the ongoing renders. This is used for abortable renders (i.e: when moving a slider or scrubbing the timeline)
-    //The purpose of this is to always at least keep 1 active render (non abortable) and abort more recent renders that do no longer make sense
-    OnGoingRenders currentRenderAges[2];
 
 };
 

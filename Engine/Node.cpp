@@ -430,7 +430,12 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->effect->beginChanges();
 
     // For OpenFX this calls describe & describeInContext if neede dand then creates parameters and clips
-    _imp->effect->initializeDataAfterCreate();
+    _imp->effect->describePlugin();
+
+    // For an ouptut node, create its render engine
+    if (_imp->effect->isOutput()) {
+        _imp->renderEngine.reset(_imp->effect->createRenderEngine());
+    }
 
     // Set the node name
     initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
@@ -471,10 +476,6 @@ Node::load(const CreateNodeArgsPtr& args)
     }
 
 
-
-    // Refresh render scale support
-    refreshRenderScaleSupport();
-
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
     refreshDynamicProperties();
 
@@ -510,16 +511,11 @@ Node::load(const CreateNodeArgsPtr& args)
     // Refresh knobs Viewer UI order so that serialization does not save it if it did not change
     _imp->refreshDefaultViewerKnobsOrder();
 
-    // Refresh data that depend on inputs
-    if ( !getApp()->isCreatingNodeTree() ) {
-        refreshAllInputRelatedData(!serialization);
-    }
-
     // Run the Python callback
     _imp->runOnNodeCreatedCB(!serialization);
 
     // If needed compute a preview for this node
-    computePreviewImage( getApp()->getTimeLine()->currentFrame() );
+    computePreviewImage( TimeValue(getApp()->getTimeLine()->currentFrame()) );
 
     // Resume knobChanged calls
     _imp->effect->endChanges();
@@ -2356,10 +2352,8 @@ Node::areAllProcessingThreadsQuit() const
     }
 
     //If this effect has a RenderEngine, make sure it is finished
-    OutputEffectInstancePtr isOutput = isEffectOutput();
-
-    if (isOutput) {
-        if ( isOutput->getRenderEngine()->hasThreadsAlive() ) {
+    if (_imp->renderEngine) {
+        if ( _imp->renderEngine->hasThreadsAlive() ) {
             return false;
         }
     }
@@ -2379,10 +2373,9 @@ void
 Node::quitAnyProcessing_non_blocking()
 {
     //If this effect has a RenderEngine, make sure it is finished
-    OutputEffectInstancePtr isOutput = isEffectOutput();
 
-    if (isOutput) {
-        isOutput->getRenderEngine()->quitEngine(true);
+    if (_imp->renderEngine) {
+        _imp->renderEngine->quitEngine(true);
     }
 
     //Returns when the preview is done computign
@@ -2403,14 +2396,10 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 
 
     //If this effect has a RenderEngine, make sure it is finished
-    OutputEffectInstancePtr isOutput = isEffectOutput();
 
-    if (isOutput) {
-        RenderEnginePtr engine = isOutput->getRenderEngine();
-        if (engine) {
-            engine->quitEngine(allowThreadsToRestart);
-            engine->waitForEngineToQuit_enforce_blocking();
-        }
+    if (_imp->renderEngine) {
+        _imp->renderEngine->quitEngine(allowThreadsToRestart);
+        _imp->renderEngine->waitForEngineToQuit_enforce_blocking();
     }
 
     //Returns when the preview is done computign
@@ -2428,10 +2417,9 @@ Node::quitAnyProcessing_blocking(bool allowThreadsToRestart)
 void
 Node::abortAnyProcessing_non_blocking()
 {
-    OutputEffectInstancePtr isOutput = isEffectOutput();
 
-    if (isOutput) {
-        isOutput->getRenderEngine()->abortRenderingNoRestart();
+    if (_imp->renderEngine) {
+        _imp->renderEngine->abortRenderingNoRestart();
     }
 
     TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
@@ -2448,13 +2436,9 @@ Node::abortAnyProcessing_non_blocking()
 void
 Node::abortAnyProcessing_blocking()
 {
-    OutputEffectInstancePtr isOutput = isEffectOutput();
-
-    if (isOutput) {
-        RenderEnginePtr engine = isOutput->getRenderEngine();
-        assert(engine);
-        engine->abortRenderingNoRestart();
-        engine->waitForAbortToComplete_enforce_blocking();
+    if (_imp->renderEngine) {
+        _imp->renderEngine->abortRenderingNoRestart();
+        _imp->renderEngine->waitForAbortToComplete_enforce_blocking();
     }
 
     TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
@@ -3096,10 +3080,10 @@ Node::makeInfoForInput(int inputNumber) const
     {
         RenderScale scale(1.);
         RectD rod;
-        StatusEnum stat = input->getRegionOfDefinition_public(0,
+        ActionRetCodeEnum stat = input->getRegionOfDefinition_public(0,
                                                               time,
                                                               scale, ViewIdx(0), &rod);
-        if (stat != eStatusFailed) {
+        if (!isFailureRetCode(stat)) {
             ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
         }
@@ -4584,7 +4568,7 @@ Node::hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
 }
 
 void
-Node::hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* writers,
+Node::hasOutputNodesConnectedInternal(std::list<EffectInstancePtr >* writers,
                                      std::list<const Node*>* markedNodes) const
 {
     if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
@@ -4593,9 +4577,7 @@ Node::hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* write
 
     markedNodes->push_back(this);
 
-    OutputEffectInstancePtr thisWriter = boost::dynamic_pointer_cast<OutputEffectInstance>(_imp->effect);
-
-    if ( thisWriter && thisWriter->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter.get()) ) {
+    if ( _imp->effect->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter.get()) ) {
         writers->push_back(thisWriter);
     } else {
         NodesList outputs;
@@ -4609,7 +4591,7 @@ Node::hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* write
 }
 
 void
-Node::hasOutputNodesConnected(std::list<OutputEffectInstancePtr >* writers) const
+Node::hasOutputNodesConnected(std::list<EffectInstancePtr >* writers) const
 {
     std::list<const Node*> m;
     hasOutputNodesConnectedInternal(writers, &m);
@@ -5182,13 +5164,13 @@ checkCanConnectNoMultiRes(const Node* output,
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
     RenderScale scale(1.);
     RectD rod;
-    StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0,
+    ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0,
                                                                                output->getApp()->getTimeLine()->currentFrame(),
                                                                                scale,
                                                                                ViewIdx(0),
                                                                                &rod);
 
-    if ( (stat == eStatusFailed) && !rod.isNull() ) {
+    if (isFailureRetCode(stat) && !rod.isNull() ) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }
     if ( (rod.x1 != 0) || (rod.y1 != 0) ) {
@@ -5215,7 +5197,7 @@ checkCanConnectNoMultiRes(const Node* output,
                                                                                 scale,
                                                                                 ViewIdx(0),
                                                                                 &inputRod);
-            if ( (stat == eStatusFailed) && !inputRod.isNull() ) {
+            if ( isFailureRetCode(stat) && !inputRod.isNull() ) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
             }
             if (inputRod != rod) {
@@ -6016,9 +5998,8 @@ Node::doDestroyNodeInternalEnd(bool autoReconnect)
 
     // Quit any rendering
     {
-        OutputEffectInstancePtr isOutput = isEffectOutput();
-        if (isOutput) {
-            isOutput->getRenderEngine()->quitEngine(true);
+        if (_imp->renderEngine) {
+            _imp->renderEngine->quitEngine(true);
         }
     }
 
@@ -6282,8 +6263,8 @@ Node::makePreviewImage(SequenceTime time,
 
         RenderScale scale(1.);
         RectD rod;
-        StatusEnum stat = effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
-        if ( (stat == eStatusFailed) || rod.isNull() ) {
+        ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
+        if (isFailureRetCode(stat) || rod.isNull() ) {
             return false;
         }
         assert( !rod.isNull() );
@@ -6388,6 +6369,19 @@ Node::isOutputNode() const
     return _imp->effect->isOutput();
 }
 
+RenderEnginePtr
+Node::getRenderEngine() const
+{
+    return _imp->renderEngine;
+}
+
+
+bool
+Node::isDoingSequentialRender() const
+{
+    return _imp->renderEngine ? _imp->renderEngine->isDoingSequentialRender() : false;
+}
+
 
 ViewerNodePtr
 Node::isEffectViewerNode() const
@@ -6418,12 +6412,6 @@ PrecompNodePtr
 Node::isEffectPrecompNode() const
 {
     return toPrecompNode(_imp->effect);
-}
-
-OutputEffectInstancePtr
-Node::isEffectOutput() const
-{
-    return toOutputEffectInstance(_imp->effect);
 }
 
 GroupInputPtr
@@ -6470,20 +6458,6 @@ Node::getKnobs() const
     return _imp->effect->getKnobs();
 }
 
-void
-Node::setKnobsFrozen(bool frozen)
-{
-    ///MT-safe from EffectInstance::setKnobsFrozen
-    _imp->effect->setKnobsFrozen(frozen);
-
-    QMutexLocker l(&_imp->inputsMutex);
-    for (std::size_t i = 0; i < _imp->inputs.size(); ++i) {
-        NodePtr input = _imp->inputs[i].lock();
-        if (input) {
-            input->setKnobsFrozen(frozen);
-        }
-    }
-}
 
 std::string
 Node::getPluginIconFilePath() const
@@ -10539,100 +10513,6 @@ Node::getHostMixingValue(TimeValue time,
     return mix ? mix->getValueAtTime(time, DimIdx(0), view) : 1.;
 }
 
-RenderRoIRetCode
-Node::renderFrame(const TimeValue time,
-                  const ViewIdx view,
-                  const unsigned int mipMapLevel,
-                  const bool isPlayback,
-                  const RectI* roiParam,
-                  const std::list<ImageComponents>& layersToRender,
-                  std::map<ImageComponents, ImagePtr> *planes)
-{
-    assert(planes);
-    if (!planes) {
-        return eRenderRoIRetCodeFailed;
-    }
-    if (layersToRender.empty()) {
-        return eRenderRoIRetCodeOk;
-    }
-
-    // Create a render ID
-    AbortableRenderInfoPtr abortInfo = AbortableRenderInfo::create(false, 0);
-
-    const bool isRenderUserInteraction = !isPlayback;
-    const bool isSequentialRender = isPlayback;
-
- 
-
-    // Setup frame TLS on the node tree required to render
-    ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-    tlsArgs->time = time;
-    tlsArgs->view = view;
-    tlsArgs->isRenderUserInteraction = isRenderUserInteraction;
-    tlsArgs->isSequential = isSequentialRender;
-    tlsArgs->abortInfo = abortInfo;
-    tlsArgs->treeRoot = shared_from_this();
-    tlsArgs->timeline = getApp()->getTimeLine();
-    tlsArgs->activeRotoDrawableItem = RotoDrawableItemPtr();
-    tlsArgs->draftMode = true;
-    tlsArgs->stats = RenderStatsPtr();
-    boost::shared_ptr<ParallelRenderArgsSetter> frameRenderArgs;
-    try {
-        frameRenderArgs = ParallelRenderArgsSetter::create(tlsArgs);
-    } catch (...) {
-        return eRenderRoIRetCodeFailed;
-    }
-
-    RenderScale scale;
-    scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
-
-    double par = _imp->effect->getAspectRatio(-1);
-    RectD rod;
-    {
-        StatusEnum stat = _imp->effect->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
-        if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
-        }
-    }
-
-    // If there's a supplied RoI, use it otherwise fallback on RoD
-    RectD canonicalRoi;
-    if (roiParam) {
-        roiParam->toCanonical(mipMapLevel, par, rod, &canonicalRoi);
-    } else {
-        canonicalRoi = rod;
-    }
-
-    // optimize RoI on the tree
-    if (frameRenderArgs->optimizeRoI(mipMapLevel, canonicalRoi) != eStatusOK) {
-        return eRenderRoIRetCodeFailed;
-    }
-
-    RectI roi;
-    canonicalRoi.toPixelEnclosing(mipMapLevel, par, &roi);
-
-    EffectInstance::RenderRoIArgs args( time,
-                                       scale,
-                                       mipMapLevel, //mipmaplevel
-                                       view,
-                                       false,
-                                       roi,
-                                       layersToRender,
-                                       eImageBitDepthFloat,
-                                       false,
-                                       _imp->effect,
-                                       eStorageModeRAM /*returnOpenGlTex*/,
-                                       time);
-    RenderRoIRetCode stat = eRenderRoIRetCodeFailed;
-    try {
-        stat = _imp->effect->renderRoI(args, planes);
-    } catch (const std::exception& /*e*/) {
-
-    }
-    appPTR->getAppTLS()->cleanupTLSForThread();
-
-    return stat;
-}
 
 NATRON_NAMESPACE_EXIT;
 

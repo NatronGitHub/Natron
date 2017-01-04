@@ -81,7 +81,6 @@ SOURCES += \
     Backdrop.cpp \
     Bezier.cpp \
     BezierCP.cpp \
-    BlockingBackgroundRender.cpp \
     Cache.cpp \
     CacheDeleterThread.cpp \
     CacheEntryBase.cpp \
@@ -161,7 +160,6 @@ SOURCES += \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
     OneViewNode.cpp \
-    OutputEffectInstance.cpp \
     OutputSchedulerThread.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
@@ -185,6 +183,7 @@ SOURCES += \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
+    RenderQueue.cpp \
     RotoBezierTriangulation.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
@@ -297,7 +296,6 @@ HEADERS += \
     Bezier.h \
     BezierCP.h \
     BezierCPPrivate.h \
-    BlockingBackgroundRender.h \
     BufferableObject.h \
     CLArgs.h \
     Cache.h \
@@ -391,7 +389,6 @@ HEADERS += \
     OfxParamInstance.h \
     OneViewNode.h \
     OpenGLViewerI.h \
-    OutputEffectInstance.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
     Plugin.h \
@@ -419,6 +416,7 @@ HEADERS += \
     RectI.h \
     RenderStats.h \
     RenderValuesCache.h \
+    RenderQueue.h \
     RotoBezierTriangulation.h \
     RotoDrawableItem.h \
     RotoLayer.h \

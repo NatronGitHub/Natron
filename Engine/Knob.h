@@ -2690,13 +2690,6 @@ public:
 
 
     /**
-     * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
-     **/
-    void setKnobsFrozen(bool frozen);
-
-    bool areKnobsFrozen() const;
-
-    /**
      * @brief Makes all output nodes connected downstream to this node abort any rendering.
      * Should be called prior to changing the state of the user interface that could impact the
      * final image.

@@ -40,7 +40,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
-
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -67,9 +67,9 @@ public:
      * value if the task uses the progressUpdate(const int frame) function.
      **/
     void startTask( const NodePtr& node,
-                    const int firstFrame,
-                    const int lastFrame,
-                    const int frameStep,
+                    const TimeValue firstFrame,
+                    const TimeValue lastFrame,
+                    const TimeValue frameStep,
                     const bool canPause,
                     const bool canCancel,
                     const QString& message,

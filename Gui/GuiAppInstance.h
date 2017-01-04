@@ -137,11 +137,11 @@ public:
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void loadProjectGui(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
-                                     int firstFrame, int lastFrame,
-                                     int frameStep, bool canPause,
-                                     const OutputEffectInstancePtr& writer,
+                                     TimeValue firstFrame, TimeValue lastFrame,
+                                     TimeValue frameStep, bool canPause,
+                                     const NodePtr& writer,
                                      const ProcessHandlerPtr & process) OVERRIDE FINAL;
-    virtual void notifyRenderRestarted( const OutputEffectInstancePtr& writer,
+    virtual void notifyRenderRestarted( const NodePtr& writer,
                                         const ProcessHandlerPtr & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
@@ -170,7 +170,7 @@ public:
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;
-    virtual ViewerInstancePtr getLastViewerUsingTimeline() const OVERRIDE FINAL;
+    virtual ViewerNodePtr getLastViewerUsingTimeline() const OVERRIDE FINAL;
 
     void discardLastViewerUsingTimeline();
 

@@ -184,6 +184,10 @@ public:
     // Ptr to public interface, can not be a smart ptr
     Node* _publicInterface;
 
+    // If this node is an output node, this is a pointer to the render engine.
+    // This is the object that schedules playback, renders and separate threads.
+    RenderEnginePtr renderEngine;
+
     // The group containing this node
     mutable QMutex groupMutex;
     NodeCollectionWPtr group;

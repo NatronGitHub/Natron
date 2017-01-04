@@ -2589,7 +2589,7 @@ KnobItemsTable::goToPreviousMasterKeyframe(ViewIdx view)
     }
     if (minTime != -std::numeric_limits<double>::infinity()) {
         node->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        node->getApp()->getTimeLine()->seekFrame(minTime, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+        node->getApp()->getTimeLine()->seekFrame(minTime, false, EffectInstance(), eTimelineChangeReasonOtherSeek);
     }
 }
 
@@ -2608,7 +2608,7 @@ KnobItemsTable::goToNextMasterKeyframe(ViewIdx view)
     }
     if (minTime != std::numeric_limits<double>::infinity()) {
         node->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        node->getApp()->getTimeLine()->seekFrame(minTime, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+        node->getApp()->getTimeLine()->seekFrame(minTime, false, EffectInstance(), eTimelineChangeReasonOtherSeek);
     }
 }
 

@@ -54,7 +54,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/BlockingBackgroundRender.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/EffectOpenGLContextData.h"
@@ -126,8 +125,8 @@ EffectInstance::optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
             ViewIdx inputIdentityView(view);
             if ( !splits[i].intersects(inputsRoDIntersection) ) {
                 IsIdentityResultsPtr results;
-                StatusEnum stat = isIdentity_public(false, time, renderMappedScale, splits[i], view, renderArgs, &results);
-                if (stat == eStatusFailed) {
+                ActionRetCodeEnum stat = isIdentity_public(false, time, renderMappedScale, splits[i], view, renderArgs, &results);
+                if (isFailureRetCode(stat)) {
                     identityInputNb = -1;
                 } else {
                     results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView);
@@ -168,7 +167,7 @@ EffectInstance::optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
 /**
  * @brief This function determines the planes to render and calls recursively on upstream nodes unavailable planes
  **/
-RenderRoIRetCode
+ActionRetCodeEnum
 EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
                                                         std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
                                                         std::list<ImageComponents> *planesToRender,
@@ -185,9 +184,9 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
     {
 
         GetComponentsResultsPtr results;
-        StatusEnum stat = _publicInterface->getComponents_public(args.time, args.view, args.renderArgs, &results);
-        if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+        ActionRetCodeEnum stat = _publicInterface->getComponents_public(args.time, args.view, args.renderArgs, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         results->getResults(inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, processChannels, &processAllLayers);
     }
@@ -230,35 +229,35 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
 
     }
 
-    if (!componentsToFetchUpstream.empty()) {
-        return eRenderRoIRetCodeOk;
+    if (componentsToFetchUpstream.empty()) {
+        return eTreeRenderOK;
     }
 
     assert(passThroughInputNb != -1);
     EffectInstancePtr passThroughInput = _publicInterface->getInput(passThroughInputNb);
     if (!passThroughInput) {
-        return eRenderRoIRetCodeFailed;
+        return eTreeRenderInputDisconnected;
     }
 
     boost::scoped_ptr<RenderRoIArgs> inArgs ( new RenderRoIArgs(args) );
     inArgs->components = componentsToFetchUpstream;
 
     RenderRoIResults inputResults;
-    RenderRoIRetCode inputRetCode = passThroughInput->renderRoI(*inArgs, &inputResults);
+    ActionRetCodeEnum inputRetCode = passThroughInput->renderRoI(*inArgs, &inputResults);
 
-    if ( (inputRetCode == eRenderRoIRetCodeAborted) || (inputRetCode == eRenderRoIRetCodeFailed) || inputResults.outputPlanes.empty() ) {
+    if ( (inputRetCode != eTreeRenderOK) || inputResults.outputPlanes.empty() ) {
         return inputRetCode;
     }
 
     outputPlanes->insert(inputResults.outputPlanes.begin(),  inputResults.outputPlanes.end());
 
-    return eRenderRoIRetCodeOk;
+    return eTreeRenderOK;
 
 
 } // determinePlanesToRender
 
 
-RenderRoIRetCode
+ActionRetCodeEnum
 EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
                                                      double par,
                                                      const RectD& rod,
@@ -278,9 +277,9 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         rod.toPixelEnclosing(scale, par, &pixelRod);
 
         IsIdentityResultsPtr results;
-        StatusEnum stat = _publicInterface->isIdentity_public(true, args.time, scale, pixelRod, args.view, args.renderArgs, &results);
-        if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, args.time, scale, pixelRod, args.view, args.renderArgs, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         results->getIdentityData(&inputNbIdentity, &inputTimeIdentity, &inputIdentityView);
 
@@ -293,7 +292,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
             // Be safe: we may hit an infinite recursion without this check
             assert(inputTimeIdentity != args.time);
             if ( inputTimeIdentity == args.time) {
-                return eRenderRoIRetCodeFailed;
+                return eTreeRenderFailed;
             }
 
             // This special value of -2 indicates that the plugin is identity of itself at another time
@@ -308,7 +307,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         // Check if identity input really exists, otherwise fail
         EffectInstancePtr inputEffectIdentity = _publicInterface->getInput(inputNbIdentity);
         if (!inputEffectIdentity) {
-            return eRenderRoIRetCodeFailed;
+            return eTreeRenderInputDisconnected;
         }
 
 
@@ -335,8 +334,8 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         std::map<ImageComponents, ImagePtr> finalPlanes = results->outputPlanes;
         results->outputPlanes.clear();
 
-        RenderRoIRetCode ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
-        if (ret == eRenderRoIRetCodeOk) {
+        ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
+        if (ret == eTreeRenderOK) {
             // Add planes to existing outputPlanes
             finalPlanes.insert( results->outputPlanes.begin(), results->outputPlanes.end() );
         }
@@ -344,10 +343,10 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     } // if (identity)
 
     assert(!*isIdentity);
-    return eRenderRoIRetCodeOk;
+    return eTreeRenderOK;
 } // EffectInstance::Implementation::handleIdentityEffect
 
-RenderRoIRetCode
+ActionRetCodeEnum
 EffectInstance::Implementation::handleConcatenation(const EffectInstance::RenderRoIArgs& args,
                                                     const RenderScale& renderScale,
                                                     RenderRoIResults* results,
@@ -364,23 +363,23 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         if (args.caller->getInputCanReceiveDistorsion(args.inputNbInCaller)) {
 
             GetDistorsionResultsPtr actionResults;
-            StatusEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &actionResults);
-            if (stat == eStatusFailed) {
-                return eRenderRoIRetCodeFailed;
+            ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &actionResults);
+            if (isFailureRetCode(stat)) {
+                return stat;
             }
             const DistorsionFunction2DPtr& disto = actionResults->getDistorsionResults();
-            if (stat == eStatusOK && disto->inputNbToDistort != -1) {
+            if (disto && disto->inputNbToDistort != -1) {
 
                 // Recurse on input given by plug-in
                 EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
                 if (!distoInput) {
-                    return eRenderRoIRetCodeFailed;
+                    return eTreeRenderInputDisconnected;
                 }
                 boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
                 argsCpy->caller = _publicInterface->shared_from_this();
                 argsCpy->inputNbInCaller = disto->inputNbToDistort;
-                RenderRoIRetCode ret = distoInput->renderRoI(*argsCpy, results);
-                if (ret != eRenderRoIRetCodeOk) {
+                ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
+                if (ret != eTreeRenderOK) {
                     return ret;
                 }
 
@@ -397,7 +396,7 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         }
 
     }
-    return eRenderRoIRetCodeOk;
+    return eTreeRenderOK;
 } // handleConcatenation
 
 bool
@@ -429,8 +428,8 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
 
             TreeRenderNodeArgsPtr inputRenderArgs = args.renderArgs->getInputRenderArgs(i);
             GetRegionOfDefinitionResultsPtr rodResults;
-            StatusEnum stat = input->getRegionOfDefinition_public(args.time, renderMappedScale, args.view, inputRenderArgs, &rodResults);
-            if (stat == eStatusFailed) {
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(args.time, renderMappedScale, args.view, inputRenderArgs, &rodResults);
+            if (isFailureRetCode(stat)) {
                 break;
             }
             inputRod = rodResults->getRoD();
@@ -501,6 +500,25 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
     // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
     ImageBufferLayoutEnum pluginBufferLayout = _publicInterface->getPreferredBufferLayout();
 
+    StorageModeEnum cacheStorage;
+    ImageBufferLayoutEnum cacheBufferLayout;
+    if (cacheAccess != eCacheAccessModeNone) {
+        // Cache format is tiled and mmap backend
+        cacheStorage = eStorageModeDisk;
+        cacheBufferLayout = eImageBufferLayoutMonoChannelTiled;
+    } else {
+        switch (planesToRender->backendType) {
+            case eRenderBackendTypeOpenGL:
+                cacheStorage = eStorageModeGLTex;
+                break;
+            case eRenderBackendTypeCPU:
+            case eRenderBackendTypeOSMesa:
+                cacheStorage = eStorageModeRAM;
+                break;
+        }
+        cacheBufferLayout = pluginBufferLayout;
+    }
+
     std::map<ImageComponents, PlaneToRender> planes;
     for (std::list<ImageComponents>::const_iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
 
@@ -514,22 +532,8 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
             initArgs.mipMapLevel = mappedMipMapLevel;
             initArgs.isDraft = isDraftRender;
             initArgs.nodeHashKey = nodeFrameViewHash;
-            if (cacheAccess != eCacheAccessModeNone) {
-                // Cache format is tiled and mmap backend
-                initArgs.storage = eStorageModeDisk;
-                initArgs.bufferFormat = eImageBufferLayoutMonoChannelTiled;
-            } else {
-                switch (planesToRender->backendType) {
-                    case eRenderBackendTypeOpenGL:
-                        initArgs.storage = eStorageModeGLTex;
-                        break;
-                    case eRenderBackendTypeCPU:
-                    case eRenderBackendTypeOSMesa:
-                        initArgs.storage = eStorageModeRAM;
-                        break;
-                }
-                initArgs.bufferFormat = pluginBufferLayout;
-            }
+            initArgs.storage = cacheStorage;
+            initArgs.bufferFormat = cacheBufferLayout;
             initArgs.bitdepth = outputBitDepth;
             initArgs.layer = *it;
         }
@@ -547,7 +551,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
 
     RectI renderWindow = roi;
 
-    if (cacheAccess != eCacheAccessModeNone) {
+    if (cacheAccess != eCacheAccessModeNone && (cacheBufferLayout != pluginBufferLayout)) {
 
         // Remove from planes to render the planes that are already cached
         // The render window is the bounding box of all portions left to render across all planes.
@@ -696,7 +700,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
 
 
 
-EffectInstance::RenderRoIStatusEnum
+ActionRetCodeEnum
 EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArgs & args,
                                                               const ImagePlanesToRenderPtr &planesToRender,
                                                               const OSGLContextAttacherPtr& glRenderContext,
@@ -707,7 +711,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
 
     // If we reach here, it can be either because the planes are cached or not, either way
     // the planes are NOT a total identity, and they may have some content left to render.
-    EffectInstance::RenderRoIStatusEnum renderRetCode = eRenderRoIStatusImageRendered;
+    ActionRetCodeEnum renderRetCode = eActionStatusOK;
 
     // There should always be at least 1 plane to render (The color plane)
     assert( !planesToRender->planes.empty() );
@@ -761,15 +765,12 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
         planesToRender->backendType == eRenderBackendTypeOSMesa) {
         assert(glRenderContext);
-        Natron::StatusEnum stat = renderInstance->attachOpenGLContext_public(args.time, args.view, renderMappedScale, args.renderArgs, glRenderContext->getContext(), &planesToRender->glContextData);
-        if (stat == eStatusOutOfMemory) {
-            renderRetCode = eRenderRoIStatusRenderOutOfGPUMemory;
-        } else if (stat == eStatusFailed) {
-            // Should we not use eRenderRoIStatusRenderOutOfGPUMemory also so that we try CPU rendering instead of failing the render alltogether ?
-            renderRetCode = eRenderRoIStatusRenderFailed;
+        ActionRetCodeEnum stat = renderInstance->attachOpenGLContext_public(args.time, args.view, renderMappedScale, args.renderArgs, glRenderContext->getContext(), &planesToRender->glContextData);
+        if (isFailureRetCode(stat)) {
+            renderRetCode = stat;
         }
     }
-    if (renderRetCode == eRenderRoIStatusImageRendered) {
+    if (renderRetCode == eActionStatusOK) {
         
         renderRetCode = renderInstance->renderForClone(glRenderContext,
                                                           args,
@@ -817,18 +818,18 @@ EffectInstance::Implementation::resizeImagesIfNeeded(const RenderRoIArgs & args,
 
 } // resizeImagesIfNeeded
 
-RenderRoIRetCode
+ActionRetCodeEnum
 EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 {
 
     // Do nothing if no components were requested
     if ( args.components.empty() ) {
         qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out components requested empty";
-        return eRenderRoIRetCodeOk;
+        return eTreeRenderOK;
     }
     if ( args.roi.isNull() ) {
         qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out RoI requested empty ";
-        return eRenderRoIRetCodeOk;
+        return eTreeRenderOK;
     }
 
     // Make sure this call is not made recursively from getImage on a render clone on which we are already calling renderRoI.
@@ -860,15 +861,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     RectD rod;
     {
         GetRegionOfDefinitionResultsPtr results;
-        StatusEnum stat = getRegionOfDefinition_public(args.time, mappedCombinedScale, args.view, args.renderArgs, &results);
-        if (stat == eStatusFailed) {
-            return eRenderRoIRetCodeFailed;
+        ActionRetCodeEnum stat = getRegionOfDefinition_public(args.time, mappedCombinedScale, args.view, args.renderArgs, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         rod = results->getRoD();
 
         // If the plug-in RoD is null, there's nothing to render.
         if (rod.isNull()) {
-            return eRenderRoIRetCodeOk;
+            return eTreeRenderInputDisconnected;
         }
     }
 
@@ -879,14 +880,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     std::map<int, std::list<ImageComponents> > inputLayersNeeded;
     {
 
-        RenderRoIRetCode upstreamRetCode = _imp->determinePlanesToRender(args, &inputLayersNeeded, &requestedPlanes, &processChannels, &results->outputPlanes);
-        if (upstreamRetCode != eRenderRoIRetCodeOk) {
+        ActionRetCodeEnum upstreamRetCode = _imp->determinePlanesToRender(args, &inputLayersNeeded, &requestedPlanes, &processChannels, &results->outputPlanes);
+        if (upstreamRetCode != eTreeRenderOK) {
             return upstreamRetCode;
         }
 
         // There might no plane produced by this node that were requested
         if ( requestedPlanes.empty() ) {
-            return eRenderRoIRetCodeOk;
+            return eTreeRenderOK;
         }
     }
 
@@ -896,7 +897,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     const double par = getAspectRatio(args.renderArgs, -1);
     {
         bool isIdentity;
-        RenderRoIRetCode upstreamRetCode = _imp->handleIdentityEffect(args, par, rod, mappedCombinedScale, requestedPlanes, inputLayersNeeded, results, &isIdentity);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(args, par, rod, mappedCombinedScale, requestedPlanes, inputLayersNeeded, results, &isIdentity);
         if (isIdentity) {
             return upstreamRetCode;
         }
@@ -921,8 +922,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     // The OpenGL context locker
     OSGLContextAttacherPtr glContextLocker;
     {
-        RenderRoIRetCode errorCode = _imp->resolveRenderBackend(args, requestPassData, args.roi, &planesToRender->backendType, &glRenderContext);
-        if (errorCode == eRenderRoIRetCodeFailed) {
+        ActionRetCodeEnum errorCode = _imp->resolveRenderBackend(args, requestPassData, args.roi, &planesToRender->backendType, &glRenderContext);
+        if (errorCode != eTreeRenderOK) {
             return errorCode;
         }
         assert(((planesToRender->backendType == eRenderBackendTypeOpenGL || planesToRender->backendType == eRenderBackendTypeOSMesa) && glRenderContext) || (planesToRender->backendType != eRenderBackendTypeOpenGL && planesToRender->backendType != eRenderBackendTypeOSMesa && !glRenderContext));
@@ -967,12 +968,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     {
 
         bool concatenated;
-        RenderRoIRetCode upstreamRetCode = _imp->handleConcatenation(args, mappedCombinedScale, results, &concatenated);
-        if (upstreamRetCode == eRenderRoIRetCodeFailed) {
+        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(args, mappedCombinedScale, results, &concatenated);
+        if (upstreamRetCode != eTreeRenderOK) {
             return upstreamRetCode;
         }
         if (concatenated) {
-            return eRenderRoIRetCodeOk;
+            return eTreeRenderOK;
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -995,7 +996,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(pixelRoDRenderMapped, &renderMappedRoI) ) {
-            return eRenderRoIRetCodeOk;
+            return eTreeRenderOK;
         }
 
         // The RoI falls into the effect pixel region of definition
@@ -1012,7 +1013,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Allocate images and look-up cache ///////////////////////////////////////////////////////
-    CacheAccessModeEnum cacheAccess = _imp->shouldRenderUseCache(args, requestPassData, planesToRender->backendType);
+    CacheAccessModeEnum cacheAccess = _imp->shouldRenderUseCache(args, requestPassData);
 
     _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, mappedProxyScale, mappedMipMapLevel, &results->outputPlanes);
 
@@ -1031,9 +1032,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
             glContextLocker->dettach();
         }
 
-        RenderRoIRetCode upstreamRetCode = args.renderArgs->preRenderInputImages(args.time, args.view, inputLayersNeeded);
+        ActionRetCodeEnum upstreamRetCode = args.renderArgs->preRenderInputImages(args.time, args.view, inputLayersNeeded);
 
-        if (upstreamRetCode != eRenderRoIRetCodeOk) {
+        if (upstreamRetCode != eTreeRenderOK) {
             return upstreamRetCode;
         }
     }
@@ -1042,7 +1043,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Launch actual internal render ///////////////////////////////////////////////////////////
 
-    RenderRoIStatusEnum renderRetCode;
+    ActionRetCodeEnum renderRetCode = eActionStatusOK;
     if (hasSomethingToRender) {
         renderRetCode = _imp->renderRoILaunchInternalRender(args, planesToRender, glContextLocker, mappedCombinedScale, processChannels, inputLayersNeeded);
     }
@@ -1053,27 +1054,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Check for failure or abortion ///////////////////////////////////////////////////////////
 
-    bool renderAborted = args.renderArgs->isAborted();
-    switch (renderRetCode) {
-        case eRenderRoIStatusImageRendered:
-            if (renderAborted) {
-                return eRenderRoIRetCodeOk;
-            }
-            break;
-        case eRenderRoIStatusRenderFailed:
-            return eRenderRoIRetCodeFailed;
-            break;
-        case eRenderRoIStatusRenderOutOfGPUMemory: {
-
-            // Call renderRoI again, but don't use GPU this time if possible
-            if (args.renderArgs->getCurrentRenderOpenGLSupport() != ePluginOpenGLRenderSupportYes) {
-                // The plug-in can only use GPU or doesn't support GPU
-                return eRenderRoIRetCodeFailed;
-            }
-            boost::scoped_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
-            newArgs->allowGPURendering = false;
-            return renderRoI(*newArgs, results);
-        }   break;
+    // If using GPU and out of memory retry on CPU if possible
+    if (renderRetCode == eActionStatusOutOfMemory && planesToRender->backendType == eRenderBackendTypeOpenGL) {
+        if (args.renderArgs->getCurrentRenderOpenGLSupport() != ePluginOpenGLRenderSupportYes) {
+            // The plug-in can only use GPU or doesn't support GPU
+            return eActionStatusFailed;
+        }
+        boost::scoped_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
+        newArgs->allowGPURendering = false;
+        return renderRoI(*newArgs, results);
     }
 
 
@@ -1099,10 +1088,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     assert( !results->outputPlanes.empty() );
 #endif
 
-    return eRenderRoIRetCodeOk;
+    return eTreeRenderOK;
 } // renderRoI
 
-EffectInstance::RenderRoIStatusEnum
+ActionRetCodeEnum
 EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
                                const RenderRoIArgs& args,
                                const RenderScale& renderMappedScale,
@@ -1120,9 +1109,9 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     RangeD sequenceRange;
     {
         GetFrameRangeResultsPtr rangeResults;
-        StatusEnum stat = getFrameRange_public(args.renderArgs, &rangeResults);
-        if (stat == eStatusFailed) {
-            return eRenderRoIStatusRenderFailed;
+        ActionRetCodeEnum stat = getFrameRange_public(args.renderArgs, &rangeResults);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
         rangeResults->getFrameRangeResults(&sequenceRange);
     }
@@ -1137,19 +1126,21 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     bool isPlayback = args.renderArgs->getParentRender()->isPlayback();
 
     if (callBeginSequenceRender) {
-        if (beginSequenceRender_public(args.time,
-                                       args.time,
-                                       1 /*frameStep*/,
-                                       !appPTR->isBackground() /*interactive*/,
-                                       renderMappedScale,
-                                       isPlayback,
-                                       !isPlayback,
-                                       args.renderArgs->getParentRender()->isDraftRender(),
-                                       args.view,
-                                       planesToRender->backendType,
-                                       planesToRender->glContextData,
-                                       args.renderArgs) == eStatusFailed) {
-            return eRenderRoIStatusRenderFailed;
+        ActionRetCodeEnum stat = beginSequenceRender_public(args.time,
+                                                            args.time,
+                                                            1 /*frameStep*/,
+                                                            !appPTR->isBackground() /*interactive*/,
+                                                            renderMappedScale,
+                                                            isPlayback,
+                                                            !isPlayback,
+                                                            args.renderArgs->getParentRender()->isDraftRender(),
+                                                            args.view,
+                                                            planesToRender->backendType,
+                                                            planesToRender->glContextData,
+                                                            args.renderArgs);
+
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
     }
 
@@ -1202,9 +1193,8 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
 
         for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
 
-            RenderRoIStatusEnum functorRet = _imp->tiledRenderingFunctor(*it, &args, renderMappedScale, processChannels, mainInputImage, planesToRender, glContext);
-            
-            if (functorRet != eRenderRoIStatusImageRendered) {
+            ActionRetCodeEnum functorRet = _imp->tiledRenderingFunctor(*it, &args, renderMappedScale, processChannels, mainInputImage, planesToRender, glContext);
+            if (isFailureRetCode(functorRet)) {
                 return functorRet;
             }
 
@@ -1237,26 +1227,26 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
 
         QThread* curThread = QThread::currentThread();
 
-        std::vector<RenderRoIStatusEnum> threadReturnCodes;
-        QFuture<RenderRoIStatusEnum> ret = QtConcurrent::mapped( rectsToRenderList,
-                                                                boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
-                                                                            _imp.get(),
-                                                                            *tiledArgs,
-                                                                            _1,
-                                                                            curThread) );
+        std::vector<ActionRetCodeEnum> threadReturnCodes;
+        QFuture<ActionRetCodeEnum> ret = QtConcurrent::mapped( rectsToRenderList,
+                                                              boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
+                                                                          _imp.get(),
+                                                                          *tiledArgs,
+                                                                          _1,
+                                                                          curThread) );
         if (isThreadPoolThread) {
-            RenderRoIStatusEnum retCode = _imp->tiledRenderingFunctor(*tiledArgs, lastRectToRender, curThread);
+            ActionRetCodeEnum retCode = _imp->tiledRenderingFunctor(*tiledArgs, lastRectToRender, curThread);
             threadReturnCodes.push_back(retCode);
         }
 
         // Wait for other threads to be finished
         ret.waitForFinished();
 
-        for (QFuture<RenderRoIStatusEnum>::const_iterator  it2 = ret.begin(); it2 != ret.end(); ++it2) {
+        for (QFuture<ActionRetCodeEnum>::const_iterator  it2 = ret.begin(); it2 != ret.end(); ++it2) {
             threadReturnCodes.push_back(*it2);
         }
-        for (std::vector<RenderRoIStatusEnum>::const_iterator it2 = threadReturnCodes.begin(); it2 != threadReturnCodes.end(); ++it2) {
-            if (*it2 != eRenderRoIStatusImageRendered) {
+        for (std::vector<ActionRetCodeEnum>::const_iterator it2 = threadReturnCodes.begin(); it2 != threadReturnCodes.end(); ++it2) {
+            if (isFailureRetCode(*it2)) {
                 return *it2;
             }
         }
@@ -1265,22 +1255,25 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     ///never call endsequence render here if the render is sequential
     if (callBeginSequenceRender) {
 
-        if (endSequenceRender_public(args.time,
+        ActionRetCodeEnum stat = endSequenceRender_public(args.time,
                                      args.time,
                                      1 /*frameStep*/,
                                      !appPTR->isBackground() /*interactive*/,
                                      renderMappedScale,
-                                     isPlayback,
-                                     !isPlayback,
-                                     args.renderArgs->getParentRender()->isDraftRender(),
-                                     args.view,
-                                     planesToRender->backendType,
-                                     planesToRender->glContextData,
-                                     args.renderArgs) == eStatusFailed) {
-            return eRenderRoIStatusRenderFailed;
+                                                          isPlayback,
+                                                          !isPlayback,
+                                                          args.renderArgs->getParentRender()->isDraftRender(),
+                                                          args.view,
+                                                          planesToRender->backendType,
+                                                          planesToRender->glContextData,
+                                                          args.renderArgs);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
+        
     }
-    return eRenderRoIStatusImageRendered;
+    return eActionStatusOK;
+
 } // renderRoIInternal
 
 NATRON_NAMESPACE_EXIT;

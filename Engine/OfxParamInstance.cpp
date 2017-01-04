@@ -4465,9 +4465,9 @@ OfxParametricInstance::getValue(int curveIndex,
 {
     KnobParametricPtr knob = _knob.lock();
     ViewIdx view = knob->getCurrentView_TLS();
-    StatusEnum stat = knob->evaluateCurve(DimIdx(curveIndex), view, parametricPosition, returnValue);
+    ActionRetCodeEnum stat = knob->evaluateCurve(DimIdx(curveIndex), view, parametricPosition, returnValue);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -4481,9 +4481,9 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
 {
     KnobParametricPtr knob = _knob.lock();
     ViewIdx view = knob->getCurrentView_TLS();
-    StatusEnum stat = knob->getNControlPoints(DimIdx(curveIndex), view, returnValue);
+    ActionRetCodeEnum stat = knob->getNControlPoints(DimIdx(curveIndex), view, returnValue);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -4499,9 +4499,9 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
 {
     KnobParametricPtr knob = _knob.lock();
     ViewIdx view = knob->getCurrentView_TLS();
-    StatusEnum stat = knob->getNthControlPoint(DimIdx(curveIndex), view, nthCtl, key, value);
+    ActionRetCodeEnum stat = knob->getNthControlPoint(DimIdx(curveIndex), view, nthCtl, key, value);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -4519,9 +4519,9 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
 {
     KnobParametricPtr knob = _knob.lock();
     ViewIdx view = knob->getCurrentView_TLS();
-    StatusEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl, key, value);
+    ActionRetCodeEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl, key, value);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -4542,10 +4542,10 @@ OfxParametricInstance::addControlPoint(int curveIndex,
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
          boost::math::isinf(value) ) {
-        return kOfxStatFailed;
+        return eActionStatusFailed;
     }
 
-    StatusEnum stat;
+    ActionRetCodeEnum stat;
     EffectInstancePtr effect = toEffectInstance( _knob.lock()->getHolder() );
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
     // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
@@ -4562,7 +4562,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     }
     stat = _knob.lock()->addControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), key, value, interpolation);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -4575,9 +4575,9 @@ OfxParametricInstance::deleteControlPoint(int curveIndex,
 {
     KnobParametricPtr knob = _knob.lock();
     ViewIdx view = knob->getCurrentView_TLS();
-    StatusEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl);
+    ActionRetCodeEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;
@@ -4590,9 +4590,9 @@ OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 
     KnobParametricPtr knob = _knob.lock();
     ViewIdx view = knob->getCurrentView_TLS();
-    StatusEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view);
+    ActionRetCodeEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view);
 
-    if (stat == eStatusOK) {
+    if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
     } else {
         return kOfxStatFailed;

@@ -519,7 +519,7 @@ struct ViewerNodePrivate
     // Pointer to ViewerGL (interface)
     OpenGLViewerI* uiContext;
 
-    NodeWPtr internalViewerProcessNode;
+    NodeWPtr internalViewerProcessNode[2];
 
     boost::weak_ptr<KnobChoice> layersKnob;
     boost::weak_ptr<KnobChoice> alphaChannelKnob;
@@ -651,9 +651,9 @@ struct ViewerNodePrivate
 
     }
 
-    NodePtr getInternalViewerNode() const
+    NodePtr getViewerProcessNode(int index) const
     {
-        return internalViewerProcessNode.lock();
+        return internalViewerProcessNode[index].lock();
     }
 
     void onInternalViewerCreated();
@@ -755,10 +755,23 @@ ViewerNode::~ViewerNode()
     }
 }
 
-ViewerInstancePtr
-ViewerNode::getInternalViewerNode() const
+RenderEngine*
+ViewerNode::createRenderEngine()
 {
-    NodePtr node = _imp->getInternalViewerNode();
+    boost::shared_ptr<ViewerInstance> thisShared = toViewerInstance( shared_from_this() );
+
+    return new ViewerRenderEngine(thisShared);
+}
+
+
+
+ViewerInstancePtr
+ViewerNode::getViewerProcessNode(int index) const
+{
+    if (index >= 2 || index < 0) {
+        return ViewerInstancePtr();
+    }
+    NodePtr node = _imp->getViewerProcessNode(index);
     if (!node) {
         return ViewerInstancePtr();
     }
@@ -770,7 +783,6 @@ void
 ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
 {
     // Refresh the A and B input choices
-    ViewerInstancePtr internalInstance = toViewerInstance(getInternalViewerNode()->getEffectInstance());
     KnobChoicePtr aInputKnob = aInputNodeChoiceKnob.lock();
     KnobChoicePtr bInputKnob = bInputNodeChoiceKnob.lock();
     std::string aCurChoice = aInputKnob->getActiveEntryText();
@@ -853,13 +865,6 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
         }
     }
 
-    /*bool autoWipe = getInternalNode()->isInputChangeRequestedFromViewer();
-
-     if ( autoWipe && (activeInputs[0] != -1) && (activeInputs[1] != -1) && (activeInputs[0] != activeInputs[1])
-     && (operation == eViewerCompositingOperatorNone) ) {
-     blendingModeChoiceKnob.lock()->setValue((int)eViewerCompositingOperatorWipeUnder);
-     }*/
-
 } // refreshInputChoices
 
 void
@@ -888,25 +893,26 @@ void
 ViewerNode::createViewerProcessNode()
 {
     NodePtr internalViewerNode;
-    {
+    for (int i = 0; i < 2; ++ i) {
         ViewerNodePtr thisShared = shared_from_this();
 
         QString nodeName = QString::fromUtf8("ViewerProcess");
+        nodeName += QString::number(i + 1);
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_VIEWER_INTERNAL, thisShared));
-        //args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
         args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
         internalViewerNode = getApp()->createNode(args);
+        assert(internalViewerNode);
+        if (!internalViewerNode) {
+            throw std::invalid_argument("ViewerNode::setupGraph: No internal viewer process!");
+        }
+        _imp->internalViewerProcessNode[i] = internalViewerNode;
+    }
 
-    }
-    assert(internalViewerNode);
-    if (!internalViewerNode) {
-        throw std::invalid_argument("ViewerNode::setupGraph: No internal viewer process!");
-    }
-    _imp->internalViewerProcessNode = internalViewerNode;
+
     _imp->onInternalViewerCreated();
     Q_EMIT internalViewerCreated();
 }
@@ -919,7 +925,7 @@ ViewerNode::setupGraph(bool createViewerProcess)
 
     ViewerNodePtr thisShared = shared_from_this();
 
-    NodePtr internalViewerNode = _imp->internalViewerProcessNode.lock();
+    NodePtr internalViewerNode = _imp->internalViewerProcessNode[0].lock();
     assert(createViewerProcess || internalViewerNode);
     if (createViewerProcess) {
         createViewerProcessNode();
@@ -971,11 +977,18 @@ ViewerNode::clearGroupWithoutViewerProcess()
     if (getNodes().empty()) {
         return;
     }
-    NodePtr viewerProcessNode = _imp->internalViewerProcessNode.lock();
-    assert(viewerProcessNode);
-    removeNode(viewerProcessNode);
+    NodePtr viewerProcessNode[2];
+    for (int i = 0; i < 2; ++i) {
+        viewerProcessNode[i] = _imp->internalViewerProcessNode[i].lock();
+        assert(viewerProcessNode[i]);
+        removeNode(viewerProcessNode[i]);
+    }
+
     clearNodesBlocking();
-    addNode(viewerProcessNode);
+
+    for (int i = 0; i < 2; ++i) {
+        addNode(viewerProcessNode[i]);
+    }
 }
 
 void
@@ -1007,7 +1020,7 @@ ViewerNode::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* proje
         } else {
 
             // We are loading a non edited default viewer, just ensure the initial setup was done
-            if (!getInternalViewerNode()) {
+            if (!_imp->internalViewerProcessNode[0].lock()) {
                 setupGraph(true);
             }
 
@@ -1018,32 +1031,38 @@ ViewerNode::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* proje
 
 
     // Ensure the internal viewer process node exists
-    if (!_imp->internalViewerProcessNode.lock()) {
-        NodePtr internalViewerNode;
+    if (!_imp->internalViewerProcessNode[0].lock()) {
+        NodePtr internalViewerNode[2];
         NodesList nodes = getNodes();
-        for (NodesList::iterator it = nodes.begin(); it!=nodes.end(); ++it) {
+        int viewerProcessNode_i = 0;
+        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             if ((*it)->isEffectViewerInstance()) {
-                internalViewerNode = *it;
-                break;
+                internalViewerNode[viewerProcessNode_i] = *it;
+                ++viewerProcessNode_i;
+                if (viewerProcessNode_i == 2) {
+                    break;
+                }
             }
         }
-        assert(internalViewerNode);
+        assert(internalViewerNode[0] && internalViewerNode[1]);
         if (!internalViewerNode) {
-            throw std::invalid_argument("ViewerNode::onGroupCreated: No internal viewer process!");
+            throw std::invalid_argument("Viewer: No internal viewer process!");
         }
-        _imp->internalViewerProcessNode = internalViewerNode;
+        _imp->internalViewerProcessNode[0] = internalViewerNode[0];
+        _imp->internalViewerProcessNode[1] = internalViewerNode[1];
         Q_EMIT internalViewerCreated();
         
         _imp->onInternalViewerCreated();
 
     }
-    assert(getInternalViewerNode());
-
+    assert(getViewerProcessNode(0));
+    assert(getViewerProcessNode(1));
 
     _imp->refreshInputChoices(true);
     refreshInputFromChoiceMenu(0);
     refreshInputFromChoiceMenu(1);
 }
+
 
 
 void
@@ -4400,11 +4419,108 @@ ViewerNode::redrawViewer()
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     OpenGLViewerI* uiContext = getUiContext();
-    if (!uiContext) {
-        return;
+    if (uiContext) {
+        uiContext->redraw();
     }
-    uiContext->redraw();
 }
+
+
+void
+ViewerNode::redrawViewerNow()
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->redrawNow();
+    }
+}
+
+void
+ViewerNode::disconnectViewer()
+{
+    // always running in the render thread
+    OpenGLViewerI* uiContext = getUiContext();
+    ViewerNodePtr node = getViewerNodeGroup();
+    if (uiContext) {
+        node->s_viewerDisconnected();
+    }
+}
+
+bool
+ViewerNode::isViewerUIVisible() const
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        return uiContext->isViewerUIVisible();
+    }
+    return false;
+}
+
+void
+ViewerNode::disconnectTexture(int index,bool clearRod)
+{
+    OpenGLViewerI* uiContext = getUiContext();
+    ViewerNodePtr node = getViewerNodeGroup();
+    if (uiContext) {
+        node->s_disconnectTextureRequest(index, clearRod);
+    }
+}
+
+void
+ViewerNode::aboutToUpdateTextures()
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->clearPartialUpdateTextures();
+    }
+}
+
+
+void
+ViewerNode::updateViewer(ViewIdx view, const ImagePtr& viewerA, const ImagePtr& viewerB)
+{
+
+}
+
+TimeValue
+ViewerNode::getTimelineCurrentTime() const
+{
+    TimeLinePtr timeline = getTimeline();
+    return TimeValue(timeline->currentFrame());
+}
+
+int
+ViewerNode::getLastRenderedTime() const
+{
+    OpenGLViewerI* uiContext = getUiContext();
+
+    return uiContext ? uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
+}
+
+TimeLinePtr
+ViewerNode::getTimeline() const
+{
+    OpenGLViewerI* uiContext = getUiContext();
+
+    return uiContext ? uiContext->getTimeline() : getApp()->getTimeLine();
+}
+
+void
+ViewerNode::getTimelineBounds(int* first,
+                                  int* last) const
+{
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->getViewerFrameRange(first, last);
+    } else {
+        *first = 0;
+        *last = 0;
+    }
+}
+
 
 void
 ViewerNodePrivate::getAllViewerNodes(bool inGroupOnly, std::list<ViewerNodePtr>& viewerNodes) const

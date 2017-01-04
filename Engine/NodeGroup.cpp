@@ -173,6 +173,9 @@ NodeCollection::addNode(const NodePtr& node)
 void
 NodeCollection::removeNode(const Node* node)
 {
+    if (!node) {
+        return;
+    }
     QMutexLocker k(&_imp->nodesMutex);
     for (NodesList::iterator it =_imp->nodes.begin(); it != _imp->nodes.end();++it) {
         if ( it->get() == node ) {
@@ -257,13 +260,13 @@ NodeCollection::getViewers(std::list<ViewerInstancePtr>* viewers) const
 }
 
 void
-NodeCollection::getWriters(std::list<OutputEffectInstancePtr>* writers) const
+NodeCollection::getWriters(std::list<EffectInstancePtr>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
-            OutputEffectInstancePtr out = (*it)->isEffectOutput();
+            EffectInstancePtr out = (*it)->isEffectOutput();
             assert(out);
             writers->push_back(out);
         }
@@ -328,8 +331,7 @@ NodeCollection::hasNodeRendering() const
                     return true;
                 }
             } else {
-                OutputEffectInstancePtr effect = toOutputEffectInstance( (*it)->getEffectInstance() );
-                if ( effect && effect->getRenderEngine()->hasThreadsWorking() ) {
+                if ( (*it)->getRenderEngine()->hasThreadsWorking() ) {
                     return true;
                 }
             }
@@ -1126,7 +1128,7 @@ NodeGroup::createPlugin()
 
 
 NodeGroup::NodeGroup(const NodePtr &node)
-    : OutputEffectInstance(node)
+    : EffectInstance(node)
     , NodeCollection( node ? node->getApp() : AppInstancePtr() )
     , _imp( new NodeGroupPrivate() )
 {

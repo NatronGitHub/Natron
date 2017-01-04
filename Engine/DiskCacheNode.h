@@ -31,7 +31,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -40,7 +40,7 @@ NATRON_NAMESPACE_ENTER;
 struct DiskCacheNodePrivate;
 
 class DiskCacheNode
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -97,14 +97,14 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE FINAL;
 
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,

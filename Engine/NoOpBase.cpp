@@ -33,7 +33,7 @@
 NATRON_NAMESPACE_ENTER;
 
 NoOpBase::NoOpBase(const NodePtr& n)
-    : OutputEffectInstance(n)
+    : EffectInstance(n)
 {
 }
 
@@ -54,7 +54,7 @@ NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-StatusEnum
+ActionRetCodeEnum
 NoOpBase::isIdentity(TimeValue time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
@@ -68,7 +68,7 @@ NoOpBase::isIdentity(TimeValue time,
     *inputNb = 0;
     *inputView = view;
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 bool

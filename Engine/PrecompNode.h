@@ -32,7 +32,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

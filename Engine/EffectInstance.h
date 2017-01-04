@@ -242,7 +242,7 @@ public:
     };
 
 
-protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, OutputEffectInstance, PrecompNode, ReadNode, RotoPaint
+protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, PrecompNode, ReadNode, RotoPaint
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
@@ -379,7 +379,7 @@ public:
     /**
      * @brief Wrapper around getComponentsNeededAndProduced, see getComponentsNeededAndProduced.
      **/
-    StatusEnum getComponents_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
+    ActionRetCodeEnum getComponents_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
 
 protected:
 
@@ -390,7 +390,7 @@ protected:
      * then it must specify the pass-through inputNb and the time and view at which to fetch the pass-through plane.
      * Default implementation returns the components returned by getTimeInvariantMetadatas on the color plane.
      **/
-    virtual StatusEnum getComponentsAction(TimeValue time,
+    virtual ActionRetCodeEnum getComponentsAction(TimeValue time,
                                            ViewIdx view,
                                            const TreeRenderNodeArgsPtr& render,
                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
@@ -413,7 +413,7 @@ private:
                                                std::bitset<4>* processChannels);
 
 
-    StatusEnum getComponentsNeededInternal(TimeValue time,
+    ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
                                            ViewIdx view,
                                            const TreeRenderNodeArgsPtr& render,
                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
@@ -433,12 +433,12 @@ public:
     /**
      * @brief Wrapper around attachOpenGLContext, see attachOpenGLContext
      **/
-    StatusEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+    ActionRetCodeEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
 
     /**
      * @brief Wrapper around dettachOpenGLContext, see dettachOpenGLContext
      **/
-    StatusEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+    ActionRetCodeEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
     /**
      * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
@@ -456,23 +456,13 @@ protected:
      * If the function supportsConcurrentOpenGLRenders() returns false, each call to attachOpenGLContext must be followed by
      * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
      *
-     * Possible return status code:
-     * eStatusOK , the action was trapped and all was well
-     * eStatusReplyDefault , the action was ignored, but all was well anyway
-     * eStatusOutOfMemory , in which case this may be called again after a memory purge
-     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual StatusEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
 
     /**
      * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
-     * Possible return status code:
-     * eStatusOK , the action was trapped and all was well
-     * eStatusReplyDefault , the action was ignored, but all was well anyway
-     * eStatusOutOfMemory , in which case this may be called again after a memory purge
-     * eStatusFailed , something went wrong, but no error code appropriate, the plugin should to post a message if possible and the host should not attempt to run the plugin in OpenGL render mode.
      **/
-    virtual StatusEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
 
 public:
@@ -568,7 +558,7 @@ public:
      * @brief For sequential effects, this is called before the first call to render .
      * For non sequential effects, this is called before each call to render.
      **/
-    StatusEnum beginSequenceRender_public(double first, double last,
+    ActionRetCodeEnum beginSequenceRender_public(double first, double last,
                                           double step, bool interactive, const RenderScale & scale,
                                           bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                           bool draftMode,
@@ -582,7 +572,7 @@ public:
      * @brief For sequential effects, this is called after the last call to render in a sequence.
      * For non sequential effects, this is called after each call to render.
      **/
-    StatusEnum endSequenceRender_public(double first, double last,
+    ActionRetCodeEnum endSequenceRender_public(double first, double last,
                                         double step, bool interactive, const RenderScale & scale,
                                         bool isSequentialRender, bool isRenderResponseToUserInteraction,
                                         bool draftMode,
@@ -631,12 +621,12 @@ public:
     /**
      * @brief The main render action. This should render onto the given output planes.
      **/
-    StatusEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum render_public(const RenderActionArgs & args) WARN_UNUSED_RETURN;
 
 
 protected:
 
-    virtual StatusEnum beginSequenceRender(double first,
+    virtual ActionRetCodeEnum beginSequenceRender(double first,
                                            double last,
                                            double step,
                                            bool interactive,
@@ -649,7 +639,7 @@ protected:
                                            const EffectOpenGLContextDataPtr& glContextData,
                                            const TreeRenderNodeArgsPtr& render);
 
-    virtual StatusEnum endSequenceRender(double first,
+    virtual ActionRetCodeEnum endSequenceRender(double first,
                                          double last,
                                          double step,
                                          bool interactive,
@@ -662,7 +652,7 @@ protected:
                                          const EffectOpenGLContextDataPtr& glContextData,
                                          const TreeRenderNodeArgsPtr& render);
 
-    virtual StatusEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN;
 
 public:
 
@@ -672,7 +662,7 @@ public:
      * calling render. If possible, Natron will concatenate distorsion effects and only the effect at
      * the bottom will do the final rendering.
      **/
-    StatusEnum getDistorsion_public(TimeValue time,
+    ActionRetCodeEnum getDistorsion_public(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     const TreeRenderNodeArgsPtr& render,
@@ -684,7 +674,7 @@ protected:
 
 
 
-    virtual StatusEnum getDistorsion(TimeValue time,
+    virtual ActionRetCodeEnum getDistorsion(TimeValue time,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
                                      const TreeRenderNodeArgsPtr& render,
@@ -704,7 +694,7 @@ public:
      * The special value of -2 indicates that the plugin is identity of itself at another time
      * @param inputView[out] the input view of the effect that is identity of.
      **/
-    StatusEnum isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
+    ActionRetCodeEnum isIdentity_public(bool useIdentityCache, // only set to true when calling for the whole image (not for a subrect)
                            TimeValue time,
                            const RenderScale & scale,
                            const RectI & renderWindow,
@@ -714,7 +704,7 @@ public:
 protected:
 
 
-    virtual StatusEnum isIdentity(TimeValue time,
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                                   const RenderScale & scale,
                                   const RectI & roi,
                                   ViewIdx view,
@@ -730,15 +720,14 @@ public:
      * This is meaningful for plugins that generate images or transform images.
      * By default it returns in rod the union of all inputs RoD and eStatusReplyDefault is returned.
      * In case of failure the plugin should return eStatusFailed.
-     * @returns eStatusOK, eStatusReplyDefault, or eStatusFailed. rod is set except if return value is eStatusOK or eStatusReplyDefault.
      **/
-    StatusEnum getRegionOfDefinition_public(TimeValue time,
+    ActionRetCodeEnum getRegionOfDefinition_public(TimeValue time,
                                             const RenderScale & scale,
                                             ViewIdx view,
                                             const TreeRenderNodeArgsPtr& render,
                                             GetRegionOfDefinitionResultsPtr* results) WARN_UNUSED_RETURN;
 
-    StatusEnum getRegionOfDefinitionFromCache(TimeValue time,
+    ActionRetCodeEnum getRegionOfDefinitionFromCache(TimeValue time,
                                               const RenderScale & scale,
                                               ViewIdx view,
                                               RectD* rod) WARN_UNUSED_RETURN;
@@ -760,7 +749,7 @@ public:
 protected:
 
 
-    virtual StatusEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view,
+    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view,
                                              const TreeRenderNodeArgsPtr& render,
                                              RectD* rod) WARN_UNUSED_RETURN;
 
@@ -775,7 +764,7 @@ public:
      * from inputs in order to do a blur taking into account the size of the blurring kernel.
      * By default, it returns renderWindow for each input.
      **/
-    StatusEnum getRegionsOfInterest_public(TimeValue time,
+    ActionRetCodeEnum getRegionsOfInterest_public(TimeValue time,
                                      const RenderScale & scale,
                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
                                      ViewIdx view,
@@ -786,9 +775,9 @@ protected:
 
 
 
-    virtual StatusEnum getRegionsOfInterest(TimeValue time,
+    virtual ActionRetCodeEnum getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
-                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
+                                      const RectD & renderWindow,
                                       ViewIdx view,
                                       const TreeRenderNodeArgsPtr& render,
                                       RoIMap* ret);
@@ -802,12 +791,12 @@ public:
      * @param hash If set this will return the hash of the node for the given time view. In a
      * render thread, this hash should be cached away
      **/
-    StatusEnum getFramesNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetFramesNeededResultsPtr* results);
+    ActionRetCodeEnum getFramesNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetFramesNeededResultsPtr* results);
 
 protected:
 
 
-    virtual StatusEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) ;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) ;
 
 public:
 
@@ -816,13 +805,13 @@ public:
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return eStatusFailed.
      **/
-    StatusEnum getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFrameRangeResultsPtr* results);
+    ActionRetCodeEnum getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFrameRangeResultsPtr* results);
 
 
 protected:
 
 
-    virtual StatusEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last);
+    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last);
 
 public:
 
@@ -905,16 +894,15 @@ public:
      *
      * This should not be reimplemented except for OpenFX which already has its default specification
      * for clip Preferences, see setDefaultClipPreferences()
-     * Returns eStatusOK on success, eStatusFailed on failure.
      *
      **/
-    StatusEnum getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& render, GetTimeInvariantMetaDatasResultsPtr* results);
+    ActionRetCodeEnum getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& render, GetTimeInvariantMetaDatasResultsPtr* results);
 
-    StatusEnum getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata& metadata);
+    ActionRetCodeEnum getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata& metadata);
 
 protected:
 
-    virtual StatusEnum getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/) { return eStatusOK; }
+    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/) { return eActionStatusReplyDefault; }
 
 
 public:
@@ -1046,12 +1034,29 @@ public:
 
     /**
      * @brief Is this node an output node ? An output node means
-     * it has no output.
+     * that a RenderEngine can be created.
+     * If returning true, you may subclass createRenderEngine() to 
+     * create a custom render engine if needed. The basic render engine
+     * handles writers & disk cache.
      **/
     virtual bool isOutput() const WARN_UNUSED_RETURN
     {
         return false;
     }
+
+    /**
+     * @brief Return the render engine created by createRenderEngine
+     **/
+    RenderEnginePtr getRenderEngine() const;
+
+    /**
+     * @brief To be implemented if this effect has the isOutput() function retuning true.
+     * Creates the engine that will control the output rendering.
+     * The default render engine just renders the requested tree and doesn't do
+     * extra-stuff.
+     **/
+    virtual RenderEngine* createRenderEngine();
+
 
 
     virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
@@ -1166,14 +1171,8 @@ public:
      * The return code indicates whether the render succeeded or failed. Note that this function may succeed
      * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
-    RenderRoIRetCode renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
 
-    enum RenderRoIStatusEnum
-    {
-        eRenderRoIStatusImageRendered, // we rendered what was missing
-        eRenderRoIStatusRenderFailed, // render failed
-        eRenderRoIStatusRenderOutOfGPUMemory, // The render failed because the GPU did not have enough memory
-    };
     
     struct RectToRender
     {
@@ -1536,9 +1535,9 @@ public:
 
 
     /**
-     * @brief Callback called after the static create function has been called to initialize virtual stuff
+     * @brief Callback called to fetch data from the plug-in before creating an instance.
      **/
-    virtual void initializeDataAfterCreate()
+    virtual void describePlugin()
     {
     }
 
@@ -1671,6 +1670,9 @@ public:
     virtual void evaluate(bool isSignificant, bool refreshMetadatas) OVERRIDE;
 
 
+    bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
+
+
 protected:
 
 
@@ -1737,12 +1739,12 @@ private:
     /**
      * @brief Launch the render action for a given render clone
      **/
-    RenderRoIStatusEnum renderForClone(const OSGLContextAttacherPtr& glContext,
-                                          const RenderRoIArgs& args,
-                                          const RenderScale& renderMappedScale,
-                                          const ImagePlanesToRenderPtr & planes,
-                                          const std::bitset<4> processChannels,
-                                          const std::map<int, std::list<ImageComponents> >& neededInputLayers);
+    ActionRetCodeEnum renderForClone(const OSGLContextAttacherPtr& glContext,
+                                     const RenderRoIArgs& args,
+                                     const RenderScale& renderMappedScale,
+                                     const ImagePlanesToRenderPtr & planes,
+                                     const std::bitset<4> processChannels,
+                                     const std::map<int, std::list<ImageComponents> >& neededInputLayers);
 
 
 

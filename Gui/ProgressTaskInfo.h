@@ -67,9 +67,9 @@ private:
 
     ProgressTaskInfo(ProgressPanel* panel,
                      const NodePtr& node,
-                     const int firstFrame,
-                     const int lastFrame,
-                     const int frameStep,
+                     const TimeValue firstFrame,
+                     const TimeValue lastFrame,
+                     const TimeValue frameStep,
                      const bool canPause,
                      const bool canCancel,
                      const QString& message,

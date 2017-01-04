@@ -2341,7 +2341,7 @@ KnobParametric::signalCurveChanged(DimSpec dimension, const KnobDimViewBasePtr& 
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
                                 DimIdx dimension,
                                 double key,
@@ -2354,7 +2354,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
          boost::math::isinf(value) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     KeyFrame k(key, value);
@@ -2366,10 +2366,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     curve->addKeyFrame(k);
     evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
     signalCurveChanged(dimension, data);
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
                                 DimIdx dimension,
                                 double key,
@@ -2384,7 +2384,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
          boost::math::isinf(value) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     KeyFrame k(key, value, leftDerivative, rightDerivative);
@@ -2396,10 +2396,10 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     signalCurveChanged(dimension, data);
     evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::evaluateCurve(DimIdx dimension,
                          ViewIdx view,
                          double parametricPosition,
@@ -2407,35 +2407,35 @@ KnobParametric::evaluateCurve(DimIdx dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *returnValue = curve->getValueAt(parametricPosition);
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::getNControlPoints(DimIdx dimension,
                                   ViewIdx view,
                                   int *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *returnValue =  curve->getKeyFramesCount();
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::getNthControlPoint(DimIdx dimension,
                                    ViewIdx view,
                                    int nthCtl,
@@ -2444,25 +2444,25 @@ KnobParametric::getNthControlPoint(DimIdx dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     KeyFrame kf;
     bool ret = curve->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *key = kf.getTime();
     *value = kf.getValue();
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::getNthControlPoint(DimIdx dimension,
                                    ViewIdx view,
                                    int nthCtl,
@@ -2473,26 +2473,26 @@ KnobParametric::getNthControlPoint(DimIdx dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     KeyFrame kf;
     bool ret = curve->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *key = kf.getTime();
     *value = kf.getValue();
     *leftDerivative = kf.getLeftDerivative();
     *rightDerivative = kf.getRightDerivative();
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
                                                 DimIdx dimension,
                                                 ViewSetSpec view,
@@ -2502,7 +2502,7 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
@@ -2518,13 +2518,13 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
 
         try {
             curve->setKeyFrameInterpolation(interpolation, nThCtl);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         signalCurveChanged(dimension, data);
 
@@ -2534,10 +2534,10 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 
     evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    DimIdx dimension,
                                    ViewSetSpec view,
@@ -2547,7 +2547,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
@@ -2563,12 +2563,12 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         try {
             curve->setKeyFrameValueAndTime(TimeValue(key), value, nthCtl);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         signalCurveChanged(dimension, data);
     }
@@ -2576,10 +2576,10 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
 
     evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    DimIdx dimension,
                                    ViewSetSpec view,
@@ -2590,7 +2590,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    double rightDerivative)
 {
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
@@ -2606,13 +2606,13 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         int newIdx;
         try {
             curve->setKeyFrameValueAndTime(TimeValue(key), value, nthCtl, &newIdx);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         curve->setKeyFrameDerivatives(leftDerivative, rightDerivative, newIdx);
         signalCurveChanged(dimension, data);
@@ -2620,17 +2620,17 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
 
     evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 } // setNthControlPoint
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
                                    DimIdx dimension,
                                    ViewSetSpec view,
                                    int nthCtl)
 {
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
@@ -2646,28 +2646,28 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         try {
             curve->removeKeyFrameWithIndex(nthCtl);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         signalCurveChanged(dimension, data);
     }
 
     evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
                                        DimIdx dimension,
                                        ViewSetSpec view)
 {
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
@@ -2683,7 +2683,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         curve->clearKeyFrames();
         signalCurveChanged(dimension, data);
@@ -2692,7 +2692,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
 
     evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 

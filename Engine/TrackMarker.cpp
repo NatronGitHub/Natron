@@ -432,7 +432,7 @@ TrackMarker::resetCenter()
         RenderScale scale;
         scale.x = scale.y = 1;
 
-        StatusEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
+        ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
         Point center;
         center.x = 0;
         center.y = 0;

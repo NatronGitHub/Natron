@@ -156,7 +156,7 @@ public:
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    ActionRetCodeEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 

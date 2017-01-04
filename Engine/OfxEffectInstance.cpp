@@ -200,11 +200,9 @@ OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
 
 
 void
-OfxEffectInstance::initializeDataAfterCreate()
+OfxEffectInstance::describePlugin()
 {
 
-
-    OutputEffectInstance::initializeDataAfterCreate();
 
     PluginPtr natronPlugin = getNode()->getPlugin();
     assert(natronPlugin);
@@ -212,7 +210,7 @@ OfxEffectInstance::initializeDataAfterCreate()
     OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = (OFX::Host::ImageEffect::ImageEffectPlugin*)natronPlugin->getProperty<void*>(kNatronPluginPropOpenFXPluginPtr);
     assert(ofxPlugin);
     if (!ofxPlugin) {
-        throw std::logic_error("OfxEffectInstance::initializeDataAfterCreate kNatronPluginPropOpenFXPluginPtr is NULL");
+        throw std::logic_error("OfxEffectInstance::describePlugin kNatronPluginPropOpenFXPluginPtr is NULL");
     }
 
     // Check if we already called describe then describeInContext.
@@ -349,8 +347,7 @@ OfxEffectInstance::initializeDataAfterCreate()
     assert( _imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin() );
     assert(_imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
 
-    
-}
+} // describePlugin
 
 
 void
@@ -1017,11 +1014,11 @@ OfxEffectInstancePrivate::pushMetadatasToClips(const NodeMetadata& metadata)
 
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
     if (!_imp->initialized || !_imp->effect) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     assert(_imp->context != eContextNone);
 
@@ -1032,21 +1029,21 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 
     // It has been overriden and no data is actually set on the clip, everything will be set into the
     // metadata object
-    StatusEnum stat = _imp->effect->getClipPreferences_safe(metadata);
-    if (stat == eStatusFailed) {
+    OfxStatus stat = _imp->effect->getClipPreferences_safe(metadata);
+    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
         return stat;
     }
 
     // Push the modified datas to clips now
     // EDIT: this is not needed as we no longer use any thread unsafe clips data anymore
     //_imp->pushMetadatasToClips(metadata);
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 
 
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getRegionOfDefinition(TimeValue time,
                                          const RenderScale & scale,
                                          ViewIdx view,
@@ -1055,7 +1052,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 {
     assert(_imp->context != eContextNone);
     if (!_imp->initialized) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     assert(_imp->effect);
@@ -1064,7 +1061,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
     OfxRectD ofxRod;
     OfxStatus stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
     if (stat == kOfxStatFailed) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     // If the rod is 1 pixel, determine if it was because one clip was unconnected or this is really a
@@ -1075,14 +1072,14 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
             OfxClipInstance* clip = getClipCorrespondingToInput(i);
             if ( clip && !clip->getConnected() && !clip->getIsOptional() && !clip->getIsMask() ) {
                 ///this is a mandatory source clip and it is not connected, return statfailed
-                return eStatusFailed;
+                return eActionStatusInputDisconnected;
             }
         }
     }
 
     RectD::ofxRectDToRectD(ofxRod, rod);
 
-    return eStatusOK;
+    return eActionStatusOK;
 
     // OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(kOfxImageEffectOutputClipName);
     //assert(clip);
@@ -1137,18 +1134,18 @@ rectToOfxRectD(const RectD & b,
     out->y2 = b.top();
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getRegionsOfInterest(TimeValue time,
                                         const RenderScale & scale,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                         ViewIdx view,
-                                        const TreeRenderNodeArgsPtr& render,
+                                        const TreeRenderNodeArgsPtr& /*render*/,
                                         RoIMap* ret)
 {
     assert(_imp->context != eContextNone);
     std::map<OFX::Host::ImageEffect::ClipInstance*, OfxRectD> inputRois;
     if (!_imp->initialized) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
@@ -1170,7 +1167,7 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
 
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     //Default behaviour already handled in getRegionOfInterestAction
@@ -1198,10 +1195,10 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
             //}
         }
     }
-    return eStatusOK;
+    return eActionStatusOK;
 } // getRegionsOfInterest
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getFramesNeeded(TimeValue time,
                                    ViewIdx view,
                                    const TreeRenderNodeArgsPtr& /*render*/,
@@ -1209,7 +1206,7 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
 {
     assert(_imp->context != eContextNone);
     if (!_imp->initialized) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     assert(_imp->effect);
 
@@ -1221,7 +1218,7 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
 
             OfxStatus stat = _imp->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
             if (stat == kOfxStatFailed) {
-                return eStatusFailed;
+                return eActionStatusFailed;
             }
         }
 
@@ -1251,7 +1248,7 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
             ///Take the preferences lock so that it cannot be modified throughout the action.
             OfxStatus stat = _imp->effect->getFrameNeededAction( (OfxTime)time, inputRanges );
             if (stat == kOfxStatFailed) {
-                return eStatusFailed;
+                return eActionStatusFailed;
             }
         }
 
@@ -1272,15 +1269,15 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
 
     //Default is already handled by HostSupport
 
-    return eStatusOK;
+    return eActionStatusOK;
 } // OfxEffectInstance::getFramesNeeded
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last)
 {
     assert(_imp->context != eContextNone);
     if (!_imp->initialized) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     OfxRangeD range;
     // getTimeDomain should only be called on the 'general', 'reader' or 'generator' contexts.
@@ -1305,7 +1302,7 @@ OfxEffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render, double *fi
     }
 } // getFrameRange
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::isIdentity(TimeValue time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
@@ -1320,7 +1317,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
     *inputTime = time;
 
     if (!_imp->initialized) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     assert(_imp->context != eContextNone);
@@ -1345,9 +1342,9 @@ OfxEffectInstance::isIdentity(TimeValue time,
 
         OfxStatus stat = _imp->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
         if (stat == kOfxStatFailed) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         } else if (stat == kOfxStatReplyDefault) {
-            return eStatusOK;
+            return eActionStatusOK;
         }
     }
 
@@ -1355,14 +1352,14 @@ OfxEffectInstance::isIdentity(TimeValue time,
     if (!clip) {
         // this is a plugin-side error, don't crash
         qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
     assert(natronClip);
     if (!natronClip) {
         // coverity[dead_error_line]
         qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     if ( natronClip->isOutput() ) {
         *inputNb = -2;
@@ -1371,7 +1368,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
     }
     *inputTime = TimeValue(identityTimeOfx);
 
-    return eStatusOK;
+    return eActionStatusOK;
 
 } // isIdentity
 
@@ -1401,7 +1398,7 @@ public:
     virtual ~OfxGLContextEffectData() {}
 };
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
                                        double step,
@@ -1434,13 +1431,13 @@ OfxEffectInstance::beginSequenceRender(double first,
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::endSequenceRender(double first,
                                      double last,
                                      double step,
@@ -1475,17 +1472,17 @@ OfxEffectInstance::endSequenceRender(double first,
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::render(const RenderActionArgs& args)
 {
     if (!_imp->initialized) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     assert( !args.outputPlanes.empty() );
@@ -1580,9 +1577,9 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 
         }
 
-        return eStatusFailed;
+        return eActionStatusFailed;
     } else {
-        return eStatusOK;
+        return eActionStatusOK;
     }
 } // render
 
@@ -2221,7 +2218,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getComponentsAction(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& renderArgs,
@@ -2241,7 +2238,7 @@ OfxEffectInstance::getComponentsAction(TimeValue time,
     int ptView_i;
     OfxStatus stat = effectInstance()->getClipComponentsAction( time, view, compMap, ptClip, ptTime, &ptView_i );
     if (stat == kOfxStatFailed) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *passThroughInputNb = -1;
     if (ptClip) {
@@ -2275,7 +2272,7 @@ OfxEffectInstance::getComponentsAction(TimeValue time,
             }
         }
     }
-    return eStatusOK;
+    return eActionStatusOK;
 } // getComponentsNeededAndProduced
 
 bool
@@ -2358,7 +2355,7 @@ OfxEffectInstance::getInputCanReceiveDistorsion(int inputNb) const
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::getDistorsion(TimeValue time,
                                 const RenderScale & renderScale, //< the plug-in accepted scale
                                 ViewIdx view,
@@ -2376,13 +2373,13 @@ OfxEffectInstance::getDistorsion(TimeValue time,
         try {
             stat = effectInstance()->getDistorsionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distorsion->func, &distorsion->customData, &distorsion->customDataSizeHintInBytes, &distorsion->customDataFreeFunc );
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
 
         if (stat == kOfxStatReplyDefault) {
-            return eStatusReplyDefault;
+            return eActionStatusReplyDefault;
         } else if (stat == kOfxStatFailed) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
     }
 
@@ -2398,11 +2395,11 @@ OfxEffectInstance::getDistorsion(TimeValue time,
     assert(clip);
     OfxClipInstance* natronClip = dynamic_cast<OfxClipInstance*>(clip);
     if (!natronClip) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     distorsion->inputNbToDistort = natronClip->getInputNb();
    
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 bool
@@ -2500,7 +2497,7 @@ OfxEffectInstance::supportsConcurrentOpenGLRenders() const
     return _imp->supportsConcurrentGLRenders;
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
 
@@ -2522,17 +2519,17 @@ OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const Rende
         }
     }
     if (stat == kOfxStatFailed) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     } else if (stat == kOfxStatErrMemory) {
-        return eStatusOutOfMemory;
+        return eActionStatusOutOfMemory;
     } else if (stat == kOfxStatReplyDefault) {
-        return eStatusReplyDefault;
+        return eActionStatusReplyDefault;
     } else {
-        return eStatusOK;
+        return eActionStatusOK;
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 OfxEffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
 
@@ -2547,13 +2544,13 @@ OfxEffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs,
         isOfxData->setDataHandle(NULL);
     }
     if (stat == kOfxStatFailed) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     } else if (stat == kOfxStatErrMemory) {
-        return eStatusOutOfMemory;
+        return eActionStatusOutOfMemory;
     } else if (stat == kOfxStatReplyDefault) {
-        return eStatusReplyDefault;
+        return eActionStatusReplyDefault;
     } else {
-        return eStatusOK;
+        return eActionStatusOK;
     }
 }
 

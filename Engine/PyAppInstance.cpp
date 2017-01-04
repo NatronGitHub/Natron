@@ -330,7 +330,7 @@ App::timelineGetRightBound() const
 void
 App::timelineGoTo(int frame)
 {
-    getInternalApp()->getTimeLine()->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+    getInternalApp()->getTimeLine()->seekFrame(frame, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 }
 
 AppSettings::AppSettings(const SettingsPtr& settings)
@@ -415,7 +415,7 @@ App::renderInternal(bool forceBlocking,
 
         return;
     }
-    w.writer = toOutputEffectInstance( node->getEffectInstance() );
+    w.writer = node->getEffectInstance();
     if (!w.writer) {
         std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
@@ -463,7 +463,7 @@ App::renderInternal(bool forceBlocking,
 
             return;
         }
-        w.writer = toOutputEffectInstance( node->getEffectInstance() );
+        w.writer = node->getEffectInstance();
         if ( !w.writer || !w.writer->isOutput() ) {
             std::cerr << tr("Invalid write node").toStdString() << std::endl;
 

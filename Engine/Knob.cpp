@@ -5350,32 +5350,6 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
 }
 
 
-void
-KnobHolder::setKnobsFrozen(bool frozen)
-{
-    {
-        QMutexLocker l(&_imp->knobsFrozenMutex);
-        if (frozen == _imp->knobsFrozen) {
-            return;
-        }
-        _imp->knobsFrozen = frozen;
-    }
-    KnobsVec knobs = getKnobs_mt_safe();
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->setIsFrozen(frozen);
-    }
-}
-
-bool
-KnobHolder::areKnobsFrozen() const
-{
-    QMutexLocker l(&_imp->knobsFrozenMutex);
-
-    return _imp->knobsFrozen;
-}
-
-
 int
 KnobHolder::getPageIndex(const KnobPagePtr page) const
 {

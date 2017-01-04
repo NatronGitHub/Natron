@@ -306,12 +306,12 @@ public:
     void deselectAllNodes() const;
 
     void onRenderStarted(const QString & sequenceName,
-                         int firstFrame, int lastFrame, int frameStep,
+                         TimeValue firstFrame, TimeValue lastFrame, TimeValue frameStep,
                          bool canPause,
-                         const OutputEffectInstancePtr& writer,
+                         const EffectInstancePtr& writer,
                          const ProcessHandlerPtr & process);
 
-    void onRenderRestarted(const OutputEffectInstancePtr& writer,
+    void onRenderRestarted(const EffectInstancePtr& writer,
                            const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;

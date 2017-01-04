@@ -124,9 +124,24 @@ public:
         return boost::dynamic_pointer_cast<ViewerNode>(KnobHolder::shared_from_this());
     }
 
-    ViewerInstancePtr getInternalViewerNode() const;
 
     virtual ~ViewerNode();
+
+    // This node is output as it provides a custom implementation of RenderEngine
+    virtual bool isOutput() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+    /**
+     * @brief Returns the actual viewer process node in the internal sub-graph for the given index.
+     * Index must be either 0 or 1
+     **/
+    ViewerInstancePtr getViewerProcessNode(int index) const;
+
 
     // Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
@@ -230,13 +245,25 @@ public:
     virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
                               const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization) OVERRIDE FINAL;
 
+    bool isViewerUIVisible() const;
 
-    virtual bool isOutput() const OVERRIDE FINAL
-    {
-        return true;
-    }
+    TimeLinePtr getTimeline() const;
 
-    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
+    virtual TimeValue getTimelineCurrentTime() const OVERRIDE FINAL;
+
+    int getLastRenderedTime() const;
+
+    void getTimelineBounds(int* first, int* last) const;
+
+    void aboutToUpdateTextures();
+
+    void updateViewer(ViewIdx view, const ImagePtr& viewerA, const ImagePtr& viewerB);
+
+    void disconnectViewer();
+
+    void disconnectTexture(int index, bool clearRod);
+    
+    void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) ;
 
     void refreshFps();
 
@@ -271,6 +298,8 @@ public Q_SLOTS:
 
     void redrawViewer();
 
+    void redrawViewerNow();
+
     void onEngineStopped();
     
     void onEngineStarted(bool forward);
@@ -290,6 +319,7 @@ Q_SIGNALS:
     void internalViewerCreated();
 
 private:
+
 
     void createViewerProcessNode();
 

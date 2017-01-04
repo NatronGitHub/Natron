@@ -248,9 +248,8 @@ NodeGui::initialize(NodeGraph* dag,
 
     setCacheMode(DeviceCoordinateCache);
 
-
-    OutputEffectInstancePtr isOutput = toOutputEffectInstance( internalNode->getEffectInstance() );
-    if (isOutput) {
+    if (internalNode->isOutputNode()) {
+        internalNode->
         QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 

@@ -1143,7 +1143,7 @@ struct OfxFunctorArgs
     OfxThreadFunctionV1 ofxFunc;
 };
 
-static StatusEnum ofxMultiThreadFunctor(unsigned int threadIndex,
+static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
                                         unsigned int threadMax,
                                         void *customArg,
                                         const EffectInstancePtr& /*effect*/,
@@ -1152,9 +1152,9 @@ static StatusEnum ofxMultiThreadFunctor(unsigned int threadIndex,
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
     try {
         args->ofxFunc(threadIndex, threadMax, customArg);
-        return eStatusOK;
+        return eActionStatusOK;
     } catch (...) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
 } // ofxMultiThreadFunctor
@@ -1173,10 +1173,10 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     args.customArg = customArg;
     // OpenFX does not pass the image effect instance pointer back to us so we loose the context...
     // The only way to recover it will be in the aborted() function entry point with help of thread local storage.
-    Status stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, TreeRenderNodeArgsPtr());
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, TreeRenderNodeArgsPtr());
+    if (stat == eActionStatusFailed) {
         return kOfxStatFailed;
-    } else if (stat == eStatusOutOfMemory) {
+    } else if (stat == eActionStatusOutOfMemory) {
         return kOfxStatErrMemory;
     } else {
         return kOfxStatOK;
@@ -1199,8 +1199,8 @@ OfxHost::multiThreadIndex(unsigned int *threadIndex) const
     if (!threadIndex) {
         return kOfxStatFailed;
     }
-    StatusEnum stat = MultiThread::getCurrentThreadIndex(threadIndex);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = MultiThread::getCurrentThreadIndex(threadIndex);
+    if (stat == eActionStatusFailed) {
         return kOfxStatFailed;
     }
     return kOfxStatOK;

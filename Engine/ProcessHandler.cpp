@@ -40,12 +40,12 @@
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 
 NATRON_NAMESPACE_ENTER;
 
 ProcessHandler::ProcessHandler(const QString & projectPath,
-                               const OutputEffectInstancePtr& writer)
+                               const NodePtr& writer)
     : _process(new QProcess)
     , _writer(writer)
     , _ipcServer(0)

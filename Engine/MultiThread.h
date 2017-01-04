@@ -53,7 +53,7 @@ public:
 
      A function of this type is passed to MultiThread::launchThreads to be launched in multiple threads.
      */
-    typedef StatusEnum (ThreadFunctor)(unsigned int threadIndex,
+    typedef ActionRetCodeEnum (ThreadFunctor)(unsigned int threadIndex,
                                        unsigned int threadMax,
                                        void *customArg,
                                        const TreeRenderNodeArgsPtr& renderArgs);
@@ -79,7 +79,7 @@ public:
      * Note that the thread indexes are from 0 to nThreads - 1.
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
      */
-    static StatusEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs);
+    static ActionRetCodeEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs);
 
     /**
      * @brief Function which indicates the number of CPUs available for SMP processing
@@ -98,7 +98,7 @@ public:
      * Note that the thread indexes are from 0 to nThreads-1, so a return value of 0 does not mean that it's not a spawned thread
      * (use isCurrentThreadSpawnedThread() to check if it's a spawned thread)
      **/
-    static StatusEnum getCurrentThreadIndex(unsigned int *threadIndex);
+    static ActionRetCodeEnum getCurrentThreadIndex(unsigned int *threadIndex);
 
     /** 
      * @brief Function to enquire if the calling thread was spawned by launchThreads
@@ -131,7 +131,7 @@ protected:
     /**
      * @brief function that will be called in each thread.
      * ID is from 0..nThreads-1 nThreads are the number of threads it is being run over */
-    virtual StatusEnum multiThreadFunction(unsigned int threadID,
+    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                            unsigned int nThreads,
                                            const TreeRenderNodeArgsPtr& renderArgs) = 0;
 
@@ -139,12 +139,12 @@ protected:
      *  @param nCPUs The number of threads to use at most to process this function
      *  If nCPUs is 0, the maximum allowable number of CPUs will be used.
      */
-    virtual StatusEnum launchThreads(unsigned int nCPUs = 0);
+    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0);
 
 private:
 
     // the function passed to launchThread
-    static StatusEnum staticMultiThreadFunction(unsigned int threadIndex,
+    static ActionRetCodeEnum staticMultiThreadFunction(unsigned int threadIndex,
                                                 unsigned int threadMax,
                                                 void *customArg,
                                                 const TreeRenderNodeArgsPtr& renderArgs);
@@ -171,7 +171,7 @@ public:
      * @brief Launch the threads and render. This is a simple wrapper over launchThreads()
      * which set the appropriate number of threads given the render window
      **/
-    virtual StatusEnum process();
+    virtual ActionRetCodeEnum process();
 
     /**
      * @brief Utility function to compute the subrange of a given thread
@@ -187,14 +187,14 @@ protected:
      * Note that this function should use the renderData parameter to check periodically if the render
      * has been aborted.
      **/
-    virtual StatusEnum multiThreadProcessImages(const RectI& renderWindow,
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow,
                                                 const TreeRenderNodeArgsPtr& renderArgs) = 0;
 
 private:
 
 
 
-    virtual StatusEnum multiThreadFunction(unsigned int threadID,
+    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                            unsigned int nThreads,
                                            const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL;
 

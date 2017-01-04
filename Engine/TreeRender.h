@@ -130,7 +130,7 @@ public:
      * @brief Render the planes from the output of the node passed as root node in the inArgs of the create function
      * and return it in the output planes.
      **/
-    RenderRoIRetCode launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes);
+    ActionRetCodeEnum launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes);
 
 
     virtual ~TreeRender();

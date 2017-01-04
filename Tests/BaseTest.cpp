@@ -249,7 +249,7 @@ TEST_F(BaseTest, GenerateDot)
     ///and start rendering. This call is blocking.
     std::list<AppInstance::RenderWork> works;
     AppInstance::RenderWork w;
-    w.writer = toOutputEffectInstance( writer->getEffectInstance() );
+    w.writer = writer->getEffectInstance();
     assert(w.writer);
     w.firstFrame = INT_MIN;
     w.lastFrame = INT_MAX;

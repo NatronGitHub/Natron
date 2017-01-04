@@ -44,7 +44,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
@@ -658,7 +658,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     readNode->purgeAllInstancesCaches();
 
     //Force the reader to reload the sequence/video
-    fileNameKnob->evaluateValueChange(DimSpec::all(), _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
+    fileNameKnob->evaluateValueChange(DimSpec::all(), TimeValue(_publicInterface->getApp()->getTimeLine()->currentFrame()), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -671,7 +671,7 @@ PrecompNodePrivate::launchPreRender()
 
         return;
     }
-    AppInstance::RenderWork w(toOutputEffectInstance( output->getEffectInstance() ),
+    AppInstance::RenderWork w(output->getEffectInstance(),
                               firstFrameKnob.lock()->getValue(),
                               lastFrameKnob.lock()->getValue(),
                               1,
@@ -697,7 +697,7 @@ PrecompNode::onPreRenderFinished()
     if (!output) {
         return;
     }
-    OutputEffectInstancePtr writer = toOutputEffectInstance( output->getEffectInstance() );
+    EffectInstancePtr writer = output->getEffectInstance();
     assert(writer);
     if (writer) {
         RenderEnginePtr engine = writer->getRenderEngine();

@@ -1027,7 +1027,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek );
+    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek );
 }
 
 /// get the first and last times available on the effect's timeline
@@ -1152,7 +1152,7 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
     }
 } // OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata
 
-StatusEnum
+ActionRetCodeEnum
 OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
@@ -1183,7 +1183,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
         std::cout << "default" << std::endl;
 #       endif
 
-        return eStatusReplyDefault;
+        return eActionStatusReplyDefault;
     }
 
     /// Only copy the meta-data if they actually changed
@@ -1193,7 +1193,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 #       endif
 
         /// ouch
-        return eStatusFailed;
+        return eActionStatusFailed;
     } else {
         /// OK, go pump the components/depths back into the clips themselves
         for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
@@ -1247,7 +1247,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
                   << outArgs.getIntProperty(kOfxImageEffectFrameVarying) << std::endl;
 #       endif
 
-        return eStatusOK;
+        return eActionStatusOK;
     } //if (st == kOfxStatOK)
 } // OfxImageEffectInstance::getClipPreferences_safe
 

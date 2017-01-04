@@ -272,7 +272,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             if (isUpdateViewerOnTrackingEnabled && viewer) {
                 //This will not refresh the viewer since when tracking, renderCurrentFrame()
                 //is not called on viewers, see Gui::onTimeChanged
-                timeline->seekFrame(cur, true, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+                timeline->seekFrame(cur, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
                 if (enoughTimePassedToReportProgress) {
                     if (doPartialUpdates) {
@@ -311,7 +311,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     if ( paramsProvider->getUpdateViewer() ) {
         //Refresh all viewers to the current frame
-        timeline->seekFrame(lastValidFrame, true, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+        timeline->seekFrame(lastValidFrame, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
     
     return state;

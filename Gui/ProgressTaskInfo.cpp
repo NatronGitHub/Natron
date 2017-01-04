@@ -43,7 +43,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
@@ -112,7 +112,8 @@ public:
     bool canceled;
     bool canCancel;
     bool updatedProgressOnce;
-    int firstFrame, lastFrame, frameStep, lastRenderedFrame, nFramesRendered;
+    TimeValue firstFrame, lastFrame, frameStep, lastRenderedFrame;
+    int nFramesRendered;
     boost::scoped_ptr<TimeLapse> timer;
     boost::scoped_ptr<QTimer> refreshLabelTimer;
     QString message;
@@ -123,9 +124,9 @@ public:
     ProgressTaskInfoPrivate(ProgressPanel* panel,
                             const NodePtr& node,
                             ProgressTaskInfo* publicInterface,
-                            const int firstFrame,
-                            const int lastFrame,
-                            const int frameStep,
+                            const TimeValue firstFrame,
+                            const TimeValue lastFrame,
+                            const TimeValue frameStep,
                             const bool canPause,
                             const bool canCancel,
                             const QString& message,
@@ -172,9 +173,9 @@ public:
 
 ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
                                    const NodePtr& node,
-                                   const int firstFrame,
-                                   const int lastFrame,
-                                   const int frameStep,
+                                   const TimeValue firstFrame,
+                                   const TimeValue lastFrame,
+                                   const TimeValue frameStep,
                                    const bool canPause,
                                    const bool canCancel,
                                    const QString& message,
@@ -264,8 +265,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
 
 
     NodePtr node = getNode();
-    OutputEffectInstancePtr effect = toOutputEffectInstance( node->getEffectInstance() );
-    node->getApp()->removeRenderFromQueue(effect);
+    node->getApp()->removeRenderFromQueue(node->getEffectInstance());
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
     }
@@ -305,7 +305,7 @@ ProgressTaskInfo::restartTask()
         } else {
             firstFrame =  _imp->lastRenderedFrame;
         }
-        AppInstance::RenderWork w( toOutputEffectInstance( node->getEffectInstance() ),
+        AppInstance::RenderWork w( node->getEffectInstance(),
                                    firstFrame,
                                    _imp->lastFrame,
                                    _imp->frameStep,
@@ -331,7 +331,7 @@ ProgressTaskInfo::onRenderEngineFrameComputed(int frame,
     if (!r && !process) {
         return;
     }
-    OutputEffectInstancePtr output = r ? r->getOutput() : process->getWriter();
+    EffectInstancePtr output = r ? r->getOutput() : process->getWriter();
     if (!output) {
         return;
     }
@@ -347,7 +347,7 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     if (!r && !process) {
         return;
     }
-    OutputEffectInstancePtr output = r ? r->getOutput() : process->getWriter();
+    EffectInstancePtr output = r ? r->getOutput() : process->getWriter();
     if (!output) {
         return;
     }

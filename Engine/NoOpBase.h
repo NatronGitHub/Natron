@@ -31,7 +31,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -42,7 +42,7 @@ NATRON_NAMESPACE_ENTER;
  * and it is also used to implement the "Dot" node.
  **/
 class NoOpBase
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 public:
 
@@ -85,7 +85,7 @@ private:
     /**
      * @brief A NoOp is always an identity on its input.
      **/
-    virtual StatusEnum isIdentity(TimeValue time,
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,

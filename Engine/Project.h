@@ -296,9 +296,9 @@ public:
 
     bool isFrameRangeLocked() const;
 
-    void getFrameRange(double* first, double* last) const;
+    void getFrameRange(TimeValue* first, TimeValue* last) const;
 
-    void unionFrameRangeWith(int first, int last);
+    void unionFrameRangeWith(TimeValue first, TimeValue last);
 
     void recomputeFrameRangeFromReaders();
 

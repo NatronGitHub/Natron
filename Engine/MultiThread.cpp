@@ -89,7 +89,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 // We think this is because Furnace must keep an internal thread-local state that becomes then dirty
 // if we re-use the same thread.
 
-static StatusEnum
+static ActionRetCodeEnum
 threadFunctionWrapper(MultiThreadPrivate* imp,
                       MultiThread::ThreadFunctor func,
                       unsigned int threadIndex,
@@ -115,13 +115,13 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
         appPTR->getAppTLS()->softCopy(spawnerThread, spawnedThread);
     }
 
-    StatusEnum ret = eStatusOK;
+    ActionRetCodeEnum ret = eActionStatusOK;
     try {
         ret = func(threadIndex, threadMax, customArg, renderArgs);
     } catch (const std::bad_alloc & ba) {
-        ret =  eStatusOutOfMemory;
+        ret =  eActionStatusOutOfMemory;
     } catch (...) {
-        ret =  eStatusFailed;
+        ret =  eActionStatusFailed;
     }
 
     // Reset back the index otherwise it could mess up the indices if the same thread is re-used
@@ -147,7 +147,7 @@ public:
                         QThread* spawnerThread,
                         void *customArg,
                         const TreeRenderNodeArgsPtr& renderArgs,
-                        StatusEnum *stat)
+                        ActionRetCodeEnum *stat)
     : QThread()
     , AbortableThread(this)
     , _imp(imp)
@@ -180,12 +180,12 @@ private:
 
         appPTR->getAppTLS()->softCopy(_spawnerThread, this);
 
-        assert(*_stat == eStatusFailed);
+        assert(*_stat == eActionStatusFailed);
         try {
             _func(_threadIndex, _threadMax, _customArg, _renderArgs);
-            *_stat = eStatusOK;
+            *_stat = eActionStatusOK;
         } catch (const std::bad_alloc & ba) {
-            *_stat = eStatusOutOfMemory;
+            *_stat = eActionStatusOutOfMemory;
         } catch (...) {
         }
 
@@ -204,7 +204,7 @@ private:
     QThread* _spawnerThread;
     void *_customArg;
     TreeRenderNodeArgsPtr _renderArgs;
-    StatusEnum *_stat;
+    ActionRetCodeEnum *_stat;
 };
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
@@ -222,11 +222,11 @@ MultiThread::~MultiThread()
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs)
 {
     if (!func) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     unsigned int maxConcurrentThread = getNCPUsAvailable();
@@ -241,15 +241,15 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // multiple times.
         try {
             for (unsigned int i = 0; i < nThreads; ++i) {
-                StatusEnum stat = func(i, nThreads, customArg, renderArgs);
-                if (stat != eStatusOK) {
+                ActionRetCodeEnum stat = func(i, nThreads, customArg, renderArgs);
+                if (isFailureRetCode(stat)) {
                     return stat;
                 }
             }
 
-            return eStatusOK;
+            return eActionStatusOK;
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
     }
 
@@ -288,12 +288,12 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
-        QFuture<StatusEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, customArg, renderArgs) );
+        QFuture<ActionRetCodeEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, customArg, renderArgs) );
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
-            StatusEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, customArg, renderArgs);
-            if (stat != eStatusOK) {
+            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, customArg, renderArgs);
+            if (isFailureRetCode(stat)) {
                 // This thread failed, wait for other threads and exit
                 future.waitForFinished();
                 return stat;
@@ -306,17 +306,17 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // DON'T reset back to the original value the maximum thread count
         // QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
 
-        for (QFuture<StatusEnum>::const_iterator it = future.begin(); it != future.end(); ++it) {
-            StatusEnum stat = *it;
-            if (stat != eStatusOK) {
+        for (QFuture<ActionRetCodeEnum>::const_iterator it = future.begin(); it != future.end(); ++it) {
+            ActionRetCodeEnum stat = *it;
+            if (isFailureRetCode(stat)) {
                 return stat;
             }
         }
 
     } else { // !useThreadPool
 
-        QVector<StatusEnum> status(nThreads); // vector for the return status of each thread
-        status.fill(eStatusFailed); // by default, a thread fails
+        QVector<ActionRetCodeEnum> status(nThreads); // vector for the return status of each thread
+        status.fill(eActionStatusFailed); // by default, a thread fails
         {
             // at most maxConcurrentThread should be running at the same time
             QVector<NonThreadPoolThread*> threads(nThreads);
@@ -349,15 +349,15 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             assert(running == 0);
         }
         // check the return status of each thread, return the first error found
-        for (QVector<StatusEnum>::const_iterator it = status.begin(); it != status.end(); ++it) {
-            StatusEnum stat = *it;
-            if (stat != eStatusOK) {
+        for (QVector<ActionRetCodeEnum>::const_iterator it = status.begin(); it != status.end(); ++it) {
+            ActionRetCodeEnum stat = *it;
+            if (isFailureRetCode(stat)) {
                 return stat;
             }
         }
     } // useThreadPool
 
-    return eStatusOK;
+    return eActionStatusOK;
 } // multiThread
 
 
@@ -383,12 +383,12 @@ MultiThread::getNCPUsAvailable()
     return ret;
 } // getNCPUsAvailable
 
-StatusEnum
+ActionRetCodeEnum
 MultiThread::getCurrentThreadIndex(unsigned int *threadIndex)
 {
     QThread* thisThread = QThread::currentThread();
     if (!thisThread) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     // Get the global multi-thread handler data
@@ -396,22 +396,22 @@ MultiThread::getCurrentThreadIndex(unsigned int *threadIndex)
 
     PerThreadMultiThreadDataMap::const_iterator foundThread = imp->threadsData.find(thisThread);
     if (foundThread == imp->threadsData.end()) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     if (foundThread->second.indices.empty()) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *threadIndex = foundThread->second.indices.back();
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 bool
 MultiThread::isCurrentThreadSpawnedThread()
 {
     unsigned int index;
-    StatusEnum stat = getCurrentThreadIndex(&index);
+    ActionRetCodeEnum stat = getCurrentThreadIndex(&index);
     (void)index;
-    return stat == eStatusOK;
+    return stat == eActionStatusOK;
 }
 
 MultiThreadProcessorBase::MultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs)
@@ -425,7 +425,7 @@ MultiThreadProcessorBase::~MultiThreadProcessorBase()
 
 }
 
-StatusEnum
+ActionRetCodeEnum
 MultiThreadProcessorBase::staticMultiThreadFunction(unsigned int threadIndex,
                                                     unsigned int threadMax,
                                                     void *customArg,
@@ -435,7 +435,7 @@ MultiThreadProcessorBase::staticMultiThreadFunction(unsigned int threadIndex,
     return processor->multiThreadFunction(threadIndex, threadMax, renderArgs);
 }
 
-StatusEnum
+ActionRetCodeEnum
 MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
 {
     // if 0, use all the CPUs we can
@@ -448,7 +448,7 @@ MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
         return multiThreadFunction(0, 1, _renderArgs);
     } else {
         // OK do it
-        StatusEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _renderArgs);
+        ActionRetCodeEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _renderArgs);
         return stat;
     }
 }
@@ -492,7 +492,7 @@ ImageMultiThreadProcessorBase::getThreadRange(unsigned int threadID, unsigned in
     *iend_range = ibegin + (step < di ? step : di);
 }
 
-StatusEnum
+ActionRetCodeEnum
 ImageMultiThreadProcessorBase::multiThreadFunction(unsigned int threadID,
                                                    unsigned int nThreads,
                                                    const TreeRenderNodeArgsPtr& renderArgs)
@@ -505,11 +505,11 @@ ImageMultiThreadProcessorBase::multiThreadFunction(unsigned int threadID,
         // and render that thread on each
         return multiThreadProcessImages(win, renderArgs);
     }
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 
-StatusEnum
+ActionRetCodeEnum
 ImageMultiThreadProcessorBase::process()
 {
 

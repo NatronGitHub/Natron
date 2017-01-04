@@ -52,7 +52,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/BlockingBackgroundRender.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Cache.h"
 #include "Engine/EffectInstanceActionResults.h"
@@ -110,7 +109,11 @@ EffectInstance::~EffectInstance()
 {
 }
 
-
+RenderEngine*
+EffectInstance::createRenderEngine()
+{
+    return new RenderEngine(shared_from_this());
+}
 
 
 void
@@ -173,10 +176,10 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         // We must add the input hash at the frames needed because a node may depend on a value at a different frame
 
 
-        StatusEnum stat = getFramesNeeded_public(args.time, args.view, args.render, &framesNeededResults);
+        ActionRetCodeEnum stat = getFramesNeeded_public(args.time, args.view, args.render, &framesNeededResults);
 
         FramesNeededMap framesNeeded;
-        if (stat != eStatusFailed) {
+        if (!isFailureRetCode(stat)) {
             framesNeededResults->getFramesNeeded(&framesNeeded);
         }
         for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
@@ -450,8 +453,8 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         {
 
             GetRegionOfDefinitionResultsPtr results;
-            StatusEnum stat = getRegionOfDefinition_public(inArgs.currentTime, inArgs.currentScale, inArgs.currentView, inArgs.renderArgs, &results);
-            if (stat == eStatusFailed) {
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(inArgs.currentTime, inArgs.currentScale, inArgs.currentView, inArgs.renderArgs, &results);
+            if (isFailureRetCode(stat)) {
 #ifdef DEBUG
                 qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because getRegionOfDefinition failed";
 #endif
@@ -480,8 +483,8 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
     // Get the roi for the current render window
 
     RoIMap inputRoisMap;
-    StatusEnum stat = getRegionsOfInterest_public(inArgs.currentTime, inArgs.currentScale, thisEffectRenderWindowCanonical, inArgs.currentView, inArgs.renderArgs, &inputRoisMap);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getRegionsOfInterest_public(inArgs.currentTime, inArgs.currentScale, thisEffectRenderWindowCanonical, inArgs.currentView, inArgs.renderArgs, &inputRoisMap);
+    if (isFailureRetCode(stat)) {
 #ifdef DEBUG
         qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because getRegionsOfInterest failed";
 #endif
@@ -548,8 +551,8 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         componentsToRender = *inArgs.layers;
     } else {
         GetComponentsResultsPtr results;
-        StatusEnum stat = getComponents_public(inArgs.currentTime, inArgs.currentView, inArgs.renderArgs, &results);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = getComponents_public(inArgs.currentTime, inArgs.currentView, inArgs.renderArgs, &results);
+        if (isFailureRetCode(stat)) {
 #ifdef DEBUG
             qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the get components action failed";
 #endif
@@ -625,8 +628,8 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
     // Clip the RoI to the input effect RoD
     {
         GetRegionOfDefinitionResultsPtr rodResults;
-        StatusEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inArgs.currentScale, inArgs.inputView, inputRenderArgs, &rodResults);
-        if (stat == eStatusFailed) {
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inArgs.currentScale, inArgs.inputView, inputRenderArgs, &rodResults);
+        if (isFailureRetCode(stat)) {
             return false;
         }
         const RectD& inputRod = rodResults->getRoD();
@@ -1324,8 +1327,8 @@ RectI
 EffectInstance::getOutputFormat(const TreeRenderNodeArgsPtr& render)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return RectI();
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1338,8 +1341,8 @@ bool
 EffectInstance::isFrameVarying(const TreeRenderNodeArgsPtr& render)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return true;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1352,8 +1355,8 @@ double
 EffectInstance::getFrameRate(const TreeRenderNodeArgsPtr& render)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return 24.;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1367,8 +1370,8 @@ ImagePremultiplicationEnum
 EffectInstance::getPremult(const TreeRenderNodeArgsPtr& render)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return eImagePremultiplicationPremultiplied;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1380,8 +1383,8 @@ bool
 EffectInstance::canRenderContinuously(const TreeRenderNodeArgsPtr& render)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return true;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1393,8 +1396,8 @@ ImageFieldingOrderEnum
 EffectInstance::getFieldingOrder(const TreeRenderNodeArgsPtr& render)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return eImageFieldingOrderNone;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1407,8 +1410,8 @@ double
 EffectInstance::getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return 1.;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1420,8 +1423,8 @@ ImageComponents
 EffectInstance::getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return ImageComponents::getNoneComponents();
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1433,8 +1436,8 @@ ImageBitDepthEnum
 EffectInstance::getBitDepth(const TreeRenderNodeArgsPtr& render, int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    StatusEnum stat = getTimeInvariantMetaDatas_public(render, &results);
-    if (stat == eStatusFailed) {
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    if (isFailureRetCode(stat)) {
         return eImageBitDepthFloat;
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
@@ -1442,6 +1445,37 @@ EffectInstance::getBitDepth(const TreeRenderNodeArgsPtr& render, int inputNb)
     }
 }
 
+
+bool
+EffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
+{
+
+    /*If the rod is infinite clip it to the project's default*/
+    Format projectDefault;
+    getApp()->getProject()->getProjectDefaultFormat(&projectDefault);
+    // BE CAREFUL:
+    // std::numeric_limits<int>::infinity() does not exist (check std::numeric_limits<int>::has_infinity)
+    // an int can not be equal to (or compared to) std::numeric_limits<double>::infinity()
+    bool isRodProjectFormat = false;
+    if (rod->left() <= kOfxFlagInfiniteMin) {
+        rod->set_left( projectDefault.left() );
+        isRodProjectFormat = true;
+    }
+    if (rod->bottom() <= kOfxFlagInfiniteMin) {
+        rod->set_bottom( projectDefault.bottom() );
+        isRodProjectFormat = true;
+    }
+    if (rod->right() >= kOfxFlagInfiniteMax) {
+        rod->set_right( projectDefault.right() );
+        isRodProjectFormat = true;
+    }
+    if (rod->top() >= kOfxFlagInfiniteMax) {
+        rod->set_top( projectDefault.top() );
+        isRodProjectFormat = true;
+    }
+
+    return isRodProjectFormat;
+}
 
 NATRON_NAMESPACE_EXIT;
 

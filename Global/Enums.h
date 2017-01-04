@@ -56,20 +56,46 @@ enum TimelineChangeReasonEnum
     eTimelineChangeReasonOtherSeek
 };
 
-enum StatusEnum
+enum ActionRetCodeEnum
 {
-    eStatusOK = 0,
-    eStatusFailed = 1,
-    eStatusOutOfMemory = 2,
-    eStatusReplyDefault = 14
+    // Everything went ok, the operation completed successfully
+    eActionStatusOK = 0,
+
+    // Something failed, the plug-in is expected to post an error message
+    // with setPersistentMessage
+    eActionStatusFailed,
+
+    // The render failed because a mandatory input of a node is diconnected
+    // In this case there's no need for a persistent message, a black image is enough
+    eActionStatusInputDisconnected,
+
+    // The render was aborted, everything should abort ASAP and
+    // the UI should not be updated with the processed images
+    eActionStatusAborted,
+
+    // The action failed because of a lack of memory.
+    // If the action is using a GPU backend, it may re-try the same action on CPU right away
+    eActionStatusOutOfMemory,
+
+    // The operation completed with default implementation
+    eActionStatusReplyDefault
 };
 
-enum RenderRoIRetCode
+inline bool isFailureRetCode(ActionRetCodeEnum code)
 {
-        eRenderRoIRetCodeOk = 0,
-        eRenderRoIRetCodeAborted,
-        eRenderRoIRetCodeFailed
-};
+    switch (code) {
+        case eActionStatusAborted:
+        case eActionStatusFailed:
+        case eActionStatusOutOfMemory:
+        case eActionStatusInputDisconnected:
+            return true;
+        case eActionStatusOK:
+        case eActionStatusReplyDefault:
+            return false;
+    }
+}
+
+
 
 /*Copy of QMessageBox::StandardButton*/
 enum StandardButtonEnum
