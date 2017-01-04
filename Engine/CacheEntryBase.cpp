@@ -237,18 +237,19 @@ MemoryMappedCacheEntry::getBounds() const
     if (!cache) {
         return ret;
     }
-    int tileSize = cache->getTileSizePx(getBitDepth());
+    int tileSizeX, tileSizeY;
+    cache->getTileSizePx(getBitDepth(), &tileSizeX, &tileSizeY);
     // Recover the bottom left corner from the tile coords
     {
         CacheEntryKeyBasePtr key = getKey();
         ImageTileKey* isImageTile = dynamic_cast<ImageTileKey*>(key.get());
         if (isImageTile) {
-            ret.x1 = isImageTile->getTileX() * tileSize;
-            ret.y1 = isImageTile->getTileY() * tileSize;
+            ret.x1 = isImageTile->getTileX() * tileSizeX;
+            ret.y1 = isImageTile->getTileY() * tileSizeY;
         }
     }
-    ret.x2 = ret.x1 + tileSize;
-    ret.y2 = ret.y1 + tileSize;
+    ret.x2 = ret.x1 + tileSizeX;
+    ret.y2 = ret.y1 + tileSizeY;
     return ret;
 }
 
@@ -260,9 +261,10 @@ MemoryMappedCacheEntry::getRowSize() const
         return 0;
     }
     ImageBitDepthEnum bitDepth = getBitDepth();
-    int tileSize = cache->getTileSizePx(bitDepth);
+    int tileSizeX, tileSizeY;
+    cache->getTileSizePx(bitDepth,&tileSizeX, &tileSizeY);
 
-    return tileSize * getSizeOfForBitDepth(bitDepth);
+    return tileSizeX * getSizeOfForBitDepth(bitDepth);
 
 }
 

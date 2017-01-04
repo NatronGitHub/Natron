@@ -274,7 +274,7 @@ struct CachePrivate
     , maxPhysicalRAMAttainable(0)
     , memoryFullCondition()
     , tileCacheMutex()
-    , tileSizePo2For8bit(9) // 512*512 by default for 8 bit
+    , tileSizePo2For8bit(7) // 128*128 by default for 8 bit
     , tileByteSize(0)
     , clearingCache(false)
     , cacheFiles()
@@ -601,20 +601,27 @@ Cache::getTileSizeBytes() const
     return _imp->getTileSizeBytesInternal();
 }
 
-int
-Cache::getTileSizePx(ImageBitDepthEnum bitdepth) const
+void
+Cache::getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty) const
 {
     QMutexLocker k(&_imp->tileCacheMutex);
     switch (bitdepth) {
         case eImageBitDepthByte:
-            return std::pow(2, _imp->tileSizePo2For8bit);
+            *tx = std::pow(2, _imp->tileSizePo2For8bit);
+            *ty = *tx;
+            break;
         case eImageBitDepthShort:
         case eImageBitDepthHalf:
-            return std::pow(2, _imp->tileSizePo2For8bit - 1);
+            *tx = std::pow(2, _imp->tileSizePo2For8bit);
+            *ty  = *tx / 2;
+            break;
         case eImageBitDepthFloat:
-            return std::pow(2, _imp->tileSizePo2For8bit - 2);
+            *tx = std::pow(2, _imp->tileSizePo2For8bit - 1);
+            *ty = *tx;
+            break;
         case eImageBitDepthNone:
-            return 0;
+            *tx = *ty = 0;
+            break;
     }
 }
 

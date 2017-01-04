@@ -247,13 +247,13 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
 
     // For tiled layout, get the number of tiles in X and Y depending on the bounds and the tile zie.
     int nTilesHeight,nTilesWidth;
-    int tileSize = 0;
+    int tileSizeX = 0, tileSizeY = 0;
     switch (args.bufferFormat) {
         case eImageBufferLayoutMonoChannelTiled: {
             // The size of a tile depends on the bitdepth
-            tileSize = cache->getTileSizePx(args.bitdepth);
-            nTilesHeight = std::ceil(_imp->bounds.height() / tileSize) * tileSize;
-            nTilesWidth = std::ceil(_imp->bounds.width() / tileSize) * tileSize;
+            cache->getTileSizePx(args.bitdepth, &tileSizeX, &tileSizeY);
+            nTilesHeight = std::ceil(_imp->bounds.height() / tileSizeY) * tileSizeY;
+            nTilesWidth = std::ceil(_imp->bounds.width() / tileSizeX) * tileSizeX;
         }   break;
         case eImageBufferLayoutRGBACoplanarFullRect:
         case eImageBufferLayoutRGBAPackedFullRect:
@@ -302,12 +302,12 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
 
         switch (args.bufferFormat) {
             case eImageBufferLayoutMonoChannelTiled:
-                assert(tileSize != 0);
+                assert(tileSizeX != 0 && tileSizeY != 0);
                 // The tile bounds may not necessarily be a square if we are on the edge.
-                tile.tileBounds.x1 = args.bounds.x1 + (tx * tileSize);
-                tile.tileBounds.y1 = args.bounds.y1 + (ty * tileSize);
-                tile.tileBounds.x2 = std::min(tile.tileBounds.x1 + tileSize, args.bounds.x2);
-                tile.tileBounds.y2 = std::min(tile.tileBounds.y1 + tileSize, args.bounds.y2);
+                tile.tileBounds.x1 = args.bounds.x1 + (tx * tileSizeX);
+                tile.tileBounds.y1 = args.bounds.y1 + (ty * tileSizeY);
+                tile.tileBounds.x2 = std::min(tile.tileBounds.x1 + tileSizeX, args.bounds.x2);
+                tile.tileBounds.y2 = std::min(tile.tileBounds.y1 + tileSizeY, args.bounds.y2);
                 break;
             case eImageBufferLayoutRGBACoplanarFullRect:
             case eImageBufferLayoutRGBAPackedFullRect:

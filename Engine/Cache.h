@@ -172,7 +172,7 @@ public:
     /**
      * @brief Returns the tile size (of one dimension) in pixels for the given bitdepth/
      **/
-    int getTileSizePx(ImageBitDepthEnum bitdepth) const;
+    void getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty) const;
 
     /**
      * @brief Set the maximum cache size available for the given storage.

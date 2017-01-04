@@ -1689,7 +1689,7 @@ SettingsPrivate::setDefaultValues()
     _preferBundledPlugins->setDefaultValue(true);
     _loadBundledPlugins->setDefaultValue(true);
     _texturesMode->setDefaultValue(0);
-    _cacheTileSizePo2->setDefaultValue(8);
+    _cacheTileSizePo2->setDefaultValue(7);
     _checkerboardTileSize->setDefaultValue(5);
     _checkerboardColor1->setDefaultValue(0.5);
     _checkerboardColor1->setDefaultValue(0.5, DimIdx(1));
