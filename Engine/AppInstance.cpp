@@ -1429,19 +1429,21 @@ AppInstance::exportDocs(const QString path)
                     qDebug() << pluginID;
                     // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_plugin.html"
                     NodePtr node = createNode(args);
-                    EffectInstPtr effectInstance = node->getEffectInstance();
-                    if ( effectInstance->isReader() ) {
-                        ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+                    if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                        EffectInstPtr effectInstance = node->getEffectInstance();
+                        if ( effectInstance->isReader() ) {
+                            ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                        if (isReadNode) {
-                            node = isReadNode->getEmbeddedReader();
+                            if (isReadNode) {
+                                node = isReadNode->getEmbeddedReader();
+                            }
                         }
-                    }
-                    if ( effectInstance->isWriter() ) {
-                        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+                        if ( effectInstance->isWriter() ) {
+                            WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                        if (isWriteNode) {
-                            node = isWriteNode->getEmbeddedWriter();
+                            if (isWriteNode) {
+                                node = isWriteNode->getEmbeddedWriter();
+                            }
                         }
                     }
                     if (node) {

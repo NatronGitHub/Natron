@@ -173,19 +173,21 @@ DocumentationManager::handler(QHttpRequest *req,
 
                             // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
-                            EffectInstPtr effectInstance = node->getEffectInstance();
-                            if ( effectInstance->isReader() ) {
-                                ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+                            if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                                EffectInstPtr effectInstance = node->getEffectInstance();
+                                if ( effectInstance->isReader() ) {
+                                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                                if (isReadNode) {
-                                    node = isReadNode->getEmbeddedReader();
+                                    if (isReadNode) {
+                                        node = isReadNode->getEmbeddedReader();
+                                    }
                                 }
-                            }
-                            if ( effectInstance->isWriter() ) {
-                                WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+                                if ( effectInstance->isWriter() ) {
+                                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                                if (isWriteNode) {
-                                    node = isWriteNode->getEmbeddedWriter();
+                                    if (isWriteNode) {
+                                        node = isWriteNode->getEmbeddedWriter();
+                                    }
                                 }
                             }
                             if (node) {
@@ -276,9 +278,6 @@ DocumentationManager::handler(QHttpRequest *req,
                     plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
-                }
-                if  ( plugin->getPluginLabel() == QString::fromUtf8("ReadOIIO")) {
-                    qDebug() << "bla";
                 }
                 if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
                     QStringList groupList = plugin->getGrouping();
