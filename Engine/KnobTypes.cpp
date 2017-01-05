@@ -1115,12 +1115,12 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
         // try to find the same label at some other index
         std::string matchedEntry;
         int i = choiceMatch(data->_choiceString, _mergedEntries, &matchedEntry);
-        {
-            QMutexLocker k(&_entriesMutex);
-            _currentEntryLabel = matchedEntry;
-        }
 
         if (i >= 0) {
+            {
+                QMutexLocker k(&_entriesMutex);
+                _currentEntryLabel = matchedEntry;
+            }
             setValue(i);
         }
         //   setValue(-1);
