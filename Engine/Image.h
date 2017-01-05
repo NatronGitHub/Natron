@@ -94,9 +94,6 @@ public:
         // if mono channel.
         // If not mon channel this is -1
         int channelIndex;
-
-        // Was this found in the cache ?
-        bool isCached;
         
     };
 
@@ -118,19 +115,6 @@ public:
         //
         // Must be set
         RectI bounds;
-
-        // A pointer to another image that should be updated when this image dies.
-        // Since tiled mono-channel format may not be ideal for most processing formats
-        // you may provide a pointer to another mirror image with another format.
-        // When this image is destroyed, it will update the mirror image.
-        // If the mirror image is cached, it will in turn update the cache when destroyed.
-        // The mirror image should may have different bitdepth, different
-        // storage and components.
-        ImagePtr mirrorImage;
-
-        // If mirrorImage is set, this is the portion to update in the mirror image.
-        // This should be contained in mirrorImage
-        RectI mirrorImageRoI;
 
         // The storage for the image.
         //
@@ -539,25 +523,37 @@ public:
     int getNumTiles() const;
 
     /**
-     * @brief Returns true if all tiles composing the image are cached
-     **/
-    bool isCached() const;
-
-    /**
      * @brief Returns the cache access policy for this image
      **/
     CacheAccessModeEnum getCachePolicy() const;
 
     /**
-     * @brief If this image has cache write access, push the tiles to the cache,
+     * @brief If this image has cache write access, push the tiles to the cache.
+     * This will only push the tiles that are marked eCacheEntryStatusMustCompute.
      * making them available to other threads waiting for it (and waking them up).
      **/
     void pushTilesToCacheIfNotAborted();
 
     /**
-     * @brief If this image is cached, this will return what portion of the image is left to render.
+     * @brief If this image has some tiles pending (i.e: another thread is computing it),
+     * wait for them to be available. This function returns once all tiles are marked as cached
+     * or to be computed.
+     * @returns true if everything is rendered, false if there's still tiles to render
      **/
-    std::list<RectI> getRestToRender() const;
+    bool waitForPendingTiles();
+
+    /**
+     * @brief If this image is cached, returns whether other thread(s) are waiting for the resulting tiles or not.
+     * If only this thread is interested on its tiles this function returns false.
+     **/
+    bool hasTilesPendingForOtherThreads() const;
+
+    /**
+     * @brief If this image is cached, this will return what portion of the image is left to render.
+     * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
+     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
+     **/
+    std::list<RectI> getRestToRender(bool *hasPendingResults) const;
 
     template <typename PIX>
     static inline void getChannelPointers(const PIX* ptrs[4],

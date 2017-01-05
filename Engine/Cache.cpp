@@ -46,6 +46,7 @@
 #include "Engine/CacheDeleterThread.h"
 #include "Engine/MemoryFile.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/ThreadPool.h"
 
 
 #include "Serialization/CacheEntrySerialization.h"
@@ -122,8 +123,27 @@ NATRON_NAMESPACE_ENTER;
     #endif // NATRON_CACHE_USE_BOOST
 #endif // USE_VARIADIC_TEMPLATES
 
+/**
+ * @brief Struct used to prevent multiple threads from computing the same value associated to a hash
+ **/
+struct LockedHash
+{
 
-typedef std::set<U64> LockedHashSet;
+    // This is the wait condition into which waiters will wait. This is protected by the corresponding bucketLock
+    QWaitCondition lockedHashCond;
+
+    // This is the locker that has the status eCacheEntryStatusMustCompute that is locking the entry and supposed to
+    // compute it.
+    // Protected by bucketLock
+    CacheEntryLockerPtr computeLocker;
+
+};
+
+
+typedef boost::shared_ptr<LockedHash> LockedHashPtr;
+
+
+typedef std::map<U64, LockedHashPtr> LockedHashMap;
 
 
 /**
@@ -142,51 +162,53 @@ struct CacheBucket
     // To ensure concurrent threads do not compute concurrently multiple stuff, we lock cache keys
     // of objects that are currently being computed by a thread and that will be inserted later on in the cache.
     // This way, another thread may wait until the computation is done to return the results.
-    LockedHashSet lockedHashes;
+    LockedHashMap lockedHashes;
 
-    // Threads waiting for an entry to be computed wait in this condition. Protected by bucketLock
-    QWaitCondition lockedHashesCond;
 };
 
 struct CacheEntryLockerPrivate
 {
-    // The locked hash
-    U64 hash;
+    CacheEntryLocker* _publicInterface;
+
+    // A pointer to the cache that returned this object in Cache::get()
+    CachePtr cache;
+
+    // The key of the entry
+    CacheEntryKeyBasePtr key;
+
+    // A strong reference to the locked object shared amongst CacheEntryLocker that need the value associated
+    // to the hash
+    LockedHashPtr lockObject;
+
+    // Protects the lockObject pointer
+    QMutex lockObjectMutex;
 
     // Holding a pointer to the bucket is safe since they are statically allocated on the cache.
     CacheBucket* bucket;
 
-    CacheEntryLockerPrivate(U64 hash, CacheBucket* bucket)
-    : hash(hash)
-    , bucket(bucket)
+    // The entry result
+    CacheEntryBasePtr entry;
+
+    CacheEntryLocker::CacheEntryStatusEnum status;
+
+    CacheEntryLockerPrivate(CacheEntryLocker* publicInterface, const CachePtr& cache, const CacheEntryKeyBasePtr& key)
+    : _publicInterface(publicInterface)
+    , cache(cache)
+    , key(key)
+    , lockObject()
+    , lockObjectMutex()
+    , bucket(0)
+    , entry()
+    , status(CacheEntryLocker::eCacheEntryStatusMustCompute)
     {
 
     }
 
+    void tryCacheLookup();
+
+    void removeLockObjectIfUnique();
+
 };
-
-CacheEntryLocker::CacheEntryLocker(U64 hash, CacheBucket* bucket)
-: _imp(new CacheEntryLockerPrivate(hash, bucket))
-{
-
-    // When calling this, the mutex should already be taken
-    assert(!bucket->bucketLock.tryLock());
-
-}
-
-CacheEntryLocker::~CacheEntryLocker()
-{
-    // Erase the locked hash
-    QMutexLocker k(&_imp->bucket->bucketLock);
-    LockedHashSet::iterator foundLockedHash = _imp->bucket->lockedHashes.find(_imp->hash);
-    assert(foundLockedHash != _imp->bucket->lockedHashes.end());
-    if (foundLockedHash != _imp->bucket->lockedHashes.end()) {
-        _imp->bucket->lockedHashes.erase(foundLockedHash);
-    }
-
-    // And wake up all other threads
-    _imp->bucket->lockedHashesCond.wakeAll();
-}
 
 struct CachePrivate
 {
@@ -302,7 +324,7 @@ struct CachePrivate
 
     std::size_t getTileSizeBytesInternal() const;
 
-    int getBucketCacheBucketIndex(U64 hash) const
+    static int getBucketCacheBucketIndex(U64 hash)
     {
         int index = hash >> (64 - NATRON_CACHE_BUCKETS_N_DIGITS * 4);
         assert(index >= 0 && index < NATRON_CACHE_BUCKETS_COUNT);
@@ -352,6 +374,296 @@ struct CachePrivate
     }
 
 };
+
+
+CacheEntryLocker::CacheEntryLocker(const CachePtr& cache, const CacheEntryKeyBasePtr& key)
+: _imp(new CacheEntryLockerPrivate(this, cache, key))
+{
+
+
+}
+
+CacheEntryLockerPtr
+CacheEntryLocker::create(const CachePtr& cache, const CacheEntryKeyBasePtr& key)
+{
+    CacheEntryLockerPtr ret(new CacheEntryLocker(cache, key));
+    ret->init();
+    return ret;
+}
+
+void
+CacheEntryLockerPrivate::tryCacheLookup()
+{
+     // Private - should not lock
+    assert(!bucket->bucketLock.tryLock());
+
+    U64 keyHash = key->getHash();
+
+    // Check for a matching entry
+    CacheIterator foundEntry = bucket->container(keyHash);
+    if (foundEntry != bucket->container.end()) {
+
+        CacheEntryBasePtr ret = getValueFromIterator(foundEntry);
+        // Ok found one
+        // Check if the key is really equal, not just the hash
+        if (key->equals(*ret->getKey())) {
+            entry = ret;
+            status = CacheEntryLocker::eCacheEntryStatusCached;
+        }
+
+        // If the key was not equal this may be because 2 hash computations returned the same results.
+        // Erase the current entry
+        bucket->container.erase(foundEntry);
+        foundEntry = bucket->container.end();
+    }
+    status = CacheEntryLocker::eCacheEntryStatusMustCompute;
+
+} // tryCacheLookup
+
+void
+CacheEntryLocker::init()
+{
+    if (!_imp->key) {
+        throw std::runtime_error("CacheEntryLocker::init(): no key");
+    }
+
+    U64 hash = _imp->key->getHash();
+
+
+    // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
+    // buckets
+    _imp->bucket = &_imp->cache->_imp->buckets[CachePrivate::getBucketCacheBucketIndex(hash)];
+
+    // Lock out threads
+    QMutexLocker k(&_imp->bucket->bucketLock);
+
+    _imp->tryCacheLookup();
+
+    if (_imp->status == eCacheEntryStatusCached) {
+        // We found in cache, nothing to do
+        return;
+    }
+
+    assert(_imp->status == eCacheEntryStatusMustCompute);
+
+    LockedHashMap::iterator foundLockedHash = _imp->bucket->lockedHashes.find(hash);
+    if (foundLockedHash == _imp->bucket->lockedHashes.end()) {
+
+        // We are the first call to Cache::get() that was made: it is expected that
+        // we compute the value
+        LockedHashPtr hashLock(new LockedHash);
+        _imp->bucket->lockedHashes.insert(std::make_pair(hash, hashLock));
+        {
+            QMutexLocker k(&_imp->lockObjectMutex);
+            _imp->lockObject = hashLock;
+        }
+        hashLock->computeLocker = shared_from_this();
+    } else {
+
+        // There's already somebody computing the hash
+        LockedHashPtr &hashLock = foundLockedHash->second;
+        assert(hashLock->computeLocker);
+        {
+            QMutexLocker k(&_imp->lockObjectMutex);
+            _imp->lockObject = hashLock;
+        }
+
+
+        _imp->status = eCacheEntryStatusComputationPending;
+    }
+} // init
+
+
+CacheEntryLocker::CacheEntryStatusEnum
+CacheEntryLocker::getStatus() const
+{
+    return _imp->status;
+}
+
+
+CacheEntryBasePtr
+CacheEntryLocker::getCachedEntry() const
+{
+    return _imp->entry;
+}
+
+void
+CacheEntryLockerPrivate::removeLockObjectIfUnique()
+{
+    // Private - should not lock
+    assert(!bucket->bucketLock.tryLock());
+
+    U64 hash = key->getHash();
+
+    // Find the lock object, it should still be around
+    LockedHashMap::iterator foundLockedHash = bucket->lockedHashes.find(hash);
+    assert(foundLockedHash != bucket->lockedHashes.end());
+
+    if (foundLockedHash != bucket->lockedHashes.end()) {
+
+        // If the use count of the lock objet is 1 that means only this thread is still referencing this hash
+        // hence remove the lock object
+        if (foundLockedHash->second.use_count() == 1) {
+            bucket->lockedHashes.erase(foundLockedHash);
+        }
+    }
+}
+
+void
+CacheEntryLocker::insertInCache(const CacheEntryBasePtr& value)
+{
+    // The entry should only be computed and inserted in the cache if the status
+    // of the object was eCacheEntryStatusMustCompute
+    assert(_imp->status == eCacheEntryStatusMustCompute);
+    _imp->status = eCacheEntryStatusCached;
+
+    _imp->entry = value;
+
+
+    U64 hash = _imp->key->getHash();
+
+    // Set the entry cache bucket index
+    _imp->cache->onEntryInsertedInCache(value, CachePrivate::getBucketCacheBucketIndex(hash));
+
+    QMutexLocker locker(&_imp->bucket->bucketLock);
+
+    // The entry must not yet exist in the cache. This is ensured by the locker object that was returned from the get()
+    // function.
+    assert(_imp->bucket->container(hash) == _imp->bucket->container.end());
+
+    _imp->bucket->container.insert(hash, value);
+
+    assert(_imp->lockObject);
+    assert(_imp->lockObject->computeLocker.get() == this);
+    _imp->lockObject->computeLocker.reset();
+
+
+    // Wake up any thread waiting in waitForPendingEntry()
+    _imp->lockObject->lockedHashCond.wakeAll();
+
+    // We no longer need to hold a reference to the lock object since we cache it
+    {
+        QMutexLocker k(&_imp->lockObjectMutex);
+        _imp->lockObject.reset();
+    }
+
+    // Remove the lock object from the cache if we were the only thread using it
+    _imp->removeLockObjectIfUnique();
+
+} // insertInCache
+
+CacheEntryLocker::CacheEntryStatusEnum
+CacheEntryLocker::waitForPendingEntry()
+{
+    // The thread can only wait if the status was set to eCacheEntryStatusComputationPending
+    assert(_imp->status == eCacheEntryStatusComputationPending);
+
+    // If this thread is a threadpool thread, it may wait for a while that results gets available.
+    // Release the thread to the thread pool so that it may use this thread for other runnables
+    // and reserve it back when done waiting.
+    bool hasReleasedThread = false;
+    if (isRunningInThreadPoolThread()) {
+        QThreadPool::globalInstance()->releaseThread();
+        hasReleasedThread = true;
+    }
+
+
+    // Lock out threads
+    QMutexLocker k(&_imp->bucket->bucketLock);
+    do {
+
+
+        _imp->lockObject->lockedHashCond.wait(&_imp->bucket->bucketLock);
+
+        // We have been woken up by a thread that either called insertInCache() or was in the
+        // destructor (hence was aborted).
+
+        // If the original compute thread was aborted, we have to compute now, else we are now
+        // also cached
+
+        _imp->tryCacheLookup();
+
+        assert(_imp->status == eCacheEntryStatusMustCompute || _imp->status == eCacheEntryStatusCached);
+
+        if (_imp->status == eCacheEntryStatusMustCompute) {
+            assert(_imp->lockObject);
+            if (!_imp->lockObject->computeLocker) {
+                _imp->lockObject->computeLocker = shared_from_this();
+            } else {
+                _imp->status = eCacheEntryStatusComputationPending;
+            }
+        } else {
+            // Remove the reference to the lock object
+            {
+                QMutexLocker k(&_imp->lockObjectMutex);
+                _imp->lockObject.reset();
+            }
+            _imp->removeLockObjectIfUnique();
+        }
+
+
+    } while(_imp->status == eCacheEntryStatusComputationPending);
+
+    if (hasReleasedThread) {
+        QThreadPool::globalInstance()->reserveThread();
+    }
+
+
+    return _imp->status;
+} // waitForPendingEntry
+
+int
+CacheEntryLocker::getNumberOfLockersInterestedByPendingResults() const
+{
+
+    QMutexLocker k(&_imp->lockObjectMutex);
+    if (!_imp->lockObject) {
+        return 0;
+    }
+    
+    assert(_imp->status != eCacheEntryStatusCached);
+
+    int useCount = _imp->lockObject.use_count();
+
+    // There must be at least 2 persons referencing it: the Cache and us
+    assert(useCount >= 2);
+
+    // Do not count the cache in the interested items
+    return useCount - 1;
+}
+
+
+CacheEntryLocker::~CacheEntryLocker()
+{
+
+    // Lock the bucket
+    QMutexLocker k(&_imp->bucket->bucketLock);
+
+    // There may still be threads waiting in waitForPendingEntry. If this entry status
+    // is set to eCacheEntryStatusMustCompute, this means that the entry was not computed
+    // or CacheEntryLocker::insertInCache was not called. We need to wake pending threads
+    // and tell them to actually compute
+    if (_imp->status == eCacheEntryStatusMustCompute) {
+        assert(_imp->lockObject);
+        _imp->lockObject->lockedHashCond.wakeAll();
+    } else {
+
+        // The cache entry is still pending but this thread is no longer interested in it
+        // or it was already cached
+        assert(_imp->status == eCacheEntryStatusCached || _imp->status == eCacheEntryStatusComputationPending);
+    }
+
+    // Remove the reference to the lock object
+    {
+        QMutexLocker k(&_imp->lockObjectMutex);
+        if (_imp->lockObject) {
+            _imp->lockObject->computeLocker.reset();
+            _imp->lockObject.reset();
+        }
+    }
+
+    _imp->removeLockObjectIfUnique();
+}
 
 
 Cache::Cache()
@@ -805,119 +1117,14 @@ Cache::freeTile(const TileCacheFilePtr& file, std::size_t dataOffset)
     }
 } // freeTile
 
-bool
-Cache::get(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr* returnValue, CacheEntryLockerPtr* locker) const
+CacheEntryLockerPtr
+Cache::get(const CacheEntryKeyBasePtr& key) const
 {
-    assert(key && returnValue && locker);
-    if (!key || !returnValue || !locker) {
-        return false;
-    }
-
-    // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
-    // buckets
-    U64 hash = key->getHash();
-    CacheBucket& bucket = _imp->buckets[_imp->getBucketCacheBucketIndex(hash)];
-
-    {
-        // Lock out threads
-        QMutexLocker k(&bucket.bucketLock);
-
-        // Check for a matching entry
-        CacheIterator foundEntry = bucket.container(hash);
-        if (foundEntry != bucket.container.end()) {
-
-            CacheEntryBasePtr ret = getValueFromIterator(foundEntry);
-            // Ok found one
-            // Check if the key is really equal, not just the hash
-            if (key->equals(*ret->getKey())) {
-                *returnValue = ret;
-                return true;
-            }
-
-            // If the key was not equal this may be because 2 hash computations returned the same results.
-            // Erase the current entry
-            bucket.container.erase(foundEntry);
-            foundEntry = bucket.container.end();
-        }
-
-        // Not found. Since we have the lock, all other threads that want to check for the same entry
-        // are waiting on the bucketLock.
-        // We register the hash in the locked hash set so we ensure that
-        // this thread will be the only thread computing the entry
-
-        LockedHashSet::iterator foundLockedHash = bucket.lockedHashes.find(hash);
-
-        // Whilst the hash is still locked by someone else, wait...
-        bool hasWaitedOnce = false;
-        while (foundLockedHash != bucket.lockedHashes.end()) {
-
-            // This thread will go asleep and release the bucket lock.
-            // it will be woken up once the thread locking the hash is done.
-            bucket.lockedHashesCond.wait(&bucket.bucketLock);
-            hasWaitedOnce = true;
-        }
-
-        // Ok now if we waited once, the entry may now be in the cache
-        // because the thread that locked the hash is done with it.
-        // If the entry is not in the cache but it was released it means that the
-        // original thread aborted, in this case let this thread redo the computation.
-        // It is likely that this thread gets in turn aborted.
-        if (hasWaitedOnce) {
-            foundEntry = bucket.container(hash);
-            if (foundEntry != bucket.container.end()) {
-                // Ok found one, return it
-                *returnValue = getValueFromIterator(foundEntry);
-                return true;
-            }
-        }
-
-
-        // We did not find it in the cache. We must compute it:
-        // Ensure that we are the only thread doing so.
-        bucket.lockedHashes.insert(hash);
-        locker->reset(new CacheEntryLocker(hash, &bucket));
-    }
-
-    return false;
+    assert(key);
+    CachePtr thisShared = boost::const_pointer_cast<Cache>(shared_from_this());
+    return CacheEntryLocker::create(thisShared, key);
 } // get
 
-void
-Cache::insert(const CacheEntryBasePtr& value, const CacheEntryLockerPtr& locker)
-{
-    assert(value && locker);
-    if (!value || !locker) {
-        return;
-    }
-    insertInternal(value);
-
-} // insert
-
-void
-Cache::insertInternal(const CacheEntryBasePtr& value)
-{
-    // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
-    // buckets
-    CacheEntryKeyBasePtr key = value->getKey();
-    assert(key);
-    if (!key) {
-        throw std::runtime_error("Cache entry without a key!");
-    }
-    U64 hash = key->getHash();
-
-    int cacheBucket_i = _imp->getBucketCacheBucketIndex(hash);
-    CacheBucket& bucket = _imp->buckets[cacheBucket_i];
-
-    // Set the entry cache bucket index
-    onEntryInsertedInCache(value, cacheBucket_i);
-
-    QMutexLocker k(&bucket.bucketLock);
-
-    // The entry must not yet exist in the cache. This is ensured by the locker object that was returned from the get()
-    // function.
-    assert(bucket.container(hash) == bucket.container.end());
-
-    bucket.container.insert(hash, value);
-} // insertInternal
 
 void
 Cache::onEntryRemovedFromCache(const CacheEntryBasePtr& entry)
@@ -1340,7 +1547,18 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
 
         usedFilePaths.insert(QString::fromUtf8((*it)->filePath.c_str()));
 
-        insertInternal(value);
+
+        // Set the entry cache bucket index
+        int bucket_i = CachePrivate::getBucketCacheBucketIndex((*it)->hash);
+        CacheBucket& bucket = _imp->buckets[bucket_i];
+        onEntryInsertedInCache(value, bucket_i);
+
+        QMutexLocker locker(&bucket.bucketLock);
+
+        assert(bucket.container((*it)->hash) == bucket.container.end());
+        bucket.container.insert((*it)->hash, value);
+
+
     } // for each serialized entry
 
     // Remove from the cache all files that are not referenced by the table of contents
@@ -1362,50 +1580,6 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
 
 } // fromSerialization
 
-
-
-struct CacheFetcherPrivate
-{
-    CacheEntryLockerPtr entryLocker;
-    CacheEntryBasePtr entry;
-
-    CacheFetcherPrivate()
-    : entryLocker()
-    {
-
-    }
-};
-
-CacheFetcher::CacheFetcher(const CacheEntryKeyBasePtr& key)
-: _imp(new CacheFetcherPrivate())
-{
-    CachePtr cache = appPTR->getCache();
-    bool cached = cache->get(key, &_imp->entry, &_imp->entryLocker);
-    (void)cached;
-}
-
-CacheEntryBasePtr
-CacheFetcher::isCached() const
-{
-    return _imp->entry;
-}
-
-void
-CacheFetcher::setEntry(const CacheEntryBasePtr& entry)
-{
-    // The entry should only be computed if isCached retured NULL.
-    assert(!_imp->entry && _imp->entryLocker);
-    _imp->entry = entry;
-}
-
-CacheFetcher::~CacheFetcher()
-{
-    // If we created the item, push it to the cache.
-    if (_imp->entryLocker && _imp->entry) {
-        CachePtr cache = appPTR->getCache();
-        cache->insert(_imp->entry, _imp->entryLocker);
-    }
-}
 
 
 NATRON_NAMESPACE_EXIT;

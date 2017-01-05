@@ -159,7 +159,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
     for (int y = 0; y < renderWindow.height(); ++y) {
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 
@@ -325,7 +325,7 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
         // Start of the line for error diffusion
         // coverity[dont_call]
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 
@@ -524,7 +524,7 @@ static convertToMonoImage(const RectI & renderWindow,
         // coverity[dont_call]
 
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 
@@ -579,7 +579,7 @@ static convertFromMonoImage(const RectI & renderWindow,
         // Start of the line for error diffusion
         // coverity[dont_call]
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 

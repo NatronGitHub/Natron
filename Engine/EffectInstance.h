@@ -1184,19 +1184,24 @@ public:
 
     struct ImagePlanesToRender
     {
+        // The list of rectangles to pass to the render action.
+        // identity rectangles will not have render called but directly
+        // copy the identity input image
         std::list<RectToRender> rectsToRender;
-        InputImagesMap inputImages;
+
+        // The planes to render. Fully cached planes are not in this list
         std::map<ImageComponents, PlaneToRender> planes;
-        std::map<int, ImagePremultiplicationEnum> inputPremult;
-        ImagePremultiplicationEnum outputPremult;
+
+        // The render device (CPU, OpenGL...)
         RenderBackendTypeEnum backendType;
+
+        // For OpenGL this is the effect context dependent data
         EffectOpenGLContextDataPtr glContextData;
+
 
         ImagePlanesToRender()
         : rectsToRender()
         , planes()
-        , inputPremult()
-        , outputPremult(eImagePremultiplicationPremultiplied)
         , backendType(eRenderBackendTypeCPU)
         , glContextData()
         {

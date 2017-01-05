@@ -69,27 +69,12 @@ struct ImagePrivate
     // The buffer format
     ImageBufferLayoutEnum bufferFormat;
 
-    // A pointer to another image that should be updated when this image dies.
-    // Since tiled mono-channel format may not be ideal for most processing formats
-    // you may provide a pointer to another mirror image with another format.
-    // When this image is destroyed, it will update the mirror image.
-    // If the mirror image is cached, it will in turn update the cache when destroyed.
-    ImagePtr mirrorImage;
-
-    // If mirrorImage is set, this is the portion to update in the mirror image.
-    // This should be contained in mirrorImage
-    RectI mirrorImageRoI;
 
     // This must be set if the cache policy is not none.
     // This will be used to prevent inserting in the cache part of images that had
     // their render aborted.
     TreeRenderNodeArgsPtr renderArgs;
 
-    // Protects tilesInsertedInCache
-    mutable QMutex tilesInsertedInCacheMutex;
-
-    // When true, pushTilesToCacheIfNotAborted has been called and cannot be called again
-    bool tilesInsertedInCache;
 
     ImagePrivate()
     : bounds()
@@ -99,11 +84,7 @@ struct ImagePrivate
     , mipMapLevel(0)
     , cachePolicy(eCacheAccessModeNone)
     , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
-    , mirrorImage()
-    , mirrorImageRoI()
     , renderArgs()
-    , tilesInsertedInCacheMutex()
-    , tilesInsertedInCache(false)
     {
 
     }

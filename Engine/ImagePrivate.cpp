@@ -47,6 +47,8 @@ ImagePrivate::insertTilesInCache()
 
     CachePtr cache = appPTR->getCache();
 
+    bool renderAborted = renderArgs->isRenderAborted();
+
     for (std::size_t tile_i = 0; tile_i < tiles.size(); ++tile_i) {
         Image::Tile& tile = tiles[tile_i];
         assert(!tile.perChannelTile.empty());
@@ -56,17 +58,14 @@ ImagePrivate::insertTilesInCache()
             Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
 
             // If the tile is already cached, don't push it to the cache
-            if (thisChannelTile.isCached) {
+            if (!thisChannelTile.entryLocker) {
                 continue;
             }
-
-            // If the tile was not cached, we MUST have an entry locker, otherwise maybe
-            // another thread already computed and pushed this entry in the cache.
-            assert(thisChannelTile.entryLocker);
-
-            // Insert in the cache
-            cache->insert(thisChannelTile.buffer, thisChannelTile.entryLocker);
-            
+            CacheEntryLocker::CacheEntryStatusEnum status = thisChannelTile.entryLocker->getStatus();
+            if (status == CacheEntryLocker::eCacheEntryStatusMustCompute && !renderAborted) {
+                thisChannelTile.entryLocker->insertInCache(thisChannelTile.buffer);
+            }
+            thisChannelTile.entryLocker.reset();
         }
         
     } // for each tile

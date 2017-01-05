@@ -533,7 +533,7 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobDouble> userRoIBtmLeftKnob;
     boost::weak_ptr<KnobDouble> userRoISizeKnob;
     boost::weak_ptr<KnobButton> toggleProxyModeButtonKnob;
-    boost::weak_ptr<KnobChoice> proxyChoiceKnob;
+    boost::weak_ptr<KnobChoice> downscaleChoiceKnob;
     boost::weak_ptr<KnobButton> refreshButtonKnob;
     boost::weak_ptr<KnobButton> pauseButtonKnob[2];
     boost::weak_ptr<KnobChoice> aInputNodeChoiceKnob;
@@ -635,6 +635,8 @@ struct ViewerNodePrivate
 
     QTimer mustSetUpPlaybackButtonsTimer;
 
+    QMutex forceRenderMutex;
+    bool forceRender;
 
     ViewerNodePrivate(ViewerNode* publicInterface)
     : _publicInterface(publicInterface)
@@ -647,6 +649,10 @@ struct ViewerNodePrivate
     , uiState(eViewerNodeInteractMouseStateIdle)
     , hoverState(eHoverStateNothing)
     , lastMousePos()
+    , viewerInputs()
+    , mustSetUpPlaybackButtonsTimer()
+    , forceRenderMutex()
+    , forceRender(false)
     {
 
     }
@@ -716,6 +722,10 @@ struct ViewerNodePrivate
     void timelineGoTo(TimeValue time);
 
     void refreshInputChoiceMenu(int internalIndex, int groupInputIndex);
+
+    void toggleDownscaleLevel(int index);
+
+
 
 };
 
@@ -1351,6 +1361,7 @@ ViewerNode::initializeKnobs()
         param->setHintToolTip(tr(kViewerNodeParamProxyLevelHint));
         {
             std::vector<std::string> entries;
+            entries.push_back("Auto");
             entries.push_back("2");
             entries.push_back("4");
             entries.push_back("8");
@@ -1369,7 +1380,7 @@ ViewerNode::initializeKnobs()
         }
         page->addKnob(param);
         param->setSecret(true);
-        _imp->proxyChoiceKnob = param;
+        _imp->downscaleChoiceKnob = param;
     }
 
 
@@ -1910,8 +1921,8 @@ ViewerNode::initializeKnobs()
     _imp->clipToFormatButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->toggleProxyModeButtonKnob.lock());
     _imp->toggleProxyModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(_imp->proxyChoiceKnob.lock());
-    _imp->proxyChoiceKnob.lock()->setInViewerContextItemSpacing(0);
+    addKnobToViewerUI(_imp->downscaleChoiceKnob.lock());
+    _imp->downscaleChoiceKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->fullFrameButtonKnob.lock());
     _imp->fullFrameButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->toggleUserRoIButtonKnob.lock());
@@ -2577,6 +2588,38 @@ ViewerNode::isInfoBarVisible() const
     return _imp->enableInfoBarButtonKnob.lock()->getValue();
 }
 
+void
+ViewerNodePrivate::toggleDownscaleLevel(int index)
+{
+    assert(index > 0);
+    KnobChoicePtr downscaleChoice = downscaleChoiceKnob.lock();
+    int curChoice_i = downscaleChoice->getValue();
+    if (curChoice_i != index) {
+        downscaleChoice->setValue(index);
+    } else {
+        // Reset back to auto
+        downscaleChoice->setValue(0);
+    }
+}
+
+void
+ViewerNode::forceNextRenderWithoutCacheRead()
+{
+    QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
+    _imp->forceRender = true;
+}
+
+bool
+ViewerNode::isRenderWithoutCacheEnabledAndTurnOff()
+{
+    QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
+    if (_imp->forceRender) {
+        _imp->forceRender = false;
+        return true;
+    }
+    return false;
+}
+
 bool
 ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                         ViewSetSpec view,
@@ -2718,10 +2761,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         
     } else if (k == _imp->refreshButtonKnob.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);
-        NodePtr viewerNode = _imp->internalViewerProcessNode.lock();
-        ViewerInstancePtr instance = toViewerInstance(viewerNode->getEffectInstance());
-        assert(instance);
-        instance->forceFullComputationOnNextFrame();
+        forceNextRenderWithoutCacheRead();
         instance->renderCurrentFrame(true);
     } else if (k == _imp->syncViewersButtonKnob.lock()) {
 
@@ -2925,15 +2965,15 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
     } else if (k == _imp->zoomScaleOneAction.lock()) {
         _imp->uiContext->zoomViewport(1.);
     } else if (k == _imp->proxyLevelAction[0].lock()) {
-        _imp->proxyChoiceKnob.lock()->setValue(0);
+        _imp->toggleDownscaleLevel(1);
     } else if (k == _imp->proxyLevelAction[1].lock()) {
-        _imp->proxyChoiceKnob.lock()->setValue(1);
+        _imp->toggleDownscaleLevel(2);
     } else if (k == _imp->proxyLevelAction[2].lock()) {
-        _imp->proxyChoiceKnob.lock()->setValue(2);
+        _imp->toggleDownscaleLevel(3);
     } else if (k == _imp->proxyLevelAction[3].lock()) {
-        _imp->proxyChoiceKnob.lock()->setValue(3);
+        _imp->toggleDownscaleLevel(4);
     } else if (k == _imp->proxyLevelAction[4].lock()) {
-        _imp->proxyChoiceKnob.lock()->setValue(4);
+        _imp->toggleDownscaleLevel(5);
     } else if (k == _imp->leftViewAction.lock()) {
         _imp->activeViewKnob.lock()->setValue(0);
     } else if (k == _imp->rightViewAction.lock()) {
@@ -2956,10 +2996,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         }
     } else if (k == _imp->enableStatsAction.lock() && reason == eValueChangedReasonUserEdited) {
         getApp()->checkAllReadersModificationDate(false);
-        NodePtr viewerNode = _imp->internalViewerProcessNode.lock();
-        ViewerInstancePtr instance = toViewerInstance(viewerNode->getEffectInstance());
-        assert(instance);
-        instance->forceFullComputationOnNextFrame();
+        forceNextRenderWithoutCacheRead();
         getApp()->showRenderStatsWindow();
         instance->renderCurrentFrameWithRenderStats(true);
     } else if (k == _imp->rightClickPreviousLayer.lock()) {
@@ -4404,13 +4441,10 @@ ViewerNode::executeDisconnectTextureRequestOnMainThread(int index,bool clearRoD)
 
 
 unsigned int
-ViewerNode::getProxyModeKnobMipMapLevel() const
+ViewerNode::getDownscaleMipMapLevelKnobIndex() const
 {
-    if (!_imp->toggleProxyModeButtonKnob.lock()->getValue()) {
-        return 0;
-    }
     int index =  _imp->proxyChoiceKnob.lock()->getValue();
-    return index + 1;
+    return index;
 }
 
 void
@@ -4478,6 +4512,16 @@ ViewerNode::aboutToUpdateTextures()
     }
 }
 
+double
+ViewerNode::getUIZoomFactor() const
+{
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        return uiContext->getZoomFactor();
+    }
+    return 1.;
+
+}
 
 void
 ViewerNode::updateViewer(ViewIdx view, const ImagePtr& viewerA, const ImagePtr& viewerB)

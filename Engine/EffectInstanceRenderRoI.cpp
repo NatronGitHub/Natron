@@ -230,13 +230,13 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
     }
 
     if (componentsToFetchUpstream.empty()) {
-        return eTreeRenderOK;
+        return eActionStatusOK;
     }
 
     assert(passThroughInputNb != -1);
     EffectInstancePtr passThroughInput = _publicInterface->getInput(passThroughInputNb);
     if (!passThroughInput) {
-        return eTreeRenderInputDisconnected;
+        return eActionStatusInputDisconnected;
     }
 
     boost::scoped_ptr<RenderRoIArgs> inArgs ( new RenderRoIArgs(args) );
@@ -245,13 +245,13 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
     RenderRoIResults inputResults;
     ActionRetCodeEnum inputRetCode = passThroughInput->renderRoI(*inArgs, &inputResults);
 
-    if ( (inputRetCode != eTreeRenderOK) || inputResults.outputPlanes.empty() ) {
+    if (isFailureRetCode(inputRetCode) || inputResults.outputPlanes.empty() ) {
         return inputRetCode;
     }
 
     outputPlanes->insert(inputResults.outputPlanes.begin(),  inputResults.outputPlanes.end());
 
-    return eTreeRenderOK;
+    return eActionStatusOK;
 
 
 } // determinePlanesToRender
@@ -292,7 +292,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
             // Be safe: we may hit an infinite recursion without this check
             assert(inputTimeIdentity != args.time);
             if ( inputTimeIdentity == args.time) {
-                return eTreeRenderFailed;
+                return eActionStatusFailed;
             }
 
             // This special value of -2 indicates that the plugin is identity of itself at another time
@@ -307,7 +307,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         // Check if identity input really exists, otherwise fail
         EffectInstancePtr inputEffectIdentity = _publicInterface->getInput(inputNbIdentity);
         if (!inputEffectIdentity) {
-            return eTreeRenderInputDisconnected;
+            return eActionStatusInputDisconnected;
         }
 
 
@@ -335,7 +335,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         results->outputPlanes.clear();
 
         ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
-        if (ret == eTreeRenderOK) {
+        if (ret == eActionStatusOK) {
             // Add planes to existing outputPlanes
             finalPlanes.insert( results->outputPlanes.begin(), results->outputPlanes.end() );
         }
@@ -343,7 +343,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     } // if (identity)
 
     assert(!*isIdentity);
-    return eTreeRenderOK;
+    return eActionStatusOK;
 } // EffectInstance::Implementation::handleIdentityEffect
 
 ActionRetCodeEnum
@@ -373,13 +373,13 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
                 // Recurse on input given by plug-in
                 EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
                 if (!distoInput) {
-                    return eTreeRenderInputDisconnected;
+                    return eActionStatusInputDisconnected;
                 }
                 boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
                 argsCpy->caller = _publicInterface->shared_from_this();
                 argsCpy->inputNbInCaller = disto->inputNbToDistort;
                 ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
-                if (ret != eTreeRenderOK) {
+                if (isFailureRetCode(ret)) {
                     return ret;
                 }
 
@@ -396,7 +396,7 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         }
 
     }
-    return eTreeRenderOK;
+    return eActionStatusOK;
 } // handleConcatenation
 
 bool
@@ -468,6 +468,223 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
 
 
 void
+EffectInstance::Implementation::computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow)
+{
+
+
+    planesToRender->rectsToRender.clear();
+
+    // The renderwindow may be null if this render only have to wait results from another render
+    if (renderWindow.isNull()) {
+        return;
+    }
+
+    // If the effect does not support tiles, render everything again
+
+    if (!args.renderArgs->getCurrentTilesSupport()) {
+        // If not using the cache, render the full RoI
+        // The RoI has already been set to the pixelRoD in this case
+        RectToRender r;
+        r.rect = renderWindow;
+        r.identityInputNumber = -1;
+        planesToRender->rectsToRender.push_back(r);
+        return;
+    }
+
+
+    //
+    // If the effect has multiple inputs (such as masks) (e.g: Merge), try to call isIdentity
+    // if the RoDs do not intersect the RoI
+    //
+    // Edit: We don't do this anymore: it requires to render a lot of tiles which may
+    // add a lot of overhead in a conventional compositing tree.
+
+    bool didSomething = false;
+
+#if 0
+    {
+        RectD inputRodIntersection;
+        RectI inputRodIntersectionPixel;
+        if (canSplitRenderWindowWithIdentityRectangles(args, renderMappedScale, &inputRodIntersection)) {
+            double par = _publicInterface->getAspectRatio(args.renderArgs, -1);
+            inputRodIntersection.toPixelEnclosing(renderMappedScale, par, &inputRodIntersectionPixel);
+
+            std::list<RectI> rectsToOptimize;
+            rectsToOptimize.push_back(renderWindow);
+
+            _publicInterface->optimizeRectsToRender(args.renderArgs, inputRodIntersectionPixel, rectsToOptimize, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
+            didSomething = true;
+        }
+    }
+#endif
+
+    if (!didSomething) {
+
+        if (args.renderArgs->getCurrentRenderSafety() != eRenderSafetyFullySafeFrame) {
+
+            // Plug-in did not enable host frame threading, it is expected that it handles multi-threading itself
+            // with the multi-thread suite it needs so.
+
+            RectToRender r;
+            r.rect = renderWindow;
+            r.identityInputNumber = -1;
+            planesToRender->rectsToRender.push_back(r);
+
+        } else {
+
+            // If plug-in wants host frame threading and there is only 1 rect to render, split it
+            // in the number of available threads in the thread-pool
+
+            const unsigned int nThreads = MultiThread::getNCPUsAvailable();
+
+            std::vector<RectI> splits;
+            if (nThreads > 1) {
+                splits = renderWindow.splitIntoSmallerRects(nThreads);
+            } else {
+                splits.push_back(renderWindow);
+            }
+
+            for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
+                if (!it->isNull()) {
+                    RectToRender r;
+                    r.rect = *it;
+                    r.identityInputNumber = -1;
+                    planesToRender->rectsToRender.push_back(r);
+                }
+            }
+        }
+    } // !didSomething
+} // computeRectanglesToRender
+
+void
+EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(const RenderRoIArgs & args,
+                                                                                   const ImagePlanesToRenderPtr &planesToRender,
+                                                                                   CacheAccessModeEnum cacheAccess,
+                                                                                   const RectI& roi,
+                                                                                   std::map<ImageComponents, ImagePtr>* outputPlanes)
+{
+    // The renderwindow is the bounding box of all tiles that are left to render (not the tiles that are pending)
+    RectI renderWindow;
+    {
+        bool renderWindowSet = false;
+
+        std::map<ImageComponents, PlaneToRender> planes = planesToRender->planes;
+        planesToRender->planes.clear();
+        for (std::map<ImageComponents, PlaneToRender>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
+
+            // If the image is entirely cached, do not even compute it and insert it in the output planes map
+            bool planeHasPendingResults;
+            std::list<RectI> restToRender = it->second.cacheImage->getRestToRender(&planeHasPendingResults);
+
+            if (restToRender.empty() && !planeHasPendingResults) {
+                (*outputPlanes)[it->first] = it->second.cacheImage;
+                continue;
+            }
+
+            planesToRender->planes.insert(*it);
+
+            // if there's nothing left to render but only pending results, do not mark it has a portion to render.
+            if (restToRender.empty()) {
+                continue;
+            }
+
+            if (!args.renderArgs->getCurrentTilesSupport()) {
+                // If the effect does not support tiles, we must render the RoI which has been set to the pixel RoD.
+                renderWindow = roi;
+                continue;
+            }
+
+            // The temporary image will have the bounding box of tiles left to render.
+            RectI restToRenderBoundingBox;
+            {
+                bool bboxSet = false;
+                for (std::list<RectI>::const_iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
+                    if (!bboxSet) {
+                        bboxSet = true;
+                        restToRenderBoundingBox = *it;
+                    } else {
+                        restToRenderBoundingBox.merge(*it);
+                    }
+                }
+            }
+            if (!renderWindowSet) {
+                renderWindowSet = true;
+                renderWindow = restToRenderBoundingBox;
+            } else {
+                renderWindow.merge(restToRenderBoundingBox);
+            }
+        } // for each plane
+    }
+
+    // No planes left to render, don't even compute rectangles to render
+    if (planesToRender->planes.empty()) {
+        return;
+    }
+
+    // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
+    ImageBufferLayoutEnum pluginBufferLayout = _publicInterface->getPreferredBufferLayout();
+
+    StorageModeEnum cacheStorage;
+    ImageBufferLayoutEnum cacheBufferLayout;
+
+    if (cacheAccess != eCacheAccessModeNone) {
+        // Cache format is tiled and mmap backend
+        cacheStorage = eStorageModeDisk;
+        cacheBufferLayout = eImageBufferLayoutMonoChannelTiled;
+    } else {
+        switch (planesToRender->backendType) {
+            case eRenderBackendTypeOpenGL:
+                cacheStorage = eStorageModeGLTex;
+                break;
+            case eRenderBackendTypeCPU:
+            case eRenderBackendTypeOSMesa:
+                cacheStorage = eStorageModeRAM;
+                break;
+        }
+        cacheBufferLayout = pluginBufferLayout;
+    }
+
+
+    if (cacheAccess != eCacheAccessModeNone && (cacheBufferLayout != pluginBufferLayout) && !renderWindow.isNull()) {
+
+        // The bitdepth of the image
+        ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(args.renderArgs, -1);
+
+        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+
+            // The image planes left are not entirely cached (or not at all): create a temporary image
+            // with the memory layout supported by the plug-in that we will write to.
+            // When the temporary image will be destroyed, it will automatically copy pixels
+            // to the cache image, which in turn when destroyed will push the tiles to the cache.
+            Image::InitStorageArgs tmpImgInitArgs;
+            {
+                tmpImgInitArgs.bounds = renderWindow;
+                tmpImgInitArgs.renderArgs = args.renderArgs;
+                tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
+                tmpImgInitArgs.bufferFormat = pluginBufferLayout;
+                switch (planesToRender->backendType) {
+                    case eRenderBackendTypeOpenGL:
+                        tmpImgInitArgs.storage = eStorageModeGLTex;
+                        break;
+                    case eRenderBackendTypeCPU:
+                    case eRenderBackendTypeOSMesa:
+                        tmpImgInitArgs.storage = eStorageModeRAM;
+                        break;
+                }
+                tmpImgInitArgs.bitdepth = outputBitDepth;
+                tmpImgInitArgs.layer = it->first;
+
+            }
+            it->second.tmpImage = Image::create(tmpImgInitArgs);
+        } // for each plane to render
+
+    } // useCache
+
+    computeRectanglesToRender(args, planesToRender, renderWindow);
+
+} // checkPlanesToRenderAndComputeRectanglesToRender
+
+void
 EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & args,
                                                           const FrameViewRequestPtr& requestPassData,
                                                           CacheAccessModeEnum cacheAccess,
@@ -519,6 +736,10 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
         cacheBufferLayout = pluginBufferLayout;
     }
 
+    // For each requested components, create the corresponding image plane.
+    // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
+    // If using the cache, the image has to be in a mono-channel tiled format, hence we later create a temporary copy
+    // on which the plug-in will work on.
     std::map<ImageComponents, PlaneToRender> planes;
     for (std::list<ImageComponents>::const_iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
 
@@ -549,155 +770,57 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
 
     } // for each requested plane
 
-    RectI renderWindow = roi;
-
-    if (cacheAccess != eCacheAccessModeNone && (cacheBufferLayout != pluginBufferLayout)) {
-
-        // Remove from planes to render the planes that are already cached
-        // The render window is the bounding box of all portions left to render across all planes.
-
-
-        {
-            bool renderWindowSet = false;
-            for (std::map<ImageComponents, PlaneToRender>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
-
-                // If the image is entirely cached, do not even compute it and insert it in the output planes map
-                std::list<RectI> restToRender = it->second.cacheImage->getRestToRender();
-                if (restToRender.empty()) {
-                    (*outputPlanes)[it->first] = it->second.cacheImage;
-                    continue;
-                }
-
-                planesToRender->planes.insert(*it);
-
-                // The temporary image will have the bounding box of rectangles left to render.
-                RectI restToRenderBoundingBox;
-                {
-                    bool bboxSet = false;
-                    for (std::list<RectI>::const_iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
-                        if (!bboxSet) {
-                            bboxSet = true;
-                            restToRenderBoundingBox = *it;
-                        } else {
-                            restToRenderBoundingBox.merge(*it);
-                        }
-                    }
-                }
-                if (!renderWindowSet) {
-                    renderWindowSet = true;
-                    renderWindow = restToRenderBoundingBox;
-                } else {
-                    renderWindow.merge(restToRenderBoundingBox);
-                }
-            } // for each plane
-        }
-
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-
-            // The image planes left are not entirely cached (or not at all): create a temporary image
-            // with the memory layout supported by the plug-in that we will write to.
-            // When the temporary image will be destroyed, it will automatically copy pixels
-            // to the cache image, which in turn when destroyed will push the tiles to the cache.
-            Image::InitStorageArgs tmpImgInitArgs;
-            {
-                tmpImgInitArgs.bounds = renderWindow;
-                tmpImgInitArgs.renderArgs = args.renderArgs;
-                tmpImgInitArgs.isDraft = isDraftRender;
-                tmpImgInitArgs.nodeHashKey = nodeFrameViewHash;
-                tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
-                tmpImgInitArgs.bufferFormat = pluginBufferLayout;
-                switch (planesToRender->backendType) {
-                    case eRenderBackendTypeOpenGL:
-                        tmpImgInitArgs.storage = eStorageModeGLTex;
-                        break;
-                    case eRenderBackendTypeCPU:
-                    case eRenderBackendTypeOSMesa:
-                        tmpImgInitArgs.storage = eStorageModeRAM;
-                        break;
-                }
-                tmpImgInitArgs.bitdepth = outputBitDepth;
-                tmpImgInitArgs.layer = it->first;
-                tmpImgInitArgs.proxyScale = mappedProxyScale;
-                tmpImgInitArgs.mipMapLevel = mappedMipMapLevel;
-
-                tmpImgInitArgs.mirrorImage = it->second.cacheImage;
-                tmpImgInitArgs.mirrorImageRoI = renderWindow;
-            }
-            it->second.tmpImage = Image::create(tmpImgInitArgs);
-        } // for each plane to render
-
-    } // useCache
-
-    // If the effect does not support tiles, render everything again
-    // The RoI has already been set to the pixelRoD in this case
-    if (!args.renderArgs->getCurrentTilesSupport()) {
-        // If not using the cache, render the full RoI
-        RectToRender r;
-        r.rect = roi;
-        r.identityInputNumber = -1;
-        planesToRender->rectsToRender.push_back(r);
-    } else {
-
-        //
-        // If the effect has multiple inputs (such as masks) (e.g: Merge), try to call isIdentity
-        // if the RoDs do not intersect the RoI
-        //
-        // Edit: We don't do this anymore: it requires to render a lot of tiles which may
-        // add a lot of overhead in a conventional compositing tree.
-
-        bool didSomething = false;
-
-#if 0
-        {
-            RectD inputRodIntersection;
-            RectI inputRodIntersectionPixel;
-            if (canSplitRenderWindowWithIdentityRectangles(args, renderMappedScale, &inputRodIntersection)) {
-                double par = _publicInterface->getAspectRatio(args.renderArgs, -1);
-                inputRodIntersection.toPixelEnclosing(renderMappedScale, par, &inputRodIntersectionPixel);
-
-                std::list<RectI> rectsToOptimize;
-                rectsToOptimize.push_back(renderWindow);
-
-                _publicInterface->optimizeRectsToRender(args.renderArgs, inputRodIntersectionPixel, rectsToOptimize, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
-                didSomething = true;
-            }
-        }
-#endif
-
-        if (!didSomething) {
-
-            // If plug-in wants host frame threading and there is only 1 rect to render, split it
-            if (args.renderArgs->getCurrentRenderSafety() == eRenderSafetyFullySafeFrame) {
-
-                unsigned int nThreads = MultiThread::getNCPUsAvailable();
-
-                std::vector<RectI> splits;
-                if (nThreads > 1) {
-                    splits = renderWindow.splitIntoSmallerRects(nThreads);
-                } else {
-                    splits.push_back(renderWindow);
-                }
-
-                for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
-                    if (!it->isNull()) {
-                        RectToRender r;
-                        r.rect = *it;
-                        r.identityInputNumber = -1;
-                        planesToRender->rectsToRender.push_back(r);
-                    }
-                }
-            } else {
-                RectToRender r;
-                r.rect = renderWindow;
-                r.identityInputNumber = -1;
-                planesToRender->rectsToRender.push_back(r);
-
-            }
-        } // !didSomething
-    } // supportsTiles
+    checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, outputPlanes);
 
 } // fetchOrCreateOutputPlanes
 
+ActionRetCodeEnum
+EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderRoIArgs & args,
+                                                                   const ImagePlanesToRenderPtr &planesToRender,
+                                                                   const OSGLContextAttacherPtr& glRenderContext,
+                                                                   CacheAccessModeEnum cacheAccess,
+                                                                   const RectI& roi,
+                                                                   const RenderScale& renderMappedScale,
+                                                                   const std::bitset<4> &processChannels,
+                                                                   const std::map<int, std::list<ImageComponents> >& neededInputLayers,
+                                                                   std::map<ImageComponents, ImagePtr>* outputPlanes)
+{
+
+    while (!planesToRender->planes.empty()) {
+
+        ActionRetCodeEnum renderRetCode = eActionStatusOK;
+        // There may be no rectangles to render if all rectangles are pending (i.e: this render should wait for another thread
+        // to complete the render first)
+        if (!planesToRender->rectsToRender.empty()) {
+            renderRetCode = renderRoILaunchInternalRender(args, planesToRender, glRenderContext, renderMappedScale, processChannels, neededInputLayers);
+        }
+        if (isFailureRetCode(renderRetCode)) {
+            return renderRetCode;
+        }
+
+        // The render went OK: push the cache images tiles to the cache
+        std::map<ImageComponents, PlaneToRender> planes = planesToRender->planes;
+        planesToRender->planes.clear();
+        for (std::map<ImageComponents, PlaneToRender>::iterator it = planes.begin(); it != planes.end(); ++it) {
+            if (it->second.cacheImage->getCachePolicy() != eCacheAccessModeNone) {
+
+                // Destroy the temporary image if there was any.
+                // The cached image has been copied from the temporary image in tiledRenderingFunctor
+                it->second.tmpImage.reset();
+
+                // Push to the cache the tiles that we rendered
+                it->second.cacheImage->pushTilesToCacheIfNotAborted();
+
+                // Wait for any pending results. After this line other threads that should have computed should be done
+                it->second.cacheImage->waitForPendingTiles();
+            }
+        }
+        checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, outputPlanes);
+
+    } // while there is still planes to render
+    
+    return eActionStatusOK;
+} // launcRenderAndWaitForPendingTiles
 
 
 ActionRetCodeEnum
@@ -714,7 +837,30 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     ActionRetCodeEnum renderRetCode = eActionStatusOK;
 
     // There should always be at least 1 plane to render (The color plane)
-    assert( !planesToRender->planes.empty() );
+    assert( !planesToRender->planes.empty() && !planesToRender->rectsToRender.empty() );
+
+
+    EffectInstancePtr renderInstance;
+    //
+    // Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
+    // Reasons to use a render clone is because a plug-in is eRenderSafetyInstanceSafe or does not support
+    // concurrent GL renders.
+    //
+
+    bool useRenderClone = false;
+
+    RenderSafetyEnum safety = args.renderArgs->getCurrentRenderSafety();
+
+    useRenderClone |= (safety == eRenderSafetyInstanceSafe && !_publicInterface->getNode()->isDuringPaintStrokeCreation());
+
+    useRenderClone |= safety != eRenderSafetyUnsafe && planesToRender->backendType == eRenderBackendTypeOpenGL && !_publicInterface->supportsConcurrentOpenGLRenders();
+
+    if (useRenderClone) {
+        renderInstance = _publicInterface->getOrCreateRenderInstance();
+    } else {
+        renderInstance = _publicInterface->shared_from_this();
+    }
+    assert(renderInstance);
 
     // eRenderSafetyInstanceSafe means that there is at most one render per instance
     // NOTE: the per-instance lock should be shared between
@@ -726,38 +872,27 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
 
     boost::scoped_ptr<QMutexLocker> locker;
 
-    EffectInstancePtr renderInstance;
-    //
-    // Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
-    // Reasons to use a render clone is because a plug-in is eRenderSafetyInstanceSafe or does not support
-    // concurrent GL renders.
-    //
-    bool isDuringPaintStrokeDrawing = _publicInterface->getNode()->isDuringPaintStrokeCreation();
 
-    bool useRenderClone = false;
-
-    RenderSafetyEnum safety = args.renderArgs->getCurrentRenderSafety();
-
-    useRenderClone |= (safety == eRenderSafetyInstanceSafe && !isDuringPaintStrokeDrawing);
-
-    useRenderClone |= safety != eRenderSafetyUnsafe && planesToRender->backendType == eRenderBackendTypeOpenGL && !_publicInterface->supportsConcurrentOpenGLRenders();
-
-    if (useRenderClone) {
-        renderInstance = _publicInterface->getOrCreateRenderInstance();
-    } else {
-        renderInstance = _publicInterface->shared_from_this();
-    }
-    assert(renderInstance);
-
+    // Since we may are going to sit and wait on this lock, to allow this thread to be re-used by another task of the thread pool we
+    // temporarily release the thread to the threadpool and reserve it again once
+    // we waited.
+    bool hasReleasedThread = false;
     if (safety == eRenderSafetyInstanceSafe && !useRenderClone) {
+        QThreadPool::globalInstance()->releaseThread();
         locker.reset( new QMutexLocker( &_publicInterface->getNode()->getRenderInstancesSharedMutex() ) );
+        hasReleasedThread = true;
     } else if (safety == eRenderSafetyUnsafe) {
         PluginPtr p = _publicInterface->getNode()->getPlugin();
         assert(p);
+        QThreadPool::globalInstance()->releaseThread();
         locker.reset( new QMutexLocker( p->getPluginLock().get() ) );
+        hasReleasedThread = true;
     } else {
         // no need to lock
         Q_UNUSED(locker);
+    }
+    if (hasReleasedThread) {
+        QThreadPool::globalInstance()->reserveThread();
     }
 
 
@@ -797,26 +932,11 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     if (useRenderClone) {
         _publicInterface->releaseRenderInstance(renderInstance);
     }
+    
 
     return renderRetCode;
 } // EffectInstance::Implementation::::renderRoILaunchInternalRender
 
-
-void
-EffectInstance::Implementation::resizeImagesIfNeeded(const RenderRoIArgs & args,
-                                                             const ImagePlanesToRenderPtr &planesToRender,
-                                                             const RectI& roi,
-                                                             std::map<ImageComponents, ImagePtr>* outputPlanes)
-{
-
-    // Ensure all planes are in the scale that was requested if this effect does not support render scale
-    
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-#pragma message WARN("TODO: Resize")
-    }
-
-
-} // resizeImagesIfNeeded
 
 ActionRetCodeEnum
 EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
@@ -825,11 +945,11 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     // Do nothing if no components were requested
     if ( args.components.empty() ) {
         qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out components requested empty";
-        return eTreeRenderOK;
+        return eActionStatusOK;
     }
     if ( args.roi.isNull() ) {
         qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out RoI requested empty ";
-        return eTreeRenderOK;
+        return eActionStatusOK;
     }
 
     // Make sure this call is not made recursively from getImage on a render clone on which we are already calling renderRoI.
@@ -869,7 +989,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
         // If the plug-in RoD is null, there's nothing to render.
         if (rod.isNull()) {
-            return eTreeRenderInputDisconnected;
+            return eActionStatusInputDisconnected;
         }
     }
 
@@ -881,13 +1001,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     {
 
         ActionRetCodeEnum upstreamRetCode = _imp->determinePlanesToRender(args, &inputLayersNeeded, &requestedPlanes, &processChannels, &results->outputPlanes);
-        if (upstreamRetCode != eTreeRenderOK) {
+        if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
 
         // There might no plane produced by this node that were requested
         if ( requestedPlanes.empty() ) {
-            return eTreeRenderOK;
+            return eActionStatusOK;
         }
     }
 
@@ -923,7 +1043,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     OSGLContextAttacherPtr glContextLocker;
     {
         ActionRetCodeEnum errorCode = _imp->resolveRenderBackend(args, requestPassData, args.roi, &planesToRender->backendType, &glRenderContext);
-        if (errorCode != eTreeRenderOK) {
+        if (isFailureRetCode(errorCode)) {
             return errorCode;
         }
         assert(((planesToRender->backendType == eRenderBackendTypeOpenGL || planesToRender->backendType == eRenderBackendTypeOSMesa) && glRenderContext) || (planesToRender->backendType != eRenderBackendTypeOpenGL && planesToRender->backendType != eRenderBackendTypeOSMesa && !glRenderContext));
@@ -969,15 +1089,18 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
         bool concatenated;
         ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(args, mappedCombinedScale, results, &concatenated);
-        if (upstreamRetCode != eTreeRenderOK) {
+        if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
         if (concatenated) {
-            return eTreeRenderOK;
+            return eActionStatusOK;
         }
     }
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
+
+    // Should the output of this render be cached ?
+    CacheAccessModeEnum cacheAccess = _imp->shouldRenderUseCache(args, requestPassData);
 
 
     // The RoD in pixel coordinates at the scale of renderMappedScale
@@ -994,9 +1117,27 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
         renderMappedRoI = pixelRoDRenderMapped;
     } else {
 
+        // Round the roi to the tile size if the render is cached
+        if (cacheAccess != eCacheAccessModeNone) {
+            ImageBitDepthEnum outputBitDepth = getBitDepth(args.renderArgs, -1);
+            int tileWidth, tileHeight;
+            appPTR->getCache()->getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+
+            RectI tiledRoundedRoI = renderMappedRoI;
+
+            tiledRoundedRoI.x1 = renderMappedRoI.x1 +  (int)std::floor((double)(renderMappedRoI.x1 - pixelRoDRenderMapped.x1) / tileWidth ) * tileWidth;
+
+            tiledRoundedRoI.y1 = renderMappedRoI.y1 + (int)std::floor((double)(renderMappedRoI.y1 - pixelRoDRenderMapped.y1) / tileHeight ) * tileHeight;
+
+            tiledRoundedRoI.x2 = tiledRoundedRoI.x1 + (int)std::ceil((double)(renderMappedRoI.x2 - renderMappedRoI.x1)  / tileWidth ) * tileWidth;
+
+            tiledRoundedRoI.y2 = tiledRoundedRoI.y1 + (int)std::ceil((double)(renderMappedRoI.y2 - renderMappedRoI.y1) / tileHeight ) * tileHeight;
+            renderMappedRoI = tiledRoundedRoI;
+        }
+
         // Make sure the RoI falls within the image bounds
         if ( !renderMappedRoI.intersect(pixelRoDRenderMapped, &renderMappedRoI) ) {
-            return eTreeRenderOK;
+            return eActionStatusOK;
         }
 
         // The RoI falls into the effect pixel region of definition
@@ -1013,14 +1154,10 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Allocate images and look-up cache ///////////////////////////////////////////////////////
-    CacheAccessModeEnum cacheAccess = _imp->shouldRenderUseCache(args, requestPassData);
 
     _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, mappedProxyScale, mappedMipMapLevel, &results->outputPlanes);
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
-
-
-
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1034,7 +1171,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
         ActionRetCodeEnum upstreamRetCode = args.renderArgs->preRenderInputImages(args.time, args.view, inputLayersNeeded);
 
-        if (upstreamRetCode != eTreeRenderOK) {
+        if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
     }
@@ -1045,7 +1182,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     ActionRetCodeEnum renderRetCode = eActionStatusOK;
     if (hasSomethingToRender) {
-        renderRetCode = _imp->renderRoILaunchInternalRender(args, planesToRender, glContextLocker, mappedCombinedScale, processChannels, inputLayersNeeded);
+        renderRetCode = _imp->launchRenderAndWaitForPendingTiles(args, planesToRender, glContextLocker, cacheAccess, renderMappedRoI, mappedCombinedScale, processChannels, inputLayersNeeded, &results->outputPlanes);
     }
 
     // Now that this effect has rendered, clear pre-rendered inputs
@@ -1067,8 +1204,8 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Resize to requested scale ///////////////////////////////////////////////////////////////
-    _imp->resizeImagesIfNeeded(args, planesToRender, renderMappedRoI, &results->outputPlanes);
+    ////////////////////////////// Termination ///////////////////////////////////////////////////////////////////////////
+  
 
 
     // Termination, check that we rendered things correctly or we should have failed earlier otherwise.
@@ -1088,7 +1225,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     assert( !results->outputPlanes.empty() );
 #endif
 
-    return eTreeRenderOK;
+    return eActionStatusOK;
 } // renderRoI
 
 ActionRetCodeEnum

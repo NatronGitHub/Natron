@@ -1514,9 +1514,9 @@ SettingsPrivate::initializeKnobsCaching()
 
     _cacheTileSizePo2 = AppManager::createKnob<KnobInt>( thisShared, tr("Cache Tile size is 2 to the power of...") );
     _cacheTileSizePo2->setName("cacheTiling");
-    _cacheTileSizePo2->setHintToolTip( tr("The dimension of the cache tiles for 8-bit images is 2^n by 2^n (i.e. 256 by 256 pixels for n=8).\n"
-                                          "To fit in the same amount of memory, 16-bit images will have a 2^(n-1) tile size (128x128px for n = 8) and "
-                                          "32-bit images will have a 2^(n-2) tile size (64x64px for n=8).\n"
+    _cacheTileSizePo2->setHintToolTip( tr("The dimension of the cache tiles for 8-bit images is 2^n by 2^n (i.e. 128x128 pixels for n=7).\n"
+                                          "To fit in the same amount of memory, 16-bit images will have a one size halved, (128x64 px for n=7) and "
+                                          "32-bit images will have a 2^(n-1) tile size (64x64px for n=7).\n"
                                           "A high value means more elements in the cache but higher chances to find an already computed area.") );
     _cacheTileSizePo2->disableSlider();
     _cacheTileSizePo2->setRange(6, 10);

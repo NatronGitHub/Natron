@@ -604,10 +604,10 @@ TreeRenderNodeArgs::getView() const
 }
 
 bool
-TreeRenderNodeArgs::isAborted() const
+TreeRenderNodeArgs::isRenderAborted() const
 {
     // MT-safe: is aborted is MT-safe on the TreeRender class.
-    return _imp->parentRender.lock()->isAborted();
+    return _imp->parentRender.lock()->isRenderAborted();
 }
 
 NodePtr
@@ -854,11 +854,11 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     TimeValue identityTime;
     ViewIdx identityView;
     RectI identityRegionPixel;
-    canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &identityRegionPixel);
+    canonicalRenderWindow.toPixelEnclosing(scale, par, &identityRegionPixel);
 
     {
         IsIdentityResultsPtr results;
-        ActionRetCodeEnum stat = effect->isIdentity_public(true, time, mappedScale, identityRegionPixel, view, thisShared, &results);
+        ActionRetCodeEnum stat = effect->isIdentity_public(true, time, scale, identityRegionPixel, view, thisShared, &results);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -929,7 +929,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
     RoIMap inputsRoi;
     {
-        ActionRetCodeEnum stat = effect->getRegionsOfInterest_public(time, mappedScale, canonicalRenderWindow, view, thisShared, &inputsRoi);
+        ActionRetCodeEnum stat = effect->getRegionsOfInterest_public(time, scale, canonicalRenderWindow, view, thisShared, &inputsRoi);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1199,8 +1199,8 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
     }
 
     // Check if we are aborted
-    if (isAborted()) {
-        return eRenderRoIRetCodeAborted;
+    if (isRenderAborted()) {
+        return eActionStatusAborted;
     }
 
     // Append the pre-rendered input images to the frame view request.
@@ -1210,7 +1210,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
     for (std::vector<PreRenderResult>::const_iterator it = allResults.begin(); it != allResults.end(); ++it) {
 
         // If a pre-render failed, fail all the render
-        if (isFailureRetCode(it->first)) {
+        if (isFailureRetCode(it->stat)) {
             return it->stat;
         }
 
@@ -1224,7 +1224,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
 
     }
 
-    return eRenderRoIRetCodeOk;
+    return eActionStatusOK;
 } // preRenderInputImages
 
 

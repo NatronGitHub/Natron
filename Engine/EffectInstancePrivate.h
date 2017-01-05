@@ -156,6 +156,24 @@ public:
                                    std::map<ImageComponents, ImagePtr>* outputPlanes);
 
 
+    void checkPlanesToRenderAndComputeRectanglesToRender(const RenderRoIArgs & args,
+                                                         const ImagePlanesToRenderPtr &planesToRender,
+                                                         CacheAccessModeEnum cacheAccess,
+                                                         const RectI& roi,
+                                                         std::map<ImageComponents, ImagePtr>* outputPlanes);
+
+    void computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow);
+
+
+    ActionRetCodeEnum launchRenderAndWaitForPendingTiles(const RenderRoIArgs & args,
+                                                         const ImagePlanesToRenderPtr &planesToRender,
+                                                         const OSGLContextAttacherPtr& glRenderContext,
+                                                         CacheAccessModeEnum cacheAccess,
+                                                         const RectI& roi,
+                                                         const RenderScale& renderMappedScale,
+                                                         const std::bitset<4> &processChannels,
+                                                         const std::map<int, std::list<ImageComponents> >& neededInputLayers,
+                                                         std::map<ImageComponents, ImagePtr>* outputPlanes);
 
     ActionRetCodeEnum renderRoILaunchInternalRender(const RenderRoIArgs & args,
                                                     const ImagePlanesToRenderPtr &planesToRender,
@@ -163,11 +181,6 @@ public:
                                                     const RenderScale& renderMappedScale,
                                                     const std::bitset<4> &processChannels,
                                                     const std::map<int, std::list<ImageComponents> >& neededInputLayers);
-
-    void resizeImagesIfNeeded(const RenderRoIArgs & args,
-                              const ImagePlanesToRenderPtr &planesToRender,
-                              const RectI& roi,
-                              std::map<ImageComponents, ImagePtr>* outputPlanes);
 
 
 

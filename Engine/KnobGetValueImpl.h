@@ -109,13 +109,23 @@ Knob<T>::getValueFromExpression(TimeValue time,
 
 
     KnobExpressionKey cacheKey(effectHash, dimension, time, view, getName());
-    CacheFetcher cacheAccess(cacheKey);
 
-    KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess.isCached());
-    if (cachedResult) {
-        getValueFromCachedExpressionResult(cachedResult, ret);
-        return true;
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        cacheStatus = cacheAccess->waitForPendingEntry();
     }
+
+    KnobExpressionResultPtr cachedResult;
+    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getCachedEntry());
+        if (cachedResult) {
+            getValueFromCachedExpressionResult(cachedResult, ret);
+            return true;
+        }
+    }
+    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
     cachedResult = KnobExpressionResult::create(cacheKey);
 

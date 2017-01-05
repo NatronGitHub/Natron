@@ -297,14 +297,22 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
     GetComponentsKeyPtr cacheKey(new GetComponentsKey(hash, getNode()->getPluginID()));
 
     // Ensure the cache fetcher lives as long as we compute the action
-    CacheFetcher cacheAccess(cacheKey);
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
 
-    GetComponentsResultsPtr ret = toGetComponentsResults(cacheAccess.isCached());
-    if (ret) {
-        *results = ret;
-        return eActionStatusOK;
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        cacheStatus = cacheAccess->waitForPendingEntry();
     }
-    ret = GetComponentsResults::create(cacheKey);
+
+    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        *results = toGetComponentsResults(cacheAccess->getCachedEntry());
+        if (*results) {
+            return eActionStatusOK;
+        }
+    }
+    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+
+    *results = GetComponentsResults::create(cacheKey);
 
 
     // For each input index what layers are required
@@ -379,12 +387,12 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
         }
     } // if pass-through for planes
 
-    ret->setResults(inputLayersNeeded, outputLayersProduced, passThroughPlanes, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
+    (*results)->setResults(inputLayersNeeded, outputLayersProduced, passThroughPlanes, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
 
     if (fvRequest) {
-        fvRequest->setComponentsNeededResults(ret);
+        fvRequest->setComponentsNeededResults(*results);
     }
-    cacheAccess.setEntry(ret);
+    cacheAccess->insertInCache(*results);
 
     return eActionStatusOK;
     
@@ -702,14 +710,26 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
 
     GetDistorsionKeyPtr cacheKey(new GetDistorsionKey(hash, renderScale, getNode()->getPluginID()));
 
-    // Ensure the cache fetcher lives as long as we compute the action
-    CacheFetcher cacheAccess(cacheKey);
+    GetDistorsionResultsPtr ret;
 
-    GetDistorsionResultsPtr ret = toGetDistorsionResults(cacheAccess.isCached());
+    // Ensure the cache fetcher lives as long as we compute the action
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        cacheStatus = cacheAccess->waitForPendingEntry();
+    }
+
+    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        ret = toGetDistorsionResults(cacheAccess->getCachedEntry());
+    }
     if (ret) {
         *outDisto = ret;
         return eActionStatusOK;
     }
+
+    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+
     ret = GetDistorsionResults::create(cacheKey);
 
     // If the effect is identity, do not call the getDistorsion action, instead just return an identity
@@ -754,7 +774,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     }
     
     *outDisto = ret;
-    cacheAccess.setEntry(ret);
+    cacheAccess->insertInCache(ret);
     return eActionStatusOK;
 
 } // getDistorsion_public
@@ -840,15 +860,28 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     }
 
     IsIdentityKeyPtr cacheKey;
-    boost::scoped_ptr<CacheFetcher> cacheAccess;
+    CacheEntryLockerPtr cacheAccess;
     if (useIdentityCache) {
         cacheKey.reset(new IsIdentityKey(hash, getNode()->getPluginID()));
-        cacheAccess.reset(new CacheFetcher(cacheKey));
-        *results = toIsIdentityResults(cacheAccess->isCached());
-        if (*results) {
-            return eActionStatusOK;
+
+        // Ensure the cache fetcher lives as long as we compute the action
+        cacheAccess = appPTR->getCache()->get(cacheKey);
+
+        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+            cacheStatus = cacheAccess->waitForPendingEntry();
         }
+
+        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            *results = toIsIdentityResults(cacheAccess->getCachedEntry());
+            if (*results) {
+                return eActionStatusOK;
+            }
+        }
+
+        assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
     }
+
 
     IsIdentityResultsPtr identityData = IsIdentityResults::create(cacheKey);
     bool caught = false;
@@ -907,7 +940,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         fvRequest->setIdentityResults(identityData);
     }
     if (cacheAccess) {
-        cacheAccess->setEntry(identityData);
+        cacheAccess->insertInCache(identityData);
     }
     *results = identityData;
     return eActionStatusOK;
@@ -938,16 +971,19 @@ EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
 
     GetRegionOfDefinitionKeyPtr cacheKey(new GetRegionOfDefinitionKey(hash, scale, getNode()->getPluginID()));
 
-    CacheFetcher cacheAccess(cacheKey);
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
 
-
-    GetRegionOfDefinitionResultsPtr ret = toGetRegionOfDefinitionResults(cacheAccess.isCached());
-    if (!ret) {
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        GetRegionOfDefinitionResultsPtr ret = toGetRegionOfDefinitionResults(cacheAccess->getCachedEntry());
+        if (!ret) {
+            return eActionStatusFailed;
+        }
+        *results = ret->getRoD();
+    } else {
         return eActionStatusFailed;
     }
 
-    *results = ret->getRoD();
-    
     return eActionStatusOK;
 } // getRegionOfDefinitionFromCache
 
@@ -1003,15 +1039,26 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     }
 
     GetRegionOfDefinitionKeyPtr cacheKey(new GetRegionOfDefinitionKey(hash, scale, getNode()->getPluginID()));
-    boost::scoped_ptr<CacheFetcher> cacheAccess;
+    CacheEntryLockerPtr cacheAccess;
     if (useCache) {
         assert(hash != 0);
         cacheKey.reset(new GetRegionOfDefinitionKey(hash, scale, getNode()->getPluginID()));
-        cacheAccess.reset(new CacheFetcher(cacheKey));
-        *results = toGetRegionOfDefinitionResults(cacheAccess->isCached());
-        if (*results) {
-            return eActionStatusOK;
+
+        cacheAccess = appPTR->getCache()->get(cacheKey);
+
+        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+            cacheStatus = cacheAccess->waitForPendingEntry();
         }
+
+        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            *results = toGetRegionOfDefinitionResults(cacheAccess->getCachedEntry());
+            if (*results) {
+                return eActionStatusOK;
+            }
+        }
+        assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+
     }
 
     *results = GetRegionOfDefinitionResults::create(cacheKey);
@@ -1096,7 +1143,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         fvRequest->setRegionOfDefinitionResults(*results);
     }
     if (cacheAccess) {
-        cacheAccess->setEntry(*results);
+        cacheAccess->insertInCache(*results);
     }
     
     return eActionStatusOK;
@@ -1403,13 +1450,12 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         if (*results) {
             return eActionStatusOK;
         }
-        fvRequest->getHash(&hashValue);
     }
 
     NodePtr thisNode = getNode();
 
     GetFramesNeededKeyPtr cacheKey;
-    boost::scoped_ptr<CacheFetcher> cacheAccess;
+    CacheEntryLockerPtr cacheAccess;
 
     // Only use the cache if we got a hash.
     // We cannot compute the hash here because the hash itself requires the result of this function.
@@ -1418,11 +1464,21 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     if (isHashCached) {
 
         cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
-        cacheAccess.reset(new CacheFetcher(cacheKey));
-        *results = toGetFramesNeededResults(cacheAccess->isCached());
-        if (*results) {
-            return eActionStatusOK;
+
+        cacheAccess = appPTR->getCache()->get(cacheKey);
+
+        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+            cacheStatus = cacheAccess->waitForPendingEntry();
         }
+
+        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+            *results = toGetFramesNeededResults(cacheAccess->getCachedEntry());
+            if (*results) {
+                return eActionStatusOK;
+            }
+        }
+        assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
     }
 
 
@@ -1466,7 +1522,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI format = getOutputFormat(render);
         RenderScale scale(1.);
-        ActionRetCodeEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, render, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1493,9 +1549,8 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     }
 
 
-    if (!cacheAccess) {
-        cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
-        cacheAccess.reset(new CacheFetcher(cacheKey));
+    if (!cacheKey) {
+        cacheKey.reset(new GetFramesNeededKey(0, getNode()->getPluginID()));
     }
 
     *results = GetFramesNeededResults::create(cacheKey);
@@ -1504,8 +1559,10 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     if (fvRequest) {
         fvRequest->setFramesNeededResults(*results);
     }
-    
-    cacheAccess->setEntry(*results);
+
+    if (cacheAccess) {
+        cacheAccess->insertInCache(*results);
+    }
 
     return eActionStatusOK;
 
@@ -1580,13 +1637,21 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     }
 
     GetFrameRangeKeyPtr cacheKey(new GetFrameRangeKey(hash, getNode()->getPluginID()));
-    CacheFetcher cacheAccess(cacheKey);
 
-    *results = toGetFrameRangeResults(cacheAccess.isCached());
-    if (*results) {
-        return eActionStatusOK;
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        cacheStatus = cacheAccess->waitForPendingEntry();
     }
 
+    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        *results = toGetFrameRangeResults(cacheAccess->getCachedEntry());
+        if (*results) {
+            return eActionStatusOK;
+        }
+    }
+    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
     // Call the action
     RangeD range;
@@ -1609,7 +1674,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
 
     *results = GetFrameRangeResults::create(cacheKey);
     (*results)->setFrameRangeResults(range);
-    cacheAccess.setEntry(*results);
+    cacheAccess->insertInCache(*results);
 
     if (render) {
         render->setFrameRangeResults(*results);
@@ -1773,12 +1838,21 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     }
 
     GetTimeInvariantMetaDatasKeyPtr cacheKey(new GetTimeInvariantMetaDatasKey(hash, getNode()->getPluginID()));
-    CacheFetcher cacheAccess(cacheKey);
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
 
-    *results = toGetTimeInvariantMetaDatasResults(cacheAccess.isCached());
-    if (*results) {
-        return eActionStatusOK;
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+        cacheStatus = cacheAccess->waitForPendingEntry();
     }
+
+    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
+        *results = toGetTimeInvariantMetaDatasResults(cacheAccess->getCachedEntry());
+        if (*results) {
+            return eActionStatusOK;
+        }
+    }
+    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
+
 
     // If the node is disabled return the meta-datas of the main input.
     // Don't do that for an identity node: a render may be identity but not the metadatas (e.g: NoOp)
@@ -1842,7 +1916,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         getApp()->getProject()->setOrAddProjectFormat(format, true);
     }
 
-    cacheAccess.setEntry(*results);
+    cacheAccess->insertInCache(*results);
     return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public
 

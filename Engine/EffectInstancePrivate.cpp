@@ -70,7 +70,7 @@ EffectInstance::Implementation::Implementation(const Implementation& other)
 }
 
 
-RenderRoIRetCode
+ActionRetCodeEnum
 EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
                                                      const FrameViewRequestPtr& requestPassData,
                                                      const RectI& roi,
@@ -95,7 +95,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
 
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             _publicInterface->setPersistentMessage(eMessageTypeError, message.toStdString());
-            return eRenderRoIRetCodeFailed;
+            return eActionStatusFailed;
         }
 
 
@@ -144,7 +144,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
         }
     }
 
-    return eRenderRoIRetCodeOk;
+    return eActionStatusOK;
 } // resolveRenderBackend
 
 CacheAccessModeEnum
@@ -270,29 +270,33 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 
     // If this tile is identity, copy input image instead
+    ActionRetCodeEnum stat;
     if (rectToRender.identityInputNumber != -1) {
-        return renderHandlerIdentity(rectToRender, args, renderMappedScale, planesToRender);
-    }
-
-    // Call render
-    std::map<ImageComponents, PlaneToRender> outputPlanes;
-    {
-
-
-        ActionRetCodeEnum stat = renderHandlerInternal(tls, rectToRender, args, renderMappedScale, glContext, planesToRender, processChannels);
+        stat = renderHandlerIdentity(rectToRender, args, renderMappedScale, planesToRender);
+    } else {
+        stat = renderHandlerInternal(tls, rectToRender, args, renderMappedScale, glContext, planesToRender, processChannels);
         if (isFailureRetCode(stat)) {
             return stat;
         }
+        // Apply post-processing
+        renderHandlerPostProcess(rectToRender, args, renderMappedScale, planesToRender, mainInputImage, processChannels);
     }
 
-    // Apply post-processing
-    renderHandlerPostProcess(rectToRender, args, renderMappedScale, planesToRender, mainInputImage, processChannels);
+
+    // The render went OK: copy the temporary image with the plug-in preferred format to the cache image
+    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        if (it->second.cacheImage != it->second.tmpImage) {
+            Image::CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = rectToRender.rect;
+            it->second.cacheImage->copyPixels(*it->second.tmpImage, cpyArgs);
+        }
+    }
 
 
     if (timeRecorder) {
         stats->addRenderInfosForNode(_publicInterface->getNode(), timeRecorder->getTimeSinceCreation());
     }
-    return eActionStatusOK;
+    return args->renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // EffectInstance::tiledRenderingFunctor
 
 
@@ -340,7 +344,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         it->second.tmpImage->copyPixels(*foundIdentityPlane->second, cpyArgs);
     }
 
-    return eActionStatusOK;
+    return args->renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // renderHandlerIdentity
 
 template <typename GL>
@@ -516,7 +520,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
 
     } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
-    return eActionStatusOK;
+    return args->renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // EffectInstance::Implementation::renderHandlerInternal
 
 

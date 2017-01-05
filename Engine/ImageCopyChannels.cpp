@@ -71,7 +71,7 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
 
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 
@@ -285,7 +285,7 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
 
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 

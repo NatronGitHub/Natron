@@ -1064,7 +1064,7 @@ OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
             if (isAbortableThread) {
                 TreeRenderPtr render =isAbortableThread->getCurrentRender();
                 if (render) {
-                    render->setAborted();
+                    render->setRenderAborted();
                 }
             }
         }
@@ -1856,6 +1856,9 @@ protected:
         // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
         args->mipMapLevel = 0;
 
+#pragma message WARN("Todo: set proxy scale here")
+        args->proxyScale = RenderScale(1.);
+
         // Render the RoD
         args->canonicalRoI = 0;
         args->stats = stats;
@@ -2197,7 +2200,11 @@ struct RenderViewerProcessFunctorArgs
     RenderStatsPtr stats;
     ActionRetCodeEnum retCode;
     std::map<ImageComponents, ImagePtr> planes;
-
+    RectD roi;
+    unsigned int viewerMipMapLevel;
+    bool isDraftModeEnabled;
+    bool isPlayback;
+    bool byPassCache;
 };
 
 typedef boost::shared_ptr<RenderViewerProcessFunctorArgs> RenderViewerProcessFunctorArgsPtr;
@@ -2229,20 +2236,111 @@ public:
 public:
 
 
-    static void renderViewerProcessInThread(const RenderViewerProcessFunctorArgsPtr& args)
+    static void renderViewerProcessInThread(const RenderViewerProcessFunctorArgsPtr& inArgs)
     {
-        args->retCode = renderFrameInternal(args->viewerProcessNode, args->time, args->view, args->stats, &args->planes);
+        TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
+        args->treeRoot = inArgs->viewerProcessNode;
+        args->time = inArgs->time;
+        args->view = inArgs->view;
+
+        // Render all layers produced by the viewer process node
+        args->layers = 0;
+
+        // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
+        args->mipMapLevel = inArgs->viewerMipMapLevel;
+
+#pragma message WARN("Todo: set proxy scale here")
+        args->proxyScale = RenderScale(1.);
+
+        // Render the RoD
+        args->canonicalRoI = &inArgs->roi;
+        args->stats = inArgs->stats;
+        args->draftMode = inArgs->isDraftModeEnabled;
+        args->playback = inArgs->isPlayback;
+        args->byPassCache = inArgs->byPassCache;
+
+        inArgs->retCode = eActionStatusFailed;
+        TreeRenderPtr render = TreeRender::create(args);
+        if (render) {
+            inArgs->retCode = render->launchRender(&inArgs->planes);
+        }
+
+
     }
+
+    static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled)
+    {
+
+
+        if (viewer->isFullFrameProcessingEnabled()) {
+            return 0;
+        }
+
+        unsigned int mipMapLevel = 0;
+
+        const double zoomFactor = viewer->getUIZoomFactor();
+
+        int downcale_i = viewer->getDownscaleMipMapLevelKnobIndex();
+
+
+        assert(downcale_i >= 0);
+        if (downcale_i > 0) {
+            mipMapLevel = downcale_i + 1;
+        } else {
+            // Downscale level is set to Auto, compute it from the zoom factor.
+            // This is the current zoom factor (1. == 100%) currently set by the user in the viewport. This is thread-safe.
+
+            // If we were to render at 48% zoom factor, we would render at 50% which is mipmapLevel=1
+            // If on the other hand the zoom factor would be at 51%, then we would render at 100% which is mipmapLevel=0
+
+            // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
+            // and the requested user proxy mipmap level
+
+
+            double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+            mipMapLevel = std::log(closestPowerOf2) / M_LN2;
+
+        }
+
+        // If draft mode is enabled, compute the mipmap level according to the auto-proxy setting in the preferences
+        if ( draftModeEnabled && appPTR->getCurrentSettings()->isAutoProxyEnabled() ) {
+            unsigned int autoProxyLevel = appPTR->getCurrentSettings()->getAutoProxyMipMapLevel();
+            if (zoomFactor > 1) {
+                //Decrease draft mode at each inverse mipmaplevel level taken
+                unsigned int invLevel = Image::getLevelFromScale(1. / zoomFactor);
+                if (invLevel < autoProxyLevel) {
+                    autoProxyLevel -= invLevel;
+                } else {
+                    autoProxyLevel = 0;
+                }
+            }
+            mipMapLevel = (unsigned int)std::max( (int)mipMapLevel, (int)autoProxyLevel );
+
+        }
+
+        return mipMapLevel;
+    } // getViewerMipMapLevel
 
     static void renderViewerProcessNodesInSplitThreads(const ViewerNodePtr& viewer,
                                                        TimeValue time,
                                                        const std::vector<ViewIdx>& viewsToRender,
+                                                       bool isPlayback,
                                                        const RenderStatsPtr& stats,
                                                        std::vector<RenderViewerProcessFunctorArgsPtr>* outArgs)
     {
+
         outArgs->resize(2);
+
+        bool draftModeEnabled = viewer->getApp()->isDraftRenderEnabled();
+        unsigned int mipMapLevel = getViewerMipMapLevel(viewer, draftModeEnabled);
+        bool byPassCache = viewer->isRenderWithoutCacheEnabledAndTurnOff();
+
         for (int i = 0; i < 2; ++i) {
             (*outArgs)[i].reset(new RenderViewerProcessFunctorArgs());
+            (*outArgs)[i]->isPlayback = isPlayback;
+            (*outArgs)[i]->isDraftModeEnabled = draftModeEnabled;
+            (*outArgs)[i]->viewerMipMapLevel = mipMapLevel;
+            (*outArgs)[i]->byPassCache = byPassCache;
             (*outArgs)[i]->stats = stats;
             (*outArgs)[i]->time = time;
             (*outArgs)[i]->view = viewsToRender[0];
@@ -2254,6 +2352,7 @@ public:
         renderViewerProcessInThread((*outArgs)[0]);
         processBFuture.waitForFinished();
     }
+    
 private:
 
     virtual void renderFrame(TimeValue time,
@@ -2271,7 +2370,7 @@ private:
 
         // Render both viewer processes in 2 threads. One in this thread, the other in a spawned thread
         std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-        renderViewerProcessNodesInSplitThreads(_viewer, time, viewsToRender, stats, &processArgs);
+        renderViewerProcessNodesInSplitThreads(_viewer, time, viewsToRender, true /*isPlayback*/, stats, &processArgs);
 
         for (int i = 0; i < 2; ++i) {
 
@@ -3067,7 +3166,7 @@ public:
 
         // Render both viewer processes in 2 threads. One in this thread, the other in a spawned thread
         std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-        ViewerRenderFrameRunnable::renderViewerProcessNodesInSplitThreads(_args->viewer, _args->time, viewsToRender, stats, &processArgs);
+        ViewerRenderFrameRunnable::renderViewerProcessNodesInSplitThreads(_args->viewer, _args->time, viewsToRender, false/*isPlayback*/, stats, &processArgs);
 
 
         _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request->age);
@@ -3285,7 +3384,7 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
         }
 
         for (; it != _imp->currentRenders[i].end(); ++it) {
-            it->render->setAborted();
+            it->render->setRenderAborted();
         }
     }
 }

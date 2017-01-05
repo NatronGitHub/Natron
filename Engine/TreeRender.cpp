@@ -237,13 +237,13 @@ TreeRender::getCPUOpenGLContext() const
 
 
 bool
-TreeRender::isAborted() const
+TreeRender::isRenderAborted() const
 {
     return (int)_imp->aborted > 0;
 }
 
 void
-TreeRender::setAborted()
+TreeRender::setRenderAborted()
 {
     int abortedValue = _imp->aborted.fetchAndAddAcquire(1);
 

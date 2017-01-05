@@ -56,16 +56,9 @@ Image::create(const InitStorageArgs& args)
 
 Image::~Image()
 {
-    // Only push data to the cache if we are not aborted.
-    if (!_imp->renderArgs || !_imp->renderArgs->isAborted()) {
-        // If there's a mirror image, update it
-        if (_imp->mirrorImage) {
-            CopyPixelsArgs cpyArgs;
-            cpyArgs.roi = _imp->mirrorImageRoI;
-            _imp->mirrorImage->copyPixels(*this, cpyArgs);
-        }
-    }
 
+    pushTilesToCacheIfNotAborted();
+    
     // If this image is the last image holding a pointer to memory buffers, ensure these buffers
     // gets deallocated in a specific thread and not a render thread
     std::list<CacheEntryBasePtr> toDeleteInDeleterThread;
@@ -86,21 +79,61 @@ Image::~Image()
 void
 Image::pushTilesToCacheIfNotAborted()
 {
-    QMutexLocker k(&_imp->tilesInsertedInCacheMutex);
-    if (_imp->tilesInsertedInCache) {
-        return;
+   
+    // Push tiles to cache if needed
+    if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
+        _imp->cachePolicy == eCacheAccessModeWriteOnly) {
+        assert(_imp->renderArgs);
+        _imp->insertTilesInCache();
     }
-    
-    _imp->tilesInsertedInCache = true;
 
-    // Only push data to the cache if we are not aborted.
-    if (!_imp->renderArgs || !_imp->renderArgs->isAborted()) {
-        // Push tiles to cache if needed
-        if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
-            _imp->cachePolicy == eCacheAccessModeWriteOnly) {
-            _imp->insertTilesInCache();
+}
+
+bool
+Image::waitForPendingTiles()
+{
+    if (_imp->cachePolicy == eCacheAccessModeNone) {
+        return true;
+    }
+    bool hasStuffToRender = false;
+    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
+            if (_imp->tiles[i].perChannelTile[c].entryLocker) {
+                if (_imp->tiles[i].perChannelTile[c].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                    _imp->tiles[i].perChannelTile[c].entryLocker->waitForPendingEntry();
+                }
+                CacheEntryLocker::CacheEntryStatusEnum status = _imp->tiles[i].perChannelTile[c].entryLocker->getStatus();
+                assert(status == CacheEntryLocker::eCacheEntryStatusCached || status == CacheEntryLocker::eCacheEntryStatusMustCompute);
+
+                if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
+                    hasStuffToRender = true;
+                }
+            }
         }
     }
+    return !hasStuffToRender;
+} // waitForPendingTiles
+
+bool
+Image::hasTilesPendingForOtherThreads() const
+{
+    if (_imp->cachePolicy == eCacheAccessModeNone) {
+        return false;
+    }
+    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
+            if (_imp->tiles[i].perChannelTile[c].entryLocker) {
+                int nInterested = _imp->tiles[i].perChannelTile[c].entryLocker->getNumberOfLockersInterestedByPendingResults();
+
+                // There should be at least this image counted as interested
+                assert(nInterested >= 1);
+                if (nInterested > 1) {
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
 }
 
 Image::InitStorageArgs::InitStorageArgs()
@@ -212,18 +245,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     _imp->layer = args.layer;
     _imp->proxyScale = args.proxyScale;
     _imp->mipMapLevel = args.mipMapLevel;
-    _imp->mirrorImage = args.mirrorImage;
-    _imp->mirrorImageRoI = args.mirrorImageRoI;
     _imp->renderArgs = args.renderArgs;
-    
-    if (_imp->mirrorImage) {
-        // If there's a mirror image, the portion to update must be contained in the mirror image
-        // and in this image.
-        if (!_imp->mirrorImage->getBounds().contains(_imp->mirrorImageRoI) ||
-            !args.bounds.contains(_imp->mirrorImageRoI)) {
-            throw std::bad_alloc();
-        }
-    }
 
     // OpenGL texture back-end only supports 32-bit float RGBA packed format.
     assert(args.storage != eStorageModeGLTex || (args.bufferFormat == eImageBufferLayoutRGBAPackedFullRect && args.bitdepth == eImageBitDepthFloat));
@@ -348,8 +370,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                                                  tx,
                                                  ty));
 
-            // The entry in the cache
-            CacheEntryBasePtr cacheEntry;
+
 
             // If the entry was not in the cache but we want to cache it, this will lock the hash so that another thread
             // does not compute the same tile.
@@ -358,10 +379,9 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             // If the entry wants to be cached but we don't want to read from the cache
             // we must remove from the cache any entry that already exists at the given hash.
             if (args.cachePolicy == eCacheAccessModeWriteOnly) {
-                bool isCached = cache->get(key, &cacheEntry, &entryLocker);
-                assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
-                if (isCached) {
-                    assert(cacheEntry && !entryLocker);
+                entryLocker = cache->get(key);
+                if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+                    CacheEntryBasePtr cacheEntry = entryLocker->getCachedEntry();
                     cache->removeEntry(cacheEntry);
                     cacheEntry.reset();
                 }
@@ -409,15 +429,14 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                         // In eCacheAccessModeWriteOnly mode, we already accessed the cache. If we got an entry locker because the entry
                         // was not cached, do not read a second time.
                         if (!entryLocker) {
-                            isCached = cache->get(keyToReadCache, &cacheEntry, &entryLocker);
-                            assert((isCached && cacheEntry && !entryLocker) || (!isCached && entryLocker && !cacheEntry));
+                            entryLocker = cache->get(keyToReadCache);
                         }
-                        if (isCached) {
-                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(cacheEntry);
+                        if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(entryLocker->getCachedEntry());
                             assert(isBufferedEntry);
                             thisChannelTile.buffer = isBufferedEntry;
-                            thisChannelTile.isCached = true;
-                            
+
+                            isCached = true;
                             // We found a cache entry, don't continue to look for a tile computed in draft mode.
                             break;
                             
@@ -460,16 +479,14 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                             } // must downscale
                         }
                         break;
-                    }
-                }
+                    } // isCached
+                } // for each mip map lvel to check
             } // useCache
             
             if (!isCached) {
 
-                // If we got the locker object, we are the only thread computing this tile.
+                // Either we don't use the cache or we have a locker object
                 assert(args.cachePolicy == eCacheAccessModeNone || entryLocker);
-
-                thisChannelTile.isCached = false;
 
                 // Make the hash locker live as long as this image will live
                 thisChannelTile.entryLocker = entryLocker;
@@ -802,21 +819,6 @@ Image::getNumTiles() const
     return (int)_imp->tiles.size();
 }
 
-bool
-Image::isCached() const
-{
-    if (_imp->cachePolicy != eCacheAccessModeReadWrite) {
-        return false;
-    }
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
-            if (!_imp->tiles[i].perChannelTile[c].isCached) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
 
 CacheAccessModeEnum
 Image::getCachePolicy() const

@@ -47,7 +47,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
 
     for ( int y = roi.y1; y < roi.y2; ++y) {
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
         for (int x = roi.x1; x < roi.x2; ++x) {

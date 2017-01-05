@@ -226,7 +226,7 @@ public:
 
     void setUserRoI(const RectD& rect);
 
-    unsigned int getProxyModeKnobMipMapLevel() const;
+    int getDownscaleMipMapLevelKnobIndex() const;
 
     KnobChoicePtr getLayerKnob() const;
 
@@ -254,6 +254,8 @@ public:
     int getLastRenderedTime() const;
 
     void getTimelineBounds(int* first, int* last) const;
+
+    double getUIZoomFactor() const;
 
     void aboutToUpdateTextures();
 
@@ -288,6 +290,10 @@ public:
     }
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
+
+    void forceNextRenderWithoutCacheRead();
+
+    bool isRenderWithoutCacheEnabledAndTurnOff();
 
 public Q_SLOTS:
 

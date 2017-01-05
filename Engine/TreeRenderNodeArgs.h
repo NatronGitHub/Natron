@@ -279,9 +279,9 @@ public:
     ViewIdx getView() const;
 
     /**
-     * @brief Convenience function for getParentRender()->isAborted()
+     * @brief Convenience function for getParentRender()->isRenderAborted()
      **/
-    bool isAborted() const;
+    bool isRenderAborted() const;
 
     /**
      * @brief Get the node associated to these render args

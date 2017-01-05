@@ -233,9 +233,12 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     // If we used getFramesNeeded, cache it now if possible
     if (framesNeededResults) {
         GetFramesNeededKeyPtr cacheKey(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
-        CacheFetcher cacheAccess(cacheKey);
-        if (!cacheAccess.isCached()) {
-            cacheAccess.setEntry(framesNeededResults);
+
+        CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+
+        CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+        if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
+            cacheAccess->insertInCache(framesNeededResults);
         }
     }
 

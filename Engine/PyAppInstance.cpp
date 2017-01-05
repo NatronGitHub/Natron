@@ -49,7 +49,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Settings.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
-
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -310,9 +310,9 @@ App::timelineGetTime() const
 int
 App::timelineGetLeftBound() const
 {
-    double left, right;
+    TimeValue left, right;
 
-    getInternalApp()->getFrameRange(&left, &right);
+    getInternalApp()->getProject()->getFrameRange(&left, &right);
 
     return left;
 }
@@ -320,9 +320,9 @@ App::timelineGetLeftBound() const
 int
 App::timelineGetRightBound() const
 {
-    double left, right;
+    TimeValue left, right;
 
-    getInternalApp()->getFrameRange(&left, &right);
+    getInternalApp()->getProject()->getFrameRange(&left, &right);
 
     return right;
 }
@@ -515,13 +515,10 @@ App::refreshViewer(Effect* viewerNode, bool useCache)
     if (!viewer) {
         return;
     }
-    ViewerInstancePtr instance = viewer->getInternalViewerNode();
-    if (useCache) {
-        instance->renderCurrentFrame(false);
-    } else {
-        instance->forceFullComputationOnNextFrame();
-        instance->renderCurrentFrame(false);
+    if (!useCache) {
+        viewer->forceNextRenderWithoutCacheRead();
     }
+    viewer->getRenderEngine()->renderCurrentFrame();
 }
 
 Param*

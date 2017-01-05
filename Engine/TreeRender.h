@@ -163,12 +163,12 @@ public:
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
      **/
-    bool isAborted() const;
+    bool isRenderAborted() const;
 
     /**
      * @brief Set this render as aborted, cannot be reversed. This is called when the function GenericSchedulerThread::abortThreadedTask() is called
      **/
-    void setAborted();
+    void setRenderAborted();
 
     /**
      * @brief Returns whether this render is part of a playback render or just a single render

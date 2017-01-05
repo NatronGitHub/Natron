@@ -132,7 +132,7 @@ fillCPUBlack(void* ptrs[4],
         // memset for each scan-line
         for (int y = roi.y1; y < roi.y2; ++y) {
 
-            if (renderArgs && renderArgs->isAborted()) {
+            if (renderArgs && renderArgs->isRenderAborted()) {
                 return;
             }
 
@@ -181,7 +181,7 @@ fillForDepthForComponents(void* ptrs[4],
 
     for (int y = roi.y1; y < roi.y2; ++y) {
 
-        if (renderArgs && renderArgs->isAborted()) {
+        if (renderArgs && renderArgs->isRenderAborted()) {
             return;
         }
 

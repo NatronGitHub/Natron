@@ -85,6 +85,8 @@ struct TileCacheFile
     std::vector<bool> usedTiles;
 };
 
+
+
 struct CacheBucket;
 
 /**
@@ -93,20 +95,81 @@ struct CacheBucket;
  * Mainly this is to avoid multiple threads from computing the same image at once.
  **/
 struct CacheEntryLockerPrivate;
-class CacheEntryLocker
+class CacheEntryLocker;
+typedef boost::shared_ptr<CacheEntryLocker> CacheEntryLockerPtr;
+typedef boost::weak_ptr<CacheEntryLocker> CacheEntryLockerWPtr;
+
+class CacheEntryLocker : public boost::enable_shared_from_this<CacheEntryLocker>
 {
+    // For create
+    friend class Cache;
+
+    CacheEntryLocker(const CachePtr& cache, const CacheEntryKeyBasePtr& key);
+
+    static CacheEntryLockerPtr create(const CachePtr& cache, const CacheEntryKeyBasePtr& key);
+
+
 public:
 
-    CacheEntryLocker(U64 hash, CacheBucket* bucket);
+    enum CacheEntryStatusEnum
+    {
+        // The entry is cached and may be retrieved from 
+        eCacheEntryStatusCached,
+
+        // The entry was not cached and must be computed by this thread
+        // When computed it is expected that this thread calls CacheEntryLocker::insert()
+        // when done.
+        eCacheEntryStatusMustCompute,
+
+        // The entry was not cached but another thread is already computing it
+        // This thread should wait
+        eCacheEntryStatusComputationPending
+    };
+
 
     ~CacheEntryLocker();
 
+    /**
+     * @brief Returns the cache entry status
+     **/
+    CacheEntryStatusEnum getStatus() const;
+
+    /**
+     * @brief If the status is set to eCacheEntryStatusCached then this functino
+     * returns the resulting cached entry
+     **/
+    CacheEntryBasePtr getCachedEntry() const;
+
+    /**
+     * @brief If the entry status was eCacheEntryStatusMustCompute, it should be called
+     * to insert the results into the cache. This will also set the status to eCacheEntryStatusCached
+     * and threads waiting for this entry will be woken up and should have it available.
+     **/
+    void insertInCache(const CacheEntryBasePtr& value);
+
+    /**
+     * @brief If the status was eCacheEntryStatusComputationPending, this waits for the results
+     * to be available by another thread that called insert(). 
+     * If results are ready when woken up
+     * the status will become eCacheEntryStatusCached and the results can be fetched with getCachedEntry().
+     * If the status can still not be found in the cache and no other threads is computing it, the status
+     * will become eCacheEntryStatusMustCompute and it is expected that this thread computes the entry in turn.
+     **/
+    CacheEntryStatusEnum waitForPendingEntry();
+
+    /**
+     * @brief Returns the number of CacheEntryLocker alive in the application that are interested in the value associated
+     * to the given key. This number is set to 1 if only this object is alive.
+     **/
+    int getNumberOfLockersInterestedByPendingResults() const;
+
 private:
+
+    void init();
 
     boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };
 
-typedef boost::shared_ptr<CacheEntryLocker> CacheEntryLockerPtr;
 
 struct CachePrivate;
 class Cache
@@ -118,9 +181,17 @@ class Cache
     Q_OBJECT
     GCC_DIAG_SUGGEST_OVERRIDE_ON
 
+    // For removeAllEntriesForPluginBlocking
     friend class CacheCleanerThread;
+
+    // For allocTile, freeTile etc...
     friend class MemoryMappedCacheEntry;
+
+    // For notifyEntryAllocated, etc...
     friend class MemoryBufferedCacheEntryBase;
+
+    // For insert()
+    friend class CacheEntryLocker;
     
 private:
 
@@ -128,6 +199,10 @@ private:
 
 public:
 
+    /**
+     * @brief Create a new instance of a cache. There should be a single Cache across the application as it
+     * better keeps track of allocated resources.
+     **/
     static CachePtr create();
     
     virtual ~Cache();
@@ -197,24 +272,14 @@ public:
 
     /**
      * @brief Look-up the cache for an entry whose key matches the given key.
-     * @returnValue This is set in output to the cache entry if it was found.
-     * The pointer must be valid otherwise this function always return false.
-     * If not found, the cache will lock the hash of
-     * the given key to this thread: if other threads try to call the get() function they 
-     * will wait until this thread releases the locker. 
-     * This way it is possible to let a chance to this thread to create the cache entry and
-     * to insert it in the cache so that others don't have to compute it.
-
-     * @returns True if found, false otherwise.
+     * This function return a cache entry locker object that itself indicate
+     * the CacheEntryLocker:CacheEntryStatusEnum of the entry. Depending
+     * on the status the thread must either call CacheEntryLocker::getCachedEntry()
+     * if results were found in cache, or compute the entry and then call CacheEntryLocker::insert()
+     * or just wait for another thread that is already computing the entry with
+     * CacheEntryLocker::waitForPendingEntry
      **/
-    bool get(const CacheEntryKeyBasePtr& key, CacheEntryBasePtr* returnValue, CacheEntryLockerPtr* locker) const;
-
-    /**
-     * @brief Insert an entry in the cache. The caller should have first called the get() function
-     * which should have returned a locker if the entry was not found. This same locker should be given to the insert functino
-     * and should be deleted as soon as this function returns.
-     **/
-    void insert(const CacheEntryBasePtr& value, const CacheEntryLockerPtr& locker);
+    CacheEntryLockerPtr get(const CacheEntryKeyBasePtr& key) const;
 
     /**
      * @brief Clears the cache of its last recently used entries so at least nBytesToFree are available for the given storage.
@@ -273,10 +338,6 @@ Q_SIGNALS:
     
 private:
 
-    /**
-     * @brief Used internally in the implementation of insert()
-     **/
-    void insertInternal(const CacheEntryBasePtr& value);
 
     /**
      * @brief Removes all cache entries for the given pluginID.
@@ -333,36 +394,6 @@ private:
 
 };
 
-/**
- * @brief Helper class to access the cache.
- * Construct an item with a given cache key.
- * Check the isCached() function. If it is not cache then
- * compute the entry and then set it on the CacheFetcher
- * using the setEntry function. The setEntry function
- * may only be called if isCached() returned a NULL item.
- * Whilst this item lives, it is guaranteed that no other
- * thread will try to compute the same entry.
- * If the entry is set using setEntry it will be inserted
- * in the cache in the destructor of this object.
- **/
-struct CacheFetcherPrivate;
-class CacheFetcher
-{
-
-public:
-
-    CacheFetcher(const CacheEntryKeyBasePtr& key);
-
-    ~CacheFetcher();
-
-    CacheEntryBasePtr isCached() const;
-
-    void setEntry(const CacheEntryBasePtr& entry);
-
-private:
-
-    boost::scoped_ptr<CacheFetcherPrivate> _imp;
-};
 
 
 NATRON_NAMESPACE_EXIT;

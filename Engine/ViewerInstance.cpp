@@ -208,17 +208,6 @@ ViewerInstance::getViewerNodeGroup() const
 
 
 
-OpenGLViewerI*
-ViewerInstance::getUiContext() const
-{
-    ViewerNodePtr group = getViewerNodeGroup();
-    if (!group) {
-        return 0;
-    }
-    return group->getUiContext();
-}
-
-
 std::string
 ViewerInstance::getInputLabel(int inputNb) const
 {
@@ -226,18 +215,6 @@ ViewerInstance::getInputLabel(int inputNb) const
     return inputNb == 0 ? "A" : "B";
 }
 
-void
-ViewerInstance::forceFullComputationOnNextFrame()
-{
-    // this is called by the GUI when the user presses the "Refresh" button.
-    // It set the flag forceRender to true, meaning no cache will be used.
-
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    QMutexLocker forceRenderLocker(&_imp->forceRenderMutex);
-    _imp->forceRender[0] = _imp->forceRender[1] = true;
-}
 
 void
 ViewerInstance::clearLastRenderedImage()
@@ -354,29 +331,6 @@ ViewerInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, co
 
 } // dettachOpenGLContext
 
-ActionRetCodeEnum
-ViewerInstance::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod)
-{
-
-} // getRegionOfDefinition
-
-ActionRetCodeEnum
-ViewerInstance::getRegionsOfInterest(TimeValue time,
-                                     const RenderScale & scale,
-                                     const RectD & renderWindow,
-                                     ViewIdx view,
-                                     const TreeRenderNodeArgsPtr& render,
-                                     RoIMap* ret)
-{
-
-} // getRegionsOfInterest
-
-
-ActionRetCodeEnum
-ViewerInstance::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results)
-{
-
-} // getFramesNeeded
 
 ActionRetCodeEnum
 ViewerInstance::render(const RenderActionArgs& args)

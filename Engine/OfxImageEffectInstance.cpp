@@ -1050,7 +1050,7 @@ OfxImageEffectInstance::abort()
     if (!currentRender) {
         return 0;
     }
-    return (int)currentRender->isAborted();
+    return (int)currentRender->isRenderAborted();
 }
 
 OFX::Host::Memory::Instance*

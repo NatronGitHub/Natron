@@ -176,10 +176,6 @@ public:
     
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
 
-    /**
-     * @brief Bypasses the cache so the next frame will be rendered fully
-     **/
-    void forceFullComputationOnNextFrame();
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
