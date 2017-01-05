@@ -171,26 +171,27 @@ DocumentationManager::handler(QHttpRequest *req,
                             args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
                             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
-                            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
-                            if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
-                                EffectInstPtr effectInstance = node->getEffectInstance();
-                                if ( effectInstance->isReader() ) {
-                                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
-
-                                    if (isReadNode) {
-                                        node = isReadNode->getEmbeddedReader();
-                                    }
-                                }
-                                if ( effectInstance->isWriter() ) {
-                                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
-
-                                    if (isWriteNode) {
-                                        node = isWriteNode->getEmbeddedWriter();
-                                    }
-                                }
-                            }
                             if (node) {
+                                // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
+                                if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                                    EffectInstPtr effectInstance = node->getEffectInstance();
+                                    if ( effectInstance->isReader() ) {
+                                        ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+
+                                        if (isReadNode) {
+                                            node = isReadNode->getEmbeddedReader();
+                                        }
+                                    }
+                                    if ( effectInstance->isWriter() ) {
+                                        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                                        if (isWriteNode) {
+                                            node = isWriteNode->getEmbeddedWriter();
+                                        }
+                                    }
+                                }
+
                                 QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
@@ -312,7 +313,7 @@ DocumentationManager::handler(QHttpRequest *req,
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
                         html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=%1'>%2</a></li>")
                                      .arg(plugID)
-                                     .arg( Plugin::makeLabelWithoutSuffix(plugName) ) );
+                                     .arg(plugName) );
                     }
                 }
                 html.append(groupBodyEnd);
