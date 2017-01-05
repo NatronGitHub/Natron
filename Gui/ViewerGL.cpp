@@ -905,150 +905,32 @@ ViewerGL::getZoomFactor() const
 }
 
 ///imageRoD is in PIXEL COORDINATES
-RectI
-ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel coordinates
-                                     const double par,
-                                     unsigned int mipMapLevel)
+RectD
+ViewerGL::getImageRectangleDisplayed()
 {
-    // MT-SAFE
+
     RectD visibleArea;
-    RectI ret;
+
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
+        QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
+        visibleArea.x1 =  topLeft.x();
+        visibleArea.y2 =  topLeft.y();
+        visibleArea.x2 = bottomRight.x();
+        visibleArea.y1 = bottomRight.y();
+    }
+
+
     ViewerNodePtr viewerNode = getInternalNode();
-    if (viewerNode->isFullFrameProcessingEnabled()) {
-        ret = imageRoDPixel;
-    } else {
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
-            visibleArea.x1 =  topLeft.x();
-            visibleArea.y2 =  topLeft.y();
-            QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
-            visibleArea.x2 = bottomRight.x();
-            visibleArea.y1 = bottomRight.y();
-        }
-
-        if (mipMapLevel != 0) {
-            // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-            visibleArea.toPixelEnclosing(mipMapLevel, par, &ret);
-        } else {
-            ret.x1 = std::floor(visibleArea.x1 / par);
-            ret.x2 = std::ceil(visibleArea.x2 / par);
-            ret.y1 = std::floor(visibleArea.y1);
-            ret.y2 = std::ceil(visibleArea.y2);
-        }
-
-        ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
-        if ( !ret.intersect(imageRoDPixel, &ret) ) {
-            ret.clear();
-        }
-
-    }
-
-    ///to clip against the user roi however clip it against the mipmaplevel of the zoomFactor+proxy
-
-    RectD userRoI = viewerNode->getUserRoI();
     bool userRoiEnabled = viewerNode->isUserRoIEnabled();
-
     if (userRoiEnabled) {
-        RectI userRoIpixel;
-
-        ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
-        userRoI.toPixelEnclosing(mipMapLevel, par, &userRoIpixel);
-
-        ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
-        if ( !ret.intersect(userRoIpixel, &ret) ) {
-            ret.clear();
-        }
+        RectD userRoI = viewerNode->getUserRoI();
+        visibleArea.intersect(userRoI, &visibleArea);
     }
 
-    return ret;
+    return visibleArea;
 } // ViewerGL::getImageRectangleDisplayed
-
-RectI
-ViewerGL::getExactImageRectangleDisplayed(int texIndex,
-                                          const RectD & rod,
-                                          const double par,
-                                          unsigned int mipMapLevel)
-{
-
-    bool clipToFormat = getInternalNode()->isClipToFormatEnabled();
-    RectD clippedRod;
-
-    if (clipToFormat) {
-        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
-    } else {
-        clippedRod = rod;
-    }
-
-    RectI bounds;
-    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
-    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
-
-    return roi;
-}
-
-RectI
-ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
-                                                      const RectD & rod,
-                                                      const double par,
-                                                      unsigned int mipMapLevel,
-                                                      std::vector<RectI>* tiles,
-                                                      std::vector<RectI>* tilesRounded,
-                                                      int *viewerTileSize,
-                                                      RectI* roiNotRounded)
-{
-    bool clipToFormat = getInternalNode()->isClipToFormatEnabled();
-    RectD clippedRod;
-
-    if (clipToFormat) {
-        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
-    } else {
-        clippedRod = rod;
-    }
-
-    RectI bounds;
-    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
-    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
-
-    ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
-    ////factor taken into account.
-    RectI texRect;
-    int tileSize = std::pow( 2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2() );
-    texRect.x1 = std::floor( ( (double)roi.x1 ) / tileSize ) * (double)tileSize;
-    texRect.y1 = std::floor( ( (double)roi.y1 ) / tileSize ) * (double)tileSize;
-    texRect.x2 = std::ceil( ( (double)roi.x2 ) / tileSize ) * (double)tileSize;
-    texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * (double)tileSize;
-
-    // Make sure the bounds of the area to render in the texture lies in the bounds
-    if (roiNotRounded) {
-        *roiNotRounded = roi;
-    }
-    if (tilesRounded) {
-        for (int y = texRect.y1; y < texRect.y2; y += tileSize) {
-            int y2 = std::min(y + tileSize, texRect.y2);
-            for (int x = texRect.x1; x < texRect.x2; x += tileSize) {
-                tilesRounded->resize(tilesRounded->size() + 1);
-                RectI& tile = tilesRounded->back();
-                tile.x1 = x;
-                tile.x2 = std::min(x + tileSize, texRect.x2);
-                tile.y1 = y;
-                tile.y2 = y2;
-
-                if (tiles) {
-                    RectI tileRectRounded;
-                    tile.intersect(bounds, &tileRectRounded);
-                    tiles->push_back(tileRectRounded);
-                }
-                assert( texRect.contains(tile) );
-            }
-        }
-    }
-
-    if (viewerTileSize) {
-        *viewerTileSize = tileSize;
-    }
-    return texRect;
-}
 
 int
 ViewerGL::isExtensionSupported(const char *extension)

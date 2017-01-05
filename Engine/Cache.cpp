@@ -997,7 +997,7 @@ TileCacheFilePtr
 Cache::allocTile(std::size_t *dataOffset) 
 {
 
-#pragma message WARN("Also split the tileCacheMutex across all cache buckets")
+#pragma message WARN("Also split the tileCacheMutex across all cache buckets and handle the cache files allocated chunks by bucket")
     QMutexLocker k(&_imp->tileCacheMutex);
 
     // First, search for a file with available space.

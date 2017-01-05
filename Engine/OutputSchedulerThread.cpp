@@ -2253,7 +2253,7 @@ public:
         args->proxyScale = RenderScale(1.);
 
         // Render the RoD
-        args->canonicalRoI = &inArgs->roi;
+        args->canonicalRoI = inArgs->roi.isNull() ? 0 : &inArgs->roi;
         args->stats = inArgs->stats;
         args->draftMode = inArgs->isDraftModeEnabled;
         args->playback = inArgs->isPlayback;
@@ -2268,11 +2268,11 @@ public:
 
     }
 
-    static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled)
+    static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled, bool fullFrameProcessing)
     {
 
 
-        if (viewer->isFullFrameProcessingEnabled()) {
+        if (fullFrameProcessing) {
             return 0;
         }
 
@@ -2331,9 +2331,15 @@ public:
 
         outArgs->resize(2);
 
+        bool fullFrameProcessing = viewer->isFullFrameProcessingEnabled();
         bool draftModeEnabled = viewer->getApp()->isDraftRenderEnabled();
-        unsigned int mipMapLevel = getViewerMipMapLevel(viewer, draftModeEnabled);
+        unsigned int mipMapLevel = getViewerMipMapLevel(viewer, draftModeEnabled, fullFrameProcessing);
         bool byPassCache = viewer->isRenderWithoutCacheEnabledAndTurnOff();
+
+        RectD roi;
+        if (!fullFrameProcessing) {
+            roi = viewer->getUiContext()->getImageRectangleDisplayed();
+        }
 
         for (int i = 0; i < 2; ++i) {
             (*outArgs)[i].reset(new RenderViewerProcessFunctorArgs());
@@ -2341,6 +2347,7 @@ public:
             (*outArgs)[i]->isDraftModeEnabled = draftModeEnabled;
             (*outArgs)[i]->viewerMipMapLevel = mipMapLevel;
             (*outArgs)[i]->byPassCache = byPassCache;
+            (*outArgs)[i]->roi = roi;
             (*outArgs)[i]->stats = stats;
             (*outArgs)[i]->time = time;
             (*outArgs)[i]->view = viewsToRender[0];
