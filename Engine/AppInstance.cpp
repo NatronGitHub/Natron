@@ -1491,10 +1491,10 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
-        Q_FOREACH(const QString &category, groups) {
+        Q_FOREACH(const QString &group, groups) {
             QString plugMD;
 
-            plugMD.append( category );
+            plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
             plugMD.append( QString::fromUtf8("\n==========\n\n") );
             plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
@@ -1502,14 +1502,14 @@ AppInstance::exportDocs(const QString path)
 
             Q_FOREACH(const QStringList &currPlugin, plugins) {
                 if (currPlugin.size() == 3) {
-                    if ( category == currPlugin.at(0) ) {
+                    if ( group == currPlugin.at(0) ) {
                         plugMD.append( QString::fromUtf8("    plugins/") + currPlugin.at(1) + QString::fromUtf8(".rst\n") );
                     }
                 }
             }
-            groupMD.append( QString::fromUtf8("    _group") + category + QString::fromUtf8(".rst\n") );
+            groupMD.append( QString::fromUtf8("    _group") + group + QString::fromUtf8(".rst\n") );
 
-            QFile plugFile( path + QString::fromUtf8("/_group") + category + QString::fromUtf8(".rst") );
+            QFile plugFile( path + QString::fromUtf8("/_group") + group + QString::fromUtf8(".rst") );
             plugMD.append( QString::fromUtf8("\n") );
             if ( plugFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
                 QTextStream out(&plugFile);

@@ -295,12 +295,12 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<p>%2</p>"
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
-                                         .arg( tr( group.toUtf8().constData() ) )
+                                         .arg( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) )
                                          .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
  
                                                );
                 html.append(groupHeader);
-                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), group);
+                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
                 html.append(navHeader);
                 html.append( QString::fromUtf8("<li><a href=\"/_group.html\">%1</a> &raquo;</li>")
                              .arg( tr("Reference Guide") ) );
@@ -370,7 +370,7 @@ DocumentationManager::handler(QHttpRequest *req,
             for (int i = 0; i < groups.size(); ++i) {
                 html.append( QString::fromUtf8("<li class='toctree-l1'><a href='/_group.html?id=%1'>%2</a></li>")
                              .arg( groups.at(i) )
-                             .arg( tr( groups.at(i).toUtf8().constData() ) )
+                             .arg( tr("%1 nodes").arg( tr( groups.at(i).toUtf8().constData() ) ) )
                              );
             }
             html.append(groupBodyEnd);
