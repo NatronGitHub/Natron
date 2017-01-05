@@ -175,19 +175,20 @@ DocumentationManager::handler(QHttpRequest *req,
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
                             if (node) {
                                 // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
-                                EffectInstancePtr effectInstance = node->getEffectInstance();
-                                if ( effectInstance->isReader() ) {
-                                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+                                if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                                    EffectInstancePtr effectInstance = node->getEffectInstance();
+                                    if ( effectInstance->isReader() ) {
+                                        ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                                    if (isReadNode) {
-                                        node = isReadNode->getEmbeddedReader();
-                                    }
-                                }
-                                if ( effectInstance->isWriter() ) {
-                                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+                                        if (isReadNode) {
+                                            node = isReadNode->getEmbeddedReader();
+                                        }                                    }
+                                    if ( effectInstance->isWriter() ) {
+                                        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                                    if (isWriteNode) {
-                                        node = isWriteNode->getEmbeddedWriter();
+                                        if (isWriteNode) {
+                                            node = isWriteNode->getEmbeddedWriter();
+                                        }
                                     }
                                 }
                                 QString html = node->makeDocumentation(true);
