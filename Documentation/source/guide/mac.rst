@@ -1,13 +1,13 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
    
-Mac OS X
-========
+macOS
+=====
 
 .. toctree::
    :maxdepth: 2
 
-This chapter will guide your through the installation of Natron on Mac OS X.
+This chapter will guide your through the installation of Natron on macOS (formerly known as Mac OS X or OS X).
 
 Requirements
 ------------
