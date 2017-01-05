@@ -39,10 +39,12 @@
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
-#include "Engine/Node.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
+#include "Engine/WriteNode.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -169,7 +171,23 @@ DocumentationManager::handler(QHttpRequest *req,
                             args.setProperty<bool>(kCreateNodeArgsPropOutOfProject, true);
                             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
+                            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
+                            EffectInstPtr effectInstance = node->getEffectInstance();
+                            if ( effectInstance->isReader() ) {
+                                ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+
+                                if (isReadNode) {
+                                    node = isReadNode->getEmbeddedReader();
+                                }
+                            }
+                            if ( effectInstance->isWriter() ) {
+                                WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                                if (isWriteNode) {
+                                    node = isWriteNode->getEmbeddedWriter();
+                                }
+                            }
                             if (node) {
                                 QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
@@ -247,7 +265,9 @@ DocumentationManager::handler(QHttpRequest *req,
             }
         }
         if ( !group.isEmpty() ) {
-            QVector<QStringList> plugins;
+            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
+
+            QMap<QString, QString> plugins; // use a map so that it gets sorted by label
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
@@ -257,13 +277,13 @@ DocumentationManager::handler(QHttpRequest *req,
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                 }
-
-                if (plugin) {
+                if  ( plugin->getPluginLabel() == QString::fromUtf8("ReadOIIO")) {
+                    qDebug() << "bla";
+                }
+                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
                     QStringList groupList = plugin->getGrouping();
                     if (groupList.at(0) == group) {
-                        QStringList result;
-                        result << pluginID << plugin->getPluginLabel();
-                        plugins.append(result);
+                        plugins[Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() )] = pluginID;
                     }
                 }
             }
@@ -276,8 +296,8 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
                                          .arg( tr( group.toUtf8().constData() ) )
-                                         .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
-                                                )
+                                         .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
+ 
                                                );
                 html.append(groupHeader);
                 html.replace(QString::fromUtf8("__REPLACE_TITLE__"), group);
@@ -287,17 +307,13 @@ DocumentationManager::handler(QHttpRequest *req,
                 html.append(navFooter);
                 html.append(groupBodyStart);
 
-                for (int i = 0; i < plugins.size(); ++i) {
-                    QStringList pluginInfo = plugins.at(i);
-                    QString plugID, plugName;
-                    if (pluginInfo.length() == 2) {
-                        plugID = pluginInfo.at(0);
-                        plugName = pluginInfo.at(1);
-                    }
+                for (QMap<QString, QString>::const_iterator i = plugins.constBegin(); i != plugins.constEnd(); ++i) {
+                    const QString& plugID = i.value();
+                    const QString& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
                         html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=%1'>%2</a></li>")
                                      .arg(plugID)
-                                     .arg(plugName) );
+                                     .arg( Plugin::makeLabelWithoutSuffix(plugName) ) );
                     }
                 }
                 html.append(groupBodyEnd);

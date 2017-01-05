@@ -1392,10 +1392,23 @@ void
 AppInstance::exportDocs(const QString path)
 {
     if ( !path.isEmpty() ) {
-        QStringList categories;
+        QStringList groups;
+        groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+        groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+        groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+        groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
+        groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+        groups << QString::fromUtf8("Extra"); // openfx-arena
         QVector<QStringList> plugins;
 
         // Generate a MD for each plugin
+        // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_group.html"
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
@@ -1403,56 +1416,70 @@ AppInstance::exportDocs(const QString path)
                 Plugin* plugin = 0;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                if (plugin) {
-                    if (!plugin->getIsForInternalUseOnly() ) {
-                        QStringList groups = plugin->getGrouping();
-                        categories << groups.at(0);
-                        QStringList plugList;
-                        plugList << plugin->getGrouping().at(0) << pluginID << plugin->getPluginLabel();
-                        plugins << plugList;
-                        CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
-                        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-                        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
-                        args.setProperty(kCreateNodeArgsPropSilent, true);
-                        qDebug() << pluginID;
-                        NodePtr node = createNode(args);
-                        if (node) {
-                            QDir mdDir(path);
-                            if ( !mdDir.exists() ) {
-                                mdDir.mkpath(path);
-                            }
+                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
+                    QStringList groups = plugin->getGrouping();
+                    groups << groups.at(0);
+                    QStringList plugList;
+                    plugList << plugin->getGrouping().at(0) << pluginID << Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() );
+                    plugins << plugList;
+                    CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
+                    args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+                    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+                    args.setProperty(kCreateNodeArgsPropSilent, true);
+                    qDebug() << pluginID;
+                    // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_plugin.html"
+                    NodePtr node = createNode(args);
+                    EffectInstPtr effectInstance = node->getEffectInstance();
+                    if ( effectInstance->isReader() ) {
+                        ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                            mdDir.mkdir(QLatin1String("plugins"));
-                            mdDir.cd(QLatin1String("plugins"));
+                        if (isReadNode) {
+                            node = isReadNode->getEmbeddedReader();
+                        }
+                    }
+                    if ( effectInstance->isWriter() ) {
+                        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                            QFile imgFile( plugin->getIconFilePath() );
-                            if ( imgFile.exists() ) {
-                                QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
-                                if (QFile::exists(dstPath)) {
-                                    QFile::remove(dstPath);
-                                }
-                                if ( !imgFile.copy(dstPath) ) {
-                                    std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
-                                }
-                            }
+                        if (isWriteNode) {
+                            node = isWriteNode->getEmbeddedWriter();
+                        }
+                    }
+                    if (node) {
+                        QDir mdDir(path);
+                        if ( !mdDir.exists() ) {
+                            mdDir.mkpath(path);
+                        }
 
-                            QString md = node->makeDocumentation(false);
-                            QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
-                            if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
-                                QTextStream out(&mdFile);
-                                out << md;
-                                mdFile.close();
-                            } else {
-                                std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
+                        mdDir.mkdir(QLatin1String("plugins"));
+                        mdDir.cd(QLatin1String("plugins"));
+
+                        QFile imgFile( plugin->getIconFilePath() );
+                        if ( imgFile.exists() ) {
+                            QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
+                            if (QFile::exists(dstPath)) {
+                                QFile::remove(dstPath);
                             }
+                            if ( !imgFile.copy(dstPath) ) {
+                                std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
+                            }
+                        }
+
+                        QString md = node->makeDocumentation(false);
+                        QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
+                        if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
+                            QTextStream out(&mdFile);
+                            out << md;
+                            mdFile.close();
+                        } else {
+                            std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
                         }
                     }
                 }
             }
         }
 
-        // Generate RST for plugin categories
-        categories.removeDuplicates();
+        // Generate RST for plugin groups
+        groups.removeDuplicates();
         QString groupMD;
         groupMD.append( tr("Reference") );
         groupMD.append( QString::fromUtf8("\n") );
@@ -1462,7 +1489,7 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
-        Q_FOREACH(const QString &category, categories) {
+        Q_FOREACH(const QString &category, groups) {
             QString plugMD;
 
             plugMD.append( category );

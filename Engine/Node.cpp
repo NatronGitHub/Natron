@@ -4344,7 +4344,7 @@ Node::makeDocumentation(bool genHTML) const
             }
         } else {
             pluginID = _imp->plugin->getPluginID();
-            pluginLabel =  _imp->plugin->getPluginLabel();
+            pluginLabel =  Plugin::makeLabelWithoutSuffix( _imp->plugin->getPluginLabel() );
             pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
             pluginIcon = _imp->plugin->getIconFilePath();
             pluginGroup = _imp->plugin->getGrouping();
