@@ -1,11 +1,11 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
    
-Stereoscopic
-============
+Stereoscopic compositing
+========================
 
-Import
-------
+Importing stereoscopic sequences
+--------------------------------
 
 When creating a new project in Natron, by default there is a single view present. It is called the “Main” view.
 
@@ -50,8 +50,8 @@ In Natron you can join different simple-view files to a multiple-view stream by 
 
 .. image:: _images/multiview12.png
 
-Export
-------
+Exporting stereoscopic sequences
+--------------------------------
 
 Exporting multi-view files in Natron can be done multiple ways: Either you want to have a separate file for each view, or you want all views to be in the same file. The later is only supported by the EXR file format.
 When exporting to EXR, the Write node properties panel will have an extra “Views” parameter:
