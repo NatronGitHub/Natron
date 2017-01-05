@@ -322,6 +322,19 @@ DocumentationManager::handler(QHttpRequest *req,
             html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("%1 preferences").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) ) );
 
             QStringList groups;
+            groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
+            groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+            groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+            groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+            groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
+            groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
+            groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+            groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+            groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+            groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
+            groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+            groups << QString::fromUtf8("Extra"); // openfx-arena
+
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
