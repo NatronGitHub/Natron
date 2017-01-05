@@ -291,12 +291,15 @@ getAmountFreePhysicalRAM()
     mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
     vm_statistics_data_t vmstat;
     host_name_port_t hostName = mach_host_self();
-    if ( KERN_SUCCESS != host_statistics(hostName, HOST_VM_INFO, (host_info_t)&vmstat, &count) ) {
-        throw std::runtime_error("Unable to get amount of free physical RAM");
+    kern_return_t kr;
+    kr = host_statistics(hostName, HOST_VM_INFO, (host_info_t)&vmstat, &count);
+    if (kr != KERN_SUCCESS) {
+        throw std::runtime_error(std::string("Unable to get amount of free physical RAM") + " host_statistics returned " + mach_error_string(kr));
     }
     vm_size_t pageSize;
-    if ( KERN_SUCCESS != host_page_size(hostName, &pageSize) ) {
-        throw std::runtime_error("Unable to get amount of free physical RAM");
+    kr = host_page_size(hostName, &pageSize);
+    if (kr != KERN_SUCCESS) {
+        throw std::runtime_error(std::string("Unable to get amount of free physical RAM") + " host_page_size returned " + mach_error_string(kr));
     }
 
     /**
