@@ -1274,10 +1274,23 @@ void
 AppInstance::exportDocs(const QString path)
 {
     if ( !path.isEmpty() ) {
-        QStringList categories;
+        QStringList groups;
+        groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+        groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+        groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+        groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
+        groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+        groups << QString::fromUtf8("Extra"); // openfx-arena
         QVector<QStringList> plugins;
 
         // Generate a MD for each plugin
+        // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_group.html"
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
@@ -1288,18 +1301,23 @@ AppInstance::exportDocs(const QString path)
             if (!plugin) {
                 continue;
             }
-            if (plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly) ) {
+            if (plugin->getProperty<bool>(kNatronPluginPropIsDeprecated) ) {
+                continue;
+            }
+            if (!ReadNode::isBundledReader(*it) &&
+                !WriteNode::isBundledWriter(*it) &&
+                plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly) ) {
                 continue;
             }
 
 
-            std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            std::vector<std::string> grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
 
-            QString group0 = QString::fromUtf8(groups[0].c_str());
-            categories.push_back(group0);
+            QString group0 = QString::fromUtf8(grouping[0].c_str());
+            groups.push_back(group0);
 
             QStringList plugList;
-            plugList << group0  << pluginID << QString::fromUtf8(plugin->getPluginLabel().c_str());
+            plugList << group0  << pluginID << QString::fromUtf8( Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() ).c_str() );
             plugins << plugList;
             CreateNodeArgsPtr args(CreateNodeArgs::create(pluginID.toStdString(), NodeCollectionPtr() ));
             args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
@@ -1308,6 +1326,22 @@ AppInstance::exportDocs(const QString path)
             qDebug() << pluginID;
             NodePtr node = createNode(args);
             if (node) {
+                // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_plugin.html"
+                EffectInstancePtr effectInstance = node->getEffectInstance();
+                if ( effectInstance->isReader() ) {
+                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+
+                    if (isReadNode) {
+                        node = isReadNode->getEmbeddedReader();
+                    }
+                }
+                if ( effectInstance->isWriter() ) {
+                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                    if (isWriteNode) {
+                        node = isWriteNode->getEmbeddedWriter();
+                    }
+                }
                 QDir mdDir(path);
                 if ( !mdDir.exists() ) {
                     mdDir.mkpath(path);
@@ -1340,8 +1374,8 @@ AppInstance::exportDocs(const QString path)
         }
 
 
-        // Generate RST for plugin categories
-        categories.removeDuplicates();
+        // Generate RST for plugin groups
+        groups.removeDuplicates();
         QString groupMD;
         groupMD.append( tr("Reference") );
         groupMD.append( QString::fromUtf8("\n") );
@@ -1351,7 +1385,7 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
-        Q_FOREACH(const QString &category, categories) {
+        Q_FOREACH(const QString &category, groups) {
             QString plugMD;
 
             plugMD.append( category );
