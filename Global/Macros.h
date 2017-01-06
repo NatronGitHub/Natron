@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,8 +76,8 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_NAMESPACE_ANONYMOUS_ENTER namespace {
 #define NATRON_NAMESPACE_ANONYMOUS_EXIT }
 
-#define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
-#define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
+#define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal video compositing software."
+#define NATRON_COPYRIGHT "Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
