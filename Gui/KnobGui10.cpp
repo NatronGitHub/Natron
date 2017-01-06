@@ -664,7 +664,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                 }
 
                 if (isMarkdown) {
-                    exprTt = QString::fromUtf8("%1 **%2**\n\n").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ) );
+                    exprTt = QString::fromUtf8("%1 **%2**\n\n").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ).trimmed() );
                 } else {
                     exprTt = QString::fromUtf8("<br />%1 <b>%2</b>").arg(prefix).arg( QString::fromUtf8( linkString[0].first.c_str() ) );
                 }
@@ -686,7 +686,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                 }
              
                 if (isMarkdown) {
-                    toAppend = QString::fromUtf8("%1 **%2**\n\n").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ) );
+                    toAppend = QString::fromUtf8("%1 **%2**\n\n").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ).trimmed() );
                 } else {
                     toAppend = QString::fromUtf8("<br />%1 <b>%2</b>").arg( prefix ).arg( QString::fromUtf8( linkString[i].first.c_str() ) );
                 }

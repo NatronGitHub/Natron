@@ -1378,6 +1378,7 @@ AppInstance::exportDocs(const QString path)
         // IMPORTANT: this code is *very* similar to DocumentationManager::handler in the "_group.html" section
         groups.removeDuplicates();
         QString groupMD;
+        groupMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
         groupMD.append( tr("Reference Guide") );
         groupMD.append( QString::fromUtf8("\n") );
         groupMD.append( QString::fromUtf8("=========\n\n") );

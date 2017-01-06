@@ -8,7 +8,11 @@
 Natron documentation
 ====================
 
-.. note:: This documentation is work-in-progress, if you want to contribute read :ref:`writeDocumentation`.
+The Natron documentation is organized as follows:
+
+- The :ref:`user-guide` contains everything to get started with Natron, including tutorials.
+- The :ref:`reference-guide` contains the documentation about the user settings in Natron, as well as the documentation
+- The :ref:`developers-guide` contains documentation about using the Python scripting language within Natron, and using the Natron command-line interface (a.k.a. NatronRenderer).
 
 Contents:
 
@@ -16,6 +20,6 @@ Contents:
     :maxdepth: 2
 
     guide/index.rst
-    devel/index.rst
     _group.rst
+    devel/index.rst
 
