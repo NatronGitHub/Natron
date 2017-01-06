@@ -141,8 +141,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 static MetaTypesRegistration registration;
 struct RenderThread
 {
-    RenderThreadTask* thread;
-    bool active;
+    RenderThreadTask* runnable;
 };
 
 typedef std::list<RenderThread> RenderThreads;
@@ -387,8 +386,7 @@ struct OutputSchedulerThreadPrivate
     {
         assert( !renderThreadsMutex.tryLock() );
         RenderThread r;
-        r.thread = runnable;
-        r.active = true;
+        r.runnable = runnable;
         renderThreads.push_back(r);
         QThreadPool::globalInstance()->start(runnable);
     }
@@ -398,7 +396,7 @@ struct OutputSchedulerThreadPrivate
         // Private shouldn't lock
         assert( !renderThreadsMutex.tryLock() );
         for (RenderThreads::iterator it = renderThreads.begin(); it != renderThreads.end(); ++it) {
-            if (it->thread == runnable) {
+            if (it->runnable == runnable) {
                 return it;
             }
         }
@@ -675,7 +673,6 @@ OutputSchedulerThread::notifyThreadAboutToQuit(RenderThreadTask* thread)
     RenderThreads::iterator found = _imp->getRunnableIterator(thread);
 
     if ( found != _imp->renderThreads.end() ) {
-        found->active = false;
         _imp->renderThreads.erase(found);
         _imp->allRenderThreadsInactiveCond.wakeOne();
     }
@@ -1060,13 +1057,7 @@ OutputSchedulerThread::onAbortRequested(bool /*keepOldestRender*/)
     {
         QMutexLocker l(&_imp->renderThreadsMutex);
         for (RenderThreads::iterator it = _imp->renderThreads.begin(); it != _imp->renderThreads.end(); ++it) {
-            AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(it->thread);
-            if (isAbortableThread) {
-                TreeRenderPtr render =isAbortableThread->getCurrentRender();
-                if (render) {
-                    render->setRenderAborted();
-                }
-            }
+            it->runnable->abortRender();
         }
     }
 
@@ -1744,6 +1735,12 @@ DefaultScheduler::~DefaultScheduler()
 class DefaultRenderFrameRunnable
     : public RenderThreadTask
 {
+
+protected:
+
+    mutable QMutex renderObjectsMutex;
+    std::list<TreeRenderPtr> renderObjects;
+
 public:
 
 
@@ -1754,6 +1751,8 @@ public:
                                const bool useRenderStats,
                                const std::vector<ViewIdx>& viewsToRender)
         : RenderThreadTask(writer, scheduler, time, useRenderStats, viewsToRender)
+        , renderObjectsMutex()
+        , renderObjects()
     {
     }
 
@@ -1761,6 +1760,14 @@ public:
 
     virtual ~DefaultRenderFrameRunnable()
     {
+    }
+
+    virtual void abortRender() OVERRIDE
+    {
+        QMutexLocker k(&renderObjectsMutex);
+        for (std::list<TreeRenderPtr>::const_iterator it = renderObjects.begin(); it != renderObjects.end(); ++it) {
+            (*it)->setRenderAborted();
+        }
     }
 
 private:
@@ -1821,7 +1828,7 @@ private:
 
 protected:
 
-    static ActionRetCodeEnum renderFrameInternal(NodePtr outputNode,
+    ActionRetCodeEnum renderFrameInternal(NodePtr outputNode,
                                                  TimeValue time,
                                                  ViewIdx view,
                                                  const RenderStatsPtr& stats,
@@ -1869,6 +1876,10 @@ protected:
         ActionRetCodeEnum retCode = eActionStatusFailed;
         TreeRenderPtr render = TreeRender::create(args);
         if (render) {
+            {
+                QMutexLocker k(&renderObjectsMutex);
+                renderObjects.push_back(render);
+            }
             retCode = render->launchRender(planes);
         }
 
@@ -1884,7 +1895,7 @@ private:
 
     virtual void renderFrame(TimeValue time,
                              const std::vector<ViewIdx>& viewsToRender,
-                             bool enableRenderStats)
+                             bool enableRenderStats) OVERRIDE
     {
         NodePtr outputNode = _imp->output.lock();
         assert(outputNode);
@@ -2195,6 +2206,7 @@ typedef boost::shared_ptr<ViewerRenderBufferableObject> ViewerRenderBufferableOb
 struct RenderViewerProcessFunctorArgs
 {
     NodePtr viewerProcessNode;
+    TreeRenderPtr renderObject;
     TimeValue time;
     ViewIdx view;
     RenderStatsPtr stats;
@@ -2236,7 +2248,7 @@ public:
 public:
 
 
-    static void renderViewerProcessInThread(const RenderViewerProcessFunctorArgsPtr& inArgs)
+    static void createRenderViewerObject(const RenderViewerProcessFunctorArgsPtr& inArgs)
     {
         TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
         args->treeRoot = inArgs->viewerProcessNode;
@@ -2260,12 +2272,14 @@ public:
         args->byPassCache = inArgs->byPassCache;
 
         inArgs->retCode = eActionStatusFailed;
-        TreeRenderPtr render = TreeRender::create(args);
-        if (render) {
-            inArgs->retCode = render->launchRender(&inArgs->planes);
-        }
+        inArgs->renderObject = TreeRender::create(args);
 
+    }
 
+    static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs)
+    {
+        assert(inArgs->renderObject);
+        inArgs->retCode = inArgs->renderObject->launchRender(&inArgs->planes);
     }
 
     static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled, bool fullFrameProcessing)
@@ -2321,12 +2335,12 @@ public:
         return mipMapLevel;
     } // getViewerMipMapLevel
 
-    static void renderViewerProcessNodesInSplitThreads(const ViewerNodePtr& viewer,
-                                                       TimeValue time,
-                                                       const std::vector<ViewIdx>& viewsToRender,
-                                                       bool isPlayback,
-                                                       const RenderStatsPtr& stats,
-                                                       std::vector<RenderViewerProcessFunctorArgsPtr>* outArgs)
+    static void createRenderViewerObjectForAllInputs(const ViewerNodePtr& viewer,
+                                                     TimeValue time,
+                                                     ViewIdx view,
+                                                     bool isPlayback,
+                                                     const RenderStatsPtr& stats,
+                                                     std::vector<RenderViewerProcessFunctorArgsPtr>* outArgs)
     {
 
         outArgs->resize(2);
@@ -2350,14 +2364,11 @@ public:
             (*outArgs)[i]->roi = roi;
             (*outArgs)[i]->stats = stats;
             (*outArgs)[i]->time = time;
-            (*outArgs)[i]->view = viewsToRender[0];
+            (*outArgs)[i]->view = view;
             (*outArgs)[i]->viewerProcessNode = viewer->getViewerProcessNode(i)->getNode();
+            createRenderViewerObject((*outArgs)[i]);
+
         }
-
-        QFuture<void> processBFuture = QtConcurrent::run(&renderViewerProcessInThread, (*outArgs)[1]);
-
-        renderViewerProcessInThread((*outArgs)[0]);
-        processBFuture.waitForFinished();
     }
     
 private:
@@ -2372,40 +2383,65 @@ private:
             stats.reset( new RenderStats(enableRenderStats) );
         }
 
-        // The viewer can only render a single view at once
-        assert(viewsToRender.size() == 1);
+        for (std::size_t i = 0; i < viewsToRender.size(); ++i) {
 
-        // Render both viewer processes in 2 threads. One in this thread, the other in a spawned thread
-        std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-        renderViewerProcessNodesInSplitThreads(_viewer, time, viewsToRender, true /*isPlayback*/, stats, &processArgs);
+            // Render both viewer processes arguments
+            std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
+            createRenderViewerObjectForAllInputs(_viewer, time, viewsToRender[i], true /*isPlayback*/, stats, &processArgs);
+            assert(processArgs.size() == 2);
 
-        for (int i = 0; i < 2; ++i) {
-
-            // All other status code should not show an error
-            if (processArgs[i]->retCode == eActionStatusFailed || processArgs[i]->retCode == eActionStatusOutOfMemory) {
-                _imp->scheduler->notifyRenderFailure(processArgs[i]->retCode, std::string());
-                break;
+            // Register the renders so that they can be aborted in abortRenders()
+            {
+                QMutexLocker k(&renderObjectsMutex);
+                for (int i = 0; i < 2; ++i) {
+                    if (processArgs[i]->renderObject) {
+                        renderObjects.push_back(processArgs[i]->renderObject);
+                    }
+                }
             }
-        }
 
-        ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
-        bufferObject->view = viewsToRender[0];
-        for (int i = 0; i < 2; ++i) {
-            if (processArgs[i]->planes.empty()) {
-                continue;
+            // Launch the 2nd viewer process in a separate thread
+            QFuture<void> processBFuture;
+            if (processArgs[1]) {
+                processBFuture = QtConcurrent::run(&launchRenderFunctor, processArgs[1]);
             }
-            assert(processArgs[i]->planes.size() == 1);
-            bufferObject->viewerProcessImages[i] = processArgs[i]->planes.begin()->second;
-        }
 
-        if (stats) {
-            getScheduler()->getEngine()->reportStats(time, viewsToRender[0], stats);
-        }
+            // Launch the 1st viewer process in this thread
+            if (processArgs[0]) {
+                launchRenderFunctor(processArgs[0]);
+            }
 
+            // Wait for the 2nd viewer process
+            processBFuture.waitForFinished();
 
-        // Notify the scheduler thread which will in turn call processFrame
-        _imp->scheduler->appendToBuffer(time, viewsToRender[0], stats, bufferObject);
+            // Check for failures
+            for (int i = 0; i < 2; ++i) {
 
+                // All other status code should not show an error
+                if (processArgs[i]->retCode == eActionStatusFailed || processArgs[i]->retCode == eActionStatusOutOfMemory) {
+                    _imp->scheduler->notifyRenderFailure(processArgs[i]->retCode, std::string());
+                    break;
+                }
+            }
+
+            ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
+            bufferObject->view = viewsToRender[i];
+            for (int i = 0; i < 2; ++i) {
+                if (processArgs[i]->planes.empty()) {
+                    continue;
+                }
+                assert(processArgs[i]->planes.size() == 1);
+                bufferObject->viewerProcessImages[i] = processArgs[i]->planes.begin()->second;
+            }
+
+            if (stats) {
+                getScheduler()->getEngine()->reportStats(time, viewsToRender[i], stats);
+            }
+            
+            
+            // Notify the scheduler thread which will in turn call processFrame
+            _imp->scheduler->appendToBuffer(time, viewsToRender[i], stats, bufferObject);
+        } // for all views
 
     } // renderFrame
 };
@@ -2674,7 +2710,7 @@ RenderEngine::renderCurrentFrameNowInternal(bool enableRenderStats)
         _imp->currentFrameScheduler = new ViewerCurrentFrameRequestScheduler(output);
     }
 
-    _imp->currentFrameScheduler->renderCurrentFrame(enableRenderStats, true/*canAbort*/);
+    _imp->currentFrameScheduler->renderCurrentFrame(enableRenderStats);
 }
 
 
@@ -2759,9 +2795,9 @@ RenderEngine::abortRenderingInternal(bool keepOldestRender)
 }
 
 bool
-RenderEngine::abortRenderingNoRestart(bool keepOldestRender)
+RenderEngine::abortRenderingNoRestart()
 {
-    if ( abortRenderingInternal(keepOldestRender) ) {
+    if ( abortRenderingInternal(false) ) {
         setPlaybackAutoRestartEnabled(false);
 
         return true;
@@ -2907,13 +2943,7 @@ RenderEngine::getDesiredFPS() const
     return _imp->scheduler ? _imp->scheduler->getDesiredFPS() : 24;
 }
 
-void
-RenderEngine::notifyFrameProduced(const BufferableObjectList& frames,
-                                  const RenderStatsPtr& stats,
-                                  const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request)
-{
-    _imp->currentFrameScheduler->notifyFrameProduced(frames, stats, request);
-}
+
 
 void
 RenderEngine::reportStats(TimeValue time,
@@ -2992,22 +3022,20 @@ class CurrentFrameFunctorArgs
 {
 public:
 
-    ViewIdx view;
+    std::vector<ViewIdx> viewsToRender;
     TimeValue time;
     RenderStatsPtr stats;
     NodePtr viewer;
-    boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     RotoStrokeItemPtr strokeItem;
     U64 age;
 
     CurrentFrameFunctorArgs()
         : GenericThreadStartArgs()
-        , view(0)
+        , viewsToRender()
         , time(0)
         , stats()
         , viewer()
-        , request()
         , scheduler(0)
         , strokeItem()
         , age(0)
@@ -3017,20 +3045,19 @@ public:
     CurrentFrameFunctorArgs(ViewIdx view,
                             TimeValue time,
                             const RenderStatsPtr& stats,
-                            const nodePtr& viewer,
+                            const NodePtr& viewer,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
                             const RotoStrokeItemPtr& strokeItem)
         : GenericThreadStartArgs()
-        , view(view)
+        , viewsToRender()
         , time(time)
         , stats(stats)
         , viewer(viewer)
-        , request()
         , scheduler(scheduler)
         , strokeItem(strokeItem)
         , age(0)
     {
-
+        viewsToRender.push_back(view);
     }
 
     ~CurrentFrameFunctorArgs()
@@ -3041,7 +3068,8 @@ public:
 
 struct TreeRenderAndAge
 {
-    TreeRenderPtr render;
+    // One render for each viewer process node
+    TreeRenderPtr render[2];
     U64 age;
 };
 
@@ -3083,7 +3111,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
     U64 displayAge;
 
     // A set of active renders and their age.
-    TreeRenderSetOrderedByAge currentRenders[2];
+    TreeRenderSetOrderedByAge currentRenders;
 
     ViewerCurrentFrameRequestSchedulerPrivate(const NodePtr& viewer)
         : viewer(viewer)
@@ -3168,15 +3196,62 @@ public:
 
     virtual void run() OVERRIDE FINAL
     {
-        // The viewer always uses the scheduler thread to regulate the output rate, @see ViewerInstance::renderViewer_internal
-        // it calls appendToBuffer by itself
-
-        // Render both viewer processes in 2 threads. One in this thread, the other in a spawned thread
-        std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-        ViewerRenderFrameRunnable::renderViewerProcessNodesInSplitThreads(_args->viewer, _args->time, viewsToRender, false/*isPlayback*/, stats, &processArgs);
+        // The viewer always uses the scheduler thread to regulate the output rate
 
 
-        _args->scheduler->notifyFrameProduced(ret, _args->stats, _args->request->age);
+        ViewerNodePtr viewer = _args->viewer->isEffectViewerNode();
+
+#pragma message WARN("If viewer is doing partial updates, compute the partial updates rects and not the full RoI")
+        BufferableObjectList bufferList;
+
+        for (std::size_t i = 0; i < _args->viewsToRender.size(); ++i) {
+            // Create a tree render object for both viewer process nodes
+            ViewIdx view = _args->viewsToRender[i];
+
+            std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
+            ViewerRenderFrameRunnable::createRenderViewerObjectForAllInputs(viewer, _args->time, view, false/*isPlayback*/, _args->stats, &processArgs);
+            assert(processArgs.size() == 2);
+
+            // Register the current renders and their age on the scheduler so that they can be aborted
+            {
+                QMutexLocker k(&_args->scheduler->renderAgeMutex);
+                TreeRenderAndAge curRender;
+                curRender.age = _args->age;
+                for (int i = 0; i < 2; ++i) {
+                    curRender.render[i] = processArgs[i]->renderObject;
+                }
+                _args->scheduler->currentRenders.insert(curRender);
+            }
+
+            // Render 1 tree in a separate thread and the other one in this thread
+            QFuture<void> processBFuture;
+            if (processArgs[1]->renderObject) {
+                processBFuture = QtConcurrent::run(&ViewerRenderFrameRunnable::launchRenderFunctor, processArgs[1]);
+            }
+            if (processArgs[0]) {
+                ViewerRenderFrameRunnable::launchRenderFunctor(processArgs[0]);
+            }
+
+            if (processArgs[1]->renderObject) {
+                processBFuture.waitForFinished();
+            }
+
+            ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
+            bufferObject->view = view;
+            for (int i = 0; i < 2; ++i) {
+                if (processArgs[i]->planes.empty()) {
+                    continue;
+                }
+                assert(processArgs[i]->planes.size() == 1);
+                bufferObject->viewerProcessImages[i] = processArgs[i]->planes.begin()->second;
+            }
+
+            bufferList.push_back(bufferObject);
+
+
+        } // for all views
+
+        _args->scheduler->notifyFrameProduced(bufferList, _args->stats, _args->age);
 
 
         _args->scheduler->removeRunnableTask(this);
@@ -3191,9 +3266,13 @@ public:
 
     RenderStatsPtr stats;
     BufferableObjectList frames;
+    U64 age;
 
     ViewerCurrentFrameRequestSchedulerExecOnMT()
-        : GenericThreadExecOnMainThreadArgs()
+    : GenericThreadExecOnMainThreadArgs()
+    , stats()
+    , frames()
+    , age(0)
     {
     }
 
@@ -3244,7 +3323,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         maxThreads = _imp->threadPool->maxThreadCount();
     }
 
-    args->functorArgs->request = args;
     if ( (maxThreads == 1) || (_imp->threadPool->activeThreadCount() >= maxThreads - 1) ) {
         _imp->backupThread.startTask(args->functorArgs);
     } else {
@@ -3253,16 +3331,17 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         _imp->threadPool->start(task);
     }
 
-    // Clear the shared ptr now that we started the task in the thread pool
-    args->functorArgs.reset();
+
 
     // Wait for the work to be done
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerExecOnMT> mtArgs(new ViewerCurrentFrameRequestSchedulerExecOnMT);
+    mtArgs->age = args->functorArgs->age;
+
     {
         QMutexLocker k(&_imp->producedFramesMutex);
         ProducedFrameSet::iterator found = _imp->producedFrames.end();
         for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
-            if (it->age == args->age) {
+            if (it->age == args->functorArgs->age) {
                 found = it;
                 break;
             }
@@ -3279,7 +3358,7 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
             // then this thread would be stuck here and would never launch a new render.
             _imp->producedFramesNotEmpty.wait(&_imp->producedFramesMutex, 100);
             for (ProducedFrameSet::iterator it = _imp->producedFrames.begin(); it != _imp->producedFrames.end(); ++it) {
-                if (it->age == args->age) {
+                if (it->age == args->functorArgs->age) {
                     found = it;
                     break;
                 }
@@ -3307,10 +3386,29 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
     if (state == eThreadStateActive) {
         state = resolveState();
     }
+
+    {
+        // Remove the current render from the abortable renders list
+        QMutexLocker k(&_imp->renderAgeMutex);
+        for (TreeRenderSetOrderedByAge::iterator it = _imp->currentRenders.begin(); it != _imp->currentRenders.end(); ++it) {
+            if ( it->age == args->functorArgs->age ) {
+                _imp->currentRenders.erase(it);
+                break;
+            }
+        }
+
+        // Do not process the produced frame if the age is now older than what is displayed
+        if (args->functorArgs->age <= _imp->displayAge) {
+            return state;
+        }
+    }
+
+
     // Do not uncomment the second part: if we don't update on the viewer aborted tasks then user will never even see valid images that were fully rendered
     if (state == eThreadStateStopped /*|| (state == eThreadStateAborted)*/ ) {
         return state;
     }
+
 
     requestExecutionOnMainThread(mtArgs);
 
@@ -3327,9 +3425,22 @@ ViewerCurrentFrameRequestScheduler::executeOnMainThread(const ExecOnMTArgsPtr& i
     ViewerCurrentFrameRequestSchedulerExecOnMT* args = dynamic_cast<ViewerCurrentFrameRequestSchedulerExecOnMT*>( inArgs.get() );
 
     assert(args);
-    if (args) {
-        _imp->processProducedFrame(args->stats, args->frames);
+    if (!args) {
+        return;
     }
+
+    // Do not process the produced frame if the age is now older than what is displayed
+    {
+        QMutexLocker k(&_imp->renderAgeMutex);
+        if (args->age <= _imp->displayAge) {
+            return;
+        }
+        // Update the display age
+        _imp->displayAge = args->age;
+    }
+    
+    _imp->processProducedFrame(args->stats, args->frames);
+
 }
 
 void
@@ -3370,30 +3481,33 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
 #endif
     _imp->backupThread.abortThreadedTask();
 
+    ViewerNodePtr viewerNode = _imp->viewer->isEffectViewerNode();
+
     // Do not abort the oldest render while scrubbing timeline or sliders so that the user gets some feedback
-    bool keepOldest = _imp->viewer->getApp()->isDraftRenderEnabled() || _imp->viewer->isDoingPartialUpdates() || keepOldestRender;
+    const bool keepOldest = viewerNode->getApp()->isDraftRenderEnabled() || viewerNode->isDoingPartialUpdates() || keepOldestRender;
 
     QMutexLocker k(&_imp->renderAgeMutex);
 
-    for (int i = 0; i < 2; ++i) {
-        if ( _imp->currentRenders[i].empty() ) {
-            continue;
-        }
+    if ( _imp->currentRenders.empty() ) {
+        return;
+    }
 
-        //Do not abort the oldest render, let it finish
-        TreeRenderSetOrderedByAge::iterator it = _imp->currentRenders[i].begin();
+    //Do not abort the oldest render, let it finish
+    TreeRenderSetOrderedByAge::iterator it = _imp->currentRenders.begin();
+    if (keepOldest) {
 
-        if (keepOldest) {
-            // Only keep the oldest render active if it is worth displaying!
-            if (it->age >= _imp->displayAge[i]) {
-                ++it;
-            }
-        }
-
-        for (; it != _imp->currentRenders[i].end(); ++it) {
-            it->render->setRenderAborted();
+        // Only keep the oldest render active if it is worth displaying!
+        if (it->age >= _imp->displayAge) {
+            ++it;
         }
     }
+
+    for (; it != _imp->currentRenders.end(); ++it) {
+        for (int i = 0; i < 2; ++i) {
+            it->render[i]->setRenderAborted();
+        }
+    }
+
 }
 
 void
@@ -3417,16 +3531,7 @@ ViewerCurrentFrameRequestScheduler::onWaitForAbortCompleted()
 }
 
 void
-ViewerCurrentFrameRequestScheduler::notifyFrameProduced(const BufferableObjectList& frames,
-                                                        const RenderStatsPtr& stats,
-                                                        const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request)
-{
-    _imp->notifyFrameProduced(frames, stats,  request->age);
-}
-
-void
-ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
-                                                       bool canAbort)
+ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
 {
     // Sanity check, also do not render viewer that are not made visible by the user
     NodePtr treeRoot = _imp->viewer;
@@ -3434,6 +3539,9 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     if (!treeRoot || !viewerNode || !viewerNode->isViewerUIVisible() ) {
         return;
     }
+
+    // We are about to trigger a new render, cancel all other renders except the oldest so user gets some feedback.
+    abortThreadedTask(true /*keepOldestRender*/);
 
     // Get the frame/view to render
     TimeValue frame;
@@ -3455,13 +3563,8 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
     bool isTracking = viewerNode->isDoingPartialUpdates();
 
     // Are we painting ?
+    // While painting, use a single render thread and always the same thread.
     RotoStrokeItemPtr curStroke = _imp->viewer->getApp()->getActiveRotoDrawingStroke();
-
-    // While drawing, use a single render thread and always the same thread.
-    bool rotoUse1Thread = false;
-    if (curStroke) {
-        rotoUse1Thread = true;
-    }
 
 
     // Ok we have to render at least one of A or B input
@@ -3471,23 +3574,28 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats,
                                                                                         _imp->viewer,
                                                                                         _imp.get(),
                                                                                         curStroke) );
-    functorArgs->args[0] = args[0];
-    functorArgs->args[1] = args[1];
+
 
 
     // Identify this render request with an age
+
+    {
+        QMutexLocker k(&_imp->renderAgeMutex);
+        functorArgs->age = _imp->renderAge;
+        // If we reached the max amount of age, reset to 0... should never happen anyway
+        if ( _imp->renderAge >= std::numeric_limits<U64>::max() ) {
+            _imp->renderAge = 0;
+        } else {
+            ++_imp->renderAge;
+        }
+    }
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> request(new ViewerCurrentFrameRequestSchedulerStartArgs);
-    request->age = _imp->ageCounter;
+
     request->functorArgs = functorArgs;
     // When painting, limit the number of threads to 1 to be sure strokes are painted in the right order
-    request->useSingleThread = rotoUse1Thread || isTracking;
+    request->useSingleThread = curStroke || isTracking;
 
-    // If we reached the max amount of age, reset to 0... should never happen anyway
-    if ( _imp->ageCounter >= std::numeric_limits<U64>::max() ) {
-        _imp->ageCounter = 0;
-    } else {
-        ++_imp->ageCounter;
-    }
+
 
     startTask(request);
 

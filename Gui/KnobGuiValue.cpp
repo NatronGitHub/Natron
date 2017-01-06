@@ -907,7 +907,7 @@ KnobGuiValue::onSliderEditingFinished(bool hasMovedOnce)
         double v = _imp->slider->getPosition();
         sliderEditingEnd(v);
     } else if (autoProxyEnabled && hasMovedOnce) {
-        getKnobGui()->getGui()->renderAllViewers(true);
+        getKnobGui()->getGui()->renderAllViewers();
     }
 }
 

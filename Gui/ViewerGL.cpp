@@ -1886,14 +1886,23 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
     }
 }
 
+
+int
+ViewerGL::getMipMapLevelFromZoomFactor() const
+{
+    double zoomFactor = getZoomFactor();
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+    return std::log(closestPowerOf2) / M_LN2;
+}
+
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
 
     ViewerNodePtr viewerNode = getInternalNode();
-    ViewerInstancePtr instance = viewerNode->getInternalViewerNode();
+
     assert(instance);
-    unsigned int mipMapLevel = (unsigned int)std::max((int)instance->getMipMapLevelFromZoomFactor(), (int)viewerNode->getProxyModeKnobMipMapLevel());
+    unsigned int mipMapLevel = (unsigned int)std::max((int)getMipMapLevelFromZoomFactor(), (int)viewerNode->getProxyModeKnobMipMapLevel());
     int closestPo2 = 1 << mipMapLevel;
     if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {
         return false;

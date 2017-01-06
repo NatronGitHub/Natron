@@ -963,7 +963,7 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
                 _imp->timeline->onFrameChanged(tseq);
             }
         } else if (autoProxyEnabled && wasScrubbing) {
-            _imp->gui->getApp()->renderAllViewers(true);
+            _imp->gui->getApp()->renderAllViewers();
         }
     }
 

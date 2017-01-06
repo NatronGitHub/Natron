@@ -179,9 +179,6 @@ public:
     
     virtual void clearLastRenderedImage() OVERRIDE FINAL;
 
-
-    int getMipMapLevelFromZoomFactor() const WARN_UNUSED_RETURN;
-
     DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
 
     virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -189,7 +186,6 @@ public:
         return true;
     }
 
-    bool isLatestRender(int textureIndex, U64 renderAge) const;
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
@@ -201,18 +197,7 @@ public:
     float interpolateGammaLut(float value);
 
 
-    /**
-     * @brief Used to re-render only selected portions of the texture.
-     * This requires that the renderviewer_internal() function gets called on a single thread
-     * because the texture will get resized (i.e copied and swapped) to fit new RoIs.
-     * After this call, the function isDoingPartialUpdates() will return true until
-     * clearPartialUpdateParams() gets called.
-     **/
-    void setPartialUpdateParams(const std::list<RectD>& rois, bool recenterViewer);
-    void clearPartialUpdateParams();
-
-    void setDoingPartialUpdates(bool doing);
-    bool isDoingPartialUpdates() const;
+   
 
     ///Only callable on MT
     void setActivateInputChangeRequestedFromViewer(bool fromViewer);

@@ -1309,9 +1309,6 @@ public:
     ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb);
 
 
-
-    virtual void abortAnyEvaluation(bool keepOldestRender = true) OVERRIDE FINAL;
-
     /**
      * @brief Return true if this effect can return a distorsion 2D. In this case
      * you have to implement getDistorsion.

@@ -410,7 +410,7 @@ public:
 
     void redrawAllViewers();
 
-    void renderAllViewers(bool canAbort);
+    void renderAllViewers();
 
     void abortAllViewers(bool autoRestartPlayback);
 

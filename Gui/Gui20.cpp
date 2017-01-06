@@ -532,7 +532,7 @@ Gui::removeViewerTab(ViewerTab* tab,
 
     ViewerNodePtr viewerNode = tab->getInternalNode();
     if (viewerNode) {
-        viewerNode->abortAnyEvaluation();
+        viewerNode->getNode()->abortAnyProcessing_non_blocking();
         if (getApp()->getLastViewerUsingTimeline() == viewerNode) {
             getApp()->discardLastViewerUsingTimeline();
         }

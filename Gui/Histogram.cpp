@@ -404,7 +404,7 @@ ImagePtr HistogramPrivate::getHistogramImage(RectI* imagePortion) const
 
     ImagePtr image;
     if (viewer) {
-        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getInternalNode()->getInternalViewerNode()->getMipMapLevelFromZoomFactor() );
+        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getViewer()->getMipMapLevelFromZoomFactor() );
     }
 
     if (!useImageRoD) {

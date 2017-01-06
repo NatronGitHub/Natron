@@ -979,11 +979,6 @@ EffectInstance::evaluate(bool isSignificant,
                          bool refreshMetadatas)
 {
 
-    // We changed, abort any ongoing current render to refresh them with a newer version
-    if (isSignificant) {
-        abortAnyEvaluation();
-    }
-
     NodePtr node = getNode();
 
     if ( refreshMetadatas && node && node->isNodeCreated() ) {
@@ -1016,7 +1011,7 @@ EffectInstance::evaluate(bool isSignificant,
 
     // Get the connected viewers downstream and re-render or redraw them.
     if (isSignificant) {
-        getApp()->renderAllViewers(true);
+        getApp()->renderAllViewers();
     } else {
         getApp()->redrawAllViewers();
     }
@@ -1292,20 +1287,6 @@ void
 EffectInstance::clearLastRenderedImage()
 {
     invalidateHashCache();
-}
-
-
-void
-EffectInstance::abortAnyEvaluation(bool keepOldestRender)
-{
-    
-    // Abort and allow playback to restart but do not block, when this function returns any ongoing render may very
-    // well not be finished
-    AppInstancePtr app = getApp();
-    if (!app) {
-        return;
-    }
-    app->abortAllViewers(keepOldestRender /*autoRestartPlayback*/);
 }
 
 

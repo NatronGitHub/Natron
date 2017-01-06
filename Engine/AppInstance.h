@@ -306,7 +306,7 @@ public:
 
     bool loadPythonScriptAndReportToScriptEditor(const QString& script);
 
-    virtual void renderAllViewers(bool /* canAbort*/) {}
+    virtual void renderAllViewers() {}
 
     virtual void abortAllViewers(bool /*autoRestartPlayback*/) {}
 

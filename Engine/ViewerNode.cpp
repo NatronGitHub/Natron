@@ -38,6 +38,7 @@
 #include "Engine/Node.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Project.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoPaint.h"
@@ -635,8 +636,25 @@ struct ViewerNodePrivate
 
     QTimer mustSetUpPlaybackButtonsTimer;
 
+
     QMutex forceRenderMutex;
     bool forceRender;
+
+
+    QMutex partialUpdatesMutex;
+
+    // If this list is not empty, this is the list of canonical rectangles we should update on the viewer, completly
+    //disregarding the RoI. This is protected by partialUpdatesMutex
+    std::list<RectD> partialUpdateRects;
+
+
+    // If set, the viewport center will be updated to this point upon the next update of the texture, this is protected by
+    // partialUpdatesMutex
+    Point viewportCenter;
+    bool viewportCenterSet;
+
+    // True if during tracking, protected by partialUpdatesMutex
+    bool isDoingPartialUpdates;
 
     ViewerNodePrivate(ViewerNode* publicInterface)
     : _publicInterface(publicInterface)
@@ -653,6 +671,10 @@ struct ViewerNodePrivate
     , mustSetUpPlaybackButtonsTimer()
     , forceRenderMutex()
     , forceRender(false)
+    , partialUpdateRects()
+    , viewportCenter()
+    , viewportCenterSet(false)
+    , isDoingPartialUpdates(false)
     {
 
     }
@@ -768,9 +790,8 @@ ViewerNode::~ViewerNode()
 RenderEngine*
 ViewerNode::createRenderEngine()
 {
-    boost::shared_ptr<ViewerInstance> thisShared = toViewerInstance( shared_from_this() );
 
-    return new ViewerRenderEngine(thisShared);
+    return new ViewerRenderEngine(getNode());
 }
 
 
@@ -786,6 +807,67 @@ ViewerNode::getViewerProcessNode(int index) const
         return ViewerInstancePtr();
     }
     return toViewerInstance(node->getEffectInstance());
+}
+
+
+void
+ViewerNode::setPartialUpdateParams(const std::list<RectD>& rois,
+                                       bool recenterViewer)
+{
+    double viewerCenterX = 0;
+    double viewerCenterY = 0;
+
+    if (recenterViewer) {
+        RectD bbox;
+        bool bboxSet = false;
+        for (std::list<RectD>::const_iterator it = rois.begin(); it != rois.end(); ++it) {
+            if (!bboxSet) {
+                bboxSet = true;
+                bbox = *it;
+            } else {
+                bbox.merge(*it);
+            }
+        }
+        viewerCenterX = (bbox.x1 + bbox.x2) / 2.;
+        viewerCenterY = (bbox.y1 + bbox.y2) / 2.;
+    }
+    QMutexLocker k(&_imp->partialUpdatesMutex);
+    _imp->partialUpdateRects = rois;
+    _imp->viewportCenterSet = recenterViewer;
+    _imp->viewportCenter.x = viewerCenterX;
+    _imp->viewportCenter.y = viewerCenterY;
+}
+
+std::list<RectD>
+ViewerNode::getPartialUpdateRects() const
+{
+    QMutexLocker k(&_imp->partialUpdatesMutex);
+    return _imp->partialUpdateRects;
+}
+
+void
+ViewerNode::clearPartialUpdateParams()
+{
+    QMutexLocker k(&_imp->partialUpdatesMutex);
+
+    _imp->partialUpdateRects.clear();
+    _imp->viewportCenterSet = false;
+}
+
+void
+ViewerNode::setDoingPartialUpdates(bool doing)
+{
+    QMutexLocker k(&_imp->partialUpdatesMutex);
+
+    _imp->isDoingPartialUpdates = doing;
+}
+
+bool
+ViewerNode::isDoingPartialUpdates() const
+{
+    QMutexLocker k(&_imp->partialUpdatesMutex);
+
+    return _imp->isDoingPartialUpdates;
 }
 
 

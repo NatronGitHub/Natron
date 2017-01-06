@@ -2419,7 +2419,8 @@ Node::abortAnyProcessing_non_blocking()
 {
 
     if (_imp->renderEngine) {
-        _imp->renderEngine->abortRenderingNoRestart();
+        getApp()->abortAllViewers(false);
+
     }
 
     TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
@@ -5352,11 +5353,6 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
         }
     }
 
-    if (!destroyed) {
-        _imp->effect->abortAnyEvaluation();
-    }
-
-
     if (destroyed) {
         // Don't do more if the node is destroyed because we would run code that is not needed on the node.
         return true;
@@ -5443,7 +5439,6 @@ Node::switchInput0And1()
         }
     }
 
-    _imp->effect->abortAnyEvaluation();
 
     NodePtr input0, input1;
 
@@ -5654,13 +5649,8 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
     }
 
 
-    ///kill any thread it could have started
-    ///Commented-out: If we were to undo the deactivate we don't want all threads to be
-    ///exited, just exit them when the effect is really deleted instead
-    //quitAnyProcessing();
     if (!beingDestroyed) {
-        _imp->effect->abortAnyEvaluation(false /*keepOldestRender*/);
-        _imp->abortPreview_non_blocking();
+        abortAnyProcessing_non_blocking();(false /*keepOldestRender*/);
     }
 
     NodeCollectionPtr parentCol = getGroup();
@@ -7219,11 +7209,7 @@ Node::endInputEdition(bool triggerRender)
         triggerRender = triggerRender && hasChanged;
 
         if (triggerRender) {
-            std::list<ViewerInstancePtr> viewers;
-            hasViewersConnected(&viewers);
-            for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-                (*it2)->renderCurrentFrame(true);
-            }
+            getApp()->renderAllViewers();
         }
     }
 }

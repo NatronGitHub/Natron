@@ -764,7 +764,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
     if (mustTriggerRender) {
         //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
-        app->renderAllViewers(true);
+        app->renderAllViewers();
     }
 
 

@@ -1295,7 +1295,7 @@ AppManager::clearAllCaches()
     }
 
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->renderAllViewers(true);
+        (*it)->renderAllViewers();
     }
 
     Project::clearAutoSavesDir();

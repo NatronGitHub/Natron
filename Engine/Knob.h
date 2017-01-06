@@ -2690,14 +2690,6 @@ public:
 
 
     /**
-     * @brief Makes all output nodes connected downstream to this node abort any rendering.
-     * Should be called prior to changing the state of the user interface that could impact the
-     * final image.
-     **/
-    virtual void abortAnyEvaluation(bool keepOldestRender = true) { Q_UNUSED(keepOldestRender); }
-
-
-    /**
      * @brief Returns true if at least a parameter is animated
      **/
     bool getHasAnimation() const;

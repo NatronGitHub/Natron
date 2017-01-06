@@ -170,7 +170,7 @@ AddMultipleNodesCommand::undo()
     _graph->clearSelection();
 
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->renderAllViewers(true);
+    _graph->getGui()->getApp()->renderAllViewers();
 
 
 }
@@ -205,7 +205,7 @@ AddMultipleNodesCommand::redo()
 
     _graph->getGui()->getApp()->recheckInvalidExpressions();
     _graph->getGui()->getApp()->triggerAutoSave();
-    _graph->getGui()->getApp()->renderAllViewers(true);
+    _graph->getGui()->getApp()->renderAllViewers();
 
 
     _firstRedoCalled = true;
@@ -1668,7 +1668,7 @@ GroupFromSelectionCommand::redo()
 
 
     // Ensure all viewers are refreshed
-    containerNode->getApp()->renderAllViewers(true);
+    containerNode->getApp()->renderAllViewers();
 
     // Center the new nodegraph on all its nodes
     if (newContainerGraph) {
@@ -1833,7 +1833,7 @@ InlineGroupCommand::undo()
 
     if (app) {
         app->triggerAutoSave();
-        app->renderAllViewers(true);
+        app->renderAllViewers();
     }
 }
 
@@ -1943,7 +1943,7 @@ InlineGroupCommand::redo()
 
     if (app) {
         app->triggerAutoSave();
-        app->renderAllViewers(true);
+        app->renderAllViewers();
     }
 } // redo
 

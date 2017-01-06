@@ -822,12 +822,12 @@ Gui::redrawAllViewers()
 }
 
 void
-Gui::renderAllViewers(bool canAbort)
+Gui::renderAllViewers()
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(canAbort);
+            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame();
         }
     }
 }
@@ -856,7 +856,7 @@ Gui::abortAllViewers(bool autoRestartPlayback)
         if (autoRestartPlayback) {
             engine->abortRenderingAutoRestart();
         } else {
-            engine->abortRenderingNoRestart(false);
+            engine->abortRenderingNoRestart();
         }
     }
 } // abortAllViewers

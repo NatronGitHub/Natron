@@ -111,6 +111,8 @@ public:
 
     OutputSchedulerThread* getScheduler() const;
 
+    virtual void abortRender() = 0;
+
     virtual void run() OVERRIDE FINAL;
 
 protected:
@@ -512,9 +514,7 @@ public:
 
     virtual ~ViewerCurrentFrameRequestScheduler();
 
-    void renderCurrentFrame(bool enableRenderStats, bool canAbort);
-
-    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request);
+    void renderCurrentFrame(bool enableRenderStats);
 
 private:
 
@@ -680,7 +680,7 @@ public:
      * The AutoRestart version attempts to restart the playback upon a call to renderCurrentFrame
      **/
     bool abortRenderingAutoRestart();
-    bool abortRenderingNoRestart(bool keepOldestRender = true);
+    bool abortRenderingNoRestart();
 
 private:
 
@@ -814,12 +814,6 @@ protected:
 
 private:
 
-
-
-
-    friend class ViewerInstance;
-    friend class Node;
-    void notifyFrameProduced(const BufferableObjectList& frames, const RenderStatsPtr& stats, const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request);
 
 
     boost::scoped_ptr<RenderEnginePrivate> _imp;

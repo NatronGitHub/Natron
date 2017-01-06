@@ -179,7 +179,7 @@ public:
     virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
     virtual void updateProjectLoadStatus(const QString& str) OVERRIDE FINAL;
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
-    virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
+    virtual void renderAllViewers() OVERRIDE FINAL;
     virtual void refreshAllPreviews() OVERRIDE FINAL;
     virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const OVERRIDE FINAL;
     virtual void abortAllViewers(bool autoRestartPlayback) OVERRIDE FINAL;

@@ -486,6 +486,8 @@ private:
 
     void setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setColor, bool hasColor);
 
+    int getMipMapLevelFromZoomFactor() const;
+
     bool checkIfViewPortRoIValidOrRenderForInput(int texIndex);
 
     bool penMotionInternal(int x, int y, double pressure, TimeValue timestamp, QInputEvent* event);

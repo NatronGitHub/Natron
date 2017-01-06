@@ -310,7 +310,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
                 QString warn = tr("The file \"%1\" has changed on disk.\n"
                                   "Press reload file to load the new version of the file").arg(qfilePath);
                 effect->setPersistentMessage( eMessageTypeError, warn.toStdString() );
-                effect->abortAnyEvaluation();
+                effect->getNode()->abortAnyProcessing_non_blocking();
             }
             effect->purgeCaches_public();
             effect->getNode()->removeAllImagesFromCache();
