@@ -1416,7 +1416,7 @@ AppInstance::exportDocs(const QString path)
             }
             groupMD.append( QString::fromUtf8("    _group") + group + QString::fromUtf8(".rst\n") );
 
-            QFile plugFile( path + QString::fromUtf8("/_group") + category + QString::fromUtf8(".rst") );
+            QFile plugFile( path + QString::fromUtf8("/_group") + group + QString::fromUtf8(".rst") );
             plugMD.append( QString::fromUtf8("\n") );
             if ( plugFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
                 QTextStream out(&plugFile);
