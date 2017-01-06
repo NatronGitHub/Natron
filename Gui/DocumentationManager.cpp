@@ -274,7 +274,6 @@ DocumentationManager::handler(QHttpRequest *req,
             // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
 
             QMap<std::string, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
-
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 PluginPtr plugin;
@@ -301,7 +300,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<p>%2</p>"
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
-                                         .arg( tr( group.toUtf8().constData() ) )
+                                         .arg( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) )
                                          .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")
  
                                                );

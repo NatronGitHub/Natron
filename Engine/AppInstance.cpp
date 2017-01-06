@@ -1389,11 +1389,11 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
-        Q_FOREACH(const QString &category, groups) {
+        Q_FOREACH(const QString &group, groups) {
 
             QString plugMD;
 
-            plugMD.append( tr("%1 nodes").arg( tr( category.toUtf8().constData() ) ) );
+            plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
             plugMD.append( QString::fromUtf8("\n==========\n\n") );
             plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
@@ -1402,7 +1402,7 @@ AppInstance::exportDocs(const QString path)
             QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
             Q_FOREACH(const QStringList &currPlugin, plugins) {
                 if (currPlugin.size() == 3) {
-                    if ( category == currPlugin.at(0) ) {
+                    if ( group == currPlugin.at(0) ) {
                         pluginsOrderedByLabel[currPlugin.at(2)] = currPlugin.at(1);
                     }
                 }
@@ -1414,7 +1414,7 @@ AppInstance::exportDocs(const QString path)
                 //const QString& plugName = i.key();
                 plugMD.append( QString::fromUtf8("    plugins/") + plugID + QString::fromUtf8(".rst\n") );
             }
-            groupMD.append( QString::fromUtf8("    _group") + category + QString::fromUtf8(".rst\n") );
+            groupMD.append( QString::fromUtf8("    _group") + group + QString::fromUtf8(".rst\n") );
 
             QFile plugFile( path + QString::fromUtf8("/_group") + category + QString::fromUtf8(".rst") );
             plugMD.append( QString::fromUtf8("\n") );

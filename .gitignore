@@ -14,6 +14,9 @@ sed*
 *latex*
 DerivedData
 Documentation/html
+Documentation/source/_group*
+Documentation/source/_prefs.rst
+Documentation/source/plugins
 breakpadclient.pri
 breakpadpro.pri
 google-breakpad/
