@@ -270,7 +270,7 @@ DocumentationManager::handler(QHttpRequest *req,
         if ( !group.isEmpty() ) {
             // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
 
-            QMap<QString, QString> plugins; // use a map so that it gets sorted by label
+            QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
@@ -287,7 +287,7 @@ DocumentationManager::handler(QHttpRequest *req,
                     }
                 }
             }
-            if ( !plugins.isEmpty() ) {
+            if ( !pluginsOrderedByLabel.isEmpty() ) {
                 QString groupBodyStart = QString::fromUtf8("<div class=\"document\">"
                                                            "<div class=\"documentwrapper\">"
                                                            "<div class=\"body\">"
@@ -296,7 +296,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
                                          .arg( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) )
-                                         .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
+                                         .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")
  
                                                );
                 html.append(groupHeader);
@@ -307,7 +307,9 @@ DocumentationManager::handler(QHttpRequest *req,
                 html.append(navFooter);
                 html.append(groupBodyStart);
 
-                for (QMap<QString, QString>::const_iterator i = plugins.constBegin(); i != plugins.constEnd(); ++i) {
+                for (QMap<QString, QString>::const_iterator i = pluginsOrderedByLabel.constBegin();
+                     i != pluginsOrderedByLabel.constEnd();
+                     ++i) {
                     const QString& plugID = i.value();
                     const QString& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
@@ -328,8 +330,8 @@ DocumentationManager::handler(QHttpRequest *req,
                                                        "<div class=\"toctree-wrapper compound\">"
                                                        "<ul>")
                                      .arg( tr("Reference Guide") )
-            .arg ( tr("The following sections describe the various options available from the %1 preference settings, followed by one section for each node group in %1.")
-                  .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.") );
+            .arg ( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+                  .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.") );
             html.append(groupHeader);
             html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );
             html.append(navHeader);
