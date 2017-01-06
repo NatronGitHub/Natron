@@ -1,5 +1,5 @@
-Preferences
-===========
+Natron preferences
+==================
 
 General
 -------

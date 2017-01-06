@@ -4220,7 +4220,7 @@ Node::makeDocumentation(bool genHTML) const
         assert(plugin);
 
         pluginID = QString::fromUtf8(plugin->getPluginID().c_str());
-        pluginLabel =  QString::fromUtf8(plugin->getPluginLabel().c_str());
+        pluginLabel =  QString::fromUtf8( Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() ).c_str());
         pluginDescription =  QString::fromUtf8( plugin->getProperty<std::string>(kNatronPluginPropDescription).c_str() );
         pluginIcon = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
         pluginGroup = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);

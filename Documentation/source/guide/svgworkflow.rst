@@ -1,8 +1,8 @@
 .. for help on writing/extending this file, see the reStructuredText cheatsheet
    http://github.com/ralsina/rst-cheatsheet/raw/master/rst-cheatsheet.pdf
    
-Vector Graphics Work-flow
-=========================
+Vector graphics workflow
+========================
 
 .. figure:: _images/svgworkflow_01.png
   

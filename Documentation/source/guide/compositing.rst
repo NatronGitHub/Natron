@@ -7,7 +7,6 @@ Compositing
 .. toctree::
    :maxdepth: 2
 
-   compositing_intro.rst
    managing_projects.rst
    reformatting.rst
    channels.rst

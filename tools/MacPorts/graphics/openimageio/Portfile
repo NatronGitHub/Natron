@@ -20,7 +20,7 @@ github.setup     OpenImageIO oiio 1.6.18 tags/Release-
 
 name             openimageio
 #version          1.4.5.91
-#revision         1
+revision         2
 categories       graphics
 platforms           darwin
 license          BSD
@@ -119,7 +119,7 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
-variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype universal description {Natron version} {
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
         # configure with GCC 4.9 for proper GCC intrinsics support
         configure.compiler macports-gcc-4.9

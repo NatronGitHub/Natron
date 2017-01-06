@@ -18,6 +18,8 @@
 - OpenGL rendering is enabled by default for interactive editing in plugins that support it (but still disabled for background rendering)
 - Roto & RotoPaint: ellipses and circles are more accurate #1524
 - When a plugin is not available with the right major version, use the smallest major version above for better compatibility (before that change, the highest major version was returned)
+- Natron can now be launched in 32-bits mode on macOS
+- Fix nodes documentation
 
 ### Plugins
 

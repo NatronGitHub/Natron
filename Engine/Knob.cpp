@@ -3281,8 +3281,9 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
 
         if (foundValue == -1) {
             // Just remember the active entry if not found
-            isChoice->setActiveEntryText(matchedEntry, view);
+            isChoice->setActiveEntryText(obj._value.isString, view);
         } else {
+            isChoice->setActiveEntryText(matchedEntry, view);
             isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
         }
 
