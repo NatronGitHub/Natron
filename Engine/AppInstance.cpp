@@ -1375,11 +1375,15 @@ AppInstance::exportDocs(const QString path)
 
 
         // Generate RST for plugin groups
+        // IMPORTANT: this code is *very* similar to DocumentationManager::handler in the "_group.html" section
         groups.removeDuplicates();
         QString groupMD;
-        groupMD.append( tr("Reference") );
+        groupMD.append( tr("Reference Guide") );
         groupMD.append( QString::fromUtf8("\n") );
         groupMD.append( QString::fromUtf8("=========\n\n") );
+        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+        groupMD.append( QString::fromUtf8("\n\n") );
         groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
@@ -1395,12 +1399,20 @@ AppInstance::exportDocs(const QString path)
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
             plugMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
 
+            QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
             Q_FOREACH(const QStringList &currPlugin, plugins) {
                 if (currPlugin.size() == 3) {
                     if ( category == currPlugin.at(0) ) {
-                        plugMD.append( QString::fromUtf8("    plugins/") + currPlugin.at(1) + QString::fromUtf8(".rst\n") );
+                        pluginsOrderedByLabel[currPlugin.at(2)] = currPlugin.at(1);
                     }
                 }
+            }
+            for (QMap<QString, QString>::const_iterator i = pluginsOrderedByLabel.constBegin();
+                 i != pluginsOrderedByLabel.constEnd();
+                 ++i) {
+                const QString& plugID = i.value();
+                //const QString& plugName = i.key();
+                plugMD.append( QString::fromUtf8("    plugins/") + plugID + QString::fromUtf8(".rst\n") );
             }
             groupMD.append( QString::fromUtf8("    _group") + category + QString::fromUtf8(".rst\n") );
 
