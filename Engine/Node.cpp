@@ -4272,6 +4272,7 @@ Node::makeDocumentation(bool genHTML) const
         pluginGroup = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
         pluginDescriptionIsMarkdown = plugin->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
 
+
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
             QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");

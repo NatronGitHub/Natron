@@ -1386,9 +1386,10 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
         Q_FOREACH(const QString &category, groups) {
+
             QString plugMD;
 
-            plugMD.append( category );
+            plugMD.append( tr("%1 nodes").arg( tr( category.toUtf8().constData() ) ) );
             plugMD.append( QString::fromUtf8("\n==========\n\n") );
             plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );

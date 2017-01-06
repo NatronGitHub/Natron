@@ -48,6 +48,7 @@
 #include "Serialization/NodeSerialization.h"
 
 
+
 NATRON_NAMESPACE_ENTER;
 DocumentationManager::DocumentationManager(QObject *parent)
     : QObject(parent)
@@ -177,20 +178,23 @@ DocumentationManager::handler(QHttpRequest *req,
                                 // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
                                 if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
                                     EffectInstancePtr effectInstance = node->getEffectInstance();
+
                                     if ( effectInstance->isReader() ) {
                                         ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
                                         if (isReadNode) {
                                             node = isReadNode->getEmbeddedReader();
                                         }                                    }
+
                                     if ( effectInstance->isWriter() ) {
                                         WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
-
+                                        
                                         if (isWriteNode) {
                                             node = isWriteNode->getEmbeddedWriter();
                                         }
                                     }
                                 }
+
                                 QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
@@ -270,6 +274,7 @@ DocumentationManager::handler(QHttpRequest *req,
             // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
 
             QMap<std::string, QString> plugins; // use a map so that it gets sorted by label
+
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 PluginPtr plugin;
@@ -284,6 +289,7 @@ DocumentationManager::handler(QHttpRequest *req,
                     std::vector<std::string> groupList = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
                     if (groupList.at(0) == group.toStdString()) {
                         plugins[Plugin::makeLabelWithoutSuffix( plugin->getProperty<std::string>(kNatronPluginPropLabel) )] = pluginID;
+
                     }
                 }
             }
@@ -296,11 +302,12 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
                                          .arg( tr( group.toUtf8().constData() ) )
+
                                          .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area. Please note that documentation is also generated automatically for third-party OpenFX plugins.")
  
                                                );
                 html.append(groupHeader);
-                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), group);
+                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
                 html.append(navHeader);
                 html.append( QString::fromUtf8("<li><a href=\"/_group.html\">%1</a> &raquo;</li>")
                              .arg( tr("Reference Guide") ) );
@@ -311,6 +318,7 @@ DocumentationManager::handler(QHttpRequest *req,
                     const QString& plugID = i.value();
                     const std::string& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.empty() ) {
+
                         html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=%1'>%2</a></li>")
                                      .arg(plugID)
                                      .arg( QString::fromUtf8( plugName.c_str() ) ) );
@@ -370,7 +378,7 @@ DocumentationManager::handler(QHttpRequest *req,
             for (int i = 0; i < groups.size(); ++i) {
                 html.append( QString::fromUtf8("<li class='toctree-l1'><a href='/_group.html?id=%1'>%2</a></li>")
                              .arg( groups.at(i) )
-                             .arg( tr( groups.at(i).toUtf8().constData() ) )
+                             .arg( tr("%1 nodes").arg( tr( groups.at(i).toUtf8().constData() ) ) )
                              );
             }
             html.append(groupBodyEnd);
