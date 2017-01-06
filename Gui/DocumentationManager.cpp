@@ -283,7 +283,7 @@ DocumentationManager::handler(QHttpRequest *req,
                 if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
                     QStringList groupList = plugin->getGrouping();
                     if (groupList.at(0) == group) {
-                        plugins[Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() )] = pluginID;
+                        pluginsOrderedByLabel[Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() )] = pluginID;
                     }
                 }
             }
