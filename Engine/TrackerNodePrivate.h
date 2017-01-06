@@ -697,8 +697,7 @@ public:
     TrackMarkerPtr createMarker();
 
     static void getMotionModelsAndHelps(bool addPerspective,
-                                        std::vector<std::string>* models,
-                                        std::vector<std::string>* tooltips,
+                                        std::vector<ChoiceOption>* models,
                                         std::map<int, std::string> *icons);
 
     bool

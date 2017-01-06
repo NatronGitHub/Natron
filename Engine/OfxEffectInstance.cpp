@@ -2172,32 +2172,23 @@ OfxEffectInstance::onSyncPrivateDataRequested()
 
 void
 OfxEffectInstance::addAcceptedComponents(int inputNb,
-                                         std::list<ImageComponents>* comps)
+                                         std::bitset<4>* supported)
 {
+    OfxClipInstance* clip = 0;
     if (inputNb >= 0) {
-        OfxClipInstance* clip = getClipCorrespondingToInput(inputNb);
-        assert(clip);
-        const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
-        for (U32 i = 0; i < supportedComps.size(); ++i) {
-            try {
-                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-                comps->push_back(ofxComp);
-            } catch (const std::runtime_error &e) {
-                // ignore unsupported components
-            }
-        }
+        clip = getClipCorrespondingToInput(inputNb);
     } else {
         assert(inputNb == -1);
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>( effectInstance()->getClip(kOfxImageEffectOutputClipName) );
-        assert(clip);
-        const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
-        for (U32 i = 0; i < supportedComps.size(); ++i) {
-            try {
-                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-                comps->push_back(ofxComp);
-            } catch (const std::runtime_error &e) {
-                // ignore unsupported components
-            }
+        clip = dynamic_cast<OfxClipInstance*>( effectInstance()->getClip(kOfxImageEffectOutputClipName) );
+    }
+    assert(clip)
+    const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
+    for (U32 i = 0; i < supportedComps.size(); ++i) {
+        try {
+            ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
+            (*supported)[ofxComp.getNumComponents()] = 1;
+        } catch (const std::runtime_error &e) {
+            // ignore unsupported components
         }
     }
 }

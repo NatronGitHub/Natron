@@ -294,6 +294,8 @@ private:
                                OFX::Host::ImageEffect::Texture** texture);
 
 private:
+
+    friend class OfxClipInstancePrivate;
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 

@@ -40,6 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QString>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/ChoiceOption.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -555,20 +556,7 @@ toKnobButton(const KnobIPtr& knob)
 }
 
 /******************************KnobChoice**************************************/
-class KnobChoiceMergeEntriesData
-{
-public:
 
-    KnobChoiceMergeEntriesData()
-    {
-    }
-
-    virtual void clear() = 0;
-
-    virtual ~KnobChoiceMergeEntriesData()
-    {
-    }
-};
 
 
 class ChoiceKnobDimView : public ValueKnobDimView<int>
@@ -576,7 +564,7 @@ class ChoiceKnobDimView : public ValueKnobDimView<int>
 public:
 
     // For a choice parameter we need to know the strings
-    std::vector<std::string> menuOptions, menuOptionTooltips;
+    std::vector<ChoiceOption> menuOptions;
 
     // For choice parameters the value is held by a string because if the option disappears from the menu
     // we still need to remember the user choice
@@ -641,14 +629,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-public:
 
-    // Used in populateChoices() to add new entries in the menu. If not passed the entries will be completly replaced.
-    // It should return wether a equals b. The userData are the one passed to populateChoice and can be used to store temporary
-    // potentially costly operations.
-    // The clear() function will be called right before attempting to compare the first member of the entries to merge to b.
-    // Then throughout the cycling of the internal entries, b will remain at the same value and temporary data can be used.
-    typedef bool (*MergeMenuEqualityFunctor)(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* userData);
 
 private: // derives from KnobI
     // TODO: enable_shared_from_this
@@ -698,10 +679,8 @@ public:
      *
      * @returns true if something changed, false otherwise.
      **/
-    bool populateChoices(const std::vector<std::string> &entries,
-                         const std::vector<std::string> &entriesHelp = std::vector<std::string>(),
-                         MergeMenuEqualityFunctor mergingFunctor = 0,
-                         KnobChoiceMergeEntriesData* mergingData = 0);
+
+    bool populateChoices(const std::vector<ChoiceOption>& entries);
 
     /**
      * @brief Set optional shortcuts visible for menu entries. All items in the menu don't need a shortcut
@@ -735,7 +714,7 @@ public:
      * @brief Append an option to the menu 
      * @param help Optionnally specify the tooltip that should be displayed when the user hovers the entry in the menu
      **/
-    void appendChoice( const std::string& entry, const std::string& help = std::string(), ViewSetSpec view = ViewSetSpec::all() );
+    void appendChoice( const ChoiceOption& option, ViewSetSpec view = ViewSetSpec::all() );
 
     /**
      * @brief Returns true if the entry for the given view is valid, that is: it still belongs to the menu entries.
@@ -745,28 +724,23 @@ public:
     /**
      * @brief Get all menu entries
      **/
-    std::vector<std::string> getEntries(ViewIdx view = ViewIdx(0)) const;
+    std::vector<ChoiceOption> getEntries(ViewIdx view = ViewIdx(0)) const;
 
     /**
      * @brief Get one menu entry. Throws an invalid_argument exception if index is invalid
      **/
-    std::string getEntry(int v, ViewIdx view = ViewIdx(0)) const;
-
-    /**
-     * @brief Get all menu entry tooltips
-     **/
-    std::vector<std::string> getEntriesHelp(ViewIdx view = ViewIdx(0)) const;
+    ChoiceOption getEntry(int v, ViewIdx view = ViewIdx(0)) const;
 
     /**
      * @brief Get the active entry text
      **/
-    std::string getActiveEntryText(ViewIdx view = ViewIdx(0));
+    std::string getActiveEntryID(ViewIdx view = ViewIdx(0));
 
     /**
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
      * argument exception is thrown
      **/
-    void setActiveEntryText(const std::string& entry, ViewSetSpec view = ViewSetSpec::all());
+    void setActiveEntryID(const std::string& entry, ViewSetSpec view = ViewSetSpec::all());
 
     int getNumEntries(ViewIdx view = ViewIdx(0)) const;
 
@@ -781,7 +755,7 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    static int choiceMatch(const std::string& choice, const std::vector<std::string>& entries, std::string* matchedEntry);
+    static int choiceMatch(const std::string& choice, const std::vector<ChoiceOption>& entries, std::string* matchedEntry);
     
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
@@ -818,7 +792,7 @@ Q_SIGNALS:
 
     void populated();
     void entriesReset();
-    void entryAppended(QString, QString);
+    void entryAppended();
 
 private:
     
@@ -826,8 +800,7 @@ private:
     virtual bool hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const OVERRIDE FINAL;
 
 
-    void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
-                             KnobChoiceMergeEntriesData* mergingData = 0);
+    void findAndSetOldChoice();
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
@@ -1715,7 +1688,7 @@ public:
 
     virtual int getColumnsCount() const OVERRIDE FINAL
     {
-        return 2;
+        return 3;
     }
 
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL
@@ -1724,6 +1697,8 @@ public:
             return tr("Name").toStdString();
         } else if (col == 1) {
             return tr("Channels").toStdString();
+        } else if (col == 2) {
+            return tr("Components Type").toStdString();
         } else {
             return std::string();
         }

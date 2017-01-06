@@ -79,11 +79,9 @@ OneViewNode::getInputLabel (int /*inputNb*/) const
 
 void
 OneViewNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImageComponents>* comps)
+                                   std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -107,8 +105,12 @@ OneViewNode::initializeKnobs()
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
-    std::string currentView = viewKnob->getActiveEntryText();
-    viewKnob->populateChoices(views);
+
+    std::vector<ChoiceOption> options(views.size());
+    for (std::size_t i = 0; i < views.size(); ++i) {
+        options[i].id = views[i];
+    }
+    viewKnob->populateChoices(options);
 
 
     _imp->viewKnob = viewKnob;
@@ -157,15 +159,19 @@ OneViewNode::onProjectViewsChanged()
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
-    std::string currentView = viewKnob->getActiveEntryText();
 
-    viewKnob->populateChoices(views);
+    std::string currentView = viewKnob->getActiveEntryID();
+
+    std::vector<ChoiceOption> options(views.size());
+    for (std::size_t i = 0; i < views.size(); ++i) {
+        options[i].id = views[i];
+    }
+    viewKnob->populateChoices(options);
 
     bool foundView = false;
     for (std::size_t i = 0; i < views.size(); ++i) {
         if (views[i] == currentView) {
             foundView = true;
-            viewKnob->setValue(i);
             break;
         }
     }

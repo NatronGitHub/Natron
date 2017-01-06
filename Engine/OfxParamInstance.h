@@ -170,7 +170,7 @@ public Q_SLOTS:
     void onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
-    void onChoiceMenuEntryAppended(const QString& entry, const QString& help);
+    void onChoiceMenuEntryAppended();
     void onInViewportSecretChanged();
     void onInViewportLabelChanged();
 

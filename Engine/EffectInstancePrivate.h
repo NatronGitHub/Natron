@@ -233,7 +233,6 @@ public:
 
     void checkMetadata(NodeMetadata &metadata);
 
-    void refreshMetadaWarnings(const NodeMetadata &metadata);
 };
 
 

@@ -174,7 +174,7 @@ EffectInstance::Implementation::shouldRenderUseCache(const RenderRoIArgs & args,
         const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying(args.renderArgs);
         const int requestsCount = requestPassData->getFramesNeededVisitsCount();
 
-        bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, args.time, args.view, requestsCount);
+        bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, args.renderArgs, requestsCount);
         if (useCache) {
             ret = eCacheAccessModeReadWrite;
         } else {

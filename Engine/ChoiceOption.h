@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef RENDERSTATSDIALOG_H
-#define RENDERSTATSDIALOG_H
+#ifndef NATRON_ENGINE_CHOICEOPTION_H
+#define NATRON_ENGINE_CHOICEOPTION_H
+
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,59 +26,36 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
+#include <string>
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-#endif
-
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QWidget>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
-#include "Engine/RenderStats.h"
-#include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
-#include "Gui/GuiFwd.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
-struct RenderStatsDialogPrivate;
-
-class RenderStatsDialog
-    : public QWidget
+struct ChoiceOption
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+    // Must necessarily be set, this uniquely identifies the option
+    std::string id;
 
-public:
+    // Can be set to something different than the ID. This is what will be displayed in the option in the GUI
+    // If empty this will be set to the ID.
+    std::string label;
 
-    RenderStatsDialog(Gui* gui);
+    // Can be set to display a tooltip when the user hovers the entry in the choice menu
+    std::string tooltip;
 
-    virtual ~RenderStatsDialog();
-
-    void addStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats >& stats);
-
-public Q_SLOTS:
-
-    void resetStats();
-    void onKnobsTreeSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
-
-    void updateVisibleRows();
-    void onNameLineEditChanged(const QString& filter);
-    void onIDLineEditChanged(const QString& filter);
-
-private:
-
-    virtual void closeEvent(QCloseEvent * event) OVERRIDE FINAL;
-    boost::scoped_ptr<RenderStatsDialogPrivate> _imp;
+    ChoiceOption(const std::string& id_, const std::string& label_, const std::string& tooltip_)
+    : id(id_)
+    , label(label_)
+    , tooltip(tooltip_)
+    {
+        
+    }
+    
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // RENDERSTATSDIALOG_H
+#endif // NATRON_ENGINE_CHOICEOPTION_H

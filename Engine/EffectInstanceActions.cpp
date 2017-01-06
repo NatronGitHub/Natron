@@ -245,6 +245,77 @@ static void removeFromLayersList(const std::list<ImageComponents>& toRemove,
 } // removeFromLayersList
 
 ActionRetCodeEnum
+EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render,  std::list<ImageComponents>* availableLayers)
+{
+
+    EffectInstancePtr effect;
+    if (inputNb >= 0) {
+        effect = getInput(inputNb);
+    } else {
+        effect = shared_from_this();
+    }
+    if (!effect) {
+        return eActionStatusInputDisconnected;
+    }
+    TreeRenderNodeArgsPtr effectRenderArgs;
+    if (inputNb >= 0) {
+        effectRenderArgs = render->getInputRenderArgs(inputNb);
+    } else {
+        effectRenderArgs = render;
+    }
+
+    std::list<ImageComponents> passThroughLayers;
+    {
+        GetComponentsResultsPtr actionResults;
+        ActionRetCodeEnum stat = effect->getComponents_public(time, view, effectRenderArgs, &actionResults);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+
+        std::map<int, std::list<ImageComponents> > inputLayersNeeded;
+        std::list<ImageComponents> layersProduced;
+        TimeValue passThroughTime;
+        ViewIdx passThroughView;
+        int passThroughInputNb;
+        std::bitset<4> processChannels;
+        bool processAll;
+        actionResults->getResults(&inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
+
+        // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
+        // if they are not produced by this node
+        mergeLayersList(layersProduced, &passThroughLayers);
+    }
+
+    // Ensure the color layer is always the first one available in the list
+    for (std::list<ImageComponents>::const_iterator it = passThroughLayers.begin(); it != passThroughLayers.end(); ++it) {
+        if (it->isColorPlane()) {
+            availableLayers->push_front(*it);
+            passThroughLayers.erase(it);
+            break;
+        }
+    }
+
+    // In output, also make available the default project layers and the user created components
+    if (inputNb == -1) {
+
+        std::list<ImageComponents> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+        mergeLayersList(projectLayers, availableLayers);
+    }
+
+    mergeLayersList(passThroughLayers, availableLayers);
+
+    if (inputNb == -1) {
+        std::list<ImageComponents> userCreatedLayers;
+        getNode()->getUserCreatedComponents(&userCreatedLayers);
+        mergeLayersList(userCreatedLayers, availableLayers);
+    }
+
+
+
+    return eActionStatusOK;
+} // getAvailableInputLayers
+
+ActionRetCodeEnum
 EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
 
 {
@@ -353,39 +424,21 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
 
         assert(passThroughInputNb != -1);
 
-        EffectInstancePtr passThroughInput = getInput(passThroughInputNb);
-        if (passThroughInput) {
-            TreeRenderNodeArgsPtr inputRenderArgs;
-            if (render) {
-                inputRenderArgs = render->getInputRenderArgs(passThroughInputNb);
-            }
-            GetComponentsResultsPtr upstreamResults;
-            ActionRetCodeEnum stat = getComponents_public(time, view, inputRenderArgs, &upstreamResults);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
 
-            std::map<int, std::list<ImageComponents> > upstreamInputLayersNeeded;
-            std::list<ImageComponents> upstreamOutputLayersProduced;
-            std::list<ImageComponents> upstreamAvailableLayers;
-            TimeValue upstreamPassThroughTime;
-            ViewIdx upstreamPassThroughView;
-            int upstreamPassThroughInputNb;
-            std::bitset<4> upstreamProcessChannels;
-            bool upstreamProcessAll;
-            upstreamResults->getResults(&upstreamInputLayersNeeded, &upstreamOutputLayersProduced, &upstreamAvailableLayers, &upstreamPassThroughInputNb, &upstreamPassThroughTime, &upstreamPassThroughView, &upstreamProcessChannels, &upstreamProcessAll);
-
-            // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
-            // if they are not produced by this node
-            mergeLayersList(upstreamOutputLayersProduced, &upstreamAvailableLayers);
-
-            // upstreamAvailableLayers now contain all available planes in input of this node
-            // Remove from this list all layers produced from this node to get the pass-through planes list
-            removeFromLayersList(outputLayersProduced, &upstreamAvailableLayers);
-            
-            passThroughPlanes = upstreamAvailableLayers;
+        std::list<ImageComponents> upstreamAvailableLayers;
+        ActionRetCodeEnum stat = getAvailableLayers(time, view, passThroughInputNb, render, &upstreamAvailableLayers);
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
+
+        // upstreamAvailableLayers now contain all available planes in input of this node
+        // Remove from this list all layers produced from this node to get the pass-through planes list
+        removeFromLayersList(outputLayersProduced, &upstreamAvailableLayers);
+
+        passThroughPlanes = upstreamAvailableLayers;
+
     } // if pass-through for planes
+
 
     (*results)->setResults(inputLayersNeeded, outputLayersProduced, passThroughPlanes, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
 
@@ -1873,6 +1926,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
                     return stat;
                 }
                 *results = inputResults;
+                getNode()->onNodeMetadatasRefreshedOnMainThread(*inputResults->getMetadatasResults());
                 return eActionStatusOK;
             }
         }
@@ -1916,6 +1970,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         getApp()->getProject()->setOrAddProjectFormat(format, true);
     }
 
+    getNode()->onNodeMetadatasRefreshedOnMainThread(metadata);
+
     cacheAccess->insertInCache(*results);
     return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public
@@ -1941,7 +1997,7 @@ getUnmappedComponentsForInput(const EffectInstancePtr& self,
             //None comps
             return rawComps;
         } else {
-            rawComps = self->findClosestSupportedComponents(inputNb, rawComps); //turn that into a comp the plugin expects on that clip
+            rawComps = self->getNode()->findClosestSupportedNumberOfComponents(inputNb, rawComps.getNumComponents()); //turn that into a comp the plugin expects on that clip
         }
     }
     if (!rawComps) {
@@ -2140,7 +2196,7 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
                 metadata.setImageComponents(i, mostComponents);
             } else {
                 remappedComps = mostComponents;
-                remappedComps = findClosestSupportedComponents(i, remappedComps);
+                remappedComps = node->findClosestSupportedNumberOfComponents(i, remappedComps.getNumComponents());
                 metadata.setImageComponents(i, remappedComps);
                 if ( (i == -1) && !premultSet &&
                     ( ( remappedComps == ImageComponents::getRGBAComponents() ) || ( remappedComps == ImageComponents::getAlphaComponents() ) ) ) {
@@ -2193,123 +2249,6 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
     return eActionStatusOK;
 } // getDefaultMetadata
 
-void
-EffectInstance::Implementation::refreshMetadaWarnings(const NodeMetadata &metadata)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    NodePtr node = _publicInterface->getNode();
-
-    if (!node) {
-        return;
-    }
-
-    int nInputs = node->getMaxInputCount();
-
-    QString bitDepthWarning = tr("This nodes converts higher bit depths images from its inputs to a lower bitdepth image. As "
-                                 "a result of this process, the quality of the images is degraded. The following conversions are done:\n");
-    bool setBitDepthWarning = false;
-    const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
-    const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
-    const bool supportsMultipleClipFPSs = _publicInterface->supportsMultipleClipFPSs();
-    std::vector<EffectInstancePtr> inputs(nInputs);
-    for (int i = 0; i < nInputs; ++i) {
-        inputs[i] = _publicInterface->getInput(i);
-    }
-
-
-    ImageBitDepthEnum outputDepth = metadata.getBitDepth(-1);
-    double outputPAR = metadata.getPixelAspectRatio(-1);
-    bool outputFrameRateSet = false;
-    double outputFrameRate = metadata.getOutputFrameRate();
-    bool mustWarnFPS = false;
-    bool mustWarnPAR = false;
-
-    int nbConnectedInputs = 0;
-    for (int i = 0; i < nInputs; ++i) {
-        //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
-        if ( !supportsMultipleClipDepths && (metadata.getBitDepth(i) != outputDepth) ) {
-        }
-
-        const double pixelAspect = metadata.getPixelAspectRatio(i);
-
-        if (!supportsMultipleClipPARs) {
-            if (pixelAspect != outputPAR) {
-                mustWarnPAR = true;
-            }
-        }
-
-        if (!inputs[i]) {
-            continue;
-        }
-
-        ++nbConnectedInputs;
-
-        const double fps = inputs[i]->getFrameRate(TreeRenderNodeArgsPtr());
-
-
-
-        if (!supportsMultipleClipFPSs) {
-            if (!outputFrameRateSet) {
-                outputFrameRate = fps;
-                outputFrameRateSet = true;
-            } else if (std::abs(outputFrameRate - fps) > 0.01) {
-                // We have several inputs with different frame rates
-                mustWarnFPS = true;
-            }
-        }
-
-
-        ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(TreeRenderNodeArgsPtr(), -1);
-
-        //If the bit-depth conversion will be lossy, warn the user
-        if ( Image::isBitDepthConversionLossy( inputOutputDepth, metadata.getBitDepth(i) ) ) {
-            bitDepthWarning.append( QString::fromUtf8( inputs[i]->getNode()->getLabel_mt_safe().c_str() ) );
-            bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString(inputOutputDepth).c_str() ) + QChar::fromLatin1(')') );
-            bitDepthWarning.append( QString::fromUtf8(" ----> ") );
-            bitDepthWarning.append( QString::fromUtf8( node->getLabel_mt_safe().c_str() ) );
-            bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString( metadata.getBitDepth(i) ).c_str() ) + QChar::fromLatin1(')') );
-            bitDepthWarning.append( QChar::fromLatin1('\n') );
-            setBitDepthWarning = true;
-        }
-
-
-        if ( !supportsMultipleClipPARs && (pixelAspect != outputPAR) ) {
-            qDebug() << node->getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getNode()->getScriptName_mt_safe().c_str()
-            << ") has a pixel aspect ratio (" << metadata.getPixelAspectRatio(i)
-            << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "
-            << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
-        }
-    }
-
-    std::map<Node::StreamWarningEnum, QString> warnings;
-    if (setBitDepthWarning) {
-        warnings[Node::eStreamWarningBitdepth] = bitDepthWarning;
-    } else {
-        warnings[Node::eStreamWarningBitdepth] = QString();
-    }
-
-    if (mustWarnFPS && nbConnectedInputs > 1) {
-        QString fpsWarning = tr("One or multiple inputs have a frame rate different of the output. "
-                                "It is not handled correctly by this node. To remove this warning make sure all inputs have "
-                                "the same frame-rate, either by adjusting project settings or the upstream Read node.");
-        warnings[Node::eStreamWarningFrameRate] = fpsWarning;
-    } else {
-        warnings[Node::eStreamWarningFrameRate] = QString();
-    }
-
-    if (mustWarnPAR && nbConnectedInputs > 1) {
-        QString parWarnings = tr("One or multiple input have a pixel aspect ratio different of the output. It is not "
-                                 "handled correctly by this node and may yield unwanted results. Please adjust the "
-                                 "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
-        warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
-    } else {
-        warnings[Node::eStreamWarningPixelAspectRatio] = QString();
-    }
-    
-    
-    node->setStreamWarnings(warnings);
-} // refreshMetadaWarnings
 
 void
 EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
@@ -2346,7 +2285,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
         if ( comps.isColorPlane() ) {
-            comps = node->findClosestSupportedComponents(i, comps);
+            comps = node->findClosestSupportedNumberOfComponents(i, comps.getNumComponents());
         }
 
         md.setImageComponents(i, comps);

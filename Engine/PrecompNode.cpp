@@ -177,11 +177,9 @@ PrecompNode::getOutputNode() const
 
 void
 PrecompNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImageComponents>* comps)
+                                   std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -250,8 +248,8 @@ PrecompNode::initializeKnobs()
                                     "hit the \"Render\" button.").toStdString() );
     writeChoice->setAnimationEnabled(false);
     {
-        std::vector<std::string> choices;
-        choices.push_back("None");
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("None", "", ""));
         writeChoice->populateChoices(choices);
     }
     renderGroup->addKnob(writeChoice);
@@ -281,19 +279,14 @@ PrecompNode::initializeKnobs()
     error->setHintToolTip( tr("Indicates the behavior when an image is missing from the render of the pre-comp project").toStdString() );
     error->setAnimationEnabled(false);
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back("Load Previous");
-        helps.push_back( tr("Loads the previous frame in the sequence.").toStdString() );
-        choices.push_back("Load Next");
-        helps.push_back( tr("Loads the next frame in the sequence.").toStdString() );
-        choices.push_back("Load Nearest");
-        helps.push_back( tr("Loads the nearest frame in the sequence.").toStdString() );
-        choices.push_back("Error");
-        helps.push_back( tr("Fails to render.").toStdString() );
-        choices.push_back("Black");
-        helps.push_back( tr("Black Image.").toStdString() );
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("Load Previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
+        choices.push_back(ChoiceOption("Load Next", "", tr("Loads the next frame in the sequence.").toStdString()));
+        choices.push_back(ChoiceOption("Load Nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
+        choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
+        choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
 
-        error->populateChoices(choices, helps);
+        error->populateChoices(choices);
     }
     error->setDefaultValue(3);
     renderGroup->addKnob(error);
@@ -441,8 +434,8 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     if (!param) {
         return;
     }
-    std::vector<std::string> choices;
-    choices.push_back("None");
+    std::vector<ChoiceOption> choices;
+    choices.push_back(ChoiceOption("None","",""));
 
     NodesList nodes;
     app.lock()->getProject()->getNodes_recursive(nodes, true);
@@ -467,7 +460,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
             (*it)->setPrecompNode(precomp);
         }
         if ( (*it)->getEffectInstance()->isWriter() ) {
-            choices.push_back( (*it)->getFullyQualifiedName() );
+            choices.push_back( ChoiceOption((*it)->getFullyQualifiedName(), "", "") );
         }
     }
 
@@ -655,7 +648,7 @@ PrecompNodePrivate::refreshReadNodeInput()
     //Remove all images from the cache associated to the reader since we know they are no longer valid.
     //This is a blocking call so that we are sure there's no old image laying around in the cache after this call
     readNode->removeAllImagesFromCache();
-    readNode->purgeAllInstancesCaches();
+    readNode->getEffectInstance()->purgeCaches_public();
 
     //Force the reader to reload the sequence/video
     fileNameKnob->evaluateValueChange(DimSpec::all(), TimeValue(_publicInterface->getApp()->getTimeLine()->currentFrame()), ViewSetSpec::all(), eValueChangedReasonUserEdited);

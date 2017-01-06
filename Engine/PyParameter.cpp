@@ -3075,10 +3075,12 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
         PythonSetNonUserKnobError();
         return;
     }
-    std::vector<std::string> entries, helps;
-    for (std::list<std::pair<QString, QString> >::const_iterator it = options.begin(); it != options.end(); ++it) {
-        entries.push_back( it->first.toStdString() );
-        helps.push_back( it->second.toStdString() );
+    std::vector<ChoiceOption> entries(options.size());
+    int i = 0;
+    for (std::list<std::pair<QString, QString> >::const_iterator it = options.begin(); it != options.end(); ++it, ++i) {
+        ChoiceOption& option = entries[i];
+        option.id = it->first.toStdString();
+        option.tooltip = it->second.toStdString();
     }
     knob->populateChoices(entries, helps);
 }

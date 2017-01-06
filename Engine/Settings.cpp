@@ -281,7 +281,7 @@ public:
     KnobColorPtr _defaultMergeGroupColor;
     KnobColorPtr _defaultViewsGroupColor;
     KnobColorPtr _defaultDeepGroupColor;
-    std::vector<std::string> _knownHostNames;
+    std::vector<ChoiceOption> _knownHostNames;
 
     Settings* _publicInterface;
 
@@ -479,85 +479,59 @@ SettingsPrivate::initializeKnobsGeneral()
                                   "restrict their usage to specific OpenFX host(s). "
                                   "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _knownHostNames.clear();
-    std::vector<std::string> visibleHostEntries, hostEntriesHelp;
-    assert(_knownHostNames.size() == (int)eKnownHostNameNatron);
-    _knownHostNames.push_back(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
-    visibleHostEntries.push_back(NATRON_APPLICATION_NAME);
-    assert(_knownHostNames.size() == (int)eKnownHostNameNuke);
-    _knownHostNames.push_back("uk.co.thefoundry.nuke");
-    visibleHostEntries.push_back("Nuke");
-    assert(_knownHostNames.size() == (int)eKnownHostNameFusion);
-    _knownHostNames.push_back("com.eyeonline.Fusion");
-    visibleHostEntries.push_back("Fusion");
-    assert(_knownHostNames.size() == (int)eKnownHostNameCatalyst);
-    _knownHostNames.push_back("com.sony.Catalyst.Edit");
-    visibleHostEntries.push_back("Sony Catalyst Edit");
-    assert(_knownHostNames.size() == (int)eKnownHostNameVegas);
-    _knownHostNames.push_back("com.sonycreativesoftware.vegas");
-    visibleHostEntries.push_back("Sony Vegas");
-    assert(_knownHostNames.size() == (int)eKnownHostNameToxik);
-    _knownHostNames.push_back("Autodesk Toxik");
-    visibleHostEntries.push_back("Toxik");
-    assert(_knownHostNames.size() == (int)eKnownHostNameScratch);
-    _knownHostNames.push_back("Assimilator");
-    visibleHostEntries.push_back("Scratch");
-    assert(_knownHostNames.size() == (int)eKnownHostNameDustBuster);
-    _knownHostNames.push_back("Dustbuster");
-    visibleHostEntries.push_back("DustBuster");
-    assert(_knownHostNames.size() == (int)eKnownHostNameResolve);
-    _knownHostNames.push_back("DaVinciResolve");
-    visibleHostEntries.push_back("Da Vinci Resolve");
-    assert(_knownHostNames.size() == (int)eKnownHostNameResolveLite);
-    _knownHostNames.push_back("DaVinciResolveLite");
-    visibleHostEntries.push_back("Da Vinci Resolve Lite");
-    assert(_knownHostNames.size() == (int)eKnownHostNameMistika);
-    _knownHostNames.push_back("Mistika");
-    visibleHostEntries.push_back("SGO Mistika");
-    assert(_knownHostNames.size() == (int)eKnownHostNamePablo);
-    _knownHostNames.push_back("com.quantel.genq");
-    visibleHostEntries.push_back("Quantel Pablo Rio");
-    assert(_knownHostNames.size() == (int)eKnownHostNameMotionStudio);
-    _knownHostNames.push_back("com.idtvision.MotionStudio");
-    visibleHostEntries.push_back("IDT Motion Studio");
-    assert(_knownHostNames.size() == (int)eKnownHostNameShake);
-    _knownHostNames.push_back("com.apple.shake");
-    visibleHostEntries.push_back("Shake");
-    assert(_knownHostNames.size() == (int)eKnownHostNameBaselight);
-    _knownHostNames.push_back("Baselight");
-    visibleHostEntries.push_back("Baselight");
-    assert(_knownHostNames.size() == (int)eKnownHostNameFrameCycler);
-    _knownHostNames.push_back("IRIDAS Framecycler");
-    visibleHostEntries.push_back("FrameCycler");
-    assert(_knownHostNames.size() == (int)eKnownHostNameNucoda);
-    _knownHostNames.push_back("Nucoda");
-    visibleHostEntries.push_back("Nucoda Film Master");
-    assert(_knownHostNames.size() == (int)eKnownHostNameAvidDS);
-    _knownHostNames.push_back("DS OFX HOST");
-    visibleHostEntries.push_back("Avid DS");
-    assert(_knownHostNames.size() == (int)eKnownHostNameDX);
-    _knownHostNames.push_back("com.chinadigitalvideo.dx");
-    visibleHostEntries.push_back("China Digital Video DX");
-    assert(_knownHostNames.size() == (int)eKnownHostNameTitlerPro);
-    _knownHostNames.push_back("com.newblue.titlerpro");
-    visibleHostEntries.push_back("NewBlueFX Titler Pro");
-    assert(_knownHostNames.size() == (int)eKnownHostNameNewBlueOFXBridge);
-    _knownHostNames.push_back("com.newblue.ofxbridge");
-    visibleHostEntries.push_back("NewBlueFX OFX Bridge");
-    assert(_knownHostNames.size() == (int)eKnownHostNameRamen);
-    _knownHostNames.push_back("Ramen");
-    visibleHostEntries.push_back("Ramen");
-    assert(_knownHostNames.size() == (int)eKnownHostNameTuttleOfx);
-    _knownHostNames.push_back("TuttleOfx");
-    visibleHostEntries.push_back("TuttleOFX");
+    std::vector<ChoiceOption> visibleHostEntries;
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
+    visibleHostEntries.push_back(ChoiceOption(NATRON_APPLICATION_NAME, NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNuke);
+    visibleHostEntries.push_back(ChoiceOption("uk.co.thefoundry.nuke", "Nuke", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameFusion);
+    visibleHostEntries.push_back(ChoiceOption("com.eyeonline.Fusion", "Fusion", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
+    visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);
+    visibleHostEntries.push_back(ChoiceOption("com.sonycreativesoftware.vegas", "Sony Vegas", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameToxik);
+    visibleHostEntries.push_back(ChoiceOption("Autodesk Toxik", "Toxik", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameScratch);
+    visibleHostEntries.push_back(ChoiceOption("Assimilator", "Scratch", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameDustBuster);
+    visibleHostEntries.push_back(ChoiceOption("Dustbuster", "DustBuster", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameResolve);
+    visibleHostEntries.push_back(ChoiceOption("DaVinciResolve", "Da Vinci Resolve", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameResolveLite);
+    visibleHostEntries.push_back(ChoiceOption("DaVinciResolveLite", "Da Vinci Resolve Lite", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameMistika);
+    visibleHostEntries.push_back(ChoiceOption("Mistika", "SGO Mistika", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNamePablo);
+    visibleHostEntries.push_back(ChoiceOption("com.quantel.genq", "Quantel Pablo Rio", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameMotionStudio);
+    visibleHostEntries.push_back(ChoiceOption("com.idtvision.MotionStudio", "IDT Motion Studio", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameShake);
+    visibleHostEntries.push_back(ChoiceOption("com.apple.shake", "Shake", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameBaselight);
+    visibleHostEntries.push_back(ChoiceOption("Baselight", "Baselight", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameFrameCycler);
+    visibleHostEntries.push_back(ChoiceOption("IRIDAS Framecycler", "FrameCycler", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNucoda);
+    visibleHostEntries.push_back(ChoiceOption("Nucoda", "Nucoda Film Master", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameAvidDS);
+    visibleHostEntries.push_back(ChoiceOption("DS OFX HOST", "Avid DS", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameDX);
+    visibleHostEntries.push_back(ChoiceOption("com.chinadigitalvideo.dx", "China Digital Video DX", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameTitlerPro);
+    visibleHostEntries.push_back(ChoiceOption("com.newblue.titlerpro", "NewBlueFX Titler Pro", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNewBlueOFXBridge);
+    visibleHostEntries.push_back(ChoiceOption("com.newblue.ofxbridge", "NewBlueFX OFX Bridge", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameRamen);
+    visibleHostEntries.push_back(ChoiceOption("Ramen", "Ramen", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameTuttleOfx);
+    visibleHostEntries.push_back(ChoiceOption("TuttleOfx", "TuttleOFX", ""));
 
+    _knownHostNames = visibleHostEntries;
 
-    assert( visibleHostEntries.size() == _knownHostNames.size() );
-    hostEntriesHelp = _knownHostNames;
+    visibleHostEntries.push_back(ChoiceOption(NATRON_CUSTOM_HOST_NAME_ENTRY, "Custom host name", ""));
 
-    visibleHostEntries.push_back(NATRON_CUSTOM_HOST_NAME_ENTRY);
-    hostEntriesHelp.push_back("Custom host name");
-
-    _hostName->populateChoices(visibleHostEntries, hostEntriesHelp);
+    _hostName->populateChoices(visibleHostEntries);
     _hostName->setAddNewLine(false);
     _generalTab->addKnob(_hostName);
 
@@ -657,11 +631,11 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     _imp->_nOpenGLContexts->setSecret(false);
     _imp->_enableOpenGL->setSecret(false);
 
-    std::vector<std::string> entries( renderers.size() );
+    std::vector<ChoiceOption> entries( renderers.size() );
     int i = 0;
     for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
-        entries[i] = option;
+        entries[i].id = option;
     }
     _imp->_availableOpenGLRenderers->populateChoices(entries);
     _imp->_availableOpenGLRenderers->setSecret(renderers.size() == 1);
@@ -669,9 +643,9 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
 
 #ifdef HAVE_OSMESA
 #ifdef OSMESA_GALLIUM_DRIVER
-    std::vector<std::string> mesaDrivers;
-    mesaDrivers.push_back("softpipe");
-    mesaDrivers.push_back("llvmpipe");
+    std::vector<ChoiceOption> mesaDrivers;
+    mesaDrivers.push_back(ChoiceOption("softpipe", "",""));
+    mesaDrivers.push_back(ChoiceOption("llvmpipe", "",""));
     _imp->_osmesaRenderers->populateChoices(mesaDrivers);
     _imp->_osmesaRenderers->setSecret(false);
 #else
@@ -769,18 +743,14 @@ SettingsPrivate::initializeKnobsGPU()
     _enableOpenGL = AppManager::createKnob<KnobChoice>( thisShared, tr("OpenGL Rendering") );
     _enableOpenGL->setName("enableOpenGLRendering");
     {
-        std::vector<std::string> entries;
-        std::vector<std::string> helps;
+        std::vector<ChoiceOption> entries;
         assert(entries.size() == (int)Settings::eEnableOpenGLEnabled);
-        entries.push_back("Enabled");
-        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back(ChoiceOption("Enabled", "",  tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabled);
-        entries.push_back("Disabled");
-        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabledIfBackground);
-        entries.push_back("Disabled If Background");
-        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
-        _enableOpenGL->populateChoices(entries, helps);
+        entries.push_back(ChoiceOption("Disabled If Background", "", tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
+        _enableOpenGL->populateChoices(entries);
     }
     _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
     _gpuPage->addKnob(_enableOpenGL);
@@ -919,7 +889,7 @@ SettingsPrivate::initializeKnobsColorManagement()
 
     _ocioConfigKnob->setName("ocioConfig");
 
-    std::vector<std::string> configs;
+    std::vector<ChoiceOption> configs;
     int defaultIndex = 0;
     QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
     Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
@@ -931,13 +901,13 @@ SettingsPrivate::initializeKnobsColorManagement()
                 if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
-                configs.push_back( entries[j].toStdString() );
+                configs.push_back(ChoiceOption( entries[j].toStdString(), "",""));
             }
 
             break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
-    configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
+    configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME, "", ""));
     _ocioConfigKnob->populateChoices(configs);
     _ocioConfigKnob->setDefaultValue(defaultIndex);
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
@@ -1326,17 +1296,14 @@ SettingsPrivate::initializeKnobsViewers()
 
     _texturesMode = AppManager::createKnob<KnobChoice>( thisShared, tr("Viewer textures bit depth") );
     _texturesMode->setName("texturesBitDepth");
-    std::vector<std::string> textureModes;
-    std::vector<std::string> helpStringsTextureModes;
-    textureModes.push_back("Byte");
-    helpStringsTextureModes.push_back( tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                          "by the CPU. As a results, the size of cached textures is smaller.").toStdString() );
+    std::vector<ChoiceOption> textureModes;
+    textureModes.push_back(ChoiceOption("Byte", "", tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                                        "by the CPU. As a results, the size of cached textures is smaller.").toStdString() ));
     //textureModes.push_back("16bits half-float");
     //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back("32bits floating-point");
-    helpStringsTextureModes.push_back( tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                          "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString() );
-    _texturesMode->populateChoices(textureModes, helpStringsTextureModes);
+    textureModes.push_back(ChoiceOption("32bits floating-point", "",tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString()));
+    _texturesMode->populateChoices(textureModes);
     _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
                                       " Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
@@ -1374,12 +1341,12 @@ SettingsPrivate::initializeKnobsViewers()
 
     _autoProxyLevel = AppManager::createKnob<KnobChoice>( thisShared, tr("Auto-proxy level") );
     _autoProxyLevel->setName("autoProxyLevel");
-    std::vector<std::string> autoProxyChoices;
-    autoProxyChoices.push_back("2");
-    autoProxyChoices.push_back("4");
-    autoProxyChoices.push_back("8");
-    autoProxyChoices.push_back("16");
-    autoProxyChoices.push_back("32");
+    std::vector<ChoiceOption> autoProxyChoices;
+    autoProxyChoices.push_back(ChoiceOption("2", "",""));
+    autoProxyChoices.push_back(ChoiceOption("4", "",""));
+    autoProxyChoices.push_back(ChoiceOption("8", "",""));
+    autoProxyChoices.push_back(ChoiceOption("16", "",""));
+    autoProxyChoices.push_back(ChoiceOption("32", "",""));
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
 
@@ -2720,8 +2687,12 @@ void
 Settings::populateSystemFonts(const QSettings& settings,
                               const std::vector<std::string>& fonts)
 {
-    _imp->_systemFontChoice->populateChoices(fonts);
-    _imp->_scriptEditorFontChoice->populateChoices(fonts);
+    std::vector<ChoiceOption> options(fonts.size());
+    for (std::size_t i = 0; i < fonts.size(); ++i) {
+        options[i].id = fonts[i];
+    }
+    _imp->_systemFontChoice->populateChoices(options);
+    _imp->_scriptEditorFontChoice->populateChoices(options);
     for (U32 i = 0; i < fonts.size(); ++i) {
         if (fonts[i] == NATRON_FONT) {
             _imp->_systemFontChoice->setDefaultValue(i);

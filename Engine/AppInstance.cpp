@@ -69,6 +69,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ProcessHandler.h"
 #include "Engine/KnobFile.h"
 #include "Engine/ReadNode.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/SerializableWindow.h"
 #include "Engine/Settings.h"
 #include "Engine/PyPanelI.h"
@@ -215,6 +216,7 @@ public:
     // the unique ID of this instance
     int _appID;
 
+    RenderQueuePtr renderQueue;
 
     // Protects creatingGroupMutex and _creatingTree
     mutable QMutex creatingGroupMutex;
@@ -529,6 +531,8 @@ AppInstance::load(const CLArgs& cl,
     assert(!_imp->_currentProject); // < This function may only be called once per AppInstance
     _imp->_currentProject = Project::create( shared_from_this() );
     _imp->_currentProject->initializeKnobsPublic();
+
+    _imp->renderQueue.reset(new RenderQueue(shared_from_this()));
 
     loadInternal(cl, makeEmptyInstance);
 }
@@ -1340,6 +1344,12 @@ AppInstance::getTimeLine() const
     return _imp->_currentProject->getTimeLine();
 }
 
+RenderQueuePtr
+AppInstance::getRenderQueue() const
+{
+    return _imp->renderQueue;
+}
+
 void
 AppInstance::errorDialog(const std::string & title,
                          const std::string & message,
@@ -1426,7 +1436,7 @@ AppInstance::clearOpenFXPluginsCaches()
     _imp->_currentProject->getActiveNodes(&activeNodes);
 
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        (*it)->purgeAllInstancesCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
 }
 

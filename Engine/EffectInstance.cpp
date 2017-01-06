@@ -323,14 +323,84 @@ EffectInstance::checkCanSetValueAndWarn() const
 
 bool
 EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
-                                  TimeValue time,
-                                  ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
                                   int visitsCount) const
 {
-    NodePtr n = _node.lock();
+    if (visitsCount > 1) {
+        // The node is referenced multiple times by getFramesNeeded of downstream nodes, cache it
+        return true;
+    }
 
-    return n->shouldCacheOutput(isFrameVaryingOrAnimated, time, view, visitsCount);
-}
+    NodePtr node = getNode();
+
+    std::list<NodeWPtr> outputs = node->getOutputs();
+    std::size_t nOutputNodes = outputs.size();
+
+    if (nOutputNodes == 0) {
+        // outputs == 0, never cache, unless explicitly set or rotopaint internal node
+        RotoDrawableItemPtr attachedStroke = node->getAttachedRotoItem();
+
+        return node->isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
+        ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
+
+    } else if (nOutputNodes > 1) {
+        return true;
+    }
+
+    NodePtr output = outputs.front().lock();
+
+    if (!isFrameVaryingOrAnimated) {
+        // This image never changes, cache it once.
+        return true;
+    }
+    if ( output->isSettingsPanelVisible() ) {
+        // Output node has panel opened, meaning the user is likely to be heavily editing
+        // that output node, hence requesting this node a lot. Cache it.
+        return true;
+    }
+    if ( doesTemporalClipAccess() ) {
+        // Very heavy to compute since many frames are fetched upstream. Cache it.
+        return true;
+    }
+    if ( !render->getCurrentTilesSupport() ) {
+        // No tiles, image is going to be produced fully, cache it to prevent multiple access
+        // with different RoIs
+        return true;
+    }
+    if ( node->isForceCachingEnabled() ) {
+        // Users wants it cached
+        return true;
+    }
+
+    NodeGroupPtr parentIsGroup = toNodeGroup( node->getGroup() );
+    if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput() == node) ) {
+        // If the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
+        return true;
+    }
+
+    if ( appPTR->isAggressiveCachingEnabled() ) {
+        ///Users wants all nodes cached
+        return true;
+    }
+
+    if ( node->isPreviewEnabled() && !appPTR->isBackground() ) {
+        // The node has a preview, meaning the image will be computed several times between previews & actual renders. Cache it.
+        return true;
+    }
+
+    if ( node->isDuringPaintStrokeCreation() ) {
+        // When painting we must always cache
+        return true;
+    }
+
+    RotoDrawableItemPtr attachedStroke = node->getAttachedRotoItem();
+    if ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() ) {
+        // Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
+        return true;
+    }
+
+    return false;
+} // shouldCacheOutput
 
 const std::string &
 EffectInstance::getScriptName() const
@@ -986,18 +1056,6 @@ EffectInstance::evaluate(bool isSignificant,
         // Force a re-compute of the meta-data if needed
         GetTimeInvariantMetaDatasResultsPtr results;
         getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
-        if (results) {
-            NodeMetadataPtr metadatas = results->getMetadatasResults();
-
-            // Refresh warnings
-            _imp->refreshMetadaWarnings(*metadatas);
-
-            node->refreshIdentityState();
-            node->refreshChannelSelectors();
-            node->checkForPremultWarningAndCheckboxes();
-            node->refreshLayersSelectorsVisibility();
-
-        }
     }
 
     if (isSignificant) {
@@ -1184,32 +1242,6 @@ EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
     _imp->renderClonesPool.push_back(instance);
 }
 
-
-bool
-EffectInstance::isSupportedComponent(int inputNb,
-                                     const ImageComponents & comp) const
-{
-    return getNode()->isSupportedComponent(inputNb, comp);
-}
-
-ImageBitDepthEnum
-EffectInstance::getBestSupportedBitDepth() const
-{
-    return getNode()->getBestSupportedBitDepth();
-}
-
-bool
-EffectInstance::isSupportedBitDepth(ImageBitDepthEnum depth) const
-{
-    return getNode()->isSupportedBitDepth(depth);
-}
-
-ImageComponents
-EffectInstance::findClosestSupportedComponents(int inputNb,
-                                               const ImageComponents & comp) const
-{
-    return getNode()->findClosestSupportedComponents(inputNb, comp);
-}
 
 
 bool

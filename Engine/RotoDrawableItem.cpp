@@ -1578,10 +1578,11 @@ RotoDrawableItem::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoCompOperatorParamLabel));
         param->setHintToolTip( tr(kRotoCompOperatorHint) );
         param->setName(kRotoCompOperatorParam);
-        std::vector<std::string> operators;
-        std::vector<std::string> tooltips;
-        Merge::getOperatorStrings(&operators, &tooltips);
-        param->populateChoices(operators, tooltips);
+
+
+        std::vector<ChoiceOption> operators;
+        Merge::getOperatorStrings(&operators);
+        param->populateChoices(operators);
         param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeOver) );
         _imp->compOperator = param;
     }

@@ -28,11 +28,45 @@
 
 #include <map>
 #include <list>
+#include <bitset>
+
+#include <QDebug>
+
+#include "Global/Macros.h"
+
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+#endif
+
+
 #include "Engine/EngineFwd.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/Node.h"
+#include "Engine/NodeMetadata.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/KnobFile.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
+#include "Engine/AppInstance.h"
+#include "Engine/CreateNodeArgs.h"
+#include "Engine/GroupInput.h"
+#include "Engine/NodeGuiI.h"
+#include "Engine/KnobItemsTable.h"
+#include "Engine/NodeGroup.h"
+#include "Engine/NodeGraphI.h"
+#include "Engine/Project.h"
+#include "Engine/ReadNode.h"
+#include "Engine/RenderQueue.h"
+#include "Engine/WriteNode.h"
 
+#include "Serialization/KnobSerialization.h"
+#include "Serialization/NodeSerialization.h"
+#include "Serialization/NodeClipBoard.h"
+#include "Serialization/SerializationIO.h"
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>
@@ -54,66 +88,20 @@ typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<NodeWPtr> InputsV;
 
 
-class ChannelSelector
+struct ChannelSelector
 {
-public:
 
     KnobChoiceWPtr layer;
-    mutable QMutex compsMutex;
 
-    //Stores the components available at build time of the choice menu
-    EffectInstance::ComponentsAvailableMap compsAvailable;
 
-    ChannelSelector()
-    : layer()
-    , compsMutex()
-    , compsAvailable()
-    {
-    }
-
-    ChannelSelector(const ChannelSelector& other)
-    {
-        *this = other;
-    }
-
-    void operator=(const ChannelSelector& other)
-    {
-        layer = other.layer;
-        QMutexLocker k(&compsMutex);
-        compsAvailable = other.compsAvailable;
-    }
 };
 
-class MaskSelector
+struct MaskSelector
 {
-public:
 
     KnobBoolWPtr enabled;
     KnobChoiceWPtr channel;
-    mutable QMutex compsMutex;
-    //Stores the components available at build time of the choice menu
-    std::vector<std::pair<ImageComponents, NodeWPtr > > compsAvailable;
 
-    MaskSelector()
-    : enabled()
-    , channel()
-    , compsMutex()
-    , compsAvailable()
-    {
-    }
-
-    MaskSelector(const MaskSelector& other)
-    {
-        *this = other;
-    }
-
-    void operator=(const MaskSelector& other)
-    {
-        enabled = other.enabled;
-        channel = other.channel;
-        QMutexLocker k(&compsMutex);
-        compsAvailable = other.compsAvailable;
-    }
 };
 
 
@@ -176,6 +164,7 @@ public:
 
     void refreshDefaultViewerKnobsOrder();
 
+    void refreshMetadaWarnings(const NodeMetadata &metadata);
 
 
 
@@ -228,10 +217,11 @@ public:
     // Set during interact actions. This is only read/written on the main-thread.
     OverlaySupport* overlaysViewport;
 
-    // The accepted components in input and in output of the plug-in
+    // The accepted number of components in input and in output of the plug-in
     // These two are also protected by inputsMutex
-    std::vector< std::list<ImageComponents> > inputsComponents;
-    std::list<ImageComponents> outputComponents;
+    // This is a bitset: each bit tells whether the plug-in supports N comps
+    std::vector< std::bitset<4> > inputsComponents;
+    std::bitset<4> outputComponents;
 
     // Protects scriptName and label
     mutable QMutex nameMutex;

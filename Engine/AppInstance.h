@@ -45,7 +45,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
 NATRON_NAMESPACE_ENTER;
 
 struct AppInstancePrivate;
@@ -139,6 +139,8 @@ public:
 
     ProjectPtr getProject() const;
     TimeLinePtr getTimeLine() const;
+
+    RenderQueuePtr getRenderQueue() const;
 
     /*true if the user is NOT scrubbing the timeline*/
     virtual bool shouldRefreshPreview() const

@@ -431,7 +431,7 @@ KnobDouble::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
 
     double defaultValue = getDefaultValue(dimension);
     if (_defaultValuesAreNormalized) {
-        double denormalizedDefaultValue = denormalize(dimension, 0, defaultValue);
+        double denormalizedDefaultValue = denormalize(dimension, TimeValue(0), defaultValue);
         QMutexLocker k(&doubleData->valueMutex);
         return doubleData->value != denormalizedDefaultValue;
     } else {
@@ -488,7 +488,6 @@ KnobButton::trigger()
 ChoiceKnobDimView::ChoiceKnobDimView()
 : ValueKnobDimView<int>()
 , menuOptions()
-, menuOptionTooltips()
 , activeEntry()
 , separators()
 , shortcuts()
@@ -510,7 +509,7 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
     QMutexLocker k(&valueMutex);
     std::string newChoice;
     if (v >= 0 && v < (int)menuOptions.size()) {
-        newChoice = menuOptions[v];
+        newChoice = menuOptions[v].id;
     } else {
         // No current value, assume they are different
         return true;
@@ -534,7 +533,6 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     QMutexLocker k2(&inArgs.other->valueMutex);
 
     menuOptions = otherType->menuOptions;
-    menuOptionTooltips = otherType->menuOptionTooltips;
     separators = otherType->separators;
     shortcuts = otherType->shortcuts;
     menuIcons = otherType->menuIcons;
@@ -688,7 +686,7 @@ KnobChoice::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx th
 
     // Choice parameters with different menus cannot be linked
     QString menuDifferentError = tr("You cannot link choice parameters with different menus. To overcome this, use an expression instead.");
-    std::vector<std::string> thisOptions, otherOptions;
+    std::vector<ChoiceOption> thisOptions, otherOptions;
     {
         QMutexLocker k(&thisData->valueMutex);
         thisOptions = thisData->menuOptions;
@@ -702,7 +700,7 @@ KnobChoice::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx th
         return false;
     }
     for (std::size_t i = 0; i < thisOptions.size(); ++i) {
-        if (thisOptions[i] != otherOptions[i]) {
+        if (thisOptions[i].id != otherOptions[i].id) {
             *error = menuDifferentError.toStdString();
             return false;
         }
@@ -745,7 +743,7 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
     QMutexLocker k(&data->valueMutex);
 
     if (def_i >= 0 && def_i < (int)choiceData->menuOptions.size()) {
-        defaultVal = choiceData->menuOptions[def_i];
+        defaultVal = choiceData->menuOptions[def_i].id;
     }
 
     if (choiceData->activeEntry != defaultVal) {
@@ -757,70 +755,50 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
 
 
 
-static bool
-stringEqualFunctor(const std::string& a,
-                   const std::string& b,
-                   KnobChoiceMergeEntriesData* /*data*/)
-{
-    return a == b;
-}
-
 void
-KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
-                                KnobChoiceMergeEntriesData* mergingData)
+KnobChoice::findAndSetOldChoice()
 {
     std::list<ViewIdx> views = getViewsList();
     if (views.empty()) {
         return;
     }
 
-    // Make sure we don't call knobChanged if we found the value
-    blockValueChanges();
-    beginChanges();
+
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         assert(data);
 
-        QMutexLocker k(&data->valueMutex);
+        int found = -1;
 
-        if ( !data->activeEntry.empty() ) {
-            if (mergingFunctor) {
-                assert(mergingData);
-                mergingData->clear();
-            } else {
-                mergingFunctor = stringEqualFunctor;
-            }
-            int found = -1;
-            {
+        {
+            QMutexLocker k(&data->valueMutex);
+
+            if ( !data->activeEntry.empty() ) {
+
                 for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                    if ( mergingFunctor(data->menuOptions[i], data->activeEntry, mergingData) ) {
+                    if ( data->menuOptions[i].id == data->activeEntry ) {
                         found = i;
-
-                        // Update the label if different
-                        data->activeEntry = data->menuOptions[i];
                         break;
                     }
                 }
             }
-            if (found != -1) {
-                k.unlock();
-                setValue(found, ViewSetSpec(*it));
-            }
+        }
+        if (found != -1) {
+            // Make sure we don't call knobChanged if we found the value
+            blockValueChanges();
+            beginChanges();
+            setValue(found, ViewSetSpec(*it));
+            unblockValueChanges();
+            endChanges();
         }
     } // for all views
-    unblockValueChanges();
-    endChanges();
 
 }
 
 bool
-KnobChoice::populateChoices(const std::vector<std::string> &entries,
-                            const std::vector<std::string> &entriesHelp,
-                            MergeMenuEqualityFunctor mergingFunctor,
-                            KnobChoiceMergeEntriesData* mergingData)
+KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 {
-    assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
     bool hasChanged = false;
     KnobDimViewKeySet sharedKnobs;
     {
@@ -829,45 +807,26 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
 
         QMutexLocker k(&data->valueMutex);
         sharedKnobs = data->sharedKnobs;
-        if (!mergingFunctor) {
-            // No merging functor, replace
-            data->menuOptions = entries;
-            data->menuOptionTooltips = entriesHelp;
-            hasChanged = true;
-        } else {
-            assert(mergingData);
-            // If there is a merging functor to merge current entries with new entries, do the merging
 
-            // For all new entries, check if one of the merged entry matches and then merge
-            // otherwise add to the merged entries
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                mergingData->clear();
-                bool found = false;
-                for (std::size_t j = 0; j < data->menuOptions.size(); ++j) {
-                    if ( mergingFunctor(data->menuOptions[j], entries[i], mergingData) ) {
-                        if (data->menuOptions[j] != entries[i]) {
-                            hasChanged = true;
-                            data->menuOptions[j] = entries[i];
-                        }
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    hasChanged = true;
-                    if ( i < data->menuOptionTooltips.size() ) {
-                        data->menuOptionTooltips.push_back(entriesHelp[i]);
-                    }
-                    data->menuOptions.push_back(entries[i]);
-                }
+        data->menuOptions = entries;
+        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+
+            // The ID cannot be empty, this is the only way to uniquely identify the choice.
+            assert(!data->menuOptions[i].id.empty());
+
+            // If the label is not set, use the ID
+            if (data->menuOptions[i].label.empty()) {
+                data->menuOptions[i].label = data->menuOptions[i].id;
             }
         }
+        hasChanged = true;
+
     } // QMutexLocker
 
     if (hasChanged) {
 
         //  Try to restore the last choice.
-        findAndSetOldChoice(mergingFunctor, mergingData);
+        findAndSetOldChoice();
 
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
             KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
@@ -965,8 +924,6 @@ KnobChoice::resetChoices(ViewSetSpec view)
             QMutexLocker k(&data->valueMutex);
             sharedKnobs = data->sharedKnobs;
             data->menuOptions.clear();
-            data->menuOptionTooltips.clear();
-
         }
 
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
@@ -990,10 +947,12 @@ KnobChoice::resetChoices(ViewSetSpec view)
 }
 
 void
-KnobChoice::appendChoice(const std::string& entry,
-                         const std::string& help,
+KnobChoice::appendChoice(const ChoiceOption& option,
                          ViewSetSpec view)
 {
+    // The ID is the only way to uniquely identify the option! It must be set.
+    assert(!option.id.empty());
+
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -1010,8 +969,13 @@ KnobChoice::appendChoice(const std::string& entry,
         KnobDimViewKeySet sharedKnobs;
         {
             QMutexLocker k(&data->valueMutex);
-            data->menuOptions.push_back(entry);
-            data->menuOptionTooltips.push_back(help);
+            data->menuOptions.push_back(option);
+            ChoiceOption& copiedOption = data->menuOptions.back();
+
+            // If label is empty, set to the option
+            if (copiedOption.label.empty()) {
+                copiedOption.label = copiedOption.id;
+            }
             sharedKnobs = data->sharedKnobs;
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
@@ -1023,7 +987,7 @@ KnobChoice::appendChoice(const std::string& entry,
             // Notify tooltip changed because we changed the menu entries
             sharedKnob->_signalSlotHandler->s_helpChanged();
 
-            Q_EMIT sharedKnob->entryAppended( QString::fromUtf8( entry.c_str() ), QString::fromUtf8( help.c_str() ) );
+            Q_EMIT sharedKnob->entryAppended();
         }
     }
 
@@ -1031,33 +995,19 @@ KnobChoice::appendChoice(const std::string& entry,
     findAndSetOldChoice();
 }
 
-std::vector<std::string>
+std::vector<ChoiceOption>
 KnobChoice::getEntries(ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
-            return std::vector<std::string>();
+            return std::vector<ChoiceOption>();
         }
         QMutexLocker k(&data->valueMutex);
         return data->menuOptions;
     }
 
-}
-
-std::vector<std::string>
-KnobChoice::getEntriesHelp(ViewIdx view) const
-{
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
-    {
-        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
-        if (!data) {
-            return std::vector<std::string>();
-        }
-        QMutexLocker k(&data->valueMutex);
-        return data->menuOptionTooltips;
-    }
 }
 
 bool
@@ -1071,7 +1021,7 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
         }
         QMutexLocker k(&data->valueMutex);
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if (data->menuOptions[i] == data->activeEntry) {
+            if (data->menuOptions[i].id == data->activeEntry) {
                 return true;
             }
         }
@@ -1080,14 +1030,14 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
     return false;
 }
 
-std::string
+ChoiceOption
 KnobChoice::getEntry(int v, ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
-            return std::string();
+            return ChoiceOption("","","");
         }
         QMutexLocker k(&data->valueMutex);
         if (v < 0 || (int)data->menuOptions.size() <= v ) {
@@ -1114,7 +1064,7 @@ KnobChoice::getNumEntries(ViewIdx view) const
 
 
 void
-KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
+KnobChoice::setActiveEntryID(const std::string& entry, ViewSetSpec view)
 {
 
     std::list<ViewIdx> views = getViewsList();
@@ -1150,7 +1100,7 @@ KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
 }
 
 std::string
-KnobChoice::getActiveEntryText(ViewIdx view)
+KnobChoice::getActiveEntryID(ViewIdx view)
 {
     ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
@@ -1170,7 +1120,7 @@ KnobChoice::getActiveEntryText(ViewIdx view)
         {
             QMutexLocker k(&data->valueMutex);
             if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
-                data->activeEntry = data->menuOptions[activeIndex];
+                data->activeEntry = data->menuOptions[activeIndex].id;
                 return data->activeEntry;
             }
 
@@ -1190,9 +1140,9 @@ KnobChoice::getHintToolTipFull() const
 
     int gothelp = 0;
 
-    if ( !data->menuOptionTooltips.empty() ) {
-        for (std::size_t i = 0; i < data->menuOptionTooltips.size(); ++i) {
-            if ( !data->menuOptionTooltips[i].empty() ) {
+    if ( !data->menuOptions.empty() ) {
+        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+            if ( !data->menuOptions[i].tooltip.empty() ) {
                 ++gothelp;
             }
         }
@@ -1212,11 +1162,11 @@ KnobChoice::getHintToolTipFull() const
     }
     // param may have no hint but still have per-option help
     if (gothelp) {
-        for (std::size_t i = 0; i < data->menuOptionTooltips.size(); ++i) {
-            if ( !data->menuOptionTooltips[i].empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = boost::trim_copy(data->menuOptions[i]);
+        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+            if ( !data->menuOptions[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
+                std::string entry = boost::trim_copy(data->menuOptions[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-                std::string help = boost::trim_copy(data->menuOptionTooltips[i]);
+                std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -1225,7 +1175,7 @@ KnobChoice::getHintToolTipFull() const
                 }
                 ss << ": ";
                 ss << help;
-                if (i < data->menuOptionTooltips.size() - 1) {
+                if (i < data->menuOptions.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -1276,14 +1226,14 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
 // returns index if choice was matched, -1 if not matched
 int
 KnobChoice::choiceMatch(const std::string& choice,
-                        const std::vector<std::string>& entries,
+                        const std::vector<ChoiceOption>& entries,
                         std::string* matchedEntry)
 {
     // first, try exact match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i] == choice) {
+        if (entries[i].id == choice) {
             if (matchedEntry) {
-                *matchedEntry = entries[i];
+                *matchedEntry = entries[i].id;
             }
             return i;
         }
@@ -1293,13 +1243,13 @@ KnobChoice::choiceMatch(const std::string& choice,
     std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
     std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        const std::string& entry(entries[i]);
+        const std::string& entry(entries[i].id);
         std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
         std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
 
         if (entrymain == choicemain) {
             if (matchedEntry) {
-                *matchedEntry = entries[i];
+                *matchedEntry = entries[i].id;
             }
             return i;
         }
@@ -1309,7 +1259,7 @@ KnobChoice::choiceMatch(const std::string& choice,
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if ( boost::iequals(entries[i], choice) ) {
             if (matchedEntry) {
-                *matchedEntry = entries[i];
+                *matchedEntry = entries[i].id;
             }
             return i;
         }
@@ -2308,7 +2258,7 @@ KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewIdx view, Param
 
     EffectInstancePtr holder = toEffectInstance(getHolder());
     if (holder) {
-        RenderValuesCachePtr cache = holder->getRenderValuesCache_TLS();
+        RenderValuesCachePtr cache = holder->getRenderValuesCache_TLS(0, 0);
         if (cache) {
             KnobParametricPtr thisShared = boost::const_pointer_cast<KnobParametric>(boost::dynamic_pointer_cast<const KnobParametric>(shared_from_this()));
             return cache->getOrCreateCachedParametricKnobCurve(thisShared, data->parametricCurve, dimension);
@@ -2413,7 +2363,7 @@ KnobParametric::evaluateCurve(DimIdx dimension,
     if (!curve) {
         return eActionStatusFailed;
     }
-    *returnValue = curve->getValueAt(parametricPosition);
+    *returnValue = curve->getValueAt(TimeValue(parametricPosition));
     return eActionStatusOK;
 }
 
@@ -2882,7 +2832,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
             }
 
             for (std::list<double>::const_iterator it2 = times.begin(); it2!=times.end(); ++it2) {
-                curve->removeKeyFrameWithTime(*it2);
+                curve->removeKeyFrameWithTime(TimeValue(*it2));
             }
             signalCurveChanged(dimension, data);
 
@@ -3072,7 +3022,7 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
             }
             for (std::list<double>::const_iterator it2 = times.begin(); it2!=times.end(); ++it2) {
                 KeyFrame k;
-                if (curve->setKeyFrameInterpolation(interpolation, *it2, &k)) {
+                if (curve->setKeyFrameInterpolation(interpolation, TimeValue(*it2), &k)) {
                     if (newKeys) {
                         newKeys->push_back(k);
                     }

@@ -319,6 +319,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
 
         // If the node has a layer selector knob, request what was selected in input.
         // If the node does not have a layer selector knob then just fetch the originally requested layers.
+#pragma message WARN("Use components needed in input here instead")
         bool fetchUserSelectedComponentsUpstream = _publicInterface->getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
 
         if (!fetchUserSelectedComponentsUpstream) {

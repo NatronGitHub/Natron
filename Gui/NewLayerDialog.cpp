@@ -56,6 +56,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
+#include "Engine/Utils.h"
 
 #include "Gui/Button.h"
 #include "Gui/ClickableLabel.h"
@@ -96,25 +97,29 @@ struct NewLayerDialogPrivate
     LineEdit* bEdit;
     Label* aLabel;
     LineEdit* aEdit;
+    Label* componentsTypeNameLabel;
+    LineEdit* componentsTypeNameEdit;
     Button* setRgbaButton;
     DialogButtonBox* buttons;
 
     NewLayerDialogPrivate()
-        : mainLayout(0)
-        , layerLabel(0)
-        , layerEdit(0)
-        , numCompsLabel(0)
-        , numCompsBox(0)
-        , rLabel(0)
-        , rEdit(0)
-        , gLabel(0)
-        , gEdit(0)
-        , bLabel(0)
-        , bEdit(0)
-        , aLabel(0)
-        , aEdit(0)
-        , setRgbaButton(0)
-        , buttons(0)
+    : mainLayout(0)
+    , layerLabel(0)
+    , layerEdit(0)
+    , numCompsLabel(0)
+    , numCompsBox(0)
+    , rLabel(0)
+    , rEdit(0)
+    , gLabel(0)
+    , gEdit(0)
+    , bLabel(0)
+    , bEdit(0)
+    , aLabel(0)
+    , aEdit(0)
+    , componentsTypeNameLabel(0)
+    , componentsTypeNameEdit(0)
+    , setRgbaButton(0)
+    , buttons(0)
     {
     }
 };
@@ -144,6 +149,11 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
     _imp->aLabel = new Label(tr("4th Channel"), this);
     _imp->aEdit = new LineEdit(this);
 
+    _imp->componentsTypeNameLabel = new Label(tr("Components Type Name"), this);
+    _imp->componentsTypeNameLabel->setToolTip(convertFromPlainText(tr("If set this will replace the channel names in the selectors by this label instead."
+                                                                      "For instance, for the Disparity layer, instead of having DisparityLeft.XY displayed the components type name is DisparityLeft.Disparity"), WhiteSpaceNormal));
+    _imp->componentsTypeNameEdit = new LineEdit(this);
+
     _imp->setRgbaButton = new Button(this);
     _imp->setRgbaButton->setText( tr("Set RGBA") );
     QObject::connect( _imp->setRgbaButton, SIGNAL(clicked(bool)), this, SLOT(onRGBAButtonClicked()) );
@@ -168,17 +178,20 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
     _imp->mainLayout->addWidget(_imp->bLabel, 4, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->bEdit, 4, 1, 1, 1);
 
-
     _imp->mainLayout->addWidget(_imp->aLabel, 5, 0, 1, 1);
     _imp->mainLayout->addWidget(_imp->aEdit, 5, 1, 1, 1);
 
-    _imp->mainLayout->addWidget(_imp->setRgbaButton, 6, 0, 1, 2);
+    _imp->mainLayout->addWidget(_imp->componentsTypeNameLabel, 6, 0, 1, 1);
+    _imp->mainLayout->addWidget(_imp->componentsTypeNameEdit, 6, 1, 1, 1);
 
-    _imp->mainLayout->addWidget(_imp->buttons, 7, 0, 1, 2);
+    _imp->mainLayout->addWidget(_imp->setRgbaButton, 7, 0, 1, 2);
+
+    _imp->mainLayout->addWidget(_imp->buttons, 8, 0, 1, 2);
 
     if (original.getNumComponents() != 0) {
         _imp->layerEdit->setText( QString::fromUtf8( original.getLayerName().c_str() ) );
 
+        _imp->componentsTypeNameEdit->setText(QString::fromUtf8( original.getComponentsGlobalName().c_str() ) );
         LineEdit* edits[4] = {_imp->rEdit, _imp->gEdit, _imp->bEdit, _imp->aEdit};
         Label* labels[4] = {_imp->rLabel, _imp->gLabel, _imp->bLabel, _imp->aLabel};
         const std::vector<std::string>& channels = original.getComponentsNames();
@@ -259,58 +272,46 @@ NewLayerDialog::getComponents() const
         return ImageComponents::getNoneComponents();
     }
 
+    std::string globalComponentsName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(_imp->componentsTypeNameEdit->text().toStdString());
+
     if (nComps == 1) {
         if ( a.isEmpty() ) {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(aFixed);
-        compsGlobal.append(aFixed);
 
-        return ImageComponents(layerFixed, compsGlobal, comps);
+        return ImageComponents(layerFixed, globalComponentsName, comps);
     } else if (nComps == 2) {
         if ( rFixed.empty() || gFixed.empty() ) {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(rFixed);
-        compsGlobal.append(rFixed);
         comps.push_back(gFixed);
-        compsGlobal.append(gFixed);
 
-        return ImageComponents(layerFixed, compsGlobal, comps);
+        return ImageComponents(layerFixed, globalComponentsName, comps);
     } else if (nComps == 3) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() ) {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(rFixed);
-        compsGlobal.append(rFixed);
         comps.push_back(gFixed);
-        compsGlobal.append(gFixed);
         comps.push_back(bFixed);
-        compsGlobal.append(bFixed);
 
-        return ImageComponents(layerFixed, compsGlobal, comps);
+        return ImageComponents(layerFixed, globalComponentsName, comps);
     } else if (nComps == 4) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() || aFixed.empty() ) {
             return ImageComponents::getNoneComponents();
         }
         std::vector<std::string> comps;
-        std::string compsGlobal;
         comps.push_back(rFixed);
-        compsGlobal.append(rFixed);
         comps.push_back(gFixed);
-        compsGlobal.append(gFixed);
         comps.push_back(bFixed);
-        compsGlobal.append(bFixed);
         comps.push_back(aFixed);
-        compsGlobal.append(aFixed);
 
-        return ImageComponents(layerFixed, compsGlobal, comps);
+        return ImageComponents(layerFixed, globalComponentsName, comps);
     }
 
     return ImageComponents::getNoneComponents();

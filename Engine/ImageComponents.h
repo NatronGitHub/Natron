@@ -36,25 +36,14 @@
 #include "Serialization/SerializationBase.h"
 
 #define kNatronColorPlaneName "Color"
-#define kNatronBackwardMotionVectorsPlaneName "Backward.Motion"
-#define kNatronForwardMotionVectorsPlaneName "Forward.Motion"
-#define kNatronDisparityLeftPlaneName "DisparityLeft.Disparity"
-#define kNatronDisparityRightPlaneName "DisparityRight.Disparity"
+#define kNatronBackwardMotionVectorsPlaneName "Backward"
+#define kNatronForwardMotionVectorsPlaneName "Forward"
+#define kNatronDisparityLeftPlaneName "DisparityLeft"
+#define kNatronDisparityRightPlaneName "DisparityRight"
 
-#define kNatronRGBAComponentsName "RGBA"
-#define kNatronRGBComponentsName "RGB"
-#define kNatronAlphaComponentsName "Alpha"
+#define kNatronDisparityComponentsName "Disparity"
+#define kNatronMotionComponentsName "Motion"
 
-#define kNatronDisparityComponentsName "XY"
-#define kNatronMotionComponentsName "UV"
-
-#define kNatronAlphaPlaneUserName kNatronColorPlaneName "." kNatronAlphaComponentsName
-#define kNatronRGBAPlaneUserName kNatronColorPlaneName "." kNatronRGBAComponentsName
-#define kNatronRGBPlaneUserName kNatronColorPlaneName "." kNatronRGBComponentsName
-#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName
-#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName
-#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName
-#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName
 
 NATRON_NAMESPACE_ENTER;
 
@@ -62,13 +51,6 @@ class ImageComponents : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
-    /**
-     * @brief The default components registered in Natron, you can iterate until {0,0}
-     **/
-    static const char* defaultComponents[][2];
-    static std::string mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName);
-    static std::string mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName);
-    static const ImageComponents& getDefaultComponent(const std::string& planeName);
 
     ImageComponents();
 

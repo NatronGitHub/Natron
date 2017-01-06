@@ -498,7 +498,7 @@ public:
 
     void refreshSourceKnobs(const RotoDrawableItemPtr& item);
 
-    void getMergeChoices(std::vector<std::string>* aInput, std::vector<std::string>* maskInput) const;
+    void getMergeChoices(std::vector<ChoiceOption>* aInput, std::vector<ChoiceOption>* maskInput) const;
 
     void addSoloItem(const RotoDrawableItemPtr& item);
     void removeSoloItem(const RotoDrawableItemPtr& item);

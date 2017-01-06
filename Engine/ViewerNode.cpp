@@ -36,6 +36,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
+#include "Engine/GroupInput.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -747,7 +748,9 @@ struct ViewerNodePrivate
 
     void toggleDownscaleLevel(int index);
 
+    NodePtr getInputRecursive(int inputIndex) const;
 
+    NodePtr getMainInputRecursiveInternal(const NodePtr& inputParam) const;
 
 };
 
@@ -868,6 +871,63 @@ ViewerNode::isDoingPartialUpdates() const
     QMutexLocker k(&_imp->partialUpdatesMutex);
 
     return _imp->isDoingPartialUpdates;
+}
+
+
+/**
+ * @brief Cycles recursively upstream thtough the main input of each node until we reach an Input node, or nothing in the
+ * sub-graph of the Viewer ndoe
+ **/
+NodePtr
+ViewerNodePrivate::getMainInputRecursiveInternal(const NodePtr& inputParam) const
+{
+
+    int prefIndex = inputParam->getPreferredInput();
+    if (prefIndex == -1) {
+        return NodePtr();
+    }
+    NodePtr input = inputParam->getRealInput(prefIndex);
+    if (!input) {
+        return inputParam;
+    }
+    GroupInput* isInput = dynamic_cast<GroupInput*>(input->getEffectInstance().get());
+    if (isInput) {
+        return inputParam;
+    }
+    NodePtr inputRet = getMainInputRecursiveInternal(input);
+    if (!inputRet) {
+        return input;
+    } else {
+        return inputRet;
+    }
+    
+}
+
+
+/**
+ * @brief Returns the last node connected to a GroupInput node following the main-input branch of the graph
+ **/
+NodePtr
+ViewerNodePrivate::getInputRecursive(int inputIndex) const
+{
+    NodePtr viewerProcess = internalViewerProcessNode[inputIndex].lock();
+    if (!viewerProcess) {
+        return NodePtr();
+    }
+    NodePtr input = viewerProcess->getRealInput(inputIndex);
+    if (!input) {
+        return viewerProcess;
+    }
+    GroupInput* isInput = dynamic_cast<GroupInput*>(input->getEffectInstance().get());
+    if (isInput) {
+        return viewerProcess;
+    }
+    NodePtr inputRet = getMainInputRecursiveInternal(input);
+    if (!inputRet) {
+        return input;
+    } else {
+        return inputRet;
+    }
 }
 
 
@@ -4583,6 +4643,18 @@ ViewerNode::disconnectTexture(int index,bool clearRod)
         node->s_disconnectTextureRequest(index, clearRod);
     }
 }
+
+void
+ViewerNode::clearLastRenderedImage()
+{
+    NodeGroup::clearLastRenderedImage();
+
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->clearLastRenderedImage();
+    }
+}
+
 
 void
 ViewerNode::aboutToUpdateTextures()

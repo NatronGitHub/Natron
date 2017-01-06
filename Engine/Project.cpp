@@ -739,24 +739,27 @@ Project::initializeKnobs()
     _imp->formatKnob->setName("outputFormat");
 
     const std::vector<Format> & appFormats = appPTR->getFormats();
-    std::vector<std::string> entries;
-    for (U32 i = 0; i < appFormats.size(); ++i) {
-        const Format& f = appFormats[i];
-        QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
-            _imp->formatKnob->setDefaultValue(i);
-        }
-        entries.push_back( formatStr.toStdString() );
-        _imp->builtinFormats.push_back(f);
-    }
-    _imp->formatKnob->setAddNewLine(false);
 
-    _imp->formatKnob->populateChoices(entries);
+    {
+        std::vector<ChoiceOption> entries;
+        for (U32 i = 0; i < appFormats.size(); ++i) {
+            const Format& f = appFormats[i];
+            QString formatStr = ProjectPrivate::generateStringFromFormat(f);
+            if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
+                _imp->formatKnob->setDefaultValue(i);
+            }
+            entries.push_back( ChoiceOption(formatStr.toStdString(),"", "") );
+            _imp->builtinFormats.push_back(f);
+        }
+        _imp->formatKnob->setAddNewLine(false);
+
+        _imp->formatKnob->populateChoices(entries);
+    }
     _imp->formatKnob->setAnimationEnabled(false);
     page->addKnob(_imp->formatKnob);
 
     QObject::connect( _imp->formatKnob.get(), SIGNAL(populated()), this, SLOT(onProjectFormatPopulated()) );
-
+    
     _imp->addFormatKnob = AppManager::createKnob<KnobButton>( shared_from_this(), tr("New Format...") );
     _imp->addFormatKnob->setName("newFormat");
     page->addKnob(_imp->addFormatKnob);
@@ -810,15 +813,11 @@ Project::initializeKnobs()
     _imp->gpuSupport = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("GPU Rendering") );
     _imp->gpuSupport->setName("gpuRendering");
     {
-        std::vector<std::string> entries;
-        std::vector<std::string> helps;
-        entries.push_back("Enabled");
-        helps.push_back( tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString() );
-        entries.push_back("Disabled");
-        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
-        entries.push_back("Disabled if background");
-        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
-        _imp->gpuSupport->populateChoices(entries, helps);
+        std::vector<ChoiceOption> entries;
+        entries.push_back(ChoiceOption("Enabled","",tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString()));
+        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
+        entries.push_back(ChoiceOption("Disabled if background","",tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
+        _imp->gpuSupport->populateChoices(entries);
     }
     _imp->gpuSupport->setAnimationEnabled(false);
     _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
@@ -858,11 +857,18 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setEvaluateOnChange(false);
     std::list<std::vector<std::string> > defaultLayers;
     {
+        std::vector<ImageComponents> defaultComponents;
+        defaultComponents.push_back(ImageComponents::getDisparityLeftComponents());
+        defaultComponents.push_back(ImageComponents::getDisparityRightComponents());
+        defaultComponents.push_back(ImageComponents::getBackwardMotionComponents());
+        defaultComponents.push_back(ImageComponents::getForwardMotionComponents());
+
+
         //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
-        for (int i = 3; ImageComponents::defaultComponents[i][0] != NULL; ++i) {
-            std::vector<std::string> row(2);
-            row[0] = ImageComponents::defaultComponents[i][1];
-            const ImageComponents& comps = ImageComponents::getDefaultComponent(ImageComponents::defaultComponents[i][0]);
+        for (std::size_t i = 0; i < defaultComponents.size(); ++i) {
+            const ImageComponents& comps = defaultComponents[i];
+            std::vector<std::string> row(3);
+            row[0] = comps.getLayerName();
             std::string channelsStr;
             const std::vector<std::string>& channels = comps.getComponentsNames();
             for (std::size_t c = 0; c < channels.size(); ++c) {
@@ -872,6 +878,7 @@ Project::initializeKnobs()
                 channelsStr += channels[c];
             }
             row[1] = channelsStr;
+            row[2] = comps.getComponentsGlobalName();
             defaultLayers.push_back(row);
         }
     }
@@ -881,11 +888,11 @@ Project::initializeKnobs()
 
 
     KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( shared_from_this(), tr("LUT") );
-    std::vector<std::string> colorSpaces;
+    std::vector<ChoiceOption> colorSpaces;
     // Keep it in sync with ViewerColorSpaceEnum
-    colorSpaces.push_back("Linear");
-    colorSpaces.push_back("sRGB");
-    colorSpaces.push_back("Rec.709");
+    colorSpaces.push_back(ChoiceOption("Linear","",""));
+    colorSpaces.push_back(ChoiceOption("sRGB","",""));
+    colorSpaces.push_back(ChoiceOption("Rec.709","",""));
     _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("8-Bit Colorspace") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
@@ -1073,7 +1080,7 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    std::string formatSpec = _imp->formatKnob->getActiveEntryText();
+    std::string formatSpec = _imp->formatKnob->getActiveEntryID();
     if ( !formatSpec.empty() ) {
         ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), f);
     } else {
@@ -1130,21 +1137,21 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool*
     QString formatStr = ProjectPrivate::generateStringFromFormat(f);
 
     int ret = -1;
-    std::vector<std::string> entries;
+    std::vector<ChoiceOption> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         QString str = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( str.toStdString() );
+        entries.push_back(ChoiceOption( str.toStdString(), "", "") );
     }
     if (!addAsAdditionalFormat) {
-        entries.push_back( formatStr.toStdString() );
+        entries.push_back( ChoiceOption(formatStr.toStdString(),"","") );
         ret = (entries.size() - 1);
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
         QString str = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( str.toStdString() );
+        entries.push_back( ChoiceOption(str.toStdString(),"","") );
     }
     if (addAsAdditionalFormat) {
-        entries.push_back( formatStr.toStdString() );
+        entries.push_back( ChoiceOption(formatStr.toStdString(),"","") );
         ret = (entries.size() - 1);
     }
 
@@ -1171,10 +1178,11 @@ Project::setProjectDefaultFormat(const Format & f)
 }
 
 void
-Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
+Project::getProjectFormatEntries(std::vector<ChoiceOption>* formatStrings,
                                  int* currentValue) const
 {
     *formatStrings = _imp->formatKnob->getEntries();
+
     *currentValue = _imp->formatKnob->getValue();
 }
 
@@ -1241,18 +1249,18 @@ Project::isGPURenderingEnabledInProject() const
     return false;
 }
 
-std::vector<ImageComponents>
+std::list<ImageComponents>
 Project::getProjectDefaultLayers() const
 {
-    std::vector<ImageComponents> ret;
+    std::list<ImageComponents> ret;
     std::list<std::vector<std::string> > pairs;
 
     _imp->defaultLayersList->getTable(&pairs);
     for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
          it != pairs.end(); ++it) {
         bool found = false;
-        for (std::size_t i = 0; i < ret.size(); ++i) {
-            if (ret[i].getLayerName() == (*it)[0]) {
+        for (std::list<ImageComponents>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+            if (it2->getLayerName() == (*it)[0]) {
                 found = true;
                 break;
             }
@@ -1265,7 +1273,7 @@ Project::getProjectDefaultLayers() const
             for (int i = 0; i < channels.size(); ++i) {
                 componentsName[i] = channels[i].toStdString();
             }
-            ImageComponents c( (*it)[0], std::string(), componentsName );
+            ImageComponents c( (*it)[0], (*it)[2], componentsName );
             ret.push_back(c);
         }
     }
@@ -1568,7 +1576,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         getNodes_recursive(nodes, true);
 
         // Refresh nodes with a format parameter
-        std::vector<std::string> entries = _imp->formatKnob->getEntries();
+        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2072,7 +2080,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         NodesList nodes;
         getNodes_recursive(nodes, true);
         int index = _imp->formatKnob->getValue();
-        std::vector<std::string> entries = _imp->formatKnob->getEntries();
+        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2544,8 +2552,8 @@ Project::unionFrameRangeWith(TimeValue first,
 
     curFirst = _imp->frameRange->getValue(DimIdx(0));
     curLast = _imp->frameRange->getValue(DimIdx(1));
-    curFirst = !mustSet ? std::min(first, curFirst) : first;
-    curLast = !mustSet ? std::max(last, curLast) : last;
+    curFirst = !mustSet ? std::min((double)first, (double)curFirst) : first;
+    curLast = !mustSet ? std::max((double)last, (double)curLast) : last;
     beginChanges();
     _imp->frameRange->setValue(curFirst);
     _imp->frameRange->setValue(curLast, ViewIdx(0), DimIdx(1));
@@ -2737,7 +2745,7 @@ Project::onProjectFormatPopulated()
     NodesList nodes;
 
     getNodes_recursive(nodes, true);
-    std::vector<std::string> entries = _imp->formatKnob->getEntries();
+    std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->refreshFormatParamChoice(entries, index, false);
     }
@@ -2913,10 +2921,10 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 
     // Restore project formats
     // We must restore the entries in the combobox before restoring the value
-    std::vector<std::string> entries;
+    std::vector<ChoiceOption> entries;
     for (std::list<Format>::const_iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-        entries.push_back( formatStr.toStdString() );
+        entries.push_back( ChoiceOption(formatStr.toStdString(), "", "") );
     }
 
     {
@@ -2933,7 +2941,7 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
         }
         for (std::list<Format>::const_iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
             QString formatStr = ProjectPrivate::generateStringFromFormat(*it);
-            entries.push_back( formatStr.toStdString() );
+            entries.push_back( ChoiceOption(formatStr.toStdString(), "","") );
         }
     }
 

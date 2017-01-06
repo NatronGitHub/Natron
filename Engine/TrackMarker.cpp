@@ -230,10 +230,10 @@ TrackMarker::initializeKnobs()
     mmodelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
     mmodelKnob->setName(kTrackerParamMotionModel);
     {
-        std::vector<std::string> choices, helps;
+        std::vector<ChoiceOption> choices, helps;
         std::map<int, std::string> icons;
-        TrackerNodePrivate::getMotionModelsAndHelps(true, &choices, &helps, &icons);
-        mmodelKnob->populateChoices(choices, helps);
+        TrackerNodePrivate::getMotionModelsAndHelps(true, &choices, &icons);
+        mmodelKnob->populateChoices(choices);
         mmodelKnob->setIcons(icons);
     }
 

@@ -234,29 +234,22 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
 {
     tls->componentsPresent.clear();
 
-    EffectInstancePtr effect = _publicInterface->getAssociatedNode();
+    EffectInstancePtr effect = _publicInterface->getEffectHolder();
     if (!effect) {
         return tls->componentsPresent;
     }
 
+    int inputNb = _publicInterface->getInputNb();
 
     TimeValue time = effect->getCurrentTime_TLS();
     ViewIdx view = effect->getCurrentView_TLS();
     TreeRenderNodeArgsPtr renderArgs = effect->getCurrentRender_TLS();
 
-    GetComponentsResultsPtr actionResults;
-    ActionRetCodeEnum stat = effect->getComponents_public(time, view, renderArgs, &actionResults);
+    std::list<ImageComponents> availableLayers;
+    ActionRetCodeEnum stat = effect->getAvailableLayers(time, view, inputNb, renderArgs, &availableLayers);
     if (isFailureRetCode(stat)) {
         return tls->componentsPresent;
     }
-    std::map<int, std::list<ImageComponents> > neededInputLayers;
-    std::list<ImageComponents> producedLayers, availableLayers;
-    int passThroughInputNb;
-    ViewIdx passThroughView;
-    TimeValue passThroughTime;
-    std::bitset<4> processChannels;
-    bool processAll;
-    actionResults->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
 
     for (std::list<ImageComponents>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
         tls->componentsPresent.push_back( OfxClipInstance::natronsComponentsToOfxComponents(*it) );

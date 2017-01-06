@@ -381,6 +381,13 @@ public:
      **/
     ActionRetCodeEnum getComponents_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
 
+    /**
+     * @brief Returns the layer availables for the given inputNb. If inputNb is -1, this returns the layers available in output.
+     * The layers available are the layers produced by the corresponding node, plus the pass-through layers plus the default project
+     * layers plus the user created layers at this node.
+     **/
+    ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render, std::list<ImageComponents>* availableLayers) ;
+
 protected:
 
     /**
@@ -391,13 +398,13 @@ protected:
      * Default implementation returns the components returned by getTimeInvariantMetadatas on the color plane.
      **/
     virtual ActionRetCodeEnum getComponentsAction(TimeValue time,
-                                           ViewIdx view,
-                                           const TreeRenderNodeArgsPtr& render,
-                                           std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                           std::list<ImageComponents>* layersProduced,
-                                           TimeValue* passThroughTime,
-                                           ViewIdx* passThroughView,
-                                           int* passThroughInputNb);
+                                                  ViewIdx view,
+                                                  const TreeRenderNodeArgsPtr& render,
+                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                  std::list<ImageComponents>* layersProduced,
+                                                  TimeValue* passThroughTime,
+                                                  ViewIdx* passThroughView,
+                                                  int* passThroughInputNb);
 
 private:
 
@@ -414,17 +421,17 @@ private:
 
 
     ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
-                                           ViewIdx view,
-                                           const TreeRenderNodeArgsPtr& render,
-                                           std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                           std::list<ImageComponents>* layersProduced,
-                                           TimeValue* passThroughTime,
-                                           ViewIdx* passThroughView,
-                                           int* passThroughInputNb,
-                                           bool* processAll,
-                                           std::bitset<4>* processChannels);
-
-
+                                                  ViewIdx view,
+                                                  const TreeRenderNodeArgsPtr& render,
+                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                  std::list<ImageComponents>* layersProduced,
+                                                  TimeValue* passThroughTime,
+                                                  ViewIdx* passThroughView,
+                                                  int* passThroughInputNb,
+                                                  bool* processAll,
+                                                  std::bitset<4>* processChannels);
+    
+    
 
 public:
 
@@ -1102,34 +1109,15 @@ public:
 
     /**
      * @brief Routine called after the creation of an effect. This function must
-     * fill for the given input what image components we can feed it with.
+     * fill for the given input what number of image components is supported by the plug-in.
+     * Each bit of the bitset indicate whether image of N components are supported.
+     *
      * This function is also called to specify what image components this effect can output.
      * In that case inputNb equals -1.
      **/
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) = 0;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4> * comps) = 0;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const = 0;
 
-    /**
-     * @brief Must return the deepest bit depth that this plug-in can support.
-     * If 32 float is supported then return eImageBitDepthFloat, otherwise
-     * return eImageBitDepthShort if 16 bits is supported, and as a last resort, return
-     * eImageBitDepthByte. At least one must be returned.
-     **/
-    ImageBitDepthEnum getBestSupportedBitDepth() const;
-
-    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
-
-    /**
-     * @brief Returns true if the given input supports the given components. If inputNb equals -1
-     * then this function will check whether the effect can produce the given components.
-     **/
-    bool isSupportedComponent(int inputNb, const ImageComponents & comp) const;
-
-    /**
-     * @brief Returns the most appropriate components that can be supported by the inputNb.
-     * If inputNb equals -1 then this function will check the output components.
-     **/
-    ImageComponents findClosestSupportedComponents(int inputNb, const ImageComponents & comp) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
@@ -1381,7 +1369,7 @@ public:
 
 
 
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, const TreeRenderNodeArgsPtr& render, int visitsCount) const;
 
 
 

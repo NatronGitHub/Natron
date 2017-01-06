@@ -87,12 +87,9 @@ RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
 
 void
 RotoShapeRenderNode::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<ImageComponents>* comps)
+                                 std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getXYComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -109,9 +106,9 @@ RotoShapeRenderNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamOutputComponentsLabel));
         param->setName(kRotoShapeRenderNodeParamOutputComponents);
         {
-            std::vector<std::string> options;
-            options.push_back(kRotoShapeRenderNodeParamOutputComponentsRGBA);
-            options.push_back(kRotoShapeRenderNodeParamOutputComponentsAlpha);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsRGBA, "", ""));
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsAlpha, "", ""));
             param->populateChoices(options);
         }
         param->setIsMetadataSlave(true);
@@ -122,9 +119,9 @@ RotoShapeRenderNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamTypeLabel));
         param->setName(kRotoShapeRenderNodeParamType);
         {
-            std::vector<std::string> options;
-            options.push_back(kRotoShapeRenderNodeParamTypeSolid);
-            options.push_back(kRotoShapeRenderNodeParamTypeSmear);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamTypeSolid, "", ""));
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamTypeSmear, "", ""));
             param->populateChoices(options);
         }
         param->setIsMetadataSlave(true);

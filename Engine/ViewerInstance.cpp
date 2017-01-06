@@ -23,7 +23,6 @@
 // ***** END PYTHON BLOCK *****
 
 #include "ViewerInstance.h"
-#include "ViewerInstancePrivate.h"
 
 #include <algorithm> // min, max
 #include <stdexcept>
@@ -31,47 +30,20 @@
 #include <cstring> // for std::memcpy
 #include <cfloat> // DBL_MAX
 
-#include <boost/shared_ptr.hpp>
-#include <boost/scoped_ptr.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
-// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
-#include <boost/bind.hpp>
-GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QtGlobal>
-#include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
-#include <QtCore/QFutureWatcher>
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QCoreApplication>
-#include <QtCore/QThreadPool>
-CLANG_DIAG_ON(deprecated)
 
-#include "Global/MemoryInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
-#include "Engine/Cache.h"
 #include "Engine/Image.h"
-#include "Engine/Log.h"
 #include "Engine/Lut.h"
-#include "Engine/MemoryFile.h"
-#include "Engine/Hash64.h"
 #include "Engine/Node.h"
-#include "Engine/GroupInput.h"
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/OpenGLViewerI.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/Project.h"
-#include "Engine/RenderStats.h"
-#include "Engine/RotoPaint.h"
-#include "Engine/RotoStrokeItem.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/MultiThread.h"
+#include "Engine/RamBuffer.h"
 #include "Engine/Settings.h"
-#include "Engine/TimeLine.h"
-#include "Engine/Timer.h"
-#include "Engine/UpdateViewerParams.h"
-#include "Engine/ViewIdx.h"
 #include "Engine/ViewerNode.h"
+
+#define GAMMA_LUT_NB_VALUES 1023
 
 
 #ifndef M_LN2
@@ -102,22 +74,6 @@ struct MinMaxVal {
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
-static void scaleToTexture8bits(const RectI& roi,
-                                const RenderViewerArgs & args,
-                                const ViewerInstancePtr& viewer,
-                                const UpdateViewerParams::CachedTile& tile,
-                                U32* output);
-static void scaleToTexture32bits(const RectI& roi,
-                                 const RenderViewerArgs & args,
-                                 const UpdateViewerParams::CachedTile& tile,
-                                 float *output);
-static MinMaxVal findAutoContrastVminVmax(boost::shared_ptr<const Image> inputImage,
-                                                         DisplayChannelsEnum channels,
-                                                         const RectI & rect);
-static void renderFunctor(const RectI& roi,
-                          const RenderViewerArgs & args,
-                          const ViewerInstancePtr& viewer,
-                          UpdateViewerParams::CachedTile tile);
 
 /**
  *@brief Actually converting to ARGB... but it is called BGRA by
@@ -132,6 +88,42 @@ toBGRA(unsigned char r,
 {
     return (a << 24) | (r << 16) | (g << 8) | b;
 }
+
+struct ViewerInstancePrivate
+{
+
+    ViewerInstance* _publicInterface;
+
+    // The layer to render for RGB
+    KnobChoiceWPtr layerChoiceKnob;
+
+    // The layer to use in input for the alpha channel
+    KnobChoiceWPtr alphaChannelChoiceKnob;
+
+    // What to output
+    KnobChoiceWPtr displayChannels;
+
+    KnobDoubleWPtr gammaKnob;
+    KnobDoubleWPtr gainKnob;
+    KnobBoolWPtr autoContrastKnob;
+
+
+    bool viewerChannelsAutoswitchedToAlpha;
+
+
+    ViewerInstancePrivate(ViewerInstance* publicInterface)
+    : _publicInterface(publicInterface)
+    {
+
+    }
+
+
+    void buildGammaLut(double gamma, RamBuffer<float>* gammaLookup);
+
+    float lookupGammaLut(float value, const float* gammaLookupBuffer) const;
+    
+};
+
 
 const Color::Lut*
 ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
@@ -160,9 +152,6 @@ ViewerInstance::lutFromColorspace(ViewerColorSpaceEnum cs)
 EffectInstancePtr
 ViewerInstance::create(const NodePtr& node)
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
     return EffectInstancePtr( new ViewerInstance(node) );
 }
 
@@ -184,9 +173,6 @@ ViewerInstance::ViewerInstance(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new ViewerInstancePrivate(this) )
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
 
 }
 
@@ -209,108 +195,61 @@ ViewerInstance::getViewerNodeGroup() const
 
 
 std::string
-ViewerInstance::getInputLabel(int inputNb) const
+ViewerInstance::getInputLabel(int /*inputNb*/) const
 {
-    assert(inputNb == 0 || inputNb == 1);
-    return inputNb == 0 ? "A" : "B";
-}
-
-
-void
-ViewerInstance::clearLastRenderedImage()
-{
-    EffectInstance::clearLastRenderedImage();
-
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->clearLastRenderedImage();
-    }
-    {
-        QMutexLocker k(&_imp->lastRenderParamsMutex);
-        _imp->lastRenderParams[0].reset();
-        _imp->lastRenderParams[1].reset();
-    }
+    return "Source";
 }
 
 int
 ViewerInstance::getMaxInputCount() const
 {
-    return 2;
-}
-
-
-/**
- * @brief Cycles recursively upstream thtough the main input of each node until we reach an Input node, or nothing in the 
- * sub-graph of the Viewer ndoe
- **/
-static NodePtr getMainInputRecursiveInternal(const NodePtr& inputParam, const ViewerNodePtr& viewerGroup)
-{
-
-    int prefIndex = inputParam->getPreferredInput();
-    if (prefIndex == -1) {
-        return NodePtr();
-    }
-    NodePtr input = inputParam->getRealInput(prefIndex);
-    if (!input) {
-        return inputParam;
-    }
-    GroupInput* isInput = dynamic_cast<GroupInput*>(input->getEffectInstance().get());
-    if (isInput) {
-        return inputParam;
-    }
-    NodePtr inputRet = getMainInputRecursiveInternal(input, viewerGroup);
-    if (!inputRet) {
-        return input;
-    } else {
-        return inputRet;
-    }
-
+    return 1;
 }
 
 void
-ViewerInstance::setCurrentLayer(const ImageComponents& layer)
+ViewerInstancePrivate::buildGammaLut(double gamma, RamBuffer<float>* gammaLookup)
 {
-    QMutexLocker k(&_imp->viewerParamsMutex);
-    _imp->viewerParamsLayer = layer;
+    // gammaLookupMutex should already be locked
+    gammaLookup->resize(GAMMA_LUT_NB_VALUES + 1);
+    float* buf = gammaLookup->getData();
+    if (gamma <= 0) {
+        // gamma = 0: everything is zero, except gamma(1)=1
+        memset(buf, 0, sizeof(float) * GAMMA_LUT_NB_VALUES);
+        buf[GAMMA_LUT_NB_VALUES] = 1.f;
+        return;
+    }
+    for (int position = 0; position <= GAMMA_LUT_NB_VALUES; ++position) {
+        double parametricPos = double(position) / GAMMA_LUT_NB_VALUES;
+        double value = std::pow(parametricPos, 1. / gamma);
+        // set that in the lut
+        buf[position] = (float)std::max( 0., std::min(1., value) );
+    }
 }
 
-void
-ViewerInstance::setAlphaChannel(const ImageComponents& layer, const std::string& channelName)
+float
+ViewerInstancePrivate::lookupGammaLut(float value, const float* gammaLookupBuffer) const
 {
-    QMutexLocker k(&_imp->viewerParamsMutex);
-    _imp->viewerParamsAlphaLayer = layer;
-    _imp->viewerParamsAlphaChannelName = channelName;
-}
-
-
-/**
- * @brief Returns the last node connected to a GroupInput node following the main-input branch of the graph
- **/
-NodePtr
-ViewerInstance::getInputRecursive(int inputIndex) const
-{
-    NodePtr thisNode = getNode();
-    NodePtr input = thisNode->getRealInput(inputIndex);
-    if (!input) {
-        return thisNode;
-    }
-    ViewerNodePtr viewerGroup = getViewerNodeGroup();
-    GroupInput* isInput = dynamic_cast<GroupInput*>(input->getEffectInstance().get());
-    if (isInput) {
-        return thisNode;
-    }
-    NodePtr inputRet = getMainInputRecursiveInternal(input, viewerGroup);
-    if (!inputRet) {
-        return input;
+    if (value < 0.) {
+        return 0.;
+    } else if (value > 1.) {
+        return 1.;
     } else {
-        return inputRet;
+        int i = (int)(value * GAMMA_LUT_NB_VALUES);
+        assert(0 <= i && i <= GAMMA_LUT_NB_VALUES);
+        float alpha = std::max( 0.f, std::min(value * GAMMA_LUT_NB_VALUES - i, 1.f) );
+        float a = gammaLookupBuffer[i];
+        float b = (i  < GAMMA_LUT_NB_VALUES) ? gammaLookupBuffer[i + 1] : 0.f;
+
+        return a * (1.f - alpha) + b * alpha;
     }
 }
+
 
 bool
 ViewerInstance::isMultiPlanar() const
 {
-    return false;
+    // We are multi-planar: we need to process multiple planes (The one selected in alpha + the output layer)
+    return true;
 }
 
 EffectInstance::PassThroughEnum
@@ -320,16 +259,47 @@ ViewerInstance::isPassThroughForNonRenderedPlanes() const
 }
 
 ActionRetCodeEnum
-ViewerInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+ViewerInstance::isIdentity(TimeValue time,
+                           const RenderScale & scale,
+                           const RectI & roi,
+                           ViewIdx view,
+                           const TreeRenderNodeArgsPtr& render,
+                           TimeValue* inputTime,
+                           ViewIdx* inputView,
+                           int* inputNb)
 {
+    
+} // isIdentity
 
-} // attachOpenGLContext
 
 ActionRetCodeEnum
-ViewerInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
+ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& /*metadata*/)
+{
+    ViewerNodePtr node = getViewerNodeGroup();
+    node->refreshFps();
+    node->refreshViewsKnobVisibility();
+    refreshLayerAndAlphaChannelComboBox();
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->refreshFormatFromMetadata();
+    }
+} // getTimeInvariantMetadatas
+
+ActionRetCodeEnum
+ViewerInstance::getComponentsNeededInternal(TimeValue time,
+                                            ViewIdx view,
+                                            const TreeRenderNodeArgsPtr& render,
+                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                            std::list<ImageComponents>* layersProduced,
+                                            TimeValue* passThroughTime,
+                                            ViewIdx* passThroughView,
+                                            int* passThroughInputNb,
+                                            bool* processAll,
+                                            std::bitset<4>* processChannels)
 {
 
-} // dettachOpenGLContext
+    return eActionStatusOK;
+} // getComponentsNeededInternal
 
 
 ActionRetCodeEnum
@@ -345,29 +315,33 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 {
     ViewerNodePtr viewerGroup = getViewerNodeGroup();
 
-    KnobChoicePtr layerKnob = viewerGroup->getLayerKnob();
-    KnobChoicePtr alphaChannelKnob = viewerGroup->getAlphaChannelKnob();
+    KnobChoicePtr layerKnob = _imp->layerChoiceKnob.lock();
+    KnobChoicePtr alphaChannelKnob = _imp->alphaChannelChoiceKnob.lock();
 
     // Remember the current choices
-    std::string layerCurChoice = layerKnob->getActiveEntryText();
-    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText();
+    std::string layerCurChoice = layerKnob->getActiveEntryText(ViewIdx(0));
+    std::string alphaCurChoice = alphaChannelKnob->getActiveEntryText(ViewIdx(0));
 
-    // Merge components from A and B
-    std::set<ImageComponents> components;
-    getInputsComponentsAvailables(&components);
+    std::list<ImageComponents> upstreamAvailableLayers;
+
+    {
+        const int passThroughPlanesInputNb = 0;
+        ActionRetCodeEnum stat = getAvailableInputLayers(getCurrentTime_TLS(), ViewIdx(0), passThroughPlanesInputNb, TreeRenderNodeArgsPtr(), &upstreamAvailableLayers);
+        (void)stat;
+    }
 
     std::vector<std::string> layerOptions;
     std::vector<std::string> channelOptions;
-
+    
     // Append none chocie
     layerOptions.push_back("-");
     channelOptions.push_back("-");
 
     // For each components, try to find the old user choice, if not found prefer color layer
-    std::set<ImageComponents>::iterator foundColorIt = components.end();
-    std::set<ImageComponents>::iterator foundOtherIt = components.end();
-    std::set<ImageComponents>::iterator foundCurIt = components.end();
-    std::set<ImageComponents>::iterator foundCurAlphaIt = components.end();
+    std::list<ImageComponents>::iterator foundOldLayer = upstreamAvailableLayers.end();
+    std::list<ImageComponents>::iterator foundOldAlphaLayer = upstreamAvailableLayers.end();
+
+
 
     // This is the not the full channel name (e.g: Beauty.A), but just the channel name (e.g: A)
     std::string foundAlphaChannel;
@@ -493,8 +467,6 @@ ViewerInstance::refreshLayerAndAlphaChannelComboBox()
 
 
 
-
-
 void
 ViewerInstance::fillGammaLut(double gamma)
 {
@@ -503,158 +475,6 @@ ViewerInstance::fillGammaLut(double gamma)
 }
 
 
-
-static U64 makeViewerCacheHash(TimeValue time, ViewIdx view, U64 viewerInputHash, const ViewerInstance* viewer)
-{
-    Hash64 hash;
-    hash.append(viewerInputHash);
-
-    // Also append the viewer group node hash because it has all knobs settings on it
-    ViewerNodePtr group = viewer->getViewerNodeGroup();
-    assert(group);
-    if (group) {
-        U64 groupHash = group->computeHash(time, view);
-        hash.append(groupHash);
-    }
-    hash.computeHash();
-    return hash.value();
-}
-
-ViewerInstance::ViewerRenderRetCode
-ViewerInstance::getRoDAndLookupCache(const bool useOnlyRoDCache,
-                                     const RenderStatsPtr& stats,
-                                     ViewerArgs* outArgs)
-{
-
-
-    // If it's eSupportsMaybe and mipMapLevel!=0, don't forget to update
-    // this after the first call to getRegionOfDefinition().
-    const RenderScale scaleOne(1.);
-
-    // This may be eSupportsMaybe
-    EffectInstance::RenderScaleSupportEnum supportsRS = outArgs->activeInputToRender->supportsRenderScaleMaybe();
-
-
-    // Get the hash to see if we can lookup the cache. We may not have a valid hash computed yet in which case its value is 0
-    bool gotInputHash = outArgs->activeInputToRender->getRenderHash(outArgs->params->time, outArgs->params->view, &outArgs->activeInputHash);
-    (void)gotInputHash;
-    outArgs->params->frameViewHash = makeViewerCacheHash(outArgs->params->time, outArgs->params->view, outArgs->activeInputHash, this);
-
-
-    // When in draft mode first try to get a texture without draft and then try with draft
-    const int nLookups = outArgs->draftModeEnabled ? 2 : 1;
-
-    for (int lookup = 0; lookup < nLookups; ++lookup) {
-        const unsigned mipMapLevel = lookup == 0 ? outArgs->mipmapLevelWithoutDraft : outArgs->mipMapLevelWithDraft;
-        RenderScale scale;
-        scale.x = scale.y = Image::getScaleFromMipMapLevel(mipMapLevel);
-
-
-        RectD rod;
-        // Get the RoD here to be able to figure out what is the RoI of the Viewer.
-        // Note that we are in the main-thread (OpenGL) thread here to optimize the code path when all textures are cached
-        // so we cannot afford computing the actual RoD. If it's not cached then we will actually compute the RoD in the render thread.
-        ActionRetCodeEnum stat;
-
-        if (useOnlyRoDCache) {
-            stat = eStatusFailed;
-            if (outArgs->activeInputHash != 0) {
-                stat = outArgs->activeInputToRender->getRegionOfDefinitionFromCache(outArgs->activeInputHash,
-                                                                                    outArgs->params->time,
-                                                                                    scale,
-                                                                                    outArgs->params->view,
-                                                                                    &rod);
-            }
-            if (stat == eStatusFailed) {
-                // If was not cached, we cannot lookup the cache in the main-thread at this mipmapLevel
-                continue;
-            }
-        } else {
-            stat = outArgs->activeInputToRender->getRegionOfDefinition_public(outArgs->activeInputHash,
-                                                                              outArgs->params->time,
-                                                                              supportsRS ==  eSupportsNo ? scaleOne : scale,
-                                                                              outArgs->params->view,
-                                                                              &rod);
-            if (stat == eStatusFailed) {
-                // It really failed, just exit
-                return eViewerRenderRetCodeFail;
-            }
-        }
-
-        // update scale after the first call to getRegionOfDefinition
-        if ( (supportsRS == eSupportsMaybe) && (mipMapLevel != 0) ) {
-            supportsRS = (outArgs->activeInputToRender)->supportsRenderScaleMaybe();
-        }
-
-        outArgs->mustComputeRoDAndLookupCache = false;
-
-
-        bool isRodProjectFormat = ifInfiniteclipRectToProjectDefault(&rod);
-        Q_UNUSED(isRodProjectFormat);
-
-        // Ok we go the RoD, we can actually compute the RoI and look-up the cache
-        ViewerRenderRetCode retCode = getViewerRoIAndTexture(rod, lookup == 1, mipMapLevel, stats, outArgs);
-        if (retCode != eViewerRenderRetCodeRender) {
-            return retCode;
-        }
-
-        assert(outArgs->params->tiles.size() > 0);
-
-
-        // We found something in the cache, stop now
-        if (outArgs->params->nbCachedTile > 0) {
-            break;
-        }
-    } // for (int lookup = 0; lookup < nLookups; ++lookup)
-
-    return eViewerRenderRetCodeRender;
-} // ViewerInstance::getRoDAndLookupCache
-
-ViewerInstance::ViewerRenderRetCode
-ViewerInstance::getRenderViewerArgsAndCheckCache(SequenceTime time,
-                                                 bool isSequential,
-                                                 ViewIdx view,
-                                                 int textureIndex,
-                                                 const RotoStrokeItemPtr& activeStrokeItem,
-                                                 const AbortableRenderInfoPtr& abortInfo,
-                                                 const RenderStatsPtr& stats,
-                                                 ViewerArgs* outArgs)
-{
-    // Just redraw if the viewer is paused
-    if ( getViewerNodeGroup()->isViewerPaused(textureIndex) ) {
-        outArgs->params.reset(new UpdateViewerParams);
-        outArgs->params->isViewerPaused = true;
-        outArgs->params->time = time;
-        outArgs->params->setUniqueID(textureIndex);
-        outArgs->params->textureIndex = textureIndex;
-        outArgs->params->view = view;
-
-        return eViewerRenderRetCodeRedraw;
-    }
-
-
-    // The active input providing the image is the first upstream non disabled node
-    outArgs->activeInputToRender = getInput(textureIndex);
-
-
-    // Before rendering we check that all mandatory inputs in the graph are connected else we fail
-    if (!outArgs->activeInputToRender) {
-        return eViewerRenderRetCodeFail;
-    }
-
-    // Fetch the render parameters from the Viewer UI
-    setupMinimalUpdateViewerParams(time, view, textureIndex, abortInfo, isSequential, outArgs);
-
-    // We never use the texture cache when the user RoI is enabled or while painting or when auto-contrast is on, otherwise we would have
-    // zillions of textures in the cache, each a few pixels different.
-    outArgs->useViewerCache = !outArgs->userRoIEnabled && !outArgs->autoContrast && !activeStrokeItem.get() && !outArgs->isDoingPartialUpdates && !outArgs->forceRender;
-
-
-    // Try to look-up the cache but do so only if we have a RoD valid in the cache because
-
-    // we are on the main-thread here, it would be expensive to compute the RoD now.
-    return getRoDAndLookupCache(true, stats, outArgs);
-}
 
 ViewerInstance::ViewerRenderRetCode
 ViewerInstance::renderViewer_internal(ViewIdx view,
@@ -665,93 +485,6 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                       const RenderStatsPtr& stats,
                                       ViewerArgs& inArgs)
 {
-
-    // We are in the render thread, we may not have computed the RoD and lookup the cache yet
-    {
-        ParallelRenderArgsSetter::CtorArgsPtr tlsArgs(new ParallelRenderArgsSetter::CtorArgs);
-        tlsArgs->time = inArgs.params->time;
-        tlsArgs->view = view;
-        tlsArgs->isRenderUserInteraction = !isSequentialRender;
-        tlsArgs->isSequential = isSequentialRender;
-        tlsArgs->abortInfo = inArgs.params->abortInfo;
-        tlsArgs->treeRoot = inArgs.activeInputToRender->getNode();
-        tlsArgs->textureIndex = inArgs.params->textureIndex;
-        tlsArgs->timeline = getTimeline();
-        tlsArgs->activeRotoDrawableItem = activeStrokeItem;
-        tlsArgs->draftMode = inArgs.draftModeEnabled;
-        tlsArgs->stats = stats;
-        try {
-            inArgs.frameArgs = ParallelRenderArgsSetter::create(tlsArgs);
-        } catch (const std::exception& /*e*/) {
-            return eViewerRenderRetCodeFail;
-        }
-
-        // Refresh hash
-
-        bool gotHash = inArgs.activeInputToRender->getRenderHash(inArgs.params->time, inArgs.params->view, &inArgs.activeInputHash);
-        assert(gotHash);
-        (void)gotHash;
-        inArgs.params->frameViewHash = makeViewerCacheHash(inArgs.params->time, inArgs.params->view, inArgs.activeInputHash, this);
-
-    }
-
-
-    // Since we need to compute the RoD now, we MUST setup the thread local
-    // storage otherwise functions like EffectInstance::aborted() would not work.
-    if (inArgs.mustComputeRoDAndLookupCache) {
-        // Since we will most likely need to compute the RoD now, we MUST setup the thread local
-        // storage otherwise functions like EffectInstance::aborted() would not work.
-
-        ViewerRenderRetCode retcode = getRoDAndLookupCache(false, stats, &inArgs);
-        if (retcode != eViewerRenderRetCodeRender) {
-            return retcode;
-        }
-
-
-        if ( inArgs.params->nbCachedTile == (int)inArgs.params->tiles.size() ) {
-            // Found a cached texture
-            return eViewerRenderRetCodeRender;
-        }
-    }
-
-    AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( QThread::currentThread() );
-    if (isAbortable) {
-        isAbortable->setAbortInfo( !isSequentialRender, inArgs.params->abortInfo, getNode()->getEffectInstance() );
-    }
-
-
-    assert( !inArgs.params->nbCachedTile || inArgs.params->nbCachedTile < (int)inArgs.params->tiles.size() );
-
-    /*
-     * There are 3 types of renders:
-     * 1) Playback: the canAbort flag is set to true and the isSequentialRender flag is set to true
-     * 2) Single frame abortable render: the canAbort flag is set to true and the isSequentialRender flag is set to false. Basically
-     * this kind of render is triggered by any parameter change, timeline scrubbing, curve positioning, etc... In this mode each image
-     * rendered concurrently by the viewer is probably different than another one (different hash key or time) hence we want to abort
-     * ongoing renders that are no longer corresponding to anything relevant to the actual state of the GUI. On the other hand, the user
-     * still want a smooth feedback, e.g: If the user scrubs the timeline, we want to give him/her a continuous feedback, even with a
-     * latency so it looks like it is actually seeking, otherwise it would just refresh the image upon the mouseRelease event because all
-     * other renders would be aborted. To enable this behaviour, we ensure that at least 1 render is always running, even if it does not
-     * correspond to the GUI state anymore.
-     * 3) Single frame non-abortable render: the canAbort flag is set to false and the isSequentialRender flag is set to false.
-     */
-    RectI roi = inArgs.params->roi;
-
-    assert(inArgs.activeInputToRender);
-
-
-    // Compute the request pass to optimize the RoI
-    {
-        RectD canonicalRoi;
-        roi.toCanonical(inArgs.params->mipMapLevel, inArgs.params->pixelAspectRatio, inArgs.params->rod, &canonicalRoi);
-        if (inArgs.frameArgs->optimizeRoI(inArgs.params->mipMapLevel, canonicalRoi) != eStatusOK) {
-            return eViewerRenderRetCodeFail;
-        }
-    }
-
-    ///Notify the gui we're rendering.
-    EffectInstance::NotifyRenderingStarted_RAII renderingNotifier( getNode().get() );
-
 
     const double par = inArgs.activeInputToRender->getAspectRatio(-1);
 
@@ -796,128 +529,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         return eViewerRenderRetCodeBlack;
     }
 
-    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(getNode().get(), inArgs.params->textureIndex);
-    std::vector<RectI> splitRoi;
-    if (inArgs.isDoingPartialUpdates) {
-        for (std::list<UpdateViewerParams::CachedTile>::iterator it = inArgs.params->tiles.begin(); it != inArgs.params->tiles.end(); ++it) {
-            splitRoi.push_back(it->rect);
-        }
-    } else {
-        /*
-           Just render 1 tile
-         */
-        splitRoi.push_back(roi);
-    }
 
-
-    if ( stats && stats->isInDepthProfilingEnabled() ) {
-        std::bitset<4> channelsRendered;
-        switch (inArgs.channels) {
-        case eDisplayChannelsMatte:
-        case eDisplayChannelsRGB:
-        case eDisplayChannelsY:
-            channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = true;
-            channelsRendered[3] = false;
-            break;
-        case eDisplayChannelsR:
-            channelsRendered[3] = channelsRendered[1] = channelsRendered[2] = false;
-            channelsRendered[0] = true;
-            break;
-        case eDisplayChannelsG:
-            channelsRendered[0] = channelsRendered[2] = channelsRendered[3] = false;
-            channelsRendered[1] = true;
-            break;
-        case eDisplayChannelsB:
-            channelsRendered[0] = channelsRendered[1] = channelsRendered[3] = false;
-            channelsRendered[2] = true;
-            break;
-        case eDisplayChannelsA:
-            channelsRendered[0] = channelsRendered[1] = channelsRendered[2] = false;
-            channelsRendered[3] = true;
-            break;
-        }
-        stats->setGlobalRenderInfosForNode(getNode(), inArgs.params->rod, inArgs.params->srcPremult, channelsRendered, true, true, inArgs.params->mipMapLevel);
-    }
-
-#pragma message WARN("Implement Viewer so it accepts OpenGL Textures in input")
     BufferableObjectList partialUpdateObjects;
     for (std::size_t rectIndex = 0; rectIndex < splitRoi.size(); ++rectIndex) {
         //AlphaImage will only be set when displaying the Matte overlay
         ImagePtr alphaImage, colorImage;
-
-        // If an exception occurs here it is probably fatal, since
-        // it comes from Natron itself. All exceptions from plugins are already caught
-        // by the HostSupport library.
-        // We catch it  and rethrow it just to notify the rendering is done.
-        try {
-            std::map<ImageComponents, ImagePtr> planes;
-            RenderRoIRetCode retCode;
-            {
-                boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-                renderArgs.reset( new EffectInstance::RenderRoIArgs(inArgs.params->time,
-                                                                    Image::getScaleFromMipMapLevel(inArgs.params->mipMapLevel),
-                                                                    inArgs.params->mipMapLevel,
-                                                                    view,
-                                                                    inArgs.forceRender,
-                                                                    splitRoi[rectIndex],
-                                                                    requestedComponents,
-                                                                    imageDepth,
-                                                                    false /*calledFromGetImage*/,
-                                                                    inArgs.activeInputToRender,
-                                                                    -1,
-                                                                    eStorageModeRAM /*returnStorage*/,
-                                                                    inArgs.params->time) );
-                retCode = inArgs.activeInputToRender->renderRoI(*renderArgs, &planes);
-            }
-            //Either rendering failed or we have 2 planes (alpha mask and color image) or we have a single plane (color image)
-            assert(planes.size() == 0 || planes.size() <= 2);
-            if ( !planes.empty() && (retCode == eRenderRoIRetCodeOk) ) {
-                if (planes.size() == 2) {
-                    std::map<ImageComponents, ImagePtr>::iterator foundColorLayer = planes.find(inArgs.params->layer);
-                    if ( foundColorLayer != planes.end() ) {
-                        colorImage = foundColorLayer->second;
-                    }
-                    std::map<ImageComponents, ImagePtr>::iterator foundAlphaLayer = planes.find(inArgs.params->alphaLayer);
-                    if ( foundAlphaLayer != planes.end() ) {
-                        alphaImage = foundAlphaLayer->second;
-                    }
-                } else {
-                    //only 1 plane, figure out if the alpha layer is the same as the color layer
-                    if (inArgs.params->alphaLayer == inArgs.params->layer) {
-                        if (inArgs.channels == eDisplayChannelsMatte) {
-                            alphaImage = colorImage = planes.begin()->second;
-                        } else {
-                            colorImage = planes.begin()->second;
-                        }
-                    } else {
-                        colorImage = planes.begin()->second;
-                    }
-                }
-                assert(colorImage);
-                inArgs.params->colorImage = colorImage;
-            }
-            if (!colorImage) {
-                if (retCode == eRenderRoIRetCodeFailed) {
-                    return eViewerRenderRetCodeFail;
-                } else if (retCode == eRenderRoIRetCodeOk) {
-                    return eViewerRenderRetCodeBlack;
-                } else {
-                    /*
-                       The render was not aborted but did not return an image, this may be the case
-                       for example when an effect returns a NULL RoD at some point. Don't fail but
-                       display a black image
-                     */
-                    return eViewerRenderRetCodeRedraw;
-                }
-            }
-        } catch (...) {
-            ///If the plug-in was aborted, this is probably not a failure due to render but because of abortion.
-            ///Don't forward the exception in that case.
-            if ( inArgs.activeInputToRender->aborted() ) {
-                return eViewerRenderRetCodeRedraw;
-            }
-            throw;
-        }
 
 
         // Don't uncomment: if the image was rendered so far, render it to the display texture so that the user get some feedback
@@ -2233,7 +1849,7 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
 bool
 ViewerInstance::isInputOptional(int /*n*/) const
 {
-    return true;
+    return false;
 }
 
 
@@ -2247,44 +1863,13 @@ ViewerInstance::callRedrawOnMainThread()
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<ImageComponents>* comps)
+                                      std::bitset<4>* supported)
 {
-    ///Viewer only supports RGBA for now.
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
-}
-
-
-void
-ViewerInstance::setActivateInputChangeRequestedFromViewer(bool fromViewer)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->activateInputChangedFromViewer = fromViewer;
-}
-
-bool
-ViewerInstance::isInputChangeRequestedFromViewer() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->activateInputChangedFromViewer;
+  (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 
 
-ActionRetCodeEnum
-ViewerInstance::getTimeInvariantMetadatas(NodeMetadata& /*metadata*/)
-{
-    ViewerNodePtr node = getViewerNodeGroup();
-    node->refreshFps();
-    node->refreshViewsKnobVisibility();
-    refreshLayerAndAlphaChannelComboBox();
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->refreshFormatFromMetadata();
-    }
-}
 
 void
 ViewerInstance::getInputsComponentsAvailables(std::set<ImageComponents>* comps) const

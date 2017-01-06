@@ -2813,7 +2813,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     } else if (isChoice) {
         KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (duplicateType != eDuplicateKnobTypeAlias) {
-            newKnob->populateChoices( isChoice->getEntries(), isChoice->getEntriesHelp() );
+            newKnob->populateChoices( isChoice->getEntries());
         }
         output = newKnob;
     } else if (isColor) {
@@ -3691,7 +3691,15 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         } else if (isChoice) {
             const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(serialization->_extraData.get());
             if (data) {
-                isChoice->populateChoices(data->_entries, data->_helpStrings);
+                std::vector<ChoiceOption> options(data->_entries.size());
+                for (std::size_t i = 0; i < data->_entries.size(); ++i) {
+                    ChoiceOption& option = data->_entries[i];
+                    option.id = data->_entries[i];
+                    if (i < data->_helpStrings.size()) {
+                        option.tooltip = data->_helpStrings[i];
+                    }
+                }
+                isChoice->populateChoices(options);
             }
         } else if (isColor) {
             const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());

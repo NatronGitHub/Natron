@@ -25,7 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include <cmath>
+#include <climits>
 #include <QObject>
+
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
@@ -78,9 +81,9 @@ public:
         RenderWork()
         : treeRoot()
         , renderLabel()
-        , firstFrame(0)
-        , lastFrame(0)
-        , frameStep(0)
+        , firstFrame(INT_MIN)
+        , lastFrame(INT_MAX)
+        , frameStep(INT_MIN)
         , useRenderStats(false)
         , isRestart(false)
         {

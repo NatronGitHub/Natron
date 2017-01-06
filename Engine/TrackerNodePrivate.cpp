@@ -120,28 +120,21 @@ TrackerKnobItemsTable::TrackerKnobItemsTable(TrackerNodePrivate* imp, KnobItemsT
 
 void
 TrackerNodePrivate::getMotionModelsAndHelps(bool addPerspective,
-                                        std::vector<std::string>* models,
-                                        std::vector<std::string>* tooltips,
+                                        std::vector<ChoiceOption>* models,
                                         std::map<int, std::string> *icons)
 {
-    models->push_back("Trans.");
-    tooltips->push_back(kTrackerParamMotionModelTranslation);
+    models->push_back(ChoiceOption("Trans.", "", tr(kTrackerParamMotionModelTranslation).toStdString()));
     (*icons)[0] = NATRON_IMAGES_PATH "motionTypeT.png";
-    models->push_back("Trans.+Rot.");
-    tooltips->push_back(kTrackerParamMotionModelTransRot);
+    models->push_back(ChoiceOption("Trans.+Rot.", "", tr(kTrackerParamMotionModelTransRot).toStdString()));
     (*icons)[1] = NATRON_IMAGES_PATH "motionTypeRT.png";
-    models->push_back("Trans.+Scale");
-    tooltips->push_back(kTrackerParamMotionModelTransScale);
+    models->push_back(ChoiceOption("Trans.+Scale", "", tr(kTrackerParamMotionModelTransScale).toStdString()));
     (*icons)[2] = NATRON_IMAGES_PATH "motionTypeTS.png";
-    models->push_back("Trans.+Rot.+Scale");
-    tooltips->push_back(kTrackerParamMotionModelTransRotScale);
+    models->push_back(ChoiceOption("Trans.+Rot.+Scale", "", tr(kTrackerParamMotionModelTransRotScale).toStdString()));
     (*icons)[3] = NATRON_IMAGES_PATH "motionTypeRTS.png";
-    models->push_back("Affine");
-    tooltips->push_back(kTrackerParamMotionModelAffine);
+    models->push_back(ChoiceOption("Affine", "", tr(kTrackerParamMotionModelAffine).toStdString()));
     (*icons)[4] = NATRON_IMAGES_PATH "motionTypeAffine.png";
     if (addPerspective) {
-        models->push_back("Perspective");
-        tooltips->push_back(kTrackerParamMotionModelPerspective);
+        models->push_back(ChoiceOption("Perspective", "", tr(kTrackerParamMotionModelPerspective).toStdString()));
         (*icons)[5] = NATRON_IMAGES_PATH "motionTypePerspective.png";
     }
 }
@@ -150,7 +143,7 @@ TrackerNodePrivate::getMotionModelsAndHelps(bool addPerspective,
 void
 TrackerNodeInteract::onTrackRangeClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
     ViewerInstancePtr viewer = overlay->getInternalViewerNode();

@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
+#include "Engine/ChoiceOption.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/ImageComponents.h"
 #include "Serialization/SerializationBase.h"
@@ -474,13 +475,10 @@ public:
     bool isSupportedComponent(int inputNb, const ImageComponents& comp) const;
 
     /**
-     * @brief Returns the most appropriate components that can be supported by the inputNb.
+     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    ImageComponents findClosestSupportedComponents(int inputNb, const ImageComponents& comp) const;
-    static ImageComponents findClosestInList(const ImageComponents& comp,
-                                             const std::list<ImageComponents> &components,
-                                             bool multiPlanar);
+    ImageComponents findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
 
     ImageBitDepthEnum getBestSupportedBitDepth() const;
     bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
@@ -726,7 +724,6 @@ public:
 
     bool isUserSelected() const;
 
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, TimeValue time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
@@ -893,9 +890,6 @@ public:
      **/
     KnobIPtr getKnobByName(const std::string & name) const;
 
-    /*@brief The derived class should query this to abort any long process
-       in the engine function.*/
-    bool aborted() const;
 
     bool makePreviewByDefault() const;
 
@@ -904,20 +898,21 @@ public:
     bool isPreviewEnabled() const;
 
     /**
-     * @brief Makes a small 8bits preview image of size width x height of format ARGB32.
+     * @brief Makes a small 8-bit preview image of size width x height with a ARGB32 format.
      * Pre-condition:
      *  - buf has been allocated for the correct amount of memory needed to fill the buffer.
      * Post-condition:
      *  - buf must not be freed or overflown.
      * It will serve as a preview on the node's graphical user interface.
-     * This function is called directly by the GUI to display the preview.
+     * This function is called directly by the PreviewThread.
+     *
      * In order to notify the GUI that you want to refresh the preview, just
      * call refreshPreviewImage(time).
      *
      * The width and height might be modified by the function, so their value can
      * be queried at the end of the function
      **/
-    bool makePreviewImage(SequenceTime time, int *width, int *height, unsigned int* buf);
+    bool makePreviewImage(TimeValue time, int *width, int *height, unsigned int* buf);
 
     /**
      * @brief Returns true if the node is currently rendering a preview image.
@@ -969,8 +964,6 @@ private:
 public:
 
 
-    void purgeAllInstancesCaches();
-
     bool notifyInputNIsRendering(int inputNb);
 
     void notifyInputNIsFinishedRendering(int inputNb);
@@ -982,11 +975,6 @@ public:
     int getIsInputNRenderingCounter(int inputNb) const;
 
     int getIsNodeRenderingCounter() const;
-
-    /**
-     * @brief forwarded to the live instance
-     **/
-    void setOutputFilesForWriter(const std::string & pattern);
 
 
     //see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
@@ -1007,23 +995,6 @@ public:
     KnobStringPtr getExtraLabelKnob() const;
 
     KnobStringPtr getOFXSubLabelKnob() const;
-
-    /**
-     * @brief Attemps to lock an image for render. If it successfully obtained the lock,
-     * the thread can continue and render normally. If another thread is currently
-     * rendering that image, this function will wait until the image is available for render again.
-     * This is used internally by EffectInstance::renderRoI
-     **/
-    void lock(const ImagePtr& entry);
-    bool tryLock(const ImagePtr& entry);
-    void unlock(const ImagePtr& entry);
-
-
-    /**
-     * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
-     * do not respect the OpenFX specification.
-     **/
-    ImagePtr getImageBeingRendered(TimeValue time, unsigned int mipMapLevel, ViewIdx view);
 
     void beginInputEdition();
 
@@ -1401,7 +1372,7 @@ public:
 
     int getFrameStepKnobValue() const;
 
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool loadingProject);
+    void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
 
     bool handleFormatKnob(const KnobIPtr& knob);
 
@@ -1424,12 +1395,13 @@ public:
 
     void setStreamWarning(StreamWarningEnum warning, const QString& message);
     void setStreamWarnings(const std::map<StreamWarningEnum, QString>& warnings);
-    void clearStreamWarning(StreamWarningEnum warning);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
     void refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps);
 
     bool isNodeUpstream(const NodeConstPtr& input) const;
+
+    void onNodeMetadatasRefreshedOnMainThread(const NodeMetadata& meta);
 
 private:
 
@@ -1569,6 +1541,8 @@ private:
     void declareTablePythonFields();
 
     std::string makeInfoForInput(int inputNumber) const;
+
+    void refreshInfos();
 
 
     void declareNodeVariableToPython(const std::string& nodeName);

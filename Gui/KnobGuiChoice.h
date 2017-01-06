@@ -124,7 +124,7 @@ public Q_SLOTS:
 
     void onEntriesPopulated();
 
-    void onEntryAppended(const QString& entry, const QString& help);
+    void onEntryAppended();
 
     void onEntriesReset();
 

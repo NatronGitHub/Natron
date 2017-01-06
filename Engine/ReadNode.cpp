@@ -743,9 +743,8 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
-    std::vector<std::string> entries, help;
-    entries.push_back(kPluginSelectorParamEntryDefault);
-    help.push_back("Use the default plug-in chosen from the Preferences to read this file format");
+    std::vector<ChoiceOption> entries;
+    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", _publicInterface->tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
@@ -758,18 +757,16 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
             PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
-            entries.push_back( plugin->getPluginID());
-            std::stringstream ss;
-            ss << "Use " << plugin->getPluginLabel() << " version ";
-            ss << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0) << "." << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
-            ss << " to read this file format";
-            help.push_back( ss.str() );
+
+            QString tooltip = tr("Use %1 version %2.%3 to read this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1));
+            entries.push_back( ChoiceOption(plugin->getPluginID(), "", tooltip.toStdString()));
+
         }
     }
 
     KnobChoicePtr pluginChoice = pluginSelectorKnob.lock();
 
-    pluginChoice->populateChoices(entries, help);
+    pluginChoice->populateChoices(entries);
     pluginChoice->blockValueChanges();
     pluginChoice->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     pluginChoice->unblockValueChanges();
@@ -904,13 +901,13 @@ ReadNode::isInputMask(int /*inputNb*/) const
 
 void
 ReadNode::addAcceptedComponents(int inputNb,
-                                std::list<ImageComponents>* comps)
+                                std::bitset<4>* comps)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
         p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
     } else {
-        comps->push_back( ImageComponents::getRGBAComponents() );
+        (*comps)[3] = 1;
     }
 }
 

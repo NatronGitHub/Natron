@@ -30,7 +30,6 @@
 #include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/shared_ptr.hpp>
 #include <boost/scoped_ptr.hpp>
 #endif
 
@@ -38,42 +37,50 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
+#define kViewerInstanceParamOutputLayer "outputLayer"
+#define kViewerInstanceParamOutputLayerLabel "Layer"
+#define kViewerInstanceParamOutputLayerHint "The layer this node will fetch in input and use as the RGB channels"
 
+#define kViewerInstanceParamAlphaChannel "alphaChannel"
+#define kViewerInstanceParamAlphaChannelLabel "Alpha"
+#define kViewerInstanceParamAlphaChannelHint "The channel to use in input as alpha channel"
+
+#define kViewerInstanceParamDisplayChannels "displayChannels"
+#define kViewerInstanceParamDisplayChannelsLabel "Display Channels"
+#define kViewerInstanceParamDisplayChannelsHint "The channels to display on the viewer from the selected layer"
+
+#define kViewerInstanceNodeParamGain "gain"
+#define kViewerInstanceNodeParamGainLabel "Gain"
+#define kViewerInstanceNodeParamGainHint "Gain is shown as f-stops. The image is multipled by pow(2,value) before display"
+
+#define kViewerInstanceParamEnableAutoContrast "autoContrast"
+#define kViewerInstanceParamEnableAutoContrastLabel "Auto Contrast"
+#define kViewerInstanceParamEnableAutoContrastHint "Automatically adjusts the gain and the offset applied " \
+"to the colors of the visible image portion on the viewer"
+
+#define kViewerInstanceParamGamma "gamma"
+#define kViewerInstanceParamGammaLabel "Gamma"
+#define kViewerInstanceParamGammaHint "Viewer gamma correction level (applied after gain and before colorspace correction)"
+
+#define kViewerInstanceParamColorspace "deviceColorspace"
+#define kViewerInstanceParamColorspaceLabel "Device Colorspace"
+#define kViewerInstanceParamColorspaceHint "The operation applied to the image before it is displayed " \
+"on screen. The image is converted to this colorspace before being displayed on the monitor"
 
 NATRON_NAMESPACE_ENTER;
 
-class UpdateViewerParams; // ViewerInstancePrivate
-
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
-struct ViewerArgs
-{
-    EffectInstancePtr activeInputToRender;
-    bool forceRender;
-    U64 activeInputHash;
-    boost::shared_ptr<UpdateViewerParams> params;
-    TreeRenderPtr frameArgs;
-    bool draftModeEnabled;
-    unsigned int mipMapLevelWithDraft, mipmapLevelWithoutDraft;
-    bool autoContrast;
-    DisplayChannelsEnum channels;
-    bool userRoIEnabled;
-    bool mustComputeRoDAndLookupCache;
-    bool isDoingPartialUpdates;
-    bool useViewerCache;
-};
-
-
-class ViewerInstance
-    : public EffectInstance
+struct ViewerInstancePrivate;
+class ViewerInstance : public EffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
-    friend class ViewerCurrentFrameRequestScheduler;
 
 private: // derives from EffectInstance
+
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     ViewerInstance(const NodePtr& node);
@@ -91,172 +98,57 @@ public:
 
     ViewerNodePtr getViewerNodeGroup() const;
 
-#if 0
-    ViewerRenderRetCode getRenderViewerArgsAndCheckCache_public(SequenceTime time,
-                                                                bool isSequential,
-                                                                ViewIdx view,
-                                                                int textureIndex,
-                                                                bool canAbort,
-                                                                const RotoStrokeItemPtr& activeStrokeItem,
-                                                                const RenderStatsPtr& stats,
-                                                                ViewerArgs* outArgs);
-
-private:
     /**
-     * @brief Look-up the cache and try to find a matching texture for the portion to render.
+     * @brief We do not want to create a settings panel, most knobs are handled on the viewer group node instead
      **/
-    ViewerRenderRetCode getRenderViewerArgsAndCheckCache(SequenceTime time,
-                                                         bool isSequential,
-                                                         ViewIdx view,
-                                                         int textureIndex,
-                                                         const RotoStrokeItemPtr& activeStrokeItem,
-                                                         const RenderStatsPtr& stats,
-                                                         ViewerArgs* outArgs);
-
-
-    /**
-     * @brief Setup the ViewerArgs struct with the info requested by the user from the Viewer UI
-     **/
-    void setupMinimalUpdateViewerParams(const SequenceTime time,
-                                        const ViewIdx view,
-                                        const int textureIndex,
-                                        const bool isSequential,
-                                        ViewerArgs* outArgs);
-
-
-    /**
-     * @brief Get the RoI from the Viewer and lookup the cache for a texture at the given mipMapLevel.
-     * setupMinimalUpdateViewerParams(...) MUST have been called before.
-     * When returning this function, the UpdateViewerParams will have been filled entirely
-     * and if the texture was found in the cache, the shared pointer outArgs->params->cachedFrame will be valid.
-     * This function may fail or ask to just redraw or ask to clear the viewer to black depending on it's return
-     * code.
-     **/
-    ViewerRenderRetCode getViewerRoIAndTexture(const RectD& rod,
-                                               const bool isDraftMode,
-                                               const unsigned int mipmapLevel,
-                                               const RenderStatsPtr& stats,
-                                               ViewerArgs* outArgs);
-
-
-    /**
-     * @brief Calls getViewerRoIAndTexture(). If called on the main-thread, the parameter
-     * useOnlyRoDCache should be set to true. If it did not lookup the cache it will not
-     * set the member mustComputeRoDAndLookupCache of the ViewerArgs struct. In that case
-     * this function should be called again later on by the render thread with the parameter
-     * useOnlyRoDCache to false.
-     **/
-    ViewerRenderRetCode getRoDAndLookupCache(const bool useOnlyRoDCache,
-                                             const RenderStatsPtr& stats,
-                                             ViewerArgs* outArgs);
-
-public:
-
-
-    /**
-     * @brief This function renders the image at time 'time' on the viewer.
-     * It first get the region of definition of the image at the given time
-     * and then deduce what is the region of interest on the viewer, according
-     * to the current render scale.
-     * Then it looks-up the ViewerCache to find an already existing frame,
-     * in which case it copies directly the cached frame over to the PBO.
-     * Otherwise it just calls renderRoi(...) on the active input
-     * and then render to the PBO.
-     **/
-    ViewerRenderRetCode renderViewer(ViewIdx view,
-                                     bool singleThreaded,
-                                     bool isSequentialRender,
-                                     const RotoStrokeItemPtr& activeStrokeItem,
-                                     boost::shared_ptr<ViewerArgs> args[2],
-                                     const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                     const RenderStatsPtr& stats) WARN_UNUSED_RETURN;
-
-#endif
-
-    
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
-
-    
-    virtual void clearLastRenderedImage() OVERRIDE FINAL;
-
-    DisplayChannelsEnum getChannels(int texIndex) const WARN_UNUSED_RETURN;
-
-    virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
-
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
     
-    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
-
-
-    struct ViewerInstancePrivate;
-
-    float interpolateGammaLut(float value);
-
-
-   
-
-    ///Only callable on MT
-    void setActivateInputChangeRequestedFromViewer(bool fromViewer);
-
-    bool isInputChangeRequestedFromViewer() const;
-
-    void getInputsComponentsAvailables(std::set<ImageComponents>* comps) const;
-
     NodePtr getInputRecursive(int inputIndex) const;
-
-    void setCurrentLayer(const ImageComponents& layer);
-
-    void setAlphaChannel(const ImageComponents& layer, const std::string& channelName);
-
-
-    void callRedrawOnMainThread();
-
-    void fillGammaLut(double gamma);
 
 private:
 
-
-
     void refreshLayerAndAlphaChannelComboBox();
 
+    virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
+    virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual bool isOutput() const OVERRIDE FINAL
-    {
-        return true;
-    }
+    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual int getMaxInputCount() const OVERRIDE FINAL;
-    virtual bool isInputOptional(int /*n*/) const OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
 
-    virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL;
-
-
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    virtual bool isMultiPlanar() const OVERRIDE FINAL;
+    virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL;
+    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
+                                         const RenderScale & scale,
+                                         const RectI & roi,
+                                         ViewIdx view,
+                                         const TreeRenderNodeArgsPtr& render,
+                                         TimeValue* inputTime,
+                                         ViewIdx* inputView,
+                                         int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+    ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
+                                                  ViewIdx view,
+                                                  const TreeRenderNodeArgsPtr& render,
+                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                  std::list<ImageComponents>* layersProduced,
+                                                  TimeValue* passThroughTime,
+                                                  ViewIdx* passThroughView,
+                                                  int* passThroughInputNb,
+                                                  bool* processAll,
+                                                  std::bitset<4>* processChannels) OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-
-    ViewerRenderRetCode renderViewer_internal(ViewIdx view,
-                                              bool singleThreaded,
-                                              bool isSequentialRender,
-                                              const RotoStrokeItemPtr& activeStrokeItem,
-                                              const boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs>& request,
-                                              const RenderStatsPtr& stats,
-                                              ViewerArgs& inArgs) WARN_UNUSED_RETURN;
-
 
 
 private:

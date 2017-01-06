@@ -139,9 +139,18 @@ SOURCES += \
     MemoryFile.cpp \
     MultiThread.cpp \
     Node.cpp \
+    NodeChannelSelectors.cpp \
+    NodeDocumentation.cpp \
+    NodeDefaultKnobs.cpp \
+    NodeInputs.cpp \
+    NodeMain.cpp \
+    NodeName.cpp \
+    NodeOverlay.cpp \
+    NodeRenderPreview.cpp \
     NodePrivate.cpp \
     NodeGroup.cpp \
     NodeMetadata.cpp \
+    NodePythonInteraction.cpp \
     NonKeyParams.cpp \
     NoOpBase.cpp \
     Noise.cpp \
@@ -286,6 +295,7 @@ SOURCES += \
 
 
 
+
 HEADERS += \
     AfterQuitProcessingI.h \
     AnimatingObjectI.h \
@@ -303,6 +313,7 @@ HEADERS += \
     CacheEntryBase.h \
     CacheEntryKeyBase.h \
     CoonsRegularization.h \
+    ChoiceOption.h \
     ColorParser.h \
     CreateNodeArgs.h \
     Curve.h \
@@ -462,12 +473,10 @@ HEADERS += \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
-    UpdateViewerParams.h \
     UndoCommand.h \
     Utils.h \
     Variant.h \
     ViewerInstance.h \
-    ViewerInstancePrivate.h \
     ViewerNode.h \
     ViewIdx.h \
     WriteNode.h \

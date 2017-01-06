@@ -84,11 +84,9 @@ DiskCacheNode::~DiskCacheNode()
 
 void
 DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImageComponents>* comps)
+                                     std::bitset<4>* comps)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -99,8 +97,7 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
-                                 TimeValue /*time*/,
-                                 ViewIdx /*view*/,
+                                 const TreeRenderNodeArgsPtr& /*render*/,
                                  int /*visitsCount*/) const
 {
     // The disk cache node always caches.
@@ -115,11 +112,13 @@ DiskCacheNode::initializeKnobs()
 
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
-    std::vector<std::string> choices;
-    choices.push_back("Input frame range");
-    choices.push_back("Project frame range");
-    choices.push_back("Manual");
-    frameRange->populateChoices(choices);
+    {
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("Input frame range", "", ""));
+        choices.push_back(ChoiceOption("Project frame range", "", ""));
+        choices.push_back(ChoiceOption("Manual","", ""));
+        frameRange->populateChoices(choices);
+    }
     frameRange->setEvaluateOnChange(false);
     frameRange->setDefaultValue(0);
     page->addKnob(frameRange);
