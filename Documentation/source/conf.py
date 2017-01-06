@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Natron'
-copyright = u'2016, Natron Developers'
+copyright = u'2013-2017 The Natron documentation authors, licensed under CC BY-SA 4.0'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -195,7 +195,7 @@ latex_elements = {
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'Natron.tex', u'Natron Documentation',
-   u'Natron Developers', 'manual'),
+   u'The Natron documentation authors', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -225,7 +225,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'natron', u'Natron Documentation',
-     [u'Natron Developers'], 1)
+     [u'The Natron documentation authors'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -239,7 +239,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'Natron', u'Natron Documentation',
-   u'Natron Developers', 'Natron', 'One line description of project.',
+   u'The Natron documentation authors', 'Natron', 'Open-source, cross-platform, nodal video compositing software.',
    'Miscellaneous'),
 ]
 
