@@ -4470,7 +4470,7 @@ Node::makeDocumentation(bool genHTML) const
                                 QString entry = QString::fromUtf8( entries[i].c_str() );
                                 QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
                                 if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
-                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg(entry).arg(entryHelp) );
+                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg( entry.trimmed() ).arg(entryHelp) );
                                 }
                             }
                         }
@@ -4530,7 +4530,46 @@ Node::makeDocumentation(bool genHTML) const
             QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
-            pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+            // the following chars must be backslash-escaped in markdown:
+            // \    backslash
+            // `    backtick
+            // *    asterisk
+            // _    underscore
+            // {}   curly braces
+            // []   square brackets
+            // ()   parentheses
+            // #    hash mark
+            // +    plus sign
+            // -    minus sign (hyphen)
+            // .    dot
+            // !    exclamation mark
+            QString escaped;
+            const QString& plain = pluginDescription;
+            for (int i = 0; i < plain.length(); ++i) {
+                if (plain[i] == QLatin1Char('\\') ||
+                    plain[i] == QLatin1Char('`') ||
+                    plain[i] == QLatin1Char('*') ||
+                    plain[i] == QLatin1Char('_') ||
+                    plain[i] == QLatin1Char('{') ||
+                    plain[i] == QLatin1Char('}') ||
+                    plain[i] == QLatin1Char('[') ||
+                    plain[i] == QLatin1Char(']') ||
+                    plain[i] == QLatin1Char('(') ||
+                    plain[i] == QLatin1Char(')') ||
+                    plain[i] == QLatin1Char('#') ||
+                    plain[i] == QLatin1Char('+') ||
+                    plain[i] == QLatin1Char('-') ||
+                    plain[i] == QLatin1Char('.') ||
+                    plain[i] == QLatin1Char('!')) {
+                    escaped += QLatin1Char('\\');
+                }
+                // line breaks become paragraph breaks (double the line breaks)
+                if (plain[i] == QLatin1Char('\n')) {
+                    escaped += QLatin1Char('\n');
+                }
+                escaped += plain[i];
+            }
+            pluginDescription = escaped;
         }
     }
 

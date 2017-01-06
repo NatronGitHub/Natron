@@ -44,10 +44,10 @@ rm "$TMP_FOLDER/dummy.ntp"
 
 pushd "$TMP_FOLDER"
 for i in *.md; do
-    $PANDOC "$i" --columns=1000 -o "$(echo "$i"|$SED 's/.md/.rst/')"
+    $PANDOC "$i" --columns=1000 -o "$(echo "$i"|$SED 's/\.md$/.rst/')"
 done
 for x in plugins/*.md; do
-    $PANDOC "$x" --columns=9000 -o "$(echo "$x"|$SED 's/.md/.rst/')"
+    $PANDOC "$x" --columns=9000 -o "$(echo "$x"|$SED 's/\.md$/.rst/')"
     PLUG="$(echo "$x"|$SED 's/.md//;s#plugins/##')"
     $SED -i "1i.. _${PLUG}:\n" plugins/"${PLUG}".rst
 done

@@ -18,5 +18,5 @@ Compositing
    transforming.rst
    working_with_color.rst
    stereoscopic.rst
-   previews_and_rendering.rst
+   preview_and_rendering.rst
    expressions.rst

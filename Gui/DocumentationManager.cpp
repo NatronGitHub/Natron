@@ -382,29 +382,38 @@ DocumentationManager::handler(QHttpRequest *req,
         body = html.toUtf8();
     }
 
-    // get static file
-    QFileInfo staticFileInfo;
-    if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".css") ) || page.endsWith( QString::fromUtf8(".js") ) || page.endsWith( QString::fromUtf8(".txt") ) || page.endsWith( QString::fromUtf8(".png") ) || page.endsWith( QString::fromUtf8(".jpg") ) ) {
+    int status = 200;
+
+    if ( body.isEmpty() && ( page.endsWith( QString::fromUtf8(".html") ) ||
+                             page.endsWith( QString::fromUtf8(".css") ) ||
+                             page.endsWith( QString::fromUtf8(".js") ) ||
+                             page.endsWith( QString::fromUtf8(".txt") ) ||
+                             page.endsWith( QString::fromUtf8(".png") ) ||
+                             page.endsWith( QString::fromUtf8(".jpg") ) ) ) {
+        // get static file
+        QFileInfo staticFileInfo;
+
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
             staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") );
         } else {
             staticFileInfo = docDir + page;
         }
-    }
-    if ( staticFileInfo.exists() && body.isEmpty() ) {
-        QFile staticFile( staticFileInfo.absoluteFilePath() );
-        if ( staticFile.open(QIODevice::ReadOnly) ) {
-            if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
-                QString input = QString::fromUtf8( staticFile.readAll() );
-                body = parser(input, docDir).toUtf8();
-            } else {
-                body = staticFile.readAll();
+#ifdef DEBUG
+        qDebug() << "www client requested page" << page << "->file" << staticFileInfo.absoluteFilePath();
+#endif
+        if ( staticFileInfo.exists() ) {
+            QFile staticFile( staticFileInfo.absoluteFilePath() );
+            if ( staticFile.open(QIODevice::ReadOnly) ) {
+                if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
+                    QString input = QString::fromUtf8( staticFile.readAll() );
+                    body = parser(input, docDir).toUtf8();
+                } else {
+                    body = staticFile.readAll();
+                }
+                staticFile.close();
             }
-            staticFile.close();
         }
     }
-
-    // page not found
     if ( body.isEmpty() ) {
         QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
                                              "<html>"
@@ -423,9 +432,9 @@ DocumentationManager::handler(QHttpRequest *req,
                                              "</div>"
                                              "</div>"
                                              "</body>"
-                                             "</html>")
-                           .arg( tr("Page not found") );
+                                             "</html>").arg( tr("Page not found") );
         body = parser(notFound, docDir).toUtf8();
+        status = 404;
     }
 
     // set header(s)
@@ -445,7 +454,7 @@ DocumentationManager::handler(QHttpRequest *req,
     }
 
     // return result
-    resp->writeHead(200);
+    resp->writeHead(status);
     resp->end(body);
 }                                             // DocumentationManager::handler
 
