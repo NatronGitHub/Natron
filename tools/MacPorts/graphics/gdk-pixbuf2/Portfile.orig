@@ -6,7 +6,7 @@ PortGroup           gobject_introspection 1.0
 name                gdk-pixbuf2
 set my_name         gdk-pixbuf
 epoch               2
-version             2.36.2
+version             2.36.3
 license             LGPL
 set branch          [join [lrange [split ${version} .] 0 1] .]
 categories          graphics
@@ -22,8 +22,8 @@ long_description    ${description}
 
 master_sites        gnome:sources/${my_name}/${branch}/
 
-checksums           rmd160  b15e8de187ac2ffac11f26a0e3e113c33df45e2b \
-                    sha256  3a082ad67d68b55970aed0b2034a06618167be98a42d5c70de736756b45d325d
+checksums           rmd160  79bb474dc62833e66df194a09c2b0f2a9a7bb78e \
+                    sha256  5223138f7d31afc6b356a049930304ec0abd6ac1113a5d3d1dba5cd4a4d639ec
 
 depends_build       port:pkgconfig
 
