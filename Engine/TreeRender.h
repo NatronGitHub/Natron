@@ -35,7 +35,7 @@
 #endif
 
 #include "Engine/ImageComponents.h"
-#include "Engine/Timevalue.h"
+#include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
 #include "Global/GlobalDefines.h"

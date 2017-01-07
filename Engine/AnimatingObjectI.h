@@ -114,7 +114,7 @@ inline std::string variantToType(const Variant& v)
 }
 
 template <typename T>
-inline TimeValuePair<T> variantTimevaluePairToTemplated(const VariantTimeValuePair& v)
+inline TimeValuePair<T> variantTimeValuePairToTemplated(const VariantTimeValuePair& v)
 {
      return TimeValuePair<T>(v.time, variantToType<T>(v.value));
 }
