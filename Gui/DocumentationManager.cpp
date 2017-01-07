@@ -172,26 +172,26 @@ DocumentationManager::handler(QHttpRequest *req,
                             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
-                            if (node) {
-                                // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
-                                if ( pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) && pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
-                                    EffectInstPtr effectInstance = node->getEffectInstance();
-                                    if ( effectInstance->isReader() ) {
-                                        ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+                            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
+                            if ( node &&
+                                 pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) &&
+                                 pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                                EffectInstPtr effectInstance = node->getEffectInstance();
+                                if ( effectInstance && effectInstance->isReader() ) {
+                                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                                        if (isReadNode) {
-                                            node = isReadNode->getEmbeddedReader();
-                                        }
+                                    if (isReadNode) {
+                                        node = isReadNode->getEmbeddedReader();
                                     }
-                                    if ( effectInstance->isWriter() ) {
-                                        WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+                                } else if ( effectInstance && effectInstance->isWriter() ) {
+                                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                                        if (isWriteNode) {
-                                            node = isWriteNode->getEmbeddedWriter();
-                                        }
+                                    if (isWriteNode) {
+                                        node = isWriteNode->getEmbeddedWriter();
                                     }
                                 }
-
+                            }
+                            if (node) {
                                 QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
                                 body = html.toUtf8();
