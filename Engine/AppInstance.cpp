@@ -2150,12 +2150,17 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
                                      const boost::shared_ptr<NodeSerialization>& serialization, bool /*autoConnect*/)
 {
     assert(node);
+
+    // If the node is a PyPlug we might have set in the Python scripts the Mask and Optional knobs of the GroupInput
+    // nodes, but nothing updated the inputs since we were loading the PyPlug, ensure they are up to date.
+    node->initializeInputs();
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
         NodeGroup* isGrp = node->isEffectGroup();
         assert(isGrp);
         if (!isGrp) {
             return;
         }
+
         isGrp->forceComputeInputDependentDataOnAllTrees();
     }
 }

@@ -59,6 +59,26 @@ NodeCollectionSerialization::initialize(const NodeCollection& group)
     }
 }
 
+static QString lookForFileRecursively(const QString& dirPath, const QString& filenameUnPathed)
+{
+    QDir d(dirPath);
+    if (!d.exists()) {
+        return QString();
+    }
+    if (d.exists(filenameUnPathed)) {
+        return d.absoluteFilePath(filenameUnPathed);
+    }
+    QStringList subDirs = d.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (QStringList::const_iterator it = subDirs.begin(); it != subDirs.end(); ++it) {
+        QString ret = lookForFileRecursively(*it, filenameUnPathed);
+        if (!ret.isEmpty()) {
+            return ret;
+        }
+    }
+    return QString();
+
+}
+
 bool
 NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::shared_ptr<NodeSerialization> > & serializedNodes,
                                                       const boost::shared_ptr<NodeCollection>& group,
@@ -142,25 +162,24 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
             if ( !qPyModulePath.endsWith( QString::fromUtf8(".py") ) ) {
                 qPyModulePath.append( QString::fromUtf8(".py") );
             }
-            ///The path that has been saved in the project might not be corresponding on this computer.
-            ///We need to search through all search paths for a match
-            std::string pythonModuleUnPathed = qPyModulePath.toStdString();
-            std::string s = SequenceParsing::removePath(pythonModuleUnPathed);
-            Q_UNUSED(s);
+            // The path that has been saved in the project might not be corresponding on this computer.
+            // First try with the saved path
+            // Then search through all PyPlug search paths recursively for a match
+            if (!QFile::exists(qPyModulePath)) {
+                std::string pythonModuleUnPathed = qPyModulePath.toStdString();
+                std::string s = SequenceParsing::removePath(pythonModuleUnPathed);
+                Q_UNUSED(s);
 
-            qPyModulePath.clear();
-            QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
-            for (int i = 0; i < natronPaths.size(); ++i) {
-                QString path = natronPaths[i];
-                if ( !path.endsWith( QLatin1Char('/') ) ) {
-                    path.append( QLatin1Char('/') );
-                }
-                path.append( QString::fromUtf8( pythonModuleUnPathed.c_str() ) );
-                if ( QFile::exists(path) ) {
-                    qPyModulePath = path;
-                    break;
+                qPyModulePath.clear();
+                QStringList natronPaths = appPTR->getAllNonOFXPluginsPaths();
+                for (int i = 0; i < natronPaths.size(); ++i) {
+                    qPyModulePath = lookForFileRecursively(natronPaths[i], QString::fromUtf8(pythonModuleAbsolutePath.c_str()));
+                    if (!qPyModulePath.isEmpty()) {
+                        break;
+                    }
                 }
             }
+
 
             //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
             QFileInfo pythonModuleInfo(qPyModulePath);
