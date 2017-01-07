@@ -53,7 +53,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>

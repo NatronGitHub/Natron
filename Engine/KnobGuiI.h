@@ -32,6 +32,7 @@
 #endif
 #include "Engine/OverlaySupport.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

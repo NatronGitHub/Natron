@@ -25,8 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <set>
 #include "Global/Macros.h"
+
+#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
@@ -45,20 +46,20 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/SerializableWindow.h"
 #include "Engine/TimeLineKeys.h"
+#include "Engine/TimeValue.h"
 
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
 #endif
 #include "Gui/RegisteredTabs.h"
+
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kMainSplitterObjectName "ToolbarSplitter"
-
-NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate;
 

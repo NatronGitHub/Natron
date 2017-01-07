@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -32,13 +34,13 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/Timevalue.h"
 #include "Engine/ViewIdx.h"
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

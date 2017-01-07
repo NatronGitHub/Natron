@@ -44,12 +44,13 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define ROTO_BEZIER_EVAL_ITERATIVE
 
-NATRON_NAMESPACE_ENTER;
 
 
 /**

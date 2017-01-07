@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <set>
 #include <list>
 
@@ -36,13 +38,13 @@
 
 #include <QObject>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/Transform.h"
 
 namespace mv {
 class AutoTrack;
 }
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

@@ -47,16 +47,15 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/FitCurve.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoPoint.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 // The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
 // 512 should be OK, see:
 // http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
 #define ROTO_PRESSURE_LEVELS 512
-
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context

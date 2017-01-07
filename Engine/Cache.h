@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_ABSTRACTCACHE_H
-#define NATRON_ENGINE_ABSTRACTCACHE_H
+#ifndef Engine_Cache_h
+#define Engine_Cache_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -56,6 +56,7 @@ GCC_DIAG_ON(deprecated)
 #include "Serialization/CacheSerialization.h"
 
 #include "Engine/CacheEntryBase.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -399,4 +400,4 @@ private:
 NATRON_NAMESPACE_EXIT;
 
 
-#endif /*NATRON_ENGINE_ABSTRACTCACHE_H_ */
+#endif /*Engine_Cache_h_ */

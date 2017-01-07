@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_LRUCACHE_H
-#define NATRON_ENGINE_LRUCACHE_H
+#ifndef Engine_LRUHashTable_h
+#define Engine_LRUHashTable_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -58,8 +58,15 @@ CLANG_DIAG_ON(unknown-pragmas)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#ifdef USE_VARIADIC_TEMPLATES // c++11 is defined as well as unordered_map
+#ifndef NATRON_CACHE_USE_BOOST
+#include <unordered_map>
+#endif
+#endif
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 //#define USE_VARIADIC_TEMPLATES
 #define NATRON_CACHE_USE_HASH
@@ -98,8 +105,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #ifdef USE_VARIADIC_TEMPLATES // c++11 is defined as well as unordered_map
 
 #  ifndef NATRON_CACHE_USE_BOOST
-
-#include <unordered_map>
 
 // Class providing fixed-size (by number of records)
 // LRU-replacement cache of a function with signature
@@ -579,4 +584,6 @@ private:
 
 #endif // !USE_VARIADIC_TEMPLATES
 
-#endif // ifndef NATRON_ENGINE_LRUCACHE_H
+NATRON_NAMESPACE_EXIT;
+
+#endif // ifndef Engine_LRUHashTable_h

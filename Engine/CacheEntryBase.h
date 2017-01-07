@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef CACHEENTRY_H
-#define CACHEENTRY_H
+#ifndef Engine_CacheEntryBase_h
+#define Engine_CacheEntryBase_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -27,7 +27,6 @@
 
 #include "Global/Macros.h"
 
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/scoped_ptr.hpp>
@@ -35,12 +34,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-
+#include "Global/GlobalDefines.h"
 #include "Engine/CacheEntryKeyBase.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/RectI.h"
 
-#include "Global/GlobalDefines.h"
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -442,4 +440,4 @@ toGLCacheEntry(const CacheEntryBasePtr& entry)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // CACHEENTRY_H
+#endif // Engine_CacheEntryBase_h

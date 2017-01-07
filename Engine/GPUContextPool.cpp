@@ -29,7 +29,7 @@
 
 #include <QMutex>
 #include <QWaitCondition>
-#include <QThread>
+#include <QtCore/QThread>
 
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"

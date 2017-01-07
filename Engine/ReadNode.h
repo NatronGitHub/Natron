@@ -34,6 +34,10 @@
 
 #include "Engine/EffectInstance.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 #define NATRON_READER_INPUT_NAME "Sync"
 
 #define kNatronReadNodeParamDecodingPluginChoice "decodingPluginChoice"
@@ -41,7 +45,6 @@
 
 #define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
 
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A wrapper around all OpenFX Readers nodes so that to the user they all appear under a single Read node that has a dynamic

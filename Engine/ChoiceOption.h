@@ -16,9 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CHOICEOPTION_H
-#define NATRON_ENGINE_CHOICEOPTION_H
-
+#ifndef Engine_ChoiceOption_h
+#define Engine_ChoiceOption_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -26,11 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <string>
 
 #include "Engine/EngineFwd.h"
-
-
 
 NATRON_NAMESPACE_ENTER;
 
@@ -58,4 +57,4 @@ struct ChoiceOption
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_CHOICEOPTION_H
+#endif // Engine_ChoiceOption_h

@@ -32,10 +32,12 @@
 #include <vector>
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/EngineFwd.h"
 
 
 NATRON_NAMESPACE_ENTER;
+
 #ifdef __NATRON_OSX__
     #define NATRON_LIBRARY_EXT "dylib"
 #elif defined(__NATRON_LINUX__)

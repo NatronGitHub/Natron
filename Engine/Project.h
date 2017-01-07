@@ -54,8 +54,8 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
 #include "Serialization/SerializationBase.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

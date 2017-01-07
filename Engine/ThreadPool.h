@@ -35,9 +35,7 @@
 
 #include "Engine/EngineFwd.h"
 
-
 NATRON_NAMESPACE_ENTER;
-
 
 /**
  * @brief This class provides a fast way to determine whether a render thread

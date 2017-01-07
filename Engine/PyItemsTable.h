@@ -35,11 +35,11 @@
 #endif
 
 #include "Engine/PyParameter.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
-
 
 class ItemBase
 {

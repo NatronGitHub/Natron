@@ -25,18 +25,21 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <map>
-#include "Engine/EngineFwd.h"
-#include "Engine/ViewIdx.h"
-#include "Engine/RectI.h"
-#include "Engine/EffectInstance.h"
-#include "Global/GlobalDefines.h"
-
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#include "Global/GlobalDefines.h"
+#include "Engine/ViewIdx.h"
+#include "Engine/RectI.h"
+#include "Engine/EffectInstance.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

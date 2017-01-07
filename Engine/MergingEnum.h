@@ -29,8 +29,10 @@
 
 #include <string>
 #include <vector>
+
 #include "Global/Enums.h"
 #include "Engine/ChoiceOption.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

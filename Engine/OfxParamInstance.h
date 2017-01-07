@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EffectInstance.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

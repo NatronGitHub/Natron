@@ -32,7 +32,7 @@
 #include <cassert>
 #include <stdexcept>
 
-#include <QThread>
+#include <QtCore/QThread>
 #include <QCoreApplication>
 #include <QtCore/QLineF>
 #include <QtCore/QDebug>

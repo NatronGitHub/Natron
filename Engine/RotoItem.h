@@ -45,10 +45,12 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/KnobItemsTable.h"
 #include "Serialization/SerializationBase.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kRotoLayerBaseName "Group"
 #define kRotoBezierBaseName "Bezier"
@@ -79,8 +81,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kParamRotoItemSolo "soloButton"
 #define kParamRotoItemSoloLabel "Solo"
 #define kParamRotoItemSoloHint "Includes the current item in renders, ignoring others without this switch set"
-
-NATRON_NAMESPACE_ENTER;
 
 struct RotoItemPrivate;
 class RotoItem

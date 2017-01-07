@@ -24,12 +24,16 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 #include <map>
 #include <list>
-#include "Engine/EngineFwd.h"
+
 #include "Global/GlobalDefines.h"
 #include "Engine/OSGLContext.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

@@ -28,8 +28,9 @@
 #include "Global/Macros.h"
 
 #include "Global/Enums.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

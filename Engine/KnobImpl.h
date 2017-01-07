@@ -58,10 +58,9 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/Hash64.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/StringAnimationManager.h"
 
-
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

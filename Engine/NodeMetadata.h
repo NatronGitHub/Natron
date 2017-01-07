@@ -31,10 +31,10 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
 #include "Global/GlobalDefines.h"
 #include "Engine/ImageComponents.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

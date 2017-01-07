@@ -31,7 +31,7 @@
 #include <QApplication>
 #include <QClipboard>
 #include <QDebug>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QFile>
 #include <QUrl>
 #include <QtCore/QMimeData>

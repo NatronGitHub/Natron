@@ -35,7 +35,10 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kViewerInstanceParamOutputLayer "outputLayer"
 #define kViewerInstanceParamOutputLayerLabel "Layer"
@@ -66,8 +69,6 @@
 #define kViewerInstanceParamColorspaceLabel "Device Colorspace"
 #define kViewerInstanceParamColorspaceHint "The operation applied to the image before it is displayed " \
 "on screen. The image is converted to this colorspace before being displayed on the monitor"
-
-NATRON_NAMESPACE_ENTER;
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 

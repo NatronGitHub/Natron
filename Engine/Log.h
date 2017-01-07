@@ -30,6 +30,7 @@
 #ifdef NATRON_LOG
 
 #include "Engine/Singleton.h"
+
 #include "Engine/EngineFwd.h"
 
 

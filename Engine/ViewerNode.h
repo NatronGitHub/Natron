@@ -36,7 +36,10 @@
 
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kViewerNodeParamPlayerToolBarPage "playerToolBar"
 
@@ -96,8 +99,6 @@
 #define kViewerNodeParamNextIncr "goToNextIncrement"
 #define kViewerNodeParamNextIncrLabel "Next Increment"
 #define kViewerNodeParamNextIncrHint "Moves the timeline cursor forward by the number of frames indicated by the Frame Increment parameter"
-
-NATRON_NAMESPACE_ENTER;
 
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 

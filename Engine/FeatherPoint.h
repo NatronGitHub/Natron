@@ -28,6 +28,7 @@
 #include "Global/Macros.h"
 
 #include "Engine/BezierCP.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

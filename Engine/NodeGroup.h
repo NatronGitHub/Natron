@@ -43,13 +43,13 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
-
-NATRON_NAMESPACE_ENTER;
 
 
 struct NodeCollectionPrivate;

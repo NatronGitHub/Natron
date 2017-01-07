@@ -29,7 +29,7 @@
 #include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QApplication>
 
-#include <QThread>
+#include <QtCore/QThread>
 #include <QImage>
 
 #include "Engine/Image.h"

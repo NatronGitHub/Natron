@@ -35,8 +35,8 @@ CLANG_DIAG_ON(deprecated)
 
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

@@ -57,6 +57,7 @@ class access;
 class QByteArray;
 class QChar;
 class QDateTime;
+class QDir;
 class QFileInfo;
 class QLocalServer;
 class QLocalSocket;

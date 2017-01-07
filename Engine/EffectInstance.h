@@ -45,11 +45,14 @@
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/EffectInstanceActionResults.h"
 #include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/PluginActionShortcut.h"
 #include "Engine/ViewIdx.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 // Various useful plugin IDs, @see EffectInstance::getPluginID()
 #define PLUGINID_OFX_MERGE        "net.sf.openfx.MergePlugin"
@@ -120,8 +123,6 @@
 #define kReaderParamNameOriginalFrameRange "originalFrameRange"
 #define kReaderParamNameFirstFrame "firstFrame"
 #define kReaderParamNameLastFrame "lastFrame"
-
-NATRON_NAMESPACE_ENTER;
 
 struct PlaneToRender
 {

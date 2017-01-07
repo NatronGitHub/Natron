@@ -26,7 +26,7 @@
 #include "EffectInstancePrivate.h"
 
 #include <QDebug>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QCoreApplication>
 
 #include "Engine/AppInstance.h"

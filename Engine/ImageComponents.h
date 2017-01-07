@@ -32,8 +32,12 @@
 #include <list>
 
 #include <nuke/fnOfxExtensions.h>
-#include "Engine/EngineFwd.h"
+
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kNatronColorPlaneName "Color"
 #define kNatronBackwardMotionVectorsPlaneName "Backward"
@@ -43,9 +47,6 @@
 
 #define kNatronDisparityComponentsName "Disparity"
 #define kNatronMotionComponentsName "Motion"
-
-
-NATRON_NAMESPACE_ENTER;
 
 class ImageComponents : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {

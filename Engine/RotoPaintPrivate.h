@@ -28,20 +28,22 @@
 #include "Global/Macros.h"
 
 #include <list>
-#include <QtCore/QPointF>
-#include <QtCore/QRectF>
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include <QtCore/QPointF>
+#include <QtCore/QRectF>
+
+
 #include <ofxNatron.h>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

@@ -30,6 +30,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/TextureRect.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

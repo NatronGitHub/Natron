@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef NATRON_ENGINE_TIMEVALUE_H
 #define NATRON_ENGINE_TIMEVALUE_H
 
@@ -25,6 +24,12 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Small value representing a time. This should be passed to any function using a time as parameter
@@ -57,5 +62,6 @@ public:
     }
 };
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // NATRON_ENGINE_TIMEVALUE_H

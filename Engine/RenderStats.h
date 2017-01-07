@@ -43,8 +43,9 @@
 
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

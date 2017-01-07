@@ -31,7 +31,6 @@
 
 #include "Engine/EngineFwd.h"
 
-
 NATRON_NAMESPACE_ENTER;
 
 class StandardPaths

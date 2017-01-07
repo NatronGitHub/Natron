@@ -42,15 +42,14 @@
 #include "Engine/BufferableObject.h"
 #include "Engine/GenericSchedulerThread.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/TimeValue.h"
 
-//#define NATRON_PLAYBACK_USES_THREAD_POOL
-
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
+//#define NATRON_PLAYBACK_USES_THREAD_POOL
 
 
 struct BufferedFrame

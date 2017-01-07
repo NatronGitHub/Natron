@@ -46,10 +46,10 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/TLSHolder.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Project.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
