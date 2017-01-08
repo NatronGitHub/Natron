@@ -8,10 +8,7 @@ name                gcc6
 subport             libgcc {}
 
 epoch               2
-version             6.2.0
-if {${name} eq ${subport}} {
-    revision        2
-}
+version             6.3.0
 platforms           darwin
 categories          lang
 maintainers         mww openmaintainer
@@ -31,8 +28,8 @@ master_sites        ftp://ftp.funet.fi/pub/mirrors/sources.redhat.com/pub/gcc/re
 distname            gcc-${version}
 use_bzip2           yes
 
-checksums           rmd160  d9154ca51f40ae3ce42950a0476f701a9f86fc95 \
-                    sha256  9944589fc722d3e66308c0ce5257788ebd7872982a718aa2516123940671b7c5
+checksums           rmd160  38d297e66ff27786f52ccc2b3a006cd1b056b0f7 \
+                    sha256  f06ae7f3f790fbf0f018f6d40e844451e6bc3b7bc96e128e63b09825c1f8b29f
 
 depends_lib         port:cctools \
                     port:gmp \

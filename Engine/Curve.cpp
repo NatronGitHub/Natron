@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -539,6 +539,7 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
         bool nextKeySet = false;
         if (next != _imp->keyFrames.end()) {
             nextKey = *next;
+            nextKeySet = true;
         } else {
             KeyFrameSet::iterator start = _imp->keyFrames.begin();
             ++start;

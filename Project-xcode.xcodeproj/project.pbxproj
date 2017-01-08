@@ -420,6 +420,7 @@
 		1EADE5C418AA403700EF3180 /* Gui.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Gui.xcodeproj; path = Gui/Gui.xcodeproj; sourceTree = "<group>"; };
 		1EADE5C718AA403700EF3180 /* Tests.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = Tests.xcodeproj; path = Tests/Tests.xcodeproj; sourceTree = "<group>"; };
 		1EDADF2A1D8B0C4D00D47689 /* yaml-cpp-natron.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = "yaml-cpp-natron.xcodeproj"; path = "libs/yaml-cpp/yaml-cpp-natron.xcodeproj"; sourceTree = "<group>"; };
+		1EDF0EA31E1FDF3E00C12A4C /* README-Natron-documentation.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "README-Natron-documentation.md"; path = "Documentation/README-Natron-documentation.md"; sourceTree = "<group>"; };
 		1EE90EED1DD79AB400FA7BFE /* AngleBlur.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = AngleBlur.nps; sourceTree = "<group>"; };
 		1EE90EEE1DD79AB400FA7BFE /* DropShadow.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = DropShadow.nps; sourceTree = "<group>"; };
 		1EE90EEF1DD79AB400FA7BFE /* Fill.nps */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = Fill.nps; sourceTree = "<group>"; };
@@ -602,6 +603,7 @@
 		1E70D1631CF33B22000D2932 /* Documentation */ = {
 			isa = PBXGroup;
 			children = (
+				1EDF0EA31E1FDF3E00C12A4C /* README-Natron-documentation.md */,
 				1E70D14F1CF33A0C000D2932 /* BUGS.md */,
 				1E70D1501CF33A0C000D2932 /* CHANGELOG.md */,
 				1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */,
