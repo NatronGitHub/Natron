@@ -192,9 +192,11 @@ DocumentationManager::handler(QHttpRequest *req,
                                         if (isWriteNode) {
                                             node = isWriteNode->getEmbeddedWriter();
                                         }
+
                                     }
                                 }
-
+                            }
+                            if (node) {
                                 QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
                                 body = html.toUtf8();

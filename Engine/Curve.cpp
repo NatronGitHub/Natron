@@ -539,6 +539,7 @@ Curve::removeKeyFrame(KeyFrameSet::const_iterator it)
         bool nextKeySet = false;
         if (next != _imp->keyFrames.end()) {
             nextKey = *next;
+            nextKeySet = true;
         } else {
             KeyFrameSet::iterator start = _imp->keyFrames.begin();
             ++start;

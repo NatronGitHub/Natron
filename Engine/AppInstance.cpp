@@ -1333,6 +1333,7 @@ AppInstance::exportDocs(const QString path)
 
                     if (isReadNode) {
                         node = isReadNode->getEmbeddedReader();
+
                     }
                 }
                 if ( effectInstance->isWriter() ) {
@@ -2065,6 +2066,7 @@ AppInstance::getAppIDString() const
         return appID.toStdString();
     }
 }
+
 
 bool
 AppInstance::saveTemp(const std::string& filename)
