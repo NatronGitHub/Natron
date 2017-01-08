@@ -221,6 +221,7 @@ public:
 
     ///////////////////////////////////////////////////////
     // "Viewers" pane
+    KnobChoicePtr getViewerBitDepthKnob() const;
     ImageBitDepthEnum getViewersBitDepth() const;
     int getCache8BitTilesPo2() const;
     int getCheckerboardTileSize() const;

@@ -128,7 +128,7 @@ public:
     /**
      * @brief Returns the rectangle of the image displayed by the viewer
      **/
-    virtual RectD getImageRectangleDisplayed() OVERRIDE FINAL;
+    virtual RectD getImageRectangleDisplayed() const OVERRIDE FINAL;
 
     /**
      *@brief Set the pointer to the InfoViewerWidget. This is called once after creation
@@ -145,7 +145,7 @@ public:
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
     virtual bool isViewerUIVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void refreshFormatFromMetadata() OVERRIDE FINAL;
+    virtual void refreshFormatFromMetadata(int inputNb) OVERRIDE FINAL;
 
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently

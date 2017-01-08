@@ -151,6 +151,43 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
+    struct RenderActionArgs
+    {
+        // The time at which to render
+        TimeValue time;
+
+        // The view to render
+        ViewIdx view;
+
+        // The scale at which this effect is rendering
+        RenderScale renderScale;
+
+        // The render window: this is the portion to render for each output plane
+        RectI roi;
+
+        // The list of output planes: these are the images to write to in output
+        std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
+
+        // The render args for this node.
+        TreeRenderNodeArgsPtr renderArgs;
+
+        // Should render use OpenGL or CPU
+        RenderBackendTypeEnum backendType;
+
+        // The OpenGL context to used to render if backend type is set to eRenderBackendTypeOpenGL
+        // or eRenderBackendTypeOSMesa
+        OSGLContextAttacherPtr glContextAttacher;
+
+        // The effect data attached to the current OpenGL context. These are the data that were returned by
+        // attachOpenGLContext.
+        EffectOpenGLContextDataPtr glContextData;
+
+        // The RGBA channels to process. This can optimize render times for un-needed channels.
+        std::bitset<4> processChannels;
+        
+    };
+
+
     enum RenderRoITypeEnum
     {
         // The frame view was only requested via getFramesNeeded by a node downstream the usual way.
@@ -325,6 +362,9 @@ public:
         TreeRenderNodeArgsPtr renderArgs;
 
         GetImageInArgs();
+
+        // Initialize the inArgs with the current render action args
+        GetImageInArgs(const RenderActionArgs& args);
     };
 
     struct GetImageOutArgs
@@ -588,41 +628,6 @@ public:
                                         const EffectOpenGLContextDataPtr& glContextData,
                                         const TreeRenderNodeArgsPtr& render);
 
-    struct RenderActionArgs
-    {
-        // The time at which to render
-        TimeValue time;
-
-        // The view to render
-        ViewIdx view;
-
-        // The scale at which this effect is rendering
-        RenderScale renderScale;
-
-        // The render window: this is the portion to render for each output plane
-        RectI roi;
-
-        // The list of output planes: these are the images to write to in output
-        std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
-
-        // The render args for this node.
-        TreeRenderNodeArgsPtr renderArgs;
-
-        // Should render use OpenGL or CPU 
-        RenderBackendTypeEnum backendType;
-
-        // The OpenGL context to used to render if backend type is set to eRenderBackendTypeOpenGL
-        // or eRenderBackendTypeOSMesa
-        OSGLContextAttacherPtr glContextAttacher;
-
-        // The effect data attached to the current OpenGL context. These are the data that were returned by
-        // attachOpenGLContext.
-        EffectOpenGLContextDataPtr glContextData;
-
-        // The RGBA channels to process. This can optimize render times for un-needed channels.
-        std::bitset<4> processChannels;
-
-    };
 
 
     /**

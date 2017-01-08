@@ -104,12 +104,12 @@ public:
     virtual bool getMakeSettingsPanel() const OVERRIDE FINAL { return false; }
 
     static const Color::Lut* lutFromColorspace(ViewerColorSpaceEnum cs) WARN_UNUSED_RETURN;
-    
-    NodePtr getInputRecursive(int inputIndex) const;
 
-private:
+    virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    void refreshLayerAndAlphaChannelComboBox();
+    virtual bool supportsTiles() const OVERRIDE FINAL;
+
+    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
@@ -121,9 +121,10 @@ private:
 
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    NodePtr getInputRecursive(int inputIndex) const;
 
-    virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+private:
+
 
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
                                          const RenderScale & scale,
@@ -134,22 +135,21 @@ private:
                                          ViewIdx* inputView,
                                          int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
-                                                  ViewIdx view,
-                                                  const TreeRenderNodeArgsPtr& render,
-                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                  std::list<ImageComponents>* layersProduced,
-                                                  TimeValue* passThroughTime,
-                                                  ViewIdx* passThroughView,
-                                                  int* passThroughInputNb,
-                                                  bool* processAll,
-                                                  std::bitset<4>* processChannels) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    ActionRetCodeEnum getComponentsAction(TimeValue time,
+                                          ViewIdx view,
+                                          const TreeRenderNodeArgsPtr& render,
+                                          std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                          std::list<ImageComponents>* layersProduced,
+                                          TimeValue* passThroughTime,
+                                          ViewIdx* passThroughView,
+                                          int* passThroughInputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
     virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
 private:
 

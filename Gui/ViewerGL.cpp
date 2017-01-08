@@ -906,7 +906,7 @@ ViewerGL::getZoomFactor() const
 
 ///imageRoD is in PIXEL COORDINATES
 RectD
-ViewerGL::getImageRectangleDisplayed()
+ViewerGL::getImageRectangleDisplayed() const
 {
 
     RectD visibleArea;
@@ -1022,7 +1022,7 @@ ViewerGL::isViewerUIVisible() const
 }
 
 void
-ViewerGL::refreshFormatFromMetadata()
+ViewerGL::refreshFormatFromMetadata(int inputNb)
 {
     ViewerInstancePtr internalViewerNode = getInternalNode()->getInternalViewerNode();
     if (!internalViewerNode) {

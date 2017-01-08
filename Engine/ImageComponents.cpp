@@ -29,6 +29,9 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+
 #include "Serialization/NodeSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -352,6 +355,54 @@ ImageComponents::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationO
     _layerName = s->layerName;
     _globalComponentsName = s->globalCompsName;
     _componentNames = s->channelNames;
+
+}
+
+static std::string generateChannelID(const std::string& channelName)
+{
+    if (boost::iequals(channelName, "a") || boost::iequals(channelName, "alpha")) {
+        return "a";
+    } else if (boost::iequals(channelName, "r") || boost::iequals(channelName, "red")) {
+        return "r";
+    } else if (boost::iequals(channelName, "g") || boost::iequals(channelName, "green")) {
+        return "g";
+    } else if (boost::iequals(channelName, "b") || boost::iequals(channelName, "blue")) {
+        return "b";
+    } else {
+        return channelName;
+    }
+}
+
+ChoiceOption
+ImageComponents::getChannelOption(int channelIndex) const
+{
+    if (channelIndex < 0 || channelIndex >= (int)_componentNames.size()) {
+        return ChoiceOption("","","");
+    }
+    std::string optionID, optionLabel;
+    optionID += _layerName;
+    if ( !_layerName.empty() ) {
+        optionID += '.';
+    }
+    optionLabel = optionID;
+
+    // For the option label, append the name of the channel
+    optionLabel += _componentNames[channelIndex];
+
+    // For the option ID, if this is the alpha channel we need to do something different:
+    // The Color.RGBA and Color.Alpha planes both have alpha. To overcome this
+    optionID += generateChannelID(_componentNames[channelIndex]);
+    return ChoiceOption(optionID, optionLabel, "");
+}
+
+ChoiceOption
+ImageComponents::getLayerOption() const
+{
+    std::string optionLabel = _layerName + "." + _globalComponentsName;
+
+    // The option ID is always the name of the layer, this ensures for the Color plane that even if the components type changes, the choice stays
+    // the same in the parameter.
+    return ChoiceOption(_layerName, optionLabel, "");
 
 }
 

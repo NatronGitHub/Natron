@@ -2470,6 +2470,11 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
 
 ////////////////////////////////////////////////////////
 // "Viewers" pane
+KnobChoicePtr
+Settings::getViewerBitDepthKnob() const
+{
+    return _imp->_texturesMode;
+}
 
 ImageBitDepthEnum
 Settings::getViewersBitDepth() const

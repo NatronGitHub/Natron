@@ -873,6 +873,28 @@ ViewerNode::isDoingPartialUpdates() const
     return _imp->isDoingPartialUpdates;
 }
 
+void
+ViewerNode::onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode)
+{
+    int viewerProcess_i = -1;
+    for (int i = 0; i < 2; ++i) {
+        if (_imp->internalViewerProcessNode[i].lock() == viewerProcessNode) {
+            viewerProcess_i = i;
+            break;
+        }
+    }
+    assert(viewerProcess_i != -1);
+
+    refreshFps();
+    refreshViewsKnobVisibility();
+    
+    OpenGLViewerI* uiContext = getUiContext();
+    if (uiContext) {
+        uiContext->refreshFormatFromMetadata(viewerProcess_i);
+    }
+
+}
+
 
 /**
  * @brief Cycles recursively upstream thtough the main input of each node until we reach an Input node, or nothing in the
@@ -3282,18 +3304,6 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
 
 } // knobChanged
 
-void
-ViewerNode::setDisplayChannels(int index, bool setBoth)
-{
-
-    for (int i = 0; i < 2; ++i) {
-        if (i == 1 && !setBoth) {
-            break;
-        }
-        KnobChoicePtr displayChoice = _imp->displayChannelsKnob[i].lock();
-        displayChoice->setValue(index);
-    }
-}
 DisplayChannelsEnum
 ViewerNode::getDisplayChannels(int index) const
 {

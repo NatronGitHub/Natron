@@ -26,38 +26,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-static std::string generateChannelID(const std::string& channelName)
-{
-    if (boost::iequals(channelName, "a") || boost::iequals(channelName, "alpha")) {
-        return "a";
-    } else if (boost::iequals(channelName, "r") || boost::iequals(channelName, "red")) {
-        return "r";
-    } else if (boost::iequals(channelName, "g") || boost::iequals(channelName, "green")) {
-        return "g";
-    } else if (boost::iequals(channelName, "b") || boost::iequals(channelName, "blue")) {
-        return "b";
-    } else {
-        return channelName;
-    }
-}
 
-static ChoiceOption makeChannelOption(const std::string& layerName, const std::string& channelName)
-{
-    std::string optionID, optionLabel;
-    optionID += layerName;
-    if ( !layerName.empty() ) {
-        optionID += '.';
-    }
-    optionLabel = optionID;
-
-    // For the option label, append the name of the channel
-    optionLabel += channelName;
-
-    // For the option ID, if this is the alpha channel we need to do something different:
-    // The Color.RGBA and Color.Alpha planes both have alpha. To overcome this
-    optionID += generateChannelID(channelName);
-    return ChoiceOption(optionID, optionLabel, "");
-}
 
 bool
 Node::refreshChannelSelectors()
@@ -89,12 +58,8 @@ Node::refreshChannelSelectors()
         }
 
         for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
-            std::string optionLabel = it2->getLayerName() + "." + it2->getComponentsGlobalName();
-
-            // The option ID is always the name of the layer, this ensures for the Color plane that even if the components type changes, the choice stays
-            // the same in the parameter.
-            const std::string& optionID = it2->getLayerName();
-            choices.push_back(ChoiceOption(optionID, optionLabel, ""));
+            ChoiceOption layerOption = it2->getLayerOption();
+            choices.push_back(layerOption);
         }
 
         {
@@ -127,10 +92,9 @@ Node::refreshChannelSelectors()
 
         for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
 
-            const std::string& layerName = it2->getLayerName();
-            const std::vector<std::string>& channels = it2->getComponentsNames();
-            for (std::size_t c = 0; c < channels.size(); ++c) {
-                choices.push_back(makeChannelOption(layerName, channels[c]));
+            std::size_t nChans = (std::size_t)it2->getNumComponents();
+            for (std::size_t c = 0; c < nChans; ++c) {
+                choices.push_back(it2->getChannelOption(c));
             }
         }
 
@@ -262,10 +226,9 @@ Node::getMaskChannel(int inputNb, ImageComponents* comps) const
 
     for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
 
-        const std::string& layerName = it2->getLayerName();
-        const std::vector<std::string>& channels = it2->getComponentsNames();
-        for (std::size_t c = 0; c < channels.size(); ++c) {
-            ChoiceOption channelOption = makeChannelOption(layerName, channels[c]);
+        std::size_t nChans = (std::size_t)it2->getNumComponents();
+        for (std::size_t c = 0; c < nChans; ++c) {
+            ChoiceOption channelOption = it2->getChannelOption(c);
             if (channelOption.id == maskChannelID) {
                 *comps = *it2;
                 return c;

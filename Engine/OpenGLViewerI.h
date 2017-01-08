@@ -36,7 +36,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 #include "Engine/Texture.h"
-
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -141,7 +141,7 @@ public:
     /**
      * @brief Called when the viewer should refresh the foramt
      **/
-    virtual void refreshFormatFromMetadata() = 0;
+    virtual void refreshFormatFromMetadata(int inputNb) = 0;
 
     /**
      * @brief Called when the live instance of the viewer node is killed. (i.e: when the node is deleted).

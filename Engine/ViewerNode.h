@@ -174,8 +174,6 @@ public:
 
     void setZoomComboBoxText(const std::string& text);
 
-    void setDisplayChannels(int index, bool setBoth);
-
     DisplayChannelsEnum getDisplayChannels(int index) const;
 
     bool isAutoContrastEnabled() const;
@@ -308,6 +306,8 @@ public:
 
     void setDoingPartialUpdates(bool doing);
     bool isDoingPartialUpdates() const;
+
+    void onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode);
 
 public Q_SLOTS:
 

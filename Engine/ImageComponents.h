@@ -33,6 +33,7 @@
 
 #include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
+#include "Engine/ChoiceOption.h"
 #include "Serialization/SerializationBase.h"
 
 #define kNatronColorPlaneName "Color"
@@ -142,6 +143,9 @@ public:
         return getNumComponents() == 0;
     }
 
+
+    ChoiceOption getLayerOption() const;
+    ChoiceOption getChannelOption(int channelIndex) const;
 
     /**
      * @brief Find a layer equivalent to this layer in the other layers container.

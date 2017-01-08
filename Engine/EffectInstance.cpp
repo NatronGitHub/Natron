@@ -588,6 +588,21 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 
 }
 
+EffectInstance::GetImageInArgs::GetImageInArgs(const RenderActionArgs& args)
+: inputNb(0)
+, inputTime(args.time)
+, inputView(args.view)
+, currentScale(args.renderScale)
+, currentTime(args.time)
+, currentView(args.view)
+, optionalBounds(0)
+, layers(0)
+, renderBackend(&args.backendType)
+, renderArgs(args.renderArgs)
+{
+
+}
+
 bool
 EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 {
