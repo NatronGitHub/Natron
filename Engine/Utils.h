@@ -42,6 +42,8 @@ enum WhiteSpaceMode {
 
 QString convertFromPlainText(const QString &plain, NATRON_NAMESPACE::WhiteSpaceMode mode);
 
+QString convertFromPlainTextToMarkdown(const QString &plain, bool isTableElement);
+
 NATRON_NAMESPACE_EXIT;
 
 #endif // Natron_Gui_Utils_h

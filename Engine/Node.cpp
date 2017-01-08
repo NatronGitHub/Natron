@@ -4353,8 +4353,9 @@ Node::makeDocumentation(bool genHTML) const
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
-            QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
-            input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
+            input << NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), true );
+            input << NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), true );
+            input << ( _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No") );
             inputs.push_back(input);
 
             // Don't show more than doc for 4 inputs otherwise it will just clutter the page
@@ -4404,9 +4405,9 @@ Node::makeDocumentation(bool genHTML) const
             continue;
         }
 
-        QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
-        QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
-        QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
+        QString knobScriptName = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getName().c_str() ), true);
+        QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), true);
+        QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), true);
 
         if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
             continue;
@@ -4465,12 +4466,19 @@ Node::makeDocumentation(bool genHTML) const
                         }
                         std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
                         if ( entries.size() == entriesHelp.size() ) {
-                            knobHint.append( QString::fromUtf8("\n\n") );
+                            bool first = true;
                             for (size_t i = 0; i < entries.size(); i++) {
                                 QString entry = QString::fromUtf8( entries[i].c_str() );
                                 QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
                                 if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
-                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg( entry.trimmed() ).arg(entryHelp) );
+                                    if (first) {
+                                        //knobHint.append( QString::fromUtf8("<br />") );
+                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                        first = false;
+                                    }
+                                    //knobHint.append( QString::fromUtf8("<br />") );
+                                    knobHint.append( QString::fromUtf8("\\\n") );
+                                    knobHint.append( QString::fromUtf8("**%1**: %2").arg( NATRON_NAMESPACE::convertFromPlainTextToMarkdown(entry, true) ).arg( NATRON_NAMESPACE::convertFromPlainTextToMarkdown(entryHelp, true) ) );
                                 }
                             }
                         }
@@ -4487,7 +4495,8 @@ Node::makeDocumentation(bool genHTML) const
                     }
                 }
 
-                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), valueStr) );
+                dimsDefaultValueStr.push_back( std::make_pair(NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), true ),
+                                                              NATRON_NAMESPACE::convertFromPlainTextToMarkdown(valueStr, true)) );
             }
 
             for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
@@ -4530,46 +4539,7 @@ Node::makeDocumentation(bool genHTML) const
             QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
-            // the following chars must be backslash-escaped in markdown:
-            // \    backslash
-            // `    backtick
-            // *    asterisk
-            // _    underscore
-            // {}   curly braces
-            // []   square brackets
-            // ()   parentheses
-            // #    hash mark
-            // +    plus sign
-            // -    minus sign (hyphen)
-            // .    dot
-            // !    exclamation mark
-            QString escaped;
-            const QString& plain = pluginDescription;
-            for (int i = 0; i < plain.length(); ++i) {
-                if (plain[i] == QLatin1Char('\\') ||
-                    plain[i] == QLatin1Char('`') ||
-                    plain[i] == QLatin1Char('*') ||
-                    plain[i] == QLatin1Char('_') ||
-                    plain[i] == QLatin1Char('{') ||
-                    plain[i] == QLatin1Char('}') ||
-                    plain[i] == QLatin1Char('[') ||
-                    plain[i] == QLatin1Char(']') ||
-                    plain[i] == QLatin1Char('(') ||
-                    plain[i] == QLatin1Char(')') ||
-                    plain[i] == QLatin1Char('#') ||
-                    plain[i] == QLatin1Char('+') ||
-                    plain[i] == QLatin1Char('-') ||
-                    plain[i] == QLatin1Char('.') ||
-                    plain[i] == QLatin1Char('!')) {
-                    escaped += QLatin1Char('\\');
-                }
-                // line breaks become paragraph breaks (double the line breaks)
-                if (plain[i] == QLatin1Char('\n')) {
-                    escaped += QLatin1Char('\n');
-                }
-                escaped += plain[i];
-            }
-            pluginDescription = escaped;
+            pluginDescription = NATRON_NAMESPACE::convertFromPlainTextToMarkdown(pluginDescription, false);
         }
     }
 
@@ -4582,21 +4552,8 @@ Node::makeDocumentation(bool genHTML) const
     if (inputs.size() > 0) {
         Q_FOREACH(const QStringList &input, inputs) {
             QString inputName = input.at(0);
-            inputName.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputName.isEmpty()) {
-                inputName = QString::fromUtf8("&nbsp;");
-            }
-
             QString inputDesc = input.at(1);
-            inputDesc.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputDesc.isEmpty()) {
-                inputDesc = QString::fromUtf8("&nbsp;");
-            }
-
             QString inputOpt = input.at(2);
-            if (inputOpt.isEmpty()) {
-                inputOpt = QString::fromUtf8("&nbsp;");
-            }
 
             ms << inputName << " | " << inputDesc << " | " << inputOpt << "\n";
         }
@@ -4607,33 +4564,10 @@ Node::makeDocumentation(bool genHTML) const
     if (items.size() > 0) {
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
-            itemLabel.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemLabel.isEmpty()) {
-                itemLabel = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemScript = item.at(1);
-            itemScript.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemScript.isEmpty()) {
-                itemScript = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemType = item.at(2);
-            if (itemType.isEmpty()) {
-                itemType = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemDefault = item.at(3);
-            itemDefault.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemDefault.isEmpty()) {
-                itemDefault = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemFunction = item.at(4);
-            itemFunction.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemFunction.isEmpty()) {
-                itemFunction = QString::fromUtf8("&nbsp;");
-            }
 
             ms << itemLabel << " | " << itemScript << " | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
         }

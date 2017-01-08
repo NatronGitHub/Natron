@@ -103,4 +103,75 @@ convertFromPlainText(const QString &plain,
     return rich;
 } // convertFromPlainText
 
+QString
+convertFromPlainTextToMarkdown(const QString &plain_, bool isTableElement)
+{
+    QString escaped;
+    // we trim table elements
+    QString plain = isTableElement ? plain_.trimmed() : plain_;
+    // the following chars must be backslash-escaped in markdown:
+    // \    backslash
+    // `    backtick
+    // *    asterisk
+    // _    underscore
+    // {}   curly braces
+    // []   square brackets
+    // ()   parentheses
+    // #    hash mark
+    // +    plus sign
+    // -    minus sign (hyphen)
+    // .    dot
+    // !    exclamation mark
+
+    for (int i = 0; i < plain.length(); ++i) {
+        bool outputChar = true;
+        if (plain[i] == QLatin1Char('\\') ||
+            plain[i] == QLatin1Char('`') ||
+            plain[i] == QLatin1Char('*') ||
+            plain[i] == QLatin1Char('_') ||
+            plain[i] == QLatin1Char('{') ||
+            plain[i] == QLatin1Char('}') ||
+            plain[i] == QLatin1Char('[') ||
+            plain[i] == QLatin1Char(']') ||
+            plain[i] == QLatin1Char('(') ||
+            plain[i] == QLatin1Char(')') ||
+            plain[i] == QLatin1Char('#') ||
+            plain[i] == QLatin1Char('+') ||
+            plain[i] == QLatin1Char('-') ||
+            plain[i] == QLatin1Char('.') ||
+            plain[i] == QLatin1Char('!')) {
+            escaped += QLatin1Char('\\');
+        }
+        if (isTableElement) {
+            if (plain[i] == QLatin1Char('|')) {
+                escaped += QString::fromUtf8("&#124;");
+                outputChar = false;
+            } else if (plain[i] == QLatin1Char('\n')) {
+                // "<br />" should work, but actually it doesn't work well and is ignored in many cases
+                //escaped += QString::fromUtf8("<br />");
+                //escaped += QString::fromUtf8("<br />");
+                //outputChar = false;
+                // see http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html
+                // A backslash followed by a newline is also a hard line break.
+                // Note: in multiline and grid table cells, this is the only way
+                // to create a hard line break, since trailing spaces in the cells are ignored.
+                escaped += QLatin1Char('\\');
+            }
+        } else if (plain[i] == QLatin1Char('\n')) {
+            // line breaks become paragraph breaks (double the line breaks)
+            escaped += QLatin1Char('\n');
+        }
+        if (outputChar) {
+            escaped += plain[i];
+        }
+    }
+    if ( isTableElement && escaped.isEmpty() ) {
+        escaped = QString::fromUtf8("&nbsp;");
+    }
+    if (isTableElement) {
+        return escaped.trimmed();
+    }
+    return escaped;
+} // convertFromPlainText
+
 NATRON_NAMESPACE_EXIT;
