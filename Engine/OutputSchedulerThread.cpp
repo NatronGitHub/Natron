@@ -2210,7 +2210,7 @@ struct RenderViewerProcessFunctorArgs
     ViewIdx view;
     RenderStatsPtr stats;
     ActionRetCodeEnum retCode;
-    std::map<ImageComponents, ImagePtr> planes;
+    ImagePtr outputImage;
     RectD roi;
     unsigned int viewerMipMapLevel;
     bool isDraftModeEnabled;
@@ -2278,7 +2278,31 @@ public:
     static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs)
     {
         assert(inArgs->renderObject);
-        inArgs->retCode = inArgs->renderObject->launchRender(&inArgs->planes);
+        std::map<ImageComponents, ImagePtr> planes;
+        inArgs->retCode = inArgs->renderObject->launchRender(&planes);
+        if (planes.empty()) {
+            inArgs->retCode = eActionStatusFailed;
+            return;
+        }
+        // Convert the image to a format that can be uploaded to a OpenGL texture
+        {
+            inArgs->outputImage = planes.begin()->second;
+            Image::InitStorageArgs initArgs;
+            initArgs.bounds = inArgs->outputImage->getBounds();
+
+            // Viewer textures are always RGBA
+            initArgs.layer = ImageComponents::getRGBAComponents();
+            initArgs.bitdepth = inArgs->outputImage->getBitDepth();
+            initArgs.storage = eStorageModeRAM;
+            initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+            ImagePtr mappedImage = Image::create(initArgs);
+
+            Image::CopyPixelsArgs copyArgs;
+            copyArgs.roi = initArgs.bounds;
+            copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
+            mappedImage->copyPixels(*inArgs->outputImage, copyArgs);
+            inArgs->outputImage = mappedImage;
+        }
     }
 
     static unsigned getViewerMipMapLevel(const ViewerNodePtr& viewer, bool draftModeEnabled, bool fullFrameProcessing)
@@ -2298,7 +2322,7 @@ public:
 
         assert(downcale_i >= 0);
         if (downcale_i > 0) {
-            mipMapLevel = downcale_i + 1;
+            mipMapLevel = downcale_i;
         } else {
             // Downscale level is set to Auto, compute it from the zoom factor.
             // This is the current zoom factor (1. == 100%) currently set by the user in the viewport. This is thread-safe.
@@ -2426,11 +2450,7 @@ private:
             ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
             bufferObject->view = viewsToRender[i];
             for (int i = 0; i < 2; ++i) {
-                if (processArgs[i]->planes.empty()) {
-                    continue;
-                }
-                assert(processArgs[i]->planes.size() == 1);
-                bufferObject->viewerProcessImages[i] = processArgs[i]->planes.begin()->second;
+                bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
             if (stats) {
@@ -2452,9 +2472,7 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
 
     ViewerNodePtr isViewer = getOutputNode()->isEffectViewerNode();
     assert(isViewer);
-    if ( !frames.empty() ) {
-        isViewer->aboutToUpdateTextures();
-    }
+
     if ( !frames.empty() ) {
         assert(frames.size() == 1);
         for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
@@ -3238,11 +3256,7 @@ public:
             ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
             bufferObject->view = view;
             for (int i = 0; i < 2; ++i) {
-                if (processArgs[i]->planes.empty()) {
-                    continue;
-                }
-                assert(processArgs[i]->planes.size() == 1);
-                bufferObject->viewerProcessImages[i] = processArgs[i]->planes.begin()->second;
+                bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
             bufferList.push_back(bufferObject);
@@ -3449,9 +3463,6 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStat
     assert( QThread::currentThread() == qApp->thread() );
 
     ViewerNodePtr viewerNode = viewer->isEffectViewerNode();
-    if ( !frames.empty() ) {
-        viewerNode->aboutToUpdateTextures();
-    }
 
 
     for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {

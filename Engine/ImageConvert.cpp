@@ -1191,7 +1191,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
 
     if (fromStorage == eStorageModeGLTex && toStorage == eStorageModeGLTex) {
 
-        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].isCached) {
+        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].entryLocker && toTile.perChannelTile[0].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
             // Don't write over cached tiles
             return;
         }
@@ -1220,7 +1220,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
 
     } else if (fromStorage == eStorageModeGLTex && toStorage != eStorageModeGLTex) {
 
-        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].isCached) {
+        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].entryLocker && toTile.perChannelTile[0].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
             // Don't write over cached tiles
             return;
         }
@@ -1249,7 +1249,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
 
     } else if (fromStorage != eStorageModeGLTex && toStorage == eStorageModeGLTex) {
 
-        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].isCached) {
+        if (args.skipDestinationTilesMarkedCached && toTile.perChannelTile[0].entryLocker && toTile.perChannelTile[0].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
             // Don't write over cached tiles
             return;
         }
@@ -1286,7 +1286,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
             // This not very important: effects for now always compute all channels at once.
             bool hasUncachedTile = false;
             for (std::size_t i = 0; i < toTile.perChannelTile.size(); ++i) {
-                if (!toTile.perChannelTile[i].isCached) {
+                if (toTile.perChannelTile[i].entryLocker && toTile.perChannelTile[i].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
                     hasUncachedTile = true;
                 }
             }

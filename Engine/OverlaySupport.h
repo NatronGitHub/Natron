@@ -34,7 +34,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/RectD.h"
-
+#include "Global/GlobalDefines.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -122,11 +122,11 @@ public:
     virtual void getCursorPosition(double& x, double& y) const = 0;
 
     /**
-     * @brief Returns for a viewer the internal viewer node
+     * @brief Returns the frame range of the viewer's timeline
      **/
-    virtual ViewerInstancePtr getInternalViewerNode() const
+    virtual RangeD getFrameRange() const
     {
-        return ViewerInstancePtr();
+        return RangeD(0., 0.);
     }
 
     /**

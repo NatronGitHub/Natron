@@ -1057,10 +1057,6 @@ public:
         return false;
     }
 
-    /**
-     * @brief Return the render engine created by createRenderEngine
-     **/
-    RenderEnginePtr getRenderEngine() const;
 
     /**
      * @brief To be implemented if this effect has the isOutput() function retuning true.

@@ -102,8 +102,6 @@ public:
 
     double getPAR(int texIndex) const;
 
-    virtual ImageBitDepthEnum getBitDepth() const OVERRIDE FINAL;
-
     /**
      *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
      * It calls QGLWidget::resizeEvent(QResizeEvent*).
@@ -145,7 +143,7 @@ public:
     virtual void clearPartialUpdateTextures() OVERRIDE FINAL;
     virtual bool isViewerUIVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void refreshFormatFromMetadata(int inputNb) OVERRIDE FINAL;
+    virtual void refreshMetadata(int inputNb, const NodeMetadata& metadata) OVERRIDE FINAL;
 
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently
@@ -156,32 +154,15 @@ public:
      * 3) glUnmapBuffer
      * 4) glTexSubImage2D or glTexImage2D depending whether we resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            size_t bytesCount,
-                                            const RectI &roiRoundedToTileSize,
-                                            const RectI& roi,
-                                            const TextureRect & tileRect,
+    virtual void transferBufferFromRAMtoGPU(const ImagePtr& image,
                                             int textureIndex,
                                             bool isPartialRect,
-                                            bool isFirstTile,
-                                            boost::shared_ptr<Texture>* texture) OVERRIDE FINAL;
-    virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<Texture>& texture,
-                                               const ImagePtr& image,
-                                               int time,
-                                               const RectD& rod,
-                                               double par,
-                                               ImageBitDepthEnum depth,
-                                               unsigned int mipMapLevel,
-                                               ImagePremultiplicationEnum premult,
-                                               double gain,
-                                               double gamma,
-                                               double offset,
-                                               int lut,
-                                               bool recenterViewer,
-                                               const Point& viewportCenter,
-                                               bool isPartialRect) OVERRIDE FINAL;
-    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+                                            TimeValue time,
+                                            const RectD& rod,
+                                            bool recenterViewer,
+                                            const Point& viewportCenter) OVERRIDE FINAL;
+
+
     virtual void disconnectInputTexture(int textureIndex, bool clearRoD) OVERRIDE FINAL;
 
 
@@ -237,8 +218,6 @@ public Q_SLOTS:
      * Otherwise it goes in the middle of the project window
      **/
     void resetWipeControls();
-
-    void clearLastRenderedTexture();
 
 
 public:
@@ -371,7 +350,7 @@ public:
      * @brief Returns the cursor position in canonical coordinates
      **/
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
-    virtual ViewerInstancePtr getInternalViewerNode() const OVERRIDE FINAL;
+    virtual RangeD getFrameRange() const OVERRIDE FINAL;
 
     void setZoomOrPannedSinceLastFit(bool enabled);
 
@@ -389,14 +368,6 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() OVERRIDE FINAL;
-
-    /**
-     * @brief Called by the Histogram when it wants to refresh. It returns a pointer to the last
-     * rendered image by the viewer. It doesn't re-render the image if it is not present.
-     **/
-    ImagePtr getLastRenderedImage(int textureIndex) const;
-
-    ImagePtr getLastRenderedImageByMipMapLevel(int textureIndex, unsigned int mipMapLevel) const;
 
     /**
      * @brief Get the color of the currently displayed image at position x,y.
@@ -419,7 +390,7 @@ public:
     ///same as getMipMapLevel but with the zoomFactor taken into account
     int getMipMapLevelCombinedToZoomFactor() const WARN_UNUSED_RETURN;
 
-    virtual int getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual TimeValue getCurrentlyDisplayedTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     QPointF toZoomCoordinates(const QPointF& position) const;
 
@@ -444,7 +415,7 @@ Q_SIGNALS:
     /**
      * @brief Emitted when the image texture changes.
      **/
-    void imageChanged(int texIndex, bool hasImageBackEnd);
+    void imageChanged(int texIndex);
 
     /**
      * @brief Emitted when the selection rectangle has changed.
@@ -505,11 +476,6 @@ private:
      * this function will report even when the frame buffer is complete.
      **/
     void checkFrameBufferCompleteness(const char where[], bool silent = true);
-
-    /**
-     *@brief Initialises shaders. If they were initialized ,returns instantly.
-     **/
-    void initShaderGLSL(); // init shaders
 
 
     enum DrawPolygonModeEnum

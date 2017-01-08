@@ -460,21 +460,6 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     return true;
 }
 
-void
-ViewerGL::Implementation::getBaseTextureCoordinates(const RectI & r,
-                                                    int closestPo2,
-                                                    int texW,
-                                                    int texH,
-                                                    GLfloat & bottom,
-                                                    GLfloat & top,
-                                                    GLfloat & left,
-                                                    GLfloat & right)
-{
-    bottom =  0;
-    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(texH * closestPo2);
-    left = 0;
-    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(texW * closestPo2);
-}
 
 void
 ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF & polygonPoints,

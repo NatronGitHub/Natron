@@ -827,7 +827,7 @@ Image::getCachePolicy() const
 }
 
 std::list<RectI>
-Image::getRestToRender() const
+Image::getRestToRender(bool *hasPendingResults) const
 {
 
     std::list<RectI> ret;
@@ -838,9 +838,17 @@ Image::getRestToRender() const
     for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
         bool hasChannelNotCached = true;
         for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
-            if (!_imp->tiles[i].perChannelTile[c].isCached) {
+
+            CacheEntryLocker::CacheEntryStatusEnum status = CacheEntryLocker::eCacheEntryStatusMustCompute;
+            if (_imp->tiles[i].perChannelTile[c].entryLocker) {
+                status = _imp->tiles[i].perChannelTile[c].entryLocker->getStatus();
+            }
+            if (status != CacheEntryLocker::eCacheEntryStatusCached) {
                 hasChannelNotCached = true;
                 break;
+            }
+            if (status == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                *hasPendingResults = true;
             }
         }
         if (hasChannelNotCached) {

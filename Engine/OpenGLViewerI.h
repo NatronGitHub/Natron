@@ -72,12 +72,6 @@ public:
      * actually displayed on the viewport. (It cannot be bigger than the rod)
      **/
     virtual RectD getImageRectangleDisplayed() const = 0;
-
-    /**
-     * @brief Must return the bit depth of the texture used to render. (Byte, half or float)
-     **/
-    virtual ImageBitDepthEnum getBitDepth() const = 0;
-
     /**
      * @brief Should clear any partial texture overlayed previously transferred with transferBufferFromRAMtoGPU
      **/
@@ -90,31 +84,13 @@ public:
      * 3) glUnmapBuffer to unmap the GPU buffer
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
-    virtual void transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                            size_t bytesCount,
-                                            const RectI &roiRoundedToTileSize,
-                                            const RectI& roi,
-                                            const TextureRect & tileRect,
+    virtual void transferBufferFromRAMtoGPU(const ImagePtr& image,
                                             int textureIndex,
                                             bool isPartialRect,
-                                            bool isFirstTile,
-                                            boost::shared_ptr<Texture>* texture) = 0;
-    virtual void endTransferBufferFromRAMToGPU(int textureIndex,
-                                               const boost::shared_ptr<Texture>& texture,
-                                               const ImagePtr& image,
-                                               int time,
-                                               const RectD& rod,
-                                               double par,
-                                               ImageBitDepthEnum depth,
-                                               unsigned int mipMapLevel,
-                                               ImagePremultiplicationEnum premult,
-                                               double gain,
-                                               double gamma,
-                                               double offset,
-                                               int lut,
-                                               bool recenterViewer,
-                                               const Point& viewportCenter,
-                                               bool isPartialRect) = 0;
+                                            TimeValue time,
+                                            const RectD& rod,
+                                            bool recenterViewer,
+                                            const Point& viewportCenter) = 0;
 
     /**
      * @brief Called when the input of a viewer should render black.
@@ -141,7 +117,7 @@ public:
     /**
      * @brief Called when the viewer should refresh the foramt
      **/
-    virtual void refreshFormatFromMetadata(int inputNb) = 0;
+    virtual void refreshMetadata(int inputNb, const NodeMetadata& metadata) = 0;
 
     /**
      * @brief Called when the live instance of the viewer node is killed. (i.e: when the node is deleted).
@@ -152,7 +128,7 @@ public:
     /**
      * @brief Must return the time currently displayed
      **/
-    virtual int getCurrentlyDisplayedTime() const = 0;
+    virtual TimeValue getCurrentlyDisplayedTime() const = 0;
 
     /**
      * @brief Get the viewer's timeline's range
@@ -173,12 +149,6 @@ public:
      * @brief Must restore all OpenGL bits saved in saveOpenGLContext()
      **/
     virtual void restoreOpenGLContext() OVERRIDE = 0;
-
-    /**
-     * @brief Clears pointers to images that may be left
-     **/
-    virtual void clearLastRenderedImage() = 0;
-
     /**
      *@brief To be called if redraw needs to  be called now without waiting the end of the event loop
      **/

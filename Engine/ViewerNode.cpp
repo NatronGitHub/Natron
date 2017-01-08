@@ -874,7 +874,7 @@ ViewerNode::isDoingPartialUpdates() const
 }
 
 void
-ViewerNode::onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode)
+ViewerNode::onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode, const NodeMetadata& metadata)
 {
     int viewerProcess_i = -1;
     for (int i = 0; i < 2; ++i) {
@@ -890,7 +890,7 @@ ViewerNode::onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNod
     
     OpenGLViewerI* uiContext = getUiContext();
     if (uiContext) {
-        uiContext->refreshFormatFromMetadata(viewerProcess_i);
+        uiContext->refreshMetadata(viewerProcess_i, metadata);
     }
 
 }
@@ -4665,17 +4665,6 @@ ViewerNode::clearLastRenderedImage()
     }
 }
 
-
-void
-ViewerNode::aboutToUpdateTextures()
-{
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    OpenGLViewerI* uiContext = getUiContext();
-    if (uiContext) {
-        uiContext->clearPartialUpdateTextures();
-    }
-}
-
 double
 ViewerNode::getUIZoomFactor() const
 {
@@ -4687,10 +4676,34 @@ ViewerNode::getUIZoomFactor() const
 
 }
 
-void
-ViewerNode::updateViewer(ViewIdx view, const ImagePtr& viewerA, const ImagePtr& viewerB)
-{
 
+
+void
+ViewerNode::updateViewer(const UpdateViewerArgs& args)
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+
+
+    OpenGLViewerI* uiContext = getUiContext();
+    assert(uiContext);
+
+    uiContext->clearPartialUpdateTextures();
+    
+    const std::list<ImagePtr> *imagesForInput[2] = {&args.viewerA, &args.viewerB};
+    for (int i = 0; i < 2; ++i) {
+        RectD rod;
+        NodePtr viewerProcessNode = getViewerProcessNode(i);
+        GetRegionOfDefinitionResultsPtr actionResults;
+        ActionRetCodeEnum stat = viewerProcessNode->getEffectInstance()->getRegionOfDefinition_public(args.time, args.view, RenderScale(1.), TreeRenderNodeArgs(), &actionResults);
+        if (!isFailureRetCode(stat)) {
+            rod = actionResults->getRoD();
+        }
+
+        for (std::list<ImagePtr>::const_iterator it = imagesForInput[i]->begin(); it!=imagesForInput[i]->end(); ++it) {
+            uiContext->transferBufferFromRAMtoGPU(*it, i, isPartialRect, time, rod, args.recenterViewer, args.viewerCenter);
+        }
+
+    }
 }
 
 TimeValue
@@ -4700,12 +4713,12 @@ ViewerNode::getTimelineCurrentTime() const
     return TimeValue(timeline->currentFrame());
 }
 
-int
+TimeValue
 ViewerNode::getLastRenderedTime() const
 {
     OpenGLViewerI* uiContext = getUiContext();
 
-    return uiContext ? uiContext->getCurrentlyDisplayedTime() : getApp()->getTimeLine()->currentFrame();
+    return uiContext ? uiContext->getCurrentlyDisplayedTime() : TimeValue(getApp()->getTimeLine()->currentFrame());
 }
 
 TimeLinePtr

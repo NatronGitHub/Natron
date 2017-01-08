@@ -224,7 +224,6 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 ViewerInstancePrivate::buildGammaLut(double gamma, RamBuffer<float>* gammaLookup)
 {
-    // gammaLookupMutex should already be locked
     gammaLookup->resize(GAMMA_LUT_NB_VALUES + 1);
     float* buf = gammaLookup->getData();
     if (gamma <= 0) {
@@ -348,7 +347,7 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 
 
     _imp->refreshLayerAndAlphaChannelComboBox();
-    getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode());
+    getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode(), metadata);
 
     return eActionStatusOK;
 } // getTimeInvariantMetadatas

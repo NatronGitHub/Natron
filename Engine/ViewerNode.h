@@ -256,9 +256,18 @@ public:
 
     double getUIZoomFactor() const;
 
-    void aboutToUpdateTextures();
+    struct UpdateViewerArgs
+    {
+        TimeValue time;
+        ViewIdx view;
+        bool isPartialRect;
+        std::list<ImagePtr> viewerA;
+        std::list<ImagePtr> viewerB;
+        bool recenterViewer;
+        Point viewerCenter;
+    };
 
-    void updateViewer(ViewIdx view, const ImagePtr& viewerA, const ImagePtr& viewerB);
+    void updateViewer(const UpdateViewerArgs& args);
 
     void disconnectViewer();
 
@@ -308,7 +317,7 @@ public:
     void setDoingPartialUpdates(bool doing);
     bool isDoingPartialUpdates() const;
 
-    void onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode);
+    void onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode, const NodeMetadata& metadata);
 
 public Q_SLOTS:
 

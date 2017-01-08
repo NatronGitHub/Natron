@@ -215,7 +215,6 @@ SOURCES += \
     StubNode.cpp \
     TabWidgetI.cpp \
     Texture.cpp \
-    TextureRect.cpp \
     ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
@@ -452,7 +451,6 @@ HEADERS += \
     StubNode.h \
     TabWidgetI.h \
     Texture.h \
-    TextureRect.h \
     ThreadStorage.h \
     ThreadPool.h \
     TimeLine.h \

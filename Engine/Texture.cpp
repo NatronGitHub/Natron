@@ -36,7 +36,7 @@ Texture::Texture(U32 target,
                  int minFilter,
                  int magFilter,
                  int clamp,
-                 DataTypeEnum type,
+                 ImageBitDepthEnum type,
                  int format,
                  int internalFormat,
                  int glType,
@@ -124,13 +124,13 @@ void ensureTextureHasSizeInternal(const unsigned char* originalRAMBuffer,
 }
 
 bool
-Texture::ensureTextureHasSize(const TextureRect& texRect,
+Texture::ensureTextureHasSize(const RectI& bounds,
                               const unsigned char* originalRAMBuffer)
 {
-    if (texRect == _textureRect) {
+    if (bounds == _bounds) {
         return false;
     }
-    _textureRect = texRect;
+    _bounds = bounds;
 
     if (_useOpenGL) {
         ensureTextureHasSizeInternal<GL_GPU>(originalRAMBuffer, _target, _texID, _minFilter, _magFilter, _clamp, _internalFormat, _format, _glType, w(), h());
@@ -142,10 +142,9 @@ Texture::ensureTextureHasSize(const TextureRect& texRect,
 }
 
 template <typename GL>
-void fillOrAllocateTextureInternal(const TextureRect & texRect,
+void fillOrAllocateTextureInternal(const RectI & bounds,
                                    Texture* texture,
-                                   const RectI& roi,
-                                   bool updateOnlyRoi,
+                                   const RectI* roiParam,
                                    const unsigned char* originalRAMBuffer,
                                    int target,
                                    int texID,
@@ -158,12 +157,12 @@ void fillOrAllocateTextureInternal(const TextureRect & texRect,
     //glGetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&savedTexture);
     {
         GLProtectAttrib<GL> a(GL_ENABLE_BIT);
-        int width = updateOnlyRoi ? roi.width() : w;
-        int height = updateOnlyRoi ? roi.height() : h;
-        int x1 = updateOnlyRoi ? roi.x1 - texRect.x1 : 0;
-        int y1 = updateOnlyRoi ? roi.y1 - texRect.y1 : 0;
+        int width = roiParam ? roiParam->width() : w;
+        int height = roiParam ? roiParam->height() : h;
+        int x1 = roiParam ? roiParam->x1 - bounds.x1 : 0;
+        int y1 = roiParam ? roiParam->y1 - bounds.y1 : 0;
 
-        if ( !texture->ensureTextureHasSize(texRect, originalRAMBuffer) ) {
+        if ( !texture->ensureTextureHasSize(bounds, originalRAMBuffer) ) {
             GL::Enable(target);
             GL::BindTexture (target, texID);
 
@@ -182,15 +181,14 @@ void fillOrAllocateTextureInternal(const TextureRect & texRect,
 }
 
 void
-Texture::fillOrAllocateTexture(const TextureRect & texRect,
-                               const RectI& roi,
-                               bool updateOnlyRoi,
+Texture::fillOrAllocateTexture(const RectI & bounds,
+                               const RectI* roiParam,
                                const unsigned char* originalRAMBuffer)
 {
     if (_useOpenGL) {
-        fillOrAllocateTextureInternal<GL_GPU>(texRect, this, roi, updateOnlyRoi, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
+        fillOrAllocateTextureInternal<GL_GPU>(bounds, this, roiParam, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
     } else {
-        fillOrAllocateTextureInternal<GL_CPU>(texRect, this, roi, updateOnlyRoi, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
+        fillOrAllocateTextureInternal<GL_CPU>(bounds, this, roiParam, originalRAMBuffer, _target, _texID, _format, _glType, w(), h());
     }
 } // fillOrAllocateTexture
 
