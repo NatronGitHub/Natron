@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CURVE_H
-#define NATRON_ENGINE_CURVE_H
+#ifndef Engine_Curve_h
+#define Engine_Curve_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -37,15 +37,16 @@
 #endif
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/DimensionIdx.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/Transform.h"
 #include "Engine/TimeValue.h"
 
-#define NATRON_CURVE_X_SPACING_EPSILON 1e-6
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
+#define NATRON_CURVE_X_SPACING_EPSILON 1e-6
 
 /**
  * @brief A KeyFrame is a lightweight pair <time,value>. These are the values that are used
@@ -616,4 +617,4 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_CURVE_H
+#endif // Engine_Curve_h

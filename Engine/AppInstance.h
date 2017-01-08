@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef APPINSTANCE_H
-#define APPINSTANCE_H
+#ifndef Engine_AppInstance_h
+#define Engine_AppInstance_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -44,8 +44,10 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct AppInstancePrivate;
@@ -487,4 +489,4 @@ public:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // APPINSTANCE_H
+#endif // Engine_AppInstance_h

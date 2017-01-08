@@ -33,6 +33,8 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 // Singleton pattern ( thread-safe) , to have 1 global ptr
 
 template<class T>
@@ -121,5 +123,6 @@ T * Singleton<T>::instance_ = 0;
 template<class T>
 QMutex * Singleton<T>::_mutex = 0;
 
+NATRON_NAMESPACE_EXIT;
 
 #endif // ifndef NATRON_ENGINE_SINGLETON_H

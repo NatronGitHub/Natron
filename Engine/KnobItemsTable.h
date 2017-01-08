@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <vector>
 #include "Engine/EngineFwd.h"
@@ -34,19 +36,21 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include <QMetaType>
-#include <QString>
+#include <QtCore/QMetaType>
+#include <QtCore/QString>
 
 #include "Engine/Knob.h"
 
 #include "Serialization/KnobSerialization.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief String passed to setColumn to indicate that a column corresponds to the label
  **/
 #define kKnobTableItemColumnLabel "KnobTableItemColumnLabel"
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A KnobTableItem represents one row in an item view. Each column of the row can be the view of a Knob (or only

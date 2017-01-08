@@ -40,10 +40,12 @@
 #endif
 
 #include "Global/Enums.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/PluginActionShortcut.h"
 #include "Engine/PropertiesHolder.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief x1 pointer property indicating the function used to create an instance of the plug-in.
@@ -194,8 +196,6 @@
  **/
 #define kNatronPluginPropRenderSafety "NatronPluginPropRenderSafety"
 
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A node of a tree data structure representing the grouping hierarchy of plug-ins. This is mainly for the GUI so it can create its toolbuttons and menus

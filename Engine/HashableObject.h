@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -32,9 +34,10 @@
 #include <set>
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
 

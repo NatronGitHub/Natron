@@ -48,13 +48,13 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/Enums.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Plugin.h"
 
-
-//#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
+//#define MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
 
 struct OfxHostPrivate;
 class OfxHost

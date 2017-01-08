@@ -25,14 +25,17 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 
 #include "Engine/RotoBezierTriangulation.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

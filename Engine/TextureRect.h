@@ -30,6 +30,7 @@
 #include <algorithm> // min, max
 
 #include "Engine/RectI.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

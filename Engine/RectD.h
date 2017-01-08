@@ -37,15 +37,16 @@
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/EngineFwd.h"
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
 #endif
-
-NATRON_NAMESPACE_ENTER;
 
 class RectD : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {

@@ -33,7 +33,10 @@
 
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define ROTOPAINT_MAX_INPUTS_COUNT 11
 #define ROTOPAINT_MASK_INPUT_INDEX 10
@@ -382,8 +385,6 @@ enum RotoMotionBlurModeEnum
 #define kRotoRemoveItemParam "removeItemButton"
 #define kRotoRemoveItemParamLabel "Remove"
 #define kRotoRemoveItemParamHint "Remove the selected item(s) from the table"
-
-NATRON_NAMESPACE_ENTER;
 
 struct RotoPaintPrivate;
 class RotoPaint

@@ -26,7 +26,7 @@
 #include "TreeRender.h"
 
 #include <set>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QMutex>
 #include <QTimer>
 #include <QDebug>

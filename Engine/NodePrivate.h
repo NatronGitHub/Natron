@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef NATRON_ENGINE_NODE_PRIVATE_H
 #define NATRON_ENGINE_NODE_PRIVATE_H
 
@@ -26,13 +25,11 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <map>
 #include <list>
 #include <bitset>
-
-#include <QDebug>
-
-#include "Global/Macros.h"
 
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 // /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
@@ -42,8 +39,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
+#include <QtCore/QCoreApplication>
+#include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
+#include <QtCore/QDebug>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/FStreamsSupport.h"
 #include "Engine/Node.h"
@@ -68,18 +68,13 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Serialization/NodeClipBoard.h"
 #include "Serialization/SerializationIO.h"
 
-#include <QtCore/QCoreApplication>
-#include <QtCore/QMutex>
-#include <QtCore/QWaitCondition>
+#include "Engine/EngineFwd.h"
 
-
+NATRON_NAMESPACE_ENTER
 
 #define kNodeParamProcessAllLayers "processAllLayers"
 #define kNodeParamProcessAllLayersLabel "All Layers"
 #define kNodeParamProcessAllLayersHint "When checked all layers in input will be processed and output to the same layer as in input. It is useful for example to apply a Transform effect on all layers."
-
-
-NATRON_NAMESPACE_ENTER
 
 
 /*The output node was connected from inputNumber to this...*/

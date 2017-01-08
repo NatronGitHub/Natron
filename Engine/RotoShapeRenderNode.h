@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ROTOSHAPERENDERNODE_H
 #define ROTOSHAPERENDERNODE_H
 
@@ -34,8 +33,10 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kRotoShapeRenderNodeParamOutputComponents "outputComponents"
 #define kRotoShapeRenderNodeParamOutputComponentsLabel "Output Components"
@@ -49,7 +50,6 @@
 #define kRotoShapeRenderNodeParamTypeSolid "Solid"
 #define kRotoShapeRenderNodeParamTypeSmear "Smear"
 
-NATRON_NAMESPACE_ENTER;
 
 class RotoShapeRenderNodePrivate;
 class RotoShapeRenderNode

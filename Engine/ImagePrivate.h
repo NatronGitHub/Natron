@@ -25,8 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "Engine/AppManager.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
@@ -39,12 +40,9 @@
 #include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ViewIdx.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
-
-
-
-
 
 struct ImagePrivate
 {

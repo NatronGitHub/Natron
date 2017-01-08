@@ -27,18 +27,19 @@
 
 #include "Global/Macros.h"
 
-/**
- * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
- * doesn't generate the Natron namespace
- **/
-
 #include "Engine/AppManager.h"
 #include "Engine/PyAppInstance.h"
 #include "Global/MemoryInfo.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
+
+/**
+ * @brief Used to wrap all global functions that are in the Natron namespace so shiboken
+ * doesn't generate the Natron namespace
+ **/
 
 class PyCoreApplication
 {

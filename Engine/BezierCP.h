@@ -41,8 +41,9 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

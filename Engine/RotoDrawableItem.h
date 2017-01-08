@@ -47,7 +47,10 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kMergeParamOutputChannelsR      "OutputChannelsR"
 #define kMergeParamOutputChannelsG      "OutputChannelsG"
@@ -77,9 +80,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kTimeBlurParamShutter "shutter"
 #define kTimeBlurParamShutterOffset "shutterOffset"
 #define kTimeBlurParamCustomOffset "shutterCustomOffset"
-
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context

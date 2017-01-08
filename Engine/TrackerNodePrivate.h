@@ -35,7 +35,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 #include <QtCore/QPointF>
@@ -43,7 +42,6 @@
 
 #include <ofxNatron.h>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RectI.h"
 #include "Engine/KnobItemsTable.h"
@@ -54,6 +52,9 @@
 
 #include "Global/GLIncludes.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #ifdef DEBUG
 // Enable usage of markers that track using TrackerPM internally
@@ -458,10 +459,6 @@
 #define kCornerPinParamOverlayPoints "overlayPoints"
 
 #define kCornerPinParamMatrix "transform"
-
-
-NATRON_NAMESPACE_ENTER;
-
 
 enum TrackerTransformNodeEnum
 {

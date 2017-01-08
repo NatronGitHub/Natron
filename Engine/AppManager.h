@@ -50,8 +50,11 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/LogEntry.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -60,10 +63,6 @@ CLANG_DIAG_ON(deprecated)
 #define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
-
-class QDir;
-
-NATRON_NAMESPACE_ENTER;
 
 enum AppInstanceStatusEnum
 {

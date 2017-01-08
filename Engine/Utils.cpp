@@ -26,7 +26,7 @@
 
 #include <stdexcept>
 
-#include <QString>
+#include <QtCore/QString>
 #include <QChar>
 
 NATRON_NAMESPACE_ENTER;

@@ -32,9 +32,10 @@
 #include "Global/KeySymbols.h"
 #include "Global/Enums.h"
 #include "Engine/HostOverlaySupport.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

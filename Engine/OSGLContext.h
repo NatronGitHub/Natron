@@ -31,24 +31,22 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
-
 #include <cstddef>
 #include <string>
 #include <vector>
 #include <list>
-
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Engine/OSGLFramebufferConfig.h"
 #include "Engine/GLShader.h"
 #include "Engine/RectI.h"
 #include "Global/GLIncludes.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

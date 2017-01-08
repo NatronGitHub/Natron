@@ -50,8 +50,11 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ImageComponents.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Markdown.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kNodePageParamName "nodePage"
 #define kNodePageParamLabel "Node"
@@ -145,8 +148,6 @@ CLANG_DIAG_ON(deprecated)
 #define kNatronNodeKnobKeepInAnimationModuleButton "keepInAnimationModuleButton"
 #define kNatronNodeKnobKeepInAnimationModuleButtonLabel "Keep In Animation Module"
 #define kNatronNodeKnobKeepInAnimationModuleButtonHint "When checked, this node will always be visible in the Animation Module regardless of whether its settings panel is opened or not"
-
-NATRON_NAMESPACE_ENTER;
 
 struct NodePrivate;
 class Node

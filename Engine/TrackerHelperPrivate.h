@@ -49,19 +49,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(maybe-uninitialized)
 #endif
 
-
-
-
-#include "Engine/EngineFwd.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerParamsProvider.h"
 #include "Engine/TrackerFrameAccessor.h"
 #include "Engine/TrackScheduler.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
-
-
 
 enum libmv_MarkerChannelEnum
 {

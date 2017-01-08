@@ -25,10 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <QThread>
+#include "Global/Macros.h"
+
+#include <QtCore/QThread>
+
+#include "Engine/ThreadPool.h"
 
 #include "Engine/EngineFwd.h"
-#include "Engine/ThreadPool.h"
 
 NATRON_NAMESPACE_ENTER;
 

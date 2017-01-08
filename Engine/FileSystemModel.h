@@ -39,9 +39,8 @@
 #include <QtCore/QAbstractItemModel>
 #include <QtCore/QDir>
 
-
-
 #include "Global/GlobalDefines.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

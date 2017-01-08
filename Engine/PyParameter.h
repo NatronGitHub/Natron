@@ -48,8 +48,12 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/ViewIdx.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 /**
  * @brief Specify that an action (a setter) must be applied on all split views in the parameter
@@ -71,9 +75,6 @@ CLANG_DIAG_ON(uninitialized)
 #define PythonSetNonUserKnobError() (PyErr_SetString(PyExc_ValueError, tr("Cannot do this on a non-user parameter").toStdString().c_str()))
 #define PythonSetInvalidViewName(view) (PyErr_SetString(PyExc_ValueError, tr("%1: Invalid view").arg(view).toStdString().c_str()))
 
-
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Param
 {

@@ -42,8 +42,11 @@
 #include "Engine/EffectInstanceActionResults.h"
 #include "Engine/RectD.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 // This controls how many frames a plug-in can pre-fetch (per view and per input)
 // This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
@@ -61,7 +64,6 @@ inline TimeValue roundImageTimeToEpsilon(TimeValue time)
     return TimeValue(std::floor(time * exp + 0.5) / exp);
 }
 
-NATRON_NAMESPACE_ENTER;
 
 typedef std::map<int, RectD> RoIMap; // RoIs are in canonical coordinates
 

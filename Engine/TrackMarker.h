@@ -37,11 +37,14 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobItemsTable.h"
 
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kTrackerParamSearchWndBtmLeft "searchWndBtmLeft"
 #define kTrackerParamSearchWndBtmLeftLabel "Search Window Bottom Left"
@@ -98,8 +101,6 @@
 #define kTrackerParamEnabledLabel "Enabled"
 #define kTrackerParamEnabledHint "When checked, this track data will be used to generate the resulting Transform/CornerPin out of the tracker. You can animate this parameter to control the lifetime of the track."
 //#define NATRON_TRACK_MARKER_USE_WEIGHT
-
-NATRON_NAMESPACE_ENTER;
 
 struct TrackMarkerPrivate;
 class TrackMarker

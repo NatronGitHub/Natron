@@ -35,17 +35,16 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
-
-NATRON_NAMESPACE_ENTER;
 
 enum KnownHostNameEnum
 {

@@ -24,7 +24,7 @@
 
 #include "ViewerNode.h"
 
-#include <QThread>
+#include <QtCore/QThread>
 #include <QCoreApplication>
 #include <QTimer>
 

@@ -45,6 +45,7 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EffectInstanceTLSData.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

@@ -16,9 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
-#ifndef DISTORSION2D_H
-#define DISTORSION2D_H
+#ifndef Engine_Distortion2D_h
+#define Engine_Distortion2D_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -26,13 +25,15 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include <ofxNatron.h>
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -102,4 +103,4 @@ private:
 NATRON_NAMESPACE_EXIT;
 
 
-#endif // DISTORSION2D_H
+#endif // Engine_Distortion2D_h

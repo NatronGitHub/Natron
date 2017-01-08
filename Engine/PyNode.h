@@ -42,6 +42,7 @@
 #include "Engine/PyNodeGroup.h" // Group
 #include "Engine/PyItemsTable.h"
 #include "Engine/RectD.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

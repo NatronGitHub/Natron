@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CACHEENTRYBASE_H
-#define NATRON_ENGINE_CACHEENTRYBASE_H
+#ifndef Engine_CacheEntryKeyBase_h
+#define Engine_CacheEntryKeyBase_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,15 +29,17 @@
 
 #include <string>
 
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #endif
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kCacheKeyUniqueIDImageTile 1
 #define kCacheKeyUniqueIDGetRoDResults 2
@@ -48,8 +50,6 @@
 #define kCacheKeyUniqueIDGetComponentsResults 7
 #define kCacheKeyUniqueIDGetFrameRangeResults 8
 #define kCacheKeyUniqueIDExpressionResult 9
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief The base class for a key of an item in the cache
@@ -172,4 +172,4 @@ ImageTileKeyPtr toImageTileKey(const CacheEntryKeyBasePtr& key)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_CACHEENTRYBASE_H
+#endif // Engine_CacheEntryKeyBase_h

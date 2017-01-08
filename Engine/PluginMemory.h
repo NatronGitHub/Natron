@@ -33,8 +33,9 @@
 #endif
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/CacheEntryBase.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

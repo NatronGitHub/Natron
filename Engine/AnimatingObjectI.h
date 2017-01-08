@@ -16,16 +16,16 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
-#ifndef ANIMATINGOBJECTI_H
-#define ANIMATINGOBJECTI_H
-
+#ifndef Engine_AnimatingObjectI_h
+#define Engine_AnimatingObjectI_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
 
 #include <vector>
 #include <list>
@@ -37,14 +37,14 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-
 #include "Global/GlobalDefines.h"
 #include "Engine/DimensionIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Curve.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/Variant.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -114,7 +114,7 @@ inline std::string variantToType(const Variant& v)
 }
 
 template <typename T>
-inline TimeValuePair<T> variantTimevaluePairToTemplated(const VariantTimeValuePair& v)
+inline TimeValuePair<T> variantTimeValuePairToTemplated(const VariantTimeValuePair& v)
 {
      return TimeValuePair<T>(v.time, variantToType<T>(v.value));
 }
@@ -627,4 +627,4 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // ANIMATINGOBJECTI_H
+#endif // Engine_AnimatingObjectI_h

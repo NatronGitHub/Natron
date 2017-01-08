@@ -29,6 +29,10 @@
 
 #include "Engine/NodeGroup.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 #define kTrackerUIParamDefaultMarkerPatternWinSize "defPatternWinSize"
 #define kTrackerUIParamDefaultMarkerPatternWinSizeLabel "Default Pattern Size"
 #define kTrackerUIParamDefaultMarkerPatternWinSizeHint "The size in pixels of the pattern that created markers will have by default"
@@ -40,8 +44,6 @@
 #define kTrackerUIParamDefaultMotionModel "defMotionModel"
 #define kTrackerUIParamDefaultMotionModelLabel "Default Motion Model"
 #define kTrackerUIParamDefaultMotionModelHint "The motion model that new tracks have by default"
-
-NATRON_NAMESPACE_ENTER;
 
 class TrackerNodePrivate;
 class TrackerNode

@@ -16,10 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef TIMELINEKEYS_H
 #define TIMELINEKEYS_H
-
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -27,7 +25,10 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <set>
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

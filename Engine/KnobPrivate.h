@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ENGINE_KNOBPRIVATE_H
 #define ENGINE_KNOBPRIVATE_H
 
@@ -26,11 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
+#include "Knob.h"
+
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
-
-#include "Knob.h"
 
 #include <QtCore/QDataStream>
 #include <QtCore/QDateTime>
@@ -74,10 +75,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
-#define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
-
-
 NATRON_NAMESPACE_ENTER
+
+#define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;

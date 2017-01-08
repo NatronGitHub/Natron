@@ -34,11 +34,12 @@
 
 #include "Engine/RectI.h"
 #include "Engine/NonKeyParams.h"
-#include "Engine/EngineFwd.h"
 #include "Global/GLIncludes.h"
 
 #include "Serialization/RectDSerialization.h"
 #include "Serialization/FrameParamsSerialization.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

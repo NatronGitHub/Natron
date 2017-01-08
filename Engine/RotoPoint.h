@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Global/GlobalDefines.h"
 #include "Engine/FitCurve.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

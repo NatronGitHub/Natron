@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GUIAPPINSTANCE_H
-#define GUIAPPINSTANCE_H
+#ifndef Gui_GuiAppInstance_h
+#define Gui_GuiAppInstance_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -260,4 +260,4 @@ toGuiAppInstance(const AppInstancePtr& instance)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // GUIAPPINSTANCE_H
+#endif // Gui_GuiAppInstance_h

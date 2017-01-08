@@ -52,15 +52,15 @@
 #include "Engine/OverlaySupport.h"
 #include "Engine/Variant.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 
 #include "Serialization/SerializationBase.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define NATRON_USER_MANAGED_KNOBS_PAGE_LABEL "User"
 #define NATRON_USER_MANAGED_KNOBS_PAGE "userNatron"
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A class that reports changes happening to a knob

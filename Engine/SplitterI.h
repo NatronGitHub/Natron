@@ -19,18 +19,21 @@
 #ifndef SPLITTERI_H
 #define SPLITTERI_H
 
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/EngineFwd.h"
+#include "Global/Macros.h"
+
 #include "Serialization/SerializationBase.h"
 #include "Global/Enums.h"
 
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief Interface for the Splitter class
  **/

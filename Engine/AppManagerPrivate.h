@@ -68,8 +68,10 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/Image.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/TLSHolder.h"
+
+#include "Engine/EngineFwd.h"
+
 
 NATRON_NAMESPACE_ENTER;
 

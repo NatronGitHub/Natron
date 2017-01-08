@@ -43,7 +43,10 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ChoiceOption.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kFontSizeTag "<font size=\""
 #define kFontColorTag "color=\""
@@ -53,8 +56,6 @@ CLANG_DIAG_ON(deprecated)
 #define kBoldEndTag "</b>"
 #define kItalicStartTag "<i>"
 #define kItalicEndTag "</i>"
-
-NATRON_NAMESPACE_ENTER;
 
 inline KnobBoolBasePtr
 toKnobBoolBase(const KnobIPtr& knob)
