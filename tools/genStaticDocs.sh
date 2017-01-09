@@ -50,6 +50,12 @@ for x in plugins/*.md; do
     $PANDOC "$x" --columns=9000 -o "$(echo "$x"|$SED 's/\.md$/.rst/')"
     PLUG="$(echo "$x"|$SED 's/.md//;s#plugins/##')"
     $SED -i "1i.. _${PLUG}:\n" plugins/"${PLUG}".rst
+    # multiline table element hack: in tables (lines beginning
+    # with '|') replace "| . " with "| | "
+    # see comments in source code in functions:
+    # - convertFromPlainTextToMarkdown()
+    # - Node::makeDocumentation()
+    $SED -i '/^| /s/| \. /| | /g' plugins/"${PLUG}".rst
 done
 popd
 

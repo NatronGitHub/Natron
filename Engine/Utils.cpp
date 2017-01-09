@@ -26,8 +26,9 @@
 
 #include <stdexcept>
 
-#include <QString>
-#include <QChar>
+#include <QtCore/QString>
+#include <QtCore/QChar>
+#include <QtCore/QDebug>
 
 NATRON_NAMESPACE_ENTER;
 
@@ -124,6 +125,13 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
     // .    dot
     // !    exclamation mark
 
+    // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+    // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+    // genStaticDocs.sh script by a simple sed command after converting to RsT
+    bool isMultilineElement = isTableElement && plain.contains(QLatin1Char('\n'));
+    if (isMultilineElement && !genHTML) {
+        escaped += QString::fromUtf8(". ");
+    }
     for (int i = 0; i < plain.length(); ++i) {
         bool outputChar = true;
         if (plain[i] == QLatin1Char('\\') ||
@@ -148,6 +156,7 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
                 escaped += QString::fromUtf8("&#124;");
                 outputChar = false;
             } else if (plain[i] == QLatin1Char('\n')) {
+                assert(isMultilineElement);
                 if (genHTML) {
                     // we are generating markdown for hoedown
 
@@ -162,6 +171,11 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
                     // Note: in multiline and grid table cells, this is the only way
                     // to create a hard line break, since trailing spaces in the cells are ignored.
                     escaped += QLatin1Char('\\');
+                    // we add a dot at the beginning of the next line, which is converted to a pipe "|" by
+                    // the genStaticDocs.sh script afterwards, see comment above.
+                    escaped += QLatin1Char('\n');
+                    escaped += QString::fromUtf8(". ");
+                    outputChar = false;
                 }
             }
         } else if (plain[i] == QLatin1Char('\n')) {

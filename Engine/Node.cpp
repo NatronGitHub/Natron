@@ -4472,10 +4472,16 @@ Node::makeDocumentation(bool genHTML) const
                                 QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
                                 if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
                                     if (first) {
-                                        // empty line befor the option descriptions
+                                        // empty line before the option descriptions
                                         if (genHTML) {
                                             knobHint.append( QString::fromUtf8("<br />") );
                                         } else {
+                                            // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+                                            // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+                                            // genStaticDocs.sh script by a simple sed command after converting to RsT
+                                            if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
+                                                knobHint.prepend( QString::fromUtf8(". ") );
+                                            }
                                             knobHint.append( QString::fromUtf8("\\\n") );
                                         }
                                         first = false;
@@ -4484,6 +4490,10 @@ Node::makeDocumentation(bool genHTML) const
                                         knobHint.append( QString::fromUtf8("<br />") );
                                     } else {
                                         knobHint.append( QString::fromUtf8("\\\n") );
+                                        // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+                                        // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+                                        // genStaticDocs.sh script by a simple sed command after converting to RsT
+                                        knobHint.append( QString::fromUtf8(". ") );
                                     }
                                     knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
                                 }
@@ -4534,7 +4544,9 @@ Node::makeDocumentation(bool genHTML) const
     // generate plugin info
     ms << pluginLabel << "\n==========\n\n";
     if (!pluginIconUrl.isEmpty()) {
-        ms << "![](" << pluginIconUrl << ")\n\n";
+        // add a nonbreaking space so that pandoc doesn't use the alt-text as a caption
+        // http://pandoc.org/MANUAL.html#images
+        ms << "![pluginIcon](" << pluginIconUrl << ")\\ \n\n";
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
