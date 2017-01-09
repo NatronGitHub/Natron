@@ -253,4 +253,4 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 # force default theme on readthedocs
-html_style = '/default.css'
+html_style = 'default.css'

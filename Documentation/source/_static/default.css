@@ -1,0 +1,7 @@
+@import url("classic.css");
+
+/* vertical-align table row to top, because of long parameter descriptions */
+tr {vertical-align: top}
+/* improve readability on large tables */
+tr:nth-child(even) {background: #CCC}
+tr:nth-child(odd) {background: #FFF}
