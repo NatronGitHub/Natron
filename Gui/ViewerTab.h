@@ -265,7 +265,7 @@ public Q_SLOTS:
     
     void onInternalNodeScriptNameChanged(const QString& name);
 
-    void onRenderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
+    void onRenderStatsAvailable(int time, double wallTime, const RenderStatsMap& stats);
 
     void setTripleSyncEnabled(bool toggled);
 

@@ -103,23 +103,15 @@
 NATRON_NAMESPACE_ENTER;
 
 
-///Sort the frames by time and then by view
-
-struct BufferedFrameKey
+struct BufferedFrameContainer_Compare
 {
-    TimeValue time;
-};
-
-struct BufferedFrameCompare_less
-{
-    bool operator()(const BufferedFrameKey& lhs,
-                    const BufferedFrameKey& rhs) const
+    bool operator()(const BufferedFrameContainerPtr& lhs, const BufferedFrameContainerPtr& rhs)
     {
-        return lhs.time < rhs.time;
+        return lhs->time < rhs->time;
     }
 };
 
-typedef std::multimap< BufferedFrameKey, BufferedFrame, BufferedFrameCompare_less > FrameBuffer;
+typedef std::set<BufferedFrameContainerPtr, BufferedFrameContainer_Compare> FrameBuffer;
 
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
@@ -129,8 +121,7 @@ class MetaTypesRegistration
 public:
     inline MetaTypesRegistration()
     {
-        qRegisterMetaType<BufferedFrames>("BufferedFrames");
-        qRegisterMetaType<BufferableObjectList>("BufferableObjectList");
+        qRegisterMetaType<BufferedFrameContainerPtr>("BufferedFrameContainerPtr");
     }
 };
 
@@ -148,9 +139,8 @@ typedef std::list<RenderThread> RenderThreads;
 
 struct ProducedFrame
 {
-    BufferableObjectList frames;
+    BufferedFrameContainerPtr frames;
     U64 age;
-    RenderStatsPtr stats;
 };
 
 struct ProducedFrameCompareAgeLess
@@ -169,7 +159,7 @@ class OutputSchedulerThreadExecMTArgs
 {
 public:
 
-    BufferedFrames frames;
+    BufferedFrameContainerPtr frames;
 
     OutputSchedulerThreadExecMTArgs()
         : GenericThreadExecOnMainThreadArgs()
@@ -293,92 +283,34 @@ struct OutputSchedulerThreadPrivate
 
     void launchNextSequentialRender();
 
-    void appendBufferedFrame(TimeValue time,
-                             ViewIdx view,
-                             const RenderStatsPtr& stats,
-                             const BufferableObjectPtr& image)
+    void appendBufferedFrame(const BufferedFrameContainerPtr& object)
     {
         ///Private, shouldn't lock
         assert( !bufMutex.tryLock() );
 #ifdef TRACE_SCHEDULER
-        QString idStr;
-        if (image) {
-            idStr = QString::fromUtf8("ID: ") + QString::number( image->getUniqueID() );
-        }
-        qDebug() << "Parallel Render Thread: Rendered Frame:" << time << " View:" << (int)view << idStr;
+        qDebug() << "Parallel Render Thread: Rendered Frame:" << object->time << " View:" << (int)object->view << idStr;
 #endif
-        BufferedFrameKey key;
-        BufferedFrame value;
-        value.time = key.time = time;
-        value.view = view;
-        value.frame = image;
-        value.stats = stats;
-        buf.insert( std::make_pair(key, value) );
+        buf.insert(object);
     }
 
-    struct ViewUniqueIDPair
+
+    BufferedFrameContainerPtr getFromBufferAndErase(TimeValue time)
     {
-        ViewIdx view;
-    };
-
-    struct ViewUniqueIDPairCompareLess
-    {
-        bool operator() (const ViewUniqueIDPair& lhs,
-                         const ViewUniqueIDPair& rhs) const
-        {
-            return lhs.view < rhs.view;
-
-        }
-    };
-
-    typedef std::set<ViewUniqueIDPair, ViewUniqueIDPairCompareLess> ViewUniqueIDSet;
-
-    void getFromBufferAndErase(TimeValue time,
-                               BufferedFrames& frames)
-    {
-        ///Private, shouldn't lock
+        // Private, shouldn't lock
         assert( !bufMutex.tryLock() );
 
-        /*
-           Note that the frame buffer does not hold any particular ordering and just contains all the frames as they
-           were received by render threads.
-           In the buffer, for any particular given time there can be:
-           - Multiple views
-           - Multiple "unique ID" (corresponds to viewer input A or B)
+        BufferedFrameContainerPtr ret;
+        {
+            BufferedFrameContainerPtr stub(new BufferedFrameContainer);
+            stub->time = time;
+            FrameBuffer::iterator found = buf.find(stub);
+            if ( found != buf.end() ) {
+                ret = *found;
+                buf.erase(found);
 
-           Also since we are rendering ahead, we can have a buffered frame at time 23,
-           and also another frame at time 23, each of which could have multiple unique IDs and so on
-
-           To retrieve what we need to render, we extract at least one view and unique ID for this particular time
-         */
-
-        ViewUniqueIDSet uniqueIdsRetrieved;
-        BufferedFrameKey key;
-        key.time = time;
-        std::pair<FrameBuffer::iterator, FrameBuffer::iterator> range = buf.equal_range(key);
-        
-        std::list<std::pair<BufferedFrameKey, BufferedFrame> > toKeep;
-        for (FrameBuffer::iterator it = range.first; it != range.second; ++it) {
-            bool keepInBuf = true;
-            if (it->second.frame) {
-                ViewUniqueIDPair p;
-                p.view = it->second.view;
-                std::pair<ViewUniqueIDSet::iterator, bool> alreadyRetrievedIndex = uniqueIdsRetrieved.insert(p);
-                if (alreadyRetrievedIndex.second) {
-                    frames.push_back(it->second);
-                    keepInBuf = false;
-                }
-            }
-
-
-            if (keepInBuf) {
-                toKeep.push_back(*it);
             }
         }
-        if ( range.first != buf.end() ) {
-            buf.erase(range.first, range.second);
-            buf.insert( toKeep.begin(), toKeep.end() );
-        }
+        return ret;
     } // getFromBufferAndErase
 
     void startRunnable(RenderThreadTask* runnable)
@@ -903,10 +835,10 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             boost::shared_ptr<OutputSchedulerThreadExecMTArgs> framesToRender( new OutputSchedulerThreadExecMTArgs() );
             {
                 QMutexLocker l(&_imp->bufMutex);
-                _imp->getFromBufferAndErase(expectedTimeToRender, framesToRender->frames);
+                framesToRender->frames = _imp->getFromBufferAndErase(expectedTimeToRender);
             }
 
-            if ( framesToRender->frames.empty() ) {
+            if ( !framesToRender->frames ) {
                 // The expected frame is not yet ready, go to sleep again
                 expectedTimeToRenderPreviousIteration = expectedTimeToRender;
                 break;
@@ -1007,13 +939,10 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             ////////////
             /////At this point the frame has been processed by the output device
 
-            assert( !framesToRender->frames.empty() );
-            {
-                const BufferedFrame& frame = framesToRender->frames.front();
-                std::vector<ViewIdx> views(1);
-                views[0] = frame.view;
-                notifyFrameRendered(expectedTimeToRender, frame.view, views, frame.stats, eSchedulingPolicyOrdered);
-            }
+            assert( framesToRender->frames );
+
+            notifyFrameRendered(expectedTimeToRender, frame->stats, eSchedulingPolicyOrdered);
+
 
             ///////////
             /// End of the loop, refresh bufferEmpty
@@ -1079,19 +1008,14 @@ OutputSchedulerThread::executeOnMainThread(const ExecOnMTArgsPtr& inArgs)
 
 void
 OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
-                                           ViewIdx viewIndex,
-                                           const std::vector<ViewIdx>& viewsToRender,
                                            const RenderStatsPtr& stats,
                                            SchedulingPolicyEnum policy)
 {
-    assert(viewsToRender.size() > 0);
-
-    bool isLastView = viewIndex == viewsToRender[viewsToRender.size() - 1] || viewIndex == -1;
 
     // Report render stats if desired
     NodePtr effect = _imp->outputEffect.lock();
     if (stats && stats->isInDepthProfilingEnabled()) {
-        _imp->engine->reportStats(frame, viewIndex, stats);
+        _imp->engine->reportStats(frame , stats);
     }
 
 
@@ -1107,9 +1031,8 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
     if (policy == eSchedulingPolicyFFA) {
         {
             QMutexLocker l(&_imp->renderFinishedMutex);
-            if (isLastView) {
-                ++_imp->nFramesRendered;
-            }
+            ++_imp->nFramesRendered;
+
             nbTotalFrames = std::ceil( (double)(runArgs->lastFrame - runArgs->firstFrame + 1) / runArgs->frameStep );
             nbFramesRendered = _imp->nFramesRendered;
 
@@ -1121,7 +1044,6 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
                 // Notify the scheduler rendering is finished by append a fake frame to the buffer
                 {
                     QMutexLocker bufLocker (&_imp->bufMutex);
-                    _imp->appendBufferedFrame( TimeValue(0), viewIndex, RenderStatsPtr(), BufferableObjectPtr() );
                     _imp->bufEmptyCondition.wakeOne();
                 }
             }
@@ -1181,9 +1103,8 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
     }
 
     // Notify we rendered a frame
-    if (isLastView) {
-        _imp->engine->s_frameRendered(frame, percentage);
-    }
+    _imp->engine->s_frameRendered(frame, percentage);
+
 
     // Call Python after frame ranedered callback if policy is ordered, otherwise this has been called on the render thread
     if (policy == eSchedulingPolicyOrdered) {
@@ -1193,17 +1114,14 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
 } // OutputSchedulerThread::notifyFrameRendered
 
 void
-OutputSchedulerThread::appendToBuffer_internal(TimeValue time,
-                                               ViewIdx view,
-                                               const RenderStatsPtr& stats,
-                                               const BufferableObjectPtr& frame,
+OutputSchedulerThread::appendToBuffer_internal(const BufferedFramePtr& frame,
                                                bool wakeThread)
 {
 
     // Called by the scheduler thread when an image is rendered
 
     QMutexLocker l(&_imp->bufMutex);
-    _imp->appendBufferedFrame(time, view, stats, frame);
+    _imp->appendBufferedFrame(frame);
     if (wakeThread) {
         ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
         _imp->bufEmptyCondition.wakeOne();
@@ -1212,33 +1130,27 @@ OutputSchedulerThread::appendToBuffer_internal(TimeValue time,
 }
 
 void
-OutputSchedulerThread::appendToBuffer(TimeValue time,
-                                      ViewIdx view,
-                                      const RenderStatsPtr& stats,
-                                      const BufferableObjectPtr& image)
+OutputSchedulerThread::appendToBuffer(const BufferedFramePtr& image)
 {
-    appendToBuffer_internal(time, view, stats, image, true);
+    appendToBuffer_internal(image, true);
 }
 
 void
-OutputSchedulerThread::appendToBuffer(TimeValue time,
-                                      ViewIdx view,
-                                      const RenderStatsPtr& stats,
-                                      const BufferableObjectList& frames)
+OutputSchedulerThread::appendToBuffer(const BufferedFrameList& frames)
 {
     if ( frames.empty() ) {
         return;
     }
-    BufferableObjectList::const_iterator next = frames.begin();
+    BufferedFrameList::const_iterator next = frames.begin();
     if ( next != frames.end() ) {
         ++next;
     }
-    for (BufferableObjectList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+    for (BufferedFrameList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
         if ( next != frames.end() ) {
-            appendToBuffer_internal(time, view, stats, *it, false);
+            appendToBuffer_internal(*it, false);
             ++next;
         } else {
-            appendToBuffer_internal(time, view, stats, *it, true);
+            appendToBuffer_internal(*it, true);
         }
     }
 }
@@ -1915,7 +1827,7 @@ private:
             if (isFailureRetCode(stat)) {
                 _imp->scheduler->notifyRenderFailure(stat, std::string());
             } else {
-                _imp->scheduler->notifyFrameRendered(time, viewsToRender[view], viewsToRender, stats, eSchedulingPolicyFFA);
+                _imp->scheduler->notifyFrameRendered(time, stats, eSchedulingPolicyFFA);
             }
         }
 
@@ -1945,7 +1857,7 @@ DefaultScheduler::createRunnable(TimeValue frame,
  * or by the application's main-thread (typically to do OpenGL rendering).
  **/
 void
-DefaultScheduler::processFrame(const BufferedFrames& /*frames*/)
+DefaultScheduler::processFrame(const BufferedFrameList& /*frames*/)
 {
     // We don't have anymore writer that need to process things in order. WriteFFMPEG is doing it for us
 } // DefaultScheduler::processFrame
@@ -2181,26 +2093,27 @@ ViewerDisplayScheduler::getFrameRangeToRender(TimeValue &first,
     last = TimeValue(right);
 }
 
-class ViewerRenderBufferableObject : public BufferableObject
+class ViewerRenderBufferedFrame : public BufferedFrame
 {
 public:
 
-    ViewerRenderBufferableObject()
-    : BufferableObject()
+    ViewerRenderBufferedFrame()
+    : BufferedFrame()
+    , isPartialRect(false)
     , viewerProcessImages()
     {
 
     }
 
-    virtual ~ViewerRenderBufferableObject() {}
+    virtual ~ViewerRenderBufferedFrame() {}
 
 public:
 
-    ViewIdx view;
+    bool isPartialRect;
     ImagePtr viewerProcessImages[2];
 };
 
-typedef boost::shared_ptr<ViewerRenderBufferableObject> ViewerRenderBufferableObjectPtr;
+typedef boost::shared_ptr<ViewerRenderBufferedFrame> ViewerRenderBufferedFramePtr;
 
 struct RenderViewerProcessFunctorArgs
 {
@@ -2363,6 +2276,7 @@ public:
                                                      ViewIdx view,
                                                      bool isPlayback,
                                                      const RenderStatsPtr& stats,
+                                                     const RectD* roiParam,
                                                      std::vector<RenderViewerProcessFunctorArgsPtr>* outArgs)
     {
 
@@ -2374,7 +2288,9 @@ public:
         bool byPassCache = viewer->isRenderWithoutCacheEnabledAndTurnOff();
 
         RectD roi;
-        if (!fullFrameProcessing) {
+        if (roiParam) {
+            roi = *roiParam;
+        } else if (!fullFrameProcessing) {
             roi = viewer->getUiContext()->getImageRectangleDisplayed();
         }
 
@@ -2406,11 +2322,14 @@ private:
             stats.reset( new RenderStats(enableRenderStats) );
         }
 
+
+        BufferedFrameList buffers;
+
         for (std::size_t i = 0; i < viewsToRender.size(); ++i) {
 
             // Render both viewer processes arguments
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-            createRenderViewerObjectForAllInputs(_viewer, time, viewsToRender[i], true /*isPlayback*/, stats, &processArgs);
+            createRenderViewerObjectForAllInputs(_viewer, time, viewsToRender[i], true /*isPlayback*/, stats, 0 /*roiParam*/,  &processArgs);
             assert(processArgs.size() == 2);
 
             // Register the renders so that they can be aborted in abortRenders()
@@ -2447,27 +2366,34 @@ private:
                 }
             }
 
-            ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
+            ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = viewsToRender[i];
+            bufferObject->time = time;
+            bufferObject->stats = stats;
+            bufferObject->isPartialRect = false;
+
             for (int i = 0; i < 2; ++i) {
                 bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
-            if (stats) {
-                getScheduler()->getEngine()->reportStats(time, viewsToRender[i], stats);
-            }
-            
+            buffers.push_back(bufferObject);
             
             // Notify the scheduler thread which will in turn call processFrame
-            _imp->scheduler->appendToBuffer(time, viewsToRender[i], stats, bufferObject);
+
         } // for all views
+
+        _imp->scheduler->appendToBuffer(buffers);
+
+        if (stats) {
+            getScheduler()->getEngine()->reportStats(time,  stats);
+        }
 
     } // renderFrame
 };
 
 
 void
-ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
+ViewerDisplayScheduler::processFrame(const BufferedFrameList& frames)
 {
 
     ViewerNodePtr isViewer = getOutputNode()->isEffectViewerNode();
@@ -2475,11 +2401,18 @@ ViewerDisplayScheduler::processFrame(const BufferedFrames& frames)
 
     if ( !frames.empty() ) {
         assert(frames.size() == 1);
-        for (BufferedFrames::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-            ViewerRenderBufferableObject* viewerObject = dynamic_cast<ViewerRenderBufferableObject*>(it->frame.get());
+        for (BufferedFrameList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
+            ViewerRenderBufferedFrame* viewerObject = dynamic_cast<ViewerRenderBufferedFrame*>(it->get());
             assert(viewerObject);
 
-            isViewer->updateViewer(it->view, viewerObject->viewerProcessImages[0], viewerObject->viewerProcessImages[1]);
+            ViewerNode::UpdateViewerArgs args;
+            args.time = (*it)->time;
+            args.view = (*it)->view;
+            args.isPartialRect = false;
+            args.recenterViewer = false;
+            args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
+            args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
+            isViewer->updateViewer(args);
         }
         isViewer->redrawViewerNow();
     } else {
@@ -2964,7 +2897,6 @@ RenderEngine::getDesiredFPS() const
 
 void
 RenderEngine::reportStats(TimeValue time,
-                          ViewIdx view,
                           const RenderStatsPtr& stats)
 {
 
@@ -2978,7 +2910,7 @@ RenderEngine::reportStats(TimeValue time,
     if (fileKnob) {
         KnobFilePtr strKnob = toKnobFile(fileKnob);
         if  (strKnob) {
-            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( DimIdx(0), ViewIdx(view) ), output->getApp()->getProject()->getProjectViewNames(), time, view).c_str() );
+            QString qfileName = QString::fromUtf8( SequenceParsing::generateFileNameFromPattern(strKnob->getValue( DimIdx(0), ViewIdx(0) ), output->getApp()->getProject()->getProjectViewNames(), time, ViewIdx(0)).c_str() );
             QtCompat::removeFileExtension(qfileName);
             qfileName.append( QString::fromUtf8("-stats.txt") );
             filename = qfileName.toStdString();
@@ -3022,13 +2954,12 @@ ViewerRenderEngine::createScheduler(const NodePtr& effect)
 
 void
 ViewerRenderEngine::reportStats(TimeValue time,
-                         ViewIdx view,
                          const RenderStatsPtr& stats)
 {
     ViewerNodePtr viewer = getOutput()->isEffectViewerNode();
     double wallTime;
     std::map<NodePtr, NodeRenderStats > statsMap = stats->getStats(&wallTime);
-    viewer->reportStats(time, view, wallTime, statsMap);
+    viewer->reportStats(time, wallTime, statsMap);
 }
 
 
@@ -3041,7 +2972,7 @@ public:
 
     std::vector<ViewIdx> viewsToRender;
     TimeValue time;
-    RenderStatsPtr stats;
+    bool useStats;
     NodePtr viewer;
     ViewerCurrentFrameRequestSchedulerPrivate* scheduler;
     RotoStrokeItemPtr strokeItem;
@@ -3051,7 +2982,7 @@ public:
         : GenericThreadStartArgs()
         , viewsToRender()
         , time(0)
-        , stats()
+        , useStats(false)
         , viewer()
         , scheduler(0)
         , strokeItem()
@@ -3061,14 +2992,14 @@ public:
 
     CurrentFrameFunctorArgs(ViewIdx view,
                             TimeValue time,
-                            const RenderStatsPtr& stats,
+                            bool useStats,
                             const NodePtr& viewer,
                             ViewerCurrentFrameRequestSchedulerPrivate* scheduler,
                             const RotoStrokeItemPtr& strokeItem)
         : GenericThreadStartArgs()
         , viewsToRender()
         , time(time)
-        , stats(stats)
+        , useStats(useStats)
         , viewer(viewer)
         , scheduler(scheduler)
         , strokeItem(strokeItem)
@@ -3178,8 +3109,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         }
     }
 
-    void notifyFrameProduced(const BufferableObjectList& frames,
-                             const RenderStatsPtr& stats,
+    void notifyFrameProduced(const BufferedFrameList& frames,
                              U64 age)
     {
         QMutexLocker k(&producedFramesMutex);
@@ -3187,12 +3117,11 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
 
         p.frames = frames;
         p.age = age;
-        p.stats = stats;
         producedFrames.insert(p);
         producedFramesNotEmpty.wakeOne();
     }
 
-    void processProducedFrame(const RenderStatsPtr& stats, const BufferableObjectList& frames);
+    void processProducedFrame(const BufferedFrameList& frames);
 };
 
 class RenderCurrentFrameFunctorRunnable
@@ -3211,22 +3140,22 @@ public:
     {
     }
 
-    virtual void run() OVERRIDE FINAL
+    void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* roiParam, BufferedFrameList &bufferList)
     {
-        // The viewer always uses the scheduler thread to regulate the output rate
-
-
-        ViewerNodePtr viewer = _args->viewer->isEffectViewerNode();
-
-#pragma message WARN("If viewer is doing partial updates, compute the partial updates rects and not the full RoI")
-        BufferableObjectList bufferList;
 
         for (std::size_t i = 0; i < _args->viewsToRender.size(); ++i) {
             // Create a tree render object for both viewer process nodes
             ViewIdx view = _args->viewsToRender[i];
 
+            // Create stats object if we want statistics
+            RenderStatsPtr stats;
+            if (_args->useStats) {
+                stats.reset( new RenderStats(true) );
+            }
+
+
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-            ViewerRenderFrameRunnable::createRenderViewerObjectForAllInputs(viewer, _args->time, view, false/*isPlayback*/, _args->stats, &processArgs);
+            ViewerRenderFrameRunnable::createRenderViewerObjectForAllInputs(viewer, _args->time, view, false/*isPlayback*/, stats, roiParam, &processArgs);
             assert(processArgs.size() == 2);
 
             // Register the current renders and their age on the scheduler so that they can be aborted
@@ -3253,18 +3182,41 @@ public:
                 processBFuture.waitForFinished();
             }
 
-            ViewerRenderBufferableObjectPtr bufferObject(new ViewerRenderBufferableObject);
+            ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = view;
+            bufferObject->time = _args->time;
+            bufferObject->stats = stats;
+            bufferObject->isPartialRect = roiParam != 0;
             for (int i = 0; i < 2; ++i) {
                 bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
             bufferList.push_back(bufferObject);
-
-
+            
+            
         } // for all views
 
-        _args->scheduler->notifyFrameProduced(bufferList, _args->stats, _args->age);
+    }
+
+    virtual void run() OVERRIDE FINAL
+    {
+
+        ViewerNodePtr viewer = _args->viewer->isEffectViewerNode();
+
+        BufferedFrameList bufferList;
+        if (viewer->isDoingPartialUpdates()) {
+            std::list<RectD> partialUpdates = viewer->getPartialUpdateRects();
+            for (std::list<RectD>::const_iterator it = partialUpdates.begin(); it != partialUpdates.end(); ++it) {
+                computeViewsForRoI(viewer, &(*it), bufferList);
+            }
+        } else {
+            computeViewsForRoI(viewer, 0, bufferList);
+        }
+
+        Point viewerCenter;
+        bool viewerCenterSet = viewer->getViewerCenterPoint(&viewerCenter);
+
+        _args->scheduler->notifyFrameProduced(bufferList,  _args->age);
 
 
         _args->scheduler->removeRunnableTask(this);
@@ -3277,13 +3229,11 @@ class ViewerCurrentFrameRequestSchedulerExecOnMT
 {
 public:
 
-    RenderStatsPtr stats;
-    BufferableObjectList frames;
+    BufferedFrameContainerPtr frames;
     U64 age;
 
     ViewerCurrentFrameRequestSchedulerExecOnMT()
     : GenericThreadExecOnMainThreadArgs()
-    , stats()
     , frames()
     , age(0)
     {
@@ -3363,7 +3313,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         while ( found == _imp->producedFrames.end() ) {
             state = resolveState();
             if ( (state == eThreadStateStopped) || (state == eThreadStateAborted) ) {
-                //_imp->producedFrames.clear();
                 break;
             }
             // Wait at most 100ms and re-check, so that we can resolveState() again:
@@ -3383,7 +3332,6 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
 #endif
 
             mtArgs->frames = found->frames;
-            mtArgs->stats = found->stats;
 
             // Erase from the produced frames all renders that are older that the age we want to render
             // since they are no longer going to be used.
@@ -3452,31 +3400,41 @@ ViewerCurrentFrameRequestScheduler::executeOnMainThread(const ExecOnMTArgsPtr& i
         _imp->displayAge = args->age;
     }
     
-    _imp->processProducedFrame(args->stats, args->frames);
+    _imp->processProducedFrame(args->frames);
 
 }
 
 void
-ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const RenderStatsPtr& stats,
-                                                                const BufferableObjectList& frames)
+ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFrameContainerPtr& frames)
 {
     assert( QThread::currentThread() == qApp->thread() );
 
     ViewerNodePtr viewerNode = viewer->isEffectViewerNode();
 
 
-    for (BufferableObjectList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
-        ViewerRenderBufferableObject* viewerObject = dynamic_cast<ViewerRenderBufferableObject*>(it2->get());
+    for (BufferedFrameList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
+        ViewerRenderBufferedFrame* viewerObject = dynamic_cast<ViewerRenderBufferedFrame*>(it2->get());
         assert(viewerObject);
-        viewerNode->updateViewer(viewerObject->view, viewerObject->viewerProcessImages[0], viewerObject->viewerProcessImages[1]);
+
+        ViewerNode::UpdateViewerArgs args;
+        args.time = viewerObject->time;
+        args.view = viewerObject->view;
+        args.isPartialRect = viewerObject->isPartialRect;
+        args.recenterViewer = false;
+        args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
+        args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
+
+        viewerNode->updateViewer(args);
+
+        if (viewerObject->stats) {
+            double wallTime = 0;
+            std::map<NodePtr, NodeRenderStats > statsMap = viewerObject->stats->getStats(&wallTime);
+
+            viewerNode->reportStats(viewerObject->time,  wallTime, statsMap);
+        }
 
     }
-    if (stats && stats->isInDepthProfilingEnabled()) {
-        double wallTime = 0;
-        std::map<NodePtr, NodeRenderStats > statsMap = stats->getStats(&wallTime);
 
-        viewerNode->reportStats(TimeValue(0), ViewIdx(0), wallTime, statsMap);
-    }
 
 
     // At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
@@ -3563,11 +3521,6 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
     }
 
 
-    // Create stats object if we want statistics
-    RenderStatsPtr stats;
-    if (enableRenderStats) {
-        stats.reset( new RenderStats(enableRenderStats) );
-    }
 
     // Are we tracking ?
     bool isTracking = viewerNode->isDoingPartialUpdates();
@@ -3580,7 +3533,7 @@ ViewerCurrentFrameRequestScheduler::renderCurrentFrame(bool enableRenderStats)
     // Ok we have to render at least one of A or B input
     boost::shared_ptr<CurrentFrameFunctorArgs> functorArgs( new CurrentFrameFunctorArgs(view,
                                                                                         frame,
-                                                                                        stats,
+                                                                                        enableRenderStats,
                                                                                         _imp->viewer,
                                                                                         _imp.get(),
                                                                                         curStroke) );

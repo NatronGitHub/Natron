@@ -273,13 +273,13 @@ public:
 
     void disconnectTexture(int index, bool clearRod);
     
-    void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) ;
+    void reportStats(int time , double wallTime, const RenderStatsMap& stats) ;
 
     void refreshFps();
 
-    void s_renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
+    void s_renderStatsAvailable(int time, double wallTime, const RenderStatsMap& stats)
     {
-        Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
+        Q_EMIT renderStatsAvailable(time, wallTime, stats);
     }
 
     void s_redrawOnMainThread()
@@ -314,6 +314,8 @@ public:
     std::list<RectD> getPartialUpdateRects() const;
     void clearPartialUpdateParams();
 
+    bool getViewerCenterPoint(Point* center) const;
+
     void setDoingPartialUpdates(bool doing);
     bool isDoingPartialUpdates() const;
 
@@ -338,7 +340,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
+    void renderStatsAvailable(int time, double wallTime, const RenderStatsMap& stats);
 
     void redrawOnMainThread();
 

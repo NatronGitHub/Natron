@@ -495,7 +495,6 @@ RenderStatsDialog::resetStats()
 
 void
 RenderStatsDialog::addStats(int /*time*/,
-                            ViewIdx /*view*/,
                             double wallTime,
                             const std::map<NodePtr, NodeRenderStats >& stats)
 {

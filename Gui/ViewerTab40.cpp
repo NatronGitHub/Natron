@@ -362,14 +362,13 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 
 void
 ViewerTab::onRenderStatsAvailable(int time,
-                                  ViewIdx view,
                                   double wallTime,
                                   const RenderStatsMap& stats)
 {
     assert( QThread::currentThread() == qApp->thread() );
     RenderStatsDialog* dialog = getGui()->getRenderStatsDialog();
     if (dialog) {
-        dialog->addStats(time, view, wallTime, stats);
+        dialog->addStats(time,, wallTime, stats);
     }
 }
 

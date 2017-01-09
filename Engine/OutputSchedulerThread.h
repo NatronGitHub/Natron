@@ -52,23 +52,6 @@ NATRON_NAMESPACE_ENTER;
 //#define NATRON_PLAYBACK_USES_THREAD_POOL
 
 
-struct BufferedFrame
-{
-    ViewIdx view;
-    TimeValue time;
-    RenderStatsPtr stats;
-    BufferableObjectPtr frame;
-
-    BufferedFrame()
-        : view(0)
-        , time(0)
-        , stats()
-        , frame()
-    {
-    }
-};
-
-typedef std::list<BufferedFrame> BufferedFrames;
 class CurrentFrameFunctorArgs;
 class ViewerCurrentFrameRequestSchedulerStartArgs
     : public GenericThreadStartArgs
@@ -200,23 +183,8 @@ public:
      * This wakes up the scheduler thread waiting on the bufCondition. If you need to append several frames
      * use the other version of this function.
      **/
-    void appendToBuffer(TimeValue time,
-                        ViewIdx view,
-                        const RenderStatsPtr& stats,
-                        const BufferableObjectPtr& frame);
-    
-    void appendToBuffer(TimeValue time,
-                        ViewIdx view,
-                        const RenderStatsPtr& stats,
-                        const BufferableObjectList& frames);
+    void appendToBuffer(const BufferedFrameContainerPtr& frames);
 
-private:
-
-    void appendToBuffer_internal(TimeValue time,
-                                 ViewIdx view,
-                                 const RenderStatsPtr& stats,
-                                 const BufferableObjectPtr& frame,
-                                 bool wakeThread);
 
 public:
 
@@ -252,8 +220,6 @@ public:
      * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
     void notifyFrameRendered(TimeValue frame,
-                             ViewIdx viewIndex,
-                             const std::vector<ViewIdx>& viewsToRender,
                              const RenderStatsPtr& stats,
                              SchedulingPolicyEnum policy);
 
@@ -333,7 +299,7 @@ protected:
      * According to the ProcessFrameModeEnum given to the scheduler this function will be called either by the scheduler thread (this)
      * or by the application's main-thread (typically to do OpenGL rendering).
      **/
-    virtual void processFrame(const BufferedFrames& frames) = 0;
+    virtual void processFrame(const BufferedFrameContainerPtr& frames) = 0;
 
 
     /**
@@ -440,7 +406,7 @@ public:
 
 private:
 
-    virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
+    virtual void processFrame(const BufferedFrameContainerPtr& frames) OVERRIDE FINAL;
     virtual void timelineGoTo(TimeValue time) OVERRIDE FINAL;
     virtual void getFrameRangeToRender(TimeValue& first, TimeValue& last) const OVERRIDE FINAL;
     virtual TimeValue timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -474,7 +440,7 @@ public:
 private:
 
 
-    virtual void processFrame(const BufferedFrames& frames) OVERRIDE FINAL;
+    virtual void processFrame(const BufferedFrameContainerPtr& frames) OVERRIDE FINAL;
     virtual void timelineGoTo(TimeValue time) OVERRIDE FINAL;
     virtual TimeValue timelineGetTime() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isFPSRegulationNeeded() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
@@ -735,7 +701,6 @@ public:
     void s_refreshAllKnobs() { Q_EMIT refreshAllKnobs(); }
 
     virtual void reportStats(TimeValue time,
-                             ViewIdx view,
                              const RenderStatsPtr& stats);
 
 
@@ -830,7 +795,6 @@ public:
     virtual ~ViewerRenderEngine() {}
 
     virtual void reportStats(TimeValue time,
-                             ViewIdx view,
                              const RenderStatsPtr& stats) OVERRIDE FINAL;
 private:
 

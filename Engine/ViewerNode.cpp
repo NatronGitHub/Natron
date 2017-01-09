@@ -227,6 +227,17 @@ ViewerNode::clearPartialUpdateParams()
     _imp->viewportCenterSet = false;
 }
 
+bool
+ViewerNode::getViewerCenterPoint(Point* center) const
+{
+    QMutexLocker k(&_imp->partialUpdatesMutex);
+    if (_imp->viewportCenterSet) {
+        *center = _imp->viewportCenter;
+        return true;
+    }
+    return false;
+}
+
 void
 ViewerNode::setDoingPartialUpdates(bool doing)
 {
@@ -908,9 +919,9 @@ ViewerNode::setUserRoI(const RectD& rect)
 }
 
 void
-ViewerNode::reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
+ViewerNode::reportStats(int time, double wallTime, const RenderStatsMap& stats)
 {
-    Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
+    Q_EMIT renderStatsAvailable(time, wallTime, stats);
 }
 
 void

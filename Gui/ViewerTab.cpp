@@ -178,8 +178,8 @@ ViewerTab::ViewerTab(const std::string& scriptName,
 
     manageTimelineSlot(false, timeline);
 
-    QObject::connect( node.get(), SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
-                      this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
+    QObject::connect( node.get(), SIGNAL(renderStatsAvailable(int,double,RenderStatsMap)),
+                      this, SLOT(onRenderStatsAvailable(int,double,RenderStatsMap)) );
     QObject::connect( _imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)) );
     QObject::connect( node.get(), SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
 

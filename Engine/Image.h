@@ -38,7 +38,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Global/GLIncludes.h"
-#include "Engine/BufferableObject.h"
+#include "Engine/BufferedFrame.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/RectI.h"
 #include "Engine/ViewIdx.h"
@@ -71,7 +71,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 struct ImagePrivate;
 class Image
-: public BufferableObject
+: public BufferedFrame
 , public boost::enable_shared_from_this<Image>
 {
     /**
