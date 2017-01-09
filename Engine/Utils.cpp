@@ -103,8 +103,9 @@ convertFromPlainText(const QString &plain,
     return rich;
 } // convertFromPlainText
 
+// use genHTML=true when generating markdown for hoedown. false for pandoc
 QString
-convertFromPlainTextToMarkdown(const QString &plain_, bool isTableElement)
+convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTableElement)
 {
     QString escaped;
     // we trim table elements
@@ -147,15 +148,21 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool isTableElement)
                 escaped += QString::fromUtf8("&#124;");
                 outputChar = false;
             } else if (plain[i] == QLatin1Char('\n')) {
-                // "<br />" should work, but actually it doesn't work well and is ignored in many cases
-                //escaped += QString::fromUtf8("<br />");
-                //escaped += QString::fromUtf8("<br />");
-                //outputChar = false;
-                // see http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html
-                // A backslash followed by a newline is also a hard line break.
-                // Note: in multiline and grid table cells, this is the only way
-                // to create a hard line break, since trailing spaces in the cells are ignored.
-                escaped += QLatin1Char('\\');
+                if (genHTML) {
+                    // we are generating markdown for hoedown
+
+                    // "<br />" should work, but actually it doesn't work well and is ignored by pandoc in many cases
+                    escaped += QString::fromUtf8("<br />");
+                    outputChar = false;
+                } else {
+                    // we are generating markdown for pandoc
+
+                    // see http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html
+                    // A backslash followed by a newline is also a hard line break.
+                    // Note: in multiline and grid table cells, this is the only way
+                    // to create a hard line break, since trailing spaces in the cells are ignored.
+                    escaped += QLatin1Char('\\');
+                }
             }
         } else if (plain[i] == QLatin1Char('\n')) {
             // line breaks become paragraph breaks (double the line breaks)

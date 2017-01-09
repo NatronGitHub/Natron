@@ -4353,8 +4353,8 @@ Node::makeDocumentation(bool genHTML) const
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
-            input << NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), true );
-            input << NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), true );
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), genHTML, true );
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), genHTML, true );
             input << ( _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No") );
             inputs.push_back(input);
 
@@ -4405,9 +4405,9 @@ Node::makeDocumentation(bool genHTML) const
             continue;
         }
 
-        QString knobScriptName = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getName().c_str() ), true);
-        QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), true);
-        QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), true);
+        QString knobScriptName = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getName().c_str() ), genHTML, true);
+        QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), genHTML, true);
+        QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), genHTML, true);
 
         if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
             continue;
@@ -4472,13 +4472,20 @@ Node::makeDocumentation(bool genHTML) const
                                 QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
                                 if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
                                     if (first) {
-                                        //knobHint.append( QString::fromUtf8("<br />") );
-                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                        // empty line befor the option descriptions
+                                        if (genHTML) {
+                                            knobHint.append( QString::fromUtf8("<br />") );
+                                        } else {
+                                            knobHint.append( QString::fromUtf8("\\\n") );
+                                        }
                                         first = false;
                                     }
-                                    //knobHint.append( QString::fromUtf8("<br />") );
-                                    knobHint.append( QString::fromUtf8("\\\n") );
-                                    knobHint.append( QString::fromUtf8("**%1**: %2").arg( NATRON_NAMESPACE::convertFromPlainTextToMarkdown(entry, true) ).arg( NATRON_NAMESPACE::convertFromPlainTextToMarkdown(entryHelp, true) ) );
+                                    if (genHTML) {
+                                        knobHint.append( QString::fromUtf8("<br />") );
+                                    } else {
+                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                    }
+                                    knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
                                 }
                             }
                         }
@@ -4495,8 +4502,8 @@ Node::makeDocumentation(bool genHTML) const
                     }
                 }
 
-                dimsDefaultValueStr.push_back( std::make_pair(NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), true ),
-                                                              NATRON_NAMESPACE::convertFromPlainTextToMarkdown(valueStr, true)) );
+                dimsDefaultValueStr.push_back( std::make_pair(convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), genHTML, true ),
+                                                              convertFromPlainTextToMarkdown(valueStr, genHTML, true)) );
             }
 
             for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
@@ -4539,7 +4546,7 @@ Node::makeDocumentation(bool genHTML) const
             QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
-            pluginDescription = NATRON_NAMESPACE::convertFromPlainTextToMarkdown(pluginDescription, false);
+            pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
         }
     }
 
@@ -4581,6 +4588,8 @@ Node::makeDocumentation(bool genHTML) const
 
     // output
     if (genHTML) {
+        // use hoedown to convert to HTML
+
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         ts << "<html><head>";
         ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
@@ -4601,6 +4610,8 @@ Node::makeDocumentation(bool genHTML) const
         ts << Markdown::fixNodeHTML(html);
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     } else {
+        // this markdown will be processed externally by pandoc
+
         ts << markdown;
     }
 
