@@ -149,7 +149,7 @@ AnimationModuleViewPrivate::drawTimelineMarkers(const ZoomContext& ctx)
         GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         GL_GPU::Color4f(boundsR, boundsG, boundsB, 1.);
 
-        double leftBound, rightBound;
+        TimeValue leftBound, rightBound;
         _gui->getApp()->getProject()->getFrameRange(&leftBound, &rightBound);
         GL_GPU::Begin(GL_LINES);
         GL_GPU::Vertex2f( leftBound, btmRight.y() );

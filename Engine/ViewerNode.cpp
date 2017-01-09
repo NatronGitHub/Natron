@@ -1019,6 +1019,28 @@ ViewerNode::getUIZoomFactor() const
 
 }
 
+unsigned int
+ViewerNode::getMipMapLevelFromZoomFactor() const
+{
+    OpenGLViewerI* uiContext = getUiContext();
+    if (!uiContext) {
+        return 0;
+    }
+    double zoomFactor = uiContext->getZoomFactor();
+    // Downscale level is set to Auto, compute it from the zoom factor.
+    // This is the current zoom factor (1. == 100%) currently set by the user in the viewport. This is thread-safe.
+    
+    // If we were to render at 48% zoom factor, we would render at 50% which is mipmapLevel=1
+    // If on the other hand the zoom factor would be at 51%, then we would render at 100% which is mipmapLevel=0
+    
+    // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
+    // and the requested user proxy mipmap level
+    
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+    return std::log(closestPowerOf2) / M_LN2;
+
+}
+
 void
 ViewerNode::updateViewer(const UpdateViewerArgs& args)
 {

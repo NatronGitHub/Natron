@@ -32,6 +32,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Project.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
@@ -84,7 +85,7 @@ DiskCacheNode::~DiskCacheNode()
 
 void
 DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::bitset<4>* comps)
+                                     std::bitset<4>* supported)
 {
     (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
@@ -177,17 +178,14 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
             break;
         }
     } else if (_imp->preRender.lock() == k) {
-        AppInstance::RenderWork w;
+        RenderQueue::RenderWork w;
         w.renderLabel = tr("Caching").toStdString();
-        w.writer = shared_from_this();
-        assert(w.writer);
-        w.firstFrame = INT_MIN;
-        w.lastFrame = INT_MAX;
-        w.frameStep = 1;
+        w.treeRoot = getNode();
+        w.frameStep = TimeValue(1.);
         w.useRenderStats = false;
-        std::list<AppInstance::RenderWork> works;
+        std::list<RenderQueue::RenderWork> works;
         works.push_back(w);
-        getApp()->renderWritersNonBlocking(works);
+        getApp()->getRenderQueue()->renderNonBlocking(works);
     } else {
         ret = false;
     }
@@ -224,7 +222,10 @@ DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
         break;
     }
     case 1: {
-        getApp()->getProject()->getFrameRange(first, last);
+        TimeValue left, right;
+        getApp()->getProject()->getFrameRange(&left, &right);
+        *first = left;
+        *last = right;
         break;
     }
     case 2: {

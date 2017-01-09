@@ -940,8 +940,9 @@ OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
             /////At this point the frame has been processed by the output device
 
             assert( framesToRender->frames );
-
-            notifyFrameRendered(expectedTimeToRender, frame->stats, eSchedulingPolicyOrdered);
+            if (getSchedulingPolicy() == eSchedulingPolicyOrdered) {
+                notifyFrameRendered(framesToRender->frames, eSchedulingPolicyOrdered);
+            }
 
 
             ///////////
@@ -1007,17 +1008,20 @@ OutputSchedulerThread::executeOnMainThread(const ExecOnMTArgsPtr& inArgs)
 }
 
 void
-OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
-                                           const RenderStatsPtr& stats,
+OutputSchedulerThread::notifyFrameRendered(const BufferedFrameContainerPtr& frameContainer,
                                            SchedulingPolicyEnum policy)
 {
 
+    // This function only supports
+
     // Report render stats if desired
     NodePtr effect = _imp->outputEffect.lock();
-    if (stats && stats->isInDepthProfilingEnabled()) {
-        _imp->engine->reportStats(frame , stats);
-    }
+    for (std::list<BufferedFramePtr>::const_iterator it = frameContainer->frames.begin(); it != frameContainer->frames.end(); ++it) {
+        if ((*it)->stats && (*it)->stats->isInDepthProfilingEnabled()) {
+            _imp->engine->reportStats(frameContainer->time , (*it)->stats);
+        }
 
+    }
 
     bool isBackground = appPTR->isBackground();
     boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->runArgs.lock();
@@ -1051,9 +1055,9 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
     } else {
         nbTotalFrames = std::floor( (double)(runArgs->lastFrame - runArgs->firstFrame + 1) / runArgs->frameStep );
         if (runArgs->direction == eRenderDirectionForward) {
-            nbFramesRendered = (frame - runArgs->firstFrame) / runArgs->frameStep;
+            nbFramesRendered = (frameContainer->time - runArgs->firstFrame) / runArgs->frameStep;
         } else {
-            nbFramesRendered = (runArgs->lastFrame - frame) / runArgs->frameStep;
+            nbFramesRendered = (runArgs->lastFrame - frameContainer->time) / runArgs->frameStep;
         }
     } // if (policy == eSchedulingPolicyFFA) {
 
@@ -1072,7 +1076,7 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
     if (isBackground) {
         QString longMessage;
         QTextStream ts(&longMessage);
-        QString frameStr = QString::number(frame);
+        QString frameStr = QString::number(frameContainer->time);
         QString fpsStr = QString::number(estimatedFps, 'f', 1);
         QString percentageStr = QString::number(percentage * 100, 'f', 1);
         QString timeRemainingStr = Timer::printAsTime(timeRemaining, true);
@@ -1103,56 +1107,28 @@ OutputSchedulerThread::notifyFrameRendered(TimeValue frame,
     }
 
     // Notify we rendered a frame
-    _imp->engine->s_frameRendered(frame, percentage);
+    _imp->engine->s_frameRendered(frameContainer->time, percentage);
 
 
     // Call Python after frame ranedered callback if policy is ordered, otherwise this has been called on the render thread
     if (policy == eSchedulingPolicyOrdered) {
-        runAfterFrameRenderedCallback(frame);
+        runAfterFrameRenderedCallback(frameContainer->time);
     }
 
 } // OutputSchedulerThread::notifyFrameRendered
 
 void
-OutputSchedulerThread::appendToBuffer_internal(const BufferedFramePtr& frame,
-                                               bool wakeThread)
+OutputSchedulerThread::appendToBuffer(const BufferedFrameContainerPtr& frame)
 {
-
     // Called by the scheduler thread when an image is rendered
-
+    
     QMutexLocker l(&_imp->bufMutex);
     _imp->appendBufferedFrame(frame);
-    if (wakeThread) {
-        ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
-        _imp->bufEmptyCondition.wakeOne();
-    }
+    
+    ///Wake up the scheduler thread that an image is available if it is asleep so it can process it.
+    _imp->bufEmptyCondition.wakeOne();
 
-}
 
-void
-OutputSchedulerThread::appendToBuffer(const BufferedFramePtr& image)
-{
-    appendToBuffer_internal(image, true);
-}
-
-void
-OutputSchedulerThread::appendToBuffer(const BufferedFrameList& frames)
-{
-    if ( frames.empty() ) {
-        return;
-    }
-    BufferedFrameList::const_iterator next = frames.begin();
-    if ( next != frames.end() ) {
-        ++next;
-    }
-    for (BufferedFrameList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-        if ( next != frames.end() ) {
-            appendToBuffer_internal(*it, false);
-            ++next;
-        } else {
-            appendToBuffer_internal(*it, true);
-        }
-    }
 }
 
 void
@@ -1396,6 +1372,8 @@ OutputSchedulerThread::renderFrameRange(bool isBlocking,
         args.viewsToRender = viewsToRender;
         args.direction = direction;
     }
+    
+    _imp->validateRenderSequenceArgs(args);
 
     {
         QMutexLocker k(&_imp->sequentialRenderQueueMutex);
@@ -1820,16 +1798,27 @@ private:
         if (outputNode->getEffectInstance()->isWriter()) {
             stats.reset( new RenderStats(enableRenderStats) );
         }
+        
+        BufferedFrameContainerPtr frameContainer(new BufferedFrameContainer);
+        frameContainer->time = time;
 
         for (std::size_t view = 0; view < viewsToRender.size(); ++view) {
+            
+            BufferedFramePtr frame(new BufferedFrame);
+            frame->view = viewsToRender[view];
+            frame->stats = stats;
+            
             std::map<ImageComponents, ImagePtr> planes;
             ActionRetCodeEnum stat = renderFrameInternal(outputNode, time, viewsToRender[view], stats, &planes);
             if (isFailureRetCode(stat)) {
                 _imp->scheduler->notifyRenderFailure(stat, std::string());
-            } else {
-                _imp->scheduler->notifyFrameRendered(time, stats, eSchedulingPolicyFFA);
             }
+            
+            frameContainer->frames.push_back(frame);
         }
+        
+        _imp->scheduler->notifyFrameRendered(frameContainer, eSchedulingPolicyFFA);
+
 
         // If policy is FFA run the callback on this thread, otherwise wait that it gets processed on the scheduler thread.
         if (getScheduler()->getSchedulingPolicy() == eSchedulingPolicyFFA) {
@@ -1849,15 +1838,8 @@ DefaultScheduler::createRunnable(TimeValue frame,
 
 
 
-/**
- * @brief Called whenever there are images available to process in the buffer.
- * Once processed, the frame will be removed from the buffer.
- *
- * According to the ProcessFrameModeEnum given to the scheduler this function will be called either by the scheduler thread (this)
- * or by the application's main-thread (typically to do OpenGL rendering).
- **/
 void
-DefaultScheduler::processFrame(const BufferedFrameList& /*frames*/)
+DefaultScheduler::processFrame(const BufferedFrameContainerPtr& /*frames*/)
 {
     // We don't have anymore writer that need to process things in order. WriteFFMPEG is doing it for us
 } // DefaultScheduler::processFrame
@@ -2113,7 +2095,26 @@ public:
     ImagePtr viewerProcessImages[2];
 };
 
+class ViewerRenderBufferedFrameContainer : public BufferedFrameContainer
+{
+public:
+    
+    ViewerRenderBufferedFrameContainer()
+    : BufferedFrameContainer()
+    , recenterViewer(0)
+    , viewerCenter()
+    {
+        
+    }
+    
+    virtual ~ViewerRenderBufferedFrameContainer() {}
+    
+    bool recenterViewer;
+    Point viewerCenter;
+};
+
 typedef boost::shared_ptr<ViewerRenderBufferedFrame> ViewerRenderBufferedFramePtr;
+typedef boost::shared_ptr<ViewerRenderBufferedFrameContainer> ViewerRenderBufferedFrameContainerPtr;
 
 struct RenderViewerProcessFunctorArgs
 {
@@ -2237,19 +2238,7 @@ public:
         if (downcale_i > 0) {
             mipMapLevel = downcale_i;
         } else {
-            // Downscale level is set to Auto, compute it from the zoom factor.
-            // This is the current zoom factor (1. == 100%) currently set by the user in the viewport. This is thread-safe.
-
-            // If we were to render at 48% zoom factor, we would render at 50% which is mipmapLevel=1
-            // If on the other hand the zoom factor would be at 51%, then we would render at 100% which is mipmapLevel=0
-
-            // Adjust the mipmap level (without taking draft into account yet) as the max of the closest mipmap level of the viewer zoom
-            // and the requested user proxy mipmap level
-
-
-            double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
-            mipMapLevel = std::log(closestPowerOf2) / M_LN2;
-
+            mipMapLevel = viewer->getMipMapLevelFromZoomFactor();
         }
 
         // If draft mode is enabled, compute the mipmap level according to the auto-proxy setting in the preferences
@@ -2323,8 +2312,10 @@ private:
         }
 
 
-        BufferedFrameList buffers;
-
+        ViewerRenderBufferedFrameContainerPtr frameContainer(new  ViewerRenderBufferedFrameContainer());
+        frameContainer->time = time;
+        frameContainer->recenterViewer = false;
+        
         for (std::size_t i = 0; i < viewsToRender.size(); ++i) {
 
             // Render both viewer processes arguments
@@ -2368,7 +2359,6 @@ private:
 
             ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = viewsToRender[i];
-            bufferObject->time = time;
             bufferObject->stats = stats;
             bufferObject->isPartialRect = false;
 
@@ -2376,13 +2366,13 @@ private:
                 bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
-            buffers.push_back(bufferObject);
+            frameContainer->frames.push_back(bufferObject);
             
             // Notify the scheduler thread which will in turn call processFrame
 
         } // for all views
 
-        _imp->scheduler->appendToBuffer(buffers);
+        _imp->scheduler->appendToBuffer(frameContainer);
 
         if (stats) {
             getScheduler()->getEngine()->reportStats(time,  stats);
@@ -2393,31 +2383,34 @@ private:
 
 
 void
-ViewerDisplayScheduler::processFrame(const BufferedFrameList& frames)
+ViewerDisplayScheduler::processFrame(const BufferedFrameContainerPtr& frames)
 {
+    ViewerRenderBufferedFrameContainer* framesContainer = dynamic_cast<ViewerRenderBufferedFrameContainer*>(frames.get());
+    assert(framesContainer);
 
     ViewerNodePtr isViewer = getOutputNode()->isEffectViewerNode();
     assert(isViewer);
 
-    if ( !frames.empty() ) {
-        assert(frames.size() == 1);
-        for (BufferedFrameList::const_iterator it = frames.begin(); it != frames.end(); ++it) {
-            ViewerRenderBufferedFrame* viewerObject = dynamic_cast<ViewerRenderBufferedFrame*>(it->get());
-            assert(viewerObject);
-
-            ViewerNode::UpdateViewerArgs args;
-            args.time = (*it)->time;
-            args.view = (*it)->view;
-            args.isPartialRect = false;
-            args.recenterViewer = false;
-            args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
-            args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
-            isViewer->updateViewer(args);
-        }
-        isViewer->redrawViewerNow();
-    } else {
+    if ( framesContainer->frames.empty() ) {
         isViewer->redrawViewer();
+        return;
     }
+
+    for (std::list<BufferedFramePtr>::const_iterator it = framesContainer->frames.begin(); it != framesContainer->frames.end(); ++it) {
+        ViewerRenderBufferedFrame* viewerObject = dynamic_cast<ViewerRenderBufferedFrame*>(it->get());
+        assert(viewerObject);
+        
+        ViewerNode::UpdateViewerArgs args;
+        args.time = framesContainer->time;
+        args.view = (*it)->view;
+        args.isPartialRect = false;
+        args.recenterViewer = false;
+        args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
+        args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
+        isViewer->updateViewer(args);
+    }
+    isViewer->redrawViewerNow();
+   
 }
 
 RenderThreadTask*
@@ -3109,7 +3102,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         }
     }
 
-    void notifyFrameProduced(const BufferedFrameList& frames,
+    void notifyFrameProduced(const BufferedFrameContainerPtr& frames,
                              U64 age)
     {
         QMutexLocker k(&producedFramesMutex);
@@ -3121,7 +3114,7 @@ struct ViewerCurrentFrameRequestSchedulerPrivate
         producedFramesNotEmpty.wakeOne();
     }
 
-    void processProducedFrame(const BufferedFrameList& frames);
+    void processProducedFrame(const BufferedFrameContainerPtr& frames);
 };
 
 class RenderCurrentFrameFunctorRunnable
@@ -3140,7 +3133,7 @@ public:
     {
     }
 
-    void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* roiParam, BufferedFrameList &bufferList)
+    void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* roiParam, const ViewerRenderBufferedFrameContainerPtr& framesContainer)
     {
 
         for (std::size_t i = 0; i < _args->viewsToRender.size(); ++i) {
@@ -3184,14 +3177,13 @@ public:
 
             ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
             bufferObject->view = view;
-            bufferObject->time = _args->time;
             bufferObject->stats = stats;
             bufferObject->isPartialRect = roiParam != 0;
             for (int i = 0; i < 2; ++i) {
                 bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
-            bufferList.push_back(bufferObject);
+            framesContainer->frames.push_back(bufferObject);
             
             
         } // for all views
@@ -3203,20 +3195,22 @@ public:
 
         ViewerNodePtr viewer = _args->viewer->isEffectViewerNode();
 
-        BufferedFrameList bufferList;
+        ViewerRenderBufferedFrameContainerPtr framesContainer(new ViewerRenderBufferedFrameContainer);
+        framesContainer->time = _args->time;
+        framesContainer->recenterViewer = viewer->getViewerCenterPoint(&framesContainer->viewerCenter);
+        
         if (viewer->isDoingPartialUpdates()) {
             std::list<RectD> partialUpdates = viewer->getPartialUpdateRects();
             for (std::list<RectD>::const_iterator it = partialUpdates.begin(); it != partialUpdates.end(); ++it) {
-                computeViewsForRoI(viewer, &(*it), bufferList);
+                computeViewsForRoI(viewer, &(*it), framesContainer);
             }
         } else {
-            computeViewsForRoI(viewer, 0, bufferList);
+            computeViewsForRoI(viewer, 0, framesContainer);
         }
 
-        Point viewerCenter;
-        bool viewerCenterSet = viewer->getViewerCenterPoint(&viewerCenter);
+      
 
-        _args->scheduler->notifyFrameProduced(bufferList,  _args->age);
+        _args->scheduler->notifyFrameProduced(framesContainer,  _args->age);
 
 
         _args->scheduler->removeRunnableTask(this);
@@ -3409,18 +3403,22 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
 {
     assert( QThread::currentThread() == qApp->thread() );
 
+    ViewerRenderBufferedFrameContainer* isViewerFrameContainer = dynamic_cast<ViewerRenderBufferedFrameContainer*>(frames.get());
+    assert(isViewerFrameContainer);
+    
     ViewerNodePtr viewerNode = viewer->isEffectViewerNode();
 
 
-    for (BufferedFrameList::const_iterator it2 = frames.begin(); it2 != frames.end(); ++it2) {
+    for (std::list<BufferedFramePtr>::const_iterator it2 = isViewerFrameContainer->frames.begin(); it2 != isViewerFrameContainer->frames.end(); ++it2) {
         ViewerRenderBufferedFrame* viewerObject = dynamic_cast<ViewerRenderBufferedFrame*>(it2->get());
         assert(viewerObject);
 
         ViewerNode::UpdateViewerArgs args;
-        args.time = viewerObject->time;
+        args.time = isViewerFrameContainer->time;
         args.view = viewerObject->view;
         args.isPartialRect = viewerObject->isPartialRect;
-        args.recenterViewer = false;
+        args.recenterViewer = isViewerFrameContainer->recenterViewer;
+        args.viewerCenter = isViewerFrameContainer->viewerCenter;
         args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
         args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
 
@@ -3429,8 +3427,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
         if (viewerObject->stats) {
             double wallTime = 0;
             std::map<NodePtr, NodeRenderStats > statsMap = viewerObject->stats->getStats(&wallTime);
-
-            viewerNode->reportStats(viewerObject->time,  wallTime, statsMap);
+            viewerNode->reportStats(isViewerFrameContainer->time,  wallTime, statsMap);
         }
 
     }

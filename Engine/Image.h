@@ -38,7 +38,6 @@
 #include "Global/GlobalDefines.h"
 
 #include "Global/GLIncludes.h"
-#include "Engine/BufferedFrame.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/RectI.h"
 #include "Engine/ViewIdx.h"
@@ -71,8 +70,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 struct ImagePrivate;
 class Image
-: public BufferedFrame
-, public boost::enable_shared_from_this<Image>
+: public boost::enable_shared_from_this<Image>
 {
     /**
      * @brief Ctor. Make a new empty image. This is private, the static create() function should be used instead.

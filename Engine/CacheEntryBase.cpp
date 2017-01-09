@@ -541,7 +541,7 @@ GLCacheEntry::getBounds() const
     if (!_imp->texture) {
         return RectI();
     }
-    return _imp->texture->getTextureRect();
+    return _imp->texture->getBounds();
 }
 
 StorageModeEnum
@@ -575,7 +575,6 @@ GLCacheEntry::allocateMemoryImpl(const AllocateMemoryArgs& args)
 
     int glType, internalFormat;
     int format = GL_RGBA;
-    Texture::DataTypeEnum type = Texture::eDataTypeFloat;
 
     // For now, only use RGBA fp OpenGL textures, let glReadPixels do the conversion for us
     internalFormat = GL_RGBA32F_ARB;
@@ -586,17 +585,15 @@ GLCacheEntry::allocateMemoryImpl(const AllocateMemoryArgs& args)
                                      GL_NONE,
                                      GL_NONE,
                                      GL_NONE,
-                                     type,
+                                     eImageBitDepthFloat,
                                      format,
                                      internalFormat,
                                      glType,
                                      glArgs->glContext->isGPUContext() /*useOpenGL*/) );
 
 
-    TextureRect r(glArgs->bounds.x1, glArgs->bounds.y1, glArgs->bounds.x2, glArgs->bounds.y2, 1., 1.);
-
     // This calls glTexImage2D and allocates a RGBA image
-    _imp->texture->ensureTextureHasSize(r, 0);
+    _imp->texture->ensureTextureHasSize(glArgs->bounds, 0);
 }
 
 void

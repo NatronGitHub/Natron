@@ -163,11 +163,6 @@ bool
 Gui::closeProject()
 {
     bool ret = abortProject(true, true, true);
-
-    ///When closing a project we can remove the ViewerCache from memory and put it on disk
-    ///since we're not sure it will be used right away
-    appPTR->clearPlaybackCache();
-
     return ret;
 }
 

@@ -463,8 +463,10 @@ RenderQueuePrivate::renderInternal(const RenderQueueItem& w)
     if (w.process) {
         w.process->startProcess();
     } else {
+        
         // Note that we don't need to make the sequential render blocking since we already block in dispatchQueue()
-        w.work.treeRoot->renderSequential(false /*blocking*/, w.work.useRenderStats, w.work.firstFrame, w.work.lastFrame, w.work.frameStep);
+        // The views passed are empty, meaning we want to render all views, see OutputSchedulerThreadPrivate::validateRenderSequenceArgs
+        w.work.treeRoot->getRenderEngine()->renderFrameRange(false /*blocking*/, w.work.useRenderStats, w.work.firstFrame, w.work.lastFrame, w.work.frameStep, std::vector<ViewIdx>() /*views*/, eRenderDirectionForward);
     }
 }
 

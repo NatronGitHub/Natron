@@ -578,7 +578,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             throw std::invalid_argument( tr("%1: No such file.").arg(scriptFilename).toStdString() );
         }
 
-        std::list<AppInstance::RenderWork> writersWork;
+        std::list<RenderQueue::RenderWork> writersWork;
 
 
         if ( info.suffix() == QString::fromUtf8(NATRON_PROJECT_FILE_EXT) ) {
@@ -602,9 +602,7 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         }
 
-
-        getWritersWorkForCL(cl, writersWork);
-
+        _imp->renderQueue->createRenderRequestsFromCommandLineArgs(cl, writersWork);
 
         ///Set reader parameters if specified from the command-line
         const std::list<CLArgs::ReaderArg>& readerArgs = cl.getReaderArgs();
@@ -637,10 +635,7 @@ AppInstance::loadInternal(const CLArgs& cl,
 
         ///launch renders
         if ( !writersWork.empty() ) {
-            renderWritersNonBlocking(writersWork);
-        } else {
-            std::list<std::string> writers;
-            startWritersRenderingFromNames( cl.areRenderStatsEnabled(), false, writers, cl.getFrameRanges() );
+            _imp->renderQueue->renderNonBlocking(writersWork);
         }
     } else if (appPTR->getAppType() == AppManager::eAppTypeInterpreter) {
         QFileInfo info( cl.getScriptFilename() );

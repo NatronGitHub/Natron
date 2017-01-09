@@ -219,8 +219,7 @@ public:
      * but is directly rendering (e.g: a Writer rendering image sequences doesn't need to be ordered)
      * then the scheduler takes this as a hint to know how many frames have been rendered.
      **/
-    void notifyFrameRendered(TimeValue frame,
-                             const RenderStatsPtr& stats,
+    void notifyFrameRendered(const BufferedFrameContainerPtr& stats,
                              SchedulingPolicyEnum policy);
 
     void runAfterFrameRenderedCallback(TimeValue frame);

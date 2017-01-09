@@ -33,6 +33,8 @@
 
 #include "Engine/Image.h"
 #include "Engine/Smooth1D.h"
+#include "Engine/TreeRender.h"
+#include "Engine/ViewerNode.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -40,37 +42,41 @@ struct HistogramRequest
 {
     int binsCount;
     int mode;
-    ImagePtr image;
-    RectI rect;
+    ViewerNodePtr viewer;
+    int viewerInputNb;
+    RectD roiParam;
     double vmin;
     double vmax;
     int smoothingKernelSize;
 
     HistogramRequest()
-        : binsCount(0)
-        , mode(0)
-        , image()
-        , rect()
-        , vmin(0)
-        , vmax(0)
-        , smoothingKernelSize(0)
+    : binsCount(0)
+    , mode(0)
+    , viewer()
+    , viewerInputNb(0)
+    , roiParam()
+    , vmin(0)
+    , vmax(0)
+    , smoothingKernelSize(0)
     {
     }
-
+    
     HistogramRequest(int binsCount,
                      int mode,
-                     const ImagePtr & image,
-                     const RectI & rect,
+                     const ViewerNodePtr & viewer,
+                     int viewerInputNb,
+                     const RectD& roiParam,
                      double vmin,
                      double vmax,
                      int smoothingKernelSize)
-        : binsCount(binsCount)
-        , mode(mode)
-        , image(image)
-        , rect(rect)
-        , vmin(vmin)
-        , vmax(vmax)
-        , smoothingKernelSize(smoothingKernelSize)
+    : binsCount(binsCount)
+    , mode(mode)
+    , viewer(viewer)
+    , viewerInputNb(viewerInputNb)
+    , roiParam(roiParam)
+    , vmin(vmin)
+    , vmax(vmax)
+    , smoothingKernelSize(smoothingKernelSize)
     {
     }
 };
@@ -137,8 +143,9 @@ HistogramCPU::~HistogramCPU()
 
 void
 HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
-                               const ImagePtr & image,
-                               const RectI & rect,
+                               const ViewerNodePtr & viewer,
+                               int viewerInputNb,
+                               const RectD& roiParam,
                                int binsCount,
                                double vmin,
                                double vmax,
@@ -148,7 +155,7 @@ HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histog
     QMutexLocker quitLocker(&_imp->mustQuitMutex);
     QMutexLocker locker(&_imp->requestMutex);
 
-    _imp->requests.push_back( HistogramRequest(binsCount, mode, image, rect, vmin, vmax, smoothingKernelSize) );
+    _imp->requests.push_back( HistogramRequest(binsCount, mode, viewer, viewerInputNb, roiParam, vmin, vmax, smoothingKernelSize) );
     if (!isRunning() && !_imp->mustQuit) {
         quitLocker.unlock();
         start(HighestPriority);
@@ -168,7 +175,7 @@ HistogramCPU::quitAnyComputation()
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, ImagePtr(), RectI(), 0, 0, 0, 0);
+        computeHistogram(0, ViewerNodePtr(), -1, RectI(), 0, 0, 0, 0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -401,14 +408,55 @@ HistogramCPU::run()
                 return;
             }
         }
+        
+        assert(request.viewer);
+        
+        ImagePtr image;
+        {
+            TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
+            args->treeRoot = request.viewer->getViewerProcessNode(request.viewerInputNb);
+            assert(args->treeRoot);
+            args->time = request.viewer->getTimelineCurrentTime();
+            args->view = request.viewer->getCurrentView_TLS();
+            
+            // Render all layers produced by the viewer process node
+            args->layers = 0;
+            
+            // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
+            int downcale_i = request.viewer->getDownscaleMipMapLevelKnobIndex();
+            assert(downcale_i >= 0);
+            if (downcale_i > 0) {
+                args->mipMapLevel = downcale_i;
+            } else {
+                args->mipMapLevel = request.viewer->getMipMapLevelFromZoomFactor();
+            }
+            
+#pragma message WARN("Todo: set proxy scale here")
+            args->proxyScale = RenderScale(1.);
+            
+            // Render the RoD
+            args->canonicalRoI = &request.rect;
+            args->draftMode = false;
+            args->playback = false;
+            args->byPassCache = false;
+            
+            TreeRenderPtr render = TreeRender::create(args);
+            std::map<ImageComponents, ImagePtr> planes;
+            ActionRetCodeEnum stat = render->launchRender(&planes);
+            if (isFailureRetCode(stat)) {
+                continue;
+            }
+            image = planes.begin()->second;
+        }
+        
         boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;
         ret->vmax = request.vmax;
         ret->mipMapLevel = request.image->getMipMapLevel();
-
-
+        
+        
         switch (request.mode) {
         case 0:     //< RGB
             computeHistogramStatic(request, ret, 1);

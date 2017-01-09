@@ -44,6 +44,14 @@ struct ChoiceOption
 
     // Can be set to display a tooltip when the user hovers the entry in the choice menu
     std::string tooltip;
+    
+    ChoiceOption()
+    : id()
+    , label()
+    , tooltip()
+    {
+        
+    }
 
     ChoiceOption(const std::string& id_, const std::string& label_, const std::string& tooltip_)
     : id(id_)

@@ -255,6 +255,8 @@ public:
     void getTimelineBounds(int* first, int* last) const;
 
     double getUIZoomFactor() const;
+    
+    unsigned int getMipMapLevelFromZoomFactor() const;
 
     struct UpdateViewerArgs
     {

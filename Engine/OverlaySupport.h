@@ -126,7 +126,8 @@ public:
      **/
     virtual RangeD getFrameRange() const
     {
-        return RangeD(0., 0.);
+        RangeD ret = {0., 0.};
+        return ret;
     }
 
     /**
