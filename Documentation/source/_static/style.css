@@ -1,3 +1,6 @@
+/* plugin icons */
+img[alt=pluginIcon] { width: 128px; }
+
 body {
   background-color: #ffffff;
 }
