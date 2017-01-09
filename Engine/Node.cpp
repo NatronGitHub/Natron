@@ -4593,7 +4593,7 @@ Node::makeDocumentation(bool genHTML) const
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         ts << "<html><head>";
         ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
-        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+        ts << "<link rel=\"stylesheet\" href=\"_static/markdown.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
         ts << "</head><body>";
         ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
         ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
