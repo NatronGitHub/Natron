@@ -56,6 +56,9 @@ for x in plugins/*.md; do
     # - convertFromPlainTextToMarkdown()
     # - Node::makeDocumentation()
     $SED -i '/^| /s/| \. /| | /g' plugins/"${PLUG}".rst
+    # add properties for the Controls tables
+    $SED -i 's/^CONTROLSTABLEPROPS/.. tabularcolumns:: |>{\\raggedright}p{0.2\\columnwidth}|>{\\raggedright}p{0.06\\columnwidth}|>{\\raggedright}p{0.07\\columnwidth}|p{0.63\\columnwidth}|\n\n.. cssclass:: longtable/g' plugins/"${PLUG}".rst
+
 done
 popd
 

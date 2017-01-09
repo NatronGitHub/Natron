@@ -4543,10 +4543,54 @@ Node::makeDocumentation(bool genHTML) const
 
     // generate plugin info
     ms << pluginLabel << "\n==========\n\n";
+
+    // a hack to avoid repeating the documentation for the various merge plugins
+    if ( pluginID.startsWith( QString::fromUtf8("net.sf.openfx.Merge") ) ) {
+        std::string id = pluginID.toStdString();
+        std::string op;
+        if (id == PLUGINID_OFX_MERGE) {
+            // do nothing
+        } else if (id == "net.sf.openfx.MergeDifference") {
+            op = "difference (a.k.a. absminus)";
+        } else if (id == "net.sf.openfx.MergeIn") {
+            op = "in";
+        } else if (id == "net.sf.openfx.MergeMatte") {
+            op = "matte";
+        } else if (id == "net.sf.openfx.MergeMax") {
+            op = "max";
+        } else if (id == "net.sf.openfx.MergeMin") {
+            op = "min";
+        } else if (id == "net.sf.openfx.MergeMultiply") {
+            op = "multiply";
+        } else if (id == "net.sf.openfx.MergeOut") {
+            op = "out";
+        } else if (id == "net.sf.openfx.MergePlus") {
+            op = "plus";
+        } else if (id == "net.sf.openfx.MergeScreen") {
+            op = "screen";
+        }
+        if ( !op.empty() ) {
+            ms << tr("The %1 node is an alias of the %2 node, with the operator set to **%3** by default.")
+            .arg(pluginLabel)
+            .arg(genHTML ? QString::fromUtf8("<a href=\""PLUGINID_OFX_MERGE".html\">Merge</a>") : QString::fromUtf8("Merge"))
+            .arg( QString::fromUtf8( op.c_str() ) );
+            goto OUTPUT;
+        }
+
+    }
+
     if (!pluginIconUrl.isEmpty()) {
         // add a nonbreaking space so that pandoc doesn't use the alt-text as a caption
         // http://pandoc.org/MANUAL.html#images
-        ms << "![pluginIcon](" << pluginIconUrl << ")\\ \n\n";
+        ms << "![pluginIcon](" << pluginIconUrl << ")";
+        if (!genHTML) {
+            // specify image width for pandoc-generated printed doc
+            // (for hoedown-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
+            // see http://pandoc.org/MANUAL.html#images
+            // note that only % units are understood both by pandox and sphinx
+            ms << "{ width=10% }";
+        }
+        ms << "\\ \n\n";
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
@@ -4578,8 +4622,12 @@ Node::makeDocumentation(bool genHTML) const
         }
     }
     ms << tr("Controls") << "\n----------\n\n";
-    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " <<tr("Type") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
-    ms << "--- | --- | --- | --- | ---\n";
+    if (!genHTML) {
+        // insert a special marker to be replaced in rst by the genStaticDocs.sh script)
+        ms << "CONTROLSTABLEPROPS\n\n";
+    }
+    ms << tr("Parameter / script name") << " | " << tr("Type") << " | " << tr("Default") << " | " << tr("Function") << "\n";
+    ms << "--- | --- | --- | ---\n";
     if (items.size() > 0) {
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
@@ -4588,7 +4636,7 @@ Node::makeDocumentation(bool genHTML) const
             QString itemDefault = item.at(3);
             QString itemFunction = item.at(4);
 
-            ms << itemLabel << " | " << itemScript << " | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
+            ms << itemLabel << " / `" << itemScript << "` | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
         }
     }
 
@@ -4598,6 +4646,7 @@ Node::makeDocumentation(bool genHTML) const
         ms << extraMarkdown;
     }
 
+OUTPUT:
     // output
     if (genHTML) {
         // use hoedown to convert to HTML
