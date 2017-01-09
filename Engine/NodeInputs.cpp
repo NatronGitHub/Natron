@@ -840,7 +840,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
     beginInputEdition();
 
     // Call the instance changed action with a reason clip changed
-    onInputChanged(inputNumber, curIn, input);
+    onInputChanged(inputNumber);
 
     // Notify cache
     _imp->effect->invalidateHashCache();
@@ -925,8 +925,8 @@ Node::switchInput0And1()
     Q_EMIT inputChanged(inputBIndex);
 
     beginInputEdition();
-    onInputChanged(inputAIndex, input0, input1);
-    onInputChanged(inputBIndex, input1, input0);
+    onInputChanged(inputAIndex);
+    onInputChanged(inputBIndex);
 
 
     // Notify cache
@@ -1349,7 +1349,7 @@ Node::endInputEdition(bool triggerRender)
 }
 
 void
-Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode)
+Node::onInputChanged(int inputNb)
 {
     if ( getApp()->getProject()->isProjectClosing() ) {
         return;
@@ -1365,7 +1365,7 @@ Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode
 
 
     ///Don't do clip preferences while loading a project, they will be refreshed globally once the project is loaded.
-    _imp->effect->onInputChanged_public(inputNb, oldNode, newNode);
+    _imp->effect->onInputChanged_public(inputNb);
     _imp->inputsModified.insert(inputNb);
 
     // If the effect has render clones, kill them as the plug-in might have changed its internal state
@@ -1384,8 +1384,7 @@ Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode
             std::map<NodePtr, int> inputOutputs;
             groupInputs[inputNb]->getOutputsConnectedToThisNode(&inputOutputs);
             for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
-                NodePtr inputNode = it->first->getInput(it->second);
-                it->first->onInputChanged(it->second, inputNode, inputNode);
+                it->first->onInputChanged(it->second);
             }
         }
     }
@@ -1400,8 +1399,7 @@ Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode
             std::map<NodePtr, int> groupOutputs;
             containerGroup->getNode()->getOutputsConnectedToThisNode(&groupOutputs);
             for (std::map<NodePtr, int> ::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
-                NodePtr inputNode = it->first->getInput(it->second);
-                it->first->onInputChanged(it->second, inputNode, inputNode);
+                it->first->onInputChanged(it->second);
             }
         }
     }
@@ -1414,8 +1412,7 @@ Node::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode
         std::map<NodePtr, int> inputOutputs;
         isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
         for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
-            NodePtr inputNode = it->first->getInput(it->second);
-            it->first->onInputChanged(it->second, inputNode, inputNode);
+            it->first->onInputChanged(it->second);
         }
     }
 

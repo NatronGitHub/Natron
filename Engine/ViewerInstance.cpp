@@ -76,11 +76,10 @@ struct ViewerInstancePrivate
 
     KnobDoubleWPtr gammaKnob;
     KnobDoubleWPtr gainKnob;
-    KnobBoolWPtr autoContrastKnob;
-
+    KnobButtonWPtr autoContrastKnob;
 
     bool viewerChannelsAutoswitchedToAlpha;
-
+    bool layerAndAlphaChoiceRefreshEnabled;
 
     ViewerInstancePrivate(ViewerInstance* publicInterface)
     : _publicInterface(publicInterface)
@@ -92,6 +91,7 @@ struct ViewerInstancePrivate
     , gainKnob()
     , autoContrastKnob()
     , viewerChannelsAutoswitchedToAlpha(false)
+    , layerAndAlphaChoiceRefreshEnabled(false)
     {
 
     }
@@ -220,6 +220,11 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthByte);
 }
 
+void
+ViewerInstance::initializeKnobs()
+{
+#pragma message WARN("TODO")
+} // initializeKnobs
 
 void
 ViewerInstancePrivate::buildGammaLut(double gamma, RamBuffer<float>* gammaLookup)
@@ -345,8 +350,9 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     ImageBitDepthEnum outputDepth = appPTR->getCurrentSettings()->getViewersBitDepth();
     metadata.setBitDepth(-1, outputDepth);
 
-
-    _imp->refreshLayerAndAlphaChannelComboBox();
+    if (_imp->layerAndAlphaChoiceRefreshEnabled) {
+        _imp->refreshLayerAndAlphaChannelComboBox();
+    }
     getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode(), metadata);
 
     return eActionStatusOK;
@@ -382,6 +388,19 @@ ViewerInstance::getComponentsAction(TimeValue time,
     }
     return eActionStatusOK;
 } // getComponentsNeededInternal
+
+
+void
+ViewerInstance::setRefreshLayerAndAlphaChoiceEnabled(bool enabled)
+{
+    _imp->layerAndAlphaChoiceRefreshEnabled = enabled;
+}
+
+void
+ViewerInstance::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const
+{
+    _imp->getChannelOptions(render, time, rgbLayer, alphaLayer, alphaChannelIndex, displayChannels);
+}
 
 void
 ViewerInstancePrivate::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const

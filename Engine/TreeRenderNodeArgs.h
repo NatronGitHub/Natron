@@ -328,6 +328,11 @@ public:
     bool getCurrentTilesSupport() const;
 
     /**
+     * @brief Returns the node render scale support for this render
+     **/
+    bool getCurrentRenderScaleSupport() const;
+
+    /**
      * @brief Returns the node distorsion support for this render
      **/
     bool getCurrentDistortSupport() const;
@@ -394,7 +399,6 @@ public:
      **/
     ActionRetCodeEnum roiVisitFunctor(TimeValue time,
                                       ViewIdx view,
-                                      const RenderScale& scale,
                                       const RectD & canonicalRenderWindow,
                                       const EffectInstancePtr& caller);
 

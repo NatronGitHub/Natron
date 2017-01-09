@@ -63,7 +63,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Log.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
-#include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/GPUContextPool.h"
@@ -112,7 +111,7 @@ EffectInstance::~EffectInstance()
 RenderEngine*
 EffectInstance::createRenderEngine()
 {
-    return new RenderEngine(shared_from_this());
+    return new RenderEngine(getNode());
 }
 
 
@@ -577,7 +576,9 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 : inputNb(0)
 , inputTime(0)
 , inputView(0)
-, currentScale()
+, inputProxyScale(1.)
+, inputMipMapLevel(0)
+, currentScale(1.)
 , currentTime(0)
 , currentView(0)
 , optionalBounds(0)
@@ -592,6 +593,8 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const RenderActionArgs& args)
 : inputNb(0)
 , inputTime(args.time)
 , inputView(args.view)
+, inputProxyScale(args.renderArgs->getParentRender()->getProxyScale())
+, inputMipMapLevel(args.renderArgs->getParentRender()->getMipMapLevel())
 , currentScale(args.renderScale)
 , currentTime(args.time)
 , currentView(args.view)
@@ -676,16 +679,16 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         rargs->view = inArgs.inputView;
         rargs->treeRoot = inputEffect->getNode();
         rargs->canonicalRoI = inArgs.optionalBounds;
-        rargs->proxyScale = inArgs.currentScale;
-        rargs->mipMapLevel = 0;
+        rargs->proxyScale = inArgs.inputProxyScale;
+        rargs->mipMapLevel = inArgs.inputMipMapLevel;
         rargs->layers = &componentsToRender;
         rargs->draftMode = false;
         rargs->playback = false;
         rargs->byPassCache = false;
 
         TreeRenderPtr renderObject = TreeRender::create(rargs);
-        RenderRoIRetCode status = renderObject->launchRender(&outArgs->imagePlanes);
-        if (status != eRenderRoIRetCodeOk || outArgs->imagePlanes.empty()) {
+        ActionRetCodeEnum status = renderObject->launchRender(&outArgs->imagePlanes);
+        if (isFailureRetCode(status) || outArgs->imagePlanes.empty()) {
             return false;
         }
         return true;
@@ -712,11 +715,17 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         return false;
     }
 
+    RenderScale inputCombinedScale = inArgs.inputProxyScale;
+    {
+        double mipMapScale = Image::getScaleFromMipMapLevel(inArgs.inputMipMapLevel);
+        inputCombinedScale.x *= mipMapScale;
+        inputCombinedScale.y *= mipMapScale;
+    }
 
     // Clip the RoI to the input effect RoD
     {
         GetRegionOfDefinitionResultsPtr rodResults;
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inArgs.currentScale, inArgs.inputView, inputRenderArgs, &rodResults);
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inArgs.inputView, inputRenderArgs, &rodResults);
         if (isFailureRetCode(stat)) {
             return false;
         }
@@ -749,7 +758,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
 
     // Convert the roi to pixel coordinates
     RectI pixelRoI;
-    roiCanonical.toPixelEnclosing(inArgs.currentScale, par, &pixelRoI);
+    roiCanonical.toPixelEnclosing(inputCombinedScale, par, &pixelRoI);
 
 
     // Get the request of this effect current action
@@ -780,15 +789,17 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         boost::scoped_ptr<RenderRoIArgs> rargs(new RenderRoIArgs(inputTime,
                                                                  inArgs.inputView,
                                                                  pixelRoI,
+                                                                 inArgs.inputProxyScale,
+                                                                 inArgs.inputMipMapLevel,
                                                                  componentsToRender,
                                                                  thisShared,
                                                                  inArgs.inputNb,
                                                                  inArgs.currentTime,
                                                                  inputRenderArgs));
         rargs->type = renderType;
-        RenderRoIRetCode retCode = inputEffect->renderRoI(*rargs, &inputRenderResults);
+        ActionRetCodeEnum retCode = inputEffect->renderRoI(*rargs, &inputRenderResults);
 
-        if ( inputRenderResults.outputPlanes.empty() || (retCode != eRenderRoIRetCodeOk) ) {
+        if (isFailureRetCode(retCode) || inputRenderResults.outputPlanes.empty()) {
             return false;
         }
 
@@ -815,20 +826,9 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
             return ImagePtr();
         }
 
-        // We may have rendered an effect with a different scale upstream if this effect does not support render scale
-        const RenderScale& imageScale = it->second->getProxyScale();
-        unsigned int imageMipMapLevel = it->second->getMipMapLevel();
-        RenderScale imageCombinedScale = imageScale;
-        {
-            double imageMipMapScale = Image::getScaleFromMipMapLevel(imageMipMapLevel);
-            imageCombinedScale.x *= imageMipMapScale;
-            imageCombinedScale.y *= imageMipMapScale;
-        }
-        if (inArgs.currentScale.x != imageCombinedScale.x ||
-            inArgs.currentScale.y != imageCombinedScale.y) {
+        assert(it->second->getProxyScale().x == inArgs.inputProxyScale.x && it->second->getProxyScale().y == inArgs.inputProxyScale.y);
+        assert(it->second->getMipMapLevel() == inArgs.inputMipMapLevel);
 
-#pragma message WARN("TODO: Resize")
-        }
 
         bool mustConvertImage = false;
         StorageModeEnum storage = it->second->getStorageMode();

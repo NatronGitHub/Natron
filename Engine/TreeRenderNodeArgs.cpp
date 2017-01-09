@@ -523,6 +523,9 @@ struct TreeRenderNodeArgsPrivate
     // The support for tiles is local to a render and may change depending on GPU usage or other parameters
     bool tilesSupported;
 
+    // The support for render scale is local to a render
+    bool renderScaleSupported;
+
     // The distort flag may change (e.g Reformat may provide a transform or not depending on a parameter)
     bool canDistort;
 
@@ -543,6 +546,7 @@ struct TreeRenderNodeArgsPrivate
     , timeViewInvariantHashValid(false)
     , metadataTimeInvariantHashValid(false)
     , tilesSupported(node->getCurrentSupportTiles())
+    , renderScaleSupported(node->getCurrentSupportRenderScale())
     , canDistort(node->getCurrentCanDistort())
     {
 
@@ -707,6 +711,13 @@ TreeRenderNodeArgs::getCurrentTilesSupport() const
 }
 
 bool
+TreeRenderNodeArgs::getCurrentRenderScaleSupport() const
+{
+    // MT-safe: never changes throughout the lifetime of the object
+    return _imp->renderScaleSupported;
+}
+
+bool
 TreeRenderNodeArgs::getCurrentDistortSupport() const
 {
     // MT-safe: never changes throughout the lifetime of the object
@@ -818,7 +829,6 @@ TreeRenderNodeArgs::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) co
 ActionRetCodeEnum
 TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
                                     ViewIdx view,
-                                    const RenderScale& scale,
                                     const RectD& canonicalRenderWindow,
                                     const EffectInstancePtr& caller)
 {
@@ -845,6 +855,15 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
     }
 
 
+    const RenderScale &scale = getParentRender()->getProxyMipMapScale();
+    {
+        const RenderScale& proxyScale = getParentRender()->getProxyScale();
+        if (proxyScale.x != 1. || proxyScale.y != 1.) {
+            node->setPersistentMessage(eMessageTypeError, node->tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
+            return eActionStatusFailed;
+        }
+
+    }
 
     double par = effect->getAspectRatio(thisShared, -1);
     EffectInstance::ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
@@ -890,7 +909,6 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
             ViewIdx inputView = (view != 0 && viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
             ActionRetCodeEnum stat = roiVisitFunctor(identityTime,
                                                      inputView,
-                                                     scale,
                                                      canonicalRenderWindow,
                                                      effect);
 
@@ -911,7 +929,6 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
 
             ActionRetCodeEnum stat = inputFrameArgs->roiVisitFunctor(identityTime,
                                                               identityView,
-                                                              scale,
                                                               canonicalRenderWindow,
                                                               effect);
             
@@ -987,7 +1004,6 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
 
                     ActionRetCodeEnum stat = inputRenderArgs->roiVisitFunctor(TimeValue(f),
                                                                        viewIt->first,
-                                                                       scale,
                                                                        roi,
                                                                        effect);
 

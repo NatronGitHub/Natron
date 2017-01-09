@@ -605,6 +605,9 @@ public:
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
 
+    void setCurrentSupportRenderScale(bool support);
+    bool getCurrentSupportRenderScale() const;
+
     void refreshDynamicProperties();
 
     bool isRenderScaleSupportEnabledForPlugin() const;
@@ -1001,7 +1004,7 @@ public:
 
     void endInputEdition(bool triggerRender);
 
-    void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode);
+    void onInputChanged(int inputNb);
 
     bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
 

@@ -113,6 +113,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , pluginSafety(eRenderSafetyInstanceSafe)
 , currentThreadSafety(eRenderSafetyInstanceSafe)
 , currentSupportTiles(false)
+, currentSupportsRenderScale(false)
 , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
 , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
 , currentCanDistort(false)

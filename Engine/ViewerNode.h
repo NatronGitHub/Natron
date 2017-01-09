@@ -250,7 +250,7 @@ public:
 
     virtual TimeValue getTimelineCurrentTime() const OVERRIDE FINAL;
 
-    int getLastRenderedTime() const;
+    TimeValue getLastRenderedTime() const;
 
     void getTimelineBounds(int* first, int* last) const;
 
@@ -357,7 +357,7 @@ private:
 
     void clearGroupWithoutViewerProcess();
 
-    virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
     virtual bool hasOverlay() const OVERRIDE FINAL
     {

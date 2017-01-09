@@ -612,8 +612,7 @@ PrecompNodePrivate::refreshOutputNode()
     thisNode->getOutputsConnectedToThisNode(&outputs);
 
     for (std::map<NodePtr, int>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr inputNode = it->first->getInput(it->second);
-        it->first->onInputChanged(it->second, inputNode, inputNode);
+        it->first->onInputChanged(it->second);
     }
 }
 

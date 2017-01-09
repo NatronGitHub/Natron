@@ -377,6 +377,7 @@ ChoiceOption
 ImageComponents::getChannelOption(int channelIndex) const
 {
     if (channelIndex < 0 || channelIndex >= (int)_componentNames.size()) {
+        assert(false);
         return ChoiceOption("","","");
     }
     std::string optionID, optionLabel;

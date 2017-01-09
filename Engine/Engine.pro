@@ -234,6 +234,9 @@ SOURCES += \
     Utils.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
+    ViewerNodePrivate.cpp \
+    ViewerNodeKnobs.cpp \
+    ViewerNodeOverlays.cpp \
     ViewIdx.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
@@ -290,6 +293,7 @@ SOURCES += \
     NatronEngine/nodecreationproperty_wrapper.cpp \
     NatronEngine/stringnodecreationproperty_wrapper.cpp \
     NatronEngine/exprutils_wrapper.cpp
+
 
 
 
@@ -476,6 +480,7 @@ HEADERS += \
     Variant.h \
     ViewerInstance.h \
     ViewerNode.h \
+    ViewerNodePrivate.h \
     ViewIdx.h \
     WriteNode.h \
     ../Global/Enums.h \

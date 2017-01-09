@@ -1625,7 +1625,7 @@ TrackerNodePrivate::setFromPointsToInputRod()
 }
 
 void
-TrackerNode::onInputChanged(int inputNb, const NodePtr& /*oldNode*/, const NodePtr& /*newNode*/)
+TrackerNode::onInputChanged(int inputNb)
 {
     KnobBoolPtr fromPointsSetOnceKnob = _imp->cornerPinFromPointsSetOnceAutomatically.lock();
     if ( !fromPointsSetOnceKnob->getValue() ) {

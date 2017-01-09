@@ -658,7 +658,7 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     // Cycle through the tree to make sure all nodes render once with the appropriate RoI
     {
         
-        ActionRetCodeEnum stat = rootNodeArgs->roiVisitFunctor(time, view, proxyMipMapScale, canonicalRoI, effectToRender);
+        ActionRetCodeEnum stat = rootNodeArgs->roiVisitFunctor(time, view, canonicalRoI, effectToRender);
         
         if (isFailureRetCode(stat)) {
             state = stat;
@@ -707,6 +707,8 @@ TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(_imp->time,
                                                                                                      _imp->view,
                                                                                                      pixelRoI,
+                                                                                                     _imp->proxyScale,
+                                                                                                     _imp->mipMapLevel,
                                                                                                      _imp->layers,
                                                                                                      effectToRender,
                                                                                                      -1,

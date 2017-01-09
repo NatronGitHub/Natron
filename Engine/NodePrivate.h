@@ -387,6 +387,9 @@ public:
     // Does this node currently support tiled rendering
     bool currentSupportTiles;
 
+    // Does this node currently support render scale
+    bool currentSupportsRenderScale;
+
     // Does this node currently supports OpenGL render
     PluginOpenGLRenderSupport currentSupportOpenGLRender;
 

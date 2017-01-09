@@ -69,7 +69,7 @@ public:
     virtual ~TrackerNode();
 
 
-    virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {

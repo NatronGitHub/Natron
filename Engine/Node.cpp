@@ -299,6 +299,22 @@ Node::getCurrentSupportTiles() const
 }
 
 void
+Node::setCurrentSupportRenderScale(bool support)
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+
+    _imp->currentSupportsRenderScale = support;
+}
+
+bool
+Node::getCurrentSupportRenderScale() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+
+    return _imp->currentSupportsRenderScale;
+}
+
+void
 Node::setCurrentCanDistort(bool support)
 {
     QMutexLocker k(&_imp->pluginsPropMutex);
@@ -330,10 +346,11 @@ Node::refreshDynamicProperties()
 
     setCurrentOpenGLRenderSupport(pluginGLSupport);
     bool tilesSupported = _imp->effect->supportsTiles();
+    bool supportsRenderScale = _imp->effect->supportsRenderScale();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canDistort = _imp->effect->getCanDistort();
     _imp->pluginSafety = _imp->effect->getCurrentRenderThreadSafety();
-
+    
     if (!tilesSupported && _imp->pluginSafety == eRenderSafetyFullySafeFrame) {
         // an effect which does not support tiles cannot support host frame threading
         setRenderThreadSafety(eRenderSafetyFullySafe);
@@ -342,6 +359,7 @@ Node::refreshDynamicProperties()
     }
 
     setCurrentSupportTiles(multiResSupported && tilesSupported);
+    setCurrentSupportRenderScale(supportsRenderScale);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanDistort(canDistort);
 }

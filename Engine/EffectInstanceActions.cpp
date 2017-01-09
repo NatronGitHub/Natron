@@ -478,15 +478,18 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
         return eActionStatusOK;
     }
 
+    const bool renderScaleSupported = renderArgs ? renderArgs->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
+
     EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, mappedScale
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ false
 #endif
                                               );
 
-    ActionRetCodeEnum stat = attachOpenGLContext(time, view, scale, renderArgs, glContext, data);
+    ActionRetCodeEnum stat = attachOpenGLContext(time, view, mappedScale, renderArgs, glContext, data);
 
     if (!isFailureRetCode(stat)) {
         if (!concurrentGLRender) {
@@ -720,6 +723,9 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
         }
     }
 
+    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const RenderScale mappedScale = renderScaleSupported ? renderScale : RenderScale(1.);
+
     // Get the render local args
     FrameViewRequestPtr fvRequest;
     if (render) {
@@ -761,7 +767,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
 
     assert(hash != 0);
 
-    GetDistorsionKeyPtr cacheKey(new GetDistorsionKey(hash, renderScale, getNode()->getPluginID()));
+    GetDistorsionKeyPtr cacheKey(new GetDistorsionKey(hash, mappedScale, getNode()->getPluginID()));
 
     GetDistorsionResultsPtr ret;
 
@@ -804,7 +810,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     } else {
 
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, mappedScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -813,7 +819,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
                                                   );
 
         // Call the action
-        ActionRetCodeEnum stat = getDistorsion(time, renderScale, view, render, distorsion.get());
+        ActionRetCodeEnum stat = getDistorsion(time, mappedScale, view, render, distorsion.get());
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -880,6 +886,8 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         return eActionStatusOK;
     }
 
+    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
     // Get the render local args
     FrameViewRequestPtr fvRequest;
@@ -950,17 +958,27 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
 
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, mappedScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
 #endif
                                                   );
 
+        RectI mappedRenderWindow = renderWindow;
+
+        if (mappedScale.x != scale.x || mappedScale.y != scale.y) {
+            // map the render window to the appropriate scale
+            RectD canonicalRenderWindow;
+            double par = getAspectRatio(render, -1);
+            renderWindow.toCanonical_noClipping(scale, par, &canonicalRenderWindow);
+            canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &mappedRenderWindow);
+        }
+
         TimeValue identityTime;
         ViewIdx identityView;
         int identityInputNb;
-        ActionRetCodeEnum stat = isIdentity(time, scale, renderWindow, view, render, &identityTime, &identityView, &identityInputNb);
+        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, render, &identityTime, &identityView, &identityInputNb);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1055,6 +1073,8 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         }
     }
 
+    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
     // Get the render local args
     FrameViewRequestPtr fvRequest;
@@ -1091,11 +1111,11 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         hash = computeHash(hashArgs);
     }
 
-    GetRegionOfDefinitionKeyPtr cacheKey(new GetRegionOfDefinitionKey(hash, scale, getNode()->getPluginID()));
+    GetRegionOfDefinitionKeyPtr cacheKey(new GetRegionOfDefinitionKey(hash, mappedScale, getNode()->getPluginID()));
     CacheEntryLockerPtr cacheAccess;
     if (useCache) {
         assert(hash != 0);
-        cacheKey.reset(new GetRegionOfDefinitionKey(hash, scale, getNode()->getPluginID()));
+        cacheKey.reset(new GetRegionOfDefinitionKey(hash, mappedScale, getNode()->getPluginID()));
 
         cacheAccess = appPTR->getCache()->get(cacheKey);
 
@@ -1124,7 +1144,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         RectI format = getOutputFormat(render);
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, scale, format, view, render, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, render, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1149,7 +1169,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
             }
 
             GetRegionOfDefinitionResultsPtr inputResults;
-            ActionRetCodeEnum stat = identityInputNode->getRegionOfDefinition_public(identityTime, scale, identityView, inputRenderArgs, &inputResults);
+            ActionRetCodeEnum stat = identityInputNode->getRegionOfDefinition_public(identityTime, mappedScale, identityView, inputRenderArgs, &inputResults);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1170,7 +1190,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
             EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
 
-            EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+            EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, mappedScale
 #ifdef DEBUG
                                                       , /*canSetValue*/ false
                                                       , /*canBeCalledRecursively*/ true
@@ -1179,12 +1199,12 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
 
             RectD rod;
-            ActionRetCodeEnum stat = getRegionOfDefinition(time, scale, view, render, &rod);
+            ActionRetCodeEnum stat = getRegionOfDefinition(time, mappedScale, view, render, &rod);
 
             if (isFailureRetCode(stat)) {
                 return stat;
             }
-            ifInfiniteApplyHeuristic(time, scale, view, render, &rod);
+            ifInfiniteApplyHeuristic(time, mappedScale, view, render, &rod);
 
             (*results)->setRoD(rod);
             
@@ -1380,18 +1400,21 @@ EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
         }
     }
 
+    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
+
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
 
     EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, mappedScale
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ false
 #endif
                                               );
 
-    return getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
+    return getRegionsOfInterest(time, mappedScale, renderWindow, view, render, ret);
 
 } // getRegionsOfInterest_public
 
@@ -1845,12 +1868,12 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
 
 void
-EffectInstance::onInputChanged(int /*inputNo*/, const NodePtr& /*oldNode*/, const NodePtr& /*newNode*/)
+EffectInstance::onInputChanged(int /*inputNo*/)
 {
 }
 
 void
-EffectInstance::onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode)
+EffectInstance::onInputChanged_public(int inputNo)
 {
 
     REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
@@ -1864,7 +1887,7 @@ EffectInstance::onInputChanged_public(int inputNo, const NodePtr& oldNode, const
 #endif
                                               );
 
-    onInputChanged(inputNo, oldNode, newNode);
+    onInputChanged(inputNo);
 } // onInputChanged_public
 
 ActionRetCodeEnum

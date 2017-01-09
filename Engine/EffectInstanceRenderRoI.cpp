@@ -961,22 +961,28 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     assert(args.renderArgs && args.renderArgs->getNode() == getNode());
 
+    // Some nodes do not support render-scale and can only render at scale 1.
+    // If the render requested a mipmap level different than 0, we must render at mipmap level 0 then downscale to the requested
+    // mipmap level.
+    // If the render requested a proxy scale different than 1, we fail because we cannot render at scale 1 then resize at an arbitrary scale.
+    
+    const bool renderFullScaleThenDownScale = !args.renderArgs->getCurrentRenderScaleSupport() && args.mipMapLevel > 0;
 
-    TreeRenderPtr parentRender = args.renderArgs->getParentRender();
-    const RenderScale& renderProxyScale = parentRender->getProxyScale();
-    unsigned int renderMipMapLevel = parentRender->getMipMapLevel();
-    const RenderScale& renderProxyMipMapedScale = parentRender->getProxyMipMapScale();
+    if (!args.renderArgs->getCurrentRenderScaleSupport() && (args.proxyScale.x != 1. || args.proxyScale.y != 1.)) {
+        setPersistentMessage(eMessageTypeError, tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
+        return eActionStatusFailed;
+    }
 
-    // This flag is relevant only when the mipMapLevel is different than 0. We use it to determine
-    // wether the plug-in should render in the full scale image, and then we downscale afterwards or
-    // if the plug-in can just use the downscaled image to render.
-    const RenderScale scaleOne(1.);
-    const bool renderScaleOneThenResize = false;
+    const unsigned int mappedMipMapLevel = renderFullScaleThenDownScale ? 0 : args.mipMapLevel;
+    RenderScale originalCombinedScale;
 
-
-    const RenderScale mappedProxyScale = renderScaleOneThenResize ? scaleOne : renderProxyScale;
-    const unsigned int mappedMipMapLevel = renderScaleOneThenResize ? 0 : renderMipMapLevel;
-    const RenderScale mappedCombinedScale = renderScaleOneThenResize ? scaleOne : renderProxyMipMapedScale;
+    {
+        originalCombinedScale = args.proxyScale;
+        double mipMapScale = Image::getScaleFromMipMapLevel(args.mipMapLevel);
+        originalCombinedScale.x *= mipMapScale;
+        originalCombinedScale.y *= mipMapScale;
+    }
+    const RenderScale mappedCombinedScale = renderFullScaleThenDownScale ? RenderScale(1.) : originalCombinedScale;
 
     // The region of definition of the effect at this frame/view in canonical coordinates
     RectD rod;
@@ -1071,12 +1077,12 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
         }
     } else {
 
-        if (!renderScaleOneThenResize) {
+        if (!renderFullScaleThenDownScale) {
             renderMappedRoI = args.roi;
         } else {
             RectD canonicalRoI;
-            args.roi.toCanonical(mappedCombinedScale, par, rod, &canonicalRoI);
-            canonicalRoI.toPixelEnclosing(scaleOne, par, &renderMappedRoI);
+            args.roi.toCanonical(originalCombinedScale, par, rod, &canonicalRoI);
+            canonicalRoI.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
         }
     }
 
@@ -1156,7 +1162,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Allocate images and look-up cache ///////////////////////////////////////////////////////
 
-    _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, mappedProxyScale, mappedMipMapLevel, &results->outputPlanes);
+    _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, args.proxyScale, mappedMipMapLevel, &results->outputPlanes);
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
 
@@ -1203,11 +1209,15 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
         return renderRoI(*newArgs, results);
     }
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Termination ///////////////////////////////////////////////////////////////////////////
-  
-
+    // If the node did not support render scale and the mipmap level rendered was different than what was requested, downcale the image.
+    if (renderFullScaleThenDownScale) {
+        assert(args.mipMapLevel > 0);
+        for (std::map<ImageComponents, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
+            assert(it->second->getMipMapLevel() == 0);
+            ImagePtr downscaledImage = it->second->downscaleMipMap(it->second->getBounds(), args.mipMapLevel);
+            it->second = downscaledImage;
+        }
+    }
 
     // Termination, check that we rendered things correctly or we should have failed earlier otherwise.
 #ifdef DEBUG

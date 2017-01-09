@@ -2567,7 +2567,7 @@ static void adjustChoiceParamOption(const std::string& oldOption, const std::str
 }
 
 void
-RotoPaint::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode)
+RotoPaint::onInputChanged(int inputNb)
 {
 
     if (oldNode && newNode && oldNode != newNode) {
@@ -2581,7 +2581,7 @@ RotoPaint::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& ne
     }
     refreshRotoPaintTree();
     
-    NodeGroup::onInputChanged(inputNb, oldNode, newNode);
+    NodeGroup::onInputChanged(inputNb);
 }
 
 

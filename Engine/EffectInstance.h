@@ -223,6 +223,12 @@ public:
         // The rectangle to render (in pixel coordinates)
         RectI roi;
 
+        // The proxy scale at which to render
+        RenderScale proxyScale;
+
+        // The mipmap level at which to render
+        unsigned int mipMapLevel;
+
         // The image planes to render
         std::list<ImageComponents> components;
 
@@ -248,6 +254,8 @@ public:
         : time(0)
         , view(0)
         , roi()
+        , proxyScale(1.)
+        , mipMapLevel(0)
         , components()
         , caller()
         , inputNbInCaller(-1)
@@ -261,6 +269,8 @@ public:
         RenderRoIArgs(TimeValue time_,
                       ViewIdx view_,
                       const RectI & roi_,
+                      const RenderScale& proxyScale_,
+                      unsigned int mipMapLevel_,
                       const std::list<ImageComponents> & components_,
                       EffectInstancePtr caller,
                       int inputNbInCaller,
@@ -269,6 +279,8 @@ public:
         : time(time_)
         , view(view_)
         , roi(roi_)
+        , proxyScale(proxyScale_)
+        , mipMapLevel(mipMapLevel_)
         , components(components_)
         , caller(caller)
         , inputNbInCaller(inputNbInCaller)
@@ -325,6 +337,14 @@ public:
         //
         // Default - 0
         ViewIdx inputView;
+
+        // The desired scale of the input image
+        // - Must be set
+        RenderScale inputProxyScale;
+
+        // The desired mipmap level of the input image
+        // - Must be set
+        unsigned int inputMipMapLevel;
 
         // The current action scale
         // - Must be set
@@ -876,7 +896,7 @@ protected:
 
 public:
 
-    void onInputChanged_public(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
+    void onInputChanged_public(int inputNo);
 
 protected:
 
@@ -884,7 +904,7 @@ protected:
     /**
      * @brief Called anytime an input connection is changed
      **/
-    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode);
+    virtual void onInputChanged(int inputNo);
 
 
 public:
@@ -1455,7 +1475,15 @@ public:
      **/
     virtual bool supportsTiles() const
     {
-        return false;
+        return true;
+    }
+
+    /**
+     * @brief When true the plug-in may have actions called with an abitrary render scale.
+     * Spatial parameters must then take the render scale into account.
+     **/
+    virtual bool supportsRenderScale() const {
+        return true;
     }
 
     /**

@@ -124,7 +124,17 @@ public:
 
     NodePtr getInputRecursive(int inputIndex) const;
 
+    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const;
+
+    /**
+     * @brief A ViewerNode is composed of 2 ViewerProcess nodes but it only has 1 layer and 1 alpha channel choices.
+     * We thus disable the refreshing of the menu from the 2nd ViewerProcess node.
+     **/
+    void setRefreshLayerAndAlphaChoiceEnabled(bool enabled);
+
 private:
+
+    virtual void initializeKnobs() OVERRIDE FINAL;
 
 
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
