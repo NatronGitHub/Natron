@@ -94,7 +94,7 @@ struct PluginTreeNode
         , rsCheckbox(NULL)
         , mtCheckbox(NULL)
         , glCheckbox(NULL)
-        , plugin(NULL)
+        , plugin()
     {
     }
 
