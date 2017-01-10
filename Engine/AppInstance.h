@@ -283,8 +283,6 @@ public:
     void removeInvalidExpressionKnob(const KnobIConstPtr& knob);
     void recheckInvalidExpressions();
 
-    virtual void clearViewersLastRenderedTexture() {}
-
     virtual void toggleAutoHideGraphInputs() {}
 
 

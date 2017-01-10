@@ -26,6 +26,8 @@
 
 #include <QDebug>
 
+#include "Engine/GroupOutput.h"
+#include "Engine/PrecompNode.h"
 #include "Engine/TreeRenderNodeArgs.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -95,69 +97,7 @@ Node::initializeInputs()
 
 
 
-void
-Node::hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
-                                  std::list<const Node*>* markedNodes) const
-{
 
-    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
-        return;
-    }
-
-    markedNodes->push_back(this);
-    ViewerInstancePtr thisViewer = toViewerInstance( _imp->effect);
-
-    if (thisViewer) {
-        viewers->push_back(thisViewer);
-    } else {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-
-        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            (*it)->hasViewersConnectedInternal(viewers, markedNodes);
-        }
-    }
-}
-
-void
-Node::hasOutputNodesConnectedInternal(std::list<EffectInstancePtr >* writers,
-                                      std::list<const Node*>* markedNodes) const
-{
-    if (std::find(markedNodes->begin(), markedNodes->end(), this) != markedNodes->end()) {
-        return;
-    }
-
-    markedNodes->push_back(this);
-
-    if ( _imp->effect->isOutput() && !dynamic_cast<GroupOutput*>(thisWriter.get()) ) {
-        writers->push_back(thisWriter);
-    } else {
-        NodesList outputs;
-        getOutputsWithGroupRedirection(outputs);
-
-        for (NodesList::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-            assert(*it);
-            (*it)->hasOutputNodesConnectedInternal(writers, markedNodes);
-        }
-    }
-}
-
-void
-Node::hasOutputNodesConnected(std::list<EffectInstancePtr >* writers) const
-{
-    std::list<const Node*> m;
-    hasOutputNodesConnectedInternal(writers, &m);
-}
-
-void
-Node::hasViewersConnected(std::list<ViewerInstancePtr >* viewers) const
-{
-
-    std::list<const Node*> m;
-    hasViewersConnectedInternal(viewers, &m);
-
-}
 
 /**
  * @brief Resolves links of the graph in the case of containers (that do not do any rendering but only contain nodes inside)
@@ -316,7 +256,7 @@ Node::getInputInternal(bool useGroupRedirections,
     // to avoid the usage of TLS.
     TreeRenderNodeArgsPtr render = _imp->effect->getCurrentRender_TLS();
     if (render) {
-        return render->getInput(index);
+        return render->getInputNode(index);
     }
 
     QMutexLocker l(&_imp->inputsMutex);
@@ -328,9 +268,7 @@ Node::getInputInternal(bool useGroupRedirections,
     if (ret && useGroupRedirections) {
         ret = applyNodeRedirectionsUpstream(ret);
     }
-    if (renderCache) {
-        renderCache->setCachedInput(index, ret);
-    }
+
     return ret;
 }
 
@@ -614,15 +552,22 @@ checkCanConnectNoMultiRes(const Node* output,
     //Check that the input has the same RoD that another input and that its rod is set to 0,0
     RenderScale scale(1.);
     RectD rod;
-    ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0,
-                                                                                      output->getApp()->getTimeLine()->currentFrame(),
-                                                                                      scale,
-                                                                                      ViewIdx(0),
-                                                                                      &rod);
-
-    if (isFailureRetCode(stat) && !rod.isNull() ) {
+    {
+        GetRegionOfDefinitionResultsPtr actionResults;
+        ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(TimeValue(output->getApp()->getTimeLine()->currentFrame()),
+                                                                                          scale,
+                                                                                          ViewIdx(0),
+                                                                                          TreeRenderNodeArgsPtr(),
+                                                                                          &actionResults);
+        if (isFailureRetCode(stat)) {
+            return Node::eCanConnectInput_givenNodeNotConnectable;
+        }
+        rod = actionResults->getRoD();
+    }
+    if (rod.isNull()) {
         return Node::eCanConnectInput_givenNodeNotConnectable;
     }
+
     if ( (rod.x1 != 0) || (rod.y1 != 0) ) {
         return Node::eCanConnectInput_multiResNotSupported;
     }

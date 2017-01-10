@@ -891,8 +891,6 @@ public:
 
     void makeStroke(bool prepareForLater, const RotoPoint& p);
 
-    void checkViewersAreDirectlyConnected();
-
     void showMenuForControlPoint(const BezierCPPtr& cp);
 
     void showMenuForCurve(const BezierPtr & curve);

@@ -71,27 +71,9 @@ setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, c
 }
 
 template <typename T>
-bool
-Knob<T>::getValueFromExpression(TimeValue time,
-                                ViewIdx view,
-                                DimIdx dimension,
-                                bool clamp,
-                                T* ret)
+CacheEntryLockerPtr
+Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
 {
-    ///Prevent recursive call of the expression
-    if (getExpressionRecursionLevel() > 0) {
-        return false;
-    }
-
-    if (dimension < 0 || dimension >= getNDimensions()) {
-        throw std::invalid_argument("Knob::getValueFromExpression: dimension out of range");
-    }
-
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
-
-    // Check for a cached expression result
-
-
     KnobHolderPtr holder = getHolder();
     EffectInstancePtr effect = toEffectInstance(holder);
     KnobTableItemPtr tableItem = toKnobTableItem(holder);
@@ -116,27 +98,52 @@ Knob<T>::getValueFromExpression(TimeValue time,
     }
 
 
-    KnobExpressionKey cacheKey(effectHash, dimension, time, view, getName());
+    KnobExpressionKeyPtr cacheKey(new KnobExpressionKey(effectHash, dimension, time, view, getName()));
 
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+    CacheEntryLockerPtr locker = appPTR->getCache()->get(cacheKey);
 
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
+    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = locker->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-        cacheStatus = cacheAccess->waitForPendingEntry();
+        cacheStatus = locker->waitForPendingEntry();
     }
 
-    KnobExpressionResultPtr cachedResult;
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getCachedEntry());
+    return locker;
+
+} // getKnobExpresionResults
+
+template <typename T>
+bool
+Knob<T>::getValueFromExpression(TimeValue time,
+                                ViewIdx view,
+                                DimIdx dimension,
+                                bool clamp,
+                                T* ret)
+{
+    ///Prevent recursive call of the expression
+    if (getExpressionRecursionLevel() > 0) {
+        return false;
+    }
+
+    if (dimension < 0 || dimension >= getNDimensions()) {
+        throw std::invalid_argument("Knob::getValueFromExpression: dimension out of range");
+    }
+
+    ViewIdx view_i = getViewIdxFromGetSpec(view);
+
+    // Check for a cached expression result
+    CacheEntryLockerPtr cacheAccess = getKnobExpresionResults(time, view, dimension);
+
+    if (cacheAccess->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+        KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getCachedEntry());
         if (cachedResult) {
             getValueFromCachedExpressionResult(cachedResult, ret);
             return true;
         }
     }
-    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
-    cachedResult = KnobExpressionResult::create(cacheKey);
-
+    KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(boost::dynamic_pointer_cast<KnobExpressionKey>(cacheAccess->getKey()));
+    
+    
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
         EXPR_RECURSION_LEVEL();
@@ -158,7 +165,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
     }
 
     setValueFromCachedExpressionResult(cachedResult, *ret);
-    cacheAccess.setEntry(cachedResult);
+    cacheAccess->insertInCache(cachedResult);
 
     return true;
 } // getValueFromExpression
@@ -224,23 +231,18 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     
+    // Check for a cached expression result
+    CacheEntryLockerPtr cacheAccess = getKnobExpresionResults(time, view, dimension);
 
-    ///Check first if a value was already computed:
-
-
-    {
-        QMutexLocker k(&_defaultValueMutex);
-        typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
-        if (foundView != _exprRes[dimension].end()) {
-            typename FrameValueMap::iterator foundValue = foundView->second.find(time);
-            if ( foundValue != foundView->second.end() ) {
-                *ret = foundValue->second;
-
-                return true;
-            }
+    if (cacheAccess->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+        KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getCachedEntry());
+        if (cachedResult) {
+            getValueFromCachedExpressionResult<double>(cachedResult, ret);
+            return true;
         }
-        
     }
+
+    KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(boost::dynamic_pointer_cast<KnobExpressionKey>(cacheAccess->getKey()));
 
 
 
@@ -264,8 +266,10 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
         *ret =  clampToMinMax(*ret, dimension);
     }
     
-    //QWriteLocker k(&_valueMutex);
-    _exprRes[dimension][view_i][time] = *ret;
+
+    setValueFromCachedExpressionResult(cachedResult, *ret);
+    cacheAccess->insertInCache(cachedResult);
+
     
     return true;
 } // getValueFromExpression_pod
@@ -274,7 +278,7 @@ template <typename T>
 T
 Knob<T>::getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
                           const RenderValuesCachePtr& valuesCache,
-                          double tlsCurrentTime,
+                          TimeValue tlsCurrentTime,
                           DimIdx dimension,
                           ViewIdx view,
                           bool clamp)
@@ -320,8 +324,9 @@ Knob<T>::getValue(DimIdx dimension,
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
 
-    double tlsCurrentTime = 0;
-    RenderValuesCachePtr valuesCache = getHolderRenderValuesCache(&tlsCurrentTime);
+    TimeValue tlsCurrentTime(0);
+    ViewIdx tlsCurrentView;
+    RenderValuesCachePtr valuesCache = getHolderRenderValuesCache(&tlsCurrentTime, &tlsCurrentView);
     // Check if value is already in TLS when rendering
     if (valuesCache) {
         T ret;
@@ -499,7 +504,7 @@ Knob<T>::getValueAtTime(TimeValue time,
         }
     }
 
-    std::string hasExpr = getExpression(dimension);
+    std::string hasExpr = getExpression(dimension, view);
     if ( !hasExpr.empty() ) {
         T ret;
         if ( getValueFromExpression(time, /*view*/ ViewIdx(0), dimension, clamp, &ret) ) {
@@ -536,10 +541,10 @@ Knob<T>::getDerivativeAtTime(TimeValue time,
         throw std::invalid_argument("Knob::getDerivativeAtTime(): Dimension out of range");
     }
     {
-        std::string expr = getExpression(dimension);
+        std::string expr = getExpression(dimension, view);
         if ( !expr.empty() ) {
             // Compute derivative by finite differences, using values at t-0.5 and t+0.5
-            return ( getValueAtTime(time + 0.5, dimension, view) - getValueAtTime(time - 0.5, dimension, view) ) / 2.;
+            return ( getValueAtTime(TimeValue(time + 0.5), dimension, view) - getValueAtTime(TimeValue(time - 0.5), dimension, view) ) / 2.;
         }
     }
 
@@ -573,7 +578,7 @@ Knob<T>::getIntegrateFromTimeToTimeSimpson(TimeValue time1,
                                            DimIdx dimension)
 {
     double fa = getValueAtTime(time1, dimension, view);
-    double fm = getValueAtTime( (time1 + time2) / 2, dimension, view );
+    double fm = getValueAtTime( TimeValue((time1 + time2) / 2.), dimension, view );
     double fb = getValueAtTime(time2, dimension, view);
 
     return (time2 - time1) / 6 * (fa + 4 * fm + fb);
@@ -590,7 +595,7 @@ Knob<T>::getIntegrateFromTimeToTime(TimeValue time1,
         throw std::invalid_argument("Knob::getIntegrateFromTimeToTime(): Dimension out of range");
     }
     {
-        std::string expr = getExpression(dimension);
+        std::string expr = getExpression(dimension, view);
         if ( !expr.empty() ) {
             // Compute integral using Simpsons rule:
             // \int_a^b f(x) dx = (b-a)/6 * (f(a) + 4f((a+b)/2) + f(b))
@@ -604,15 +609,15 @@ Knob<T>::getIntegrateFromTimeToTime(TimeValue time1,
             // start integrating over the interval
             // first chunk
             if (time1 < i) {
-                val += getIntegrateFromTimeToTimeSimpson(time1, i, view, dimension);
+                val += getIntegrateFromTimeToTimeSimpson(time1, TimeValue(i), view, dimension);
             }
             // integer chunks
             for (int t = i; t < j; ++t) {
-                val += getIntegrateFromTimeToTimeSimpson(t, t + 1, view, dimension);
+                val += getIntegrateFromTimeToTimeSimpson(TimeValue(t), TimeValue(t + 1), view, dimension);
             }
             // last chunk
             if (j < time2) {
-                val += getIntegrateFromTimeToTimeSimpson(j, time2, view, dimension);
+                val += getIntegrateFromTimeToTimeSimpson(TimeValue(j), time2, view, dimension);
             }
 
             return val;
@@ -633,8 +638,8 @@ Knob<T>::getIntegrateFromTimeToTime(TimeValue time1,
 
 template<>
 double
-KnobStringBase::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
-                                                  double /*time2*/,
+KnobStringBase::getIntegrateFromTimeToTimeSimpson(TimeValue /*time1*/,
+                                                  TimeValue /*time2*/,
                                                   ViewIdx /*view*/,
                                                   DimIdx /*dimension*/)
 {
@@ -643,8 +648,8 @@ KnobStringBase::getIntegrateFromTimeToTimeSimpson(double /*time1*/,
 
 template<>
 double
-KnobStringBase::getIntegrateFromTimeToTime(double /*time1*/,
-                                           double /*time2*/,
+KnobStringBase::getIntegrateFromTimeToTime(TimeValue /*time1*/,
+                                           TimeValue /*time2*/,
                                            ViewIdx /*view*/,
                                            DimIdx /*dimension*/)
 {

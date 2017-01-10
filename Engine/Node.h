@@ -380,22 +380,6 @@ public:
     const std::vector< KnobIPtr > & getKnobs() const;
 
 
-    /*Returns in viewers the list of all the viewers connected to this node*/
-    void hasViewersConnected(std::list<ViewerInstancePtr>* viewers) const;
-
-    void hasOutputNodesConnected(std::list<EffectInstancePtr>* writers) const;
-
-private:
-
-    void hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
-                                     std::list<const Node*>* markedNodes) const;
-
-    void hasOutputNodesConnectedInternal(std::list<EffectInstancePtr >* writers,
-                                         std::list<const Node*>* markedNodes) const;
-
-public:
-
-
     /**
      * @brief If this node is an output node, return the render engine
      **/

@@ -473,6 +473,11 @@ CacheEntryLocker::init()
     }
 } // init
 
+CacheEntryKeyBasePtr
+CacheEntryLocker::getKey() const
+{
+    return _imp->key;
+}
 
 CacheEntryLocker::CacheEntryStatusEnum
 CacheEntryLocker::getStatus() const

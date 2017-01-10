@@ -294,7 +294,7 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
 
             // Be opaque for anything that doesn't contain alpha
             PIX srcA;
-            if (srcPixelPtrs[srcNComps - 1]) {
+            if (srcNComps > 0 && srcPixelPtrs[srcNComps - 1]) {
                 srcA = maxValue;
             } else {
                 srcA = 0;

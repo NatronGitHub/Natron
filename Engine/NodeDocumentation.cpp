@@ -25,6 +25,7 @@
 #include "NodePrivate.h"
 
 #include <QTextStream>
+#include <QFile>
 
 #include "Engine/Utils.h"
 
@@ -167,11 +168,11 @@ Node::makeDocumentation(bool genHTML) const
                 if (!isBtn && !isSep && !isParametric) {
                     if (isChoice) {
                         int index = isChoice->getDefaultValue(DimIdx(i));
-                        std::vector<std::string> entries = isChoice->getEntries();
+                        std::vector<ChoiceOption> entries = isChoice->getEntries();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
                             valueStr = QString::fromUtf8( entries[index].c_str() );
                         }
-                        std::vector<std::string> entriesHelp = isChoice->getEntriesHelp();
+                        std::vector<ChoiceOption> entriesHelp = isChoice->getEntriesHelp();
                         if ( entries.size() == entriesHelp.size() ) {
                             knobHint.append( QString::fromUtf8("\n\n") );
                             for (size_t i = 0; i < entries.size(); i++) {

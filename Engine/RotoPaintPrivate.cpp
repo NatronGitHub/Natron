@@ -967,37 +967,7 @@ isBranchConnectedToRotoNodeRecursive(const NodePtr& node,
     return false;
 }
 
-void
-RotoPaintInteract::checkViewersAreDirectlyConnected()
-{
-    NodePtr rotoNode = p->publicInterface->getNode();
-    std::list<ViewerInstancePtr> viewers;
 
-    rotoNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        NodePtr viewerNode = (*it)->getNode();
-        int maxInputs = viewerNode->getMaxInputCount();
-        int hasBranchConnectedToRoto = -1;
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = viewerNode->getInput(i);
-            if (input) {
-                std::list<NodePtr> markedNodes;
-                int recursion = 0;
-                if ( isBranchConnectedToRotoNodeRecursive(input, rotoNode, &recursion, markedNodes) ) {
-                    if (recursion == 0) {
-                        //This viewer is already connected to the Roto node directly.
-                        break;
-                    }
-                    viewerNode->disconnectInput(i);
-                    if (hasBranchConnectedToRoto == -1) {
-                        viewerNode->connectInput(rotoNode, i);
-                        hasBranchConnectedToRoto = i;
-                    }
-                }
-            }
-        }
-    }
-}
 
 void
 RotoPaintInteract::makeStroke(bool prepareForLater,

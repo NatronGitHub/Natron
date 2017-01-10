@@ -826,8 +826,7 @@ struct RenderViewerArgs
  *@brief Actually converting to ARGB... but it is called BGRA by
  the texture format GL_UNSIGNED_INT_8_8_8_8_REV
  **/
-static
-unsigned int
+inline unsigned int
 toBGRA(unsigned char r,
        unsigned char g,
        unsigned char b,

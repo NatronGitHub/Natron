@@ -260,7 +260,6 @@ RemoveMultipleNodesCommand::~RemoveMultipleNodesCommand()
 void
 RemoveMultipleNodesCommand::undo()
 {
-    std::list<ViewerInstancePtr> viewersToRefresh;
     std::list<SequenceTime> allKeysToAdd;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
 
@@ -281,24 +280,16 @@ RemoveMultipleNodesCommand::undo()
 
         node->getNode()->activate(outputsToRestore, false, false);
 
-        std::list<ViewerInstancePtr> viewers;
-        node->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
-            if ( foundViewer == viewersToRefresh.end() ) {
-                viewersToRefresh.push_back(*it2);
-            }
-        }
 
         // increment for next iteration
         if ( next != _nodes.end() ) {
             ++next;
         }
     } // for(it)
-    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
+
+
     _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->renderAllViewers();
     _graph->getGui()->getApp()->redrawAllViewers();
     _graph->updateNavigator();
 
@@ -312,7 +303,6 @@ RemoveMultipleNodesCommand::redo()
 {
     _isRedone = true;
 
-    std::list<ViewerInstancePtr> viewersToRefresh;
     std::list<NodeToRemove>::iterator next = _nodes.begin();
     if ( next != _nodes.end() ) {
         ++next;
@@ -323,14 +313,6 @@ RemoveMultipleNodesCommand::redo()
         NodeGuiPtr node = it->node.lock();
         ///Make a copy before calling deactivate which will modify the list
         NodesWList outputs = node->getNode()->getOutputs();
-        std::list<ViewerInstancePtr> viewers;
-        node->getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-            std::list<ViewerInstancePtr>::iterator foundViewer = std::find(viewersToRefresh.begin(), viewersToRefresh.end(), *it2);
-            if ( foundViewer == viewersToRefresh.end() ) {
-                viewersToRefresh.push_back(*it2);
-            }
-        }
 
         NodesList outputsToRestore;
         for (NodesWList::const_iterator it2 = it->outputsToRestore.begin(); it2 != it->outputsToRestore.end(); ++it2) {
@@ -365,12 +347,6 @@ RemoveMultipleNodesCommand::redo()
                             NodePtr input = inputs[i].lock();
                             if (input) {
                                 isViewer->connectInputToIndex(i, 0);
-                                ///make sure we don't refresh it a second time
-                                std::list<ViewerInstancePtr>::iterator foundViewer =
-                                    std::find( viewersToRefresh.begin(), viewersToRefresh.end(), isViewer->getInternalViewerNode() );
-                                if ( foundViewer != viewersToRefresh.end() ) {
-                                    viewersToRefresh.erase(foundViewer);
-                                }
                                 break;
                             }
                         }
@@ -385,11 +361,8 @@ RemoveMultipleNodesCommand::redo()
         }
     } // for(it)
 
-    for (std::list<ViewerInstancePtr>::iterator it = viewersToRefresh.begin(); it != viewersToRefresh.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
     _graph->getGui()->getApp()->triggerAutoSave();
+    _graph->getGui()->getApp()->renderAllViewers();
     _graph->getGui()->getApp()->redrawAllViewers();
     _graph->updateNavigator();
 
@@ -627,12 +600,7 @@ InsertNodeCommand::redo()
     newSrcInternal->endInputEdition(false);
     dstInternal->endInputEdition(false);
 
-    std::list<ViewerInstancePtr> viewers;
-    dstInternal->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it2 = viewers.begin(); it2 != viewers.end(); ++it2) {
-        (*it2)->renderCurrentFrame(true);
-    }
-
+   _graph->getGui()->getApp()->renderAllViewers();
     _graph->update();
 } // InsertNodeCommand::redo
 
@@ -1263,7 +1231,6 @@ ExtractNodeUndoRedoCommand::~ExtractNodeUndoRedoCommand()
 void
 ExtractNodeUndoRedoCommand::undo()
 {
-    std::set<ViewerInstancePtr> viewers;
 
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it != _trees.end(); ++it) {
         NodeGuiPtr output = it->output.node.lock();
@@ -1303,18 +1270,9 @@ ExtractNodeUndoRedoCommand::undo()
             node->refreshPosition(curPos.x() - 200, curPos.y(), true);
         }
 
-        std::list<ViewerInstancePtr> tmp;
-        output->getNode()->hasViewersConnected(&tmp);
-
-        for (std::list<ViewerInstancePtr>::iterator it2 = tmp.begin(); it2 != tmp.end(); ++it2) {
-            viewers.insert(*it2);
-        }
     }
 
-    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
+    _graph->getGui()->getApp()->renderAllViewers();
     _graph->getGui()->getApp()->triggerAutoSave();
     setText( tr("Extract node") );
 } // ExtractNodeUndoRedoCommand::undo
@@ -1322,16 +1280,10 @@ ExtractNodeUndoRedoCommand::undo()
 void
 ExtractNodeUndoRedoCommand::redo()
 {
-    std::set<ViewerInstancePtr> viewers;
 
     for (std::list<ExtractedTree>::iterator it = _trees.begin(); it != _trees.end(); ++it) {
-        std::list<ViewerInstancePtr> tmp;
         NodeGuiPtr output = it->output.node.lock();
-        output->getNode()->hasViewersConnected(&tmp);
 
-        for (std::list<ViewerInstancePtr>::iterator it2 = tmp.begin(); it2 != tmp.end(); ++it2) {
-            viewers.insert(*it2);
-        }
 
         bool outputsAlreadyDisconnected = false;
 
@@ -1398,10 +1350,7 @@ ExtractNodeUndoRedoCommand::redo()
         }
     }
 
-    for (std::set<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
+    _graph->getGui()->getApp()->renderAllViewers();
     _graph->getGui()->getApp()->triggerAutoSave();
 
 

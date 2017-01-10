@@ -1213,7 +1213,7 @@ KnobHelper::setSecret(bool b)
         if (holder) {
             AppInstancePtr app = holder->getApp();
             if (app) {
-                onTimeChanged( false, app->getTimeLine()->currentFrame() );
+                onTimeChanged( false, TimeValue(app->getTimeLine()->currentFrame()) );
             }
         }
     }
@@ -2501,12 +2501,12 @@ KnobHelper::getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags)
 
 }
 
-double
+TimeValue
 KnobHelper::getCurrentTime_TLS() const
 {
     KnobHolderPtr holder = getHolder();
 
-    return holder && holder->getApp() ? holder->getCurrentTime_TLS() : 0;
+    return holder && holder->getApp() ? holder->getCurrentTime_TLS() : TimeValue(0);
 }
 
 ViewIdx
@@ -3032,11 +3032,11 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
     } else if (isChoice) {
         knobSer->_dataType = eSerializationValueVariantTypeString;
         //serialization->_defaultValue.isString
-        std::vector<std::string> entries = isChoice->getEntries();
+        std::vector<ChoiceOption> entries = isChoice->getEntries();
         int defIndex = isChoice->getDefaultValue(dimension);
         std::string defaultValueChoice;
         if (defIndex >= 0 && defIndex < (int)entries.size()) {
-            defaultValueChoice = entries[defIndex];
+            defaultValueChoice = entries[defIndex].id;
         }
         defValue->value.isString = defaultValueChoice;
         defValue->serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
@@ -3164,7 +3164,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
 
         } else if (isChoice) {
-            serialization->_value.isString = isChoice->getActiveEntryText(view);
+            serialization->_value.isString = isChoice->getActiveEntryID(view);
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
         }
     }
@@ -3281,9 +3281,9 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
 
         if (foundValue == -1) {
             // Just remember the active entry if not found
-            isChoice->setActiveEntryText(obj._value.isString, view);
+            isChoice->setActiveEntryID(obj._value.isString, view);
         } else {
-            isChoice->setActiveEntryText(matchedEntry, view);
+            isChoice->setActiveEntryID(matchedEntry, view);
             isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
         }
 
@@ -3477,8 +3477,14 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
-            extraData->_entries = isChoice->getEntries();
-            extraData->_helpStrings = isChoice->getEntriesHelp();
+            std::vector<ChoiceOption> options = isChoice->getEntries();
+            std::vector<std::string> ids(options.size()), helps(options.size());
+            for (std::size_t i = 0; i < options.size(); ++i) {
+                ids[i] = options[i].id;
+                helps[i] = options[i].tooltip;
+            }
+            extraData->_entries = ids;
+            extraData->_helpStrings = helps;
             serialization->_extraData.reset(extraData);
         }
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
@@ -3693,10 +3699,9 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
             if (data) {
                 std::vector<ChoiceOption> options(data->_entries.size());
                 for (std::size_t i = 0; i < data->_entries.size(); ++i) {
-                    ChoiceOption& option = data->_entries[i];
-                    option.id = data->_entries[i];
+                    options[i].id = data->_entries[i];
                     if (i < data->_helpStrings.size()) {
-                        option.tooltip = data->_helpStrings[i];
+                        options[i].tooltip = data->_helpStrings[i];
                     }
                 }
                 isChoice->populateChoices(options);

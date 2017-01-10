@@ -131,6 +131,11 @@ public:
     ~CacheEntryLocker();
 
     /**
+     * @brief Returns the key that was passed to the ctor
+     **/
+    CacheEntryKeyBasePtr getKey() const;
+
+    /**
      * @brief Returns the cache entry status
      **/
     CacheEntryStatusEnum getStatus() const;

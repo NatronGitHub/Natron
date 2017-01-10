@@ -1257,7 +1257,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 
     // third, case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if ( boost::iequals(entries[i], choice) ) {
+        if ( boost::iequals(entries[i].id, choice) ) {
             if (matchedEntry) {
                 *matchedEntry = entries[i].id;
             }

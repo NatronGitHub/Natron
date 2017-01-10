@@ -390,19 +390,10 @@ void
 OfxImageEffectInstance::getRenderScaleRecursive(double &x,
                                                 double &y) const
 {
-    assert( getOfxEffectInstance() );
-    std::list<ViewerInstancePtr> attachedViewers;
-    getOfxEffectInstance()->getNode()->hasViewersConnected(&attachedViewers);
-    ///get the render scale of the 1st viewer
-    if ( !attachedViewers.empty() ) {
-        ViewerNodePtr first = attachedViewers.front()->getViewerNodeGroup();
-        int mipMapLevel = first->getProxyModeKnobMipMapLevel();
-        x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
-        y = x;
-    } else {
-        x = 1.;
-        y = 1.;
-    }
+
+    x = 1.;
+    y = 1.;
+
 }
 
 OfxStatus

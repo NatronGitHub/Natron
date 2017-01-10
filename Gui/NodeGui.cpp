@@ -1908,11 +1908,7 @@ NodeGui::activate(bool triggerRender)
     _graph->restoreFromTrash( shared_from_this() );
 
     if (triggerRender) {
-        std::list<ViewerInstancePtr> viewers;
-        getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->renderCurrentFrame(true);
-        }
+        _graph->getGui()->getApp()->renderAllViewers();
     }
 }
 
@@ -1992,11 +1988,7 @@ NodeGui::deactivate(bool triggerRender)
     }
 
     if (triggerRender) {
-        std::list<ViewerInstancePtr> viewers;
-        getNode()->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->renderCurrentFrame(true);
-        }
+        _graph->getGui()->getApp()->renderAllViewers();
     }
 }
 
@@ -2849,11 +2841,7 @@ NodeGui::onSwitchInputActionTriggered()
 
     if (node->getMaxInputCount() >= 2) {
         node->switchInput0And1();
-        std::list<ViewerInstancePtr> viewers;
-        node->hasViewersConnected(&viewers);
-        for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-            (*it)->renderCurrentFrame(true);
-        }
+        _graph->getGui()->getApp()->renderAllViewers();
         update();
         node->getApp()->triggerAutoSave();
     }

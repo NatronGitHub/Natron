@@ -309,10 +309,10 @@ public:
     void onRenderStarted(const QString & sequenceName,
                          TimeValue firstFrame, TimeValue lastFrame, TimeValue frameStep,
                          bool canPause,
-                         const EffectInstancePtr& writer,
+                         const NodePtr& writer,
                          const ProcessHandlerPtr & process);
 
-    void onRenderRestarted(const EffectInstancePtr& writer,
+    void onRenderRestarted(const NodePtr& writer,
                            const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;

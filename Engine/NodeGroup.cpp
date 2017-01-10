@@ -762,14 +762,6 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
             ret = false;
         }
     }
-
-    ///update the render trees
-    std::list<ViewerInstancePtr> viewers;
-    created->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
     return ret;
 } // autoConnectNodes
 

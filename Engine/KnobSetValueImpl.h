@@ -191,7 +191,7 @@ Knob<T>::setValue(const T & v,
     TimeValue time = getCurrentTime_TLS();
 
     // Check if we can add automatically a new keyframe
-    if (isAutoKeyingEnabled(dimension, view, reason)) {
+    if (isAutoKeyingEnabled(dimension, time, view, reason)) {
         return setValueAtTime(time, v, view, dimension, reason, newKey);
     }
 
@@ -613,7 +613,7 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
 
     // Prevent clearExpression from triggereing evaluateValueChange with a reason different than eValueChangedReasonRestoreDefault
     blockValueChanges();
-    clearExpression(dimension, view, true);
+    clearExpression(dimension, view);
     resetExtraToDefaultValue(dimension, view);
     unblockValueChanges();
 
@@ -657,7 +657,7 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     ///A KnobDoubleBase is not always a KnobDouble (it can also be a KnobColor)
     KnobDouble* isDouble = dynamic_cast<KnobDouble*>(this);
 
-    clearExpression(dimension, view, true);
+    clearExpression(dimension, view);
 
 
     resetExtraToDefaultValue(dimension, view);

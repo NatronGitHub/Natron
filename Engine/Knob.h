@@ -2285,7 +2285,7 @@ private:
 
     T getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
                        const RenderValuesCachePtr& valuesCache,
-                       double currentTime,
+                       TimeValue currentTime,
                        DimIdx dimension,
                        ViewIdx view,
                        bool clamp);
@@ -2312,6 +2312,7 @@ private:
      */
     bool evaluateExpression_pod(TimeValue time, ViewIdx view, DimIdx dimension, double* value, std::string* error);
 
+    CacheEntryLockerPtr getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension);
 
     bool getValueFromExpression(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 

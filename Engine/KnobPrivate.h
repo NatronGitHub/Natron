@@ -359,6 +359,7 @@ struct KnobHelperPrivate
      **/
     std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view);
 
+
 };
 
 
@@ -446,10 +447,7 @@ private:
     std::string _knobScriptName;
 };
 
-typedef boost::shared_ptr<KnobExpressionKey> KnobExpressionKeyPtr;
 
-class KnobExpressionResult;
-typedef boost::shared_ptr<KnobExpressionResult> KnobExpressionResultPtr;
 class KnobExpressionResult : public CacheEntryBase
 {
     KnobExpressionResult();

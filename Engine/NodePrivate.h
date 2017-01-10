@@ -37,7 +37,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
-#endif
 
 #include <QtCore/QCoreApplication>
 #include <QtCore/QMutex>

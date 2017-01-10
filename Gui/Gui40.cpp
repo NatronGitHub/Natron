@@ -38,6 +38,7 @@
 #include <QtGui/QScreen>
 #endif
 
+#include <QDebug>
 #include <QAction>
 #include <QApplication> // qApp
 
@@ -49,6 +50,8 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
@@ -492,66 +495,79 @@ Gui::debugImage(const Image* image,
             return;
         }
     }
+
+
+    if (image->getStorageMode() != eStorageModeRAM && image->getStorageMode() != eStorageModeDisk) {
+        qDebug() << "Only CPU images supported";
+        return;
+    }
+
+    if (image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled) {
+        qDebug() << "Only Full rect image supported";
+        return;
+    }
+
+    if (image->getBitDepth() != eImageBitDepthFloat) {
+        qDebug() << "Only float image supported";
+        return;
+    }
+
+    Image::CPUTileData imageData;
+    {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
+
     QImage output(renderWindow.width(), renderWindow.height(), QImage::Format_ARGB32);
     const Color::Lut* lut = Color::LutManager::sRGBLut();
     lut->validate();
-    Image::ReadAccess acc = image->getReadRights();
-    const float* from = (const float*)acc.pixelAt( renderWindow.left(), renderWindow.bottom() );
-    assert(from);
-    int srcNComps = (int)image->getComponentsCount();
-    int srcRowElements = srcNComps * bounds.width();
 
-    for ( int y = renderWindow.height() - 1; y >= 0; --y,
-          from += ( srcRowElements - srcNComps * renderWindow.width() ) ) {
+
+    for ( int y = renderWindow.height() - 1; y >= 0; --y ) {
+
+        const float* src_pixels[4];
+        int pixelStride;
+        Image::getChannelPointers<float>((const float**)imageData.ptrs, renderWindow.x1, y, imageData.tileBounds, imageData.nComps, (float**)src_pixels, &pixelStride);
+
         QRgb* dstPixels = (QRgb*)output.scanLine(y);
         assert(dstPixels);
 
-        unsigned error_r = 0x80;
-        unsigned error_g = 0x80;
-        unsigned error_b = 0x80;
+        unsigned error[3] = {0x80, 0x80, 0x80};
 
-        for (int x = 0; x < renderWindow.width(); ++x, from += srcNComps, ++dstPixels) {
-            float r, g, b, a;
-            switch (srcNComps) {
-            case 1:
-                r = g = b = *from;
-                a = 1;
-                break;
-            case 2:
-                r = *from;
-                g = *(from + 1);
-                b = 0;
-                a = 1;
-                break;
-            case 3:
-                r = *from;
-                g = *(from + 1);
-                b = *(from + 2);
-                a = 1;
-                break;
-            case 4:
-                r = *from;
-                g = *(from + 1);
-                b = *(from + 2);
-                a = *(from + 3);
-                break;
-            default:
-                assert(false);
+        for (int x = 0; x < renderWindow.width(); ++x, ++dstPixels) {
+            float tmpPix[4] = {0, 0, 0, 1};
+            switch (imageData.nComps) {
+                case 1:
+                    tmpPix[0] = tmpPix[1] = tmpPix[2] = *src_pixels[0];
+                    tmpPix[3] = 1;
+                    break;
+                case 2:
+                case 3:
+                case 4: {
+                    for (int i = 0; i < imageData.nComps; ++i) {
+                        tmpPix[i] = *src_pixels[i];
+                        if (i < 3) {
+                            error[i] = (error[i] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[i]);
+                            assert(error[i] < 0x10000);
+                        }
+                    }
+                }   break;
 
-                return;
+                default:
+                    assert(false);
+                    
+                    return;
             }
-            error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
-            error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
-            error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
-            assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-            *dstPixels = qRgba( U8(error_r >> 8),
-                                U8(error_g >> 8),
-                                U8(error_b >> 8),
-                                U8(a * 255) );
+            *dstPixels = qRgba( U8(error[0] >> 8),
+                                U8(error[1] >> 8),
+                                U8(error[2] >> 8),
+                                U8(tmpPix[3] * 255) );
         }
     }
 
-    U64 hashKey = image->getHashKey();
+    U64 hashKey = rand();
     QString hashKeyStr = QString::number(hashKey);
     QString realFileName = filename.isEmpty() ? QString( hashKeyStr + QString::fromUtf8(".png") ) : filename;
 #ifdef DEBUG
@@ -676,7 +692,9 @@ void
 Gui::renderAllWriters()
 {
     try {
-        getApp()->startWritersRenderingFromNames( areRenderStatsEnabled(), false, std::list<std::string>(), std::list<std::pair<int, std::pair<int, int> > >() );
+        std::list<RenderQueue::RenderWork> requests;
+        getApp()->getRenderQueue()->createRenderRequestsFromCommandLineArgs(areRenderStatsEnabled(), std::list<std::string>(), std::list<std::pair<int, std::pair<int, int> > >(), requests);
+        getApp()->getRenderQueue()->renderNonBlocking(requests);
     } catch (const std::exception& e) {
         Dialogs::warningDialog( tr("Render").toStdString(), e.what() );
     }
@@ -698,7 +716,7 @@ Gui::renderSelectedNode()
 
         return;
     }
-    std::list<AppInstance::RenderWork> workList;
+    std::list<RenderQueue::RenderWork> workList;
     bool useStats = getApp()->isRenderStatsActionChecked();
     for (NodesGuiList::const_iterator it = selectedNodes.begin();
          it != selectedNodes.end(); ++it) {
@@ -714,12 +732,8 @@ Gui::renderSelectedNode()
             if ( !internalNode->isDoingSequentialRender() ) {
                 //if ((*it)->getNode()->is)
                 ///if the node is a writer, just use it to render!
-                AppInstance::RenderWork w;
-                w.writer = effect;
-                assert(w.writer);
-                w.firstFrame = INT_MIN;
-                w.lastFrame = INT_MAX;
-                w.frameStep = INT_MIN;
+                RenderQueue::RenderWork w;
+                w.treeRoot = internalNode;
                 w.useRenderStats = useStats;
                 workList.push_back(w);
             }
@@ -734,19 +748,15 @@ Gui::renderSelectedNode()
                 args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
                 NodePtr writer = getApp()->createWriter( std::string(), args );
                 if (writer) {
-                    AppInstance::RenderWork w;
-                    w.writer = writer->getEffectInstance();
-                    assert(w.writer);
-                    w.firstFrame = INT_MIN;
-                    w.lastFrame = INT_MAX;
-                    w.frameStep = INT_MIN;
+                    RenderQueue::RenderWork w;
+                    w.treeRoot = writer;
                     w.useRenderStats = useStats;
                     workList.push_back(w);
                 }
             }
         }
     }
-    getApp()->renderWritersNonBlocking(workList);
+    getApp()->getRenderQueue()->renderNonBlocking(workList);
 } // Gui::renderSelectedNode
 
 void
@@ -809,7 +819,7 @@ Gui::onTimelineTimeAboutToChange()
     assert( QThread::currentThread() == qApp->thread() );
     const std::list<ViewerTab*>& viewers = getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        RenderEnginePtr engine = (*it)->getInternalNode()->getRenderEngine();
+        RenderEnginePtr engine = (*it)->getInternalNode()->getNode()->getRenderEngine();
         engine->abortRenderingAutoRestart();
     }
 }
@@ -825,7 +835,7 @@ Gui::onMustRefreshViewersAndKnobsLaterReceived()
     TimeLinePtr timeline = getApp()->getTimeLine();
 
     TimelineChangeReasonEnum reason = timeline->getLastSeekReason();
-    int frame = timeline->currentFrame();
+    TimeValue frame(timeline->currentFrame());
 
     assert( QThread::currentThread() == qApp->thread() );
     if ( (reason == eTimelineChangeReasonUserSeek) ||
@@ -856,15 +866,14 @@ Gui::onMustRefreshViewersAndKnobsLaterReceived()
     ///Syncrhronize viewers
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         ViewerNodePtr internalNode =  (*it)->getInternalNode() ;
-        ViewerInstancePtr instance = internalNode->getInternalViewerNode();
-        if ( (instance == leadViewer ) && isPlayback ) {
+        if ( (internalNode == leadViewer ) && isPlayback ) {
             continue;
         }
-        if ( instance->isDoingPartialUpdates() ) {
+        if ( internalNode->isDoingPartialUpdates() ) {
             //When tracking, we handle rendering separatly
             continue;
         }
-        instance->renderCurrentFrame(!isPlayback);
+        internalNode->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 } // onMustRefreshViewersAndKnobsLaterReceived
 

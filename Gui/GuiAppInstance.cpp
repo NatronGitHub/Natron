@@ -840,7 +840,7 @@ void
 GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 {
     if (_imp->_previewProvider && _imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
-        _imp->_previewProvider->viewerUI->getInternalNode()->renderCurrentFrame(true);
+        _imp->_previewProvider->viewerUI->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 }
 
@@ -850,15 +850,6 @@ GuiAppInstance::isGuiFrozen() const
     return _imp->_gui ? _imp->_gui->isGUIFrozen() : false;
 }
 
-void
-GuiAppInstance::clearViewersLastRenderedTexture()
-{
-    std::list<ViewerTab*> tabs = _imp->_gui->getViewersList_mt_safe();
-
-    for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        (*it)->getViewer()->clearLastRenderedTexture();
-    }
-}
 
 void
 GuiAppInstance::redrawAllViewers()
