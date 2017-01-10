@@ -40,7 +40,7 @@ fi
 
 OPTS=("--no-settings")
 if [ -n "${OFX_PLUGIN_PATH:-}" ]; then
-    OPTS=(${OPTS[@]+"${OPTS[@]}" "-c" "NatronEngine.natron.getSettings().getParam(\"useStdOFXPluginsLocation\").setValue(False)")
+    OPTS=(${OPTS[@]+"${OPTS[@]}" "--setting" "useStdOFXPluginsLocation=False")
 fi
 
 touch "$TMP_FOLDER/dummy.ntp"

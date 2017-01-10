@@ -349,6 +349,8 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         return;
     }
 
+    executeCommandLinePythonCommands(cl);
+
     /// If this is the first instance of the software, try to load an autosave
     if ( (getAppID() == 0) && cl.getScriptFilename().isEmpty() ) {
         if ( findAndTryLoadUntitledAutoSave() ) {
