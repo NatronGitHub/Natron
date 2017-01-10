@@ -150,6 +150,8 @@ protected:
 
     virtual void loadInternal(const CLArgs& cl, bool makeEmptyInstance);
 
+    void executeCommandLinePythonCommands(const CLArgs& args);
+
 public:
 
     int getAppID() const;

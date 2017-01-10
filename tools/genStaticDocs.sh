@@ -8,9 +8,9 @@
 set -u
 set -e
 
-NATRON_BIN=${1:-}
-TMP_FOLDER=${2:-}
-DOC_FOLDER=${3:-}
+NATRON_BIN="${1:-}"
+TMP_FOLDER="${2:-}"
+DOC_FOLDER="${3:-}"
 
 if [ -z "$NATRON_BIN" ] || [ -z "$TMP_FOLDER" ] || [ -z "$DOC_FOLDER" ]; then
   echo "Usage: script NATRON_RENDERER TMP_FOLDER DOC_FOLDER"
@@ -22,6 +22,10 @@ PANDOC=pandoc
 SED=sed
 if [ "$(uname -s)" = "Darwin" ]; then
     SED=gsed
+fi
+
+if [ -d "$DOC_FOLDER/source" ]; then
+    rm -rf "$DOC_FOLDER/source/_group*" "$DOC_FOLDER/source/_prefs.rst" "$DOC_FOLDER/source/plugins" || true
 fi
 
 if [ ! -d "$TMP_FOLDER" ]; then
@@ -38,8 +42,13 @@ if [ ! -d "$DOC_FOLDER/source/plugins" ]; then
   mkdir -p "$DOC_FOLDER/source/plugins" || exit 1
 fi
 
+OPTS=("--no-settings")
+if [ -n "${OFX_PLUGIN_PATH:-}" ]; then
+    OPTS=(${OPTS[@]+"${OPTS[@]}"} "--setting" "useStdOFXPluginsLocation=False")
+fi
+
 touch "$TMP_FOLDER/dummy.ntp"
-"$NATRON_BIN" --export-docs "$TMP_FOLDER" "$TMP_FOLDER/dummy.ntp"
+"$NATRON_BIN" ${OPTS[@]+"${OPTS[@]}"} --export-docs "$TMP_FOLDER" "$TMP_FOLDER/dummy.ntp"
 rm "$TMP_FOLDER/dummy.ntp"
 
 pushd "$TMP_FOLDER"
