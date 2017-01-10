@@ -28,7 +28,7 @@ if {${subport} ne "ilmbase"} {
 }
 
 if {${subport} eq ${name}} {
-    revision 1
+    revision 2
 
     depends_lib-append port:ilmbase
 
@@ -61,6 +61,13 @@ if {${subport} eq ${name}} {
     # see #51470 for MacPorts report
     # see https://github.com/openexr/openexr/issues/128 for upstream report
         patchfiles-append patch-pic.diff
+
+    # code generated with -Os on clang-3.9 crashes openexr in
+    # #0  Imf_2_2::DwaCompressor::initializeFuncs () at ImfDwaCompressor.cpp:2865
+    # -O, -O2, -O3 work, though
+    if { ${configure.compiler} eq "macports-clang-3.9" } {
+        configure.optflags "-O2"
+    }
 }
 
 subport ilmbase {

@@ -1,16 +1,30 @@
---- Portfile.orig	2016-09-23 15:36:10.000000000 +0200
-+++ Portfile	2016-10-19 16:32:00.000000000 +0200
-@@ -61,9 +61,7 @@
+--- Portfile.orig	2017-01-03 10:50:19.000000000 +0100
++++ Portfile	2017-01-10 23:50:19.000000000 +0100
+@@ -28,7 +28,7 @@
+ }
+ 
+ if {${subport} eq ${name}} {
+-    revision 1
++    revision 2
+ 
+     depends_lib-append port:ilmbase
+ 
+@@ -60,8 +60,13 @@
      # avoid "can't find a register in class 'BREG' while reloading 'asm'
      # see #51470 for MacPorts report
      # see https://github.com/openexr/openexr/issues/128 for upstream report
 -    if { ${build_arch} eq "i386" && [string match *gcc-4* ${configure.compiler}] } {
          patchfiles-append patch-pic.diff
--    }
++
++    # code generated with -Os on clang-3.9 crashes openexr in
++    # #0  Imf_2_2::DwaCompressor::initializeFuncs () at ImfDwaCompressor.cpp:2865
++    # -O, -O2, -O3 work, though
++    if { ${configure.compiler} eq "macports-clang-3.9" } {
++        configure.optflags "-O2"
+     }
  }
  
- subport ilmbase {
-@@ -72,6 +70,11 @@
+@@ -71,6 +76,11 @@
          rmd160  b1adb0c96eff6b3554ddaf8f8bafe2cba8c114e3 \
          sha256  ecf815b60695555c1fbc73679e84c7c9902f4e8faa6e8000d2f905b8b86cedc7
  
