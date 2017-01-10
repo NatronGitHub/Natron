@@ -4542,7 +4542,7 @@ Node::makeDocumentation(bool genHTML) const
 
 
     // generate plugin info
-    ms << pluginLabel << "\n==========\n\n";
+    ms << tr("%1 node").arg(pluginLabel) << "\n==========\n\n";
 
     // a hack to avoid repeating the documentation for the various merge plugins
     if ( pluginID.startsWith( QString::fromUtf8("net.sf.openfx.Merge") ) ) {
@@ -4570,9 +4570,14 @@ Node::makeDocumentation(bool genHTML) const
             op = "screen";
         }
         if ( !op.empty() ) {
-            ms << tr("The %1 node is an alias of the %2 node, with the operator set to **%3** by default.")
+            // we should use the custom link "[Merge node](|http::/plugins/"PLUGINID_OFX_MERGE".html||rst::net.sf.openfx.MergePlugin|)"
+            // but pandoc borks it
+            ms << tr("The *%1* node is a convenience node identical to the %2, except that the operator is set to *%3* by default.")
             .arg(pluginLabel)
-            .arg(genHTML ? QString::fromUtf8("<a href=\""PLUGINID_OFX_MERGE".html\">Merge</a>") : QString::fromUtf8("Merge"))
+            .arg(genHTML ? QString::fromUtf8("<a href=\""PLUGINID_OFX_MERGE".html\">Merge node</a>") :
+                 QString::fromUtf8(":ref:`"PLUGINID_OFX_MERGE"`")
+                 //QString::fromUtf8("[Merge node](http::/plugins/"PLUGINID_OFX_MERGE".html)")
+                 )
             .arg( QString::fromUtf8( op.c_str() ) );
             goto OUTPUT;
         }

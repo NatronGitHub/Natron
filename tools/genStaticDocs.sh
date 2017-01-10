@@ -70,6 +70,11 @@ for z in "$TMP_FOLDER"/plugins/*.rst; do
   # removes html::* and convert rst::* to a proper RST link, example: :ref:`linux<Linux>`
   $SED -i 's/<|html::.*||/|/g;s/|rst::\(.*\)|>.*__/:ref:\`\1\`/g' "${z}"
 
+  # We insert rst-style refs in markdown as :ref:`label`, and pandoc
+  # transforms these to :ref:``label`` - let's remove those double quotes
+  # see sources/plugins/net.sf.openfx.MergeIn.rst for an example
+  $SED -i 's/:ref:``\([^`]*\)``/:ref:`\1`/g' "${z}"
+  
   cp "$z" "$DOC_FOLDER/source/plugins" || exit 1
 done
 
