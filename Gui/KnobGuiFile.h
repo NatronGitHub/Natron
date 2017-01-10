@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/TimeValue.h"
 #include "Gui/KnobGuiTable.h"
 #include "Gui/KnobGuiWidgets.h"
 #include "Gui/GuiFwd.h"

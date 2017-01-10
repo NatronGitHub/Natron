@@ -648,7 +648,7 @@ OutputSchedulerThread::startRender()
     if (isWrite) {
         NodePtr embeddedWriter = isWrite->getEmbeddedWriter();
         if (embeddedWriter) {
-            node = embeddedWriter->getEffectInstance();
+            node = embeddedWriter;
         }
     }
     SequentialPreferenceEnum pref = node->getEffectInstance()->getSequentialPreference();

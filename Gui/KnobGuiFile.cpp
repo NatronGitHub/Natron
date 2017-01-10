@@ -329,7 +329,7 @@ bool
 KnobGuiFile::checkFileModificationAndWarn(SequenceTime time,
                                           bool errorAndAbortRender)
 {
-    return checkFileModificationAndWarnInternal(true, time, errorAndAbortRender);
+    return checkFileModificationAndWarnInternal(true, TimeValue(time), errorAndAbortRender);
 }
 
 void
