@@ -26,8 +26,9 @@
 
 #include <stdexcept>
 
-#include <QString>
-#include <QChar>
+#include <QtCore/QString>
+#include <QtCore/QChar>
+#include <QtCore/QDebug>
 
 NATRON_NAMESPACE_ENTER;
 
@@ -101,6 +102,97 @@ convertFromPlainText(const QString &plain,
     }
 
     return rich;
+} // convertFromPlainText
+
+// use genHTML=true when generating markdown for hoedown. false for pandoc
+QString
+convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTableElement)
+{
+    QString escaped;
+    // we trim table elements
+    QString plain = isTableElement ? plain_.trimmed() : plain_;
+    // the following chars must be backslash-escaped in markdown:
+    // \    backslash
+    // `    backtick
+    // *    asterisk
+    // _    underscore
+    // {}   curly braces
+    // []   square brackets
+    // ()   parentheses
+    // #    hash mark
+    // +    plus sign
+    // -    minus sign (hyphen)
+    // .    dot
+    // !    exclamation mark
+
+    // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+    // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+    // genStaticDocs.sh script by a simple sed command after converting to RsT
+    bool isMultilineElement = isTableElement && plain.contains(QLatin1Char('\n'));
+    if (isMultilineElement && !genHTML) {
+        escaped += QString::fromUtf8(". ");
+    }
+    for (int i = 0; i < plain.length(); ++i) {
+        bool outputChar = true;
+        if (plain[i] == QLatin1Char('\\') ||
+            plain[i] == QLatin1Char('`') ||
+            plain[i] == QLatin1Char('*') ||
+            plain[i] == QLatin1Char('_') ||
+            plain[i] == QLatin1Char('{') ||
+            plain[i] == QLatin1Char('}') ||
+            plain[i] == QLatin1Char('[') ||
+            plain[i] == QLatin1Char(']') ||
+            plain[i] == QLatin1Char('(') ||
+            plain[i] == QLatin1Char(')') ||
+            plain[i] == QLatin1Char('#') ||
+            plain[i] == QLatin1Char('+') ||
+            plain[i] == QLatin1Char('-') ||
+            plain[i] == QLatin1Char('.') ||
+            plain[i] == QLatin1Char('!')) {
+            escaped += QLatin1Char('\\');
+        }
+        if (isTableElement) {
+            if (plain[i] == QLatin1Char('|')) {
+                escaped += QString::fromUtf8("&#124;");
+                outputChar = false;
+            } else if (plain[i] == QLatin1Char('\n')) {
+                assert(isMultilineElement);
+                if (genHTML) {
+                    // we are generating markdown for hoedown
+
+                    // "<br />" should work, but actually it doesn't work well and is ignored by pandoc in many cases
+                    escaped += QString::fromUtf8("<br />");
+                    outputChar = false;
+                } else {
+                    // we are generating markdown for pandoc
+
+                    // see http://rmarkdown.rstudio.com/authoring_pandoc_markdown.html
+                    // A backslash followed by a newline is also a hard line break.
+                    // Note: in multiline and grid table cells, this is the only way
+                    // to create a hard line break, since trailing spaces in the cells are ignored.
+                    escaped += QLatin1Char('\\');
+                    // we add a dot at the beginning of the next line, which is converted to a pipe "|" by
+                    // the genStaticDocs.sh script afterwards, see comment above.
+                    escaped += QLatin1Char('\n');
+                    escaped += QString::fromUtf8(". ");
+                    outputChar = false;
+                }
+            }
+        } else if (plain[i] == QLatin1Char('\n')) {
+            // line breaks become paragraph breaks (double the line breaks)
+            escaped += QLatin1Char('\n');
+        }
+        if (outputChar) {
+            escaped += plain[i];
+        }
+    }
+    if ( isTableElement && escaped.isEmpty() ) {
+        escaped = QString::fromUtf8("&nbsp;");
+    }
+    if (isTableElement) {
+        return escaped.trimmed();
+    }
+    return escaped;
 } // convertFromPlainText
 
 NATRON_NAMESPACE_EXIT;

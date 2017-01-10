@@ -121,9 +121,51 @@ DocumentationManager::handler(QHttpRequest *req,
 #endif
 
     // override static docs
-    if ( page.contains( QString::fromUtf8("/plugins/") ) ) {
-        page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
+    // plugin pages are generated only if they don't exist
+    QString staticPage, dynamicPage;
+    bool isPlugin = false;
+    bool isStatic = false;
+    if ( page.startsWith( QString::fromUtf8("/plugins/") ) ) {
+        isPlugin = true;
+        isStatic = true;
+        staticPage = page;
+        dynamicPage = page;
+        dynamicPage.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
+    if ( page.startsWith( QString::fromUtf8("/_plugin.html?id=") ) ) {
+        isPlugin = true;
+        isStatic = false;
+        staticPage = page;
+        staticPage.replace( QString::fromUtf8("/_plugin.html?id="), QString::fromUtf8("/plugins/") );
+        staticPage += QString::fromUtf8(".html");
+        dynamicPage = page;
+    }
+    if (isPlugin) {
+        QFileInfo staticFileInfo = docDir + staticPage;
+        if ( ( isStatic && !staticFileInfo.exists() ) ||
+             ( !isStatic && staticFileInfo.exists() ) ) {
+            // must redirect
+            if (isStatic) {
+                page = dynamicPage;
+            } else {
+                page = staticPage;
+            }
+
+            // redirect
+            resp->setHeader(QString::fromUtf8("Location"), page);
+            resp->setHeader(QString::fromUtf8("Connection"), QString::fromUtf8("keep-alive"));
+            resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8"));
+            resp->writeHead(301); // Moved permanently
+            resp->end( QString::fromUtf8("<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n"
+                                         "<TITLE>301 Moved</TITLE></HEAD><BODY>\n"
+                                         "<H1>301 Moved</H1>\n"
+                                         "The document has moved\n"
+                                         "<A HREF=\"%1/\">here</A>.\r\n"
+                                         "</BODY></HTML>").arg(page).toUtf8() );
+            return;
+        }
+    }
+    // always generate group pages on the fly
     if ( page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") ) ) {
         page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("_group"), QString::fromUtf8("_group.html?id=") );
     }

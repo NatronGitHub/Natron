@@ -29,6 +29,7 @@ Download
 Navigate to http://natron.fr/download and download the latest version.
 
 .. image:: _images/mac_install_01.png
+   :width: 40%
 
 Install
 -------
@@ -36,6 +37,7 @@ Install
 Double-click the DMG file and copy Natron where you want it.
 
 .. image:: _images/mac_install_02.png
+   :width: 40%
 
 Run
 ---

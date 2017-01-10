@@ -165,6 +165,8 @@ public:
 
     void getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const;
 
+    bool getUseStdOFXPluginsLocation() const;
+
     bool isRenderInSeparatedProcessEnabled() const;
 
     bool isRenderQueuingEnabled() const;
@@ -377,7 +379,6 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     boost::scoped_ptr<SettingsPrivate> _imp;
-
 };
 
 NATRON_NAMESPACE_EXIT;

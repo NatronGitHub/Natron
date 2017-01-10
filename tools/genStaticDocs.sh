@@ -50,6 +50,15 @@ for x in plugins/*.md; do
     $PANDOC "$x" --columns=9000 -o "$(echo "$x"|$SED 's/\.md$/.rst/')"
     PLUG="$(echo "$x"|$SED 's/.md//;s#plugins/##')"
     $SED -i "1i.. _${PLUG}:\n" plugins/"${PLUG}".rst
+    # multiline table element hack: in tables (lines beginning
+    # with '|') replace "| . " with "| | "
+    # see comments in source code in functions:
+    # - convertFromPlainTextToMarkdown()
+    # - Node::makeDocumentation()
+    $SED -i '/^| /s/| \. /| | /g' plugins/"${PLUG}".rst
+    # add properties for the Controls tables
+    $SED -i 's/^CONTROLSTABLEPROPS/.. tabularcolumns:: |>{\\raggedright}p{0.2\\columnwidth}|>{\\raggedright}p{0.06\\columnwidth}|>{\\raggedright}p{0.07\\columnwidth}|p{0.63\\columnwidth}|\n\n.. cssclass:: longtable/g' plugins/"${PLUG}".rst
+
 done
 popd
 
@@ -61,6 +70,11 @@ for z in "$TMP_FOLDER"/plugins/*.rst; do
   # removes html::* and convert rst::* to a proper RST link, example: :ref:`linux<Linux>`
   $SED -i 's/<|html::.*||/|/g;s/|rst::\(.*\)|>.*__/:ref:\`\1\`/g' "${z}"
 
+  # We insert rst-style refs in markdown as :ref:`label`, and pandoc
+  # transforms these to :ref:``label`` - let's remove those double quotes
+  # see sources/plugins/net.sf.openfx.MergeIn.rst for an example
+  $SED -i 's/:ref:``\([^`]*\)``/:ref:`\1`/g' "${z}"
+  
   cp "$z" "$DOC_FOLDER/source/plugins" || exit 1
 done
 
