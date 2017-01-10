@@ -348,7 +348,9 @@ public:
 
     std::string getUserStyleSheetFilePath() const;
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
     int getDocumentationSource() const;
+#endif
     int getServerPort() const;
     void setServerPort(int port) const;
 
@@ -451,7 +453,9 @@ private:
     // General/Documentation
     boost::shared_ptr<KnobPage> _documentationPage;
     boost::shared_ptr<KnobInt> _wwwServerPort;
+#ifdef NATRON_DOCUMENTATION_ONLINE
     boost::shared_ptr<KnobChoice> _documentationSource;
+#endif
 
     // General/User Interface
     boost::shared_ptr<KnobPage> _uiPage;
