@@ -1669,7 +1669,7 @@ SettingsPrivate::initializeKnobsPlugins()
                                               "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _pluginsTab->addKnob(_preferBundledPlugins);
 
-    _useStdOFXPluginsLocation = AppManager::createKnob<KnobBool>( this, tr("Enable default OpenFX plugins location") );
+    _useStdOFXPluginsLocation = AppManager::createKnob<KnobBool>( thisShared, tr("Enable default OpenFX plugins location") );
     knobsRequiringRestart.insert(_useStdOFXPluginsLocation);
     _useStdOFXPluginsLocation->setName("useStdOFXPluginsLocation");
     _useStdOFXPluginsLocation->setHintToolTip( tr("When checked, %1 also uses the OpenFX plug-ins found in the default location (%2).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
@@ -2917,7 +2917,7 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
 bool
 Settings::getUseStdOFXPluginsLocation() const
 {
-    return _useStdOFXPluginsLocation->getValue();
+    return _imp->_useStdOFXPluginsLocation->getValue();
 }
 
 void
