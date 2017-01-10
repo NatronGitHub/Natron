@@ -69,8 +69,17 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER;
+
 struct PreferenceTab
 {
+    PreferenceTab()
+        : treeItem(NULL)
+        , tab(NULL)
+        , page()
+    {
+    }
+
     QTreeWidgetItem* treeItem;
     QFrame* tab;
     boost::weak_ptr<KnobPageGui> page;
@@ -78,6 +87,16 @@ struct PreferenceTab
 
 struct PluginTreeNode
 {
+    PluginTreeNode()
+        : item(NULL)
+        , enabledCheckbox(NULL)
+        , rsCheckbox(NULL)
+        , mtCheckbox(NULL)
+        , glCheckbox(NULL)
+        , plugin(NULL)
+    {
+    }
+
     QTreeWidgetItem* item;
     AnimatedCheckBox* enabledCheckbox;
     AnimatedCheckBox* rsCheckbox;
@@ -91,15 +110,29 @@ typedef std::list<PluginTreeNode> PluginTreeNodeList;
 
 struct GuiBoundAction
 {
+    GuiBoundAction()
+        : item(NULL)
+        , action(NULL)
+    {
+    }
+
     QTreeWidgetItem* item;
     BoundAction* action;
 };
 
 struct GuiShortCutGroup
 {
+    GuiShortCutGroup()
+        : actions()
+        , item(NULL)
+    {
+    }
+
     std::list<GuiBoundAction> actions;
     QTreeWidgetItem* item;
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 static QString
 keybindToString(const Qt::KeyboardModifiers & modifiers,
