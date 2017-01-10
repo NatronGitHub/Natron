@@ -156,6 +156,8 @@ public:
 
     void getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const;
 
+    bool getUseStdOFXPluginsLocation() const;
+
     bool isRenderInSeparatedProcessEnabled() const;
 
     bool isRenderQueuingEnabled() const;
@@ -527,6 +529,7 @@ private:
     // Plugins
     boost::shared_ptr<KnobPage> _pluginsTab;
     boost::shared_ptr<KnobPath> _extraPluginPaths;
+    boost::shared_ptr<KnobBool> _useStdOFXPluginsLocation;
     boost::shared_ptr<KnobPath> _templatesPluginPaths;
     boost::shared_ptr<KnobBool> _preferBundledPlugins;
     boost::shared_ptr<KnobBool> _loadBundledPlugins;
