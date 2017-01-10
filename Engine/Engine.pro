@@ -309,7 +309,7 @@ HEADERS += \
     Bezier.h \
     BezierCP.h \
     BezierCPPrivate.h \
-    BufferedFrame.h \
+    BufferableObject.h \
     CLArgs.h \
     Cache.h \
     CacheDeleterThread.h \

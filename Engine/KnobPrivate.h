@@ -434,8 +434,8 @@ private:
     {
         hash->append(_nodeTimeInvariantHash);
         hash->append(_dimension);
-        hash->append(_time);
-        hash->append(_view);
+        hash->append((double)_time);
+        hash->append((int)_view);
         Hash64::appendQString(QString::fromUtf8(_knobScriptName.c_str()), hash);
     }
 

@@ -549,7 +549,6 @@ protected:
     virtual void onPluginLoaded(const PluginPtr& /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
-    virtual void clearLastRenderedTextures() {}
 
     virtual void initBuiltinPythonModules();
 

@@ -323,6 +323,9 @@ public:
 
     void onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode, const NodeMetadata& metadata);
 
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+
+
 public Q_SLOTS:
 
 

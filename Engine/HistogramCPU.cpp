@@ -243,8 +243,6 @@ computeHisto_internal(const HistogramRequest & request,
     std::fill(histo->begin(), histo->end(), 0.f);
     double binSize = (request.vmax - request.vmin) / histo->size();
 
-    int srcRowElementCounts = imageData.tileBounds.width() * srcNComps;
-
     int pixelStride;
     const float* src_pixels[4];
     Image::getChannelPointers<float>((const float**)imageData.ptrs, roi.x1, roi.y1, imageData.tileBounds, imageData.nComps, (float**)src_pixels, &pixelStride);
@@ -317,7 +315,7 @@ computeHisto_internal(const HistogramRequest & request,
         // Remove what was done on the previous line and go to the next
         for (int c = 0; c < srcNComps; ++c) {
             if (src_pixels[c]) {
-                src_pixels[c] += ((srcRowElementCounts - roi.width() * srcNComps) * pixelStride);
+                src_pixels[c] += ((imageData.tileBounds .width()- roi.width()) * pixelStride);
             }
         }
     } // for each scan-line

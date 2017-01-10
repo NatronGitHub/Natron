@@ -2090,7 +2090,7 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec v
     {
         QMutexLocker k(&_imp->lock);
         for (std::list<double>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
-            ValueChangedReturnCodeEnum ret = setKeyFrameInternal(*it, view, newKeys ? &key : 0);
+            ValueChangedReturnCodeEnum ret = setKeyFrameInternal(TimeValue(*it), view, newKeys ? &key : 0);
             if (ret == eValueChangedReturnCodeKeyframeAdded) {
                 added.push_back(*it);
             }
@@ -2118,7 +2118,7 @@ KnobTableItem::deleteAnimationConditional(TimeValue time, ViewSetSpec view, bool
             }
             if (!keysRemoved.empty()) {
                 for (std::list<double>::const_iterator it2 = keysRemoved.begin(); it2!=keysRemoved.end(); ++it2) {
-                    onKeyFrameRemoved(*it2, it->first);
+                    onKeyFrameRemoved(TimeValue(*it2), it->first);
                 }
                 std::list<double> keysAdded;
                 Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, it->first);
@@ -2136,7 +2136,7 @@ KnobTableItem::deleteAnimationConditional(TimeValue time, ViewSetSpec view, bool
             }
             if (!keysRemoved.empty()) {
                 for (std::list<double>::const_iterator it2 = keysRemoved.begin(); it2!=keysRemoved.end(); ++it2) {
-                    onKeyFrameRemoved(*it2, it->first);
+                    onKeyFrameRemoved(TimeValue(*it2), it->first);
                 }
                 std::list<double> keysAdded;
                 Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, it->first);
@@ -2185,10 +2185,10 @@ KnobTableItem::cloneCurve(ViewIdx view, DimIdx /*dimension*/, const Curve& curve
 
     if (!keysAdded.empty() || !keysRemoved.empty()) {
         for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
-            onKeyFrameSet(*it, view);
+            onKeyFrameSet(TimeValue(*it), view);
         }
         for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
-            onKeyFrameRemoved(*it, view);
+            onKeyFrameRemoved(TimeValue(*it), view);
         }
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
@@ -2204,7 +2204,7 @@ KnobTableItem::deleteValuesAtTimeInternal(const std::list<double>& times, ViewId
         QMutexLocker k(&_imp->lock);
         try {
             for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
-                curve->removeKeyFrameWithTime(*it);
+                curve->removeKeyFrameWithTime(TimeValue(*it));
                 keysRemoved.push_back(*it);
             }
         } catch (const std::exception & /*e*/) {
@@ -2212,7 +2212,7 @@ KnobTableItem::deleteValuesAtTimeInternal(const std::list<double>& times, ViewId
     }
     if (!keysRemoved.empty()) {
         for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
-            onKeyFrameRemoved(*it, view);
+            onKeyFrameRemoved(TimeValue(*it), view);
         }
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
     }
@@ -2249,10 +2249,10 @@ KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx 
     }
     if (!keysAdded.empty() || !keysRemoved.empty()) {
         for (std::list<double>::const_iterator it = keysAdded.begin(); it!=keysAdded.end(); ++it) {
-            onKeyFrameSet(*it, view);
+            onKeyFrameSet(TimeValue(*it), view);
         }
         for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
-            onKeyFrameRemoved(*it, view);
+            onKeyFrameRemoved(TimeValue(*it), view);
         }
 
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
@@ -2294,7 +2294,7 @@ KnobTableItem::removeAnimationInternal(ViewIdx view, const CurvePtr& curve)
     }
     if (!keysRemoved.empty()) {
         for (std::list<double>::const_iterator it = keysRemoved.begin(); it!=keysRemoved.end(); ++it) {
-            onKeyFrameRemoved(*it, view);
+            onKeyFrameRemoved(TimeValue(*it), view);
         }
 
         Q_EMIT curveAnimationChanged(keysAdded, keysRemoved, ViewIdx(0));
@@ -2581,7 +2581,7 @@ KnobItemsTable::goToPreviousMasterKeyframe(ViewIdx view)
     if (!node) {
         return;
     }
-    TimeValue time = node->getApp()->getTimeLine()->currentFrame();
+    TimeValue time = TimeValue(node->getApp()->getTimeLine()->currentFrame());
     double minTime = -std::numeric_limits<double>::infinity();
     std::list<KnobTableItemPtr> items = getSelectedItems();
     for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
@@ -2589,7 +2589,7 @@ KnobItemsTable::goToPreviousMasterKeyframe(ViewIdx view)
     }
     if (minTime != -std::numeric_limits<double>::infinity()) {
         node->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        node->getApp()->getTimeLine()->seekFrame(minTime, false, EffectInstance(), eTimelineChangeReasonOtherSeek);
+        node->getApp()->getTimeLine()->seekFrame(minTime, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
 }
 
@@ -2600,7 +2600,7 @@ KnobItemsTable::goToNextMasterKeyframe(ViewIdx view)
     if (!node) {
         return;
     }
-    TimeValue time = node->getApp()->getTimeLine()->currentFrame();
+    TimeValue time = TimeValue(node->getApp()->getTimeLine()->currentFrame());
     double minTime = std::numeric_limits<double>::infinity();
     std::list<KnobTableItemPtr> items = getSelectedItems();
     for (std::list<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
@@ -2608,7 +2608,7 @@ KnobItemsTable::goToNextMasterKeyframe(ViewIdx view)
     }
     if (minTime != std::numeric_limits<double>::infinity()) {
         node->getApp()->setLastViewerUsingTimeline( NodePtr() );
-        node->getApp()->getTimeLine()->seekFrame(minTime, false, EffectInstance(), eTimelineChangeReasonOtherSeek);
+        node->getApp()->getTimeLine()->seekFrame(minTime, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
 }
 

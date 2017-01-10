@@ -38,7 +38,9 @@
 
 NATRON_NAMESPACE_ENTER
 
+
 template <typename T>
+void
 getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, T* result)
 {
     double value;
@@ -47,12 +49,14 @@ getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, T
 }
 
 template <>
+void
 getValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, std::string* result)
 {
     cachedValue->getResult(0, result);
 }
 
 template <typename T>
+void
 setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, const T& result)
 {
     double value = (double)result;
@@ -60,6 +64,7 @@ setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, c
 }
 
 template <>
+void
 setValueFromCachedExpressionResult(const KnobExpressionResultPtr& cachedValue, const std::string& result)
 {
     cachedValue->setResult(0, result);

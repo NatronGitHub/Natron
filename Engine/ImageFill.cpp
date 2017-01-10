@@ -177,7 +177,7 @@ fillForDepthForComponents(void* ptrs[4],
     // now we're safe: the image contains the area in roi
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<char>((PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX>((const PIX**)ptrs, roi.x1, roi.y1, bounds, nComps, (PIX**)dstPixelPtrs, &dstPixelStride);
 
     for (int y = roi.y1; y < roi.y2; ++y) {
 

@@ -41,7 +41,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<PIX, dstNComps>((PIX**)dstImgPtrs, roi.x1, roi.y1, bounds, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, bounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
     const std::size_t dstRowElements = (std::size_t)bounds.width() * dstPixelStride;
 
@@ -54,7 +54,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
 
             PIX* srcPixelPtrs[4];
             int srcPixelStride;
-            Image::getChannelPointers<PIX, srcNComps>((PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, srcPixelPtrs, &srcPixelStride);
+            Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
 
             float maskScale = 1.f;
             if (!masked) {
@@ -75,7 +75,7 @@ applyMaskMixForMaskInvert(const void* originalImgPtrs[4],
 
                 PIX* maskPixelPtrs[4];
                 int maskPixelStride;
-                Image::getChannelPointers<PIX, 1>((PIX**)maskImgPtrs, roi.x1, roi.y1, maskImgBounds, maskPixelPtrs, &maskPixelStride);
+                Image::getChannelPointers<PIX, 1>((const PIX**)maskImgPtrs, roi.x1, roi.y1, maskImgBounds, (PIX**)maskPixelPtrs, &maskPixelStride);
 
                 // figure the scale factor from that pixel
                 if (maskPixelPtrs[0] == 0) {

@@ -168,11 +168,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             const SRCPIX* srcPixelPtrs[4];
             int srcPixelStride;
-            Image::getChannelPointers<SRCPIX, nComp>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcPixelPtrs, &srcPixelStride);
+            Image::getChannelPointers<SRCPIX>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, nComp, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
             DSTPIX* dstPixelPtrs[4];
             int dstPixelStride;
-            Image::getChannelPointers<DSTPIX, nComp>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstPixelPtrs, &dstPixelStride);
+            Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
             std::size_t nBytesToCopy = renderWindow.width() * nComp * srcDataSizeOf;
             if (nComp == 1 || !srcPixelPtrs[1]) {
@@ -193,11 +193,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             const SRCPIX* srcPixelPtrs[4];
             int srcPixelStride;
-            Image::getChannelPointers<SRCPIX, nComp>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, srcPixelPtrs, &srcPixelStride);
+            Image::getChannelPointers<SRCPIX>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, nComp, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
             DSTPIX* dstPixelPtrs[4];
             int dstPixelStride;
-            Image::getChannelPointers<DSTPIX, nComp>((const SRCPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, dstPixelPtrs, &dstPixelStride);
+            Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
             const SRCPIX* srcPixelStart[4];
             DSTPIX* dstPixelStart[4];
@@ -333,11 +333,11 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, dstNComps>((const SRCPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, dstPixelPtrs, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, dstNComps>((const DSTPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
         const SRCPIX* srcPixelStart[4];
         DSTPIX* dstPixelStart[4];
@@ -530,11 +530,11 @@ static convertToMonoImage(const RectI & renderWindow,
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, 1>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, 1>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
 
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
@@ -547,7 +547,7 @@ static convertToMonoImage(const RectI & renderWindow,
                     break;
                 case Image::eAlphaChannelHandlingFillFromChannel:
                     assert(conversionChannel >= 0 && conversionChannel < srcNComps);
-                    Image::convertPixelDepth<SRCPIX, DSTPIX>(*srcPixelPtrs[conversionChannel]);
+                    pix = Image::convertPixelDepth<SRCPIX, DSTPIX>(*srcPixelPtrs[conversionChannel]);
                     // Only increment the conversion channel pointer, this is the only one we use
                     srcPixelPtrs[conversionChannel] += srcPixelStride;
                     break;
@@ -585,11 +585,11 @@ static convertFromMonoImage(const RectI & renderWindow,
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, 1>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, 1>((const SRCPIX**)srcBufPtrs, renderWindow.x1, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, dstNComps>((const SRCPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, dstPixelPtrs, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, dstNComps>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
         for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
 
@@ -656,7 +656,7 @@ static convertFromMonoImageForComps(const RectI & renderWindow,
 
 }
 
-template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps,
+template <typename SRCPIX, int srcMaxValue, typename DSTPIX, int dstMaxValue, int srcNComps, int dstNComps,
           bool requiresUnpremult>
 static void
 convertToFormatInternalForUnpremult(const RectI & renderWindow,
@@ -790,13 +790,13 @@ convertToFormatInternalForDstDepth(const RectI & renderWindow,
     switch (srcNComps) {
 
         case 2:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
             break;
         case 3:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
             break;
         case 4:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
             break;
         default:
             assert(false);

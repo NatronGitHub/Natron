@@ -76,6 +76,7 @@ struct TextureInfo
 {
     TextureInfo()
     : texture()
+    , image()
     , mipMapLevel(0)
     , premult(eImagePremultiplicationOpaque)
     , time(0)
@@ -88,11 +89,14 @@ struct TextureInfo
     }
 
     GLTexturePtr texture;
+
+    ImagePtr image;
+
     unsigned int mipMapLevel;
 
     // These are meta-datas at the time the texture was uploaded
     ImagePremultiplicationEnum premult;
-    SequenceTime time;
+    TimeValue time;
     RectD rod;
     RectD format;
     double pixelAspectRatio;

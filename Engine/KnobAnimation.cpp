@@ -69,7 +69,7 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
     try {
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             // This may throw exceptions if keyframes do not exist
-            curve->removeKeyFrameWithTime(*it);
+            curve->removeKeyFrameWithTime(TimeValue(*it));
         }
     } catch (const std::exception & /*e*/) {
     }
@@ -124,7 +124,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
 
 
     // Evaluate the change
-    evaluateValueChange(dimension, *times.begin(), view, reason);
+    evaluateValueChange(dimension, TimeValue(*times.begin()), view, reason);
 
 
 
@@ -370,7 +370,7 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
 
     for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
         KeyFrame k;
-        if (curve->setKeyFrameInterpolation(interpolation, *it, &k)) {
+        if (curve->setKeyFrameInterpolation(interpolation, TimeValue(*it), &k)) {
             if (newKeys) {
                 newKeys->push_back(k);
             }
@@ -419,7 +419,7 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
         }
     }
 
-    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, TimeValue(times.front()), view, eValueChangedReasonUserEdited);
 
 
 } // setInterpolationAtTimes

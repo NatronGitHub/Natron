@@ -145,6 +145,8 @@ public:
 
     virtual void refreshMetadata(int inputNb, const NodeMetadata& metadata) OVERRIDE FINAL;
 
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+    
     /**
      *@brief Copies the data stored in the  RAM buffer into the currently
      * used texture.

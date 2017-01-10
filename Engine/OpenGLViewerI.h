@@ -93,6 +93,11 @@ public:
                                             const Point& viewportCenter) = 0;
 
     /**
+     * @brief Clear the image pointers of the last image sent to transferBufferFromRAMtoGPU
+     **/
+    virtual void clearLastRenderedImage() = 0;
+
+    /**
      * @brief Called when the input of a viewer should render black.
      **/
     virtual void disconnectInputTexture(int textureIndex, bool clearRoD) = 0;

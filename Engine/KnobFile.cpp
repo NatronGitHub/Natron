@@ -75,7 +75,7 @@ KnobFile::reloadFile()
     assert( getHolder() );
     EffectInstancePtr effect = toEffectInstance( getHolder() );
     if (effect) {
-        effect->purgeCaches();
+        effect->purgeCaches_public();
         effect->clearPersistentMessage(false);
     }
     evaluateValueChange(DimSpec(0), getHolder()->getTimelineCurrentTime(), ViewSetSpec(0), eValueChangedReasonUserEdited);

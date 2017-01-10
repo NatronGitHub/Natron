@@ -1042,6 +1042,18 @@ ViewerNode::getMipMapLevelFromZoomFactor() const
 }
 
 void
+ViewerNode::clearLastRenderedImage()
+{
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+
+    OpenGLViewerI* uiContext = getUiContext();
+    if (!uiContext) {
+        return;
+    }
+    uiContext->clearLastRenderedImage();
+}
+
+void
 ViewerNode::updateViewer(const UpdateViewerArgs& args)
 {
     assert( qApp && qApp->thread() == QThread::currentThread() );

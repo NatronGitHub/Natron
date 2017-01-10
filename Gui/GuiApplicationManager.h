@@ -220,7 +220,6 @@ private:
     void handleOpenFileRequest();
 
     virtual void onLoadCompleted() OVERRIDE FINAL;
-    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
     /**
      * @brief Load shortcuts from QSettings
      **/

@@ -1005,6 +1005,14 @@ ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata)
     getViewerTab()->setImageFormat(inputNb, metadata.getImageComponents(0), metadata.getBitDepth(0));
 }
 
+void
+ViewerGL::clearLastRenderedImage()
+{
+    for (int i = 0; i < 2; ++i) {
+        _imp->displayTextures[i].image.reset();
+    }
+}
+
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
@@ -1081,6 +1089,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
         _imp->displayTextures[1].time = time;
     } else {
 
+        _imp->displayTextures[textureIndex].image = image;
         // re-use the existing texture if possible
         if (!image) {
             _imp->displayTextures[textureIndex].isVisible = false;
@@ -2992,7 +3001,7 @@ ViewerGL::getCurrentRenderScale() const
 template <typename PIX, int maxValue>
 static
 bool
-getColorAtInternal(const ImagePtr& image,
+getColorAtSinglePixel(const Image::CPUTileData& image,
                    int x,
                    int y,             // in pixel coordinates
                    bool forceLinear,
@@ -3003,62 +3012,56 @@ getColorAtInternal(const ImagePtr& image,
                    float* b,
                    float* a)
 {
-    if ( image->getBounds().contains(x, y) ) {
-
-        
-
-        const PIX* pix = (const PIX*)racc.pixelAt(x, y);
-
-        if (!pix) {
-            return false;
-        }
-
-        int nComps = image->getComponents().getNumComponents();
-        if (nComps >= 4) {
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = pix[3] / (float)maxValue;
-        } else if (nComps == 3) {
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = 1.;
-        } else if (nComps == 2) {
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = 1.;
-            *a = 1.;
-        } else {
-            *r = *g = *b = *a = pix[0] / (float)maxValue;
-        }
-
-
-        ///convert to linear
-        if (srcColorSpace) {
-            *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
-            *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
-            *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
-        }
-
-        if (!forceLinear && dstColorSpace) {
-            ///convert to dst color space
-            float from[3];
-            from[0] = *r;
-            from[1] = *g;
-            from[2] = *b;
-            float to[3];
-            dstColorSpace->to_float_planar(to, from, 3);
-            *r = to[0];
-            *g = to[1];
-            *b = to[2];
-        }
-
-        return true;
+    if ( !image.tileBounds.contains(x, y) ) {
+        return false;
     }
 
 
-    return false;
+    int pixelStride;
+    const PIX* pix[4];
+    Image::getChannelPointers<PIX>((const PIX**)image.ptrs, x, y, image.tileBounds, image.nComps, (PIX**)pix, &pixelStride);
+
+    if (image.nComps >= 4) {
+        *r = *pix[0] / (float)maxValue;
+        *g = *pix[1] / (float)maxValue;
+        *b = *pix[2] / (float)maxValue;
+        *a = *pix[3] / (float)maxValue;
+    } else if (image.nComps == 3) {
+        *r = *pix[0] / (float)maxValue;
+        *g = *pix[1] / (float)maxValue;
+        *b = *pix[2] / (float)maxValue;
+        *a = 1.;
+    } else if (image.nComps == 2) {
+        *r = *pix[0] / (float)maxValue;
+        *g = *pix[1] / (float)maxValue;
+        *b = 1.;
+        *a = 1.;
+    } else {
+        *r = *g = *b = *a = *pix[0] / (float)maxValue;
+    }
+
+    // Convert to linear
+    if (srcColorSpace) {
+        *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
+        *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
+        *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
+    }
+
+    if (!forceLinear && dstColorSpace) {
+        ///convert to dst color space
+        float from[3];
+        from[0] = *r;
+        from[1] = *g;
+        from[2] = *b;
+        float to[3];
+        dstColorSpace->to_float_planar(to, from, 3);
+        *r = to[0];
+        *g = to[1];
+        *b = to[2];
+    }
+
+    return true;
+
 } // getColorAtInternal
 
 bool
@@ -3078,32 +3081,13 @@ ViewerGL::getColorAt(double x,
     assert(textureIndex == 0 || textureIndex == 1);
 
 
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
 
-
+    ImagePtr image = _imp->displayTextures[textureIndex].image;
     if (!image) {
         return false;
-        ///Don't do this as this is 8bit data
-        /*double colorGPU[4];
-           getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
-         * a = colorGPU[3];
-           if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-            const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
-
-         * r = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
-         * g = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
-         * b = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
-           } else {
-         * r = colorGPU[0];
-         * g = colorGPU[1];
-         * b = colorGPU[2];
-           }
-           return true;*/
     }
 
-    ImageBitDepthEnum depth = image->getBitDepth();
-    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
+    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
     if ( (srcCS == _imp->displayingImageLut)
@@ -3112,7 +3096,7 @@ ViewerGL::getColorAt(double x,
         srcColorSpace = 0;
         dstColorSpace = 0;
     } else {
-        if ( image->getComponents().isColorPlane() ) {
+        if ( image->getLayer().isColorPlane() ) {
             srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
             dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
         } else {
@@ -3120,171 +3104,193 @@ ViewerGL::getColorAt(double x,
         }
     }
 
-    const double par = image->getPixelAspectRatio();
-    double scale = 1. / ( 1 << image->getMipMapLevel() );
+
+    assert(image->getBufferFormat() != eImageBufferLayoutMonoChannelTiled);
+    assert(image->getStorageMode() != eStorageModeGLTex);
+
+
+    Image::CPUTileData imageData;
+    {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
+    *imgMmlevel = image->getMipMapLevel();
+    double scale = 1. / ( 1 << *imgMmlevel );
+    double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
 
     ///Convert to pixel coords
     int xPixel = std::floor(x  * scale / par);
     int yPixel = std::floor(y * scale);
     bool gotval;
-    switch (depth) {
-    case eImageBitDepthByte:
-        gotval = getColorAtInternal<unsigned char, 255>(image,
-                                                        xPixel, yPixel,
-                                                        forceLinear,
-                                                        srcColorSpace,
-                                                        dstColorSpace,
-                                                        r, g, b, a);
-        break;
-    case eImageBitDepthShort:
-        gotval = getColorAtInternal<unsigned short, 65535>(image,
-                                                           xPixel, yPixel,
-                                                           forceLinear,
-                                                           srcColorSpace,
-                                                           dstColorSpace,
-                                                           r, g, b, a);
-        break;
-    case eImageBitDepthFloat:
-        gotval = getColorAtInternal<float, 1>(image,
-                                              xPixel, yPixel,
-                                              forceLinear,
-                                              srcColorSpace,
-                                              dstColorSpace,
-                                              r, g, b, a);
-        break;
-    default:
-        gotval = false;
-        break;
+    switch (image->getBitDepth()) {
+        case eImageBitDepthByte:
+            gotval = getColorAtSinglePixel<unsigned char, 255>(imageData,
+                                                               xPixel, yPixel,
+                                                               forceLinear,
+                                                               srcColorSpace,
+                                                               dstColorSpace,
+                                                               r, g, b, a);
+            break;
+        case eImageBitDepthShort:
+            gotval = getColorAtSinglePixel<unsigned short, 65535>(imageData,
+                                                                  xPixel, yPixel,
+                                                                  forceLinear,
+                                                                  srcColorSpace,
+                                                                  dstColorSpace,
+                                                                  r, g, b, a);
+            break;
+        case eImageBitDepthFloat:
+            gotval = getColorAtSinglePixel<float, 1>(imageData,
+                                                     xPixel, yPixel,
+                                                     forceLinear,
+                                                     srcColorSpace,
+                                                     dstColorSpace,
+                                                     r, g, b, a);
+            break;
+        default:
+            gotval = false;
+            break;
     }
-    *imgMmlevel = image->getMipMapLevel();
 
     return gotval;
 } // getColorAt
 
+template <typename PIX, int maxValue, int srcNComps>
+static
 bool
-ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
+getColorAtRectForSrcNComps(const Image::CPUTileData& image,
+                           const RectI& roi,
+                           bool forceLinear,
+                           const Color::Lut* srcColorSpace,
+                           const Color::Lut* dstColorSpace,
+                           double pixelSums[4])
+{
+
+    memset(pixelSums, 0, sizeof(double) * 4);
+
+    U64 area = roi.area();
+
+    int pixelStride;
+    const PIX* pix[4];
+    Image::getChannelPointers<PIX, srcNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.tileBounds, (PIX**)pix, &pixelStride);
+
+
+    for (int y = roi.y1; y < roi.y2; ++y) {
+
+        for (int x = roi.x1; x < roi.x2; ++x) {
+
+            float tmpPix[4] = {0., 0., 0., 0.};
+            if (srcNComps == 1) {
+                tmpPix[3] == Image::convertPixelDepth<PIX, float>(*pix[0]);
+            } else {
+                for (int c = 0; c < srcNComps; ++c) {
+                    tmpPix[c] = Image::convertPixelDepth<PIX, float>(*pix[c]);
+                }
+            }
+
+            // Convert to linear
+            if (srcColorSpace && srcNComps > 1) {
+                int nCompsToConvert = std::min(3, srcNComps);
+                for (int c = 0; c < nCompsToConvert; ++c) {
+                    tmpPix[c] = srcColorSpace->fromColorSpaceFloatToLinearFloat(tmpPix[c]);
+                }
+            }
+
+            if (!forceLinear && dstColorSpace) {
+                ///convert to dst color space
+                float from[3];
+                memcpy(from, tmpPix, sizeof(float) * 3);
+                dstColorSpace->to_float_planar(tmpPix, from, 3);
+            }
+
+
+            for (int c = 0; c < 4; ++c) {
+                pixelSums[c] += tmpPix[c];
+                if (pix[c]) {
+                    pix[c] += pixelStride;
+                }
+            }
+        } // for each pixels along the line
+
+        // Remove what was done on previous iteration and move to next line
+        for (int c = 0; c < srcNComps; ++c) {
+            pix[c] += ((image.tileBounds.width() - roi.width()) * pixelStride);
+        }
+
+    } // for each scan-line
+
+    if (area > 0) {
+        for (int c = 0; c < 4; ++c) {
+            pixelSums[c] /= area;
+        }
+    }
+    return true;
+
+
+} // getColorAtRectForSrcNComps
+
+template <typename PIX, int maxValue>
+static
+bool
+getColorAtRectForDepth(const Image::CPUTileData& image,
+                       const RectI& roi,
+                       bool forceLinear,
+                       const Color::Lut* srcColorSpace,
+                       const Color::Lut* dstColorSpace,
+                       double pixelSums[4])
+{
+    switch (image.nComps) {
+        case 1:
+            getColorAtRectForSrcNComps<PIX, maxValue, 1>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case 2:
+            getColorAtRectForSrcNComps<PIX, maxValue, 2>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case 3:
+            getColorAtRectForSrcNComps<PIX, maxValue, 3>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case 4:
+            getColorAtRectForSrcNComps<PIX, maxValue, 4>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        default:
+            break;
+    }
+} // getColorAtRectForDepth
+
+
+bool
+ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
                          bool forceLinear,
                          int textureIndex,
                          float* r,
                          float* g,
                          float* b,
                          float* a,
-                         unsigned int* imgMm)
+                         unsigned int* imgMmlevel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
 
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
 
-    if (image) {
-        mipMapLevel = image->getMipMapLevel();
-        *imgMm = mipMapLevel;
-    }
 
-    ///Convert to pixel coords
-    RectI rectPixel;
-    rectPixel.set_left(  int( std::floor( rect.left() ) ) >> mipMapLevel);
-    rectPixel.set_right( int( std::floor( rect.right() ) ) >> mipMapLevel);
-    rectPixel.set_bottom(int( std::floor( rect.bottom() ) ) >> mipMapLevel);
-    rectPixel.set_top(   int( std::floor( rect.top() ) ) >> mipMapLevel);
-    assert( rect.bottom() <= rect.top() && rect.left() <= rect.right() );
-    assert( rectPixel.bottom() <= rectPixel.top() && rectPixel.left() <= rectPixel.right() );
-    double rSum = 0.;
-    double gSum = 0.;
-    double bSum = 0.;
-    double aSum = 0.;
+    ImagePtr image = _imp->displayTextures[textureIndex].image;
     if (!image) {
         return false;
-        //don't do this as this is 8 bit
-        /*
-           Texture::DataTypeEnum type;
-           if (_imp->displayTextures[0]) {
-            type = _imp->displayTextures[0]->type();
-           } else if (_imp->displayTextures[1]) {
-            type = _imp->displayTextures[1]->type();
-           } else {
-            return false;
-           }
-
-           if ( (type == Texture::eDataTypeByte) ) {
-            std::vector<U32> pixels(rectPixel.width() * rectPixel.height());
-            GL_GPU::ReadBuffer(GL_FRONT);
-            GL_GPU::ReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
-                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels.front());
-            double rF,gF,bF,aF;
-            for (U32 i = 0 ; i < pixels.size(); ++i) {
-                U8 red = 0, green = 0, blue = 0, alpha = 0;
-                blue |= pixels[i];
-                green |= (pixels[i] >> 8);
-                red |= (pixels[i] >> 16);
-                alpha |= (pixels[i] >> 24);
-                rF = (double)red / 255.;
-                gF = (double)green / 255.;
-                bF = (double)blue / 255.;
-                aF = (double)alpha / 255.;
-
-                aSum += aF;
-                if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-                    const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
-
-                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
-                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
-                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
-                } else {
-                    rSum += rF;
-                    gSum += gF;
-                    bSum += bF;
-                }
-
-            }
-
-            glCheckError(GL_GPU);
-           } else if ( (type == Texture::eDataTypeFloat)) {
-            std::vector<float> pixels(rectPixel.width() * rectPixel.height() * 4);
-            GL_GPU::ReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
-                         GL_RGBA, GL_FLOAT, &pixels.front());
-
-            int rowSize = rectPixel.width() * 4;
-            for (int y = 0; y < rectPixel.height(); ++y) {
-                for (int x = 0; x < rectPixel.width(); ++x) {
-                    double rF = pixels[y * rowSize + (4 * x)];
-                    double gF = pixels[y * rowSize + (4 * x) + 1];
-                    double bF = pixels[y * rowSize + (4 * x) + 2];
-                    double aF = pixels[y * rowSize + (4 * x) + 3];
-
-                    aSum += aF;
-                    if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-                        const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
-
-                        rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
-                        gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
-                        bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
-                    } else {
-                        rSum += rF;
-                        gSum += gF;
-                        bSum += bF;
-                    }
-                }
-            }
-
-
-            glCheckError(GL_GPU);
-           }
-
-         * r = rSum / rectPixel.area();
-         * g = gSum / rectPixel.area();
-         * b = bSum / rectPixel.area();
-         * a = aSum / rectPixel.area();
-
-           return true;*/
     }
 
 
-    ImageBitDepthEnum depth = image->getBitDepth();
-    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
+    Image::CPUTileData imageData;
+    {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
+    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
     if ( (srcCS == _imp->displayingImageLut) && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
@@ -3296,59 +3302,32 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
         dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
     }
 
-    unsigned long area = 0;
-    for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
-        for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
-            float rPix, gPix, bPix, aPix;
-            bool gotval = false;
-            switch (depth) {
-            case eImageBitDepthByte:
-                gotval = getColorAtInternal<unsigned char, 255>(image,
-                                                                xPixel, yPixel,
-                                                                forceLinear,
-                                                                srcColorSpace,
-                                                                dstColorSpace,
-                                                                &rPix, &gPix, &bPix, &aPix);
-                break;
-            case eImageBitDepthShort:
-                gotval = getColorAtInternal<unsigned short, 65535>(image,
-                                                                   xPixel, yPixel,
-                                                                   forceLinear,
-                                                                   srcColorSpace,
-                                                                   dstColorSpace,
-                                                                   &rPix, &gPix, &bPix, &aPix);
-                break;
-            case eImageBitDepthHalf:
-                break;
-            case eImageBitDepthFloat:
-                gotval = getColorAtInternal<float, 1>(image,
-                                                      xPixel, yPixel,
-                                                      forceLinear,
-                                                      srcColorSpace,
-                                                      dstColorSpace,
-                                                      &rPix, &gPix, &bPix, &aPix);
-                break;
-            case eImageBitDepthNone:
-                break;
-            }
-            if (gotval) {
-                rSum += rPix;
-                gSum += gPix;
-                bSum += bPix;
-                aSum += aPix;
-                ++area;
-            }
-        }
+    *imgMmlevel = image->getMipMapLevel();
+    double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
+
+
+    RectI roiPixels;
+    roi.toPixelEnclosing(*imgMmlevel, par, &roiPixels);
+
+    double pixelSums[4];
+    switch (image->getBitDepth()) {
+        case eImageBitDepthByte:
+            getColorAtRectForDepth<unsigned char, 255>(imageData, roiPixels, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case eImageBitDepthShort:
+            getColorAtRectForDepth<unsigned short, 65535>(imageData, roiPixels, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case eImageBitDepthFloat:
+            getColorAtRectForDepth<float, 1>(imageData, roiPixels, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case eImageBitDepthHalf:
+        case eImageBitDepthNone:
+            break;
     }
 
-    if (area > 0) {
-        *r = rSum / area;
-        *g = gSum / area;
-        *b = bSum / area;
-        *a = aSum / area;
 
-        return true;
-    }
+
+
 
     return false;
 } // getColorAtRect
@@ -3356,7 +3335,6 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
 TimeValue
 ViewerGL::getCurrentlyDisplayedTime() const
 {
-    QMutexLocker k(&_imp->lastRenderedImageMutex);
 
     if (_imp->displayTextures[0].isVisible) {
         return _imp->displayTextures[0].time;

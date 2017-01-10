@@ -59,11 +59,11 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<char, dstNComps>((PIX**)dstImgPtrs, roi.x1, roi.y1, dstBounds, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, dstBounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
     PIX* srcPixelPtrs[4];
     int srcPixelStride;
-    Image::getChannelPointers<char, srcNComps>((PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, srcPixelPtrs, &srcPixelStride);
+    Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
 
 
     const int dstRowElements = dstPixelStride * dstBounds.width();
@@ -79,12 +79,12 @@ copyUnProcessedChannels_templated(const void* originalImgPtrs[4],
 
             // be opaque for anything that doesn't contain alpha
             PIX srcA;
-            if (srcPixelPtrs[srcNComps - 1]) {
+            if (srcNComps > 0 && srcPixelPtrs[srcNComps - 1]) {
                 srcA = maxValue;
             } else {
                 srcA = 0;
             }
-            if ( ( (srcNComps == 1) || (srcNComps == 4) ) && srcPixelPtrs[srcNComps - 1] ) {
+            if ( srcNComps > 0 && ( (srcNComps == 1) || (srcNComps == 4) ) && srcPixelPtrs[srcNComps - 1] ) {
                 srcA = *srcPixelPtrs[srcNComps - 1];
 #             ifdef DEBUG
                 assert(srcA == srcA); // check for NaN
@@ -272,11 +272,11 @@ copyUnProcessedChannels_nonTemplated(const void* originalImgPtrs[4],
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<char, dstNComps>((PIX**)dstImgPtrs, roi.x1, roi.y1, dstBounds, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, dstNComps>((const PIX**)dstImgPtrs, roi.x1, roi.y1, dstBounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
     PIX* srcPixelPtrs[4];
     int srcPixelStride;
-    Image::getChannelPointers<char, srcNComps>((PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, srcPixelPtrs, &srcPixelStride);
+    Image::getChannelPointers<PIX, srcNComps>((const PIX**)originalImgPtrs, roi.x1, roi.y1, originalImgBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
 
 
     const int dstRowElements = dstPixelStride * dstBounds.width();
@@ -514,16 +514,16 @@ copyUnProcessedChannelsForSrcComps(const void* originalImgPtrs[4],
 {
     switch (dstImgNComps) {
         case 1:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, srcNComps, 1>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
+            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 1>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
             break;
         case 2:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, srcNComps, 2>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
+            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 2>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
             break;
         case 3:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, srcNComps, 3>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
+            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 3>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
             break;
         case 4:
-            copyUnProcessedChannelsForSrcComps<PIX, maxValue, srcNComps, 4>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
+            copyUnProcessedChannelsForDstComponents<PIX, maxValue, srcNComps, 4>(originalImgPtrs, originalImgBounds, dstImgPtrs, dstBounds, processChannels, roi, renderArgs);
             break;
         default:
             assert(false);

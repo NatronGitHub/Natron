@@ -321,11 +321,11 @@ halveImageForInternal(const void* srcPtrs[4],
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<PIX, nComps>((PIX**)dstPtrs, dstBounds.x1, dstBounds.y1, dstBounds, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, nComps>((const PIX**)dstPtrs, dstBounds.x1, dstBounds.y1, dstBounds, (PIX**)dstPixelPtrs, &dstPixelStride);
 
     const PIX* srcPixelPtrs[4];
     int srcPixelStride;
-    Image::getChannelPointers<PIX, nComps>((PIX**)srcPtrs, srcBounds.x1, srcBounds.y1, srcBounds, srcPixelPtrs, &srcPixelStride);
+    Image::getChannelPointers<PIX, nComps>((const PIX**)srcPtrs, srcBounds.x1, srcBounds.y1, srcBounds, (PIX**)srcPixelPtrs, &srcPixelStride);
 
     const int dstRowElementsCount = dstBounds.width() * dstPixelStride;
     const int srcRowElementsCount = srcBounds.width() * srcPixelStride;
@@ -451,7 +451,7 @@ checkForNaNsInternal(void* ptrs[4],
 
     PIX* dstPixelPtrs[4];
     int dstPixelStride;
-    Image::getChannelPointers<PIX, nComps>((PIX**)ptrs, roi.x1, roi.y1, bounds, dstPixelPtrs, &dstPixelStride);
+    Image::getChannelPointers<PIX, nComps>((const PIX**)ptrs, roi.x1, roi.y1, bounds, (PIX**)dstPixelPtrs, &dstPixelStride);
     const int rowElementsCount = bounds.width() * dstPixelStride;
 
     bool hasnan = false;
