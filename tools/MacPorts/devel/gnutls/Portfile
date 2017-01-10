@@ -4,7 +4,7 @@ PortSystem      1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
-version         3.4.17
+version         3.5.8
 set branch      [join [lrange [split ${version} .] 0 1] .]
 categories      devel security
 # yes, some of the libs are GPL only
@@ -24,8 +24,8 @@ master_sites    ftp://ftp.gnutls.org/gcrypt/gnutls/v${branch}/ \
                 http://archive.hmug.org/src/gnutls/ \
                 http://mirrors.dotsrc.org/gcrypt/gnutls/v${branch}/
 
-checksums       rmd160  6308d362a29b908ea08b1219a8b7d2c0fd482b3a \
-                sha256  9b50e8a670d5e950425d96935c7ddd415eb6f8079615a36df425f09a3143172e
+checksums       rmd160  77cd2f4a6da7cf1eece05422bc86b29833b08772 \
+                sha256  0e97f243ae72b70307d684b84c7fe679385aa7a7a0e37e5be810193dcc17d4ff
 
 use_xz          yes
 
@@ -35,6 +35,7 @@ depends_build   port:gettext \
 depends_lib     port:gmp \
                 port:libidn \
                 port:libtasn1 \
+                port:libunistring \
                 port:p11-kit \
                 port:nettle \
                 port:zlib
