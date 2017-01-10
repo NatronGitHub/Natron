@@ -792,21 +792,25 @@ void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
                         IOPluginsMap* writersMap)
 {
-    assert( OFX::Host::PluginCache::getPluginCache() );
+    SettingsPtr settings = appPTR->getCurrentSettings();
+    assert(settings);
+    bool useStdOFXPluginsLocation = settings->getUseStdOFXPluginsLocation();
+    OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
+    assert(pluginCache);
     /// set the version label in the global cache
-    OFX::Host::PluginCache::getPluginCache()->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
+    pluginCache->setCacheVersion(NATRON_APPLICATION_NAME "OFXCachev1");
 
     /// register the image effect cache with the global plugin cache
-    _imp->imageEffectPluginCache->registerInCache( *OFX::Host::PluginCache::getPluginCache() );
+    _imp->imageEffectPluginCache->registerInCache( *pluginCache );
 
 
-    OFX::Host::PluginCache::getPluginCache()->setPluginHostPath(NATRON_APPLICATION_NAME);
-    OFX::Host::PluginCache::getPluginCache()->setPluginHostPath("Nuke");
+    pluginCache->setPluginHostPath(NATRON_APPLICATION_NAME);
+    pluginCache->setPluginHostPath("Nuke");
     std::list<std::string> extraPluginsSearchPaths;
-    appPTR->getCurrentSettings()->getOpenFXPluginsSearchPaths(&extraPluginsSearchPaths);
     for (std::list<std::string>::iterator it = extraPluginsSearchPaths.begin(); it != extraPluginsSearchPaths.end(); ++it) {
         if ( !(*it).empty() ) {
-            OFX::Host::PluginCache::getPluginCache()->addFileToPath(*it);
+            pluginCache->addFileToPath(*it);
         }
     }
 
@@ -815,11 +819,11 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     dir.cdUp();
     std::string natronBundledPluginsPath = QString( dir.absolutePath() +  QString::fromUtf8("/Plugins/OFX/") + QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString();
     try {
-        if ( appPTR->getCurrentSettings()->loadBundledPlugins() ) {
-            if ( appPTR->getCurrentSettings()->preferBundledPlugins() ) {
-                OFX::Host::PluginCache::getPluginCache()->prependFileToPath(natronBundledPluginsPath);
+        if ( settings->loadBundledPlugins() ) {
+            if ( settings->preferBundledPlugins() ) {
+                pluginCache->prependFileToPath(natronBundledPluginsPath);
             } else {
-                OFX::Host::PluginCache::getPluginCache()->addFileToPath(natronBundledPluginsPath);
+                pluginCache->addFileToPath(natronBundledPluginsPath);
             }
         }
     } catch (std::logic_error) {
@@ -837,14 +841,14 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
         FStreamsSupport::open( &ifs, ofxCacheFilePath.toStdString() );
         if (ifs) {
             try {
-                OFX::Host::PluginCache::getPluginCache()->readCache(ifs);
+                pluginCache->readCache(ifs);
             } catch (const std::exception& e) {
                 appPTR->writeToErrorLog_mt_safe( QLatin1String("OpenFX"), QDateTime::currentDateTime(),
                                                  tr("Failure to read OpenFX plug-ins cache: %1").arg( QString::fromUtf8( e.what() ) ) );
             }
         }
     }
-    OFX::Host::PluginCache::getPluginCache()->scanPluginFiles();
+    pluginCache->scanPluginFiles();
     _imp->loadingPluginID.clear(); // finished loading plugins
 
     // write the cache NOW (it won't change anyway)
@@ -1037,8 +1041,9 @@ OfxHost::writeOFXCache()
     if (!ofile) {
         return;
     }
-    assert( OFX::Host::PluginCache::getPluginCache() );
-    OFX::Host::PluginCache::getPluginCache()->writePluginCache(ofile);
+    OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
+    assert(pluginCache);
+    pluginCache->writePluginCache(ofile);
 
     ofile.close();
     if (QFile::exists(ofxCacheFilePath)) {
@@ -1124,30 +1129,24 @@ OfxHost::newMemoryInstance(size_t nBytes)
 
 void
 OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
-                                 bool actionCaller)
+                                 bool /*actionCaller*/)
 {
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
     tls->lastEffectCallingMainEntry = instance;
-    if (actionCaller) {
-        tls->threadIndexes.push_back(-1);
-    } else {
-        assert( !tls->threadIndexes.empty() );
-        tls->threadIndexes.pop_back();
-    }
+
 }
 
 struct OfxFunctorArgs
 {
     void* customArg;
-    OfxThreadFunctionV1 ofxFunc;
+    OfxThreadFunctionV1* ofxFunc;
 };
 
 static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
-                                        unsigned int threadMax,
-                                        void *customArg,
-                                        const EffectInstancePtr& /*effect*/,
-                                        const TreeRenderNodeArgsPtr& /*renderArgs*/)
+                                               unsigned int threadMax,
+                                               void *customArg,
+                                               const TreeRenderNodeArgsPtr& /*renderArgs*/)
 {
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
     try {

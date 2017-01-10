@@ -113,8 +113,6 @@ public:
 
     bool isInitialized() const;
 
-    const std::string & ofxGetOutputPremultiplication() const;
-
     /**
      * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
      * call of the action will take place in the main-thread.
@@ -248,6 +246,9 @@ public:
 public:
 
     virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+    virtual bool getInputCanReceiveTransform(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getInputCanReceiveDistorsion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum getDistorsion(TimeValue time,
                                     const RenderScale & renderScale,

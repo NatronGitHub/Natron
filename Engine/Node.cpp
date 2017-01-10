@@ -331,6 +331,22 @@ Node::getCurrentCanDistort() const
 }
 
 void
+Node::setCurrentCanTransform(bool support)
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+
+    _imp->currentDeprecatedTransformSupport = support;
+}
+
+bool
+Node::getCurrentCanTransform() const
+{
+    QMutexLocker k(&_imp->pluginsPropMutex);
+
+    return _imp->currentDeprecatedTransformSupport;
+}
+
+void
 Node::refreshDynamicProperties()
 {
     PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
@@ -349,6 +365,8 @@ Node::refreshDynamicProperties()
     bool supportsRenderScale = _imp->effect->supportsRenderScale();
     bool multiResSupported = _imp->effect->supportsMultiResolution();
     bool canDistort = _imp->effect->getCanDistort();
+    bool currentDeprecatedTransformSupport = _imp->effect->getCanTransform();
+
     _imp->pluginSafety = _imp->effect->getCurrentRenderThreadSafety();
     
     if (!tilesSupported && _imp->pluginSafety == eRenderSafetyFullySafeFrame) {
@@ -362,6 +380,7 @@ Node::refreshDynamicProperties()
     setCurrentSupportRenderScale(supportsRenderScale);
     setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
     setCurrentCanDistort(canDistort);
+    setCurrentCanTransform(currentDeprecatedTransformSupport);
 }
 
 bool
@@ -727,12 +746,12 @@ Node::quitAnyProcessing_non_blocking()
     _imp->abortPreview_non_blocking();
 
 
+
     TrackerNodePtr isTracker = toTrackerNode(_imp->effect);
     if (isTracker) {
         TrackerHelperPtr tracker = isTracker->getTracker();
         if (tracker) {
             tracker->quitTrackerThread_non_blocking();
-
         }
     }
 }
@@ -1113,24 +1132,6 @@ Node::getPluginGrouping(std::vector<std::string>* grouping) const
     *grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
 }
 
-static std::string removeTrailingDigits(const std::string& str)
-{
-    if (str.empty()) {
-        return std::string();
-    }
-    std::size_t i = str.size() - 1;
-    while (i > 0 && std::isdigit(str[i])) {
-        --i;
-    }
-
-    if (i == 0) {
-        // Name only consists of digits
-        return std::string();
-    }
-
-    return str.substr(0, i + 1);
-}
-
 
 
 
@@ -1138,8 +1139,12 @@ bool
 Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
-    ///If the node was aborted, don't transmit any message because we could cause a deadlock
-    if ( _imp->effect->aborted() || (!_imp->nodeCreated && _imp->wasCreatedSilently) || _imp->restoringDefaults) {
+    if ( (!_imp->nodeCreated && _imp->wasCreatedSilently) || _imp->restoringDefaults) {
+        return false;
+    }
+
+    TreeRenderNodeArgsPtr currentRender = _imp->effect->getCurrentRender_TLS();
+    if (currentRender && currentRender->isRenderAborted()) {
         return false;
     }
 
@@ -1678,36 +1683,36 @@ Node::onRefreshIdentityStateRequestReceived()
     if (project->isLoadingProject()) {
         return;
     }
-    TimeValue time = project->currentFrame();
+    TimeValue time(project->currentFrame());
     RenderScale scale(1.);
-    double inputTime = 0;
-    U64 hash = 0;
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
 
-    RectI format = _imp->effect->getOutputFormat();
+    RectI format = _imp->effect->getOutputFormat(TreeRenderNodeArgsPtr());
 
     //The one view node might report it is identity, but we do not want it to display it
 
 
-    bool isIdentity = false;
     int inputNb = -1;
     OneViewNodePtr isOneView = isEffectOneViewNode();
     if (!isOneView) {
         for (int i = 0; i < nViews; ++i) {
-            int identityInputNb = -1;
+
+            IsIdentityResultsPtr isIdentityResults;
+            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, format, ViewIdx(i), TreeRenderNodeArgsPtr(), &isIdentityResults);
+            if (isFailureRetCode(stat)) {
+                continue;
+            }
+            int identityInputNb;
+            TimeValue identityTime;
             ViewIdx identityView;
-            bool isViewIdentity = _imp->effect->isIdentity_public(true, hash, time, scale, format, ViewIdx(i), &inputTime, &identityView, &identityInputNb);
-            if ( (i > 0) && ( (isViewIdentity != isIdentity) || (identityInputNb != inputNb) || (identityView.value() != i) ) ) {
-                isIdentity = false;
+            isIdentityResults->getIdentityData(&identityInputNb, &identityTime, &identityView);
+
+            if ( identityInputNb == -1 || identityView.value() != i ) {
                 inputNb = -1;
                 break;
             }
-            isIdentity |= isViewIdentity;
             inputNb = identityInputNb;
-            if (!isIdentity) {
-                break;
-            }
         }
     }
 
@@ -1717,7 +1722,7 @@ Node::onRefreshIdentityStateRequestReceived()
 
     NodeGuiIPtr nodeUi = _imp->guiPointer.lock();
     if (nodeUi) {
-        nodeUi->onIdentityStateChanged(isIdentity ? inputNb : -1);
+        nodeUi->onIdentityStateChanged(inputNb);
     }
 } // Node::onRefreshIdentityStateRequestReceived
 
@@ -2265,9 +2270,9 @@ Node::getAttachedRotoItem() const
         return thisItem;
     }
     // On a render thread, use the local thread copy
-    ParallelRenderArgsPtr tls = effect->getParallelRenderArgsTLS();
-    if (tls && thisItem->isRenderCloneNeeded()) {
-        return thisItem->getCachedDrawable(tls->abortInfo.lock());
+    TreeRenderNodeArgsPtr currentRender = effect->getCurrentRender_TLS();
+    if (currentRender && thisItem->isRenderCloneNeeded()) {
+        return thisItem->getCachedDrawable(currentRender->getParentRender());
     }
     return thisItem;
 }
@@ -2315,7 +2320,7 @@ Node::checkForPremultWarningAndCheckboxes()
         }
     }
 
-    ImagePremultiplicationEnum premult = _imp->effect->getPremult();
+    ImagePremultiplicationEnum premult = _imp->effect->getPremult(TreeRenderNodeArgsPtr());
 
     //not premult
     if (premult != eImagePremultiplicationPremultiplied) {

@@ -70,6 +70,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/TreeRender.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/UndoCommand.h"
@@ -94,13 +95,14 @@ struct OfxEffectInstancePrivate
     struct ClipsInfo
     {
         ClipsInfo()
-            : optional(false)
-            , mask(false)
-            , clip(NULL)
-            , label()
-            , hint()
-            , visible(true)
-            , canReceiveDistorsion(false)
+        : optional(false)
+        , mask(false)
+        , clip(NULL)
+        , label()
+        , hint()
+        , visible(true)
+        , canReceiveDistorsion(false)
+        , canReceiveDeprecatedTransform3x3(false)
         {
         }
 
@@ -111,6 +113,7 @@ struct OfxEffectInstancePrivate
         std::string hint;
         bool visible;
         bool canReceiveDistorsion;
+        bool canReceiveDeprecatedTransform3x3;
     };
 
     std::vector<ClipsInfo> clipsInfos;
@@ -180,7 +183,6 @@ struct OfxEffectInstancePrivate
     {
     }
 
-    void pushMetadatasToClips(const NodeMetadata& metadata);
 };
 
 OfxEffectInstance::OfxEffectInstance(const NodePtr& node)
@@ -291,6 +293,10 @@ OfxEffectInstance::describePlugin()
         _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
         _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
         _imp->clipsInfos[i].canReceiveDistorsion = clips[i]->canDistort();
+        _imp->clipsInfos[i].canReceiveDeprecatedTransform3x3 = clips[i]->canTransform();
+
+        // An effect that supports the distorsion suite should not supports also the old transformation suite: this is obsolete.
+        assert(!_imp->clipsInfos[i].canReceiveDistorsion || !_imp->clipsInfos[i].canReceiveDeprecatedTransform3x3);
         assert(_imp->clipsInfos[i].clip);
     }
 
@@ -982,37 +988,6 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
     return std::string();
 }
 
-void
-OfxEffectInstancePrivate::pushMetadatasToClips(const NodeMetadata& metadata)
-{
-    //Actually push to the clips the preferences and set the flags on the effect
-
-    if (!effect) {
-        return;
-    }
-    const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& clips = effect->getClips();
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = clips.begin()
-         ; it != clips.end(); ++it) {
-        OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-        assert(clip);
-        if (!clip) {
-            continue;
-        }
-        int inputNb = clip->getInputNb();
-        const ImageComponents& components = metadata.getImageComponents(inputNb);
-
-        clip->setComponents( OfxClipInstance::natronsComponentsToOfxComponents(components) );
-        clip->setPixelDepth( OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) ) );
-        clip->setAspectRatio( metadata.getPixelAspectRatio(inputNb) );
-    }
-
-    effect->updatePreferences_safe( metadata.getOutputFrameRate(),
-                                   OfxClipInstance::natronsFieldingToOfxFielding( metadata.getOutputFielding() ),
-                                   OfxClipInstance::natronsPremultToOfxPremult( metadata.getOutputPremult() ),
-                                   metadata.getIsContinuous(),
-                                   metadata.getIsFrameVarying() );
-
-}
 
 ActionRetCodeEnum
 OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
@@ -1031,7 +1006,7 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     // metadata object
     OfxStatus stat = _imp->effect->getClipPreferences_safe(metadata);
     if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        return stat;
+        return eActionStatusFailed;
     }
 
     // Push the modified datas to clips now
@@ -1307,7 +1282,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
                               ViewIdx view,
-                              const TreeRenderNodeArgsPtr& render,
+                              const TreeRenderNodeArgsPtr& /*render*/,
                               TimeValue* inputTime,
                               ViewIdx* inputView,
                               int* inputNb)
@@ -1324,8 +1299,6 @@ OfxEffectInstance::isIdentity(TimeValue time,
 
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
-
-    assert((getNode()->supportsRenderScaleMaybe() != eSupportsNo) || (scale.x == 1. && scale.y == 1.));
 
     OfxTime identityTimeOfx = time;
     {
@@ -1402,7 +1375,7 @@ ActionRetCodeEnum
 OfxEffectInstance::beginSequenceRender(double first,
                                        double last,
                                        double step,
-                                       bool interactive*,
+                                       bool interactive,
                                        const RenderScale & scale,
                                        bool isSequentialRender,
                                        bool isRenderResponseToUserInteraction,
@@ -1410,13 +1383,8 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        ViewIdx view,
                                        RenderBackendTypeEnum backendType,
                                        const EffectOpenGLContextDataPtr& glContextData,
-                                       const TreeRenderNodeArgsPtr& render)
+                                       const TreeRenderNodeArgsPtr& /*render*/)
 {
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        Q_UNUSED(scaleIsOne);
-    }
 
     OfxStatus stat;
     {
@@ -1427,7 +1395,7 @@ OfxEffectInstance::beginSequenceRender(double first,
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
-                                                   isOpenGLRender, oglData, draftMode, view);
+                                                   backendType == eRenderBackendTypeOpenGL, oglData, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1441,7 +1409,7 @@ ActionRetCodeEnum
 OfxEffectInstance::endSequenceRender(double first,
                                      double last,
                                      double step,
-                                     bool interactive*,
+                                     bool interactive,
                                      const RenderScale & scale,
                                      bool isSequentialRender,
                                      bool isRenderResponseToUserInteraction,
@@ -1449,13 +1417,8 @@ OfxEffectInstance::endSequenceRender(double first,
                                      ViewIdx view,
                                      RenderBackendTypeEnum backendType,
                                      const EffectOpenGLContextDataPtr& glContextData,
-                                     const TreeRenderNodeArgsPtr& render)
+                                     const TreeRenderNodeArgsPtr& /*render*/)
 {
-    {
-        bool scaleIsOne = (scale.x == 1. && scale.y == 1.);
-        assert( !( (supportsRenderScaleMaybe() == eSupportsNo) && !scaleIsOne ) );
-        Q_UNUSED(scaleIsOne);
-    }
 
     OfxStatus stat;
     {
@@ -1468,7 +1431,7 @@ OfxEffectInstance::endSequenceRender(double first,
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
                                                  isSequentialRender, isRenderResponseToUserInteraction,
-                                                 isOpenGLRender, oglData, draftMode, view);
+                                                 backendType == eRenderBackendTypeOpenGL, oglData, draftMode, view);
     }
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
@@ -1487,7 +1450,6 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 
     assert( !args.outputPlanes.empty() );
 
-    const std::pair<ImageComponents, ImagePtr>& firstPlane = args.outputPlanes.front();
     OfxRectI ofxRoI;
     ofxRoI.x1 = args.roi.left();
     ofxRoI.x2 = args.roi.right();
@@ -1508,53 +1470,26 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         }
     }
 
-    ///before calling render, set the render scale thread storage for each clip
-# ifdef DEBUG
-    {
-        // check the dimensions of output images
-        const RectI & dstBounds = firstPlane.second->getBounds();
-        const RectD & dstRodCanonical = firstPlane.second->getRoD();
-        RectI dstRod;
-        dstRodCanonical.toPixelEnclosing(args.mappedScale, firstPlane.second->getPixelAspectRatio(), &dstRod);
-
-        if ( !supportsTiles() && !getNode()->isDuringPaintStrokeCreation() ) {
-            // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsTiles
-            //  If a clip or plugin does not support tiled images, then the host should supply full RoD images to the effect whenever it fetches one.
-            assert(dstRod.x1 == dstBounds.x1);
-            assert(dstRod.x2 == dstBounds.x2);
-            assert(dstRod.y1 == dstBounds.y1);
-            assert(dstRod.y2 == dstBounds.y2);
-        }
-        if ( !supportsMultiResolution() ) {
-            // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectPropSupportsMultiResolution
-            //   Multiple resolution images mean...
-            //    input and output images can be of any size
-            //    input and output images can be offset from the origin
-            // Commented-out: Some Furnace plug-ins from The Foundry (e.g F_Steadiness) are not supporting multi-resolution but actually produce an output
-            // with a RoD different from the input
-            /* assert(dstRod.x1 == 0);
-               assert(dstRod.y1 == 0);*/
-        }
-    }
-# endif // DEBUG
     {
         assert(_imp->effect);
 
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( args.glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
-        stat = _imp->effect->renderAction( (OfxTime)args.time,
-                                           field,
-                                           ofxRoI,
-                                           args.mappedScale,
-                                           args.isSequentialRender,
-                                           args.isRenderResponseToUserInteraction,
-                                           args.useOpenGL,
-                                           oglData,
-                                           args.draftMode,
-                                           args.view,
-                                           viewsCount,
-                                           ofxPlanes );
+        TreeRenderPtr parentRender = args.renderArgs->getParentRender();
+
+        stat = _imp->effect->renderAction((OfxTime)args.time,
+                                          field,
+                                          ofxRoI,
+                                          args.renderScale,
+                                          parentRender->isPlayback(),
+                                          !parentRender->isPlayback(),
+                                          args.backendType == eRenderBackendTypeOpenGL,
+                                          oglData,
+                                          parentRender->isDraftRender(),
+                                          args.view,
+                                          viewsCount,
+                                          ofxPlanes );
     }
 
     if (stat != kOfxStatOK) {
@@ -1682,7 +1617,7 @@ OfxEffectInstance::onOverlayPenDown(TimeValue time,
                                     const QPointF & viewportPos,
                                     const QPointF & pos,
                                     double pressure,
-                                    double /*timestamp*/,
+                                    TimeValue /*timestamp*/,
                                     PenType /*pen*/)
 {
     if (!_imp->initialized) {
@@ -1717,7 +1652,7 @@ OfxEffectInstance::onOverlayPenMotion(TimeValue time,
                                       const QPointF & viewportPos,
                                       const QPointF & pos,
                                       double pressure,
-                                      double /*timestamp*/)
+                                      TimeValue /*timestamp*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -1750,7 +1685,7 @@ OfxEffectInstance::onOverlayPenUp(TimeValue time,
                                   const QPointF & viewportPos,
                                   const QPointF & pos,
                                   double pressure,
-                                  double /*timestamp*/)
+                                  TimeValue /*timestamp*/)
 {
     if (!_imp->initialized) {
         return false;
@@ -1948,7 +1883,7 @@ public:
         assert(!currentValue);
         state->setValue(true);
         if (currentValue) {
-            state->evaluateValueChange(DimSpec::all(), 0 /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
+            state->evaluateValueChange(DimSpec::all(), TimeValue(0) /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
         }
     }
 
@@ -1962,7 +1897,7 @@ public:
         assert(currentValue);
         state->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0);
         if (!currentValue) {
-            state->evaluateValueChange(DimSpec::all(), 0 /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
+            state->evaluateValueChange(DimSpec::all(), TimeValue(0) /*time*/, ViewSetSpec::all(), eValueChangedReasonUserEdited);
         }
     }
     
@@ -2007,7 +1942,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     }
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
-    RenderScale renderScale  = getOverlayInteractRenderScale();
+    RenderScale renderScale  = getNode()->getOverlayInteractRenderScale();
 
 
     OfxStatus stat = kOfxStatOK;
@@ -2163,9 +2098,6 @@ OfxEffectInstance::syncPrivateData_other_thread()
 void
 OfxEffectInstance::onSyncPrivateDataRequested()
 {
-    ///Can only be called in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
-
 
     effectInstance()->syncPrivateDataAction();
 }
@@ -2181,7 +2113,7 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
         assert(inputNb == -1);
         clip = dynamic_cast<OfxClipInstance*>( effectInstance()->getClip(kOfxImageEffectOutputClipName) );
     }
-    assert(clip)
+    assert(clip);
     const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
     for (U32 i = 0; i < supportedComps.size(); ++i) {
         try {
@@ -2211,13 +2143,13 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 
 ActionRetCodeEnum
 OfxEffectInstance::getComponentsAction(TimeValue time,
-                                                  ViewIdx view,
-                                                  const TreeRenderNodeArgsPtr& renderArgs,
-                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                  std::list<ImageComponents>* layersProduced,
-                                                  TimeValue* passThroughTime,
-                                                  ViewIdx* passThroughView,
-                                                  int* passThroughInputNb)
+                                       ViewIdx view,
+                                       const TreeRenderNodeArgsPtr& /*renderArgs*/,
+                                       std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                       std::list<ImageComponents>* layersProduced,
+                                       TimeValue* passThroughTime,
+                                       ViewIdx* passThroughView,
+                                       int* passThroughInputNb)
 {
 
 
@@ -2227,7 +2159,7 @@ OfxEffectInstance::getComponentsAction(TimeValue time,
     OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
     OfxTime ptTime;
     int ptView_i;
-    OfxStatus stat = effectInstance()->getClipComponentsAction( time, view, compMap, ptClip, ptTime, &ptView_i );
+    OfxStatus stat = effectInstance()->getClipComponentsAction( time, view, compMap, ptClip, ptTime, ptView_i );
     if (stat == kOfxStatFailed) {
         return eActionStatusFailed;
     }
@@ -2238,7 +2170,7 @@ OfxEffectInstance::getComponentsAction(TimeValue time,
             *passThroughInputNb = clip->getInputNb();
         }
     }
-    *passThroughTime = ptTime;
+    *passThroughTime = TimeValue(ptTime);
     *passThroughView = ViewIdx(ptView_i);
 
     for (OFX::Host::ImageEffect::ComponentsMap::iterator it = compMap.begin(); it != compMap.end(); ++it) {
@@ -2320,10 +2252,13 @@ OfxEffectInstance::getSequentialPreference() const
     return _imp->sequentialPref;
 }
 
-const std::string &
-OfxEffectInstance::ofxGetOutputPremultiplication() const
+bool
+OfxEffectInstance::getCanTransform() const
 {
-    return OfxClipInstance::natronsPremultToOfxPremult( getPremult() );
+    if (!effectInstance()) {
+        return false;
+    }
+    return effectInstance()->canTransform();
 }
 
 bool
@@ -2333,6 +2268,17 @@ OfxEffectInstance::getCanDistort() const
         return false;
     }
     return effectInstance()->canDistort();
+}
+
+bool
+OfxEffectInstance::getInputCanReceiveTransform(int inputNb) const
+{
+    if (inputNb < 0 || inputNb >= (int)_imp->clipsInfos.size()) {
+        assert(false);
+        return false;
+    }
+    return _imp->clipsInfos[inputNb].canReceiveDistorsion;
+
 }
 
 bool
@@ -2348,21 +2294,22 @@ OfxEffectInstance::getInputCanReceiveDistorsion(int inputNb) const
 
 ActionRetCodeEnum
 OfxEffectInstance::getDistorsion(TimeValue time,
-                                const RenderScale & renderScale, //< the plug-in accepted scale
-                                ViewIdx view,
-                                DistorsionFunction2D* distorsion)
+                                 const RenderScale & renderScale, //< the plug-in accepted scale
+                                 ViewIdx view,
+                                 const TreeRenderNodeArgsPtr& /*render*/,
+                                 DistorsionFunction2D* distorsion)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string clipName;
     double tmpTransform[9];
     OfxStatus stat;
     {
-
-
-
-
         try {
-            stat = effectInstance()->getDistorsionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distorsion->func, &distorsion->customData, &distorsion->customDataSizeHintInBytes, &distorsion->customDataFreeFunc );
+            if (effectInstance()->canDistort()) {
+                stat = effectInstance()->getDistorsionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distorsion->func, &distorsion->customData, &distorsion->customDataSizeHintInBytes, &distorsion->customDataFreeFunc );
+            } else {
+                stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform);
+            }
         } catch (...) {
             return eActionStatusFailed;
         }
@@ -2489,7 +2436,7 @@ OfxEffectInstance::supportsConcurrentOpenGLRenders() const
 }
 
 ActionRetCodeEnum
-OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
 
 
@@ -2521,7 +2468,7 @@ OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const Rende
 }
 
 ActionRetCodeEnum
-OfxEffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
+OfxEffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
 
 

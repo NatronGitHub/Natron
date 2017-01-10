@@ -337,6 +337,8 @@ public:
      **/
     bool getCurrentDistortSupport() const;
 
+    bool getCurrentTransformationSupport_deprecated() const;
+
     /**
      * @brief Set the results of the getFrameRange action for this render
      **/

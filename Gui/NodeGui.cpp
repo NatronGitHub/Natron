@@ -62,6 +62,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/GroupOutput.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/PyNode.h"
 #include "Engine/PyParameter.h"
 #include "Engine/Plugin.h"
@@ -249,8 +250,7 @@ NodeGui::initialize(NodeGraph* dag,
     setCacheMode(DeviceCoordinateCache);
 
     if (internalNode->isOutputNode()) {
-        internalNode->
-        QObject::connect ( isOutput->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
+        QObject::connect ( internalNode->getRenderEngine().get(), SIGNAL(refreshAllKnobs()), _graph, SLOT(refreshAllKnobsGui()) );
     }
 
     ViewerNodePtr isViewerNode = internalNode->isEffectViewerNode();
@@ -651,7 +651,7 @@ NodeGui::togglePreview_internal(bool refreshPreview)
     if ( getNode()->isPreviewEnabled() ) {
         ensurePreviewCreated();
         if (refreshPreview) {
-            getNode()->computePreviewImage( _graph->getGui()->getApp()->getTimeLine()->currentFrame() );
+            getNode()->computePreviewImage(TimeValue(_graph->getGui()->getApp()->getTimeLine()->currentFrame()));
         }
     } else {
         if (_previewPixmap) {
@@ -1941,7 +1941,6 @@ NodeGui::hideGui()
     if (isViewer) {
         ViewerGL* viewerGui = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
         if (viewerGui) {
-            viewerGui->clearLastRenderedTexture();
             _graph->getGui()->deactivateViewerTab(isViewer);
         }
     }
@@ -2918,7 +2917,7 @@ TextItem::init()
 
 void
 NodeGui::refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs,
-                                     SequenceTime time)
+                                     TimeValue time)
 {
     NodePtr node = getNode();
 
@@ -2945,7 +2944,7 @@ NodeGui::onSettingsPanelClosedChanged(bool closed)
 
         if (!closed) {
             NodePtr node = getNode();
-            SequenceTime time = node->getApp()->getTimeLine()->currentFrame();
+            TimeValue time(node->getApp()->getTimeLine()->currentFrame());
             node->getEffectInstance()->refreshAfterTimeChange(false, time);
         }
 
@@ -3349,7 +3348,7 @@ NodeGui::onIdentityStateChanged(int inputNb)
     }
     if (enabled) {
         RotoDrawableItemPtr attachItem = node->getAttachedRotoItem();
-        TimeValue time = node->getEffectInstance()->getCurrentTime();
+        TimeValue time = node->getEffectInstance()->getTimelineCurrentTime();
         if (attachItem && !attachItem->isActivated(time, ViewIdx(0))) {
             enabled = false;
         }
@@ -3474,7 +3473,7 @@ NodeGui::setCurrentCursor(CursorEnum defaultCursor)
     if (!node) {
         return;
     }
-    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupport* overlayInteract = node->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return;
     }
@@ -3502,7 +3501,7 @@ NodeGui::setCurrentCursor(const QString& customCursorFilePath)
     if (!node) {
         return false;
     }
-    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupport* overlayInteract = node->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return false;
     }
@@ -3760,13 +3759,13 @@ NodeGui::showGroupKnobAsDialog(const KnobGroupPtr& group)
 
 static void populateMenuRecursive(const KnobChoicePtr& choiceKnob, const NodePtr& node, const NodeGui* self, Menu* m)
 {
-    std::vector<std::string> entries = choiceKnob->getEntries();
+    std::vector<ChoiceOption> entries = choiceKnob->getEntries();
     if ( entries.empty() ) {
         return;
     }
 
-    for (std::vector<std::string>::iterator it = entries.begin(); it != entries.end(); ++it) {
-        KnobIPtr knob = node->getKnobByName(*it);
+    for (std::vector<ChoiceOption>::iterator it = entries.begin(); it != entries.end(); ++it) {
+        KnobIPtr knob = node->getKnobByName(it->id);
         if (!knob) {
             // Plug-in specified invalid knob name in the menu
             continue;
@@ -3808,7 +3807,7 @@ NodeGui::onRightClickMenuKnobPopulated()
     if (!node) {
         return;
     }
-    OverlaySupport* overlayInteract = node->getEffectInstance()->getCurrentViewportForOverlays();
+    OverlaySupport* overlayInteract = node->getCurrentViewportForOverlays();
     if (!overlayInteract) {
         return;
     }

@@ -140,7 +140,9 @@ public:
     // General/Documentation
     KnobPagePtr _documentationPage;
     KnobIntPtr _wwwServerPort;
+#ifdef NATRON_DOCUMENTATION_ONLINE
     KnobChoicePtr _documentationSource;
+#endif
 
     // General/User Interface
     KnobPagePtr _uiPage;
@@ -201,6 +203,7 @@ public:
     // Plugins
     KnobPagePtr _pluginsTab;
     KnobPathPtr _extraPluginPaths;
+    KnobBoolPtr _useStdOFXPluginsLocation;
     KnobPathPtr _templatesPluginPaths;
     KnobBoolPtr _preferBundledPlugins;
     KnobBoolPtr _loadBundledPlugins;
@@ -796,14 +799,15 @@ SettingsPrivate::initializeKnobsDocumentation()
     KnobHolderPtr thisShared = _publicInterface->shared_from_this();
     _documentationPage = AppManager::createKnob<KnobPage>( thisShared, tr("Documentation") );
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
     _documentationSource = AppManager::createKnob<KnobChoice>( thisShared, tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
     _documentationSource->appendChoice("Local");
     _documentationSource->appendChoice("Online");
     _documentationSource->appendChoice("None");
-
     _documentationPage->addKnob(_documentationSource);
+#endif
 
     /// used to store temp port for local webserver
     _wwwServerPort = AppManager::createKnob<KnobInt>( thisShared, tr("Documentation local port (0=auto)") );
@@ -1499,10 +1503,6 @@ SettingsPrivate::initializeKnobsPlugins()
     _pluginsTab = AppManager::createKnob<KnobPage>( thisShared, tr("Plug-ins") );
     _pluginsTab->setName("plugins");
 
-    _extraPluginPaths = AppManager::createKnob<KnobPath>( thisShared, tr("OpenFX plug-ins search path") );
-    knobsRequiringRestart.insert(_extraPluginPaths);
-    _extraPluginPaths->setName("extraPluginsSearchPaths");
-
 #if defined(__linux__) || defined(__FreeBSD__)
     std::string searchPath("/usr/OFX/Plugins");
 #elif defined(__APPLE__)
@@ -1515,14 +1515,40 @@ SettingsPrivate::initializeKnobsPlugins()
 
 #endif
 
+    _loadBundledPlugins = AppManager::createKnob<KnobBool>( thisShared, tr("Use bundled plug-ins") );
+    knobsRequiringRestart.insert(_loadBundledPlugins);
+    _loadBundledPlugins->setName("useBundledPlugins");
+    _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plug-ins bundled "
+                                            "with the binary distribution.\n"
+                                            "When unchecked, only system-wide plug-ins found in are loaded (more information can be "
+                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _pluginsTab->addKnob(_loadBundledPlugins);
+
+    _preferBundledPlugins = AppManager::createKnob<KnobBool>( thisShared, tr("Prefer bundled plug-ins over system-wide plug-ins") );
+    knobsRequiringRestart.insert(_preferBundledPlugins);
+    _preferBundledPlugins->setName("preferBundledPlugins");
+    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the %1 binary distribution will take precedence over system-wide plug-ins "
+                                              "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+    _pluginsTab->addKnob(_preferBundledPlugins);
+
+    _useStdOFXPluginsLocation = AppManager::createKnob<KnobBool>( thisShared, tr("Enable default OpenFX plugins location") );
+    knobsRequiringRestart.insert(_useStdOFXPluginsLocation);
+    _useStdOFXPluginsLocation->setName("useStdOFXPluginsLocation");
+    _useStdOFXPluginsLocation->setHintToolTip( tr("When checked, %1 also uses the OpenFX plug-ins found in the default location (%2).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
+    _pluginsTab->addKnob(_useStdOFXPluginsLocation);
+
+    _extraPluginPaths = AppManager::createKnob<KnobPath>( thisShared, tr("OpenFX plug-ins search path") );
+    knobsRequiringRestart.insert(_extraPluginPaths);
+    _extraPluginPaths->setName("extraPluginsSearchPaths");
     _extraPluginPaths->setHintToolTip( tr("Extra search paths where %1 should scan for OpenFX plug-ins. "
                                           "Extra plug-ins search paths can also be specified using the OFX_PLUGIN_PATH environment variable.\n"
                                           "The priority order for system-wide plug-ins, from high to low, is:\n"
+                                          "- plugins bundled with the binary distribution of %1 (if \"Prefer bundled plug-ins over "
+                                          "system-wide plug-ins\" is checked)\n"
                                           "- plug-ins found in OFX_PLUGIN_PATH\n"
-                                          "- plug-ins found in %2\n"
-                                          "Plug-ins bundled with the binary distribution of Natron may have either "
-                                          "higher or lower priority, depending on the \"Prefer bundled plug-ins over "
-                                          "system-wide plug-ins\" setting.\n"
+                                          "- plug-ins found in %2 (if \"Enable default OpenFX plug-ins location\" is checked)\n"
+                                          "- plugins bundled with the binary distribution of %1 (if \"Prefer bundled plug-ins over "
+                                          "system-wide plug-ins\" is not checked)\n"
                                           "Any change will take effect on the next launch of %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8( searchPath.c_str() ) ) );
     _extraPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_extraPluginPaths);
@@ -1536,21 +1562,6 @@ SettingsPrivate::initializeKnobsPlugins()
     _templatesPluginPaths->setMultiPath(true);
     _pluginsTab->addKnob(_templatesPluginPaths);
 
-    _loadBundledPlugins = AppManager::createKnob<KnobBool>( thisShared, tr("Use bundled plug-ins") );
-    knobsRequiringRestart.insert(_loadBundledPlugins);
-    _loadBundledPlugins->setName("useBundledPlugins");
-    _loadBundledPlugins->setHintToolTip( tr("When checked, %1 also uses the plug-ins bundled "
-                                            "with the binary distribution.\n"
-                                            "When unchecked, only system-wide plug-ins are loaded (more information can be "
-                                            "found in the help for the \"Extra plug-ins search paths\" setting).").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _pluginsTab->addKnob(_loadBundledPlugins);
-
-    _preferBundledPlugins = AppManager::createKnob<KnobBool>( thisShared, tr("Prefer bundled plug-ins over system-wide plugins") );
-    knobsRequiringRestart.insert(_preferBundledPlugins);
-    _preferBundledPlugins->setName("preferBundledPlugins");
-    _preferBundledPlugins->setHintToolTip( tr("When checked, and if \"Use bundled plug-ins\" is also checked, plug-ins bundled with the %1 binary distribution will take precedence over system-wide plug-ins "
-                                              "if they have the same internal ID.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _pluginsTab->addKnob(_preferBundledPlugins);
 } // Settings::initializeKnobsPlugins
 
 void
@@ -1610,16 +1621,12 @@ void
 SettingsPrivate::setDefaultValues()
 {
     _publicInterface->beginChanges();
-    _hostName->setDefaultValue(0);
-    _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+
     _natronSettingsExist->setDefaultValue(false);
-    _systemFontChoice->setDefaultValue(0);
-    _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
+
+    // General
     _checkForUpdates->setDefaultValue(false);
     _enableCrashReports->setDefaultValue(true);
-    _documentationSource->setDefaultValue(0);
-    _notifyOnFileChange->setDefaultValue(true);
-    _autoSaveDelay->setDefaultValue(5);
     _autoSaveUnSavedProjects->setDefaultValue(true);
     _maxUndoRedoNodeGraph->setDefaultValue(20);
     _linearPickers->setDefaultValue(true);
@@ -1628,7 +1635,6 @@ SettingsPrivate::setDefaultValues()
     _useBWIcons->setDefaultValue(false);
     _loadProjectsWorkspace->setDefaultValue(false);
     _numberOfThreads->setDefaultValue(0);
-
 
 
     _osmesaRenderers->setDefaultValue(defaultMesaDriver);
@@ -1644,17 +1650,38 @@ SettingsPrivate::setDefaultValues()
 #endif
     _renderInSeparateProcess->setDefaultValue(false);
     _queueRenders->setDefaultValue(false);
-    _autoPreviewEnabledForNewProjects->setDefaultValue(true);
+
+    // General/Projects setup
     _firstReadSetProjectFormat->setDefaultValue(true);
+    _autoPreviewEnabledForNewProjects->setDefaultValue(true);
     _fixPathsOnProjectPathChanged->setDefaultValue(true);
+    //_enableMappingFromDriveLettersToUNCShareNames
+
+    // General/Documentation
+    _wwwServerPort->setDefaultValue(0);
+#ifdef NATRON_DOCUMENTATION_ONLINE
+    _documentationSource->setDefaultValue(0);
+#endif
+
+    // General/User Interface
+    _notifyOnFileChange->setDefaultValue(true);
+#ifdef NATRON_ENABLE_IO_META_NODES
+    //_filedialogForWriters
+#endif
+    _renderOnEditingFinished->setDefaultValue(false);
+    _linearPickers->setDefaultValue(true);
     _maxPanelsOpened->setDefaultValue(10);
     _useCursorPositionIncrements->setDefaultValue(true);
-    _renderOnEditingFinished->setDefaultValue(false);
-    _activateRGBSupport->setDefaultValue(true);
-    _activateTransformConcatenationSupport->setDefaultValue(true);
-    _extraPluginPaths->setDefaultValue("");
-    _preferBundledPlugins->setDefaultValue(true);
-    _loadBundledPlugins->setDefaultValue(true);
+    //_defaultLayoutFile
+    _loadProjectsWorkspace->setDefaultValue(false);
+
+    // Color-Management
+    //_ocioConfigKnob
+    _ocioStartupCheck->setDefaultValue(true);
+    //_customOcioConfigFile
+
+
+    // Viewer
     _texturesMode->setDefaultValue(0);
     _cacheTileSizePo2->setDefaultValue(7);
     _checkerboardTileSize->setDefaultValue(5);
@@ -1682,206 +1709,193 @@ SettingsPrivate::setDefaultValues()
     // Default to All ram
     _maxRAMCacheSizeMb->setDefaultValue(0);
 
+    // Nodegraph
+
     _autoScroll->setDefaultValue(false);
     _autoTurbo->setDefaultValue(false);
-    _usePluginIconsInNodeGraph->setDefaultValue(true);
-    _useAntiAliasing->setDefaultValue(true);
-    _defaultNodeColor->setDefaultValue(0.7, DimIdx(0));
-    _defaultNodeColor->setDefaultValue(0.7, DimIdx(1));
-    _defaultNodeColor->setDefaultValue(0.7, DimIdx(2));
-    _cloneColor->setDefaultValue(0.78, DimIdx(0));
-    _cloneColor->setDefaultValue(0.27, DimIdx(1));
-    _cloneColor->setDefaultValue(0.39, DimIdx(2));
-    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(0));
-    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(1));
-    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(2));
+    _snapNodesToConnections->setDefaultValue(true);
+    _useBWIcons->setDefaultValue(false);
+    _maxUndoRedoNodeGraph->setDefaultValue(20);
     _disconnectedArrowLength->setDefaultValue(30);
     _hideOptionalInputsAutomatically->setDefaultValue(true);
     _useInputAForMergeAutoConnect->setDefaultValue(false);
+    _usePluginIconsInNodeGraph->setDefaultValue(true);
+    _useAntiAliasing->setDefaultValue(true);
 
-    _defaultGeneratorColor->setDefaultValue(0.3, DimIdx(0));
-    _defaultGeneratorColor->setDefaultValue(0.5, DimIdx(1));
-    _defaultGeneratorColor->setDefaultValue(0.2, DimIdx(2));
+    // Plugins
+    _extraPluginPaths->setDefaultValue("");
+    _useStdOFXPluginsLocation->setDefaultValue(true);
+    //_templatesPluginPaths
+    _preferBundledPlugins->setDefaultValue(true);
+    _loadBundledPlugins->setDefaultValue(true);
 
-    _defaultReaderColor->setDefaultValue(0.7, DimIdx(0));
-    _defaultReaderColor->setDefaultValue(0.7, DimIdx(1));
-    _defaultReaderColor->setDefaultValue(0.7, DimIdx(2));
-
-    _defaultWriterColor->setDefaultValue(0.75, DimIdx(0));
-    _defaultWriterColor->setDefaultValue(0.75, DimIdx(1));
-    _defaultWriterColor->setDefaultValue(0., DimIdx(2));
-
-    _defaultColorGroupColor->setDefaultValue(0.48, DimIdx(0));
-    _defaultColorGroupColor->setDefaultValue(0.66, DimIdx(1));
-    _defaultColorGroupColor->setDefaultValue(1., DimIdx(DimIdx(2)));
-
-    _defaultFilterGroupColor->setDefaultValue(0.8, DimIdx(0));
-    _defaultFilterGroupColor->setDefaultValue(0.5, DimIdx(1));
-    _defaultFilterGroupColor->setDefaultValue(0.3, DimIdx(2));
-
-    _defaultTransformGroupColor->setDefaultValue(0.7, DimIdx(0));
-    _defaultTransformGroupColor->setDefaultValue(0.3, DimIdx(1));
-    _defaultTransformGroupColor->setDefaultValue(0.1, DimIdx(2));
-
-    _defaultTimeGroupColor->setDefaultValue(0.7, DimIdx(0));
-    _defaultTimeGroupColor->setDefaultValue(0.65, DimIdx(1));
-    _defaultTimeGroupColor->setDefaultValue(0.35, DimIdx(2));
-
-    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(0));
-    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(1));
-    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(2));
-
-    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(0));
-    _defaultKeyerGroupColor->setDefaultValue(1, DimIdx(1));
-    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(2));
-
-    _defaultChannelGroupColor->setDefaultValue(0.6, DimIdx(0));
-    _defaultChannelGroupColor->setDefaultValue(0.24, DimIdx(1));
-    _defaultChannelGroupColor->setDefaultValue(0.39, DimIdx(2));
-
-    _defaultMergeGroupColor->setDefaultValue(0.3, DimIdx(0));
-    _defaultMergeGroupColor->setDefaultValue(0.37, DimIdx(1));
-    _defaultMergeGroupColor->setDefaultValue(0.776, DimIdx(2));
-
-    _defaultViewsGroupColor->setDefaultValue(0.5, DimIdx(0));
-    _defaultViewsGroupColor->setDefaultValue(0.9, DimIdx(1));
-    _defaultViewsGroupColor->setDefaultValue(0.7, DimIdx(2));
-
-    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(0));
-    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(1));
-    _defaultDeepGroupColor->setDefaultValue(0.38, DimIdx(2));
-
+    // Python
+    //_onProjectCreated;
+    //_defaultOnProjectLoaded;
+    //_defaultOnProjectSave;
+    //_defaultOnProjectClose;
+    //_defaultOnNodeCreated;
+    //_defaultOnNodeDelete;
+    //_loadPyPlugsFromPythonScript;
     _echoVariableDeclarationToPython->setDefaultValue(false);
 
+    // Appearance
+    _systemFontChoice->setDefaultValue(0);
+    _fontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
+    //_qssFile
+    //_defaultAppearanceVersion
 
+    // Appearance/Main Window
     _sunkenColor->setDefaultValue(0.12, DimIdx(0));
     _sunkenColor->setDefaultValue(0.12, DimIdx(1));
     _sunkenColor->setDefaultValue(0.12, DimIdx(2));
-
     _baseColor->setDefaultValue(0.19, DimIdx(0));
     _baseColor->setDefaultValue(0.19, DimIdx(1));
     _baseColor->setDefaultValue(0.19, DimIdx(2));
-
     _raisedColor->setDefaultValue(0.28, DimIdx(0));
     _raisedColor->setDefaultValue(0.28, DimIdx(1));
     _raisedColor->setDefaultValue(0.28, DimIdx(2));
-
     _selectionColor->setDefaultValue(0.95, DimIdx(0));
     _selectionColor->setDefaultValue(0.54, DimIdx(1));
     _selectionColor->setDefaultValue(0., DimIdx(2));
-
     _textColor->setDefaultValue(0.78, DimIdx(0));
     _textColor->setDefaultValue(0.78, DimIdx(1));
     _textColor->setDefaultValue(0.78, DimIdx(2));
-
     _altTextColor->setDefaultValue(0.6, DimIdx(0));
     _altTextColor->setDefaultValue(0.6, DimIdx(1));
     _altTextColor->setDefaultValue(0.6, DimIdx(2));
-
     _timelinePlayheadColor->setDefaultValue(0.95, DimIdx(0));
     _timelinePlayheadColor->setDefaultValue(0.54, DimIdx(1));
     _timelinePlayheadColor->setDefaultValue(0., DimIdx(2));
-
     _timelineBGColor->setDefaultValue(0, DimIdx(0));
     _timelineBGColor->setDefaultValue(0, DimIdx(1));
     _timelineBGColor->setDefaultValue(0., DimIdx(2));
-
     _timelineBoundsColor->setDefaultValue(0.81, DimIdx(0));
     _timelineBoundsColor->setDefaultValue(0.27, DimIdx(1));
     _timelineBoundsColor->setDefaultValue(0.02, DimIdx(2));
-
-    _cachedFrameColor->setDefaultValue(0.56, DimIdx(0));
-    _cachedFrameColor->setDefaultValue(0.79, DimIdx(1));
-    _cachedFrameColor->setDefaultValue(0.4, DimIdx(2));
-
-    _diskCachedFrameColor->setDefaultValue(0.27, DimIdx(0));
-    _diskCachedFrameColor->setDefaultValue(0.38, DimIdx(1));
-    _diskCachedFrameColor->setDefaultValue(0.25, DimIdx(2));
-
     _interpolatedColor->setDefaultValue(0.34, DimIdx(0));
     _interpolatedColor->setDefaultValue(0.46, DimIdx(1));
     _interpolatedColor->setDefaultValue(0.6, DimIdx(2));
-
     _keyframeColor->setDefaultValue(0.08, DimIdx(0));
     _keyframeColor->setDefaultValue(0.38, DimIdx(1));
     _keyframeColor->setDefaultValue(0.97, DimIdx(2));
-
     _trackerKeyframeColor->setDefaultValue(0.7, DimIdx(0));
     _trackerKeyframeColor->setDefaultValue(0.78, DimIdx(1));
     _trackerKeyframeColor->setDefaultValue(0.39, DimIdx(2));
-
-
     _exprColor->setDefaultValue(0.7, DimIdx(0));
     _exprColor->setDefaultValue(0.78, DimIdx(1));
     _exprColor->setDefaultValue(0.39, DimIdx(2));
-
-    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(0));
-    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
-    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
-
-    _animationViewGridColor->setDefaultValue(0.35, DimIdx(0));
-    _animationViewGridColor->setDefaultValue(0.35, DimIdx(1));
-    _animationViewGridColor->setDefaultValue(0.35, DimIdx(2));
-
-    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
-    _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));
-    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(2));
-
-    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
-    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
-    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
-    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
-
-    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
-    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
-    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
-    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
-
-    _keywordColor->setDefaultValue(0.7, DimIdx(0));
-    _keywordColor->setDefaultValue(0.7, DimIdx(1));
-    _keywordColor->setDefaultValue(0., DimIdx(2));
-
-    _operatorColor->setDefaultValue(0.78, DimIdx(0));
-    _operatorColor->setDefaultValue(0.78, DimIdx(1));
-    _operatorColor->setDefaultValue(0.78, DimIdx(2));
-
-    _braceColor->setDefaultValue(0.85, DimIdx(0));
-    _braceColor->setDefaultValue(0.85, DimIdx(1));
-    _braceColor->setDefaultValue(0.85, DimIdx(2));
-
-    _defClassColor->setDefaultValue(0.7, DimIdx(0));
-    _defClassColor->setDefaultValue(0.7, DimIdx(1));
-    _defClassColor->setDefaultValue(0., DimIdx(2));
-
-    _stringsColor->setDefaultValue(0.8, DimIdx(0));
-    _stringsColor->setDefaultValue(0.2, DimIdx(1));
-    _stringsColor->setDefaultValue(0., DimIdx(2));
-
-    _commentsColor->setDefaultValue(0.25, DimIdx(0));
-    _commentsColor->setDefaultValue(0.6, DimIdx(1));
-    _commentsColor->setDefaultValue(0.25, DimIdx(2));
-
-    _selfColor->setDefaultValue(0.7, DimIdx(0));
-    _selfColor->setDefaultValue(0.7, DimIdx(1));
-    _selfColor->setDefaultValue(0., DimIdx(2));
-
-    _numbersColor->setDefaultValue(0.25, DimIdx(0));
-    _numbersColor->setDefaultValue(0.8, DimIdx(1));
-    _numbersColor->setDefaultValue(0.9, DimIdx(2));
-
-    _curLineColor->setDefaultValue(0.35, DimIdx(0));
-    _curLineColor->setDefaultValue(0.35, DimIdx(1));
-    _curLineColor->setDefaultValue(0.35, DimIdx(2));
-
+    _cachedFrameColor->setDefaultValue(0.56, DimIdx(0));
+    _cachedFrameColor->setDefaultValue(0.79, DimIdx(1));
+    _cachedFrameColor->setDefaultValue(0.4, DimIdx(2));
+    _diskCachedFrameColor->setDefaultValue(0.27, DimIdx(0));
+    _diskCachedFrameColor->setDefaultValue(0.38, DimIdx(1));
+    _diskCachedFrameColor->setDefaultValue(0.25, DimIdx(2));
     _sliderColor->setDefaultValue(0.33, DimIdx(0));
     _sliderColor->setDefaultValue(0.45, DimIdx(1));
     _sliderColor->setDefaultValue(0.44, DimIdx(2));
 
+    // Appearance/Dope Sheet
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(0));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(1));
+    _animationViewBackgroundColor->setDefaultValue(0.19, DimIdx(2));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(0));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(1));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.204, DimIdx(2));
+    _dopesheetRootSectionBackgroundColor->setDefaultValue(0.2, DimIdx(3));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(0));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(1));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.443, DimIdx(2));
+    _dopesheetKnobSectionBackgroundColor->setDefaultValue(0.2, DimIdx(2));
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(0));
+    _animationViewScaleColor->setDefaultValue(0.718, DimIdx(1));
+    _animationViewScaleColor->setDefaultValue(0.714, DimIdx(2));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(0));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(1));
+    _animationViewGridColor->setDefaultValue(0.35, DimIdx(2));
 
+    // Appearance/Script Editor
+    _curLineColor->setDefaultValue(0.35, DimIdx(0));
+    _curLineColor->setDefaultValue(0.35, DimIdx(1));
+    _curLineColor->setDefaultValue(0.35, DimIdx(2));
+    _keywordColor->setDefaultValue(0.7, DimIdx(0));
+    _keywordColor->setDefaultValue(0.7, DimIdx(1));
+    _keywordColor->setDefaultValue(0., DimIdx(2));
+    _operatorColor->setDefaultValue(0.78, DimIdx(0));
+    _operatorColor->setDefaultValue(0.78, DimIdx(1));
+    _operatorColor->setDefaultValue(0.78, DimIdx(2));
+    _braceColor->setDefaultValue(0.85, DimIdx(0));
+    _braceColor->setDefaultValue(0.85, DimIdx(1));
+    _braceColor->setDefaultValue(0.85, DimIdx(2));
+    _defClassColor->setDefaultValue(0.7, DimIdx(0));
+    _defClassColor->setDefaultValue(0.7, DimIdx(1));
+    _defClassColor->setDefaultValue(0., DimIdx(2));
+    _stringsColor->setDefaultValue(0.8, DimIdx(0));
+    _stringsColor->setDefaultValue(0.2, DimIdx(1));
+    _stringsColor->setDefaultValue(0., DimIdx(2));
+    _commentsColor->setDefaultValue(0.25, DimIdx(0));
+    _commentsColor->setDefaultValue(0.6, DimIdx(1));
+    _commentsColor->setDefaultValue(0.25, DimIdx(2));
+    _selfColor->setDefaultValue(0.7, DimIdx(0));
+    _selfColor->setDefaultValue(0.7, DimIdx(1));
+    _selfColor->setDefaultValue(0., DimIdx(2));
+    _numbersColor->setDefaultValue(0.25, DimIdx(0));
+    _numbersColor->setDefaultValue(0.8, DimIdx(1));
+    _numbersColor->setDefaultValue(0.9, DimIdx(2));
     _scriptEditorFontChoice->setDefaultValue(0);
     _scriptEditorFontSize->setDefaultValue(NATRON_FONT_SIZE_DEFAULT);
 
-    _wwwServerPort->setDefaultValue(0);
+
+    // Appearance/Node Graph
+    _cloneColor->setDefaultValue(0.78, DimIdx(0));
+    _cloneColor->setDefaultValue(0.27, DimIdx(1));
+    _cloneColor->setDefaultValue(0.39, DimIdx(2));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(1));
+    _defaultNodeColor->setDefaultValue(0.7, DimIdx(2));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(0));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(1));
+    _defaultBackdropColor->setDefaultValue(0.45, DimIdx(2));
+    _defaultGeneratorColor->setDefaultValue(0.3, DimIdx(0));
+    _defaultGeneratorColor->setDefaultValue(0.5, DimIdx(1));
+    _defaultGeneratorColor->setDefaultValue(0.2, DimIdx(2));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(1));
+    _defaultReaderColor->setDefaultValue(0.7, DimIdx(2));
+    _defaultWriterColor->setDefaultValue(0.75, DimIdx(0));
+    _defaultWriterColor->setDefaultValue(0.75, DimIdx(1));
+    _defaultWriterColor->setDefaultValue(0., DimIdx(2));
+    _defaultColorGroupColor->setDefaultValue(0.48, DimIdx(0));
+    _defaultColorGroupColor->setDefaultValue(0.66, DimIdx(1));
+    _defaultColorGroupColor->setDefaultValue(1., DimIdx(2));
+    _defaultFilterGroupColor->setDefaultValue(0.8, DimIdx(0));
+    _defaultFilterGroupColor->setDefaultValue(0.5, DimIdx(1));
+    _defaultFilterGroupColor->setDefaultValue(0.3, DimIdx(2));
+    _defaultTransformGroupColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultTransformGroupColor->setDefaultValue(0.3, DimIdx(1));
+    _defaultTransformGroupColor->setDefaultValue(0.1, DimIdx(2));
+    _defaultTimeGroupColor->setDefaultValue(0.7, DimIdx(0));
+    _defaultTimeGroupColor->setDefaultValue(0.65, DimIdx(1));
+    _defaultTimeGroupColor->setDefaultValue(0.35, DimIdx(2));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(0));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(1));
+    _defaultDrawGroupColor->setDefaultValue(0.75, DimIdx(2));
+    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(0));
+    _defaultKeyerGroupColor->setDefaultValue(1, DimIdx(1));
+    _defaultKeyerGroupColor->setDefaultValue(0., DimIdx(2));
+    _defaultChannelGroupColor->setDefaultValue(0.6, DimIdx(0));
+    _defaultChannelGroupColor->setDefaultValue(0.24, DimIdx(1));
+    _defaultChannelGroupColor->setDefaultValue(0.39, DimIdx(2));
+    _defaultMergeGroupColor->setDefaultValue(0.3, DimIdx(0));
+    _defaultMergeGroupColor->setDefaultValue(0.37, DimIdx(1));
+    _defaultMergeGroupColor->setDefaultValue(0.776, DimIdx(2));
+    _defaultViewsGroupColor->setDefaultValue(0.5, DimIdx(0));
+    _defaultViewsGroupColor->setDefaultValue(0.9, DimIdx(1));
+    _defaultViewsGroupColor->setDefaultValue(0.7, DimIdx(2));
+    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(0));
+    _defaultDeepGroupColor->setDefaultValue(0., DimIdx(1));
+    _defaultDeepGroupColor->setDefaultValue(0.38, DimIdx(2));
+
 
     _publicInterface->endChanges();
 } // setDefaultValues
@@ -2036,10 +2050,10 @@ Settings::saveSettings(const KnobsVec& knobs,
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         int newIndex = isChoice->getValue(DimIdx(j));
-                        const std::vector<std::string> entries = isChoice->getEntries();
+                        const std::vector<ChoiceOption> entries = isChoice->getEntries();
                         if ( newIndex < (int)entries.size() ) {
                             QString oldValue = settings.value(dimensionName).toString();
-                            QString newValue = QString::fromUtf8( entries[newIndex].c_str() );
+                            QString newValue = QString::fromUtf8( entries[newIndex].id.c_str() );
                             if (oldValue != newValue) {
                                 changedKnobs.push_back(knobs[i]);
                             }
@@ -2105,11 +2119,11 @@ Settings::restoreSettings(const KnobsVec& knobs)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<std::string> entries = isChoice->getEntries();
+                        const std::vector<ChoiceOption> entries = isChoice->getEntries();
                         int found = -1;
 
                         for (U32 k = 0; k < entries.size(); ++k) {
-                            if (entries[k] == value) {
+                            if (entries[k].id == value) {
                                 found = (int)k;
                                 break;
                             }
@@ -2171,7 +2185,7 @@ Settings::restoreAllSettings()
 
     // Restore opengl renderer
     {
-        std::vector<std::string> availableRenderers = _imp->_availableOpenGLRenderers->getEntries();
+        std::vector<ChoiceOption> availableRenderers = _imp->_availableOpenGLRenderers->getEntries();
         QString missingGLError;
         bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
 
@@ -2252,7 +2266,7 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText().c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryID().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2376,7 +2390,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         }
 
     } else if ( k == _imp->_ocioConfigKnob ) {
-        if (_imp->_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+        if (_imp->_ocioConfigKnob->getActiveEntryID() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);
         } else {
             _imp->_customOcioConfigFile->setEnabled(false);
@@ -2443,7 +2457,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                        appPTR->reloadStylesheets();
                    }
                } else if ( k == _imp->_hostName ) {
-                   std::string hostName = _imp->_hostName->getActiveEntryText();
+                   std::string hostName = _imp->_hostName->getActiveEntryID();
                    bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
                    _imp->_customHostName->setSecret(!isCustom);
                } else if ( ( k == _imp->_testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
@@ -2604,11 +2618,13 @@ Settings::isAutoPreviewOnForNewProjects() const
     return _imp->_autoPreviewEnabledForNewProjects->getValue();
 }
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
 int
 Settings::getDocumentationSource() const
 {
     return _imp->_documentationSource->getValue();
 }
+#endif
 
 int
 Settings::getServerPort() const
@@ -2668,7 +2684,7 @@ Settings::makeHTMLDocumentation(bool genHTML) const
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n";
         ts << "<html>\n<head>\n";
         ts << "<title>" << tr("Natron Preferences") << "</title>\n";
-        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" />\n<link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
+        ts << "<link rel=\"stylesheet\" href=\"_static/makdown.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
         ts << "</head>\n<body>\n";
         ts << "<div class=\"related\">\n<h3>" << tr("Navigation") << "</h3>\n<ul>\n";
         ts << "<li><a href=\"/index.html\">" << tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) << "</a> &raquo;</li>\n";
@@ -2742,6 +2758,12 @@ Settings::getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const
     } catch (std::logic_error) {
         paths->clear();
     }
+}
+
+bool
+Settings::getUseStdOFXPluginsLocation() const
+{
+    return _imp->_useStdOFXPluginsLocation->getValue();
 }
 
 void
@@ -3004,13 +3026,13 @@ std::string
 Settings::getHostName() const
 {
     int entry_i =  _imp->_hostName->getValue();
-    std::vector<std::string> entries = _imp->_hostName->getEntries();
+    std::vector<ChoiceOption> entries = _imp->_hostName->getEntries();
 
-    if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i] == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
+    if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i].id == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
         return _imp->_customHostName->getValue();
     } else {
         if ( (entry_i >= 0) && ( entry_i < (int)_imp->_knownHostNames.size() ) ) {
-            return _imp->_knownHostNames[entry_i];
+            return _imp->_knownHostNames[entry_i].id;
         }
 
         return std::string();
@@ -3020,7 +3042,7 @@ Settings::getHostName() const
 const std::string&
 Settings::getKnownHostName(KnownHostNameEnum e) const
 {
-    return _imp->_knownHostNames[(int)e];
+    return _imp->_knownHostNames[(int)e].id;
 }
 
 bool
@@ -3103,11 +3125,11 @@ Settings::doOCIOStartupCheckIfNeeded()
 
     if (docheck && mainInstance) {
         int entry_i = _imp->_ocioConfigKnob->getValue();
-        std::vector<std::string> entries = _imp->_ocioConfigKnob->getEntries();
+        std::vector<ChoiceOption> entries = _imp->_ocioConfigKnob->getEntries();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
-        } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
+        } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
@@ -3126,7 +3148,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         if (reply == eStandardButtonYes) {
             int defaultIndex = -1;
             for (unsigned i = 0; i < entries.size(); ++i) {
-                if (entries[i].find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
+                if (entries[i].id.find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
                     defaultIndex = i;
                     break;
                 }
@@ -3578,7 +3600,7 @@ Settings::getSEFontSize() const
 std::string
 Settings::getSEFontFamily() const
 {
-    return _imp->_scriptEditorFontChoice->getActiveEntryText();
+    return _imp->_scriptEditorFontChoice->getActiveEntryID();
 }
 
 void

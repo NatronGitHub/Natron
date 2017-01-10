@@ -1329,6 +1329,26 @@ public:
     }
 
     /**
+     * @brief Return true if this effect can return a transform as a matrix 3x3. In this case
+     * you have to implement getDistorsion function.
+     * Note that this is deprecated, you should use getCanDistort instead.
+     **/
+    virtual bool getCanTransform() const
+    {
+        return false;
+    }
+
+
+    /**
+     * @brief Deprecated: Returns whether the given input can have 3x3 tranformation matrices attached when calling getImagePlanes
+     * getInputCanReceiveDistorsion() should be preferred
+     **/
+    virtual bool getInputCanReceiveTransform(int /*inputNb*/) const
+    {
+        return false;
+    }
+
+    /**
      * @brief Return true if the given input should also attempt to return a distorsion function
      * along with the image when possible
      **/

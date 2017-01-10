@@ -299,7 +299,7 @@ public:
 
     void setOverlayColor(const QColor& c);
 
-    void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
+    void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, TimeValue time);
 
     void setParentMultiInstance(const NodeGuiPtr & parent);
 

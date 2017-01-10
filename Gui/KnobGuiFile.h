@@ -90,7 +90,7 @@ public Q_SLOTS:
 
 private:
 
-    bool checkFileModificationAndWarnInternal(bool doCheck, SequenceTime time, bool errorAndAbortRender);
+    bool checkFileModificationAndWarnInternal(bool doCheck, TimeValue time, bool errorAndAbortRender);
 
 
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;

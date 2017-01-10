@@ -140,7 +140,7 @@ public:
 
     bool areKnobLinksVisible() const;
 
-    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, SequenceTime time);
+    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, TimeValue time);
 
     bool areOptionalInputsAutoHidden() const;
 

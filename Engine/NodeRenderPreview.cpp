@@ -81,7 +81,7 @@ renderPreviewTemplated(const void* srcPtrs[4],
 
         const PIX* srcPixelPtrs[4];
         int pixelStride;
-        Image::getChannelPointers<PIX, srcNComps>(srcPtrs, srcBounds.x1, srcY_i, srcBounds, srcPixelPtrs, &pixelStride);
+        Image::getChannelPointers<PIX, srcNComps>((const PIX**)srcPtrs, srcBounds.x1, srcY_i, srcBounds, (PIX**)srcPixelPtrs, &pixelStride);
 
         if (!srcPixelPtrs[0]) {
             // out of bounds

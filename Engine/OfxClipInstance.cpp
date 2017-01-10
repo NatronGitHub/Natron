@@ -390,7 +390,10 @@ OfxClipInstance::getFrameRange(double &startFrame,
     EffectInstancePtr effect = getAssociatedNode();
 
     if (!effect) {
-        _imp->effect->getOfxEffectInstance()->getApp()->getProject()->getFrameRange(&startFrame, &endFrame);
+        TimeValue left,right;
+        _imp->effect->getOfxEffectInstance()->getApp()->getProject()->getFrameRange(&left, &right);
+        startFrame = left;
+        endFrame = right;
     } else {
         TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
         GetFrameRangeResultsPtr results;
@@ -850,11 +853,11 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distorsionStack, componentsStr, nComps, par);
+        OfxImage* ofxImage = new OfxImage(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distorsionStack, componentsStr, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distorsionStack, componentsStr, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distorsionStack, componentsStr, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -991,11 +994,11 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distorsion2DStackPtr(), componentsStr, nComps, par);
+        OfxImage* ofxImage = new OfxImage(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distorsion2DStackPtr(), componentsStr, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distorsion2DStackPtr(), componentsStr, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distorsion2DStackPtr(), componentsStr, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -1312,7 +1315,9 @@ static void ofxaApplyDistorsionStack(double distortedX, double distortedY, const
     Distorsion2DStack::applyDistorsionStack(distortedX, distortedY, *dstack, undistortedX, undistortedY);
 }
 
-OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
+OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
+                               int inputNb,
+                               OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                                const ImagePtr& internalImage,
                                const RectD& rod,
                                ImagePremultiplicationEnum premult,
@@ -1417,35 +1422,46 @@ OfxImageCommon::OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
     // Attach the transform matrix if any
     if (distorsion) {
 
+        bool supportsDeprecatedTransforms = outputClipEffect->getInputCanReceiveTransform(inputNb);
+        bool supportsDistorsion = outputClipEffect->getInputCanReceiveDistorsion(inputNb);
+
+        assert((supportsDeprecatedTransforms && !supportsDistorsion) || (!supportsDeprecatedTransforms && supportsDistorsion));
+
         const std::list<DistorsionFunction2DPtr>& stack = distorsion->getStack();
-        boost::shared_ptr<Transform::Matrix3x3> mat;
-        if (stack.size() == 1) {
-            const DistorsionFunction2DPtr& func = stack.front();
-            if (func->transformMatrix) {
-                mat = func->transformMatrix;
+
+        if (supportsDeprecatedTransforms) {
+            boost::shared_ptr<Transform::Matrix3x3> mat;
+            if (stack.size() == 1) {
+                const DistorsionFunction2DPtr& func = stack.front();
+                if (func->transformMatrix) {
+                    mat = func->transformMatrix;
+                }
             }
+            if (mat) {
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
+
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
+
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
+                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
+            } else {
+                for (int i = 0; i < 9; ++i) {
+                    ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
+                }
+            }
+        } else if (supportsDistorsion) {
+            ofxImageBase->setPointerProperty(kOfxPropDistorsionFunction, (void*)&ofxaApplyDistorsionStack);
+            ofxImageBase->setPointerProperty(kOfxPropDistorsionFunctionData, (void*)distorsion.get());
         }
 
-        ofxImageBase->setPointerProperty(kOfxPropDistorsionFunction, (void*)&ofxaApplyDistorsionStack);
-        ofxImageBase->setPointerProperty(kOfxPropDistorsionFunctionData, (void*)distorsion.get());
 
-        if (mat) {
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->a, 0);
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->b, 1);
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->c, 2);
 
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->d, 3);
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->e, 4);
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->f, 5);
 
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->g, 6);
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->h, 7);
-            ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, mat->i, 8);
-        } else {
-            for (int i = 0; i < 9; ++i) {
-                ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
-            }
-        }
 
     }
 }

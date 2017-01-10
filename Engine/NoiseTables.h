@@ -29,7 +29,6 @@
 
 #include "Engine/EngineFwd.h"
 
-NATRON_NAMESPACE_ENTER;
 
 /*
  Copyright Disney Enterprises, Inc.  All rights reserved.
@@ -2152,6 +2151,5 @@ double NOISE_TABLES<4>::g[514][4] = {{0.3966, 0.564479, 0.423247, 0.58731},
                                      {0.3966, 0.564479, 0.423247, 0.58731},
                                      {0.207686, 0.293048, -0.883543, -0.300569}};
 
-NATRON_NAMESPACE_EXIT;
 
 #endif

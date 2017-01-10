@@ -180,15 +180,17 @@ htmlhelp_basename = 'Natrondoc'
 
 # -- Options for LaTeX output --------------------------------------------------
 
+mypreamble=ur'''\renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
+'''
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+'papersize': 'a4paper',
 
 # The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+'pointsize': '10pt',
 
 # Additional stuff for the LaTeX preamble.
-#'preamble': '',
+'preamble': mypreamble
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
@@ -198,13 +200,17 @@ latex_documents = [
    u'The Natron documentation authors', 'manual'),
 ]
 
+#geometry = 'margin=1in,marginparwidth=0.5in'
+geometry = 'margin=0.5in,marginparwidth=0.5in'
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
 #latex_logo = None
+latex_logo = '../../Gui/Resources/Images/natronIcon256_linux.png'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-#latex_use_parts = False
+latex_use_parts = True
+#latex_toplevel_sectioning = 'part'
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
@@ -253,4 +259,4 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 # force default theme on readthedocs
-html_style = '/default.css'
+html_style = 'default.css'

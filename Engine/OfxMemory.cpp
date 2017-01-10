@@ -58,7 +58,6 @@ OfxMemory::getPtr()
 bool
 OfxMemory::alloc(size_t nBytes)
 {
-    bool ret = false;
 
     QMutexLocker l(&_lock);
 
@@ -68,12 +67,12 @@ OfxMemory::alloc(size_t nBytes)
 
     PluginMemAllocateMemoryArgs args(nBytes);
     try {
-        ret = _memory->allocateMemory(args);
+        _memory->allocateMemory(args);
     } catch (const std::bad_alloc &) {
         return false;
     }
 
-    return ret;
+    return true;
 }
 
 void

@@ -266,9 +266,7 @@ NodeCollection::getWriters(std::list<EffectInstancePtr>* writers) const
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
-            EffectInstancePtr out = (*it)->isEffectOutput();
-            assert(out);
-            writers->push_back(out);
+            writers->push_back((*it)->getEffectInstance());
         }
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
@@ -348,25 +346,26 @@ NodeCollection::refreshViewersAndPreviews()
     assert( QThread::currentThread() == qApp->thread() );
 
     AppInstancePtr appInst = getApplication();
-    if (!appInst) {
+    if (!appInst || appInst->isBackground()) {
         return;
     }
-    if ( !appInst->isBackground() ) {
-        NodesList nodes = getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            assert(*it);
-            (*it)->refreshPreviewsAfterProjectLoad();
-            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-            if (isGrp) {
-                isGrp->refreshViewersAndPreviews();
-            } else {
-                ViewerInstancePtr n = (*it)->isEffectViewerInstance();
-                if (n) {
-                    n->renderCurrentFrame(true);
-                }
-            }
+
+
+
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsAfterProjectLoad();
+
+        if ((*it)->isEffectViewerNode()) {
+            (*it)->getRenderEngine()->renderCurrentFrame();
+        }
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->refreshViewersAndPreviews();
         }
     }
+
 }
 
 void
@@ -379,7 +378,7 @@ NodeCollection::refreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    TimeValue time = appInst->getTimeLine()->currentFrame();
+    TimeValue time(appInst->getTimeLine()->currentFrame());
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -403,7 +402,7 @@ NodeCollection::forceRefreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    TimeValue time = appInst->getTimeLine()->currentFrame();
+    TimeValue time(appInst->getTimeLine()->currentFrame());
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -962,14 +961,22 @@ NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
             if ( (*it)->getEffectInstance()->isReader() ) {
-                double thisFirst, thislast;
-                (*it)->getEffectInstance()->getFrameRange_public( 0, &thisFirst, &thislast );
-                if (thisFirst != INT_MIN) {
-                    *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
+
+
+                GetFrameRangeResultsPtr results;
+                ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public( TreeRenderNodeArgsPtr(), &results );
+                if (!isFailureRetCode(stat)) {
+                    RangeD thisRange;
+
+                    results->getFrameRangeResults(&thisRange);
+                    if (thisRange.min != INT_MIN) {
+                        *firstFrame = setFrameRange ? thisRange.min : std::min(*firstFrame, (int)thisRange.min);
+                    }
+                    if (thisRange.max != INT_MAX) {
+                        *lastFrame = setFrameRange ? thisRange.max : std::max(*lastFrame, (int)thisRange.max);
+                    }
                 }
-                if (thislast != INT_MAX) {
-                    *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
-                }
+
             } else {
                 NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
                 if (isGrp) {
@@ -985,25 +992,6 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,
                                                  int* lastFrame)
 {
     recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, true);
-}
-
-void
-NodeCollection::forceComputeInputDependentDataOnAllTrees()
-{
-    NodesList nodes;
-
-    getNodes_recursive(nodes, true);
-    std::list<Project::NodesTree> trees;
-    Project::extractTreesFromNodes(nodes, trees);
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->markAllInputRelatedDataDirty();
-    }
-
-    std::list<NodePtr> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-        it->output.node->forceRefreshAllInputRelatedData();
-    }
 }
 
 
@@ -1208,22 +1196,15 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
-<<<<<<< HEAD
 TimeValue
 NodeGroup::getCurrentTime_TLS() const
-=======
-
-
-double
-NodeGroup::getCurrentTime() const
->>>>>>> master
 {
     NodePtr node = getOutputNodeInput();
 
     if (node) {
         EffectInstancePtr effect = node->getEffectInstance();
         if (!effect) {
-            return 0;
+            return TimeValue(0);
         }
         return effect->getCurrentTime_TLS();
     }
@@ -1374,7 +1355,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         }
         int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
-        output->onInputChanged(idx, thisNode, thisNode);
+        output->onInputChanged(idx);
     }
 } // NodeGroup::notifyNodeDeactivated
 
@@ -1408,7 +1389,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         }
         int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
-        output->onInputChanged(idx, thisNode, thisNode);
+        output->onInputChanged(idx);
     }
 }
 
@@ -1516,7 +1497,7 @@ NodeGroup::purgeCaches()
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->purgeCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
 }
 
@@ -1527,7 +1508,7 @@ NodeGroup::clearLastRenderedImage()
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->purgeCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
 }
 

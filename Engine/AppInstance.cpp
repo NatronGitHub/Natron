@@ -1273,7 +1273,7 @@ AppInstance::exportDocs(const QString path)
         groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
         groupMD.append( QString::fromUtf8("\n\n") );
-        groupMD.append( QString::fromUtf8("Contents:\n\n") );
+        //groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
@@ -1284,7 +1284,9 @@ AppInstance::exportDocs(const QString path)
 
             plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
             plugMD.append( QString::fromUtf8("\n==========\n\n") );
-            plugMD.append( QString::fromUtf8("Contents:\n\n") );
+            plugMD.append( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+            plugMD.append( QString::fromUtf8("\n\n") );
+            //plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
             plugMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
 

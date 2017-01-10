@@ -354,49 +354,91 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
                                                     bool *concatenated)
 {
     *concatenated = false;
-    bool concatenate = args.renderArgs->getParentRender()->isConcatenationEnabled();
-    if (concatenate && args.caller && args.caller.get() != _publicInterface && args.renderArgs->getCurrentDistortSupport()) {
+    if (!args.renderArgs->getParentRender()->isConcatenationEnabled()) {
+        return eActionStatusOK;
+    }
+    if (!args.caller || args.caller.get() == _publicInterface) {
+        return eActionStatusOK;
+    }
+    bool canDistort = args.renderArgs->getCurrentDistortSupport();
+    bool canTransform = args.renderArgs->getCurrentTransformationSupport_deprecated();
 
-        assert(args.inputNbInCaller != -1);
+    if (!canDistort && !canTransform) {
+        return eActionStatusOK;
+    }
 
-        // If the caller can apply a distorsion, then check if this effect has a distorsion
+    assert(args.inputNbInCaller != -1);
 
-        if (args.caller->getInputCanReceiveDistorsion(args.inputNbInCaller)) {
+    // If the caller can apply a distorsion, then check if this effect has a distorsion
+    bool canCallerReceiveDistorsion = args.caller->getInputCanReceiveDistorsion(args.inputNbInCaller);
+    bool canCallerReceiveTransform = args.caller->getInputCanReceiveTransform(args.inputNbInCaller);
 
-            GetDistorsionResultsPtr actionResults;
-            ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &actionResults);
-            if (isFailureRetCode(stat)) {
-                return stat;
-            }
-            const DistorsionFunction2DPtr& disto = actionResults->getDistorsionResults();
-            if (disto && disto->inputNbToDistort != -1) {
+    if (!canCallerReceiveDistorsion && !canCallerReceiveTransform) {
+        return eActionStatusOK;
+    }
+    assert((canCallerReceiveTransform && !canCallerReceiveDistorsion) || (!canCallerReceiveTransform && canCallerReceiveDistorsion));
 
-                // Recurse on input given by plug-in
-                EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
-                if (!distoInput) {
-                    return eActionStatusInputDisconnected;
-                }
-                boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
-                argsCpy->caller = _publicInterface->shared_from_this();
-                argsCpy->inputNbInCaller = disto->inputNbToDistort;
-                ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
-                if (isFailureRetCode(ret)) {
-                    return ret;
-                }
+    GetDistorsionResultsPtr actionResults;
+    ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &actionResults);
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
 
-                // Create the stack if it was not already
-                if (!results->distorsionStack) {
-                    results->distorsionStack.reset(new Distorsion2DStack);
-                }
-                
-                // And then push our distorsion to the stack...
-                results->distorsionStack->pushDistorsion(disto);
-
-                *concatenated = true;
-            }
+    DistorsionFunction2DPtr disto;
+    {
+        const DistorsionFunction2DPtr& originalDisto = actionResults->getDistorsionResults();
+        if (!originalDisto || originalDisto->inputNbToDistort == -1) {
+            return eActionStatusOK;
         }
 
+        // Copy the original distorsion held in the results in case we convert the transformation matrix from canonical to pixels.
+        disto.reset(new DistorsionFunction2D(*originalDisto));
     }
+
+
+    // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
+    if (disto->func && !canCallerReceiveDistorsion) {
+        return eActionStatusOK;
+    }
+
+    assert((disto->func && canCallerReceiveDistorsion) || disto->transformMatrix);
+
+    if (disto->transformMatrix) {
+
+        // The caller expects a transformation matrix in pixel coordinates
+        double par = _publicInterface->getAspectRatio(args.renderArgs, -1);
+        Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
+        Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
+        *disto->transformMatrix = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
+    }
+
+    // Recurse on input given by plug-in
+    EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
+    if (!distoInput) {
+        return eActionStatusInputDisconnected;
+    }
+
+    boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
+    argsCpy->caller = _publicInterface->shared_from_this();
+    argsCpy->inputNbInCaller = disto->inputNbToDistort;
+    ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
+    if (isFailureRetCode(ret)) {
+        return ret;
+    }
+
+    // Create the stack if it was not already
+    if (!results->distorsionStack) {
+        results->distorsionStack.reset(new Distorsion2DStack);
+    }
+
+    // And then push our distorsion to the stack...
+    results->distorsionStack->pushDistorsion(disto);
+
+    *concatenated = true;
+
+
+
+
     return eActionStatusOK;
 } // handleConcatenation
 

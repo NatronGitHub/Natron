@@ -49,6 +49,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
@@ -476,7 +477,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText();
+    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryID();
 
     if (userChoiceNodeName == "None") {
         return NodePtr();
@@ -663,22 +664,24 @@ PrecompNodePrivate::launchPreRender()
 
         return;
     }
-    AppInstance::RenderWork w(output->getEffectInstance(),
-                              firstFrameKnob.lock()->getValue(),
-                              lastFrameKnob.lock()->getValue(),
-                              1,
+    std::string workLabel = tr("Rendering %1").arg(QString::fromUtf8(projectFileNameKnob.lock()->getValue().c_str())).toStdString();
+    RenderQueue::RenderWork w(output,
+                              workLabel,
+                              TimeValue(firstFrameKnob.lock()->getValue()),
+                              TimeValue(lastFrameKnob.lock()->getValue()),
+                              TimeValue(1),
                               false);
 
-    if (w.writer) {
-        RenderEnginePtr engine = w.writer->getRenderEngine();
+    if (w.treeRoot) {
+        RenderEnginePtr engine = w.treeRoot->getRenderEngine();
         if (engine) {
             QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
     }
 
-    std::list<AppInstance::RenderWork> works;
+    std::list<RenderQueue::RenderWork> works;
     works.push_back(w);
-    _publicInterface->getApp()->renderWritersNonBlocking(works);
+    _publicInterface->getApp()->getRenderQueue()->renderNonBlocking(works);
 }
 
 void
@@ -692,7 +695,7 @@ PrecompNode::onPreRenderFinished()
     EffectInstancePtr writer = output->getEffectInstance();
     assert(writer);
     if (writer) {
-        RenderEnginePtr engine = writer->getRenderEngine();
+        RenderEnginePtr engine = writer->getNode()->getRenderEngine();
         if (engine) {
             QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }

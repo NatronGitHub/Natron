@@ -793,7 +793,7 @@ RotoDrawableItem::refreshNodesConnections()
         if (mergeAInputChoice_i == 0) {
             mergeInputAUpstreamNode = upstreamNode;
         } else {
-            std::string inputAName = mergeAKnob->getActiveEntryText();
+            std::string inputAName = mergeAKnob->getActiveEntryID();
             // For reveal & clone, the user can select a RotoPaint node's input.
             // Find an input of the RotoPaint node with the given input label
             int maxInputs = rotoPaintNode->getMaxInputCount();
@@ -846,7 +846,7 @@ RotoDrawableItem::refreshNodesConnections()
 
             // If there's a time-offset, use it prior to the effect.
             KnobChoicePtr timeOffsetModeKnob = _imp->timeOffsetMode.lock();
-            TimeValue timeOffsetMode_i = 0;
+            int timeOffsetMode_i = 0;
             if (timeOffsetModeKnob) {
                 timeOffsetMode_i = timeOffsetModeKnob->getValue();
             }
@@ -886,7 +886,7 @@ RotoDrawableItem::refreshNodesConnections()
             if (reveal_i == 0) {
                 mergeAUpstreamInput = upstreamNode;
             } else {
-                std::string inputAName = mergeAKnob->getActiveEntryText();
+                std::string inputAName = mergeAKnob->getActiveEntryID();
                 // For reveal & clone, the user can select a RotoPaint node's input.
                 // Find an input of the RotoPaint node with the given input label
                 int maxInputs = rotoPaintNode->getMaxInputCount();
@@ -978,7 +978,7 @@ RotoDrawableItem::refreshNodesConnections()
         NodePtr maskInputNode;
         if (maskInput_i > 0) {
             std::string maskInputName;
-            maskInputName = knob->getActiveEntryText();
+            maskInputName = knob->getActiveEntryID();
 
             // Find an input of the RotoPaint node with the given input label
             int maxInputs = rotoPaintNode->getMaxInputCount();
@@ -1341,7 +1341,7 @@ RotoDrawableItem::resetTransformCenter()
     if (!centerKnob) {
         return;
     }
-    TimeValue time = getApp()->getTimeLine()->currentFrame();
+    TimeValue time(getApp()->getTimeLine()->currentFrame());
     RectD bbox =  getBoundingBox(time, ViewIdx(0));
 
 
@@ -1410,7 +1410,7 @@ RotoDrawableItem::getOrCreateCachedDrawable(const TreeRenderPtr& render)
 
     RotoDrawableItemPtr ret = createRenderCopy();
     assert(ret);
-    _imp->renderClones[renderID] = ret;
+    _imp->renderClones[render] = ret;
     return ret;
 
 }
@@ -1436,7 +1436,7 @@ RotoDrawableItem::removeCachedDrawable(const TreeRenderPtr& render) const
     QMutexLocker k(&_imp->renderClonesMutex);
     RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
-        _imp->renderClones.erase(renderID);
+        _imp->renderClones.erase(render);
     }
 }
 

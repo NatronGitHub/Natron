@@ -62,8 +62,9 @@ Node::makeDocumentation(bool genHTML) const
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
-            QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
-            input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), genHTML, true );
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), genHTML, true );
+            input << ( _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No") );
             inputs.push_back(input);
 
             // Don't show more than doc for 4 inputs otherwise it will just clutter the page
@@ -113,9 +114,9 @@ Node::makeDocumentation(bool genHTML) const
             continue;
         }
 
-        QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
-        QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
-        QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
+        QString knobScriptName = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getName().c_str() ), genHTML, true);
+        QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), genHTML, true);
+        QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), genHTML, true);
 
         if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
             continue;
@@ -170,19 +171,41 @@ Node::makeDocumentation(bool genHTML) const
                         int index = isChoice->getDefaultValue(DimIdx(i));
                         std::vector<ChoiceOption> entries = isChoice->getEntries();
                         if ( (index >= 0) && ( index < (int)entries.size() ) ) {
-                            valueStr = QString::fromUtf8( entries[index].c_str() );
+                            valueStr = QString::fromUtf8( entries[index].id.c_str() );
                         }
-                        std::vector<ChoiceOption> entriesHelp = isChoice->getEntriesHelp();
-                        if ( entries.size() == entriesHelp.size() ) {
-                            knobHint.append( QString::fromUtf8("\n\n") );
-                            for (size_t i = 0; i < entries.size(); i++) {
-                                QString entry = QString::fromUtf8( entries[i].c_str() );
-                                QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
-                                if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
-                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg(entry).arg(entryHelp) );
+                        bool first = true;
+                        for (size_t i = 0; i < entries.size(); i++) {
+                            QString entry = QString::fromUtf8( entries[i].id.c_str() );
+                            QString entryHelp = QString::fromUtf8( entries[i].tooltip.c_str() );
+                            if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
+                                if (first) {
+                                    // empty line before the option descriptions
+                                    if (genHTML) {
+                                        knobHint.append( QString::fromUtf8("<br />") );
+                                    } else {
+                                        // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+                                        // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+                                        // genStaticDocs.sh script by a simple sed command after converting to RsT
+                                        if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
+                                            knobHint.prepend( QString::fromUtf8(". ") );
+                                        }
+                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                    }
+                                    first = false;
                                 }
+                                if (genHTML) {
+                                    knobHint.append( QString::fromUtf8("<br />") );
+                                } else {
+                                    knobHint.append( QString::fromUtf8("\\\n") );
+                                    // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+                                    // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+                                    // genStaticDocs.sh script by a simple sed command after converting to RsT
+                                    knobHint.append( QString::fromUtf8(". ") );
+                                }
+                                knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
                             }
                         }
+
                     } else if (isInt) {
                         valueStr = QString::number( isInt->getDefaultValue(DimIdx(i)) );
                     } else if (isDbl) {
@@ -196,7 +219,8 @@ Node::makeDocumentation(bool genHTML) const
                     }
                 }
 
-                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(DimIdx(i)).c_str() ), valueStr) );
+                dimsDefaultValueStr.push_back( std::make_pair(convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getDimensionName( DimIdx(i) ).c_str() ), genHTML, true ),
+                                                              convertFromPlainTextToMarkdown(valueStr, genHTML, true)) );
             }
 
             for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
@@ -225,9 +249,60 @@ Node::makeDocumentation(bool genHTML) const
 
 
     // generate plugin info
-    ms << pluginLabel << "\n==========\n\n";
+    ms << tr("%1 node").arg(pluginLabel) << "\n==========\n\n";
+
+    // a hack to avoid repeating the documentation for the various merge plugins
+    if ( pluginID.startsWith( QString::fromUtf8("net.sf.openfx.Merge") ) ) {
+        std::string id = pluginID.toStdString();
+        std::string op;
+        if (id == PLUGINID_OFX_MERGE) {
+            // do nothing
+        } else if (id == "net.sf.openfx.MergeDifference") {
+            op = "difference (a.k.a. absminus)";
+        } else if (id == "net.sf.openfx.MergeIn") {
+            op = "in";
+        } else if (id == "net.sf.openfx.MergeMatte") {
+            op = "matte";
+        } else if (id == "net.sf.openfx.MergeMax") {
+            op = "max";
+        } else if (id == "net.sf.openfx.MergeMin") {
+            op = "min";
+        } else if (id == "net.sf.openfx.MergeMultiply") {
+            op = "multiply";
+        } else if (id == "net.sf.openfx.MergeOut") {
+            op = "out";
+        } else if (id == "net.sf.openfx.MergePlus") {
+            op = "plus";
+        } else if (id == "net.sf.openfx.MergeScreen") {
+            op = "screen";
+        }
+        if ( !op.empty() ) {
+            // we should use the custom link "[Merge node](|http::/plugins/"PLUGINID_OFX_MERGE".html||rst::net.sf.openfx.MergePlugin|)"
+            // but pandoc borks it
+            ms << tr("The *%1* node is a convenience node identical to the %2, except that the operator is set to *%3* by default.")
+            .arg(pluginLabel)
+            .arg(genHTML ? QString::fromUtf8("<a href=\""PLUGINID_OFX_MERGE".html\">Merge node</a>") :
+                 QString::fromUtf8(":ref:`"PLUGINID_OFX_MERGE"`")
+                 //QString::fromUtf8("[Merge node](http::/plugins/"PLUGINID_OFX_MERGE".html)")
+                 )
+            .arg( QString::fromUtf8( op.c_str() ) );
+            goto OUTPUT;
+        }
+
+    }
+
     if (!pluginIconUrl.isEmpty()) {
-        ms << "![](" << pluginIconUrl << ")\n\n";
+        // add a nonbreaking space so that pandoc doesn't use the alt-text as a caption
+        // http://pandoc.org/MANUAL.html#images
+        ms << "![pluginIcon](" << pluginIconUrl << ")";
+        if (!genHTML) {
+            // specify image width for pandoc-generated printed doc
+            // (for hoedown-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
+            // see http://pandoc.org/MANUAL.html#images
+            // note that only % units are understood both by pandox and sphinx
+            ms << "{ width=10% }";
+        }
+        ms << "\\ \n\n";
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
@@ -239,7 +314,7 @@ Node::makeDocumentation(bool genHTML) const
             QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
-            pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+            pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
         }
     }
 
@@ -252,60 +327,28 @@ Node::makeDocumentation(bool genHTML) const
     if (inputs.size() > 0) {
         Q_FOREACH(const QStringList &input, inputs) {
             QString inputName = input.at(0);
-            inputName.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputName.isEmpty()) {
-                inputName = QString::fromUtf8("&nbsp;");
-            }
-
             QString inputDesc = input.at(1);
-            inputDesc.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputDesc.isEmpty()) {
-                inputDesc = QString::fromUtf8("&nbsp;");
-            }
-
             QString inputOpt = input.at(2);
-            if (inputOpt.isEmpty()) {
-                inputOpt = QString::fromUtf8("&nbsp;");
-            }
 
             ms << inputName << " | " << inputDesc << " | " << inputOpt << "\n";
         }
     }
     ms << tr("Controls") << "\n----------\n\n";
-    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " <<tr("Type") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
-    ms << "--- | --- | --- | --- | ---\n";
+    if (!genHTML) {
+        // insert a special marker to be replaced in rst by the genStaticDocs.sh script)
+        ms << "CONTROLSTABLEPROPS\n\n";
+    }
+    ms << tr("Parameter / script name") << " | " << tr("Type") << " | " << tr("Default") << " | " << tr("Function") << "\n";
+    ms << "--- | --- | --- | ---\n";
     if (items.size() > 0) {
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
-            itemLabel.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemLabel.isEmpty()) {
-                itemLabel = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemScript = item.at(1);
-            itemScript.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemScript.isEmpty()) {
-                itemScript = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemType = item.at(2);
-            if (itemType.isEmpty()) {
-                itemType = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemDefault = item.at(3);
-            itemDefault.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemDefault.isEmpty()) {
-                itemDefault = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemFunction = item.at(4);
-            itemFunction.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemFunction.isEmpty()) {
-                itemFunction = QString::fromUtf8("&nbsp;");
-            }
 
-            ms << itemLabel << " | " << itemScript << " | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
+            ms << itemLabel << " / `" << itemScript << "` | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
         }
     }
 
@@ -315,12 +358,15 @@ Node::makeDocumentation(bool genHTML) const
         ms << extraMarkdown;
     }
 
+OUTPUT:
     // output
     if (genHTML) {
+        // use hoedown to convert to HTML
+
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         ts << "<html><head>";
         ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
-        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+        ts << "<link rel=\"stylesheet\" href=\"_static/markdown.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
         ts << "</head><body>";
         ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
         ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
@@ -337,6 +383,8 @@ Node::makeDocumentation(bool genHTML) const
         ts << Markdown::fixNodeHTML(html);
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     } else {
+        // this markdown will be processed externally by pandoc
+        
         ts << markdown;
     }
     
@@ -361,8 +409,7 @@ Node::makeInfoForInput(int inputNumber) const
     }
 
 
-    ImageBitDepthEnum depth = _imp->effect->getBitDepth(inputNumber);
-    TimeValue time = getApp()->getTimeLine()->currentFrame();
+    TimeValue time(getApp()->getTimeLine()->currentFrame());
     std::stringstream ss;
     { // input name
         QString inputName;
@@ -375,35 +422,46 @@ Node::makeInfoForInput(int inputNumber) const
     }
     { // image format
         ss << "<b>" << tr("Image planes:").toStdString() << "</b> <font color=#c8c8c8>";
-        EffectInstance::ComponentsAvailableMap availableComps;
-        input->getComponentsAvailable(true, true, time, &availableComps);
-        EffectInstance::ComponentsAvailableMap::iterator next = availableComps.begin();
-        if ( next != availableComps.end() ) {
+
+        std::list<ImageComponents> availableLayers;
+        _imp->effect->getAvailableLayers(time, ViewIdx(0), inputNumber, TreeRenderNodeArgsPtr(), &availableLayers);
+
+        std::list<ImageComponents>::iterator next = availableLayers.begin();
+        if ( next != availableLayers.end() ) {
             ++next;
         }
-        for (EffectInstance::ComponentsAvailableMap::iterator it = availableComps.begin(); it != availableComps.end(); ++it) {
-            NodePtr origin = it->second.lock();
-            if ( (origin.get() != this) || (inputNumber == -1) ) {
-                if (origin) {
-                    ss << Image::getFormatString(it->first, depth);
-                    if (inputNumber != -1) {
-                        ss << " " << tr("(from %1)").arg( QString::fromUtf8( origin->getLabel_mt_safe().c_str() ) ).toStdString();
-                    }
-                }
-            }
-            if ( next != availableComps.end() ) {
-                if (origin) {
-                    if ( (origin.get() != this) || (inputNumber == -1) ) {
-                        ss << ", ";
-                    }
-                }
+        for (std::list<ImageComponents>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
+
+            ss << " "  << it->getLayerName();
+            if ( next != availableLayers.end() ) {
+                ss << ", ";
                 ++next;
             }
         }
         ss << "</font><br />";
     }
+    {
+        ImageBitDepthEnum depth = _imp->effect->getBitDepth(TreeRenderNodeArgsPtr(),inputNumber);
+        QString depthStr = tr("unknown");
+        switch (depth) {
+            case eImageBitDepthByte:
+                depthStr = tr("8u");
+                break;
+            case eImageBitDepthShort:
+                depthStr = tr("16u");
+                break;
+            case eImageBitDepthFloat:
+                depthStr = tr("32fp");
+                break;
+            case eImageBitDepthHalf:
+                depthStr = tr("16fp");
+            case eImageBitDepthNone:
+                break;
+        }
+        ss << "<b>" << tr("BitDepth:").toStdString() << "</b> <font color=#c8c8c8>" << depthStr.toStdString() << "</font><br />";
+    }
     { // premult
-        ImagePremultiplicationEnum premult = input->getPremult();
+        ImagePremultiplicationEnum premult = input->getPremult(TreeRenderNodeArgsPtr());
         QString premultStr = tr("unknown");
         switch (premult) {
             case eImagePremultiplicationOpaque:
@@ -419,30 +477,36 @@ Node::makeInfoForInput(int inputNumber) const
         ss << "<b>" << tr("Alpha premultiplication:").toStdString() << "</b> <font color=#c8c8c8>" << premultStr.toStdString() << "</font><br />";
     }
     { // par
-        double par = input->getAspectRatio(-1);
+        double par = input->getAspectRatio(TreeRenderNodeArgsPtr(),-1);
         ss << "<b>" << tr("Pixel aspect ratio:").toStdString() << "</b> <font color=#c8c8c8>" << par << "</font><br />";
     }
     { // fps
-        double fps = input->getFrameRate();
+        double fps = input->getFrameRate(TreeRenderNodeArgsPtr());
         ss << "<b>" << tr("Frame rate:").toStdString() << "</b> <font color=#c8c8c8>" << tr("%1fps").arg(fps).toStdString() << "</font><br />";
     }
     {
-        double first = 1., last = 1.;
-        input->getFrameRange_public(0, &first, &last);
-        ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << first << " - " << last << "</font><br />";
+        RangeD range = {1., 1.};
+        {
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = input->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                results->getFrameRangeResults(&range);
+            }
+        }
+        ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << range.min << " - " << range.max << "</font><br />";
     }
+
     {
-        RenderScale scale(1.);
-        RectD rod;
-        ActionRetCodeEnum stat = input->getRegionOfDefinition_public(0,
-                                                                     time,
-                                                                     scale, ViewIdx(0), &rod);
+        GetRegionOfDefinitionResultsPtr results;
+        ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, RenderScale(1.), ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
         if (!isFailureRetCode(stat)) {
+            RectD rod = results->getRoD();
             ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
             ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
         }
     }
-    
+
+
     return ss.str();
 } // Node::makeInfoForInput
 
@@ -465,18 +529,10 @@ Node::refreshInfos()
         ssinfo << "<b>" << tr("Supports multiresolution:").toStdString() << "</b> <font color=#c8c8c8>";
         ssinfo << ( _imp->effect->supportsMultiResolution() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
         ssinfo << "<b>" << tr("Supports renderscale:").toStdString() << "</b> <font color=#c8c8c8>";
-        switch ( _imp->effect->supportsRenderScaleMaybe() ) {
-            case EffectInstance::eSupportsMaybe:
-                ssinfo << tr("Maybe").toStdString();
-                break;
-
-            case EffectInstance::eSupportsNo:
-                ssinfo << tr("No").toStdString();
-                break;
-
-            case EffectInstance::eSupportsYes:
-                ssinfo << tr("Yes").toStdString();
-                break;
+        if (!getCurrentSupportRenderScale()) {
+            ssinfo << tr("No").toStdString();
+        } else {
+            ssinfo << tr("Yes").toStdString();
         }
         ssinfo << "</font><br />";
         ssinfo << "<b>" << tr("Supports multiple clip PARs:").toStdString() << "</b> <font color=#c8c8c8>";

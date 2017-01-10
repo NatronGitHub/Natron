@@ -586,6 +586,9 @@ public:
     void setCurrentCanDistort(bool support);
     bool getCurrentCanDistort() const;
 
+    void setCurrentCanTransform(bool support);
+    bool getCurrentCanTransform() const;
+
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
 

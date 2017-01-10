@@ -529,6 +529,8 @@ struct TreeRenderNodeArgsPrivate
     // The distort flag may change (e.g Reformat may provide a transform or not depending on a parameter)
     bool canDistort;
 
+    bool canTransformDeprecated;
+
     TreeRenderNodeArgsPrivate(const TreeRenderPtr& render, const NodePtr& node)
     : lock()
     , parentRender(render)
@@ -548,6 +550,7 @@ struct TreeRenderNodeArgsPrivate
     , tilesSupported(node->getCurrentSupportTiles())
     , renderScaleSupported(node->getCurrentSupportRenderScale())
     , canDistort(node->getCurrentCanDistort())
+    , canTransformDeprecated(node->getCurrentCanTransform())
     {
 
         // Create a copy of the roto item if needed
@@ -722,6 +725,12 @@ TreeRenderNodeArgs::getCurrentDistortSupport() const
 {
     // MT-safe: never changes throughout the lifetime of the object
     return _imp->canDistort;
+}
+
+bool
+TreeRenderNodeArgs::getCurrentTransformationSupport_deprecated() const
+{
+    return _imp->canTransformDeprecated;
 }
 
 SequentialPreferenceEnum

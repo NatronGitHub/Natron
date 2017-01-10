@@ -29,6 +29,30 @@
 #include "Engine/Transform.h"
 NATRON_NAMESPACE_ENTER;
 
+DistorsionFunction2D::DistorsionFunction2D()
+: inputNbToDistort(-1)
+, transformMatrix()
+, func(0)
+, customData(0)
+, customDataSizeHintInBytes(0)
+, customDataFreeFunc(0)
+{
+
+}
+
+DistorsionFunction2D::DistorsionFunction2D(const DistorsionFunction2D& other)
+: inputNbToDistort(other.inputNbToDistort)
+, transformMatrix()
+, func(other.func)
+, customData(other.customData)
+, customDataSizeHintInBytes(other.customDataSizeHintInBytes)
+, customDataFreeFunc(other.customDataFreeFunc)
+{
+    if (other.transformMatrix) {
+        transformMatrix.reset(new Transform::Matrix3x3(*other.transformMatrix));
+    }
+}
+
 struct Distorsion2DStackPrivate
 {
     std::list<DistorsionFunction2DPtr> stack;

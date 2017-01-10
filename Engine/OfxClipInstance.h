@@ -296,7 +296,7 @@ private:
 
 private:
 
-    friend class OfxClipInstancePrivate;
+    friend struct OfxClipInstancePrivate;
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 
@@ -304,7 +304,9 @@ struct OfxImageCommonPrivate;
 class OfxImageCommon
 {
 public:
-    explicit OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
+    explicit OfxImageCommon(const EffectInstancePtr& outputClipEffect,
+                            int inputNb,
+                            OFX::Host::ImageEffect::ImageBase* ofxImageBase,
                             const ImagePtr& internalImage,
                             const RectD& rod,
                             ImagePremultiplicationEnum premult,
@@ -331,7 +333,9 @@ class OfxImage
       , public OfxImageCommon
 {
 public:
-    explicit OfxImage(const ImagePtr& internalImage,
+    explicit OfxImage(const EffectInstancePtr& outputClipEffect,
+                      int inputNb,
+                      const ImagePtr& internalImage,
                       const RectD& rod,
                       ImagePremultiplicationEnum premult,
                       ImageFieldingOrderEnum fielding,
@@ -342,7 +346,7 @@ public:
                       int nComps,
                       double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(this, internalImage, rod,  premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
+        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod,  premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
     {
     }
 };
@@ -352,7 +356,9 @@ class OfxTexture
       , public OfxImageCommon
 {
 public:
-    explicit OfxTexture(const ImagePtr& internalImage,
+    explicit OfxTexture(const EffectInstancePtr& outputClipEffect,
+                        int inputNb,
+                        const ImagePtr& internalImage,
                         const RectD& rod,
                         ImagePremultiplicationEnum premult,
                         ImageFieldingOrderEnum fielding,
@@ -363,7 +369,7 @@ public:
                         int nComps,
                         double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(this, internalImage, rod, premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
+        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod, premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
     {
     }
 };

@@ -925,7 +925,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             if (i > 0 && !knob->getAllDimensionsVisible(*it)) {
                 continue;
             }
-            AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), *it);
+            AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), knob->getHolder()->getTimelineCurrentTime(), *it);
             if (lvl != eAnimationLevelOnKeyframe) {
                 hasAllKeyframesAtTime = false;
             } else if ( (dimension == i || nDims == 1) &&

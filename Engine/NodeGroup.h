@@ -256,9 +256,6 @@ public:
      **/
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
 
-
-    void forceComputeInputDependentDataOnAllTrees();
-
     /**
      * @brief Callback called when a node of the collection is being deactivated
      **/

@@ -38,6 +38,8 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
+#include "Engine/TimeValue.h"
+
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;

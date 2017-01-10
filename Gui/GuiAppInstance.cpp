@@ -44,6 +44,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
@@ -1194,7 +1195,7 @@ bool
 GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
 {
     NodesList allNodes;
-    SequenceTime time = getProject()->getCurrentTime();
+    TimeValue time = getProject()->getTimelineCurrentTime();
 
     getProject()->getNodes_recursive(allNodes, true);
     bool changed =  false;

@@ -357,7 +357,7 @@ OfxImageEffectInstance::getEffectDuration() const
         return std::max(double(lastFrame - firstFrame) + 1., 1.);
     } else {
         // return the project duration if the effect has no lifetime
-        double projFirstFrame, projLastFrame;
+        TimeValue projFirstFrame, projLastFrame;
         node->getApp()->getProject()->getFrameRange(&projFirstFrame, &projLastFrame);
 
         return std::max(projLastFrame - projFirstFrame + 1., 1.);
@@ -1026,8 +1026,7 @@ void
 OfxImageEffectInstance::timeLineGetBounds(double &t1,
                                           double &t2)
 {
-    double first, last;
-
+    TimeValue first, last;
     _ofxEffectInstance.lock()->getApp()->getProject()->getFrameRange(&first, &last);
     t1 = first;
     t2 = last;

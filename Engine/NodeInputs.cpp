@@ -28,6 +28,7 @@
 
 #include "Engine/GroupOutput.h"
 #include "Engine/PrecompNode.h"
+#include "Engine/Settings.h"
 #include "Engine/TreeRenderNodeArgs.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -586,15 +587,17 @@ checkCanConnectNoMultiRes(const Node* output,
     for (int i = 0; i < output->getMaxInputCount(); ++i) {
         NodePtr inputNode = output->getInput(i);
         if (inputNode) {
-            RectD inputRod;
-            stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(0,
-                                                                                output->getApp()->getTimeLine()->currentFrame(),
-                                                                                scale,
-                                                                                ViewIdx(0),
-                                                                                &inputRod);
-            if ( isFailureRetCode(stat) && !inputRod.isNull() ) {
+
+            GetRegionOfDefinitionResultsPtr actionResults;
+            ActionRetCodeEnum stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(TimeValue(output->getApp()->getTimeLine()->currentFrame()),
+                                                                                                  scale,
+                                                                                                  ViewIdx(0),
+                                                                                                  TreeRenderNodeArgsPtr(),
+                                                                                                  &actionResults);
+            if ( isFailureRetCode(stat)) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
             }
+            RectD inputRod = actionResults->getRoD();
             if (inputRod != rod) {
                 return Node::eCanConnectInput_multiResNotSupported;
             }
@@ -646,20 +649,20 @@ Node::canConnectInput(const NodePtr& input,
     {
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
 
-        double inputPAR = input->getEffectInstance()->getAspectRatio(-1);
-        double inputFPS = input->getEffectInstance()->getFrameRate();
+        double inputPAR = input->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
+        double inputFPS = input->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
         QMutexLocker l(&_imp->inputsMutex);
 
         for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr node = it->lock();
             if (node) {
                 if ( !_imp->effect->supportsMultipleClipPARs() ) {
-                    if (node->getEffectInstance()->getAspectRatio(-1) != inputPAR) {
+                    if (node->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1) != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
                 }
 
-                if (std::abs(node->getEffectInstance()->getFrameRate() - inputFPS) > 0.01) {
+                if (std::abs(node->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr()) - inputFPS) > 0.01) {
                     return eCanConnectInput_differentFPS;
                 }
             }
@@ -1278,10 +1281,11 @@ Node::endInputEdition(bool triggerRender)
         _imp->inputsModified.clear();
 
         if (hasChanged) {
-            // When creating a node tree, the refresh is done on all the tree when done
-            if ( !getApp()->isCreatingNodeTree() ) {
-                forceRefreshAllInputRelatedData();
-            }
+
+            // Force a refresh of the meta-datas
+            GetTimeInvariantMetaDatasResultsPtr results;
+            _imp->effect->getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
+
             refreshDynamicProperties();
         }
 
@@ -1374,6 +1378,25 @@ Node::duringInputChangedAction() const
     
     return _imp->inputModifiedRecursion > 0;
 }
+
+static std::string removeTrailingDigits(const std::string& str)
+{
+    if (str.empty()) {
+        return std::string();
+    }
+    std::size_t i = str.size() - 1;
+    while (i > 0 && std::isdigit(str[i])) {
+        --i;
+    }
+
+    if (i == 0) {
+        // Name only consists of digits
+        return std::string();
+    }
+
+    return str.substr(0, i + 1);
+}
+
 
 bool
 Node::isEntitledForInspectorInputsStyle() const

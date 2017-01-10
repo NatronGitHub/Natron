@@ -71,6 +71,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/FileSystemModel.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -751,7 +752,7 @@ Gui::isGUIFrozen() const
 void
 Gui::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
 {
-    int time = getApp()->getProject()->getCurrentTime();
+    TimeValue time = getApp()->getProject()->getTimelineCurrentTime();
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         (*it)->refreshNodesKnobsAtTime(true, time);
@@ -788,7 +789,7 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     _imp->_propertiesBin->setEnabled(!clicked);
 
     if (!clicked) {
-        int time = getApp()->getProject()->getCurrentTime();
+        TimeValue time(getApp()->getProject()->getTimelineCurrentTime());
         for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
             (*it)->refreshNodesKnobsAtTime(false, time);
         }
@@ -827,7 +828,7 @@ Gui::renderAllViewers()
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame();
+            (*it)->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
         }
     }
 }
@@ -844,11 +845,8 @@ Gui::abortAllViewers(bool autoRestartPlayback)
         if (!viewerGroup) {
             continue;
         }
-        ViewerInstancePtr viewerProcess = viewerGroup->getInternalViewerNode();
-        if (!viewerProcess) {
-            continue;
-        }
-        RenderEnginePtr engine = viewerProcess->getRenderEngine();
+
+        RenderEnginePtr engine = viewerGroup->getNode()->getRenderEngine();
         if (!engine) {
             continue;
         }

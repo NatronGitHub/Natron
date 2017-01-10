@@ -39,16 +39,9 @@ NATRON_NAMESPACE_ENTER;
 
 struct DistorsionFunction2D
 {
-    DistorsionFunction2D()
-    : inputNbToDistort(-1)
-    , transformMatrix()
-    , func(0)
-    , customData(0)
-    , customDataSizeHintInBytes(0)
-    , customDataFreeFunc(0)
-    {
-
-    }
+    DistorsionFunction2D();
+    
+    DistorsionFunction2D(const DistorsionFunction2D& other);
 
     // Index of the input to distort
     int inputNbToDistort;

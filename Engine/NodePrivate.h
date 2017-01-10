@@ -398,6 +398,7 @@ public:
 
     // Does this node can return a distorsion function ?
     bool currentCanDistort;
+    bool currentDeprecatedTransformSupport;
 
     // During painting we keep track of the image that was rendered
     // at the previous step so that we can accumulate the renders

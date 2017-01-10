@@ -117,6 +117,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
 , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
 , currentCanDistort(false)
+, currentDeprecatedTransformSupport(false)
 , lastRenderedImageMutex()
 , lastRenderedImage()
 , isBeingDestroyedMutex()
@@ -184,7 +185,7 @@ NodePrivate::refreshMetadaWarnings(const NodeMetadata &metadata)
     const bool supportsMultipleClipDepths = effect->supportsMultipleClipDepths();
     const bool supportsMultipleClipPARs = effect->supportsMultipleClipPARs();
     const bool supportsMultipleClipFPSs = effect->supportsMultipleClipFPSs();
-    std::vector<EffectInstancePtr> inputs(nInputs);
+    std::vector<NodePtr> inputs(nInputs);
     for (int i = 0; i < nInputs; ++i) {
         inputs[i] = _publicInterface->getInput(i);
     }
@@ -217,7 +218,7 @@ NodePrivate::refreshMetadaWarnings(const NodeMetadata &metadata)
 
         ++nbConnectedInputs;
 
-        const double fps = inputs[i]->getFrameRate(TreeRenderNodeArgsPtr());
+        const double fps = inputs[i]->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
 
 
 
@@ -232,11 +233,11 @@ NodePrivate::refreshMetadaWarnings(const NodeMetadata &metadata)
         }
 
 
-        ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(TreeRenderNodeArgsPtr(), -1);
+        ImageBitDepthEnum inputOutputDepth = inputs[i]->getEffectInstance()->getBitDepth(TreeRenderNodeArgsPtr(), -1);
 
         //If the bit-depth conversion will be lossy, warn the user
         if ( Image::isBitDepthConversionLossy( inputOutputDepth, metadata.getBitDepth(i) ) ) {
-            bitDepthWarning.append( QString::fromUtf8( inputs[i]->getNode()->getLabel_mt_safe().c_str() ) );
+            bitDepthWarning.append( QString::fromUtf8( inputs[i]->getLabel_mt_safe().c_str() ) );
             bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString(inputOutputDepth).c_str() ) + QChar::fromLatin1(')') );
             bitDepthWarning.append( QString::fromUtf8(" ----> ") );
             bitDepthWarning.append( QString::fromUtf8( _publicInterface->getLabel_mt_safe().c_str() ) );
@@ -247,7 +248,7 @@ NodePrivate::refreshMetadaWarnings(const NodeMetadata &metadata)
 
 
         if ( !supportsMultipleClipPARs && (pixelAspect != outputPAR) ) {
-            qDebug() << _publicInterface->getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getNode()->getScriptName_mt_safe().c_str()
+            qDebug() << _publicInterface->getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getScriptName_mt_safe().c_str()
             << ") has a pixel aspect ratio (" << metadata.getPixelAspectRatio(i)
             << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "
             << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";

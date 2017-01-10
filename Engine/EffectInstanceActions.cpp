@@ -726,11 +726,14 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? renderScale : RenderScale(1.);
 
+
+    bool isDeprecatedTransformSupportEnabled;
     // Get the render local args
     FrameViewRequestPtr fvRequest;
     if (render) {
 
-        assert(render->getCurrentDistortSupport());
+        isDeprecatedTransformSupportEnabled = render->getCurrentTransformationSupport_deprecated();
+        assert(render->getCurrentDistortSupport() || isDeprecatedTransformSupportEnabled);
 
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
@@ -739,7 +742,8 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
         bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
         (void)created;
     } else {
-        assert(getNode()->getCurrentCanDistort());
+        isDeprecatedTransformSupportEnabled = getNode()->getCurrentCanTransform();
+        assert(getNode()->getCurrentCanDistort() || isDeprecatedTransformSupportEnabled);
     }
 
     U64 hash = 0;
@@ -824,6 +828,19 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
             return stat;
         }
 
+        // Either the matrix or the distorsion functor should be set
+        assert(distorsion->transformMatrix || distorsion->func);
+
+        // In the deprecated getTransform action, the returned transform is in pixel coordinates, whereas in the getDistorsion
+        // action, we return a matrix in canonical coordinates.
+        if (isDeprecatedTransformSupportEnabled) {
+            assert(distorsion->transformMatrix);
+            double par = getAspectRatio(render, -1);
+
+            Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, mappedScale.x, mappedScale.y, false);
+            Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, mappedScale.x, mappedScale.y, false);
+            *distorsion->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *distorsion->transformMatrix), canonicalToPixel);
+        }
     }
 
     ret->setDistorsionResults(distorsion);
