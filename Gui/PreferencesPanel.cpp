@@ -1141,9 +1141,10 @@ PreferencesPanel::onSettingChanged(const KnobIPtr& knob, ValueChangedReasonEnum 
 void
 PreferencesPanel::openHelp()
 {
-    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     int serverPort = appPTR->getDocumentationServerPort();
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
+#ifdef NATRON_DOCUMENTATION_ONLINE
+    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 
     switch (docSource) {
@@ -1157,6 +1158,9 @@ PreferencesPanel::openHelp()
         Dialogs::informationDialog(tr("Missing documentation").toStdString(), tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
+#else
+    QDesktopServices::openUrl( QUrl(localUrl) );
+#endif
 }
 
 void

@@ -143,7 +143,9 @@ public:
     // General/Documentation
     KnobPagePtr _documentationPage;
     KnobIntPtr _wwwServerPort;
+#ifdef NATRON_DOCUMENTATION_ONLINE
     KnobChoicePtr _documentationSource;
+#endif
 
     // General/User Interface
     KnobPagePtr _uiPage;
@@ -890,14 +892,15 @@ SettingsPrivate::initializeKnobsDocumentation()
     KnobHolderPtr thisShared = _publicInterface->shared_from_this();
     _documentationPage = AppManager::createKnob<KnobPage>( thisShared, tr("Documentation") );
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
     _documentationSource = AppManager::createKnob<KnobChoice>( thisShared, tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
     _documentationSource->appendChoice("Local");
     _documentationSource->appendChoice("Online");
     _documentationSource->appendChoice("None");
-
     _documentationPage->addKnob(_documentationSource);
+#endif
 
     /// used to store temp port for local webserver
     _wwwServerPort = AppManager::createKnob<KnobInt>( thisShared, tr("Documentation local port (0=auto)") );
@@ -1815,7 +1818,9 @@ SettingsPrivate::setDefaultValues()
 
     // General/Documentation
     _wwwServerPort->setDefaultValue(0);
+#ifdef NATRON_DOCUMENTATION_ONLINE
     _documentationSource->setDefaultValue(0);
+#endif
 
     // General/User Interface
     _notifyOnFileChange->setDefaultValue(true);
@@ -2771,11 +2776,13 @@ Settings::isAutoPreviewOnForNewProjects() const
     return _imp->_autoPreviewEnabledForNewProjects->getValue();
 }
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
 int
 Settings::getDocumentationSource() const
 {
     return _imp->_documentationSource->getValue();
 }
+#endif
 
 int
 Settings::getServerPort() const

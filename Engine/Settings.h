@@ -348,7 +348,9 @@ public:
 
     std::string getUserStyleSheetFilePath() const;
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
     int getDocumentationSource() const;
+#endif
     int getServerPort() const;
     void setServerPort(int port) const;
 

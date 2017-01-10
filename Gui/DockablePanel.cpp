@@ -844,12 +844,15 @@ DockablePanel::showHelp()
         NodePtr node = iseffect->getNode();
         std::string pluginLabel = node->getPluginLabel();
         std::string pluginID = node->getPluginID();
+#ifdef NATRON_DOCUMENTATION_ONLINE
         int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+#endif
         int serverPort = appPTR->getDocumentationServerPort();
         if ( (serverPort == 0) && (docSource == 0) ) {
             docSource = 1;
         }
         QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + QString::fromUtf8(pluginID.c_str());
+#ifdef NATRON_DOCUMENTATION_ONLINE
         QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + QString::fromUtf8(pluginID.c_str()) + QString::fromUtf8(".html");
         switch (docSource) {
             case 0:
@@ -862,7 +865,9 @@ DockablePanel::showHelp()
                 Dialogs::informationDialog(pluginLabel, helpString().toStdString(), true);
                 break;
         }
-
+#else
+        QDesktopServices::openUrl( QUrl(localUrl) );
+#endif
     }
 }
 
