@@ -56,6 +56,7 @@ public:
     std::list<CLArgs::WriterArg> writers;
     std::list<CLArgs::ReaderArg> readers;
     std::list<std::string> pythonCommands;
+    std::list<std::string> settingCommands; //!< executed after loading the settings
     bool isBackground;
     bool useDefaultSettings;
     QString ipcPipe;
@@ -81,6 +82,7 @@ public:
         , writers()
         , readers()
         , pythonCommands()
+        , settingCommands()
         , isBackground(false)
         , useDefaultSettings(false)
         , ipcPipe()
@@ -216,6 +218,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->writers = other._imp->writers;
     _imp->readers = other._imp->readers;
     _imp->pythonCommands = other._imp->pythonCommands;
+    _imp->settingCommands = other._imp->settingCommands;
     _imp->isBackground = other._imp->isBackground;
     _imp->ipcPipe = other._imp->ipcPipe;
     _imp->error = other._imp->error;
@@ -413,6 +416,12 @@ const std::list<std::string>&
 CLArgs::getPythonCommands() const
 {
     return _imp->pythonCommands;
+}
+
+const std::list<std::string>&
+CLArgs::getSettingCommands() const
+{
+    return _imp->settingCommands;
 }
 
 bool
@@ -981,7 +990,7 @@ CLArgsPrivate::parse()
         }
         QString name = next->left(pos);
         QString value = next->mid(pos+1);
-        pythonCommands.push_back( "NatronEngine.natron.getSettings().getParam(\"" + name.toStdString() + "\").setValue(" + value.toStdString() + ")");
+        settingCommands.push_back( "NatronEngine.natron.getSettings().getParam(\"" + name.toStdString() + "\").setValue(" + value.toStdString() + ")");
 
         ++next;
         args.erase(it, next);

@@ -103,6 +103,7 @@ public:
     const std::list<CLArgs::WriterArg>& getWriterArgs() const;
     const std::list<CLArgs::ReaderArg>& getReaderArgs() const;
     const std::list<std::string>& getPythonCommands() const;
+    const std::list<std::string>& getSettingCommands() const;
 
     bool hasFrameRange() const;
 

@@ -24,6 +24,10 @@ if [ "$(uname -s)" = "Darwin" ]; then
     SED=gsed
 fi
 
+if [ -d "$DOC_FOLDER/source" ]; then
+    rm -rf "$DOC_FOLDER/source/_group*" "$DOC_FOLDER/source/_prefs.rst" "$DOC_FOLDER/source/plugins" || true
+fi
+
 if [ ! -d "$TMP_FOLDER" ]; then
   mkdir -p "$TMP_FOLDER" || exit 1
 fi
@@ -40,11 +44,11 @@ fi
 
 OPTS=("--no-settings")
 if [ -n "${OFX_PLUGIN_PATH:-}" ]; then
-    OPTS=(${OPTS[@]+"${OPTS[@]}" "--setting" "useStdOFXPluginsLocation=False")
+    OPTS=(${OPTS[@]+"${OPTS[@]}"} "--setting" "useStdOFXPluginsLocation=False")
 fi
 
 touch "$TMP_FOLDER/dummy.ntp"
-"$NATRON_BIN" ${OPTS[@]+"${OPTS[@]}" --export-docs "$TMP_FOLDER" "$TMP_FOLDER/dummy.ntp"
+"$NATRON_BIN" ${OPTS[@]+"${OPTS[@]}"} --export-docs "$TMP_FOLDER" "$TMP_FOLDER/dummy.ntp"
 rm "$TMP_FOLDER/dummy.ntp"
 
 pushd "$TMP_FOLDER"
