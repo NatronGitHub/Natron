@@ -714,11 +714,11 @@ Gui::openHelpDocumentation()
 
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
 #ifdef NATRON_DOCUMENTATION_ONLINE
+    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     if ( (serverPort == 0) && (docSource == 0) ) {
         docSource = 1;
     }
-    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 
     switch (docSource) {
     case 0:

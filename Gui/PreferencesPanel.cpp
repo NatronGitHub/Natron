@@ -1145,10 +1145,10 @@ PreferencesPanel::openHelp()
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
 #ifdef NATRON_DOCUMENTATION_ONLINE
     int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
     if ( (serverPort == 0) && (docSource == 0) ) {
         docSource = 1;
     }
-    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 
     switch (docSource) {
     case 0:
