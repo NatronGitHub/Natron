@@ -136,8 +136,6 @@ public:
     {
     }
 
-    ImagePtr getHistogramImage(RectI* imagePortion) const;
-
 
     void showMenu(const QPoint & globalPos);
 
@@ -361,72 +359,6 @@ Histogram::getViewerTextureInputDisplayed() const
 
     return textureIndex;
 }
-
-ImagePtr HistogramPrivate::getHistogramImage(RectI* imagePortion) const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    bool useImageRoD = fullImage->isChecked();
-    int index = 0;
-    std::string viewerName;
-    QAction* selectedHistAction = histogramSelectionGroup->checkedAction();
-    if (selectedHistAction) {
-        index = selectedHistAction->data().toInt();
-        viewerName = selectedHistAction->text().toStdString();
-    }
-
-    int textureIndex = 0;
-    QAction* selectedInputAction = viewerCurrentInputGroup->checkedAction();
-    if (selectedInputAction) {
-        textureIndex = selectedInputAction->data().toInt();
-    }
-
-    ViewerTab* viewer = 0;
-    if (index == 0) {
-        //no viewer selected
-        imagePortion->clear();
-
-        return ImagePtr();
-    } else if (index == 1) {
-        //current viewer
-        viewer = widget->getGui()->getActiveViewer();
-    } else {
-        ImagePtr ret;
-        const std::list<ViewerTab*> & viewerTabs = widget->getGui()->getViewersList();
-        for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
-            if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
-                viewer = *it;
-                break;
-            }
-        }
-    }
-
-    ImagePtr image;
-    if (viewer) {
-        image = viewer->getViewer()->getLastRenderedImageByMipMapLevel( textureIndex, viewer->getViewer()->getMipMapLevelFromZoomFactor() );
-    }
-
-    if (!useImageRoD) {
-        if (viewer) {
-            RectI bounds;
-            double par = 1.;
-            unsigned int mipMapLevel = 0;
-            if (image) {
-                bounds = image->getBounds();
-                par = image->getPixelAspectRatio();
-                mipMapLevel = image->getMipMapLevel();
-            }
-            *imagePortion = viewer->getViewer()->getImageRectangleDisplayed(bounds, par, mipMapLevel);
-        }
-    } else {
-        if (image) {
-            *imagePortion = image->getBounds();
-        }
-    }
-
-    return image;
-} // getHistogramImage
 
 void
 HistogramPrivate::showMenu(const QPoint & globalPos)
@@ -987,20 +919,54 @@ Histogram::computeHistogramAndRefresh(bool forceEvenIfNotVisible)
         return;
     }
 
+    bool fullImage = _imp->fullImage->isChecked();
+    int index = 0;
+    int textureIndex = 0;
+    {
+        QAction* selectedInputAction = _imp->viewerCurrentInputGroup->checkedAction();
+        if (selectedInputAction) {
+            textureIndex = selectedInputAction->data().toInt();
+        }
+    }
+    std::string viewerName;
+    {
+        QAction* selectedHistAction = _imp->histogramSelectionGroup->checkedAction();
+        if (selectedHistAction) {
+            index = selectedHistAction->data().toInt();
+            viewerName = selectedHistAction->text().toStdString();
+        }
+    }
+    
+
+    ViewerTab* viewer = 0;
+    if (index == 1) {
+        //current viewer
+        viewer = _imp->widget->getGui()->getActiveViewer();
+    } else {
+        ImagePtr ret;
+        const std::list<ViewerTab*> & viewerTabs = _imp->widget->getGui()->getViewersList();
+        for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
+            if ( (*it)->getInternalNode()->getScriptName_mt_safe() == viewerName ) {
+                viewer = *it;
+                break;
+            }
+        }
+    }
+
+    if (!viewer) {
+        return;
+    }
+
+    RectD roiParam;
+    if (!fullImage) {
+        roiParam = viewer->getViewer()->getImageRectangleDisplayed();
+    }
+
     QPointF btmLeft = _imp->zoomCtx.toZoomCoordinates(0, height() - 1);
     QPointF topRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, 0);
     double vmin = btmLeft.x();
     double vmax = topRight.x();
-
-
-    RectI rect;
-    ImagePtr image = _imp->getHistogramImage(&rect);
-    if (image) {
-        _imp->histogramThread.computeHistogram(_imp->mode, image, rect, width(), vmin, vmax, _imp->filterSize);
-    } else {
-        _imp->hasImage = false;
-    }
-
+    _imp->histogramThread.computeHistogram(_imp->mode, viewer->getInternalNode(), textureIndex, roiParam, width(), vmin, vmax, _imp->filterSize);
 
     QPointF oldClick_opengl = _imp->zoomCtx.toZoomCoordinates( _imp->oldClick.x(), _imp->oldClick.y() );
     _imp->updatePicker( oldClick_opengl.x() );

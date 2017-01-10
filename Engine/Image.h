@@ -471,6 +471,44 @@ public:
         }
     } // getChannelPointers
 
+    template <typename PIX>
+    static inline void getChannelPointers(const PIX* ptrs[4],
+                                          int x, int y,
+                                          const RectI& bounds,
+                                          int nComps,
+                                          PIX* outPtrs[4],
+                                          int* pixelStride)
+    {
+        switch (nComps) {
+            case 1:
+                getChannelPointers<PIX, 1>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            case 2:
+                getChannelPointers<PIX, 2>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            case 3:
+                getChannelPointers<PIX, 3>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            case 4:
+                getChannelPointers<PIX, 4>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            default:
+                memset(outPtrs, 0, sizeof(void*) * 4);
+                *pixelStride = 0;
+                break;
+        }
+
+    }
+
+    static void getChannelPointers(const void* ptrs[4],
+                                   int x, int y,
+                                   const RectI& bounds,
+                                   int nComps,
+                                   ImageBitDepthEnum bitdepth,
+                                   void* outPtrs[4],
+                                   int* pixelStride);
+
+
     struct CPUTileData
     {
         void* ptrs[4];
@@ -552,43 +590,6 @@ public:
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
      **/
     std::list<RectI> getRestToRender(bool *hasPendingResults) const;
-
-    template <typename PIX>
-    static inline void getChannelPointers(const PIX* ptrs[4],
-                                          int x, int y,
-                                          const RectI& bounds,
-                                          int nComps,
-                                          PIX* outPtrs[4],
-                                          int* pixelStride)
-    {
-        switch (nComps) {
-            case 1:
-                getChannelPointers<PIX, 1>(ptrs, x, y, bounds, outPtrs, pixelStride);
-                break;
-            case 2:
-                getChannelPointers<PIX, 2>(ptrs, x, y, bounds, outPtrs, pixelStride);
-                break;
-            case 3:
-                getChannelPointers<PIX, 3>(ptrs, x, y, bounds, outPtrs, pixelStride);
-                break;
-            case 4:
-                getChannelPointers<PIX, 4>(ptrs, x, y, bounds, outPtrs, pixelStride);
-                break;
-            default:
-                memset(outPtrs, 0, sizeof(void*) * 4);
-                *pixelStride = 0;
-                break;
-        }
-
-    }
-
-    static void getChannelPointers(const void* ptrs[4],
-                                   int x, int y,
-                                   const RectI& bounds,
-                                   int nComps,
-                                   ImageBitDepthEnum bitdepth,
-                                   void* outPtrs[4],
-                                   int* pixelStride);
 
 
     /**
