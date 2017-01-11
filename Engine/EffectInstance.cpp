@@ -32,6 +32,7 @@
 #include <bitset>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -47,7 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
-#include "Global/MemoryInfo.h" // printAsRAM
 #include "Global/QtCompat.h"
 
 #include "Engine/AbortableRenderInfo.h"
@@ -61,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Log.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"

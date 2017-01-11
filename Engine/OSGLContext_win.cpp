@@ -29,10 +29,9 @@
 
 #include <QtCore/QtGlobal>      // for Q_UNUSED
 
-#include "Global/MemoryInfo.h" // isApplication32Bits
-
 #include "Engine/AppManager.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/OSGLContext.h"
 
 #ifdef NATRON_USE_OPTIMUS_HPG

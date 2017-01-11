@@ -88,7 +88,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h" // printAsRAM
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
 
@@ -97,8 +96,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
-#include "Engine/FStreamsSupport.h"
+#include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"

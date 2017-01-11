@@ -16,10 +16,13 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_MEMORYINFO_H
-#define NATRON_GLOBAL_MEMORYINFO_H
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
-// Memory utility functions ( info about RAM etc...)
+#include "Engine/MemoryInfo.h"
 
 /*
  * Author:  David Robert Nadeau
@@ -66,7 +69,6 @@
 #  error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
-#include "Global/Macros.h"
 #include <QtCore/QString>
 #include <QtCore/QLocale>
 #include <QtCore/QCoreApplication>
@@ -74,7 +76,9 @@
 
 #include "Global/GlobalDefines.h"
 
-inline uint64_t
+NATRON_NAMESPACE_ENTER;
+
+U64
 getSystemTotalRAM()
 {
 #if defined(__APPLE__)
@@ -110,24 +114,18 @@ getSystemTotalRAM()
 #endif
 }
 
-inline bool
-isApplication32Bits()
-{
-    return sizeof(void*) == 4;
-}
-
-inline uint64_t
+U64
 getSystemTotalRAM_conditionnally()
 {
     if ( isApplication32Bits() ) {
-        return std::min( (uint64_t)0x100000000ULL, getSystemTotalRAM() );
+        return std::min( (U64)0x100000000ULL, getSystemTotalRAM() );
     } else {
         return getSystemTotalRAM();
     }
 }
 
 // prints RAM value as KB, MB or GB
-inline QString
+QString
 printAsRAM(U64 bytes)
 {
     // According to the Si standard KB is 1000 bytes, KiB is 1024
@@ -158,7 +156,7 @@ printAsRAM(U64 bytes)
  * memory use) measured in bytes, or zero if the value cannot be
  * determined on this OS.
  */
-inline size_t
+std::size_t
 getPeakRSS( )
 {
 #if defined(_WIN32)
@@ -207,7 +205,7 @@ getPeakRSS( )
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-inline size_t
+std::size_t
 getCurrentRSS( )
 {
 #if defined(_WIN32)
@@ -260,7 +258,7 @@ getCurrentRSS( )
 #endif
 } // getCurrentRSS
 
-inline size_t
+std::size_t
 getAmountFreePhysicalRAM()
 {
 #if defined(_WIN32)
@@ -317,4 +315,4 @@ getAmountFreePhysicalRAM()
 #endif
 }
 
-#endif // ifndef NATRON_GLOBAL_MEMORYINFO_H
+NATRON_NAMESPACE_EXIT;
