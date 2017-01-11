@@ -84,7 +84,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // printAsRAM
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
 

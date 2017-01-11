@@ -50,7 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxhUtilities.h> // for StatStr
 #include <ofxhPluginCache.h>
 
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // printAsRAM
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxClipInstance.h"
 #include "Engine/OfxParamInstance.h"

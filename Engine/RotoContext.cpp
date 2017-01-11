@@ -49,7 +49,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "libtess.h"
 
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // printAsRAM
 #include "Engine/RotoContextPrivate.h"
 
 #include "Engine/AppInstance.h"

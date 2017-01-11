@@ -48,7 +48,7 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/GitVersion.h"
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // isApplication32Bits
 #include "Engine/AppInstance.h"
 #include "Engine/ProjectPrivate.h"
 #include "Engine/Project.h"

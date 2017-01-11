@@ -41,9 +41,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-#include "Global/MemoryInfo.h"
-#include "Engine/RotoContextPrivate.h"
-
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierSerialization.h"
@@ -56,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
+#include "Engine/RotoContextPrivate.h"
 #include "Engine/RotoLayerSerialization.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"

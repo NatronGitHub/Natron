@@ -52,7 +52,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // printAsRAM
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
