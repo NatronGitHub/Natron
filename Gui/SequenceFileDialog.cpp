@@ -83,13 +83,13 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 #include "Global/QtCompat.h"
-#include "Global/MemoryInfo.h" // printAsRAM
 #include "Global/StrUtils.h"
 
 #include "Gui/GuiDefines.h"
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobFile.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"

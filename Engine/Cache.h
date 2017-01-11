@@ -38,7 +38,6 @@
 #include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h" // getSystemTotalRAM
 #include "Global/StrUtils.h"
 
 GCC_DIAG_OFF(deprecated)
@@ -55,11 +54,13 @@ GCC_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/AppManager.h" //for access to settings
-#include "Engine/Settings.h"
 #include "Engine/CacheEntry.h"
-#include "Engine/LRUHashTable.h"
-#include "Engine/StandardPaths.h"
 #include "Engine/ImageLocker.h"
+#include "Engine/LRUHashTable.h"
+#include "Engine/MemoryInfo.h" // getSystemTotalRAM
+#include "Engine/Settings.h"
+#include "Engine/StandardPaths.h"
+
 #include "Engine/EngineFwd.h"
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries

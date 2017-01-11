@@ -48,15 +48,17 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/GitVersion.h"
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h" // isApplication32Bits
+
 #include "Engine/AppInstance.h"
-#include "Engine/ProjectPrivate.h"
-#include "Engine/Project.h"
-#include "Engine/TimeLine.h"
+#include "Engine/KnobSerialization.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroupSerialization.h"
-#include "Engine/KnobSerialization.h"
+#include "Engine/ProjectPrivate.h"
+#include "Engine/Project.h"
+#include "Engine/TimeLine.h"
+
 #include "Engine/EngineFwd.h"
 
 #define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2

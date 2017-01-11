@@ -124,6 +124,7 @@ SOURCES += \
     Lut.cpp \
     Markdown.cpp \
     MemoryFile.cpp \
+    MemoryInfo.cpp \
     Node.cpp \
     NodeGroup.cpp \
     NodeMetadata.cpp \
@@ -331,6 +332,7 @@ HEADERS += \
     Lut.h \
     Markdown.h \
     MemoryFile.h \
+    MemoryInfo.h \
     MergingEnum.h \
     Node.h \
     Noise.h \
@@ -440,7 +442,6 @@ HEADERS += \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \
-    ../Global/MemoryInfo.h \
     ../Global/ProcInfo.h \
     ../Global/QtCompat.h \
     ../Global/StrUtils.h \

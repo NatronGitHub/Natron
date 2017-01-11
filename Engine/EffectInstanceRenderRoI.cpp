@@ -31,6 +31,7 @@
 #include <fstream>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <boost/scoped_ptr.hpp>
 

@@ -77,7 +77,6 @@
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
 #include "Global/StrUtils.h"
-#include "Global/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
@@ -85,13 +84,14 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/JoinViewsNode.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
+#include "Engine/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Engine/Node.h"
-#include "Engine/FileSystemModel.h"
-#include "Engine/JoinViewsNode.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"

@@ -49,7 +49,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "libtess.h"
 
-#include "Global/MemoryInfo.h" // printAsRAM
 #include "Engine/RotoContextPrivate.h"
 
 #include "Engine/AppInstance.h"
@@ -62,6 +61,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
 #include "Engine/ImageParams.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/NodeSerialization.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"

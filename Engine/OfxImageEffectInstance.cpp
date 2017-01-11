@@ -50,24 +50,24 @@ CLANG_DIAG_ON(uninitialized)
 #include <ofxhUtilities.h> // for StatStr
 #include <ofxhPluginCache.h>
 
-#include "Global/MemoryInfo.h" // printAsRAM
-#include "Engine/OfxEffectInstance.h"
-#include "Engine/OfxClipInstance.h"
-#include "Engine/OfxParamInstance.h"
-#include "Engine/TimeLine.h"
-#include "Engine/Knob.h"
-#include "Engine/KnobTypes.h"
-#include "Engine/KnobFactory.h"
-#include "Engine/OfxMemory.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Format.h"
+#include "Engine/Knob.h"
+#include "Engine/KnobFactory.h"
+#include "Engine/KnobTypes.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
-#include "Engine/ViewerInstance.h"
+#include "Engine/OfxClipInstance.h"
+#include "Engine/OfxEffectInstance.h"
+#include "Engine/OfxMemory.h"
 #include "Engine/OfxOverlayInteract.h"
+#include "Engine/OfxParamInstance.h"
 #include "Engine/Project.h"
+#include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/ViewerInstance.h"
 
 NATRON_NAMESPACE_ENTER;
 
