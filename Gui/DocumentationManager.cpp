@@ -223,13 +223,19 @@ DocumentationManager::handler(QHttpRequest *req,
                                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
                                     if (isReadNode) {
-                                        node = isReadNode->getEmbeddedReader();
+                                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                                        if (subnode) {
+                                            node = subnode;
+                                        }
                                     }
                                 } else if ( effectInstance && effectInstance->isWriter() ) {
                                     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
                                     if (isWriteNode) {
-                                        node = isWriteNode->getEmbeddedWriter();
+                                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                                        if (subnode) {
+                                            node = subnode;
+                                        }
                                     }
                                 }
                             }
