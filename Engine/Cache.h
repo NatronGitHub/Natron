@@ -38,7 +38,7 @@
 #include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h" // getSystemTotalRAM
+#include "Global/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Global/StrUtils.h"
 
 GCC_DIAG_OFF(deprecated)

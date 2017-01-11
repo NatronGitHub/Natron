@@ -65,6 +65,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxhXml.h> // OFX::XML::escape
 
 #include "Global/StrUtils.h"
+#include "Global/GitVersion.h"
+#include "Global/MemoryInfo.h" // isApplication32Bits
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -83,9 +85,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
-
-#include "Global/GitVersion.h"
-#include "Global/MemoryInfo.h"
 
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
