@@ -1302,7 +1302,9 @@ Bezier::addControlPointInternal(double x, double y, double time, ViewIdx view)
         } else {
             KeyFrame k;
             if (!getMasterKeyframe(0, view, &k)) {
-                keyframeTime = getApp()->getTimeLine()->currentFrame();;
+                AppInstancePtr app = getApp();
+                assert(app);
+                keyframeTime = app->getTimeLine()->currentFrame();;
             } else {
                 keyframeTime = k.getTime();
             }
@@ -1391,7 +1393,6 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
 
     BezierCPPtr p( new BezierCP(this_shared) );
     BezierCPPtr fp;
-
 
     if ( useFeatherPoints() ) {
         fp.reset( new FeatherPoint(this_shared) );
@@ -1569,7 +1570,9 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
 
 
         ///If auto-keying is enabled, set a new keyframe
-        int currentTime = getApp()->getTimeLine()->currentFrame();
+        AppInstancePtr app = getApp();
+        assert(app);
+        int currentTime = app->getTimeLine()->currentFrame();
         if ( !hasMasterKeyframeAtTime(currentTime, view) && isAutoKeyingEnabled() ) {
             setKeyFrame(currentTime, view, 0);
         }

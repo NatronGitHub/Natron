@@ -236,7 +236,11 @@ Project::loadProject(const QString & path,
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            getApp()->createNode(args);
+            NodePtr viewerGroup = getApp()->createNode(args);
+            assert(viewerGroup);
+            if (!viewerGroup) {
+                throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+            }
         }
 
         return false;
@@ -247,7 +251,11 @@ Project::loadProject(const QString & path,
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            getApp()->createNode(args);
+            NodePtr viewerGroup = getApp()->createNode(args);
+            assert(viewerGroup);
+            if (!viewerGroup) {
+                throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+            }
         }
 
         return false;
@@ -2577,7 +2585,11 @@ Project::createViewer()
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    getApp()->createNode(args);
+    NodePtr viewerGroup = getApp()->createNode(args);
+    assert(viewerGroup);
+    if (!viewerGroup) {
+        throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+    }
 }
 
 static bool

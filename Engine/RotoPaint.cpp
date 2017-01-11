@@ -1286,6 +1286,10 @@ RotoPaint::setupInitialSubGraphState()
 
             premultNode = getApp()->createNode(args);
             _imp->premultNode = premultNode;
+            assert(premultNode);
+            if (!premultNode) {
+                throw std::runtime_error( tr("Rotopaint requires the plug-in %1 in order to work").arg( QLatin1String(PLUGINID_OFX_PREMULT) ).toStdString() );
+            }
 
             if (_imp->premultKnob.lock()) {
                 KnobBoolPtr disablePremultKnob = premultNode->getDisabledKnob();
