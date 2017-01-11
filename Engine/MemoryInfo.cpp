@@ -151,6 +151,8 @@ printAsRAM(U64 bytes)
     return QCoreApplication::translate("MemoryInfo", "%1 byte(s)").arg( QLocale().toString( (uint)bytes ) );
 }
 
+
+#if 0 // not used for now
 /**
  * Returns the peak (maximum so far) resident set size (physical
  * memory use) measured in bytes, or zero if the value cannot be
@@ -200,7 +202,9 @@ getPeakRSS( )
     return (size_t)0L;          /* Unsupported. */
 #endif
 }
+#endif // 0
 
+#if 0 // not used for now
 /**
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
@@ -257,6 +261,8 @@ getCurrentRSS( )
     return (size_t)0L;          /* Unsupported. */
 #endif
 } // getCurrentRSS
+#endif // 0
+
 
 std::size_t
 getAmountFreePhysicalRAM()
