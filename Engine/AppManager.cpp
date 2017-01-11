@@ -77,6 +77,7 @@
 #include "Global/ProcInfo.h"
 #include "Global/GLIncludes.h"
 #include "Global/StrUtils.h"
+#include "Global/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"

@@ -48,6 +48,8 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThreadPool>
 CLANG_DIAG_ON(deprecated)
 
+#include "Global/MemoryInfo.h" // printAsRAM
+
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"

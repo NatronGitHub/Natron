@@ -29,6 +29,8 @@
 
 #include <QtCore/QtGlobal>      // for Q_UNUSED
 
+#include "Global/MemoryInfo.h" // isApplication32Bits
+
 #include "Engine/AppManager.h"
 #include "Engine/OSGLContext.h"
 
