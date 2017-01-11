@@ -42,7 +42,6 @@
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/EffectInstance.h"
-#include "Engine/FileSystemModel.h"
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/Project.h"

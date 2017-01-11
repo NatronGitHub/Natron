@@ -87,6 +87,7 @@
 #include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
+#include "Engine/FileSystemModel.h" // FileSystemModel::initDriveLettersToNetworkShareNamesMapping
 #include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
