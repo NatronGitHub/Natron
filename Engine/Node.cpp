@@ -57,8 +57,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <SequenceParsing.h>
 
-#include "Global/MemoryInfo.h"
-
 #include "Engine/NodePrivate.h"
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"

@@ -47,7 +47,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <SequenceParsing.h> // for removePath
 
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
 #include "Engine/AppInstance.h"

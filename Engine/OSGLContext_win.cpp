@@ -33,8 +33,6 @@
 #include "Engine/OSGLFunctions.h"
 #include "Engine/OSGLContext.h"
 
-#include "Global/MemoryInfo.h"
-
 #ifdef NATRON_USE_OPTIMUS_HPG
 
 // Applications exporting this symbol with this value will be automatically

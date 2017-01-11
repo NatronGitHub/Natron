@@ -38,7 +38,7 @@
 #include <tchar.h>
 #endif
 
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // getSystemTotalRAM, isApplication32Bits, printAsRAM
 #include "Global/StrUtils.h"
 
 #include "Engine/AppManager.h"

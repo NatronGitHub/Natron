@@ -23,6 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "RotoLayer.h"
+
 #include "Serialization/KnobTableItemSerialization.h"
 
 NATRON_NAMESPACE_ENTER;

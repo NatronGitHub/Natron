@@ -83,7 +83,7 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 #include "Global/QtCompat.h"
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // printAsRAM, getSystemTotalRAM
 #include "Global/StrUtils.h"
 
 #include "Gui/GuiDefines.h"

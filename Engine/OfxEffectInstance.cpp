@@ -40,7 +40,6 @@ CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
 #include <ofxhPluginCache.h>
 #include <ofxhPluginAPICache.h>
 #include <ofxhImageEffect.h>
-#include <ofxhPluginCache.h>
 #include <ofxhImageEffectAPI.h>
 #include <ofxOpenGLRender.h>
 #include <ofxhHost.h>

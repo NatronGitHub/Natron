@@ -49,7 +49,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
 #include "Engine/AppInstance.h"

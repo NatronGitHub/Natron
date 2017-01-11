@@ -38,7 +38,7 @@
 #include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // getSystemTotalRAM
 #include "Global/StrUtils.h"
 
 GCC_DIAG_OFF(deprecated)
@@ -61,7 +61,6 @@ GCC_DIAG_ON(deprecated)
 #include "Engine/LRUHashTable.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ImageLocker.h"
-#include "Global/MemoryInfo.h"
 #include "Engine/EngineFwd.h"
 
 

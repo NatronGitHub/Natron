@@ -88,7 +88,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // printAsRAM
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
 
@@ -808,7 +808,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     SettingsPtr settings = appPTR->getCurrentSettings();
     assert(settings);
     bool useStdOFXPluginsLocation = settings->getUseStdOFXPluginsLocation();
-    OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    if (!useStdOFXPluginsLocation) {
+        // only set if false, else use the previous value (which is set for example in BaseTest::SetUp())
+        OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    }
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache

@@ -34,7 +34,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/PyAppInstance.h"
-#include "Global/MemoryInfo.h"
+#include "Global/MemoryInfo.h" // isApplication32Bits
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

@@ -45,8 +45,6 @@
 #include <QtCore/QTextStream>
 #include <QtCore/QRunnable>
 
-#include "Global/MemoryInfo.h"
-
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
