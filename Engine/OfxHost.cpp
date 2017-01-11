@@ -839,7 +839,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     SettingsPtr settings = appPTR->getCurrentSettings();
     assert(settings);
     bool useStdOFXPluginsLocation = settings->getUseStdOFXPluginsLocation();
-    OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    if (!useStdOFXPluginsLocation) {
+        // only set if false, else use the previous value (which is set for example in BaseTest::SetUp())
+        OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    }
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache
