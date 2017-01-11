@@ -20,7 +20,7 @@ and can be downloaded as a
 `PDF <https://readthedocs.org/projects/natron/downloads/pdf/rb-2.2/>`_,
 `HTML zip <https://readthedocs.org/projects/natron/downloads/htmlzip/rb-2.2/>`_
 or
-`ePub <https://readthedocs.org/projects/natron/downloads/epub/rb-2.2/`_
+`ePub <https://readthedocs.org/projects/natron/downloads/epub/rb-2.2/>`_
 file.
 
 This manual is maintained largely by volunteers.
