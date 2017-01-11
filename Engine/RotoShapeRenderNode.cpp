@@ -422,7 +422,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 } else {
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, args.renderScale, outputPlane.second->getGLTextureTarget());
+                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, args.renderScale, GL_TEXTURE_2D);
                 }
             }
         }   break;
@@ -430,40 +430,53 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
             if (!glContext->getContext()->isGPUContext()) {
                 // When rendering smear with OSMesa we need to write to the full image bounds and not only the RoI, so re-attach the default framebuffer
-                RectI bounds = outputPlane.second->getBounds();
-                Image::WriteAccess outputWriteAccess(outputPlane.second.get());
-                unsigned char* data = outputWriteAccess.pixelAt(bounds.x1, bounds.y1);
-                assert(data);
-                contextLocker = OSGLContextAttacher::create(glContext, bounds.width(), bounds.height(), bounds.width(), data);
-                contextLocker->attach();
+                Image::CPUTileData imageData;
+                {
+                    Image::Tile tile;
+                    outputPlane.second->getTileAt(0, &tile);
+                    outputPlane.second->getCPUTileData(tile, &imageData);
+                }
+
+                glContext = OSGLContextAttacher::create(glContext->getContext(), imageData.tileBounds.width(), imageData.tileBounds.height(), imageData.tileBounds.width(), imageData.ptrs[0]);
             }
 
             // Ensure that initially everything in the background is the source image
             if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
-                RectI bgImgRoI;
-                ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.renderScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, (args.useOpenGL && glContext->isGPUContext()) ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
-
-                if (!bgImg) {
+                GetImageOutArgs outArgs;
+                GetImageInArgs inArgs(args);
+                inArgs.inputNb = 0;
+                if (!getImagePlanes(inArgs, &outArgs)) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
-                    return eStatusFailed;
+                    return eActionStatusFailed;
                 }
 
-                // With OSMesa we cannot re-use the existing output plane as source because mesa clears the framebuffer out upon the first draw
-                // The only option is to draw in a tmp texture that will live for the whole stroke painting life
-                if (!glContext->isGPUContext()) {
-                    const RectD& rod = outputPlane.second->getRoD();
-                    RectI pixelRoD;
-                    rod.toPixelEnclosing(0, outputPlane.second->getPixelAspectRatio(), &pixelRoD);
-                    _imp->osmesaSmearTmpTexture = EffectInstance::convertRAMImageRoIToOpenGLTexture(bgImg, pixelRoD, glContext);
+                ImagePtr bgImage = outArgs.imagePlanes.begin()->second;
+
+
+                if (glContext->getContext()->isGPUContext()) {
+                    Image::CopyPixelsArgs cpyArgs;
+                    cpyArgs.roi = outputPlane.second->getBounds();
+                    outputPlane.second->copyPixels(*bgImage, cpyArgs);
+                } else {
+
+                    // With OSMesa we cannot re-use the existing output plane as source because mesa clears the framebuffer out upon the first draw
+                    // The only option is to draw in a tmp texture that will live for the whole stroke painting life
+
+                    Image::InitStorageArgs initArgs;
+                    initArgs.bounds = bgImage->getBounds();
+                    initArgs.bitdepth = outputPlane.second->getBitDepth();
+                    initArgs.storage = eStorageModeGLTex;
+                    initArgs.glContext = glContext;
+                    initArgs.textureTarget = GL_TEXTURE_2D;
+                    _imp->osmesaSmearTmpTexture = Image::create(initArgs);
+
                     // Make sure the texture is ready before rendering the smear
                     GL_CPU::Flush();
                     GL_CPU::Finish();
-                } else {
-                    outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);
                 }
             } else {
-                if (strokeStartPointIndex == 0 && !glContext->isGPUContext()) {
+                if (!glContext->getContext()->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
                     const RectD& rod = outputPlane.second->getRoD();
@@ -479,11 +492,11 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, scale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
             }
 #endif
-            if (args.useOpenGL) {
+            if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
+                ImagePtr dstImage = glContext->getContext()->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, scale, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, args.renderScale, &distToNextOut, &lastCenterOut);
             }
 
             if (isDuringPainting) {

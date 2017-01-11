@@ -141,7 +141,7 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 void
-RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, unsigned int mipmapLevel, double featherDist,
+RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale, double featherDistPixel_x, double featherDistPixel_y,
                                              PolygonData* outArgs)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
@@ -152,7 +152,8 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue tim
 
     bool clockWise = bezier->isFeatherPolygonClockwiseOriented(time, view);
 
-    const double absFeatherDist = std::abs(featherDist);
+    const double absFeatherDist_x = std::abs(featherDistPixel_x);
+    const double absFeatherDist_y = std::abs(featherDistPixel_y);
 
     RectD featherPolyBBox;
     featherPolyBBox.setupInfinity();
@@ -163,8 +164,8 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue tim
     double error = 1;
 #endif
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, mipmapLevel,error, true, &outArgs->featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(time, view, mipmapLevel, error,&outArgs->bezierPolygon,
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, scale, error, true, &outArgs->featherPolygon, &featherPolyBBox);
+    bezier->evaluateAtTime_DeCasteljau(time, view, scale, error,&outArgs->bezierPolygon,
 #ifndef NDEBUG
                                        &outArgs->bezierBbox
 #else
@@ -222,7 +223,7 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue tim
             lastOutterVert.x = fSegmentIt->x;
             lastOutterVert.y = fSegmentIt->y;
 
-            if (absFeatherDist) {
+            {
                 double diffx = fnext->x - fprev->x;
                 double diffy = fnext->y - fprev->y;
                 double norm = std::sqrt( diffx * diffx + diffy * diffy );
@@ -230,11 +231,11 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue tim
                 double dy = (norm != 0) ? ( diffx / norm ) : 1;
 
                 if (!clockWise) {
-                    lastOutterVert.x -= dx * absFeatherDist;
-                    lastOutterVert.y -= dy * absFeatherDist;
+                    lastOutterVert.x -= dx * absFeatherDist_x;
+                    lastOutterVert.y -= dy * absFeatherDist_y;
                 } else {
-                    lastOutterVert.x += dx * absFeatherDist;
-                    lastOutterVert.y += dy * absFeatherDist;
+                    lastOutterVert.x += dx * absFeatherDist_x;
+                    lastOutterVert.y += dy * absFeatherDist_y;
                 }
             }
 
@@ -292,7 +293,7 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue tim
                     lastOutterVert.x = fSegmentIt->x;
                     lastOutterVert.y = fSegmentIt->y;
 
-                    if (absFeatherDist) {
+                    {
                         double diffx = fnext->x - fprev->x;
                         double diffy = fnext->y - fprev->y;
                         double norm = std::sqrt( diffx * diffx + diffy * diffy );
@@ -300,11 +301,11 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, TimeValue tim
                         double dy = (norm != 0) ? ( diffx / norm ) : 1;
 
                         if (!clockWise) {
-                            lastOutterVert.x -= dx * absFeatherDist;
-                            lastOutterVert.y -= dy * absFeatherDist;
+                            lastOutterVert.x -= dx * absFeatherDist_x;
+                            lastOutterVert.y -= dy * absFeatherDist_y;
                         } else {
-                            lastOutterVert.x += dx * absFeatherDist;
-                            lastOutterVert.y += dy * absFeatherDist;
+                            lastOutterVert.x += dx * absFeatherDist_x;
+                            lastOutterVert.y += dy * absFeatherDist_y;
                         }
                     }
                     lastOutterVert.isInner = false;

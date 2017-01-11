@@ -77,7 +77,7 @@ struct RenderScale
 {
     RenderScale() { x = y = 1.; }
 
-    RenderScale(double scale) { x = y = scale; }
+    RenderScale(double scale) { assert(scale != 0.); x = y = scale; }
 
     RenderScale(double scaleX,
                 double scaleY) { x = scaleX; y = scaleY; }

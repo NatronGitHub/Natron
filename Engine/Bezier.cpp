@@ -627,7 +627,7 @@ static void
 bezierSegmentBboxUpdate(const BezierCP & first,
                         const BezierCP & last,
                         TimeValue time,
-                        unsigned int mipMapLevel,
+                        const RenderScale &scale,
                         const Transform::Matrix3x3& transform,
                         RectD* bbox,
                         bool *bboxSet) ///< input/output
@@ -663,20 +663,18 @@ bezierSegmentBboxUpdate(const BezierCP & first,
     p2.y = p2M.y / p2M.z;
     p3.y = p3M.y / p3M.z;
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
-        p0.x /= pot;
-        p0.y /= pot;
+    p0.x *= scale.x;
+    p0.y *= scale.y;
 
-        p1.x /= pot;
-        p1.y /= pot;
+    p1.x *= scale.x;
+    p1.y *= scale.y;
 
-        p2.x /= pot;
-        p2.y /= pot;
+    p2.x *= scale.x;
+    p2.y *= scale.y;
 
-        p3.x /= pot;
-        p3.y /= pot;
-    }
+    p3.x *= scale.x;
+    p3.y *= scale.y;
+
     Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
 }
 
@@ -685,7 +683,7 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
                                     bool finished,
                                     bool isOpenBezier,
                                     TimeValue time,
-                                    unsigned int mipMapLevel,
+                                    const RenderScale &scale,
                                     const Transform::Matrix3x3& transform,
                                     RectD* bbox) ///< input/output
 {
@@ -718,7 +716,7 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(*(*it), *(*next), time, mipMapLevel, transform, bbox, &bboxSet);
+        bezierSegmentBboxUpdate(*(*it), *(*next), time, scale, transform, bbox, &bboxSet);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -1005,7 +1003,7 @@ static void
 bezierSegmentEval(const BezierCP & first,
                   const BezierCP & last,
                   TimeValue time,
-                  unsigned int mipMapLevel,
+                  const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                   int nbPointsPerSegment,
 #else
@@ -1040,21 +1038,18 @@ bezierSegmentEval(const BezierCP & first,
     p2.x = p2M.x / p2M.z; p2.y = p2M.y / p2M.z;
     p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
 
+    p0.x *= scale.x;
+    p0.y *= scale.y;
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
-        p0.x /= pot;
-        p0.y /= pot;
+    p1.x *= scale.x;
+    p1.y *= scale.y;
 
-        p1.x /= pot;
-        p1.y /= pot;
+    p2.x *= scale.x;
+    p2.y *= scale.y;
 
-        p2.x /= pot;
-        p2.y /= pot;
+    p3.x *= scale.x;
+    p3.y *= scale.y;
 
-        p3.x /= pot;
-        p3.y /= pot;
-    }
 
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
     if (nbPointsPerSegment == -1) {
@@ -2832,7 +2827,7 @@ Bezier::onKeyFrameRemoved(TimeValue time, ViewSetSpec view)
 void
 Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
                     TimeValue time,
-                    unsigned int mipMapLevel,
+                    const RenderScale &scale,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
@@ -2861,11 +2856,11 @@ Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
         bool segbboxSet = false;
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time,  mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
         }
 
         if (bbox) {
@@ -2887,7 +2882,7 @@ Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
 void
 Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
                                    ViewIdx view,
-                                   unsigned int mipMapLevel,
+                                   const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2896,7 +2891,7 @@ Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
                                    std::vector<std::vector< ParametricPoint> >* points,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2908,7 +2903,7 @@ Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
 void
 Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
                                    ViewIdx view,
-                                   unsigned int mipMapLevel,
+                                   const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2917,7 +2912,7 @@ Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
                                    std::vector<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2929,7 +2924,7 @@ Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
 void
 Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
                                             ViewIdx view,
-                                            unsigned int mipMapLevel,
+                                            const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                             int nbPointsPerSegment,
 #else
@@ -2949,7 +2944,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
     if (!shape) {
         return;
     }
-    deCastelJau(shape->points, time, mipMapLevel, shape->finished,
+    deCastelJau(shape->points, time, scale, shape->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
 #else
@@ -2961,11 +2956,11 @@ Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
 void
 Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
                                                 ViewIdx view,
-                                                unsigned int mipMapLevel,
+                                                const RenderScale &scale,
                                                 std::vector<std::vector<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau(time, view, mipMapLevel,
+    evaluateAtTime_DeCasteljau(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                -1,
 #else
@@ -2977,7 +2972,7 @@ Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
                                                 ViewIdx view,
-                                                unsigned int mipMapLevel,
+                                                const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -2987,7 +2982,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
                                                 std::vector<ParametricPoint >* points,
                                                 RectD* bbox) const
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -2999,7 +2994,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
                                                          ViewIdx view,
-                                                         unsigned int mipMapLevel,
+                                                         const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                          int nbPointsPerSegment,
 #else
@@ -3053,7 +3048,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
         }
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time, mipMapLevel,
+            bezierSegmentEval(*(*it), *(*next), time, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -3063,7 +3058,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  mipMapLevel,
+            bezierSegmentEval(*(*it), *(*next), time,  scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -3089,7 +3084,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
 void
 Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
                                                 ViewIdx view,
-                                                unsigned int mipMapLevel,
+                                                const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -3099,7 +3094,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
                                                 std::vector<std::vector<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -3133,12 +3128,12 @@ Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
     }
 
 
-    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, 0 /*mipMapLevel*/, transform, &pointsBbox);
+    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, RenderScale(1.), transform, &pointsBbox);
 
 
     if (useFeatherPoints() && !_imp->isOpenBezier) {
         RectD featherPointsBbox;
-        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time,  0 /*mipMapLevel*/, transform, &featherPointsBbox);
+        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time,  RenderScale(1.), transform, &featherPointsBbox);
         pointsBbox.merge(featherPointsBbox);
         if (shape->featherPoints.size() > 1) {
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something

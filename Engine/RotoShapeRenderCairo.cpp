@@ -66,15 +66,12 @@ RotoShapeRenderCairo::CairoImageWrapper::~CairoImageWrapper()
 
 
 static void
-adjustToPointToScale(unsigned int mipmapLevel,
+adjustToPointToScale(const RenderScale &scale,
                      double &x,
                      double &y)
 {
-    if (mipmapLevel != 0) {
-        int pot = (1 << mipmapLevel);
-        x /= pot;
-        y /= pot;
-    }
+    x *= scale.x;
+    y *= scale.y;
 }
 
 
@@ -1098,7 +1095,7 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
 
 #ifdef ROTO_CAIRO_RENDER_TRIANGLES_ONLY
     PolygonData data;
-    computeTriangles(bezier, t, mipmapLevel, featherDist, &data);
+    computeTriangles(bezier, t, scale, featherDist, &data);
     renderFeather_cairo(data, shapeColor, fallOff, mesh);
     renderInternalShape_cairo(data, shapeColor, mesh);
     Q_UNUSED(opacity);
@@ -1123,7 +1120,7 @@ void
 RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
                                               TimeValue time,
                                               ViewIdx view,
-                                              unsigned int mipmapLevel,
+                                              const RenderScale &scale,
                                               double shapeColor[3],
                                               double /*opacity*/,
                                               double featherDist,
@@ -1148,14 +1145,14 @@ RotoShapeRenderCairo::renderFeather_old_cairo(const BezierPtr& bezier,
 
     featherPolyBBox.setupInfinity();
 
-    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, mipmapLevel,
+    bezier->evaluateFeatherPointsAtTime_DeCasteljau(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                     50,
 #else
                                                     1,
 #endif
                                                     true, &featherPolygon, &featherPolyBBox);
-    bezier->evaluateAtTime_DeCasteljau(time, view, mipmapLevel,
+    bezier->evaluateAtTime_DeCasteljau(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                        50,
 #else
@@ -1633,7 +1630,7 @@ RotoShapeRenderCairo::renderInternalShape_cairo(const RotoBezierTriangulation::P
 
 void
 RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
-                                                  unsigned int mipmapLevel,
+                                                  const RenderScale &scale,
                                                   double /*shapeColor*/[3],
                                                   double /*opacity*/,
                                                   const Transform::Matrix3x3& transform,
@@ -1698,18 +1695,18 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
             p3ptr->getRightBezierPointAtTime(time, &p3p0.x, &p3p0.y);
 
 
-            adjustToPointToScale(mipmapLevel, p0.x, p0.y);
-            adjustToPointToScale(mipmapLevel, p0p1.x, p0p1.y);
-            adjustToPointToScale(mipmapLevel, p1p0.x, p1p0.y);
-            adjustToPointToScale(mipmapLevel, p1.x, p1.y);
-            adjustToPointToScale(mipmapLevel, p1p2.x, p1p2.y);
-            adjustToPointToScale(mipmapLevel, p2p1.x, p2p1.y);
-            adjustToPointToScale(mipmapLevel, p2.x, p2.y);
-            adjustToPointToScale(mipmapLevel, p2p3.x, p2p3.y);
-            adjustToPointToScale(mipmapLevel, p3p2.x, p3p2.y);
-            adjustToPointToScale(mipmapLevel, p3.x, p3.y);
-            adjustToPointToScale(mipmapLevel, p3p0.x, p3p0.y);
-            adjustToPointToScale(mipmapLevel, p0p3.x, p0p3.y);
+            adjustToPointToScale(scale, p0.x, p0.y);
+            adjustToPointToScale(scale, p0p1.x, p0p1.y);
+            adjustToPointToScale(scale, p1p0.x, p1p0.y);
+            adjustToPointToScale(scale, p1.x, p1.y);
+            adjustToPointToScale(scale, p1p2.x, p1p2.y);
+            adjustToPointToScale(scale, p2p1.x, p2p1.y);
+            adjustToPointToScale(scale, p2.x, p2.y);
+            adjustToPointToScale(scale, p2p3.x, p2p3.y);
+            adjustToPointToScale(scale, p3p2.x, p3p2.y);
+            adjustToPointToScale(scale, p3.x, p3.y);
+            adjustToPointToScale(scale, p3p0.x, p3p0.y);
+            adjustToPointToScale(scale, p0p3.x, p0p3.y);
 
             // Add a Coons patch such as:
 
@@ -1791,7 +1788,7 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
     initCp.z = 1.;
     initCp = Transform::matApply(transform, initCp);
 
-    adjustToPointToScale(mipmapLevel, initCp.x, initCp.y);
+    adjustToPointToScale(scale, initCp.x, initCp.y);
 
     cairo_move_to(cr, initCp.x, initCp.y);
 
@@ -1812,9 +1809,9 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
         nextLeft = Transform::matApply(transform, nextLeft);
         next = Transform::matApply(transform, next);
 
-        adjustToPointToScale(mipmapLevel, right.x, right.y);
-        adjustToPointToScale(mipmapLevel, next.x, next.y);
-        adjustToPointToScale(mipmapLevel, nextLeft.x, nextLeft.y);
+        adjustToPointToScale(scale, right.x, right.y);
+        adjustToPointToScale(scale, next.x, next.y);
+        adjustToPointToScale(scale, nextLeft.x, nextLeft.y);
         cairo_curve_to(cr, right.x, right.y, nextLeft.x, nextLeft.y, next.x, next.y);
 
         // increment for next iteration
@@ -1852,7 +1849,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                                                ViewIdx view,
                                                const RangeD& shutterRange,
                                                int nDivisions,
-                                               const unsigned int mipmapLevel,
+                                               const RenderScale &scale,
                                                const bool isDuringPainting,
                                                const double distToNextIn,
                                                const Point& lastCenterPointIn,
@@ -1892,14 +1889,14 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
 
         std::list<std::list<std::pair<Point, double> > > strokes;
         if (isStroke) {
-            isStroke->evaluateStroke(mipmapLevel, t, view, &strokes, 0);
+            isStroke->evaluateStroke(scale, t, view, &strokes, 0);
             if (strokes.empty()) {
                 continue;
             }
 
         } else if (isBezier && isBezier->isOpenBezier()) {
             std::vector<std::vector< ParametricPoint> > decastelJauPolygon;
-            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, mipmapLevel, &decastelJauPolygon, 0);
+            isBezier->evaluateAtTime_DeCasteljau_autoNbPoints(t, view, scale, &decastelJauPolygon, 0);
             std::list<std::pair<Point, double> > points;
             for (std::vector<std::vector< ParametricPoint> > ::iterator it = decastelJauPolygon.begin(); it != decastelJauPolygon.end(); ++it) {
                 for (std::vector< ParametricPoint>::iterator it2 = it->begin(); it2 != it->end(); ++it2) {
@@ -1976,7 +1973,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 }
             }
 
-            RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, t, view, mipmapLevel, distToNextOut, lastCenterPointOut);
+            RotoShapeRenderCairo::renderStroke_cairo(imgWrapper.ctx, dotPatterns, strokes, distToNextIn, lastCenterPointIn, isStroke, doBuildUp, opacity, t, view, scale, distToNextOut, lastCenterPointOut);
 
 
             if (isDuringPainting) {
@@ -1992,7 +1989,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
                 }
             }
         } else {
-            RotoShapeRenderCairo::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, t, view, mipmapLevel);
+            RotoShapeRenderCairo::renderBezier_cairo(imgWrapper.ctx, isBezier, opacity, t, view, scale);
         }
 
         bool useOpacityToConvert = (isBezier != 0);

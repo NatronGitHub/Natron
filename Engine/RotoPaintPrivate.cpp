@@ -343,7 +343,7 @@ RotoPaintInteract::drawSelectedCpsBBOX()
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
@@ -801,7 +801,7 @@ RotoPaintInteract::computeSelectedCpsBBOX()
         return;
     }
 
-    TimeValue time = p->publicInterface->getCurrentTime();
+    TimeValue time = p->publicInterface->getTimelineCurrentTime();
 
     double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
@@ -892,7 +892,7 @@ RotoPaintInteract::showMenuForControlPoint(const BezierCPPtr& /*cp*/)
     menuKnobs.push_back( nudgeRightMenuAction.lock());
     menuKnobs.push_back( nudgeTopMenuAction.lock());
 
-    std::vector<ChoiceOption> choices(mnueKnobs.size());
+    std::vector<ChoiceOption> choices(menuKnobs.size());
     for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
         choices[i].id = menuKnobs->getName();
         choices[i].tooltip = menuKnobs->getHintTooltip();
@@ -924,7 +924,7 @@ RotoPaintInteract::showMenuForCurve(const BezierPtr & curve)
     }
     menuKnobs.push_back( lockShapeMenuAction.lock() );
 
-    std::vector<ChoiceOption> choices(mnueKnobs.size());
+    std::vector<ChoiceOption> choices(menuKnobs.size());
     for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
         choices[i].id = menuKnobs->getName();
         choices[i].tooltip = menuKnobs->getHintTooltip();
@@ -1059,8 +1059,8 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     bool pressSize = pressureSizeButton.lock()->getValue();
     bool pressHarness = pressureHardnessButton.lock()->getValue();
     bool buildUp = buildUpButton.lock()->getValue();
-    TimeValue timeOffset = timeOffsetSpinBox.lock()->getValue();
-    TimeValue timeOffsetMode_i = timeOffsetModeChoice.lock()->getValue();
+    double timeOffset = timeOffsetSpinBox.lock()->getValue();
+    int timeOffsetMode_i = timeOffsetModeChoice.lock()->getValue();
     int sourceType_i = sourceTypeChoice.lock()->getValue();
     double effectValue = effectSpinBox.lock()->getValue();
 
@@ -1109,7 +1109,7 @@ RotoPaintInteract::isNearbySelectedCpsCrossHair(const QPointF & pos) const
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     double xHairMidSizeX = kXHairSelectedCpsBox * pixelScale.first;
     double xHairMidSizeY = kXHairSelectedCpsBox * pixelScale.second;

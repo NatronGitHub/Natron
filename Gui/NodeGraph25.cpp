@@ -42,6 +42,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Edge.h"
@@ -78,7 +79,7 @@ NodeGraph::showNodePanel(bool casIsCtrl, bool casIsShift, const NodeGuiPtr& near
             getGui()->putSettingsPanelFirst( nearbyNode->getSettingPanel() );
         } else {
 
-            ViewerInstancePtr isViewer = nearbyNode->getNode()->isEffectViewerInstance();
+            ViewerNodePtr isViewer = nearbyNode->getNode()->isEffectViewerNode();
             if (isViewer) {
                 ViewerGL* viewer = dynamic_cast<ViewerGL*>( isViewer->getUiContext() );
                 assert(viewer);

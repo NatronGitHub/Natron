@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Cache.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -261,11 +262,11 @@ NodeGraph::updateCacheSizeText()
     }
 
     QString oldText = _imp->_cacheSizeText->text();
-    quint64 cacheSize = appPTR->getCachesTotalMemorySize();
+    quint64 cacheSize = appPTR->getCache()->getCurrentSize(eStorageModeRAM);
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
-    quint64 diskSize = appPTR->getCachesTotalDiskSize();
+    quint64 diskSize = appPTR->getCache()->getCurrentSize(eStorageModeDisk);
     QString diskCacheSizeStr = QDirModelPrivate_size(diskSize);
-    QString newText = tr("Memory cache: %1 / Disk cache: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
+    QString newText = tr("Memory used: %1 / Disk used: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
     if (newText != oldText) {
         _imp->_cacheSizeText->setText(newText);
     }

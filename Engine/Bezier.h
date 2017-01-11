@@ -397,7 +397,7 @@ public:
 
 
 
-    static void deCastelJau(const std::list<BezierCPPtr >& cps, TimeValue time, unsigned int mipMapLevel,
+    static void deCastelJau(const std::list<BezierCPPtr >& cps, TimeValue time, const RenderScale &scale,
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
@@ -415,7 +415,7 @@ public:
      **/
     void evaluateAtTime_DeCasteljau(TimeValue time,
                                     ViewIdx view,
-                                    unsigned int mipMapLevel,
+                                    const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -426,7 +426,7 @@ public:
 
     void evaluateAtTime_DeCasteljau(TimeValue time,
                                     ViewIdx view,
-                                    unsigned int mipMapLevel,
+                                    const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -439,7 +439,7 @@ private:
 
     void evaluateAtTime_DeCasteljau_internal(TimeValue time,
                                              ViewIdx view,
-                                             unsigned int mipMapLevel,
+                                             const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                              int nbPointsPerSegment,
 #else
@@ -456,7 +456,7 @@ public:
      **/
     void evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
                                                  ViewIdx view,
-                                                 unsigned int mipMapLevel,
+                                                 const RenderScale &scale,
                                                  std::vector<std::vector<ParametricPoint> >* points,
                                                  RectD* bbox) const;
 
@@ -466,7 +466,7 @@ public:
      **/
     void evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
                                                  ViewIdx view,
-                                                 unsigned int mipMapLevel,
+                                                 const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
 #else
@@ -478,7 +478,7 @@ public:
 
     void evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
                                                  ViewIdx view,
-                                                 unsigned int mipMapLevel,
+                                                 const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
 #else
@@ -492,7 +492,7 @@ private:
 
     void evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
                                                           ViewIdx view,
-                                                          unsigned int mipMapLevel,
+                                                          const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                           int nbPointsPerSegment,
 #else
@@ -514,7 +514,7 @@ public:
                                             bool finished,
                                             bool isOpenBezier,
                                             TimeValue time,
-                                            unsigned int mipMapLevel,
+                                            const RenderScale &scale,
                                             const Transform::Matrix3x3& transform,
                                             RectD* bbox);
 
