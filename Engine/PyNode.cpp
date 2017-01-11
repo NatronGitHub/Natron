@@ -500,10 +500,12 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
         return 0;
     }
 
+    // Try to re-use an existing Effect object that was created for this node.
     KnobHolderPtr holder = knob->getHolder();
     if (holder) {
-        // First, try to re-use an existing Effect object that was created for this node.
-        // If not found, create one.
+
+
+        // Get a pointer to the node if this param is held by a node
         NodePtr node;
         KnobTableItemPtr isItem = toKnobTableItem(holder);
         EffectInstancePtr isEffect = toEffectInstance(holder);
@@ -517,24 +519,41 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
             node = isEffect->getNode();
         }
 
+        // Ge the app pointer, there may be none if the knob is an application setting
+        AppInstancePtr app = holder->getApp();
 
         std::stringstream ss;
+        // We assign the existing attribute to a temporary attribute that we delete afterwards
         ss << kPythonTmpCheckerVariable << " = ";
-        ss << holder->getApp()->getAppIDString();
-        if (node) {
-            ss << "." << node->getFullyQualifiedName();
-        }
-        if (isItem) {
-            ss << "." << isItem->getModel()->getPythonPrefix() << "." << isItem->getFullyQualifiedName();
+
+        if (!app) {
+            // This is an application setting
+            ss << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings";
+        } else {
+
+            ss << holder->getApp()->getAppIDString();
+            if (node) {
+                // This is a knob of a node
+                ss << "." << node->getFullyQualifiedName();
+            }
+            if (isItem) {
+                // This is a knob of a table item (such as a Bezier/ Track etc...)
+                ss << "." << isItem->getModel()->getPythonPrefix() << "." << isItem->getFullyQualifiedName();
+            }
         }
         ss << "." << knob->getName();
         std::string script = ss.str();
-  
+
+        // Interpret the script and check if kPythonTmpCheckerVariable was set.
+        // We then retrieve its C++ equivalent and return it
         bool ok = NATRON_PYTHON_NAMESPACE::interpretPythonScript(script, 0, 0);
+
         // Clear errors if our call to interpretPythonScript failed, we don't want the
         // calling function to fail aswell.
         PyErr_Clear();
         if (ok) {
+
+            // Check if the kPythonTmpCheckerVariable was correctly assigned
             PyObject* pyParam = 0;
             PyObject* mainModule = NATRON_PYTHON_NAMESPACE::getMainModule();
             if ( PyObject_HasAttrString(mainModule, kPythonTmpCheckerVariable) ) {
@@ -543,10 +562,14 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
                     pyParam = 0;
                 }
             }
+
+            // The kPythonTmpCheckerVariable was set, check that it is valid and convert it to our C++ type
             Param* cppParam = 0;
             if (pyParam && Shiboken::Object::isValid(pyParam)) {
                 cppParam = (Param*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_PARAM_IDX], (SbkObject*)pyParam);
             }
+
+            // Ensure we remove the kPythonTmpCheckerVariable attribute
             NATRON_PYTHON_NAMESPACE::interpretPythonScript("del " kPythonTmpCheckerVariable, 0, 0);
 
             if (cppParam) {
@@ -556,6 +579,7 @@ Effect::createParamWrapperForKnob(const KnobIPtr& knob)
 
     }
 
+    // We did not find an already existing attribute, create one
 
     int dims = knob->getNDimensions();
     KnobIntPtr isInt = toKnobInt(knob);
