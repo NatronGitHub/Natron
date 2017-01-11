@@ -66,7 +66,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Global/StrUtils.h"
 #include "Global/GitVersion.h"
-#include "Global/MemoryInfo.h" // isApplication32Bits
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -76,6 +75,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/FStreamsSupport.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
