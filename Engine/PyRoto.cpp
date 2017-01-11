@@ -135,7 +135,7 @@ BezierCurve::isActivated(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return false;
     }
-    return item->isActivated(frame, viewSpec);
+    return item->isActivated(TimeValue(frame), viewSpec);
 }
 
 void
@@ -191,7 +191,7 @@ BezierCurve::addControlPoint(double x,
 
     KeyFrame k;
     if (!item->getMasterKeyframe(0, ViewIdx(0), &k)) {
-        k.setTime(item->getApp()->getTimeLine()->currentFrame());
+        k.setTime(TimeValue(item->getApp()->getTimeLine()->currentFrame()));
     }
     item->addControlPoint(x, y, k.getTime(), viewSpec);
 }
@@ -249,7 +249,7 @@ BezierCurve::movePointByIndex(int index,
         PythonSetInvalidViewName(view);
         return;
     }
-    item->movePointByIndex(index, time, viewSpec, dx, dy);
+    item->movePointByIndex(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
@@ -269,7 +269,7 @@ BezierCurve::moveFeatherByIndex(int index,
         PythonSetInvalidViewName(view);
         return;
     }
-    item->moveFeatherByIndex(index, time, viewSpec, dx, dy);
+    item->moveFeatherByIndex(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
@@ -289,7 +289,7 @@ BezierCurve::moveLeftBezierPoint(int index,
         PythonSetInvalidViewName(view);
         return;
     }
-    item->moveLeftBezierPoint(index, time, viewSpec, dx, dy);
+    item->moveLeftBezierPoint(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
@@ -309,7 +309,7 @@ BezierCurve::moveRightBezierPoint(int index,
         PythonSetInvalidViewName(view);
         return;
     }
-    item->moveRightBezierPoint(index, time, viewSpec, dx, dy);
+    item->moveRightBezierPoint(index, TimeValue(time), viewSpec, dx, dy);
 }
 
 void
@@ -333,7 +333,7 @@ BezierCurve::setPointAtIndex(int index,
         PythonSetInvalidViewName(view);
         return;
     }
-    item->setPointAtIndex(false, index, time, viewSpec, x, y, lx, ly, rx, ry);
+    item->setPointAtIndex(false, index, TimeValue(time), viewSpec, x, y, lx, ly, rx, ry);
 }
 
 void
@@ -357,7 +357,7 @@ BezierCurve::setFeatherPointAtIndex(int index,
         PythonSetInvalidViewName(view);
         return;
     }
-    item->setPointAtIndex(true, index, time, viewSpec, x, y, lx, ly, rx, ry);
+    item->setPointAtIndex(true, index, TimeValue(time), viewSpec, x, y, lx, ly, rx, ry);
 }
 
 int
@@ -405,9 +405,9 @@ BezierCurve::getControlPointPosition(int index,
         PyErr_SetString(PyExc_ValueError, tr("Invalid control point index").toStdString().c_str());
         return;
     }
-    cp->getPositionAtTime(time, x, y);
-    cp->getLeftBezierPointAtTime(time, lx, ly);
-    cp->getRightBezierPointAtTime(time, rx, ry);
+    cp->getPositionAtTime(TimeValue(time), x, y);
+    cp->getLeftBezierPointAtTime(TimeValue(time), lx, ly);
+    cp->getRightBezierPointAtTime(TimeValue(time), rx, ry);
 }
 
 void
@@ -437,9 +437,9 @@ BezierCurve::getFeatherPointPosition(int index,
         PyErr_SetString(PyExc_ValueError, tr("Invalid control point index").toStdString().c_str());
         return;
     }
-    cp->getPositionAtTime(time, x, y);
-    cp->getLeftBezierPointAtTime(time, lx, ly);
-    cp->getRightBezierPointAtTime(time, rx, ry);
+    cp->getPositionAtTime(TimeValue(time), x, y);
+    cp->getLeftBezierPointAtTime(TimeValue(time), lx, ly);
+    cp->getRightBezierPointAtTime(TimeValue(time), rx, ry);
 
 }
 
@@ -457,7 +457,7 @@ BezierCurve::getBoundingBox(double time, const QString& view) const
         PythonSetInvalidViewName(view);
         return RectD();
     }
-    return item->getBoundingBox(time, viewSpec);
+    return item->getBoundingBox(TimeValue(time), viewSpec);
 
 }
 
@@ -487,7 +487,7 @@ StrokeItem::getBoundingBox(double time, const QString& view) const
         PythonSetInvalidViewName(view);
         return RectD();
     }
-    return item->getBoundingBox(time, viewSpec);
+    return item->getBoundingBox(TimeValue(time), viewSpec);
 }
 
 NATRON_NAMESPACE::RotoStrokeType
@@ -511,7 +511,7 @@ StrokeItem::getPoints() const
         return ret;
     }
     std::list<std::list<std::pair<Point, double> > > strokes;
-    item->evaluateStroke(0, 0, ViewIdx(0), &strokes);
+    item->evaluateStroke(0, TimeValue(0), ViewIdx(0), &strokes);
     for (std::list<std::list<std::pair<Point, double> > >::const_iterator it = strokes.begin(); it != strokes.end(); ++it) {
         int i = 0;
         std::list<StrokePoint> subStroke;
@@ -540,7 +540,7 @@ StrokeItem::setPoints(const std::list<std::list<StrokePoint> >& strokes)
     for (std::list<std::list<StrokePoint> >::const_iterator it = strokes.begin(); it!=strokes.end(); ++it) {
         std::list<RotoPoint> subStroke;
         for (std::list<StrokePoint>::const_iterator it2 = it->begin(); it2 != it->end(); ++it2) {
-            RotoPoint p(it2->x, it2->y, it2->pressure, it2->timestamp);
+            RotoPoint p(it2->x, it2->y, it2->pressure, TimeValue(it2->timestamp));
             subStroke.push_back(p);
         }
         ret.push_back(subStroke);
@@ -605,7 +605,7 @@ Roto::createBezier(double x,
         PythonSetNullError();
         return 0;
     }
-    BezierPtr  bezier = isRotoPaint->makeBezier(x, y, kRotoBezierBaseName, time, false);
+    BezierPtr  bezier = isRotoPaint->makeBezier(x, y, kRotoBezierBaseName, TimeValue(time), false);
 
     if (bezier) {
         return (BezierCurve*)createPyItemWrapper(bezier);
@@ -637,7 +637,7 @@ Roto::createEllipse(double x,
         PythonSetNullError();
         return 0;
     }
-    BezierPtr  bezier = isRotoPaint->makeEllipse(x, y, diameter, fromCenter, time);
+    BezierPtr  bezier = isRotoPaint->makeEllipse(x, y, diameter, fromCenter, TimeValue(time));
 
     if (bezier) {
         return (BezierCurve*)createPyItemWrapper(bezier);
@@ -669,7 +669,7 @@ Roto::createRectangle(double x,
         PythonSetNullError();
         return 0;
     }
-    BezierPtr  bezier = isRotoPaint->makeSquare(x, y, size, time);
+    BezierPtr  bezier = isRotoPaint->makeSquare(x, y, size, TimeValue(time));
 
     if (bezier) {
         return (BezierCurve*)createPyItemWrapper(bezier);

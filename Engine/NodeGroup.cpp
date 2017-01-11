@@ -1053,6 +1053,24 @@ NodeCollection::isSubGraphEditable() const
     return _imp->isEditable;
 }
 
+
+void
+NodeCollection::refreshTimeInvariantMetadatasOnAllNodes_recursive()
+{
+    NodesList nodes = getNodes();
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        NodeGroupPtr isGroup = (*it)->isEffectNodeGroup();
+        if (isGroup) {
+            isGroup->refreshTimeInvariantMetadatasOnAllNodes_recursive();
+        } else {
+            GetTimeInvariantMetaDatasResultsPtr results;
+            (*it)->getEffectInstance()->getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
+        }
+
+    }
+}
+
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs

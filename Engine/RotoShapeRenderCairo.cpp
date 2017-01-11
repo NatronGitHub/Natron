@@ -846,7 +846,7 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                          double alpha,
                                          TimeValue time,
                                          ViewIdx view,
-                                         unsigned int mipmapLevel,
+                                         const RenderScale& scale,
                                          double* distToNextOut,
                                          Point* lastCenterPoint)
 {
@@ -866,7 +866,7 @@ RotoShapeRenderCairo::renderStroke_cairo(cairo_t* cr,
                                                      alpha,
                                                      time,
                                                      view,
-                                                     mipmapLevel,
+                                                     scale,
                                                      distToNextOut,
                                                      lastCenterPoint);
 }
@@ -1020,7 +1020,7 @@ renderSmearRenderDot_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userD
 bool
 RotoShapeRenderCairo::renderSmear_cairo(TimeValue time,
                                         ViewIdx view,
-                                        unsigned int mipMapLevel,
+                                        const RenderScale& scale,
                                         const RotoStrokeItemPtr& rotoItem,
                                         const RectI& /*roi*/,
                                         const ImagePtr& dstImage,
@@ -1035,7 +1035,7 @@ RotoShapeRenderCairo::renderSmear_cairo(TimeValue time,
     data.dstImage = dstImage;
 
     std::list<std::list<std::pair<Point, double> > > strokes;
-    rotoItem->evaluateStroke(mipMapLevel, time, view, &strokes, 0);
+    rotoItem->evaluateStroke(scale, time, view, &strokes, 0);
 
     bool renderedDot = RotoShapeRenderNodePrivate::renderStroke_generic((RotoShapeRenderNodePrivate::RenderStrokeDataPtr)&data,
                                                                         renderSmearBegin_cairo,
@@ -1049,7 +1049,7 @@ RotoShapeRenderCairo::renderSmear_cairo(TimeValue time,
                                                                         data.opacity,
                                                                         time,
                                                                         view,
-                                                                        mipMapLevel,
+                                                                        scale,
                                                                         distToNextOut,
                                                                         lastCenterPointOut);
     return renderedDot;
@@ -1063,11 +1063,11 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
                                          double opacity,
                                          TimeValue time,
                                          ViewIdx view,
-                                         unsigned int mipmapLevel)
+                                         const RenderScale& scale)
 {
     const double t = time;
     double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
-    double featherDist = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
+    double featherDist_canonical = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
     double shapeColor[3];
     {
         KnobColorPtr colorKnob = bezier->getColorKnob();
@@ -1090,9 +1090,9 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
     }
 
     ///Adjust the feather distance so it takes the mipmap level into account
-    if (mipmapLevel != 0) {
-        featherDist /= (1 << mipmapLevel);
-    }
+    double featherDist_pixelX = featherDist_canonical * scale.x;
+    double featherDist_pixelY = featherDist_canonical * scale.y;
+
 
 
 
@@ -1103,14 +1103,14 @@ RotoShapeRenderCairo::renderBezier_cairo(cairo_t* cr,
     renderInternalShape_cairo(data, shapeColor, mesh);
     Q_UNUSED(opacity);
 #else
-    renderFeather_old_cairo(bezier, t, view, mipmapLevel, shapeColor, opacity, featherDist, fallOff, mesh);
+    renderFeather_old_cairo(bezier, t, view, scale, shapeColor, opacity, featherDist, fallOff, mesh);
 
     Transform::Matrix3x3 transform;
     bezier->getTransformAtTime(t, view, &transform);
 
     // strangely, the above-mentioned cairo bug doesn't affect this function
     BezierCPs cps = bezier->getControlPoints(view);
-    renderInternalShape_old_cairo(t, mipmapLevel, shapeColor, opacity, transform, cr, mesh, cps);
+    renderInternalShape_old_cairo(t, scale, shapeColor, opacity, transform, cr, mesh, cps);
 
 #endif
 

@@ -313,7 +313,7 @@ ItemBase::setUserKeyframe(double frame, const QString& view)
         PythonSetInvalidViewName(view);
         return;
     }
-    item->setKeyFrame(frame, viewSpec, 0);
+    item->setKeyFrame(TimeValue(frame), viewSpec, 0);
 }
 
 void
@@ -335,7 +335,7 @@ ItemBase::deleteUserKeyframe(double frame, const QString& view)
         PythonSetInvalidViewName(view);
         return;
     }
-    item->deleteValueAtTime(frame, viewSpec, DimSpec::all(), eValueChangedReasonUserEdited);
+    item->deleteValueAtTime(TimeValue(frame), viewSpec, DimSpec::all(), eValueChangedReasonUserEdited);
 
 }
 

@@ -107,14 +107,14 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
 void
 RotoPaintInteract::autoSaveAndRedraw()
 {
-    p->publicInterface->redrawOverlayInteract();
+    p->publicInterface->requestOverlayInteractRefresh();
     p->publicInterface->getApp()->triggerAutoSave();
 }
 
 void
 RotoPaintInteract::redrawOverlays()
 {
-    p->publicInterface->redrawOverlayInteract();
+    p->publicInterface->requestOverlayInteractRefresh();
 }
 
 bool
@@ -3243,7 +3243,7 @@ RotoPaint::onOverlayPenUp(TimeValue /*time*/,
         invalidateCacheHashAndEvaluate(true, false);
 
         //sync other viewers linked to this roto
-        redrawOverlayInteract();
+        requestOverlayInteractRefresh();
         _imp->ui->evaluateOnPenUp = false;
     }
 
@@ -3378,7 +3378,7 @@ RotoPaint::onOverlayKeyUp(TimeValue /*time*/,
     
     if (_imp->ui->evaluateOnKeyUp) {
         invalidateCacheHashAndEvaluate(true, false);
-        redrawOverlayInteract();
+        requestOverlayInteractRefresh();
         _imp->ui->evaluateOnKeyUp = false;
     }
     

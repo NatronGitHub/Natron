@@ -578,9 +578,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             //Use default
             readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
-            std::vector<std::string> entries = pluginChoiceKnob->getEntries();
+            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                readerPluginID = entries[pluginChoice_i];
+                readerPluginID = entries[pluginChoice_i].id;
             }
         }
     }
@@ -1072,7 +1072,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
     
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryID();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }
@@ -1144,13 +1144,13 @@ ReadNode::getRegionOfDefinition(TimeValue time,
                                 RectD* rod)
 {
     if ( !_imp->checkDecoderCreated(time, view) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     NodePtr p = getEmbeddedReader();
     if (p) {
         return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, render, rod);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
@@ -1163,7 +1163,7 @@ ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
     if (p) {
         return p->getEffectInstance()->getFrameRange(render, first, last);
     } else {
-        *first = *last = 1;
+        return eActionStatusFailed;
     }
 }
 
@@ -1181,7 +1181,7 @@ ReadNode::getComponentsAction(TimeValue time,
     if (p) {
         return p->getEffectInstance()->getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     }
-    return eStatusFailed;
+    return eActionStatusFailed;
 }
 
 ActionRetCodeEnum
@@ -1202,7 +1202,7 @@ ReadNode::beginSequenceRender(double first,
     if (p) {
         return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
@@ -1224,7 +1224,7 @@ ReadNode::endSequenceRender(double first,
     if (p) {
         return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
@@ -1232,14 +1232,14 @@ ActionRetCodeEnum
 ReadNode::render(const RenderActionArgs& args)
 {
     if ( !_imp->checkDecoderCreated(args.time, args.view) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     NodePtr p = getEmbeddedReader();
     if (p) {
         return p->getEffectInstance()->render(args);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
@@ -1255,7 +1255,7 @@ ReadNode::getRegionsOfInterest(TimeValue time,
     if (p) {
         return p->getEffectInstance()->getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
     }
-    return eStatusFailed;
+    return eActionStatusFailed;
 }
 
 ActionRetCodeEnum
@@ -1265,7 +1265,7 @@ ReadNode::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgs
     if (p) {
         return p->getEffectInstance()->getFramesNeeded(time, view, render, framesNeeded);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 

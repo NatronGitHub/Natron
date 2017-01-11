@@ -47,6 +47,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/NodeGroup.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Settings.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -408,31 +409,27 @@ App::renderInternal(bool forceBlocking,
 
         return;
     }
-    AppInstance::RenderWork w;
+    RenderQueue::RenderWork w;
     NodePtr node =  writeNode->getInternalNode();
     if (!node) {
         std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
         return;
     }
-    w.writer = node->getEffectInstance();
-    if (!w.writer) {
-        std::cerr << tr("Invalid write node").toStdString() << std::endl;
+    w.treeRoot = node;
 
-        return;
-    }
 
-    w.firstFrame = firstFrame;
-    w.lastFrame = lastFrame;
-    w.frameStep = frameStep;
+    w.firstFrame = TimeValue(firstFrame);
+    w.lastFrame = TimeValue(lastFrame);
+    w.frameStep = TimeValue(frameStep);
     w.useRenderStats = false;
 
-    std::list<AppInstance::RenderWork> l;
+    std::list<RenderQueue::RenderWork> l;
     l.push_back(w);
     if (forceBlocking) {
-        getInternalApp()->renderWritersBlocking(l);
+        getInternalApp()->getRenderQueue()->renderBlocking(l);
     } else {
-        getInternalApp()->renderWritersNonBlocking(l);
+        getInternalApp()->getRenderQueue()->renderNonBlocking(l);
     }
 }
 
@@ -443,7 +440,7 @@ App::renderInternal(bool forceBlocking,
                     const std::list<int>& lastFrames,
                     const std::list<int>& frameSteps)
 {
-    std::list<AppInstance::RenderWork> l;
+    std::list<RenderQueue::RenderWork> l;
 
     assert( effects.size() == firstFrames.size() && effects.size() == lastFrames.size() && frameSteps.size() == effects.size() );
     std::list<Effect*>::const_iterator itE = effects.begin();
@@ -456,31 +453,31 @@ App::renderInternal(bool forceBlocking,
 
             return;
         }
-        AppInstance::RenderWork w;
+        RenderQueue::RenderWork w;
         NodePtr node =  (*itE)->getInternalNode();
         if (!node) {
             std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
             return;
         }
-        w.writer = node->getEffectInstance();
-        if ( !w.writer || !w.writer->isOutput() ) {
+        w.treeRoot = node;
+        if ( !w.treeRoot || !w.treeRoot->getEffectInstance()->isOutput() ) {
             std::cerr << tr("Invalid write node").toStdString() << std::endl;
 
             return;
         }
 
-        w.firstFrame = (*itF);
-        w.lastFrame = (*itL);
-        w.frameStep = (*itS);
+        w.firstFrame = TimeValue(*itF);
+        w.lastFrame = TimeValue(*itL);
+        w.frameStep = TimeValue(*itS);
         w.useRenderStats = false;
 
         l.push_back(w);
     }
     if (forceBlocking) {
-        getInternalApp()->renderWritersBlocking(l);
+        getInternalApp()->getRenderQueue()->renderBlocking(l);
     } else {
-        getInternalApp()->renderWritersNonBlocking(l);
+        getInternalApp()->getRenderQueue()->renderNonBlocking(l);
     }
 }
 
@@ -518,7 +515,7 @@ App::refreshViewer(Effect* viewerNode, bool useCache)
     if (!useCache) {
         viewer->forceNextRenderWithoutCacheRead();
     }
-    viewer->getRenderEngine()->renderCurrentFrame();
+    viewer->getNode()->getRenderEngine()->renderCurrentFrame();
 }
 
 Param*

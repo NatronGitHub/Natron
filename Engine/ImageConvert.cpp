@@ -894,7 +894,7 @@ copyGLTextureInternal(const GLCacheEntryPtr& from,
            glContext == to->getOpenGLContext());
 
     // Texture targets must be the same
-    U32 target = from->getGLTextureTarget();
+    int target = from->getGLTextureTarget();
     assert(target == to->getGLTextureTarget());
 
     GLuint fboID = glContext->getOrCreateFBOId();

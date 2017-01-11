@@ -404,7 +404,7 @@ NodeGraph::selectNode(const NodeGuiPtr & n,
     if (!n->getNode()) {
         return;
     }
-    ViewerInstancePtr isViewer =  n->getNode()->isEffectViewerInstance();
+    ViewerNodePtr isViewer =  n->getNode()->isEffectViewerNode();
     if (isViewer) {
         OpenGLViewerI* viewer = isViewer->getUiContext();
         const std::list<ViewerTab*> & viewerTabs = getGui()->getViewersList();

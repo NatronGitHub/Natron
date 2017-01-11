@@ -530,7 +530,6 @@ protected:
 
 private:
 
-    void refreshInputChoices(const std::string& oldInputLabel, const std::string& newInputLabel);
 
     virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
 

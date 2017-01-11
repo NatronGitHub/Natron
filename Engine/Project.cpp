@@ -1558,13 +1558,13 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
         getApp()->setupViewersForViews(viewNames);
         if (reason == eValueChangedReasonUserEdited) {
             ///views change, notify all OneView nodes via getClipPreferences
-            forceComputeInputDependentDataOnAllTrees();
+            refreshTimeInvariantMetadatasOnAllNodes_recursive();
         }
         Q_EMIT projectViewsChanged();
     } else if  ( knob == _imp->defaultLayersList ) {
         if (reason == eValueChangedReasonUserEdited) {
             ///default layers change, notify all nodes so they rebuild their layers menus
-            forceComputeInputDependentDataOnAllTrees();
+            refreshTimeInvariantMetadatasOnAllNodes_recursive();
         }
     } else if ( knob == _imp->setupForStereoButton ) {
         setupProjectForStereo();
@@ -1588,7 +1588,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 
             }
             ///Format change, hence probably the PAR so run getClipPreferences again
-            forceComputeInputDependentDataOnAllTrees();
+            refreshTimeInvariantMetadatasOnAllNodes_recursive();
             Q_EMIT formatChanged(frmt);
         }
     } else if ( knob == _imp->addFormatKnob && reason != eValueChangedReasonRestoreDefault) {
@@ -1596,7 +1596,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
     } else if ( knob == _imp->previewMode ) {
         Q_EMIT autoPreviewChanged( _imp->previewMode->getValue() );
     }  else if ( knob == _imp->frameRate ) {
-        forceComputeInputDependentDataOnAllTrees();
+        refreshTimeInvariantMetadatasOnAllNodes_recursive();
     } else if ( knob == _imp->frameRange ) {
         int first = _imp->frameRange->getValue(DimIdx(0));
         int last = _imp->frameRange->getValue(DimIdx(1));
@@ -2979,11 +2979,8 @@ Project::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBas
 
     // Restore the nodes
     Project::restoreGroupFromSerialization(serialization->_nodes, shared_from_this(),  0);
-    getApp()->updateProjectLoadStatus( tr("Restoring graph stream preferences...") );
 
 
-    // Recompute all meta-datas and stuff depending on the trees now
-    forceComputeInputDependentDataOnAllTrees();
 
     QDateTime time = QDateTime::currentDateTime();
     _imp->hasProjectBeenSavedByUser = true;

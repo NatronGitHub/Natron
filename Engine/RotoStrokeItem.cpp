@@ -516,7 +516,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,
                        const KeyFrameSet& pCurve,
                        const Transform::Matrix3x3& transform,
-                       unsigned int mipMapLevel,
+                       const RenderScale& scale,
                        double halfBrushSize,
                        bool pressureAffectsSize,
                        std::list<std::pair<Point, double> >* points,
@@ -554,8 +554,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     }
 
 
-    int pot = 1 << mipMapLevel;
-
     if ( (xCurve.size() == 1) && ( xIt != xCurve.end() ) && ( yIt != yCurve.end() ) && ( pIt != pCurve.end() ) ) {
         assert( xNext == xCurve.end() && yNext == yCurve.end() && pNext == pCurve.end() );
         Transform::Point3D p;
@@ -566,8 +564,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         p = Transform::matApply(transform, p);
 
         Point pixelPoint;
-        pixelPoint.x = p.x / pot;
-        pixelPoint.y = p.y / pot;
+        pixelPoint.x = p.x * scale.x;
+        pixelPoint.y = p.y * scale.y;
         points->push_back( std::make_pair( pixelPoint, pIt->getValue() ) );
         if (bbox) {
             bbox->x1 = p.x;
@@ -666,8 +664,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             }
 
             double pi = Bezier::bezierEval(pressp0, pressp1, pressp2, pressp3, t);
-            p.x /= pot;
-            p.y /= pot;
+            p.x *= scale.x;
+            p.y *= scale.y;
             points->push_back( std::make_pair(p, pi) );
         }
 
@@ -1322,7 +1320,7 @@ RotoStrokeItem::getNumControlPoints(int strokeIndex) const
 }
 
 void
-RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
+RotoStrokeItem::evaluateStroke(const RenderScale& scale,
                                TimeValue time,
                                ViewIdx view,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
@@ -1352,7 +1350,7 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
         std::list<std::pair<Point, double> > points;
         RectD strokeBbox;
 
-        evaluateStrokeInternal(xSet, ySet, pSet, transform, mipMapLevel, brushSize, pressureAffectsSize, &points, &strokeBbox);
+        evaluateStrokeInternal(xSet, ySet, pSet, transform, scale, brushSize, pressureAffectsSize, &points, &strokeBbox);
         if (bbox) {
             if (bboxSet) {
                 bbox->merge(strokeBbox);

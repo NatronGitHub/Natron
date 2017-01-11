@@ -205,7 +205,8 @@ public:
 
 
     ///bbox is in canonical coords
-    void evaluateStroke(unsigned int mipMapLevel, TimeValue time,
+    void evaluateStroke(const RenderScale& scale,
+                        TimeValue time,
                         ViewIdx view,
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0,

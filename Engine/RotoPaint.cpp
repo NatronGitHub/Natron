@@ -1010,7 +1010,7 @@ RotoPaint::initClonePageKnobs()
         {
             std::vector<ChoiceOption> modes;
             modes.push_back(ChoiceOption("Relative", "", ""));
-            modes.push_back(ChoiceOption("Absolute", "", "");
+            modes.push_back(ChoiceOption("Absolute", "", ""));
             param->populateChoices(modes);
         }
         clonePage->addKnob(param);
@@ -2337,7 +2337,7 @@ RotoPaint::onKnobsLoaded()
 
     // Refresh solo items
     std::list<RotoDrawableItemPtr> allItems;
-    _imp->knobsTable->getRotoItemsByRenderOrder(0, ViewIdx(0), false /*onlyActives*/);
+    _imp->knobsTable->getRotoItemsByRenderOrder(TimeValue(0), ViewIdx(0), false /*onlyActives*/);
     for (std::list<RotoDrawableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
         if ((*it)->getSoloKnob()->getValue()) {
             _imp->soloItems.insert(*it);
@@ -2454,8 +2454,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
                 if (!isBezier) {
                     continue;
                 }
-                std::list<BezierCPPtr > cps = isBezier->getControlPoints(getCurrentView());
-                std::list<BezierCPPtr > fps = isBezier->getFeatherPoints(getCurrentView());
+                std::list<BezierCPPtr > cps = isBezier->getControlPoints(view_i);
+                std::list<BezierCPPtr > fps = isBezier->getFeatherPoints(view_i);
                 assert( cps.size() == fps.size() );
 
                 std::list<BezierCPPtr >::const_iterator cpIT = cps.begin();
@@ -2551,34 +2551,13 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
     _imp->ui->computeSelectedCpsBBOX();
 }
 
-static void adjustChoiceParamOption(const std::string& oldOption, const std::string& newOption, const KnobChoicePtr& knob)
-{
-    std::vector<ChoiceOption> entries = knob->getEntries();
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i].id == oldOption) {
-            entries[i].id = newOption;
-            knob->populateChoices(entries);
-            if (knob->getActiveEntryID() == oldOption) {
-                knob->setValue(i);
-            }
-            break;
-        }
-    }
-}
-
 void
 RotoPaint::onInputChanged(int inputNb)
 {
 
-    if (oldNode && newNode && oldNode != newNode) {
-        // We know what changed, switch choices automatically so things don't get disconnected
-        const std::string& oldNodeLabel = oldNode->getLabel();
-        const std::string& newNodeLabel = newNode->getLabel();
-        refreshInputChoices(oldNodeLabel, newNodeLabel);
-    } else {
-        // We have to refresh menus only
-        _imp->refreshSourceKnobs();
-    }
+
+    _imp->refreshSourceKnobs();
+
     refreshRotoPaintTree();
     
     NodeGroup::onInputChanged(inputNb);
@@ -2657,7 +2636,7 @@ void
 RotoPaintPrivate::resetTransformsCenter(bool doClone,
                                    bool doTransform)
 {
-    TimeValue time = publicInterface->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(publicInterface->getApp()->getTimeLine()->currentFrame());
     ViewIdx view(0);
     RectD bbox;
     {
@@ -2792,7 +2771,7 @@ RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
 void
 RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelection*/, std::list<KnobTableItemPtr> /*removedFromSelection*/, TableChangeReasonEnum /*reason*/)
 {
-    redrawOverlayInteract();
+    requestOverlayInteractRefresh();
 }
 
 
@@ -3563,11 +3542,12 @@ RotoPaint::refreshSourceKnobs(const RotoDrawableItemPtr& item)
 void
 RotoPaint::getMergeChoices(std::vector<ChoiceOption>* inputAChoices, std::vector<ChoiceOption>* maskChoices) const
 {
-    maskChoices->push_back("None");
+    ChoiceOption noneChoice("None", tr("None").toStdString(), "");
+    maskChoices->push_back(noneChoice);
     if (_imp->nodeType != RotoPaint::eRotoPaintTypeComp) {
-        inputAChoices->push_back("Foreground");
+        inputAChoices->push_back(ChoiceOption("Foreground", tr("Foreground").toStdString(), ""));
     } else {
-        inputAChoices->push_back("None");
+        inputAChoices->push_back(noneChoice);
     }
     for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
         EffectInstancePtr input = getInput(i);
@@ -3576,41 +3556,17 @@ RotoPaint::getMergeChoices(std::vector<ChoiceOption>* inputAChoices, std::vector
         }
         QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onSourceNodeLabelChanged(QString,QString)), Qt::UniqueConnection);
         const std::string& inputLabel = input->getNode()->getLabel();
+        ChoiceOption opt(QString::number(i).toStdString(), inputLabel, "");
         bool isMask = i >= LAYERED_COMP_FIRST_MASK_INPUT_INDEX;
         if (!isMask) {
-            inputAChoices->push_back(inputLabel);
+            inputAChoices->push_back(opt);
         } else {
-            maskChoices->push_back(inputLabel);
+            maskChoices->push_back(opt);
         }
     }
 }
 
-void
-RotoPaint::refreshInputChoices(const std::string& oldInputLabel, const std::string& newInputLabel)
-{
-    KnobChoicePtr inputAKnob = _imp->mergeInputAChoiceKnob.lock();
-    if (inputAKnob) {
-        adjustChoiceParamOption(oldInputLabel, newInputLabel, inputAKnob);
-    }
 
-
-    // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime_TLS(), ViewIdx(0), false);
-    for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
-        {
-            KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
-            if (itemSourceKnob) {
-                adjustChoiceParamOption(oldInputLabel, newInputLabel, itemSourceKnob);
-            }
-        }
-        {
-            KnobChoicePtr maskSourceKnob = (*it)->getMergeMaskChoiceKnob();
-            if (maskSourceKnob) {
-                adjustChoiceParamOption(oldInputLabel, newInputLabel, maskSourceKnob);
-            }
-        }
-    }
-} // refreshInputChoices
 
 void
 RotoPaintPrivate::refreshSourceKnobs()
@@ -3627,7 +3583,7 @@ RotoPaintPrivate::refreshSourceKnobs()
 
 
     // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getCurrentTime(), ViewIdx(0), false);
+    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getTimelineCurrentTime(), ViewIdx(0), false);
     for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         {
             KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
@@ -3645,10 +3601,10 @@ RotoPaintPrivate::refreshSourceKnobs()
 } // refreshSourceKnobs
 
 void
-RotoPaint::onSourceNodeLabelChanged(const QString& oldLabel, const QString& newLabel)
+RotoPaint::onSourceNodeLabelChanged(const QString& /*oldLabel*/, const QString& /*newLabel*/)
 {
 
-    refreshInputChoices(oldLabel.toStdString(), newLabel.toStdString());
+    _imp->refreshSourceKnobs();
 }
 
 void

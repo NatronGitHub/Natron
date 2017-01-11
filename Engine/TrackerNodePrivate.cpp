@@ -1297,7 +1297,7 @@ TrackerNodeInteract::onTrackingEnded()
     trackBwButton.lock()->setValue(false);
     trackFwButton.lock()->setValue(false);
     isTracking = false;
-    _p->publicInterface->redrawOverlayInteract();
+    _p->publicInterface->requestOverlayInteractRefresh();
 }
 
 void
@@ -1333,7 +1333,7 @@ TrackerNodeInteract::onModelSelectionChanged(const std::list<KnobTableItemPtr>& 
         return;
     }
 
-    _p->publicInterface->redrawOverlayInteract();
+    _p->publicInterface->requestOverlayInteractRefresh();
 }
 
 void
@@ -1367,7 +1367,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
 
     convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, ret.second);
 
-    _p->publicInterface->redrawOverlayInteract();
+    _p->publicInterface->requestOverlayInteractRefresh();
 }
 
 void
@@ -1407,7 +1407,7 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
 
             trackRequestsMap.erase(it);
 
-            _p->publicInterface->redrawOverlayInteract();
+            _p->publicInterface->requestOverlayInteractRefresh();
 
             return;
         }
@@ -1815,7 +1815,7 @@ TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
             break;
         }
     }
-    _p->publicInterface->redrawOverlayInteract();
+    _p->publicInterface->requestOverlayInteractRefresh();
 }
 
 void
@@ -1827,7 +1827,7 @@ TrackerNodeInteract::onAllKeyframesRemovedOnTrack(const TrackMarkerPtr& marker)
             break;
         }
     }
-    _p->publicInterface->redrawOverlayInteract();
+    _p->publicInterface->requestOverlayInteractRefresh();
 }
 
 

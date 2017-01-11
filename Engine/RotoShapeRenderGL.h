@@ -31,7 +31,7 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EffectOpenGLContextData.h"
-
+#include "Engine/TimeValue.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -138,7 +138,7 @@ public:
                                 ViewIdx view,
                                 const RangeD& shutterRange,
                                 int nDivisions,
-                                unsigned int mipmapLevel,
+                                const RenderScale& scale,
                                 double *distToNextOut,
                                 Point* lastCenterPointOut);
 
@@ -152,7 +152,7 @@ public:
                                double opacity,
                                TimeValue time,
                                ViewIdx view,
-                               unsigned int mipmapLevel,
+                               const RenderScale& scale,
                                double *distToNextOut,
                                Point* lastCenterPointOut);
 
@@ -169,7 +169,7 @@ public:
                                 ViewIdx view,
                                 const RangeD& shutterRange,
                                 int nDivisions,
-                                unsigned int mipmapLevel,
+                                const RenderScale& scale,
                                 int target);
 
 };

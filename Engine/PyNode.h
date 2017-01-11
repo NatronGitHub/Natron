@@ -390,7 +390,7 @@ public:
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
 
-    std::map<ImageLayer, Effect*> getAvailableLayers() const;
+    std::list<ImageLayer> getAvailableLayers(int inputNb) const;
 
     double getFrameRate() const;
 

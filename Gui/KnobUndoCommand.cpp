@@ -286,7 +286,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         } catch (...) {
                         }
                     } else { // !isRedo
-                        internalKnob->clearExpression(DimIdx(i), *it, true);
+                        internalKnob->clearExpression(DimIdx(i), *it);
                     } // isRedo
                     break;
                 }
@@ -419,7 +419,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
 
     if (!setKeyFrame) {
         // Ensure the time is correct in case auto-keying is on and we add a keyframe
-        v.time = knob->getCurrentTime();
+        v.time = knob->getHolder()->getTimelineCurrentTime();
     } else {
         v.time = time;
     }
@@ -828,9 +828,9 @@ RestoreDefaultsCommand::redo()
 
     //   Call instanceChange on all knobs afterwards to put back the plug-in
     //   in a correct state
-    TimeValue time = 0;
+    TimeValue time(0);
     if (app) {
-        time = app->getTimeLine()->currentFrame();
+        time = TimeValue(app->getTimeLine()->currentFrame());
     }
     for (std::list<KnobIWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();

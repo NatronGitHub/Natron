@@ -248,6 +248,11 @@ public:
     void setSubGraphEditedByUser(bool edited);
     bool isSubGraphEditedByUser() const;
 
+    /**
+     * @brief Refresh the meta-datas on all nodes in the group
+     **/
+    void refreshTimeInvariantMetadatasOnAllNodes_recursive();
+
 public:
 
 

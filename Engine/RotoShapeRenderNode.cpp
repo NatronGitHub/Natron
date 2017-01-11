@@ -307,21 +307,18 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     RotoStrokeItemPtr nonRenderStroke = toRotoStrokeItem(getNode()->getOriginalAttachedItem());
 
     if (type == eRotoShapeRenderTypeSmear && !isStroke) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
     assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || (isBezier->isCurveFinished(args.view) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
 
-    const OSGLContextPtr& glContext = args.glContext;
+    OSGLContextAttacherPtr glContext = args.glContextAttacher;
 
-    assert(!args.useOpenGL || glContext);
-    if (args.useOpenGL && !glContext) {
+    if ((args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) && !glContext) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
-
-    const unsigned int mipmapLevel = Image::getLevelFromScale(args.mappedScale.x);
 
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
@@ -394,14 +391,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             }
 
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-            if (!args.useOpenGL) {
-                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
+            if (!args.backendType == eRenderBackendTypeCPU) {
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, args.renderScale, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
                     nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                 }
             }
 #endif
-            if (args.useOpenGL) {
+            if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
                 double shapeColor[3];
                 {
                     KnobColorPtr colorKnob = rotoItem->getColorKnob();
@@ -418,21 +415,20 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, args.renderScale, &distToNextOut, &lastCenterOut);
                     if (isDuringPainting && isStroke) {
                         nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                     }
                 } else {
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, mipmapLevel, outputPlane.second->getGLTextureTarget());
+                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, args.renderScale, outputPlane.second->getGLTextureTarget());
                 }
             }
         }   break;
         case eRotoShapeRenderTypeSmear: {
 
-            OSGLContextAttacherPtr contextLocker;
-            if (!glContext->isGPUContext()) {
+            if (!glContext->getContext()->isGPUContext()) {
                 // When rendering smear with OSMesa we need to write to the full image bounds and not only the RoI, so re-attach the default framebuffer
                 RectI bounds = outputPlane.second->getBounds();
                 Image::WriteAccess outputWriteAccess(outputPlane.second.get());
@@ -446,7 +442,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
                 RectI bgImgRoI;
-                ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, (args.useOpenGL && glContext->isGPUContext()) ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
+                ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.renderScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, (args.useOpenGL && glContext->isGPUContext()) ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
                 if (!bgImg) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
@@ -480,14 +476,14 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             bool renderedDot;
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
             if (!args.useOpenGL) {
-                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, scale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
             }
 #endif
             if (args.useOpenGL) {
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                 ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, scale, &distToNextOut, &lastCenterOut);
             }
 
             if (isDuringPainting) {

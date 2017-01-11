@@ -1131,7 +1131,7 @@ AnimatedParam::getDerivativeAtTime(double time,
         return 0.;
     }
 
-    return knob->getDerivativeAtTime(time, thisViewSpec, DimIdx(dimension));
+    return knob->getDerivativeAtTime(TimeValue(time), thisViewSpec, DimIdx(dimension));
 }
 
 double
@@ -1154,7 +1154,7 @@ AnimatedParam::getIntegrateFromTimeToTime(double time1,
         return false;
     }
 
-    return knob->getIntegrateFromTimeToTime(time1, time2, thisViewSpec, DimIdx(dimension));
+    return knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), thisViewSpec, DimIdx(dimension));
 }
 
 double
@@ -1165,7 +1165,7 @@ AnimatedParam::getCurrentTime() const
         PythonSetNullError();
         return 0;
     }
-    return knob->getCurrentTime();
+    return knob->getCurrentTime_TLS();
 }
 
 bool
@@ -1190,7 +1190,7 @@ AnimatedParam::setInterpolationAtTime(double time,
     }
 
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
-    knob->setInterpolationAtTime(thisViewSpec, dim, time, interpolation);
+    knob->setInterpolationAtTime(thisViewSpec, dim, TimeValue(time), interpolation);
     return true;
 }
 
@@ -1393,7 +1393,7 @@ IntParam::get(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return 0;
     }
-    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
 
 }
 
@@ -1413,8 +1413,8 @@ Int2DParam::get(double frame, const QString& view) const
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
-    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
+    ret.x = knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(TimeValue(frame), DimIdx(1), thisViewSpec);
 
     return ret;
 }
@@ -1434,9 +1434,9 @@ Int3DParam::get(double frame, const QString& view) const
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
-    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
-    ret.z = knob->getValueAtTime(frame, DimIdx(2), thisViewSpec);
+    ret.x = knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(TimeValue(frame), DimIdx(1), thisViewSpec);
+    ret.z = knob->getValueAtTime(TimeValue(frame), DimIdx(2), thisViewSpec);
 
     return ret;
 }
@@ -1518,7 +1518,7 @@ IntParam::set(int x,
         PythonSetInvalidViewName(view);
         return;
     }
-    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+    knob->setValueAtTime(TimeValue(frame), x, thisViewSpec, DimIdx(0));
 
 }
 
@@ -1540,7 +1540,7 @@ Int2DParam::set(int x,
     std::vector<int> values(2);
     values[0] = x;
     values[1] = y;
-    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+    knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
 
 }
 
@@ -1564,7 +1564,7 @@ Int3DParam::set(int x,
     values[0] = x;
     values[1] = y;
     values[2] = z;
-    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+    knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
 
 }
 
@@ -1630,7 +1630,7 @@ IntParam::getValueAtTime(double time,
         PythonSetInvalidViewName(view);
         return 0;
     }
-    return knob->getValueAtTime(time, DimIdx(dimension), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(time), DimIdx(dimension), thisViewSpec);
 
 }
 
@@ -1654,7 +1654,7 @@ IntParam::setValueAtTime(int value,
         return;
     }
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
-    knob->setValueAtTime(time, value, thisViewSpec, dim);
+    knob->setValueAtTime(TimeValue(time), value, thisViewSpec, dim);
 }
 
 void
@@ -1952,7 +1952,7 @@ DoubleParam::get(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return 0;
     }
-    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
 }
 
 Double2DTuple
@@ -1971,8 +1971,8 @@ Double2DParam::get(double frame, const QString& view) const
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
-    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
+    ret.x = knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(TimeValue(frame), DimIdx(1), thisViewSpec);
 
     return ret;
 }
@@ -1992,9 +1992,9 @@ Double3DParam::get(double frame, const QString& view) const
         return ret;
     }
 
-    ret.x = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
-    ret.y = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
-    ret.z = knob->getValueAtTime(frame, DimIdx(2), thisViewSpec);
+    ret.x = knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
+    ret.y = knob->getValueAtTime(TimeValue(frame), DimIdx(1), thisViewSpec);
+    ret.z = knob->getValueAtTime(TimeValue(frame), DimIdx(2), thisViewSpec);
 
     return ret;
 }
@@ -2073,7 +2073,7 @@ DoubleParam::set(double x,
         PythonSetInvalidViewName(view);
         return;
     }
-    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+    knob->setValueAtTime(TimeValue(frame), x, thisViewSpec, DimIdx(0));
 }
 
 void
@@ -2094,7 +2094,7 @@ Double2DParam::set(double x,
     std::vector<double> values(2);
     values[0] = x;
     values[1] = y;
-    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+    knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
 }
 
 void
@@ -2128,7 +2128,7 @@ Double3DParam::set(double x,
     values[0] = x;
     values[1] = y;
     values[2] = z;
-    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+    knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
 }
 
 double
@@ -2191,7 +2191,7 @@ DoubleParam::getValueAtTime(double time,
         PythonSetInvalidViewName(view);
         return 0;
     }
-    return knob->getValueAtTime(time, DimIdx(dimension), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(time), DimIdx(dimension), thisViewSpec);
 }
 
 void
@@ -2214,7 +2214,7 @@ DoubleParam::setValueAtTime(double value,
         return;
     }
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
-    knob->setValueAtTime(time, value, thisViewSpec, dim);
+    knob->setValueAtTime(TimeValue(time), value, thisViewSpec, dim);
 }
 
 void
@@ -2475,10 +2475,10 @@ ColorParam::get(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return ret;
     }
-    ret.r = knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
-    ret.g = knob->getValueAtTime(frame, DimIdx(1), thisViewSpec);
-    ret.b = knob->getValueAtTime(frame, DimIdx(2), thisViewSpec);
-    ret.a = knob->getNDimensions() == 4 ? knob->getValueAtTime(frame, DimIdx(3)) : 1.;
+    ret.r = knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
+    ret.g = knob->getValueAtTime(TimeValue(frame), DimIdx(1), thisViewSpec);
+    ret.b = knob->getValueAtTime(TimeValue(frame), DimIdx(2), thisViewSpec);
+    ret.a = knob->getNDimensions() == 4 ? knob->getValueAtTime(TimeValue(frame), DimIdx(3)) : 1.;
 
 
     return ret;
@@ -2536,7 +2536,7 @@ ColorParam::set(double r,
     if (knob->getNDimensions() == 4) {
         values[3] = a;
     }
-    knob->setValueAtTimeAcrossDimensions(frame, values, DimIdx(0), thisViewSpec);
+    knob->setValueAtTimeAcrossDimensions(TimeValue(frame), values, DimIdx(0), thisViewSpec);
 }
 
 double
@@ -2599,7 +2599,7 @@ ColorParam::getValueAtTime(double time,
         PythonSetInvalidViewName(view);
         return 0;
     }
-    return knob->getValueAtTime(time, DimIdx(dimension), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(time), DimIdx(dimension), thisViewSpec);
 }
 
 void
@@ -2622,7 +2622,7 @@ ColorParam::setValueAtTime(double value,
         return;
     }
     DimSpec dim = getDimSpecFromDimensionIndex(dimension);
-    knob->setValueAtTime(time, value, thisViewSpec, dim);
+    knob->setValueAtTime(TimeValue(time), value, thisViewSpec, dim);
 }
 
 void
@@ -2878,7 +2878,7 @@ ChoiceParam::get(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return 0;
     }
-    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
 
 }
 
@@ -2915,7 +2915,7 @@ ChoiceParam::set(int x,
         return;
     }
 
-    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+    knob->setValueAtTime(TimeValue(frame), x, thisViewSpec, DimIdx(0));
 
 }
 
@@ -3060,7 +3060,8 @@ ChoiceParam::addOption(const QString& option,
         PythonSetNonUserKnobError();
         return;
     }
-    knob->appendChoice( option.toStdString(), help.toStdString() );
+    ChoiceOption c(option.toStdString(), "", help.toStdString());
+    knob->appendChoice(c);
 }
 
 void
@@ -3082,7 +3083,7 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
         option.id = it->first.toStdString();
         option.tooltip = it->second.toStdString();
     }
-    knob->populateChoices(entries, helps);
+    knob->populateChoices(entries);
 }
 
 QString
@@ -3093,14 +3094,14 @@ ChoiceParam::getOption(int index) const
         PythonSetNullError();
         return QString();
     }
-    std::vector<std::string> entries =  knob->getEntries();
+    std::vector<ChoiceOption> entries =  knob->getEntries();
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
         PyErr_SetString(PyExc_IndexError, tr("Option index out of range").toStdString().c_str());
         return QString();
     }
 
-    return QString::fromUtf8( entries[index].c_str() );
+    return QString::fromUtf8( entries[index].id.c_str() );
 }
 
 QString
@@ -3116,7 +3117,7 @@ ChoiceParam::getActiveOption(const QString& view) const
         PythonSetInvalidViewName(view);
         return QString();
     }
-    return QString::fromUtf8(knob->getActiveEntryText(thisViewSpec).c_str());
+    return QString::fromUtf8(knob->getActiveEntryID(thisViewSpec).c_str());
 }
 
 int
@@ -3139,10 +3140,10 @@ ChoiceParam::getOptions() const
         return QStringList();
     }
     QStringList ret;
-    std::vector<std::string> entries = knob->getEntries();
+    std::vector<ChoiceOption> entries = knob->getEntries();
 
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        ret.push_back( QString::fromUtf8( entries[i].c_str() ) );
+        ret.push_back( QString::fromUtf8( entries[i].id.c_str() ) );
     }
 
     return ret;
@@ -3199,7 +3200,7 @@ BooleanParam::get(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return false;
     }
-    return knob->getValueAtTime(frame, DimIdx(0), thisViewSpec);
+    return knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec);
 
 }
 
@@ -3236,7 +3237,7 @@ BooleanParam::set(bool x,
         return;
     }
 
-    knob->setValueAtTime(frame, x, thisViewSpec, DimIdx(0));
+    knob->setValueAtTime(TimeValue(frame), x, thisViewSpec, DimIdx(0));
 
 }
 
@@ -3354,7 +3355,7 @@ StringParamBase::get(double frame, const QString& view) const
         PythonSetInvalidViewName(view);
         return QString();
     }
-    return QString::fromUtf8(knob->getValueAtTime(frame, DimIdx(0), thisViewSpec).c_str());
+    return QString::fromUtf8(knob->getValueAtTime(TimeValue(frame), DimIdx(0), thisViewSpec).c_str());
 
 }
 
@@ -3389,7 +3390,7 @@ StringParamBase::set(const QString& x,
         PythonSetInvalidViewName(view);
         return;
     }
-    knob->setValueAtTime(frame, x.toStdString(), thisViewSpec);
+    knob->setValueAtTime(TimeValue(frame), x.toStdString(), thisViewSpec);
 }
 
 QString
@@ -3979,7 +3980,7 @@ ParametricParam::getNthControlPoint(int dimension,
         return false;
     }
     ActionRetCodeEnum stat = knob->getNthControlPoint(DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
-    return !isFailureRetCode(stat)
+    return !isFailureRetCode(stat);
 }
 
 bool
@@ -4000,7 +4001,7 @@ ParametricParam::setNthControlPoint(int dimension,
         return false;
     }
     ActionRetCodeEnum stat = knob->setNthControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl, key, value, leftDerivative, rightDerivative);
-    return !isFailureRetCode(stat)
+    return !isFailureRetCode(stat);
 }
 
 bool
@@ -4018,7 +4019,7 @@ ParametricParam::setNthControlPointInterpolation(int dimension,
         return false;
     }
     ActionRetCodeEnum stat = knob->setNthControlPointInterpolation(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nThCtl, interpolation);
-    return !isFailureRetCode(stat)
+    return !isFailureRetCode(stat);
 }
 
 bool
@@ -4035,7 +4036,7 @@ ParametricParam::deleteControlPoint(int dimension,
         return false;
     }
     ActionRetCodeEnum stat = knob->deleteControlPoint(eValueChangedReasonUserEdited, DimIdx(dimension), ViewIdx(0), nthCtl);
-    return !isFailureRetCode(stat)
+    return !isFailureRetCode(stat);
 }
 
 bool
@@ -4051,7 +4052,7 @@ ParametricParam::deleteAllControlPoints(int dimension)
         return false;
     }
     ActionRetCodeEnum stat = _parametricKnob.lock()->deleteAllControlPoints(eValueChangedReasonUserEdited, DimIdx(dimension),ViewIdx(0));
-    return !isFailureRetCode(stat)
+    return !isFailureRetCode(stat);
 }
 
 void
