@@ -231,24 +231,19 @@ public:
 
         // The image planes to render
         std::list<ImageComponents> components;
-
-        // The effect calling renderRoI if within getImage
-        EffectInstancePtr caller;
-
-        // The input number of this node in the caller node
-        int inputNbInCaller;
+        TreeRenderNodeArgsPtr renderArgs;
 
         // Set to false if you don't want the node to render using the GPU at all
         // This is useful if the previous render failed because GPU memory was maxed out
         bool allowGPURendering;
 
-        // the time that was passed to the original renderRoI call of the caller node
-        TimeValue callerRenderTime;
+        // True if this render is allowed to return a Matrix 3x3 instead of rendering.
+        // In this case it should return the pass-through input's image and the transformation matrix.
+        bool canReturnDeprecatedTransform3x3;
 
-        // Is this a known frame or not
-        RenderRoITypeEnum type;
-
-        TreeRenderNodeArgsPtr renderArgs;
+        // True if this render is allowed to return a distorsion function instead of rendering.
+        // In this case it should return the pass-through input's image and the distorsion function.
+        bool canReturnDistorsionFunc;
 
         RenderRoIArgs()
         : time(0)
@@ -257,12 +252,10 @@ public:
         , proxyScale(1.)
         , mipMapLevel(0)
         , components()
-        , caller()
-        , inputNbInCaller(-1)
-        , allowGPURendering(true)
-        , callerRenderTime(0.)
-        , type(eRenderRoITypeKnownFrame)
         , renderArgs()
+        , allowGPURendering(true)
+        , canReturnDeprecatedTransform3x3(false)
+        , canReturnDistorsionFunc(false)
         {
         }
 
@@ -272,9 +265,6 @@ public:
                       const RenderScale& proxyScale_,
                       unsigned int mipMapLevel_,
                       const std::list<ImageComponents> & components_,
-                      EffectInstancePtr caller,
-                      int inputNbInCaller,
-                      TimeValue callerRenderTime,
                       const TreeRenderNodeArgsPtr& renderArgs )
         : time(time_)
         , view(view_)
@@ -282,11 +272,10 @@ public:
         , proxyScale(proxyScale_)
         , mipMapLevel(mipMapLevel_)
         , components(components_)
-        , caller(caller)
-        , inputNbInCaller(inputNbInCaller)
-        , allowGPURendering(true)
-        , callerRenderTime(callerRenderTime)
         , renderArgs(renderArgs)
+        , allowGPURendering(true)
+        , canReturnDeprecatedTransform3x3(false)
+        , canReturnDistorsionFunc(false)
         {
         }
     };

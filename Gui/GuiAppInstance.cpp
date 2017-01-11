@@ -817,21 +817,6 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
     _imp->_gui->getProgressPanel()->onRenderQueuingSettingChanged(queueingEnabled);
 }
 
-void
-GuiAppInstance::connectViewersToViewerCache()
-{
-    if (_imp->_gui) {
-        _imp->_gui->connectViewersToViewerCache();
-    }
-}
-
-void
-GuiAppInstance::disconnectViewersFromViewerCache()
-{
-    if (_imp->_gui) {
-        _imp->_gui->disconnectViewersFromViewerCache();
-    }
-}
 
 boost::shared_ptr<FileDialogPreviewProvider>
 GuiAppInstance::getPreviewProvider() const
@@ -969,6 +954,15 @@ GuiAppInstance::closeLoadPRojectSplashScreen()
         _imp->loadProjectSplash->close();
         delete _imp->loadProjectSplash;
         _imp->loadProjectSplash = 0;
+    }
+}
+
+void
+GuiAppInstance::getAllViewers(std::list<ViewerNodePtr>* viewers) const
+{
+    std::list<ViewerTab*> viewerTabs = _imp->_gui->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
+        viewers->push_back((*it)->getInternalNode());
     }
 }
 

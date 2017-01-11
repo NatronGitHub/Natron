@@ -289,6 +289,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     }
 #endif
 
+    // Get the Roto item attached to this node. It will be a render-local clone of the original item.
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
@@ -298,8 +299,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // To be thread-safe we can only operate on a render clone.
     assert(rotoItem->isRenderClone());
 
+    // Is it a smear or regular solid render ?
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
 
+    // We only support rendering bezier or strokes
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
     BezierPtr isBezier = toBezier(rotoItem);
 
@@ -315,6 +318,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     OSGLContextAttacherPtr glContext = args.glContextAttacher;
 
+    // There must be an OpenGL context bound when using OpenGL.
     if ((args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) && !glContext) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
         return eActionStatusFailed;
@@ -324,9 +328,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
 
-
-
+    // True if this render was trigger because the user is painting (with a pen or mouse)
     bool isDuringPainting = isStroke && isStroke->isCurrentlyDrawing();
+
+    // These variables are useful to pick the stroke drawing algorithm where it was at the previous draw step.
     double distNextIn = 0.;
     Point lastCenterIn = { INT_MIN, INT_MIN };
     int strokeStartPointIndex = 0;
@@ -354,16 +359,18 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // Now we are good to start rendering
 
+    // This is the state of the stroke aglorithm in output of this draw step
     double distToNextOut = 0.;
     Point lastCenterOut;
 
+    // Retrieve the OpenGL context local data that were allocated in attachOpenGLContext
     RotoShapeRenderNodeOpenGLDataPtr glData;
     if (args.glContextData) {
         glData = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(args.glContextData);
         assert(glData);
     }
 
-    // First first time we draw this clear the background.
+    // Firs time we draw this clear the background since we are not going to render the full image with OpenGL.
     if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
         outputPlane.second->fillBoundsZero();
     }
@@ -382,23 +389,19 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 divisions = 1;
             }
 
-            if (isBezier) {
-                RotoPaintPtr rotoPaintNode;
-                KnobItemsTablePtr model = isBezier->getModel();
-                if (model) {
-                    rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-                }
-            }
-
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-            if (!args.backendType == eRenderBackendTypeCPU) {
+            // When cairo is enabled, render with it for a CPU render
+            if (args.backendType == eRenderBackendTypeCPU) {
                 RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, args.renderScale, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
                     nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                 }
             }
 #endif
-            if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+            // Otherwise render with OpenGL or OSMesa
+            else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+
+                // Figure out the shape color
                 double shapeColor[3];
                 {
                     KnobColorPtr colorKnob = rotoItem->getColorKnob();
@@ -410,21 +413,26 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                         }
                     }
                 }
-                
+
+                // Figure out the opacity
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
 
+                // For a stroke or an opened bezier, use the generic stroke algorithm
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                     RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, args.renderScale, &distToNextOut, &lastCenterOut);
+
+                    // Update the stroke algorithm in output
                     if (isDuringPainting && isStroke) {
                         nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                     }
                 } else {
+                    // Render a bezier
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
                                                        isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, args.renderScale, GL_TEXTURE_2D);
                 }
-            }
+            } // useOpenGL
         }   break;
         case eRotoShapeRenderTypeSmear: {
 
@@ -455,6 +463,8 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 
                 if (glContext->getContext()->isGPUContext()) {
+
+                    // Copy the BG image
                     Image::CopyPixelsArgs cpyArgs;
                     cpyArgs.roi = outputPlane.second->getBounds();
                     outputPlane.second->copyPixels(*bgImage, cpyArgs);
@@ -467,7 +477,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     initArgs.bounds = bgImage->getBounds();
                     initArgs.bitdepth = outputPlane.second->getBitDepth();
                     initArgs.storage = eStorageModeGLTex;
-                    initArgs.glContext = glContext;
+                    initArgs.glContext = glContext->getContext();
                     initArgs.textureTarget = GL_TEXTURE_2D;
                     _imp->osmesaSmearTmpTexture = Image::create(initArgs);
 
@@ -479,26 +489,28 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 if (!glContext->getContext()->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
-                    const RectD& rod = outputPlane.second->getRoD();
-                    RectI pixelRoD;
-                    rod.toPixelEnclosing(0, outputPlane.second->getPixelAspectRatio(), &pixelRoD);
-                    _imp->osmesaSmearTmpTexture->ensureBounds(glContext, pixelRoD);
+                    _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
                 }
             }
 
             bool renderedDot;
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-            if (!args.useOpenGL) {
-                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, scale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
+            // Render with cairo if we need to render on CPU
+            if (args.backendType == eRenderBackendTypeCPU) {
+                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, args.renderScale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
             }
 #endif
-            if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+            else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+
+                // Render with OpenGL
+
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
                 ImagePtr dstImage = glContext->getContext()->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
                 renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, args.renderScale, &distToNextOut, &lastCenterOut);
             }
 
+            // Update the stroke algorithm in output
             if (isDuringPainting) {
                 Q_UNUSED(renderedDot);
                 nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());

@@ -160,8 +160,6 @@ public:
     virtual bool progressUpdate(const NodePtr& node, double t) OVERRIDE FINAL;
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
     virtual void onRenderQueuingChanged(bool queueingEnabled) OVERRIDE FINAL;
-    virtual void connectViewersToViewerCache() OVERRIDE FINAL;
-    virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
     boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
@@ -178,6 +176,7 @@ public:
     virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
     virtual void updateProjectLoadStatus(const QString& str) OVERRIDE FINAL;
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
+    virtual void getAllViewers(std::list<ViewerNodePtr>* viewers) const OVERRIDE FINAL;
     virtual void renderAllViewers() OVERRIDE FINAL;
     virtual void refreshAllPreviews() OVERRIDE FINAL;
     virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const OVERRIDE FINAL;

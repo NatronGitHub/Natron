@@ -129,8 +129,10 @@ public:
     static TreeRenderPtr create(const CtorArgsPtr& inArgs);
 
     /**
-     * @brief Render the planes from the output of the node passed as root node in the inArgs of the create function
+     * @brief Render the planes in output of the node passed in the inArgs of the create function
      * and return it in the output planes.
+     * Note that the output planes are mapped to the last node render preferences and you may want to copy
+     * the image with Image::copyPixels to a more suitable format.
      **/
     ActionRetCodeEnum launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes);
 

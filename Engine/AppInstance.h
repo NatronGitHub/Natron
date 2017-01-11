@@ -152,13 +152,6 @@ public:
         return false;
     }
 
-    virtual void connectViewersToViewerCache()
-    {
-    }
-
-    virtual void disconnectViewersFromViewerCache()
-    {
-    }
 
     virtual void errorDialog(const std::string & title, const std::string & message, bool useHtml) const;
     virtual void errorDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
@@ -309,6 +302,8 @@ public:
     bool loadPythonScript(const QFileInfo& file);
 
     bool loadPythonScriptAndReportToScriptEditor(const QString& script);
+
+    virtual void getAllViewers(std::list<ViewerNodePtr>* viewers) const { Q_UNUSED(viewers); }
 
     virtual void renderAllViewers() {}
 

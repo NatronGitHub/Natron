@@ -894,8 +894,8 @@ RotoPaintInteract::showMenuForControlPoint(const BezierCPPtr& /*cp*/)
 
     std::vector<ChoiceOption> choices(menuKnobs.size());
     for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
-        choices[i].id = menuKnobs->getName();
-        choices[i].tooltip = menuKnobs->getHintTooltip();
+        choices[i].id = menuKnobs[i]->getName();
+        choices[i].tooltip = menuKnobs[i]->getHintToolTip();
     }
     menu->populateChoices(choices);
 } // showMenuForControlPoint
@@ -926,8 +926,8 @@ RotoPaintInteract::showMenuForCurve(const BezierPtr & curve)
 
     std::vector<ChoiceOption> choices(menuKnobs.size());
     for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
-        choices[i].id = menuKnobs->getName();
-        choices[i].tooltip = menuKnobs->getHintTooltip();
+        choices[i].id = menuKnobs[i]->getName();
+        choices[i].tooltip = menuKnobs[i]->getHintToolTip();
     }
 
     menu->populateChoices(choices);
@@ -1064,7 +1064,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     int sourceType_i = sourceTypeChoice.lock()->getValue();
     double effectValue = effectSpinBox.lock()->getValue();
 
-    TimeValue time = strokeBeingPaint->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(strokeBeingPaint->getApp()->getTimeLine()->currentFrame());
     strokeBeingPaintedTimelineFrame = time;
     if (colorKnob) {
         colorKnob->setValueAcrossDimensions(color, DimIdx(0));
@@ -1666,7 +1666,7 @@ RotoPaintInteract::smoothSelectedCurve(TimeValue time, ViewIdx view)
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
     if ( !selectedCps.empty() ) {
@@ -1707,7 +1707,7 @@ RotoPaintInteract::cuspSelectedCurve(TimeValue time, ViewIdx view)
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1829,7 +1829,7 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
 
     if ( !points.empty() ) {
         std::pair<double, double> pixelScale;
-        p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+        p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
         p->publicInterface->pushUndoCommand( new MoveControlPointsUndoCommand(shared_from_this(), points, (double)x * pixelScale.first,
                                                                               (double)y * pixelScale.second, time, view) );
         computeSelectedCpsBBOX();
@@ -1867,8 +1867,8 @@ RotoPaint::drawOverlay(TimeValue time,
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
 
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-    getCurrentViewportForOverlays()->getViewportSize(viewportSize.first, viewportSize.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getViewportSize(viewportSize.first, viewportSize.second);
 
     bool featherVisible = _imp->ui->isFeatherVisible();
 
@@ -1931,7 +1931,7 @@ RotoPaint::drawOverlay(TimeValue time,
 
 
                 RectD bbox = isBezier->getBoundingBox(time, view);
-                if ( !getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
+                if ( !getNode()->getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
                     continue;
                 }
 
@@ -2218,8 +2218,8 @@ RotoPaint::drawOverlay(TimeValue time,
              ( _imp->ui->selectedRole == eRotoRoleCloneBrush) ) &&
             ( _imp->ui->selectedTool != eRotoToolOpenBezier) ) {
             Point cursorPos;
-            getCurrentViewportForOverlays()->getCursorPosition(cursorPos.x, cursorPos.y);
-            RectD viewportRect = getCurrentViewportForOverlays()->getViewportRect();
+            getNode()->getCurrentViewportForOverlays()->getCursorPosition(cursorPos.x, cursorPos.y);
+            RectD viewportRect = getNode()->getCurrentViewportForOverlays()->getViewportRect();
 
             if ( viewportRect.contains(cursorPos.x, cursorPos.y) ) {
                 //Draw a circle  around the cursor
@@ -2326,8 +2326,8 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
         selectionMode = 2;
     }
 
-    TimeValue time = getCurrentTime();
-    ViewIdx view = getCurrentView();
+    TimeValue time = getTimelineCurrentTime();
+    ViewIdx view = getCurrentView_TLS();
 
     bool featherVisible = _imp->ui->isFeatherVisible();
     std::list<RotoDrawableItemPtr > curves = _imp->knobsTable->getRotoItemsByRenderOrder(time, view);
@@ -2381,7 +2381,7 @@ RotoPaint::onOverlayPenDoubleClicked(TimeValue time,
     bool didSomething = false;
     std::pair<double, double> pixelScale;
 
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     if (_imp->ui->selectedTool == eRotoToolSelectAll) {
         double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
@@ -2427,7 +2427,7 @@ RotoPaint::onOverlayPenDown(TimeValue time,
     NodePtr node = getNode();
 
     std::pair<double, double> pixelScale;
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     bool didSomething = false;
     double tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
@@ -2834,7 +2834,7 @@ RotoPaint::onOverlayPenMotion(TimeValue time,
 
     std::pair<double, double> pixelScale;
 
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     bool didSomething = false;
     HoverStateEnum lastHoverState = _imp->ui->hoverState;
@@ -3235,7 +3235,7 @@ RotoPaint::onOverlayPenUp(TimeValue /*time*/,
                           const QPointF & /*viewportPos*/,
                           const QPointF & /*pos*/,
                           double /*pressure*/,
-                          double /*timestamp*/)
+                          TimeValue /*timestamp*/)
 {
 
 

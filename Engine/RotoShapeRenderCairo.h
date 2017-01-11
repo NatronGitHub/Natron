@@ -80,20 +80,22 @@ public:
      * @brief Low level: render a dot with feather given parameters onto the cairo image
      **/
     static void renderDot_cairo(cairo_t* cr,
-                          std::vector<cairo_pattern_t*>* dotPatterns,
-                          const Point &center,
-                          double internalDotRadius,
-                          double externalDotRadius,
-                          double pressure,
-                          bool doBuildUp,
-                          const std::vector<std::pair<double, double> >& opacityStops,
-                          double opacity);
+                                std::vector<cairo_pattern_t*>* dotPatterns,
+                                const Point &center,
+                                double internalDotRadiusX,
+                                double internalDotRadiusY,
+                                double externalDotRadiusX,
+                                double externalDotRadiusY,
+                                double pressure,
+                                bool doBuildUp,
+                                const std::vector<std::pair<double, double> >& opacityStops,
+                                double opacity);
 
     /**
      * @brief High level: Allocates a cairo image and calls renderDot_cairo
      **/
-    static bool allocateAndRenderSingleDotStroke_cairo(int brushSizePixel, double brushHardness, double alpha, CairoImageWrapper& wrapper);
-
+    static bool allocateAndRenderSingleDotStroke_cairo(double brushSizePixelX, double brushSizePixelY, double brushHardness, double alpha, CairoImageWrapper& wrapper);
+    
     /**
      * @brief Low-level: used to apply a pattern and destroy it
      **/
@@ -117,24 +119,24 @@ public:
                                    double opacity,
                                    TimeValue time,
                                    ViewIdx view,
-                                   unsigned int mipmapLevel,
+                                   const RenderScale& scale,
                                    double* distToNextOut,
                                    Point* lastCenterPoint);
 
     /**
      * @brief Low level: renders the given bezier with motion blur onto the given cairo image
      **/
-    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, TimeValue time, ViewIdx view, unsigned int mipmapLevel);
+    static void renderBezier_cairo(cairo_t* cr, const BezierPtr& bezier, double opacity, TimeValue time, ViewIdx view, const RenderScale& scale);
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
      **/
-    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, unsigned int mipmapLevel, double shapeColor[3], double opacity, double featherDist, double fallOff, cairo_pattern_t * mesh);
+    static void renderFeather_old_cairo(const BezierPtr& bezier, TimeValue time, ViewIdx view, const RenderScale& scale, double shapeColor[3], double opacity, double featherDist_pixelsX, double featherDist_pixelsY, double fallOff, cairo_pattern_t * mesh);
 
     /**
     * @brief Low level: renders the given internal bezier shape onto the given mesh pattern. This uses the old algorithm which does not use triangulation.
     **/
-    static void renderInternalShape_old_cairo(TimeValue time, unsigned int mipmapLevel, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
+    static void renderInternalShape_old_cairo(TimeValue time, const RenderScale& scale, double shapeColor[3], double opacity, const Transform::Matrix3x3 & transform, cairo_t * cr, cairo_pattern_t * mesh, const BezierCPs &cps);
 
     /**
      * @brief Low level: renders the given bezier feather onto the given mesh pattern. This uses the new algorithm which does use triangulation.
@@ -158,7 +160,7 @@ public:
                                          ViewIdx view,
                                          const RangeD& shutterRange,
                                          int nDivisions,
-                                         const unsigned int mipmapLevel,
+                                         const RenderScale& scale,
                                          const bool isDuringPainting,
                                          const double distToNextIn,
                                          const Point& lastCenterPointIn,
@@ -169,7 +171,7 @@ public:
 
     static bool renderSmear_cairo(TimeValue time,
                                   ViewIdx view,
-                                  unsigned int mipMapLevel,
+                                  const RenderScale& scale,
                                   const RotoStrokeItemPtr& rotoItem,
                                   const RectI& roi,
                                   const ImagePtr& dstImage,

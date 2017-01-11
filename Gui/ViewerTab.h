@@ -187,10 +187,6 @@ public:
      **/
     void updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node);
 
-    void connectToViewerCache();
-
-    void disconnectFromViewerCache();
-
     void clearTimelineCacheLine();
 
     bool isInfobarVisible() const;

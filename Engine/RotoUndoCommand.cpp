@@ -586,7 +586,7 @@ RemovePointUndoCommand::redo()
             }
         }
         it->curve->setAutoOrientationComputation(true);
-        it->curve->refreshPolygonOrientation(true, _view);
+        it->curve->refreshPolygonOrientation(roto->p->publicInterface->getTimelineCurrentTime(), _view);
     }
 
     for (std::list<BezierPtr >::iterator it = toRemove.begin(); it != toRemove.end(); ++it) {

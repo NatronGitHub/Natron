@@ -124,8 +124,8 @@ public:
                                             bool trackChannels[3],
                                             const TrackMarker &marker,
                                             int trackIndex,
-                                            int time,
-                                            int frameStep,
+                                            TimeValue time,
+                                            TimeValue frameStep,
                                             double formatHeight,
                                             mv::Marker * mvMarker);
     static void setKnobKeyframesFromMarker(int formatHeight,

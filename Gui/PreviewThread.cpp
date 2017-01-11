@@ -103,8 +103,6 @@ PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     NodeGuiPtr node = args->node.lock();
     if (node) {
-        ///Mark this thread as running
-        appPTR->fetchAndAddNRunningThreads(1);
 
         //process the request if valid
         int w = NATRON_PREVIEW_WIDTH;
@@ -125,8 +123,6 @@ PreviewThread::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             node->copyPreviewImageBuffer(_imp->data, w, h);
         }
 
-        ///Unmark this thread as running
-        appPTR->fetchAndAddNRunningThreads(-1);
     }
 
     return eThreadStateActive;

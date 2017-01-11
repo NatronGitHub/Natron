@@ -30,6 +30,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/clamp.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
+#include "Engine/AppInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
@@ -40,6 +41,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"
 #include "Engine/TrackMarker.h"
+#include "Engine/ViewerNode.h"
 #include "Engine/ViewerInstance.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -91,8 +93,6 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     , trackTextures()
     , trackRequestsMap()
     , selectedMarkerTexture()
-    , selectedMarkerTextureTime(0)
-    , selectedMarkerTextureRoI()
     , selectedMarker()
     , pboID(0)
     , imageGetterWatcher()
@@ -100,8 +100,11 @@ TrackerNodeInteract::TrackerNodeInteract(TrackerNodePrivate* p)
     , selectedMarkerScale()
     , selectedMarkerImg()
     , isTracking(false)
+    , nSelectedMarkerTextureRefreshRequests(0)
 {
     selectedMarkerScale.x = selectedMarkerScale.y = 1.;
+
+    QObject::connect(this, SIGNAL(requestRefreshSelectedMarkerTexture()), this, SLOT(onRequestRefreshSelectedMarkerReceived()), Qt::QueuedConnection);
 }
 
 TrackerNodeInteract::~TrackerNodeInteract()
@@ -146,19 +149,16 @@ TrackerNodeInteract::onTrackRangeClicked()
     OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int viewerFirst, viewerLast;
-    viewer->getUiContext()->getViewerFrameRange(&viewerFirst, &viewerLast);
+    RangeD range = overlay->getFrameRange();
 
     int first = trackRangeDialogFirstFrame.lock()->getValue();
     int last = trackRangeDialogLastFrame.lock()->getValue();
     int step = trackRangeDialogStep.lock()->getValue();
     if (first == INT_MIN) {
-        trackRangeDialogFirstFrame.lock()->setValue(viewerFirst);
+        trackRangeDialogFirstFrame.lock()->setValue(range.min);
     }
     if (last == INT_MIN) {
-        trackRangeDialogLastFrame.lock()->setValue(viewerLast);
+        trackRangeDialogLastFrame.lock()->setValue(range.max);
     }
     if (step == INT_MIN) {
         trackRangeDialogStep.lock()->setValue(1);
@@ -190,13 +190,13 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
 
     int first = *userKeys.begin();
     int last = *userKeys.rbegin() + 1;
-    _p->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getCurrentViewportForOverlays() );
+    _p->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
 }
 
 void
 TrackerNodeInteract::onTrackCurrentKeyframeClicked()
 {
-    SequenceTime currentFrame = _p->publicInterface->getCurrentTime();
+    TimeValue currentFrame(_p->publicInterface->getTimelineCurrentTime());
     std::list<TrackMarkerPtr> selectedMarkers;
 
     _p->knobsTable->getSelectedMarkers(&selectedMarkers);
@@ -226,37 +226,32 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
         first = *it;
     }
 
-    _p->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getCurrentViewportForOverlays() );
+    _p->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
 }
 
 void
 TrackerNodeInteract::onTrackBwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int first, last;
-    viewer->getUiContext()->getViewerFrameRange(&first, &last);
 
-    int startFrame = viewer->getTimeline()->currentFrame();
+    RangeD range = overlay->getFrameRange();
+
+    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
+
     if ( _p->tracker->isCurrentlyTracking() ) {
         _p->tracker->abortTracking();
     } else {
-        _p->trackSelectedMarkers( startFrame, first - 1, -1,  overlay );
+        _p->trackSelectedMarkers( startFrame, range.min - 1, -1,  overlay );
     }
 }
 
 void
 TrackerNodeInteract::onTrackPrevClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
-
-    assert(overlay);
-    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int startFrame = viewer->getTimeline()->currentFrame();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
+    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
     _p->trackSelectedMarkers( startFrame, startFrame - 2, -1, overlay );
 }
 
@@ -269,31 +264,25 @@ TrackerNodeInteract::onStopButtonClicked()
 void
 TrackerNodeInteract::onTrackNextClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
-
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
-    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int startFrame = viewer->getTimeline()->currentFrame();
+    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
     _p->trackSelectedMarkers( startFrame, startFrame + 2, true, overlay );
 }
 
 void
 TrackerNodeInteract::onTrackFwClicked()
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-    assert(viewer);
-    int first, last;
-    viewer->getUiContext()->getViewerFrameRange(&first, &last);
+    RangeD range = overlay->getFrameRange();
 
-    int startFrame = viewer->getTimeline()->currentFrame();
+    TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
     if ( _p->tracker->isCurrentlyTracking() ) {
         _p->tracker->abortTracking();
     } else {
-        _p->trackSelectedMarkers( startFrame, last + 1, true,  overlay );
+        _p->trackSelectedMarkers( startFrame, range.max + 1, true,  overlay );
     }
 }
 
@@ -316,7 +305,7 @@ TrackerNodeInteract::onClearAllAnimationClicked()
 void
 TrackerNodeInteract::onClearBwAnimationClicked()
 {
-    int time = _p->publicInterface->getCurrentTime();
+    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
     _p->knobsTable->getSelectedMarkers(&markers);
@@ -328,7 +317,7 @@ TrackerNodeInteract::onClearBwAnimationClicked()
 void
 TrackerNodeInteract::onClearFwAnimationClicked()
 {
-    int time = _p->publicInterface->getCurrentTime();
+    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
     _p->knobsTable->getSelectedMarkers(&markers);
@@ -340,7 +329,7 @@ TrackerNodeInteract::onClearFwAnimationClicked()
 void
 TrackerNodeInteract::onSetKeyframeButtonClicked()
 {
-    int time = _p->publicInterface->getCurrentTime();
+    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
     _p->knobsTable->getSelectedMarkers(&markers);
@@ -352,7 +341,7 @@ TrackerNodeInteract::onSetKeyframeButtonClicked()
 void
 TrackerNodeInteract::onRemoveKeyframeButtonClicked()
 {
-    int time = _p->publicInterface->getCurrentTime();
+    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
     std::list<TrackMarkerPtr > markers;
 
     _p->knobsTable->getSelectedMarkers(&markers);
@@ -426,7 +415,7 @@ TrackerNodeInteract::computeMidPointExtent(const QPointF& prev,
 }
 
 int
-TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
+TrackerNodeInteract::isInsideKeyFrameTexture(TimeValue currentTime,
                                              const QPointF& pos,
                                              const QPointF& viewportPos) const
 {
@@ -452,7 +441,7 @@ TrackerNodeInteract::isInsideKeyFrameTexture(double currentTime,
         return INT_MAX;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
 
     //Find out which keyframe it is by counting keyframe portions
@@ -494,7 +483,7 @@ TrackerNodeInteract::isNearbySelectedMarkerTextureResizeAnchor(const QPointF& po
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
     QPointF clickWidget = overlay->toWidgetCoordinates(pos);
     QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
@@ -514,7 +503,7 @@ TrackerNodeInteract::isInsideSelectedMarkerTexture(const QPointF& pos) const
 
     computeSelectedMarkerCanonicalRect(&textureRectCanonical);
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
     QPointF clickWidget = overlay->toWidgetCoordinates(pos);
     QPointF btmRightWidget = overlay->toWidgetCoordinates( QPointF(textureRectCanonical.x2, textureRectCanonical.y1) );
@@ -539,7 +528,7 @@ TrackerNodeInteract::computeTextureCanonicalRect(const Texture& tex,
         return;
     }
     double par = tex.w() / (double)tex.h();
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
     rect->x2 = overlay->toCanonicalCoordinates( QPointF(xOffset + texWidthPx, 0.) ).x();
@@ -608,7 +597,7 @@ TrackerNodeInteract::drawEllipse(double x,
 }
 
 TrackerNodeInteract::KeyFrameTexIDs
-TrackerNodeInteract::getKeysToRenderForMarker(double currentTime,
+TrackerNodeInteract::getKeysToRenderForMarker(TimeValue currentTime,
                                               const KeyFrameTexIDs& allKeys)
 {
     KeyFrameTexIDs keysToRender;
@@ -647,7 +636,7 @@ TrackerNodeInteract::getKeysToRenderForMarker(double currentTime,
 
 void
 TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>& pixelScale,
-                                                 int currentTime)
+                                                 TimeValue currentTime)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
 
@@ -659,7 +648,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
         return;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
 
     double overlayColor[4];
@@ -693,7 +682,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
             KeyFrameTexIDs keysToRender = getKeysToRenderForMarker(currentTime, it->second);
 
             for (KeyFrameTexIDs::const_iterator it2 = keysToRender.begin(); it2 != keysToRender.end(); ++it2) {
-                TimeValue time = (double)it2->first;
+                TimeValue time = it2->first;
                 Point offset, center, topLeft, topRight, btmRight, btmLeft;
 
                 center.x = centerKnob->getValueAtTime(time, DimIdx(0));
@@ -718,7 +707,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
                 //const double searchBottom = searchWndBtmLeft->getValueAtTime(time, 1) + offset.y + center.y;
                 //const double searchTop    = searchWndTopRight->getValueAtTime(time, 1) + offset.y + center.y;
 
-                const TextureRect& texRect = it2->second->getTextureRect();
+                const RectI& texRect = it2->second->getBounds();
                 if (texRect.height() <= 0) {
                     continue;
                 }
@@ -733,7 +722,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
 
 
                 RectD canonicalSearchWindow;
-                texRect.toCanonical_noClipping(0, texRect.par, &canonicalSearchWindow);
+                texRect.toCanonical_noClipping(0, 1., &canonicalSearchWindow);
 
                 //Remove any offset to the center to see the marker in the magnification window
                 double xCenterPercent = (center.x - canonicalSearchWindow.x1 + offset.x) / (canonicalSearchWindow.x2 - canonicalSearchWindow.x1);
@@ -856,7 +845,7 @@ TrackerNodeInteract::drawSelectedMarkerKeyframes(const std::pair<double, double>
 
 void
 TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& pixelScale,
-                                               int currentTime,
+                                               TimeValue currentTime,
                                                const Point& ptnCenter,
                                                const Point& offset,
                                                const Point& ptnTopLeft,
@@ -867,14 +856,24 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
                                                const Point& /*selectedSearchWndTopRight*/)
 {
     TrackMarkerPtr marker = selectedMarker.lock();
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
-    ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-    assert(viewer);
 
-    if ( isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime) || viewer->getRenderEngine()->isDoingSequentialRender() ) {
+
+    if ( isTracking || !selectedMarkerTexture || !marker || !marker->isEnabled(currentTime)) {
         return;
+    }
+
+    // If a viewer is doing playback, do not refresh the marker texture
+    {
+        std::list<ViewerNodePtr> viewers;
+        _p->publicInterface->getApp()->getAllViewers(&viewers);
+        for (std::list<ViewerNodePtr>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
+            if ((*it)->getNode()->getRenderEngine()->isDoingSequentialRender()) {
+                return;
+            }
+        }
     }
 
     RectD textureRectCanonical;
@@ -887,7 +886,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     }
     overlayColor[3] = 1.;
 
-    const TextureRect& texRect = selectedMarkerTexture->getTextureRect();
+    const RectI& texRect = selectedMarkerTexture->getBounds();
     RectD texCoords;
     /*texCoords.x1 = (texRect.x1 - selectedMarkerTextureRoI.x1) / (double)selectedMarkerTextureRoI.width();
        texCoords.y1 = (texRect.y1 - selectedMarkerTextureRoI.y1) / (double)selectedMarkerTextureRoI.height();
@@ -905,7 +904,7 @@ TrackerNodeInteract::drawSelectedMarkerTexture(const std::pair<double, double>& 
     texCoords.x2 = texCoords.y2 = 1.;
 
     RectD canonicalSearchWindow;
-    texRect.toCanonical_noClipping(0, texRect.par, &canonicalSearchWindow);
+    texRect.toCanonical_noClipping(0, 1., &canonicalSearchWindow);
 
     Point centerPoint, innerTopLeft, innerTopRight, innerBtmLeft, innerBtmRight;
 
@@ -1025,7 +1024,7 @@ TrackerNodeInteract::isNearbyPoint(const KnobDoublePtr& knob,
                                    TimeValue time)
 {
     QPointF p;
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
 
@@ -1046,7 +1045,7 @@ TrackerNodeInteract::isNearbyPoint(const QPointF& p,
                                    double yWidget,
                                    double toleranceWidget)
 {
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
 
@@ -1082,8 +1081,28 @@ TrackerNodeInteract::findLineIntersection(const Point& p,
 }
 
 void
-TrackerNodeInteract::refreshSelectedMarkerTexture()
+TrackerNodeInteract::onRequestRefreshSelectedMarkerReceived()
 {
+    if (!nSelectedMarkerTextureRefreshRequests) {
+        return;
+    }
+    nSelectedMarkerTextureRefreshRequests = 0;
+
+    refreshSelectedMarkerTextureNow();
+}
+
+void
+TrackerNodeInteract::refreshSelectedMarkerTextureLater()
+{
+    ++nSelectedMarkerTextureRefreshRequests;
+    Q_EMIT requestRefreshSelectedMarkerTexture();
+}
+
+void
+TrackerNodeInteract::refreshSelectedMarkerTextureNow()
+{
+
+
     assert( QThread::currentThread() == qApp->thread() );
     if (isTracking) {
         return;
@@ -1093,13 +1112,9 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
         return;
     }
 
-    int time = _p->publicInterface->getCurrentTime();
-    RectI roi = marker->getMarkerImageRoI(time);
+    TimeValue time = _p->publicInterface->getTimelineCurrentTime();
+    RectD roi = marker->getMarkerImageRoI(time);
     if ( roi.isNull() ) {
-        return;
-    }
-    ImagePtr existingMarkerImg = selectedMarkerImg.lock();
-    if ( existingMarkerImg && (existingMarkerImg->getTime() == time) && (roi == selectedMarkerTextureRoI) ) {
         return;
     }
 
@@ -1111,7 +1126,7 @@ TrackerNodeInteract::refreshSelectedMarkerTexture()
 }
 
 void
-TrackerNodeInteract::makeMarkerKeyTexture(int time,
+TrackerNodeInteract::makeMarkerKeyTexture(TimeValue time,
                                           const TrackMarkerPtr& track)
 {
     assert( QThread::currentThread() == qApp->thread() );
@@ -1124,7 +1139,7 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
     if ( foundTrack != trackTextures.end() ) {
         KeyFrameTexIDs::iterator foundKey = foundTrack->second.find(k.time);
         if ( foundKey != foundTrack->second.end() ) {
-            const TextureRect& texRect = foundKey->second->getTextureRect();
+            const RectI& texRect = foundKey->second->getBounds();
             if ( (k.roi.x1 == texRect.x1) &&
                  ( k.roi.x2 == texRect.x2) &&
                  ( k.roi.y1 == texRect.y1) &&
@@ -1142,7 +1157,7 @@ TrackerNodeInteract::makeMarkerKeyTexture(int time,
     }
 }
 
-static unsigned int toBGRA(unsigned char r, unsigned char g, unsigned char b, unsigned char a) WARN_UNUSED_RETURN;
+inline
 unsigned int
 toBGRA(unsigned char r,
        unsigned char g,
@@ -1150,6 +1165,90 @@ toBGRA(unsigned char r,
        unsigned char a)
 {
     return (a << 24) | (r << 16) | (g << 8) | b;
+}
+
+
+template <int srcNComps>
+void
+fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
+                                    const RectI& roi,
+                                    unsigned int* dstPixels)
+{
+
+
+    // Always display the selected marker texture in sRGB
+    const Color::Lut* lut = Color::LutManager::sRGBLut();
+    lut->validate();
+    assert(lut);
+
+    const unsigned char alpha = 255;
+
+    for (int y = roi.y1; y < roi.y2; ++y) {
+
+        const int start_x = (int)( rand() % (roi.x2 - roi.x1) );
+
+        for (int backward = 0; backward < 2; ++backward) {
+
+
+            int x = backward ? start_x - 1 : start_x;
+            const int end_x = backward ? -1 : roi.x2;
+            assert( backward == 1 || ( x >= 0 && x < (roi.x2 - roi.x1) ) );
+
+            const float* srcPixels[4];
+            int srcPixelStride;
+            Image::getChannelPointers<float, srcNComps>((float**)srcImage.ptrs, x, y, srcImage.tileBounds, (float**)srcPixels, &srcPixelStride);
+
+
+            unsigned error[3] = {0x80, 0x80, 0x80};
+
+            while (x != end_x) {
+
+                float tmpPix[3] = {0.f, 0.f, 0.f};
+                for (int c = 0; c < srcNComps; ++c) {
+                    if (srcPixels[c]) {
+                        tmpPix[c] = *srcPixels[c];
+                        srcPixels[c] += srcPixelStride;
+                        error[c] = (error[c] & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[c]);
+                        assert(error[c] < 0x10000);
+                    }
+                }
+
+                *dstPixels = toBGRA( (U8)(error[0] >> 8), (U8)(error[1] >> 8), (U8)(error[2] >> 8), alpha );
+                ++dstPixels;
+
+                if (backward) {
+                    --x;
+                } else {
+                    ++x;
+                }
+            } // for each pixels along the line
+        } // backward ?
+    } // for each scan-line
+
+} // fullRectFloatCPUImageToPBO
+
+
+static void
+fullRectFloatCPUImageToPBO(const Image::CPUTileData& srcImage,
+                           const RectI& roi,
+                           unsigned int* dstBuf)
+{
+    switch (srcImage.nComps) {
+        case 1:
+            fullRectFloatCPUImageToPBOForNComps<1>(srcImage, roi, dstBuf);
+            break;
+        case 2:
+            fullRectFloatCPUImageToPBOForNComps<2>(srcImage, roi, dstBuf);
+            break;
+        case 3:
+            fullRectFloatCPUImageToPBOForNComps<3>(srcImage, roi, dstBuf);
+            break;
+        case 4:
+            fullRectFloatCPUImageToPBOForNComps<4>(srcImage, roi, dstBuf);
+            break;
+        default:
+            break;
+    }
 }
 
 void
@@ -1171,13 +1270,17 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
         return;
     }
 
+    // The image must have the appropriate format: it has been converted in TrackMarker::getMarkerImage
+    assert(image->getBitDepth() == eImageBitDepthFloat && image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect && image->getStorageMode() != eStorageModeGLTex);
+    Image::CPUTileData imageData;
+    {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
 
     std::size_t bytesCount = 4 * sizeof(unsigned char) * roi.area();
-    TextureRect region;
-    region.x1 = roi.x1;
-    region.x2 = roi.x2;
-    region.y1 = roi.y1;
-    region.y2 = roi.y2;
 
     GLint currentBoundPBO = 0;
     GL_GPU::GetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
@@ -1203,65 +1306,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     glCheckError(GL_GPU);
     assert(buf);
     if (buf) {
-        // update data directly on the mapped buffer
-        if (!image) {
-            int pixelsCount = roi.area();
-            unsigned int* dstPixels = (unsigned int*)buf;
-            for (int i = 0; i < pixelsCount; ++i, ++dstPixels) {
-                *dstPixels = toBGRA(0, 0, 0, 255);
-            }
-        } else {
-            int srcNComps = (int)image->getComponentsCount();
-            assert(srcNComps >= 3);
-            Image::ReadAccess acc( image.get() );
-            const float* srcPixels = (const float*)acc.pixelAt(roi.x1, roi.y1);
-            unsigned int* dstPixels = (unsigned int*)buf;
-            assert(srcPixels);
-
-            int w = roi.width();
-            int srcRowElements = bounds.width() * srcNComps;
-            const Color::Lut* lut = Color::LutManager::sRGBLut();
-            lut->validate();
-            assert(lut);
-
-            unsigned char alpha = 255;
-
-            for (int y = roi.y1; y < roi.y2; ++y, dstPixels += w, srcPixels += srcRowElements) {
-                int start = (int)( rand() % (roi.x2 - roi.x1) );
-
-                for (int backward = 0; backward < 2; ++backward) {
-                    int index = backward ? start - 1 : start;
-                    assert( backward == 1 || ( index >= 0 && index < (roi.x2 - roi.x1) ) );
-                    unsigned error_r = 0x80;
-                    unsigned error_g = 0x80;
-                    unsigned error_b = 0x80;
-
-                    while (index < w && index >= 0) {
-                        float r = srcPixels[index * srcNComps];
-                        float g = srcPixels[index * srcNComps + 1];
-                        float b = srcPixels[index * srcNComps + 2];
-
-                        error_r = (error_r & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(r);
-                        error_g = (error_g & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(g);
-                        error_b = (error_b & 0xff) + lut->toColorSpaceUint8xxFromLinearFloatFast(b);
-                        assert(error_r < 0x10000 && error_g < 0x10000 && error_b < 0x10000);
-
-                        dstPixels[index] = toBGRA( (U8)(error_r >> 8),
-                                                  (U8)(error_g >> 8),
-                                                  (U8)(error_b >> 8),
-                                                  alpha );
-                        
-                        
-                        if (backward) {
-                            --index;
-                        } else {
-                            ++index;
-                        }
-                    }
-                }
-            }
-        }
-        
+        fullRectFloatCPUImageToPBO(imageData, roi, (unsigned int*)buf);
         GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
@@ -1271,7 +1316,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     // copy pixels from PBO to texture object
     // using glBindTexture followed by glTexSubImage2D.
     // Use offset instead of pointer (last parameter is 0).
-    tex->fillOrAllocateTexture(region, RectI(), false, 0);
+    tex->fillOrAllocateTexture(roi, 0, 0);
 
     // restore previously bound PBO
     GL_GPU::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
@@ -1315,13 +1360,13 @@ TrackerNodeInteract::onModelSelectionChanged(const std::list<KnobTableItemPtr>& 
         TrackMarkerPtr oldMarker = selectedMarker.lock();
         if (oldMarker != selectionFront) {
             selectedMarker = selectionFront;
-            refreshSelectedMarkerTexture();
+            refreshSelectedMarkerTextureLater();
 
 
             std::set<double> keys;
             selectionFront->getMasterKeyFrameTimes(ViewIdx(0), &keys);
             for (std::set<double>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-                makeMarkerKeyTexture(*it2, selectionFront);
+                makeMarkerKeyTexture(TimeValue(*it2), selectionFront);
             }
         } else {
             if (selectionFront) {
@@ -1343,7 +1388,7 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     QFutureWatcher<std::pair<ImagePtr, RectI> >* future = dynamic_cast<QFutureWatcher<std::pair<ImagePtr, RectI> >*>( sender() );
     assert(future);
     std::pair<ImagePtr, RectI> ret = future->result();
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
@@ -1359,11 +1404,9 @@ TrackerNodeInteract::onTrackImageRenderingFinished()
     if (!selectedMarkerTexture) {
         int format, internalFormat, glType;
         Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+        selectedMarkerTexture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte,
                                                  format, internalFormat, glType, true /*useGL*/) );
     }
-    selectedMarkerTextureTime = (int)ret.first->getTime();
-    selectedMarkerTextureRoI = ret.second;
 
     convertImageTosRGBOpenGLTexture(ret.first, selectedMarkerTexture, ret.second);
 
@@ -1376,12 +1419,12 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
     assert( QThread::currentThread() == qApp->thread() );
     TrackWatcher* future = dynamic_cast<TrackWatcher*>( sender() );
     assert(future);
-    std::pair<ImagePtr, RectI> ret = future->result();
+    std::pair<ImagePtr, RectD> ret = future->result();
     if ( !ret.first || ret.second.isNull() ) {
         return;
     }
 
-    OverlaySupport* overlay = _p->publicInterface->getCurrentViewportForOverlays();
+    OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
     OpenGLViewerI* isOpenGLViewer = dynamic_cast<OpenGLViewerI*>(overlay);
     assert(isOpenGLViewer);
@@ -1400,10 +1443,13 @@ TrackerNodeInteract::onKeyFrameImageRenderingFinished()
             TrackerNodeInteract::KeyFrameTexIDs& keyTextures = trackTextures[track];
             int format, internalFormat, glType;
             Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte,
+            GLTexturePtr tex( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte,
                                           format, internalFormat, glType, true) );
             keyTextures[it->first.time] = tex;
-            convertImageTosRGBOpenGLTexture(ret.first, tex, ret.second);
+
+            RectI roi;
+            ret.second.toPixelEnclosing(0, 1., &roi);
+            convertImageTosRGBOpenGLTexture(ret.first, tex, roi);
 
             trackRequestsMap.erase(it);
 
@@ -1426,7 +1472,7 @@ TrackerNodeInteract::rebuildMarkerTextures()
         std::set<double> keys;
         (*it)->getMasterKeyFrameTimes(ViewIdx(0), &keys);
         for (std::set<double>::iterator it2 = keys.begin(); it2 != keys.end(); ++it2) {
-            makeMarkerKeyTexture(*it2, *it);
+            makeMarkerKeyTexture(TimeValue(*it2), *it);
         }
     }
     onModelSelectionChanged(std::list<KnobTableItemPtr>(),std::list<KnobTableItemPtr>(), eTableChangeReasonInternal);
@@ -1449,8 +1495,8 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
 
     if ( !markers.empty() ) {
         std::pair<double, double> pixelScale;
-        _p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-        TimeValue time = _p->publicInterface->getCurrentTime();
+        _p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+        TimeValue time = _p->publicInterface->getTimelineCurrentTime();
         bool createkey = createKeyOnMoveButton.lock()->getValue();
 
         int hasMovedMarker = false;
@@ -1483,7 +1529,7 @@ TrackerNodeInteract::nudgeSelectedTracks(int x,
             }
             hasMovedMarker = true;
         }
-        refreshSelectedMarkerTexture();
+        refreshSelectedMarkerTextureLater();
 
         return hasMovedMarker;
     }
@@ -1788,7 +1834,7 @@ TrackerNodeInteract::transformPattern(TimeValue time,
     }
     _p->publicInterface->endChanges();
     
-    refreshSelectedMarkerTexture();
+    refreshSelectedMarkerTextureLater();
 
     if ( createKeyOnMoveButton.lock()->getValue() ) {
         interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
@@ -1799,7 +1845,7 @@ void
 TrackerNodeInteract::onKeyframeSetOnTrack(const TrackMarkerPtr& marker,
                                           int key)
 {
-    makeMarkerKeyTexture(key, marker);
+    makeMarkerKeyTexture(TimeValue(key), marker);
 }
 
 void
@@ -1808,7 +1854,7 @@ TrackerNodeInteract::onKeyframeRemovedOnTrack(const TrackMarkerPtr& marker,
 {
     for (TrackerNodeInteract::TrackKeysMap::iterator it = trackTextures.begin(); it != trackTextures.end(); ++it) {
         if (it->first.lock() == marker) {
-            std::map<int, boost::shared_ptr<Texture> >::iterator found = it->second.find(key);
+            std::map<TimeValue, boost::shared_ptr<Texture> >::iterator found = it->second.find(TimeValue(key));
             if ( found != it->second.end() ) {
                 it->second.erase(found);
             }
@@ -1856,7 +1902,7 @@ TrackerNode::drawOverlay(TimeValue time,
                          ViewIdx /*view*/)
 {
     double pixelScaleX, pixelScaleY;
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
     overlay->getPixelScale(pixelScaleX, pixelScaleY);
@@ -2038,9 +2084,9 @@ TrackerNode::drawOverlay(TimeValue time,
                     name += tr("(disabled)").toStdString();
                 }
                 CenterPointsMap centerPoints;
-                CurvePtr xCurve = centerKnob->getAnimationCurve(ViewIdx::current(), DimIdx(0));
-                CurvePtr yCurve = centerKnob->getAnimationCurve(ViewIdx::current(), DimIdx(1));
-                CurvePtr errorCurve = errorKnob->getAnimationCurve(ViewIdx::current(), DimIdx(0));
+                CurvePtr xCurve = centerKnob->getAnimationCurve(ViewIdx(0), DimIdx(0));
+                CurvePtr yCurve = centerKnob->getAnimationCurve(ViewIdx(0), DimIdx(1));
+                CurvePtr errorCurve = errorKnob->getAnimationCurve(ViewIdx(0), DimIdx(0));
 
                 {
                     KeyFrameSet xKeyframes = xCurve->getKeyFrames_mt_safe();
@@ -2367,7 +2413,7 @@ TrackerNode::drawOverlay(TimeValue time,
         } // for (std::vector<TrackMarkerPtr >::iterator it = allMarkers.begin(); it!=allMarkers.end(); ++it) {
 
         if (_imp->ui->showMarkerTexture && selectedFound) {
-            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), _imp->ui->selectedMarkerTextureTime, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
+            _imp->ui->drawSelectedMarkerTexture(std::make_pair(pixelScaleX, pixelScaleY), time, selectedCenter, selectedOffset, selectedPtnTopLeft, selectedPtnTopRight, selectedPtnBtmRight, selectedPtnBtmLeft, selectedSearchBtmLeft, selectedSearchTopRight);
         }
         // context->drawInternalNodesOverlay( time, renderScale, view, overlay);
 
@@ -2423,11 +2469,11 @@ TrackerNode::onOverlayPenDown(TimeValue time,
                               const QPointF & viewportPos,
                               const QPointF & pos,
                               double /*pressure*/,
-                              double /*timestamp*/,
+                              TimeValue /*timestamp*/,
                               PenType /*pen*/)
 {
     std::pair<double, double> pixelScale;
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
@@ -2620,7 +2666,7 @@ TrackerNode::onOverlayPenDown(TimeValue time,
             marker->setKeyFrame(time, ViewSetSpec(0), 0);
         }
         pushUndoCommand( new AddItemsCommand(marker) );
-        _imp->ui->refreshSelectedMarkerTexture();
+        _imp->ui->refreshSelectedMarkerTextureLater();
         didSomething = true;
     }
 
@@ -2642,10 +2688,9 @@ TrackerNode::onOverlayPenDown(TimeValue time,
     if (!didSomething) {
         int keyTime = _imp->ui->isInsideKeyFrameTexture(time, pos, viewportPos);
         if (keyTime != INT_MAX) {
-            ViewerInstancePtr viewer = overlay->getInternalViewerNode();
-            if (viewer) {
-                viewer->getTimeline()->seekFrame(keyTime, true, viewer, eTimelineChangeReasonOtherSeek);
-            }
+
+            getApp()->getTimeLine()->seekFrame(keyTime, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+
             didSomething = true;
         }
     }
@@ -2671,10 +2716,10 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                                 const QPointF & viewportPos,
                                 const QPointF & pos,
                                 double /*pressure*/,
-                                double /*timestamp*/)
+                                TimeValue /*timestamp*/)
 {
     std::pair<double, double> pixelScale;
-    OverlaySupport* overlay = getCurrentViewportForOverlays();
+    OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
 
     assert(overlay);
     overlay->getPixelScale(pixelScale.first, pixelScale.second);
@@ -2920,7 +2965,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                         patternCorners[i]->setValueAcrossDimensions(values);
                     }
                 }
-                _imp->ui->refreshSelectedMarkerTexture();
+                _imp->ui->refreshSelectedMarkerTextureLater();
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
                     _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
@@ -3085,7 +3130,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndBtmLeft->setValueAcrossDimensions(values);
                 }
 
-                _imp->ui->refreshSelectedMarkerTexture();
+                _imp->ui->refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3149,7 +3194,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndTopRight->setValue(p.x, ViewSetSpec::all(), DimIdx(0));
                 }
 
-                _imp->ui->refreshSelectedMarkerTexture();
+                _imp->ui->refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3213,7 +3258,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndTopRight->setValueAcrossDimensions(values);
                 }
 
-                _imp->ui->refreshSelectedMarkerTexture();
+                _imp->ui->refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3276,7 +3321,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                     searchWndTopRight->setValue(p.y, view, DimIdx(1));
                 }
 
-                _imp->ui->refreshSelectedMarkerTexture();
+                _imp->ui->refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3370,7 +3415,7 @@ TrackerNode::onOverlayPenMotion(TimeValue time,
                 if ( _imp->ui->createKeyOnMoveButton.lock()->getValue() ) {
                     _imp->ui->interactMarker->setKeyFrame(time, ViewSetSpec(0), 0);
                 }
-                _imp->ui->refreshSelectedMarkerTexture();
+                _imp->ui->refreshSelectedMarkerTextureLater();
                 didSomething = true;
                 break;
             }
@@ -3404,7 +3449,7 @@ TrackerNode::onOverlayPenUp(TimeValue /*time*/,
                             const QPointF & /*viewportPos*/,
                             const QPointF & /*pos*/,
                             double /*pressure*/,
-                            double /*timestamp*/)
+                            TimeValue /*timestamp*/)
 {
     bool didSomething = false;
     TrackerMouseStateEnum state = _imp->ui->eventState;
@@ -3558,7 +3603,7 @@ TrackerNode::onInteractViewportSelectionUpdated(const RectD& rectangle,
 
     std::list<KnobTableItemPtr> items;
     for (std::size_t i = 0; i < allMarkers.size(); ++i) {
-        if ( !allMarkers[i]->isEnabled( allMarkers[i]->getCurrentTime() ) ) {
+        if ( !allMarkers[i]->isEnabled( allMarkers[i]->getTimelineCurrentTime() ) ) {
             continue;
         }
         KnobDoublePtr center = allMarkers[i]->getCenterKnob();

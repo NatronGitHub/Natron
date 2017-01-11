@@ -245,7 +245,7 @@ void
 StringAnimationManager::removeKeyframes(const std::list<double>& keysRemoved)
 {
     for (std::list<double>::const_iterator it = keysRemoved.begin(); it != keysRemoved.end(); ++it) {
-        removeKeyFrame(*it);
+        removeKeyFrame(TimeValue(*it));
     }
 }
 
@@ -323,7 +323,7 @@ StringAnimationManager::clone(const StringAnimationManager & other,
                 continue;
             }
             StringKeyFrame k;
-            k.time = time + offset;
+            k.time = TimeValue(time + offset);
             k.value = it->value;
             _imp->keyframes.insert(k);
 
@@ -344,7 +344,7 @@ StringAnimationManager::load(const std::map<double, std::string > & keyframes)
     for (std::map<double, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         
         StringKeyFrame k;
-        k.time = it->first;
+        k.time = TimeValue(it->first);
         k.value = it->second;
         std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
         assert(ret.second);

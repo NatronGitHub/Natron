@@ -405,7 +405,7 @@ ProgressPanel::doProgressStartOnMainThread(const NodePtr& node,
                                            const QString & /*messageid*/,
                                            bool canCancel)
 {
-    startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message);
+    startTask(node, TimeValue(INT_MIN), TimeValue(INT_MAX), TimeValue(1), false, canCancel, message);
 }
 
 void

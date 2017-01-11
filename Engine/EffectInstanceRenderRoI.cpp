@@ -240,6 +240,12 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
     }
 
     boost::scoped_ptr<RenderRoIArgs> inArgs ( new RenderRoIArgs(args) );
+
+    // Planes are not available on this node and will not be rendered hence we have to render them upstream
+    // We cannot concatenate.
+    inArgs->canReturnDistorsionFunc = false;
+    inArgs->canReturnDeprecatedTransform3x3 = false;
+
     inArgs->components = componentsToFetchUpstream;
 
     RenderRoIResults inputResults;
@@ -285,65 +291,100 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
 
     }
     *isIdentity = inputNbIdentity != -1;
-    if (*isIdentity) {
+    if (!*isIdentity) {
+        return eActionStatusOK;
+    }
 
-        if (inputNbIdentity == -2) {
+    // If effect is identity on itself, call renderRoI again at different time and view.
+    if (inputNbIdentity == -2) {
 
-            // Be safe: we may hit an infinite recursion without this check
-            assert(inputTimeIdentity != args.time);
-            if ( inputTimeIdentity == args.time) {
-                return eActionStatusFailed;
-            }
-
-            // This special value of -2 indicates that the plugin is identity of itself at another time
-            boost::scoped_ptr<RenderRoIArgs> argCpy ( new RenderRoIArgs(args) );
-            argCpy->time = inputTimeIdentity;
-            argCpy->view = inputIdentityView;
-
-            return _publicInterface->renderRoI(*argCpy, results);
-
+        // Be safe: we may hit an infinite recursion without this check
+        assert(inputTimeIdentity != args.time);
+        if ( inputTimeIdentity == args.time) {
+            return eActionStatusFailed;
         }
 
-        // Check if identity input really exists, otherwise fail
-        EffectInstancePtr inputEffectIdentity = _publicInterface->getInput(inputNbIdentity);
-        if (!inputEffectIdentity) {
-            return eActionStatusInputDisconnected;
-        }
+        // This special value of -2 indicates that the plugin is identity of itself at another time
+        boost::scoped_ptr<RenderRoIArgs> argCpy ( new RenderRoIArgs(args) );
+        argCpy->time = inputTimeIdentity;
+        argCpy->view = inputIdentityView;
 
+        return _publicInterface->renderRoI(*argCpy, results);
 
+    }
 
-        boost::scoped_ptr<RenderRoIArgs> inputArgs ( new RenderRoIArgs(args) );
-        inputArgs->time = inputTimeIdentity;
-        inputArgs->view = inputIdentityView;
+    // Check if identity input really exists, otherwise fail
+    EffectInstancePtr inputEffectIdentity = _publicInterface->getInput(inputNbIdentity);
+    if (!inputEffectIdentity) {
+        return eActionStatusInputDisconnected;
+    }
 
+    // Setup renderRoI args for the identity effect render
+    boost::scoped_ptr<RenderRoIArgs> inputArgs ( new RenderRoIArgs(args) );
+    inputArgs->time = inputTimeIdentity;
+    inputArgs->view = inputIdentityView;
 
-        // If the node has a layer selector knob, request what was selected in input.
-        // If the node does not have a layer selector knob then just fetch the originally requested layers.
-#pragma message WARN("Use components needed in input here instead")
-        bool fetchUserSelectedComponentsUpstream = _publicInterface->getNode()->getChannelSelectorKnob(inputNbIdentity).get() != 0;
-
-        if (!fetchUserSelectedComponentsUpstream) {
-            inputArgs->components = requestedComponents;
-        } else {
+    bool mustCopyPixels = false;
+    {
+        // If we are requesting to render a single plane, check the planes needed in input by this node and
+        // request the needed planes instead.
+        // If we are requesting multiple planes at once, just pass-through the same planes.
+        //
+        // Note that if we request a different plane upstream, we must ensure the returned plane is converted to an image
+        // with the same number of components at least.
+        std::list<ImageComponents> compsToFetchUpstream;
+        if (requestedComponents.size() == 1) {
             std::map<int, std::list<ImageComponents> >::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
             if ( foundCompsNeeded != neededComps.end() ) {
-                inputArgs->components = foundCompsNeeded->second;
+                if (foundCompsNeeded->second.size() == 1) {
+                    compsToFetchUpstream.push_back(foundCompsNeeded->second.front());
+                    mustCopyPixels = true;
+                }
             }
         }
-
-        // Save the planes that may already have been fetched from pass-through planes
-        std::map<ImageComponents, ImagePtr> finalPlanes = results->outputPlanes;
-        results->outputPlanes.clear();
-
-        ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
-        if (ret == eActionStatusOK) {
-            // Add planes to existing outputPlanes
-            finalPlanes.insert( results->outputPlanes.begin(), results->outputPlanes.end() );
+        if (compsToFetchUpstream.empty()) {
+            compsToFetchUpstream = requestedComponents;
         }
-        return ret;
-    } // if (identity)
+        inputArgs->components = compsToFetchUpstream;
+    }
 
-    assert(!*isIdentity);
+    // Save the planes that may already have been fetched from pass-through planes
+    std::map<ImageComponents, ImagePtr> existingPassThroughPlanes = results->outputPlanes;
+    results->outputPlanes.clear();
+
+    // Since we are identity, it may return a distorsion
+    ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
+    if (ret == eActionStatusOK) {
+        if (!mustCopyPixels) {
+            // We asked exactly the requested planes upstream so we just have to re-insert them in the list
+            results->outputPlanes.insert(existingPassThroughPlanes.begin(), existingPassThroughPlanes.end());
+        } else {
+            // We must convert the plane if needed to match the components
+            assert(requestedComponents.size() == 1 && results->outputPlanes.size() == 1);
+            ImagePtr toConvert = results->outputPlanes.begin()->second;
+            Image::InitStorageArgs initArgs;
+            initArgs.bounds = toConvert->getBounds();
+            initArgs.bitdepth = toConvert->getBitDepth();
+            initArgs.layer = requestedComponents.front();
+            initArgs.storage = toConvert->getStorageMode();
+            initArgs.bufferFormat = toConvert->getBufferFormat();
+            initArgs.renderArgs = args.renderArgs;
+            ImagePtr converted = Image::create(initArgs);
+
+            Image::CopyPixelsArgs cpyArgs;
+            cpyArgs.roi = initArgs.bounds;
+            cpyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
+            cpyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
+            cpyArgs.conversionChannel = 3;
+            converted->copyPixels(*toConvert, cpyArgs);
+
+            // Insert in the output planes the converted image
+            results->outputPlanes.clear();
+            results->outputPlanes[requestedComponents.front()] = converted;
+        }
+    }
+    return ret;
+
     return eActionStatusOK;
 } // EffectInstance::Implementation::handleIdentityEffect
 
@@ -357,9 +398,7 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
     if (!args.renderArgs->getParentRender()->isConcatenationEnabled()) {
         return eActionStatusOK;
     }
-    if (!args.caller || args.caller.get() == _publicInterface) {
-        return eActionStatusOK;
-    }
+
     bool canDistort = args.renderArgs->getCurrentDistortSupport();
     bool canTransform = args.renderArgs->getCurrentTransformationSupport_deprecated();
 
@@ -367,16 +406,11 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         return eActionStatusOK;
     }
 
-    assert(args.inputNbInCaller != -1);
-
     // If the caller can apply a distorsion, then check if this effect has a distorsion
-    bool canCallerReceiveDistorsion = args.caller->getInputCanReceiveDistorsion(args.inputNbInCaller);
-    bool canCallerReceiveTransform = args.caller->getInputCanReceiveTransform(args.inputNbInCaller);
-
-    if (!canCallerReceiveDistorsion && !canCallerReceiveTransform) {
+    if (!args.canReturnDeprecatedTransform3x3 && !args.canReturnDistorsionFunc) {
         return eActionStatusOK;
     }
-    assert((canCallerReceiveTransform && !canCallerReceiveDistorsion) || (!canCallerReceiveTransform && canCallerReceiveDistorsion));
+    assert((args.canReturnDeprecatedTransform3x3 && !args.canReturnDistorsionFunc) || (!args.canReturnDeprecatedTransform3x3 && args.canReturnDistorsionFunc));
 
     GetDistorsionResultsPtr actionResults;
     ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &actionResults);
@@ -397,11 +431,11 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
 
 
     // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
-    if (disto->func && !canCallerReceiveDistorsion) {
+    if (disto->func && !args.canReturnDistorsionFunc) {
         return eActionStatusOK;
     }
 
-    assert((disto->func && canCallerReceiveDistorsion) || disto->transformMatrix);
+    assert((disto->func && args.canReturnDistorsionFunc) || disto->transformMatrix);
 
     if (disto->transformMatrix) {
 
@@ -419,8 +453,9 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
     }
 
     boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
-    argsCpy->caller = _publicInterface->shared_from_this();
-    argsCpy->inputNbInCaller = disto->inputNbToDistort;
+    argsCpy->canReturnDeprecatedTransform3x3 = canTransform;
+    argsCpy->canReturnDistorsionFunc = canDistort;
+
     ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
     if (isFailureRetCode(ret)) {
         return ret;
@@ -601,12 +636,15 @@ EffectInstance::Implementation::computeRectanglesToRender(const RenderRoIArgs& a
 
 void
 EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(const RenderRoIArgs & args,
-                                                                                   const ImagePlanesToRenderPtr &planesToRender,
-                                                                                   CacheAccessModeEnum cacheAccess,
-                                                                                   const RectI& roi,
-                                                                                   std::map<ImageComponents, ImagePtr>* outputPlanes)
+                                                                                const ImagePlanesToRenderPtr &planesToRender,
+                                                                                CacheAccessModeEnum cacheAccess,
+                                                                                const RectI& roi,
+                                                                                const OSGLContextAttacherPtr& glContextLocker,
+                                                                                std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
+    // Compute the rectangle portion (renderWindow) left to render.
     // The renderwindow is the bounding box of all tiles that are left to render (not the tiles that are pending)
+
     RectI renderWindow;
     {
         bool renderWindowSet = false;
@@ -705,6 +743,7 @@ EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(
                 tmpImgInitArgs.renderArgs = args.renderArgs;
                 tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
                 tmpImgInitArgs.bufferFormat = pluginBufferLayout;
+                tmpImgInitArgs.glContext = glContextLocker ? glContextLocker->getContext() : OSGLContextPtr();
                 switch (planesToRender->backendType) {
                     case eRenderBackendTypeOpenGL:
                         tmpImgInitArgs.storage = eStorageModeGLTex;
@@ -734,8 +773,10 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
                                                           const ImagePlanesToRenderPtr &planesToRender,
                                                           const std::list<ImageComponents>& requestedComponents,
                                                           const RectI& roi,
+                                                          const RenderScale& mappedCombinedScale,
                                                           const RenderScale& mappedProxyScale,
                                                           unsigned int mappedMipMapLevel,
+                                                          const OSGLContextAttacherPtr& glContextLocker,
                                                           std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
 
@@ -779,11 +820,53 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
         cacheBufferLayout = pluginBufferLayout;
     }
 
+
+
+    // When accumulating, re-use the same buffer of previous steps and resize it if needed.
+    // Note that in this mode only a single plane can be rendered at once
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
+    if (attachedStroke && attachedStroke->isCurrentlyDrawing()) {
+
+        assert(requestedComponents.size() == 1);
+
+        ImagePtr accumBuffer = _publicInterface->getNode()->getLastRenderedImage();
+
+        // If we do not have an accumulation buffer, we follow the usual code path
+        if (accumBuffer) {
+
+            // We got an existing buffer
+            // The accumulation buffer should be using the same OpenGL context as the current render's one!
+            assert((accumBuffer->getStorageMode() == eStorageModeGLTex && accumBuffer->getGLCacheEntry()->getOpenGLContext() == glContextLocker->getContext()) || accumBuffer->getStorageMode() != eStorageModeGLTex);
+
+            // Ensure the accumBuffer contains at least the RoI
+            accumBuffer->ensureBounds(roi);
+
+            // We must render the last stroke movement bounding box
+            RectI drawingLastMovementBBoxPixel;
+            {
+                RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
+                double par = _publicInterface->getBitDepth(args.renderArgs, -1);
+                lastStrokeRoD.toPixelEnclosing(mappedCombinedScale, par, &drawingLastMovementBBoxPixel);
+            }
+            {
+                planesToRender->rectsToRender.clear();
+                RectToRender r;
+                r.rect = drawingLastMovementBBoxPixel;
+                r.identityInputNumber = -1;
+                planesToRender->rectsToRender.push_back(r);
+            }
+
+            PlaneToRender& plane = planesToRender->planes[requestedComponents.front()];
+            plane.cacheImage = plane.tmpImage = accumBuffer;
+            return;
+        }
+    } // isDrawing
+
+
     // For each requested components, create the corresponding image plane.
     // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
     // If using the cache, the image has to be in a mono-channel tiled format, hence we later create a temporary copy
     // on which the plug-in will work on.
-    std::map<ImageComponents, PlaneToRender> planes;
     for (std::list<ImageComponents>::const_iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
 
 
@@ -802,7 +885,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
             initArgs.layer = *it;
         }
         
-        PlaneToRender &plane = planes[*it];
+        PlaneToRender &plane = planesToRender->planes[*it];
 
         // Image::create will lookup the cache (if asked for)
         // Since multiple threads may want to access to the same image in the cache concurrently,
@@ -813,7 +896,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
 
     } // for each requested plane
 
-    checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, outputPlanes);
+    checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glContextLocker, outputPlanes);
 
 } // fetchOrCreateOutputPlanes
 
@@ -858,7 +941,7 @@ EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderR
                 it->second.cacheImage->waitForPendingTiles();
             }
         }
-        checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, outputPlanes);
+        checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glRenderContext, outputPlanes);
 
     } // while there is still planes to render
     
@@ -1108,25 +1191,14 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     // This is the region to render in pixel coordinates at the scale of renderMappedScale
     RectI renderMappedRoI;
-
-    bool isDrawing = getNode()->isDuringPaintStrokeCreation();
-    // When drawing, only render the portion covered by the bounding box of the roto stroke samples.
-    if (isDrawing) {
-        RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getNode()->getAttachedRotoItem());
-        if (attachedStroke) {
-            RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
-            lastStrokeRoD.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
-        }
+    if (!renderFullScaleThenDownScale) {
+        renderMappedRoI = args.roi;
     } else {
-
-        if (!renderFullScaleThenDownScale) {
-            renderMappedRoI = args.roi;
-        } else {
-            RectD canonicalRoI;
-            args.roi.toCanonical(originalCombinedScale, par, rod, &canonicalRoI);
-            canonicalRoI.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
-        }
+        RectD canonicalRoI;
+        args.roi.toCanonical(originalCombinedScale, par, rod, &canonicalRoI);
+        canonicalRoI.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
     }
+
 
     // The RoI cannot be null here, either we are in !renderFullScaleThenDownscale and we already checked at the begining
     // of the function that the RoI was Null, either the RoD was checked for NULL.
@@ -1204,7 +1276,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Allocate images and look-up cache ///////////////////////////////////////////////////////
 
-    _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, args.proxyScale, mappedMipMapLevel, &results->outputPlanes);
+    _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, mappedCombinedScale, args.proxyScale, mappedMipMapLevel, glContextLocker, &results->outputPlanes);
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
 

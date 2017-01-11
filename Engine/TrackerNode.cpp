@@ -512,8 +512,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         {
             std::vector<ChoiceOption> choices;
             std::map<int, std::string> icons;
-            TrackerNodePrivate::getMotionModelsAndHelps(false, &choices, &helps, &icons);
-            param->populateChoices(choices, helps);
+            TrackerNodePrivate::getMotionModelsAndHelps(false, &choices, &icons);
+            param->populateChoices(choices);
             param->setIcons(icons);
         }
         param->setSecret(true);
@@ -1397,7 +1397,7 @@ bool
 TrackerNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
                          ViewSetSpec /*view*/,
-                         TimeValue /*time*/)
+                         TimeValue time)
 {
 
 
@@ -1423,7 +1423,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
             return false;
         }
 
-        OverlaySupport* overlay = getCurrentViewportForOverlays();
+        OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
         _imp->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {
@@ -1489,7 +1489,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         _imp->exportTrackDataFromExportOptions();
     } else if ( k == _imp->setCurrentFrameButton.lock() ) {
         KnobIntPtr refFrame = _imp->referenceFrame.lock();
-        refFrame->setValue(getCurrentTime());
+        refFrame->setValue(time);
     } else if ( k == _imp->transformType.lock() ) {
         _imp->solveTransformParamsIfAutomatic();
         _imp->refreshVisibilityFromTransformType();
@@ -1557,34 +1557,29 @@ void
 TrackerNode::evaluate(bool isSignificant, bool refreshMetadatas)
 {
     NodeGroup::evaluate(isSignificant, refreshMetadatas);
-    _imp->ui->refreshSelectedMarkerTexture();
+    _imp->ui->refreshSelectedMarkerTextureLater();
 }
 
 RectD
 TrackerNodePrivate::getInputRoD(TimeValue time, ViewIdx view) const
 {
     EffectInstancePtr inputEffect = publicInterface->getInput(0);
-    bool useProjFormat = false;
     RectD ret;
 
-    if (!inputEffect) {
-        useProjFormat = true;
-    } else {
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(0, time, RenderScale(1.), view, &ret);
-        if (isFailureRetCode(stat)) {
-            useProjFormat = true;
-        } else {
-            return ret;
+    if (inputEffect) {
+        GetRegionOfDefinitionResultsPtr results;
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(time, RenderScale(1.), view, TreeRenderNodeArgsPtr(), &results);
+        if (!isFailureRetCode(stat)) {
+            return results->getRoD();
         }
     }
-    if (useProjFormat) {
-        Format f;
-        publicInterface->getApp()->getProject()->getProjectDefaultFormat(&f);
-        ret.x1 = f.x1;
-        ret.x2 = f.x2;
-        ret.y1 = f.y1;
-        ret.y2 = f.y2;
-    }
+    Format f;
+    publicInterface->getApp()->getProject()->getProjectDefaultFormat(&f);
+    ret.x1 = f.x1;
+    ret.x2 = f.x2;
+    ret.y1 = f.y1;
+    ret.y2 = f.y2;
+
 
     return ret;
 } // getInputRoD
@@ -1592,7 +1587,7 @@ TrackerNodePrivate::getInputRoD(TimeValue time, ViewIdx view) const
 void
 TrackerNodePrivate::setFromPointsToInputRod()
 {
-    RectD inputRod = getInputRoD(publicInterface->getCurrentTime(), publicInterface->getCurrentView());
+    RectD inputRod = getInputRoD(publicInterface->getTimelineCurrentTime(), ViewIdx(0));
     KnobDoublePtr fromPointsKnob[4];
 
     for (int i = 0; i < 4; ++i) {
@@ -1643,7 +1638,7 @@ TrackerNode::onInputChanged(int inputNb)
     }
 
 
-    _imp->ui->refreshSelectedMarkerTexture();
+    _imp->ui->refreshSelectedMarkerTextureLater();
 }
 
 void
@@ -1651,7 +1646,7 @@ TrackerNode::refreshExtraStateAfterTimeChanged(bool isPlayback,
                                                TimeValue /*time*/)
 {
     if (_imp->ui->showMarkerTexture && !isPlayback && !getApp()->isDraftRenderEnabled()) {
-        _imp->ui->refreshSelectedMarkerTexture();
+        _imp->ui->refreshSelectedMarkerTextureLater();
     }
 }
 
@@ -1705,7 +1700,7 @@ TrackerKnobItemsTable::getAllEnabledMarkers(std::list<TrackMarkerPtr >* markers)
     for (std::vector<KnobTableItemPtr>::const_iterator it = items.begin(); it != items.end(); ++it) {
         TrackMarkerPtr marker = toTrackMarker(*it);
         assert(marker);
-        if (marker->isEnabled(marker->getCurrentTime())) {
+        if (marker->isEnabled(marker->getTimelineCurrentTime())) {
             markers->push_back(marker);
         }
     }
@@ -1743,7 +1738,7 @@ TrackerNodePrivate::resetTransformCenter()
     std::list<TrackMarkerPtr> tracks;
     knobsTable->getAllEnabledMarkers(&tracks);
 
-    TimeValue time = (double)referenceFrame.lock()->getValue();
+    TimeValue time(referenceFrame.lock()->getValue());
     std::vector<double> p(2);
     if ( tracks.empty() ) {
         RectD rod = getInputRoD(time, ViewIdx(0));
@@ -2064,21 +2059,21 @@ TrackerNodePrivate::averageSelectedTracks()
             KnobDoublePtr markBtmLeft = (*it)->getPatternBtmLeftKnob();
 #endif
 
-            avgCenter.x += markCenter->getValueAtTime(t, DimIdx(0));
-            avgCenter.y += markCenter->getValueAtTime(t, DimIdx(1));
+            avgCenter.x += markCenter->getValueAtTime(TimeValue(t), DimIdx(0));
+            avgCenter.y += markCenter->getValueAtTime(TimeValue(t), DimIdx(1));
 
 #        ifdef AVERAGE_ALSO_PATTERN_QUAD
-            avgTopLeft.x += markTopLeft->getValueAtTime(t, DimIdx(0));
-            avgTopLeft.y += markTopLeft->getValueAtTime(t, DimIdx(1));
+            avgTopLeft.x += markTopLeft->getValueAtTime(TimeValue(t), DimIdx(0));
+            avgTopLeft.y += markTopLeft->getValueAtTime(TimeValue(t), DimIdx(1));
 
-            avgTopRight.x += markTopRight->getValueAtTime(t, DimIdx(0));
-            avgTopRight.y += markTopRight->getValueAtTime(t, DimIdx(1));
+            avgTopRight.x += markTopRight->getValueAtTime(TimeValue(t), DimIdx(0));
+            avgTopRight.y += markTopRight->getValueAtTime(TimeValue(t), DimIdx(1));
 
-            avgBtmRight.x += markBtmRight->getValueAtTime(t, DimIdx(0));
-            avgBtmRight.y += markBtmRight->getValueAtTime(t, DimIdx(1));
+            avgBtmRight.x += markBtmRight->getValueAtTime(TimeValue(t), DimIdx(0));
+            avgBtmRight.y += markBtmRight->getValueAtTime(TimeValue(t), DimIdx(1));
 
-            avgBtmLeft.x += markBtmLeft->getValueAtTime(t, DimIdx(0));
-            avgBtmLeft.y += markBtmLeft->getValueAtTime(t, DimIdx(1));
+            avgBtmLeft.x += markBtmLeft->getValueAtTime(TimeValue(t), DimIdx(0));
+            avgBtmLeft.y += markBtmLeft->getValueAtTime(TimeValue(t), DimIdx(1));
 #         endif
         }
 
@@ -2117,17 +2112,17 @@ TrackerNodePrivate::averageSelectedTracks()
 #         endif
             break;
         } else {
-            centerKnob->setValueAtTime(t, avgCenter.x, ViewSetSpec::all(), DimIdx(0));
-            centerKnob->setValueAtTime(t, avgCenter.y, ViewSetSpec::all(), DimIdx(1));
+            centerKnob->setValueAtTime(TimeValue(t), avgCenter.x, ViewSetSpec::all(), DimIdx(0));
+            centerKnob->setValueAtTime(TimeValue(t), avgCenter.y, ViewSetSpec::all(), DimIdx(1));
 #         ifdef AVERAGE_ALSO_PATTERN_QUAD
-            topLeftKnob->setValueAtTime(t, avgTopLeft.x, ViewSetSpec::all(), DimIdx(0));
-            topLeftKnob->setValueAtTime(t, avgTopLeft.y, ViewSetSpec::all(), DimIdx(1));
-            topRightKnob->setValueAtTime(t, avgTopRight.x, ViewSetSpec::all(), DimIdx(0));
-            topRightKnob->setValueAtTime(t, avgTopRight.y, ViewSetSpec::all(), DimIdx(1));
-            btmRightKnob->setValueAtTime(t, avgBtmRight.x, ViewSetSpec::all(), DimIdx(0));
-            btmRightKnob->setValueAtTime(t, avgBtmRight.y, ViewSetSpec::all(), DimIdx(1));
-            btmLeftKnob->setValueAtTime(t, avgBtmLeft.x, ViewSetSpec::all(), DimIdx(0));
-            btmLeftKnob->setValueAtTime(t, avgBtmLeft.y, ViewSetSpec::all(), DimIdx(1));
+            topLeftKnob->setValueAtTime(TimeValue(t), avgTopLeft.x, ViewSetSpec::all(), DimIdx(0));
+            topLeftKnob->setValueAtTime(TimeValue(t), avgTopLeft.y, ViewSetSpec::all(), DimIdx(1));
+            topRightKnob->setValueAtTime(TimeValue(t), avgTopRight.x, ViewSetSpec::all(), DimIdx(0));
+            topRightKnob->setValueAtTime(TimeValue(t), avgTopRight.y, ViewSetSpec::all(), DimIdx(1));
+            btmRightKnob->setValueAtTime(TimeValue(t), avgBtmRight.x, ViewSetSpec::all(), DimIdx(0));
+            btmRightKnob->setValueAtTime(TimeValue(t), avgBtmRight.y, ViewSetSpec::all(), DimIdx(1));
+            btmLeftKnob->setValueAtTime(TimeValue(t), avgBtmLeft.x, ViewSetSpec::all(), DimIdx(0));
+            btmLeftKnob->setValueAtTime(TimeValue(t), avgBtmLeft.y, ViewSetSpec::all(), DimIdx(1));
 #         endif
         }
     }

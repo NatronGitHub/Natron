@@ -792,11 +792,14 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
                                                                  inArgs.inputProxyScale,
                                                                  inArgs.inputMipMapLevel,
                                                                  componentsToRender,
-                                                                 thisShared,
-                                                                 inArgs.inputNb,
-                                                                 inArgs.currentTime,
                                                                  inputRenderArgs));
-        rargs->type = renderType;
+        if (renderType == eRenderRoITypeUnknownFrame) {
+            // Disable GPU rendering for an unknown frame since we don't know how long it should stay around.
+            rargs->allowGPURendering = false;
+        }
+        rargs->canReturnDeprecatedTransform3x3 = inArgs.renderArgs->getCurrentTransformationSupport_deprecated();
+        rargs->canReturnDistorsionFunc = inArgs.renderArgs->getCurrentDistortSupport();
+
         ActionRetCodeEnum retCode = inputEffect->renderRoI(*rargs, &inputRenderResults);
 
         if (isFailureRetCode(retCode) || inputRenderResults.outputPlanes.empty()) {

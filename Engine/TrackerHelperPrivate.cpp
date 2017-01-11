@@ -26,6 +26,7 @@
 
 #include <sstream> // stringstream
 #include <QtCore/QThreadPool>
+#include <QDebug>
 
 #include "Engine/AppInstance.h"
 #include "Engine/Curve.h"
@@ -69,7 +70,7 @@ TrackerHelperPrivate::setKnobKeyframesFromMarker(int /*formatHeight*/,
     const mv::Marker& mvMarker = options->mvMarker;
     const TrackMarkerPtr& natronMarker = options->natronMarker;
     
-    int time = mvMarker.frame;
+    TimeValue time(mvMarker.frame);
     KnobDoublePtr errorKnob = natronMarker->getErrorKnob();
 
     if (result) {
@@ -77,9 +78,9 @@ TrackerHelperPrivate::setKnobKeyframesFromMarker(int /*formatHeight*/,
         if (corr != corr) {
             corr = 1.;
         }
-        errorKnob->setValueAtTime(time, 1. - corr);
+        errorKnob->setValueAtTime(TimeValue(time), 1. - corr);
     } else {
-        errorKnob->setValueAtTime(time, 0.);
+        errorKnob->setValueAtTime(TimeValue(time), 0.);
     }
 
     Point center;
@@ -89,8 +90,8 @@ TrackerHelperPrivate::setKnobKeyframesFromMarker(int /*formatHeight*/,
 
     KnobDoublePtr offsetKnob = natronMarker->getOffsetKnob();
     Point offset;
-    offset.x = offsetKnob->getValueAtTime(time, DimIdx(0));
-    offset.y = offsetKnob->getValueAtTime(time, DimIdx(1));
+    offset.x = offsetKnob->getValueAtTime(TimeValue(time), DimIdx(0));
+    offset.y = offsetKnob->getValueAtTime(TimeValue(time), DimIdx(1));
 
     Point centerPlusOffset;
     centerPlusOffset.x = center.x + offset.x;
@@ -103,7 +104,7 @@ TrackerHelperPrivate::setKnobKeyframesFromMarker(int /*formatHeight*/,
         // Blender also adds 0.5 to coordinates
         values[0] = center.x + 0.5;
         values[1] = center.y + 0.5;
-        centerKnob->setValueAtTimeAcrossDimensions(time, values);
+        centerKnob->setValueAtTimeAcrossDimensions(TimeValue(time), values);
     }
 
 
@@ -162,8 +163,8 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
                                                    bool trackChannels[3],
                                                    const TrackMarker& marker,
                                                    int trackIndex,
-                                                   int trackedTime,
-                                                   int frameStep,
+                                                   TimeValue trackedTime,
+                                                   TimeValue frameStep,
                                                    double /*formatHeight*/,
                                                    mv::Marker* mvMarker)
 {
@@ -191,9 +192,9 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
 #endif
 
     mvMarker->frame = trackedTime;
-    const int referenceTime = marker.getReferenceFrame(trackedTime, frameStep);
+    const int referenceTime = marker.getReferenceFrame(TimeValue(trackedTime), frameStep);
     mvMarker->reference_frame = referenceTime;
-    if ( marker.getHasMasterKeyframe(trackedTime, ViewIdx(0)) ) {
+    if ( marker.getHasMasterKeyframe(TimeValue(trackedTime), ViewIdx(0)) ) {
         mvMarker->source = mv::Marker::MANUAL;
     } else {
         mvMarker->source = mv::Marker::TRACKED;
@@ -275,7 +276,7 @@ TrackerHelperPrivate::natronTrackerToLibMVTracker(bool isReferenceMarker,
     //    v   (min.x, max.y)           (max.x, max.y)
     //
 
-    int searchWinTime = isReferenceMarker ? trackedTime : referenceTime;
+    TimeValue searchWinTime(isReferenceMarker ? trackedTime : referenceTime);
     Point searchWndBtmLeft, searchWndTopRight;
     searchWndBtmLeft.x = searchWindowBtmLeftKnob->getValueAtTime(searchWinTime, DimIdx(0));
     searchWndBtmLeft.y = searchWindowBtmLeftKnob->getValueAtTime(searchWinTime, DimIdx(1));
@@ -370,7 +371,7 @@ TrackerHelperPrivate::trackStepTrackerPM(const TrackMarkerPMPtr& track,
                                           int trackTime)
 {
     int frameStep = args.getStep();
-    int refTime = track->getReferenceFrame(trackTime, frameStep);
+    int refTime = track->getReferenceFrame(TimeValue(trackTime), frameStep);
 
     return track->trackMarker(frameStep > 0, refTime, trackTime);
 }
@@ -411,14 +412,14 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
             Q_UNUSED(foundStartMarker);
             track->mvMarker.source = mv::Marker::MANUAL;
         } else {
-            natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, trackTime, args.getStep(), args.getFormatHeight(), &track->mvMarker);
+            natronTrackerToLibMVTracker(false, enabledChans, *track->natronMarker, trackIndex, TimeValue(trackTime), TimeValue(args.getStep()), args.getFormatHeight(), &track->mvMarker);
             autoTrack->AddMarker(track->mvMarker);
         }
     }
 
     if (track->mvMarker.source == mv::Marker::MANUAL) {
         // This is a user keyframe or the first frame, we do not track it
-        assert( trackTime == args.getStart() || track->natronMarker->getHasMasterKeyframe(track->mvMarker.frame, ViewIdx(0)) );
+        assert( trackTime == args.getStart() || track->natronMarker->getHasMasterKeyframe(TimeValue(track->mvMarker.frame), ViewIdx(0)) );
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "TrackStep:" << trackTime << "is a keyframe";
 #endif
@@ -429,7 +430,7 @@ TrackerHelperPrivate::trackStepLibMV(int trackIndex,
             QMutexLocker k(autoTrackMutex);
             mv::Marker m;
             if ( !autoTrack->GetMarker(0, track->mvMarker.reference_frame, trackIndex, &m) ) {
-                natronTrackerToLibMVTracker(true, enabledChans, *track->natronMarker, track->mvMarker.track, track->mvMarker.reference_frame, args.getStep(), args.getFormatHeight(), &m);
+                natronTrackerToLibMVTracker(true, enabledChans, *track->natronMarker, track->mvMarker.track, TimeValue(track->mvMarker.reference_frame), TimeValue(args.getStep()), args.getFormatHeight(), &m);
                 autoTrack->AddMarker(m);
             }
         }
@@ -714,13 +715,13 @@ PointWithErrorCompareLess(const PointWithError& lhs,
 }
 
 void
-TrackerHelper::extractSortedPointsFromMarkers(double refTime,
-                                                      TimeValue time,
-                                                      const std::vector<TrackMarkerPtr>& markers,
-                                                      int jitterPeriod,
-                                                      bool jitterAdd,
-                                                      std::vector<Point>* x1,
-                                                      std::vector<Point>* x2)
+TrackerHelper::extractSortedPointsFromMarkers(TimeValue refTime,
+                                              TimeValue time,
+                                              const std::vector<TrackMarkerPtr>& markers,
+                                              int jitterPeriod,
+                                              bool jitterAdd,
+                                              std::vector<Point>* x1,
+                                              std::vector<Point>* x2)
 {
     assert( !markers.empty() );
 
@@ -733,7 +734,7 @@ TrackerHelper::extractSortedPointsFromMarkers(double refTime,
         KnobDoublePtr centerKnob = markers[i]->getCenterKnob();
         KnobDoublePtr errorKnob = markers[i]->getErrorKnob();
 
-        if (centerKnob->getKeyFrameIndex(ViewIdx::current(), DimIdx(0), time) < 0) {
+        if (centerKnob->getKeyFrameIndex(ViewIdx(0), DimIdx(0), time) < 0) {
             continue;
         }
         pointsWithErrors.resize(pointsWithErrors.size() + 1);
@@ -751,8 +752,8 @@ TrackerHelper::extractSortedPointsFromMarkers(double refTime,
 
             for (double t = time - halfJitter; t <= time + halfJitter; t += 1.) {
                 Point p;
-                p.x = centerKnob->getValueAtTime(t, DimIdx(0));
-                p.y = centerKnob->getValueAtTime(t, DimIdx(1));
+                p.x = centerKnob->getValueAtTime(TimeValue(t), DimIdx(0));
+                p.y = centerKnob->getValueAtTime(TimeValue(t), DimIdx(1));
                 x2PointJitter.push_back(p);
             }
             Point x2avg = {0, 0};
@@ -802,7 +803,7 @@ TrackerHelper::extractSortedPointsFromMarkers(double refTime,
 } // TrackerContext::extractSortedPointsFromMarkers
 
 TransformData
-TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
+TrackerHelper::computeTransformParamsFromTracksAtTime(TimeValue refTime,
                                                       TimeValue time,
                                                       int jitterPeriod,
                                                       bool jitterAdd,
@@ -864,7 +865,7 @@ TrackerHelper::computeTransformParamsFromTracksAtTime(double refTime,
 } // TrackerHelperPrivate::computeTransformParamsFromTracksAtTime
 
 CornerPinData
-TrackerHelper::computeCornerPinParamsFromTracksAtTime(double refTime,
+TrackerHelper::computeCornerPinParamsFromTracksAtTime(TimeValue refTime,
                                                       TimeValue time,
                                                       int jitterPeriod,
                                                       bool jitterAdd,

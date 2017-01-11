@@ -158,8 +158,6 @@ public:
 
     void setEnabledAtTime(TimeValue time, bool enabled);
 
-    AnimationLevelEnum getEnabledNessAnimationLevel() const;
-
     void setEnabledFromGui(TimeValue time, bool enabled);
 
     void setMotionModelFromGui(int index);
@@ -179,9 +177,9 @@ public:
     void clearAnimationAfterTime(TimeValue time);
 
 
-    std::pair<ImagePtr, RectI> getMarkerImage(TimeValue time, const RectI& roi) const;
+    std::pair<ImagePtr, RectD> getMarkerImage(TimeValue time, const RectD& roi) const;
 
-    RectI getMarkerImageRoI(TimeValue time) const;
+    RectD getMarkerImageRoI(TimeValue time) const;
 
     void notifyTrackingStarted();
     void notifyTrackingEnded();

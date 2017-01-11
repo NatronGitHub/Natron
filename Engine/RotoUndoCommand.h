@@ -38,7 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
-
+#include "Engine/TimeValue.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -71,7 +71,7 @@ private:
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
     KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
-    double _time; //< the time at which the change was made
+    TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
     std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list<int> _indexesToMove; //< indexes of the control points
@@ -123,7 +123,7 @@ private:
     bool _rippleEditEnabled;
     KnobButtonWPtr _selectedTool; //< corresponds to the RotoGui::RotoToolEnum enum
     boost::shared_ptr<Transform::Matrix3x3> _matrix;
-    double _time; //< the time at which the change was made
+    TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
     std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > _originalPoints, _selectedPoints;
@@ -284,7 +284,7 @@ private:
     double _dx, _dy;
     bool _featherLinkEnabled;
     bool _rippleEditEnabled;
-    double _time; //< the time at which the change was made
+    TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
     std::list<RotoDrawableItemPtr > _selectedCurves;
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > _selectedPoints;
@@ -320,7 +320,7 @@ private:
     bool _firstRedoCalled;
     double _dx, _dy;
     bool _rippleEditEnabled;
-    double _time; //< the time at which the change was made
+    TimeValue _time; //< the time at which the change was made
     ViewIdx _view;
     BezierPtr _curve;
     std::pair<BezierCPPtr, BezierCPPtr > _oldPoint, _newPoint;
@@ -413,7 +413,7 @@ public:
 private:
     RotoPaintInteractWPtr _roto;
     bool _firstRedoCalled;
-    double _time;
+    TimeValue _time;
     ViewIdx _view;
     int _count;
     bool _cusp;
@@ -457,7 +457,7 @@ private:
     bool _createdPoint;
     double _x, _y;
     double _dx, _dy;
-    double _time;
+    TimeValue _time;
     int _lastPointAdded;
     bool _isOpenBezier;
 };
@@ -497,7 +497,7 @@ private:
     bool _constrained;
     double _fromx, _fromy;
     double _tox, _toy;
-    double _time;
+    TimeValue _time;
 };
 
 
@@ -535,7 +535,7 @@ private:
     bool _constrained;
     double _fromx, _fromy;
     double _tox, _toy;
-    double _time;
+    TimeValue _time;
 };
 
 

@@ -152,8 +152,10 @@ public:
                                    const ImagePlanesToRenderPtr &planesToRender,
                                    const std::list<ImageComponents>& requestedComponents,
                                    const RectI& roi,
+                                   const RenderScale& mappedCombinedScale,
                                    const RenderScale& mappedProxyScale,
                                    unsigned int mappedMipMapLevel,
+                                   const OSGLContextAttacherPtr& glContextLocker,
                                    std::map<ImageComponents, ImagePtr>* outputPlanes);
 
 
@@ -161,6 +163,7 @@ public:
                                                          const ImagePlanesToRenderPtr &planesToRender,
                                                          CacheAccessModeEnum cacheAccess,
                                                          const RectI& roi,
+                                                         const OSGLContextAttacherPtr& glContextLocker,
                                                          std::map<ImageComponents, ImagePtr>* outputPlanes);
 
     void computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow);

@@ -36,6 +36,7 @@
 #endif
 
 #include "Engine/GenericSchedulerThread.h"
+#include "Engine/TimeValue.h"
 
 #include "Gui/GuiFwd.h"
 

@@ -109,9 +109,9 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
                 *renderBackend = eRenderBackendTypeCPU;
             }
 
-            // If this image is requested multiple times or it is a unknown frame, do not render it on OpenGL since we do not use the cache.
+            // If this image is requested multiple times , do not render it on OpenGL since we do not use the cache.
             if (*renderBackend == eRenderBackendTypeOpenGL) {
-                if (requestPassData->getFramesNeededVisitsCount() > 1 || args.type == eRenderRoITypeUnknownFrame) {
+                if (requestPassData->getFramesNeededVisitsCount() > 1) {
                     *renderBackend = eRenderBackendTypeCPU;
                 }
             }

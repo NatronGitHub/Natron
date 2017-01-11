@@ -185,7 +185,7 @@ ViewerTab::ViewerTab(const std::string& scriptName,
 
 
    
-    connectToViewerCache();
+    _imp->timeLineGui->connectSlotsToViewerCache();
 
 
     createNodeViewerInterface(node_ui);

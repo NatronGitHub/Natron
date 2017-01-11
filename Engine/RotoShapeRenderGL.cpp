@@ -863,7 +863,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                          const RotoShapeRenderNodeOpenGLDataPtr& glData,
                          const RectI& roi,
                          const BezierPtr& bezier,
-                         const GLCacheEntryPtr& dstImage,
+                         const ImagePtr& dstImage,
                          double opacity,
                          TimeValue time,
                          ViewIdx view,
@@ -875,6 +875,9 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
     GL::Disable(GL_SCISSOR_TEST);
+
+    GLCacheEntryPtr dstTexture = dstImage->getGLCacheEntry();
+    assert(dstTexture);
 
     Q_UNUSED(roi);
     int vboVerticesID = glData->getOrCreateVBOVerticesID();
@@ -920,7 +923,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             initArgs.bitdepth = dstImage->getBitDepth();
             initArgs.storage = eStorageModeGLTex;
             initArgs.glContext = glContext;
-            initArgs.textureTarget = dstImage->getGLTextureTarget();
+            initArgs.textureTarget = dstTexture->getGLTextureTarget();
             tmpTex[i] = Image::create(initArgs);
             *tmpGLEntry[i] = tmpTex[i]->getGLCacheEntry();
         }
@@ -1130,9 +1133,9 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextAttacherPtr& glContext,
 {
     OSGLContextPtr context = glContext->getContext();
     if (context->isGPUContext()) {
-        renderBezier_gl_internal<GL_GPU>(context, glData, roi, bezier, dstImage->getGLCacheEntry(), opacity, time, view, shutterRange, nDivisions, scale, target);
+        renderBezier_gl_internal<GL_GPU>(context, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
     } else {
-        renderBezier_gl_internal<GL_CPU>(context, glData, roi, bezier, dstImage->getGLCacheEntry(), opacity, time, view, shutterRange, nDivisions, scale, target);
+        renderBezier_gl_internal<GL_CPU>(context, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
     }
 } // RotoShapeRenderGL::renderBezier_gl
 
@@ -1457,7 +1460,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     // Do the actual rendering of the geometry, this is very fast and optimized
     ImagePtr firstPassDstImage;
     if (tmpTexture) {
-        firstPassDstImage = tmpTexture;
+        firstPassDstImage = tmpImage;
     } else {
         firstPassDstImage = dstImage;
     }

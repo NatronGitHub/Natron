@@ -995,6 +995,39 @@ Image::fillBoundsZero()
 }
 
 void
+Image::ensureBounds(const RectI& roi)
+{
+    if (_imp->bounds.contains(roi)) {
+        return;
+    }
+
+    ImagePtr tmpImage;
+    {
+        Image::InitStorageArgs initArgs;
+        initArgs.bounds = _imp->bounds;
+        initArgs.bounds.merge(roi);
+        initArgs.layer = getLayer();
+        initArgs.bitdepth = getBitDepth();
+        initArgs.bufferFormat = getBufferFormat();
+        initArgs.storage = getStorageMode();
+        initArgs.mipMapLevel = getMipMapLevel();
+        initArgs.proxyScale = getProxyScale();
+        GLCacheEntryPtr isGlEntry = getGLCacheEntry();
+        if (isGlEntry) {
+            initArgs.textureTarget = isGlEntry->getGLTextureTarget();
+            initArgs.glContext = isGlEntry->getOpenGLContext();
+        }
+        tmpImage = Image::create(initArgs);
+    }
+    Image::CopyPixelsArgs cpyArgs;
+    cpyArgs.roi = _imp->bounds;
+    tmpImage->copyPixels(*this, cpyArgs);
+
+    // Swap images so that this image becomes the resized one.
+    _imp.swap(tmpImage->_imp);
+} // ensureBounds
+
+void
 Image::getChannelPointers(const void* ptrs[4],
                           int x, int y,
                           const RectI& bounds,

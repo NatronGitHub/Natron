@@ -611,6 +611,15 @@ public:
      **/
     void fillBoundsZero();
 
+    /**
+     * @brief Ensures the image bounds can contain the given roi.
+     * If it does not, a temporary image is created to the union of
+     * the existing bounds and the passed RoI. 
+     * Data is copied over to the temporary image and then swaped with this image.
+     * In output of this function, the image bounds contain at least the RoI.
+     **/
+    void ensureBounds(const RectI& roi);
+
 
     /**
      * @brief Downscales by pow(2, downscaleLevels) a portion of this image and returns a new image with 

@@ -381,10 +381,6 @@ public:
 
     static bool getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, int pixSize, QPixmap* pixmap);
 
-    void connectViewersToViewerCache();
-
-    void disconnectViewersFromViewerCache();
-
     void checkNumberOfNonFloatingPanes();
 
     AppInstancePtr openProject(const std::string& filename) WARN_UNUSED_RETURN;

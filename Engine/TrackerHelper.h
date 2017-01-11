@@ -224,7 +224,7 @@ public:
      * from the original points to get the high frequencies. We then add those high frequencies back to the original
      * points to increase shaking/motion
      **/
-    static void extractSortedPointsFromMarkers(double x1Time, double x2Time,
+    static void extractSortedPointsFromMarkers(TimeValue x1Time, TimeValue x2Time,
                                                const std::vector<TrackMarkerPtr>& markers,
                                                int jitterPeriod,
                                                bool jitterAdd,
@@ -236,7 +236,7 @@ public:
      * @brief Given the markers that have been tracked, computes the affine transform mapping from refTime
      * to time.
      **/
-    static TransformData computeTransformParamsFromTracksAtTime(double refTime,
+    static TransformData computeTransformParamsFromTracksAtTime(TimeValue refTime,
                                                                 TimeValue time,
                                                                 int jitterPeriod,
                                                                 bool jitterAdd,
@@ -250,7 +250,7 @@ public:
      * @brief Given the markers that have been tracked, computes the CornerPin mapping from refTime
      * to time.
      **/
-    static CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
+    static CornerPinData computeCornerPinParamsFromTracksAtTime(TimeValue refTime,
                                                                 TimeValue time,
                                                                 int jitterPeriod,
                                                                 bool jitterAdd,

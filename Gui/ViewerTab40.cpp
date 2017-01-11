@@ -113,17 +113,6 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     abortViewersAndRefresh();
 }
 
-void
-ViewerTab::connectToViewerCache()
-{
-    _imp->timeLineGui->connectSlotsToViewerCache();
-}
-
-void
-ViewerTab::disconnectFromViewerCache()
-{
-    _imp->timeLineGui->disconnectSlotsFromViewerCache();
-}
 
 void
 ViewerTab::clearTimelineCacheLine()

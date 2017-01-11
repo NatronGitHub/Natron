@@ -2174,13 +2174,8 @@ AppManager::setAsTopLevelInstance(int appID)
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin();
          it != _imp->_appInstances.end();
          ++it) {
-        if ( (*it)->getAppID() != _imp->_topLevelInstanceID ) {
+        if ( (*it)->getAppID() == _imp->_topLevelInstanceID ) {
             if ( !isBackground() ) {
-                (*it)->disconnectViewersFromViewerCache();
-            }
-        } else {
-            if ( !isBackground() ) {
-                (*it)->connectViewersToViewerCache();
                 setOFXHostHandle( (*it)->getOfxHostOSHandle() );
             }
         }

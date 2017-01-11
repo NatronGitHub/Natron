@@ -304,25 +304,7 @@ Gui::minimizeMaximizeAllPanels(bool clicked)
     getApp()->redrawAllViewers();
 }
 
-void
-Gui::connectViewersToViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
 
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->connectToViewerCache();
-    }
-}
-
-void
-Gui::disconnectViewersFromViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->disconnectFromViewerCache();
-    }
-}
 
 void
 Gui::moveEvent(QMoveEvent* e)

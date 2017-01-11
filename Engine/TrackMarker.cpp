@@ -26,7 +26,6 @@
 
 #include <QtCore/QCoreApplication>
 
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/AppManager.h"
@@ -40,6 +39,7 @@
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerNodePrivate.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TreeRender.h"
 #include "Engine/TLSHolder.h"
 
 #include "Serialization/KnobTableItemSerialization.h"
@@ -353,7 +353,7 @@ TrackMarker::getCenterKeyframes(std::set<double>* keyframes) const
 bool
 TrackMarker::isEnabled(TimeValue time) const
 {
-    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewIdx::current(), true);
+    return _imp->enabled.lock()->getValueAtTime(time, DimIdx(0), ViewIdx(0), true);
 }
 
 void
@@ -366,12 +366,6 @@ TrackMarker::setEnabledAtTime(TimeValue time,
         return;
     }
     knob->setValueAtTime(time, enabled, ViewSetSpec::all(), DimIdx(0));
-}
-
-AnimationLevelEnum
-TrackMarker::getEnabledNessAnimationLevel() const
-{
-    return _imp->enabled.lock()->getAnimationLevel(DimIdx(0), ViewIdx(0));
 }
 
 int
@@ -428,18 +422,22 @@ TrackMarker::resetCenter()
         getApp()->getProject()->getProjectDefaultFormat(&f);
         rod = f.toCanonicalFormat();
     } else {
-        SequenceTime time = input->getApp()->getTimeLine()->currentFrame();
-        RenderScale scale;
-        scale.x = scale.y = 1;
-
-        ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(0, time, scale, ViewIdx(0), &rod);
+        TimeValue time(input->getApp()->getTimeLine()->currentFrame());
+        RenderScale scale(1.);
+        RectD rod;
+        {
+            GetRegionOfDefinitionResultsPtr results;
+            ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(time, scale, ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                rod = results->getRoD();
+            }
+        }
         Point center;
         center.x = 0;
         center.y = 0;
-        if (stat == eStatusOK) {
-            center.x = (rod.x1 + rod.x2) / 2.;
-            center.y = (rod.y1 + rod.y2) / 2.;
-        }
+        center.x = (rod.x1 + rod.x2) / 2.;
+        center.y = (rod.y1 + rod.y2) / 2.;
+
 
         KnobDoublePtr centerKnob = getCenterKnob();
         centerKnob->setValue(center.x, ViewSetSpec::all(), DimIdx(0));
@@ -654,10 +652,9 @@ TrackMarker::notifyTrackingEnded()
 }
 
 
-RectI
+RectD
 TrackMarker::getMarkerImageRoI(TimeValue time) const
 {
-    const unsigned int mipmapLevel = 0;
     Point center, offset;
     KnobDoublePtr centerKnob = getCenterKnob();
     KnobDoublePtr offsetKnob = getOffsetKnob();
@@ -677,23 +674,13 @@ TrackMarker::getMarkerImageRoI(TimeValue time) const
     roiCanonical.x2 = swTr->getValueAtTime(time, DimIdx(0)) + center.x + offset.x;
     roiCanonical.y2 = swTr->getValueAtTime(time, DimIdx(1)) + center.y + offset.y;
 
-    RectI roi;
-    NodePtr node = getModel()->getNode();
-    NodePtr input = node->getInput(0);
-    if (!input) {
-        return RectI();
-    }
-    roiCanonical.toPixelEnclosing(mipmapLevel, input ? input->getEffectInstance()->getAspectRatio(-1) : 1., &roi);
-
-    return roi;
+    return roiCanonical;
 }
 
-std::pair<ImagePtr, RectI>
+std::pair<ImagePtr, RectD>
 TrackMarker::getMarkerImage(TimeValue time,
-                            const RectI& roi) const
+                            const RectD& roi) const
 {
-
-    const unsigned int mipmapLevel = 0;
 
     assert( !roi.isNull() );
 
@@ -703,17 +690,51 @@ TrackMarker::getMarkerImage(TimeValue time,
         return std::make_pair(ImagePtr(), roi);
     }
 
-    std::list<ImageComponents> components;
-    components.push_back( ImageComponents::getRGBComponents() );
 
-    std::map<ImageComponents, ImagePtr> planes;
-    RenderRoIRetCode stat = input->renderFrame(time, ViewIdx(0), mipmapLevel, false /*isPlayback*/, &roi, components, &planes);
 
-    if ( (stat != eRenderRoIRetCodeOk) || planes.empty() ) {
-        return std::make_pair(ImagePtr(), roi);
+    TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
+    {
+        args->treeRoot = input;
+        args->time = time;
+        args->view = ViewIdx(0);
+
+        // Render all layers produced
+        args->layers = 0;
+        args->mipMapLevel = 0;
+        args->proxyScale = RenderScale(1.);
+        args->canonicalRoI = &roi;
+        args->draftMode = false;
+        args->playback = false;
+        args->byPassCache = false;
     }
 
-    return std::make_pair(planes.begin()->second, roi);
+    std::map<ImageComponents, ImagePtr> planes;
+    TreeRenderPtr render = TreeRender::create(args);
+    ActionRetCodeEnum stat = render->launchRender(&planes);
+    if (isFailureRetCode(stat)) {
+        return std::make_pair(ImagePtr(), roi);
+    }
+    ImagePtr sourceImage = planes.begin()->second;
+
+    // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats
+    if (sourceImage->getStorageMode() == eStorageModeGLTex ||
+        sourceImage->getBufferFormat() == eImageBufferLayoutMonoChannelTiled) {
+        Image::InitStorageArgs initArgs;
+        initArgs.bounds = sourceImage->getBounds();
+        initArgs.layer = sourceImage->getLayer();
+        initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+        initArgs.storage = eStorageModeRAM;
+        initArgs.bitdepth = sourceImage->getBitDepth();
+        ImagePtr tmpImage = Image::create(initArgs);
+
+        Image::CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = initArgs.bounds;
+        tmpImage->copyPixels(*sourceImage, cpyArgs);
+        sourceImage = tmpImage;
+        
+    }
+
+    return std::make_pair(sourceImage, roi);
 } // TrackMarker::getMarkerImage
 
 
@@ -759,7 +780,7 @@ TrackMarkerPM::trackMarker(bool forward,
     KnobDoublePtr center = centerKnob.lock();
     (void)center->unlink(DimSpec::all(), ViewSetSpec::all(), true);
 
-    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonUserEdited, frame, ViewIdx(0));
+    trackerNode->getEffectInstance()->onKnobValueChanged_public(button, eValueChangedReasonUserEdited, TimeValue(frame), ViewIdx(0));
 
     KnobDoublePtr markerCenter = getCenterKnob();
     // The TrackerPM plug-in has set a keyframe at the refFrame and frame, copy them
@@ -767,10 +788,10 @@ TrackMarkerPM::trackMarker(bool forward,
     double centerPoint[2];
     for (int i = 0; i < center->getNDimensions(); ++i) {
         {
-            int index = center->getKeyFrameIndex(ViewIdx::current(), DimIdx(i), frame);
+            int index = center->getKeyFrameIndex(ViewIdx(0), DimIdx(i), TimeValue(frame));
             if (index != -1) {
-                centerPoint[i] = center->getValueAtTime(frame, DimIdx(i));
-                markerCenter->setValueAtTime(frame, centerPoint[i], ViewSetSpec::all(), DimIdx(i));
+                centerPoint[i] = center->getValueAtTime(TimeValue(frame), DimIdx(i));
+                markerCenter->setValueAtTime(TimeValue(frame), centerPoint[i], ViewSetSpec::all(), DimIdx(i));
             } else {
                 // No keyframe at this time: tracking failed
                 ret = false;
@@ -778,10 +799,10 @@ TrackMarkerPM::trackMarker(bool forward,
             }
         }
         {
-            int index = center->getKeyFrameIndex(ViewIdx::current(), DimIdx(i), refFrame);
+            int index = center->getKeyFrameIndex(ViewIdx(0), DimIdx(i), TimeValue(refFrame));
             if (index != -1) {
-                double value = center->getValueAtTime(refFrame, DimIdx(i));
-                markerCenter->setValueAtTime(refFrame, value, ViewSetSpec::all(), DimIdx(i));
+                double value = center->getValueAtTime(TimeValue(refFrame), DimIdx(i));
+                markerCenter->setValueAtTime(TimeValue(refFrame), value, ViewSetSpec::all(), DimIdx(i));
             }
         }
     }
@@ -791,33 +812,33 @@ TrackMarkerPM::trackMarker(bool forward,
         KnobDoublePtr markerError = getErrorKnob();
         KnobDoublePtr correlation = correlationScoreKnob.lock();
         {
-            int index = correlation->getKeyFrameIndex(ViewIdx::current(), DimIdx(0), frame);
+            int index = correlation->getKeyFrameIndex(ViewIdx(0), DimIdx(0), TimeValue(frame));
             if (index != -1) {
                 // The error is estimated as a percentage of the correlation across the number of pixels in the pattern window
                 KnobDoublePtr  pBtmLeft = patternBtmLeftKnob.lock();
                 KnobDoublePtr  pTopRight = patternTopRightKnob.lock();
                 Point btmLeft, topRight;
 
-                btmLeft.x = pBtmLeft->getValueAtTime(frame, DimIdx(0));
-                btmLeft.y = pBtmLeft->getValueAtTime(frame, DimIdx(1));
+                btmLeft.x = pBtmLeft->getValueAtTime(TimeValue(frame), DimIdx(0));
+                btmLeft.y = pBtmLeft->getValueAtTime(TimeValue(frame), DimIdx(1));
 
-                topRight.x = pTopRight->getValueAtTime(frame, DimIdx(0));
-                topRight.y = pTopRight->getValueAtTime(frame, DimIdx(1));
+                topRight.x = pTopRight->getValueAtTime(TimeValue(frame), DimIdx(0));
+                topRight.y = pTopRight->getValueAtTime(TimeValue(frame), DimIdx(1));
 
 
                 double areaPixels = (topRight.x - btmLeft.x) * (topRight.y - btmLeft.y);
                 NodePtr trackerInput = trackerNode->getInput(0);
                 if (trackerInput) {
-                    ImageComponents comps = trackerInput->getEffectInstance()->getComponents(-1);
+                    ImageComponents comps = trackerInput->getEffectInstance()->getColorPlaneComponents(TreeRenderNodeArgsPtr(), -1);
                     areaPixels *= comps.getNumComponents();
                 }
 
-                double value = correlation->getValueAtTime(frame, DimIdx(0));
+                double value = correlation->getValueAtTime(TimeValue(frame), DimIdx(0));
 
                 // Convert to a percentage
                 value /= areaPixels;
 
-                markerError->setValueAtTime(frame, value, ViewSetSpec::all(), DimIdx(0));
+                markerError->setValueAtTime(TimeValue(frame), value, ViewSetSpec::all(), DimIdx(0));
             }
         }
     }

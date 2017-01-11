@@ -710,9 +710,6 @@ TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
                                                                                                      _imp->proxyScale,
                                                                                                      _imp->mipMapLevel,
                                                                                                      _imp->layers,
-                                                                                                     effectToRender,
-                                                                                                     -1,
-                                                                                                     _imp->time,
                                                                                                      rootNodeRenderArgs));
     
     EffectInstance::RenderRoIResults results;
