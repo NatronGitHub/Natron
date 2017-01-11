@@ -1340,15 +1340,20 @@ AppInstance::exportDocs(const QString path)
                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
                     if (isReadNode) {
-                        node = isReadNode->getEmbeddedReader();
-
+                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                        if (subnode) {
+                            node = subnode;
+                        }
                     }
                 }
                 if ( effectInstance->isWriter() ) {
                     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
                     if (isWriteNode) {
-                        node = isWriteNode->getEmbeddedWriter();
+                        NodePtr subnode = node = isWriteNode->getEmbeddedWriter();
+                        if (subnode) {
+                            node = subnode;
+                        }
                     }
                 }
                 QDir mdDir(path);
