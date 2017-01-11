@@ -88,6 +88,7 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             TimeValue time,
+                                            const RectD& originalCanonicalRoi,
                                             const RectD& rod,
                                             bool recenterViewer,
                                             const Point& viewportCenter) = 0;

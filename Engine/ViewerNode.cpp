@@ -1063,8 +1063,7 @@ ViewerNode::updateViewer(const UpdateViewerArgs& args)
     assert(uiContext);
 
     uiContext->clearPartialUpdateTextures();
-    
-    const std::list<ImagePtr> *imagesForInput[2] = {&args.viewerA, &args.viewerB};
+
     for (int i = 0; i < 2; ++i) {
         RectD rod;
         NodePtr viewerProcessNode = _imp->internalViewerProcessNode[i].lock();
@@ -1074,8 +1073,8 @@ ViewerNode::updateViewer(const UpdateViewerArgs& args)
             rod = actionResults->getRoD();
         }
 
-        for (std::list<ImagePtr>::const_iterator it = imagesForInput[i]->begin(); it!=imagesForInput[i]->end(); ++it) {
-            uiContext->transferBufferFromRAMtoGPU(*it, i, args.isPartialRect, args.time, rod, args.recenterViewer, args.viewerCenter);
+        for (std::list<UpdateViewerArgs::TextureUpload>::const_iterator it = args.viewerUploads[i].begin(); it!= args.viewerUploads[i].end(); ++it) {
+            uiContext->transferBufferFromRAMtoGPU(it->image, i, args.isPartialRect, args.time, it->canonicalRoI, rod, args.recenterViewer, args.viewerCenter);
         }
 
     }

@@ -87,8 +87,9 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     }
     RenderScale s(1.);
     EffectInstancePtr input;
-    ActionRetCodeEnum stat = eStatusReplyDefault;
-    Transform::Matrix3x3 mat;
+    ActionRetCodeEnum stat = eActionStatusReplyDefault;
+    DistorsionFunction2DPtr disto;
+
     // call getTransform even of effects that claim not to support it, because it may still return
     // a transform to apply to the overlays (eg for Reformat).
     // If transform is not implemented, it should return eStatusReplyDefault:
@@ -97,12 +98,34 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
     // Internally this will return an identity matrix if the node is identity
 
-    stat = currentNode->getDistorsion_public(time, s, view, 0, &input, &mat);
+    {
+        GetDistorsionResultsPtr results;
+        stat = currentNode->getDistorsion_public(time, s, view, TreeRenderNodeArgsPtr(), &results);
+        if (isFailureRetCode(stat)) {
+            return false;
+        } else {
+            disto = results->getDistorsionResults();
+        }
+    }
 
 
-    if (stat == eStatusFailed) {
-        return false;
-    } else if (stat == eStatusReplyDefault) {
+    if (stat == eActionStatusOK) {
+        assert(input);
+        double par = input->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
+
+        if (disto->transformMatrix) {
+            Transform::Matrix3x3 mat(*disto->transformMatrix);
+
+            // The mat is in pixel coordinates if the plug-in is only "canTransform", convert it to canonical
+            if (currentNode->getCanTransform()) {
+                mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false), mat);
+                mat = Transform::matMul( mat, Transform::matCanonicalToPixel(par, 1, 1, false) );
+            }
+            *transform = Transform::matMul(*transform, mat);
+        }
+
+        return getOverlayTransform(time, view, target, input, transform);
+    } else if (stat == eActionStatusReplyDefault) {
         // No transfo matrix found, pass to the input...
 
         // Test all inputs recursively, going from last to first, preferring non optional inputs.
@@ -130,7 +153,8 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
         // Cycle through all non optional inputs first
         for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-            mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+            Transform::Matrix3x3 mat;
+            mat.setIdentity();
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
                 *transform = Transform::matMul(*transform, mat);
@@ -141,7 +165,8 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
         ///Cycle through optional inputs...
         for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-            mat = Transform::Matrix3x3(1, 0, 0, 0, 1, 0, 0, 0, 1);
+            Transform::Matrix3x3 mat;
+            mat.setIdentity();
             bool isOk = getOverlayTransform(time, view, target, *it, &mat);
             if (isOk) {
                 *transform = Transform::matMul(*transform, mat);
@@ -149,31 +174,29 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
                 return true;
             }
         }
-
-        return false;
-    } else {
-        assert(input);
-        double par = input->getAspectRatio(-1);
-
-        //The mat is in pixel coordinates, though
-        mat = Transform::matMul(Transform::matPixelToCanonical(par, 1, 1, false), mat);
-        mat = Transform::matMul( mat, Transform::matCanonicalToPixel(par, 1, 1, false) );
-        *transform = Transform::matMul(*transform, mat);
-        bool isOk = getOverlayTransform(time, view, target, input, transform);
-
-        return isOk;
+        
     }
 
     return false;
+
+
+
 } // ViewerTabPrivate::getOverlayTransform
 
-static double
+static TimeValue
 transformTimeForNode(const EffectInstancePtr& currentNode,
-                     double inTime,
+                     TimeValue inTime,
                      ViewIdx view)
 {
-    U64 nodeHash;
-    FramesNeededMap framesNeeded = currentNode->getFramesNeeded_public(inTime, view, false, AbortableRenderInfoPtr(), &nodeHash);
+    FramesNeededMap framesNeeded;
+    {
+        GetFramesNeededResultsPtr results;
+        ActionRetCodeEnum stat = currentNode->getFramesNeeded_public(TimeValue(inTime), view, TreeRenderNodeArgsPtr(), &results);
+        if (isFailureRetCode(stat)) {
+            return inTime;
+        }
+        results->getFramesNeeded(&framesNeeded);
+    }
     FramesNeededMap::iterator foundInput0 = framesNeeded.find(0 /*input*/);
 
     if ( foundInput0 == framesNeeded.end() ) {
@@ -188,7 +211,7 @@ transformTimeForNode(const EffectInstancePtr& currentNode,
     if ( foundView0->second.empty() ) {
         return inTime;
     } else {
-        return (foundView0->second.front().min);
+        return TimeValue(foundView0->second.front().min);
     }
 }
 
@@ -197,7 +220,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
                                    ViewIdx view,
                                    const NodePtr& target,
                                    const EffectInstancePtr& currentNode,
-                                   double *newTime) const
+                                   TimeValue *newTime) const
 {
     if (!currentNode || !currentNode->getNode()) {
         return false;
@@ -239,7 +262,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
 
     ///Cycle through all non optional inputs first
     for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
-        double inputTime;
+        TimeValue inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
             *newTime = inputTime;
@@ -250,7 +273,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
 
     ///Cycle through optional inputs...
     for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
-        double inputTime;
+        TimeValue inputTime;
         bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
         if (isOk) {
             *newTime = inputTime;

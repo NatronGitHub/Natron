@@ -333,6 +333,12 @@ TreeRender::getStatsObject() const
     return _imp->statsObject;
 }
 
+RectD
+TreeRender::getCanonicalRoI() const
+{
+    return _imp->canonicalRoI;
+}
+
 void
 TreeRender::registerThreadForRender(AbortableThread* thread)
 {
@@ -729,3 +735,5 @@ TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
 } // launchRender
 
 NATRON_NAMESPACE_EXIT;
+NATRON_NAMESPACE_USING;
+#include "moc_TreeRender.cpp"

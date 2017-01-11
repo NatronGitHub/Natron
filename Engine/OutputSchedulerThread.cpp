@@ -86,18 +86,6 @@
 
 #define NATRON_FPS_REFRESH_RATE_SECONDS 1.5
 
-/*
-   When defined, parallel frame renders are spawned from a timer so that the frames
-   appear to be rendered all at the same speed.
-   When undefined each time a frame is computed a new thread will be spawned
-   until we reach the maximum allowed parallel frame renders.
- */
-//#define NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-
-#ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-#define NATRON_SCHEDULER_THREADS_SPAWN_DEFAULT_TIMEOUT_MS 500
-#endif
-
 #define NATRON_SCHEDULER_ABORT_AFTER_X_UNSUCCESSFUL_ITERATIONS 5000
 
 NATRON_NAMESPACE_ENTER;
@@ -168,15 +156,6 @@ public:
     virtual ~OutputSchedulerThreadExecMTArgs() {}
 };
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-static bool
-isBufferFull(int nbBufferedElement,
-             int hardwardIdealThreadCount)
-{
-    return nbBufferedElement >= hardwardIdealThreadCount * 3;
-}
-
-#endif
 
 struct OutputSchedulerThreadPrivate
 {
@@ -388,10 +367,6 @@ OutputSchedulerThread::OutputSchedulerThread(RenderEngine* engine,
 {
     QObject::connect( _imp->timer.get(), SIGNAL(fpsChanged(double,double)), _imp->engine, SIGNAL(fpsChanged(double,double)) );
 
-
-#ifdef NATRON_SCHEDULER_SPAWN_THREADS_WITH_TIMER
-    QObject::connect( &_imp->threadSpawnsTimer, SIGNAL(timeout()), this, SLOT(onThreadSpawnsTimerTriggered()) );
-#endif
 
     setThreadName("Scheduler thread");
 }
@@ -1718,10 +1693,10 @@ private:
 protected:
 
     ActionRetCodeEnum renderFrameInternal(NodePtr outputNode,
-                                                 TimeValue time,
-                                                 ViewIdx view,
-                                                 const RenderStatsPtr& stats,
-                                                 std::map<ImageComponents, ImagePtr>* planes)
+                                          TimeValue time,
+                                          ViewIdx view,
+                                          const RenderStatsPtr& stats,
+                                          std::map<ImageComponents, ImagePtr>* planes)
     {
         if (!outputNode) {
             return eActionStatusFailed;
@@ -2083,6 +2058,7 @@ public:
     : BufferedFrame()
     , isPartialRect(false)
     , viewerProcessImages()
+    , canonicalRoi()
     {
 
     }
@@ -2093,6 +2069,7 @@ public:
 
     bool isPartialRect;
     ImagePtr viewerProcessImages[2];
+    RectD canonicalRoi[2];
 };
 
 class ViewerRenderBufferedFrameContainer : public BufferedFrameContainer
@@ -2318,9 +2295,20 @@ private:
         
         for (std::size_t i = 0; i < viewsToRender.size(); ++i) {
 
+
+            ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
+            bufferObject->view = viewsToRender[i];
+            bufferObject->stats = stats;
+            bufferObject->isPartialRect = false;
+
             // Render both viewer processes arguments
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
             createRenderViewerObjectForAllInputs(_viewer, time, viewsToRender[i], true /*isPlayback*/, stats, 0 /*roiParam*/,  &processArgs);
+
+            for (int d = 0; d < 2; ++d) {
+                bufferObject->canonicalRoi[i] = processArgs[i]->renderObject->getCanonicalRoI();
+            }
+
             assert(processArgs.size() == 2);
 
             // Register the renders so that they can be aborted in abortRenders()
@@ -2357,10 +2345,6 @@ private:
                 }
             }
 
-            ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
-            bufferObject->view = viewsToRender[i];
-            bufferObject->stats = stats;
-            bufferObject->isPartialRect = false;
 
             for (int i = 0; i < 2; ++i) {
                 bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
@@ -2405,8 +2389,14 @@ ViewerDisplayScheduler::processFrame(const BufferedFrameContainerPtr& frames)
         args.view = (*it)->view;
         args.isPartialRect = false;
         args.recenterViewer = false;
-        args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
-        args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
+
+
+        for (int i = 0; i < 2; ++i) {
+            ViewerNode::UpdateViewerArgs::TextureUpload upload;
+            upload.canonicalRoI = viewerObject->canonicalRoi[i];
+            upload.image = viewerObject->viewerProcessImages[i];
+            args.viewerUploads[i].push_back(upload);
+        }
         isViewer->updateViewer(args);
     }
     isViewer->redrawViewerNow();
@@ -3147,9 +3137,19 @@ public:
             }
 
 
+            ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
+            bufferObject->view = view;
+            bufferObject->stats = stats;
+            bufferObject->isPartialRect = roiParam != 0;
+
+
             std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
             ViewerRenderFrameRunnable::createRenderViewerObjectForAllInputs(viewer, _args->time, view, false/*isPlayback*/, stats, roiParam, &processArgs);
             assert(processArgs.size() == 2);
+
+            for (int d = 0; d < 2; ++d) {
+                bufferObject->canonicalRoi[i] = processArgs[i]->renderObject->getCanonicalRoI();
+            }
 
             // Register the current renders and their age on the scheduler so that they can be aborted
             {
@@ -3175,10 +3175,7 @@ public:
                 processBFuture.waitForFinished();
             }
 
-            ViewerRenderBufferedFramePtr bufferObject(new ViewerRenderBufferedFrame);
-            bufferObject->view = view;
-            bufferObject->stats = stats;
-            bufferObject->isPartialRect = roiParam != 0;
+
             for (int i = 0; i < 2; ++i) {
                 bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
@@ -3419,9 +3416,13 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
         args.isPartialRect = viewerObject->isPartialRect;
         args.recenterViewer = isViewerFrameContainer->recenterViewer;
         args.viewerCenter = isViewerFrameContainer->viewerCenter;
-        args.viewerA.push_back(viewerObject->viewerProcessImages[0]);
-        args.viewerB.push_back(viewerObject->viewerProcessImages[1]);
 
+        for (int i = 0; i < 2; ++i) {
+            ViewerNode::UpdateViewerArgs::TextureUpload upload;
+            upload.canonicalRoI = viewerObject->canonicalRoi[i];
+            upload.image = viewerObject->viewerProcessImages[i];
+            args.viewerUploads[i].push_back(upload);
+        }
         viewerNode->updateViewer(args);
 
         if (viewerObject->stats) {

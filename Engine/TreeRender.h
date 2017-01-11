@@ -37,7 +37,7 @@
 #include "Engine/ImageComponents.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
-
+#include "Engine/RectD.h"
 #include "Global/GlobalDefines.h"
 
 #include "Engine/EngineFwd.h"
@@ -220,6 +220,11 @@ public:
      **/
     OSGLContextPtr getGPUOpenGLContext() const;
     OSGLContextPtr getCPUOpenGLContext() const;
+
+    /**
+     * @brief Get the RoI in canonical coordinates that was requested to the tree root
+     **/
+    RectD getCanonicalRoI() const;
 
 private Q_SLOTS:
 

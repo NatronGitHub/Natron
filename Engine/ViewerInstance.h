@@ -75,9 +75,6 @@ typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 struct ViewerInstancePrivate;
 class ViewerInstance : public EffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 
 private: // derives from EffectInstance

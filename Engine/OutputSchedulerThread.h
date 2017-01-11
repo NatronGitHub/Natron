@@ -49,7 +49,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-//#define NATRON_PLAYBACK_USES_THREAD_POOL
 
 
 class CurrentFrameFunctorArgs;
@@ -247,13 +246,6 @@ public:
      * @brief Returns the current number of render threads doing work
      **/
     int getNActiveRenderThreads() const;
-
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    /**
-     * @brief Called by render-threads to pick some work to do or to get asleep if theres nothing to do
-     **/
-    int pickFrameToRender(RenderThreadTask* thread, bool* enableRenderStats, std::vector<ViewIdx>* viewsToRender);
-#endif
 
     /**
      * @brief Called by the render-threads when mustQuit() is true on the thread

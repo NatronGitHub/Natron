@@ -41,7 +41,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
 #include "Gui/ComboBox.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/NodeViewerContext.h"
@@ -113,7 +113,7 @@ struct ViewerTabPrivate
                           ViewIdx view,
                           const NodePtr& target,
                           const EffectInstancePtr& currentNode,
-                          double *newTime) const;
+                          TimeValue *newTime) const;
 
 #endif
 

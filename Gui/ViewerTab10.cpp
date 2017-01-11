@@ -90,16 +90,10 @@ ViewerTab::abortViewersAndRefresh()
     const std::list<ViewerTab*> & activeNodes = gui->getViewersList();
     for (std::list<ViewerTab*>::const_iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
         ViewerNodePtr viewer = (*it)->getInternalNode();
-        if (viewer) {
-            ViewerInstancePtr instance = viewer->getInternalViewerNode();
-            if (instance) {
-                RenderEnginePtr engine = instance->getRenderEngine();
-                if ( engine ) {
-                    engine->abortRenderingAutoRestart();
-                    engine->renderCurrentFrame(false, true);
-                }
-            }
-        }
+
+        viewer->getNode()->getRenderEngine()->abortRenderingAutoRestart();
+        viewer->getNode()->getRenderEngine()->renderCurrentFrame();
+
     }
 }
 
@@ -147,14 +141,13 @@ ViewerTab::onTimeLineTimeChanged(SequenceTime time,
         return;
     }
     ViewerNodePtr node = _imp->viewerNode.lock();
-    ViewerInstancePtr viewerNode = node->getInternalViewerNode();
     if ((TimelineChangeReasonEnum)reason != eTimelineChangeReasonPlaybackSeek) {
         node->getCurrentFrameKnob()->setValue(time, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
     }
 
     GuiAppInstancePtr app = gui->getApp();
     if ( app &&  _imp->timeLineGui->getTimeline() != app->getTimeLine() ) {
-        viewerNode->renderCurrentFrame(true);
+        node->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 }
 
@@ -165,10 +158,8 @@ ViewerTab::~ViewerTab()
     if (gui) {
         NodeGraph* graph = 0;
         ViewerNodePtr internalNode = getInternalNode();
-
-        ViewerInstancePtr viewerNode = internalNode ? internalNode->getInternalViewerNode() : ViewerInstancePtr();
-        if (viewerNode) {
-            NodeCollectionPtr collection = viewerNode->getNode()->getGroup();
+        if (internalNode) {
+            NodeCollectionPtr collection = internalNode->getNode()->getGroup();
             if (collection) {
                 NodeGroupPtr isGrp = toNodeGroup(collection);
                 if (isGrp) {

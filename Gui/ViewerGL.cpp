@@ -1025,6 +1025,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                                      int textureIndex,
                                      bool isPartialRect,
                                      TimeValue time,
+                                     const RectD& originalCanonicalRoi,
                                      const RectD& rod,
                                      bool recenterViewer,
                                      const Point& viewportCenter)
@@ -1087,6 +1088,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
         info.pixelAspectRatio = _imp->displayTextures[0].pixelAspectRatio;
         info.time = time;
         info.isPartialImage = true;
+        info.originalCanonicalRoi = originalCanonicalRoi;
         info.isVisible = true;
         _imp->partialUpdateTextures.push_back(info);
 
@@ -1096,6 +1098,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     } else {
 
         _imp->displayTextures[textureIndex].image = image;
+        _imp->displayTextures[textureIndex].originalCanonicalRoi = originalCanonicalRoi;
         // re-use the existing texture if possible
         if (!image) {
             _imp->displayTextures[textureIndex].isVisible = false;

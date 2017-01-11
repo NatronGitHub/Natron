@@ -187,7 +187,6 @@ public:
      **/
     void updateSelectedToolForNode(const QString& toolID, const NodeGuiPtr& node);
 
-    void clearTimelineCacheLine();
 
     bool isInfobarVisible() const;
     bool isTopToolbarVisible() const;

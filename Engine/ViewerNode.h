@@ -263,8 +263,16 @@ public:
         TimeValue time;
         ViewIdx view;
         bool isPartialRect;
-        std::list<ImagePtr> viewerA;
-        std::list<ImagePtr> viewerB;
+
+        struct TextureUpload
+        {
+            // The RoI that was originally requested to render this image
+            RectD canonicalRoI;
+
+            // A pointer to the image on CPU
+            ImagePtr image;
+        };
+        std::list<TextureUpload> viewerUploads[2];
         bool recenterViewer;
         Point viewerCenter;
     };

@@ -168,8 +168,8 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     leftBound = node->getPlaybackInPointKnob()->getValue();
     rightBound = node->getPlaybackOutPointKnob()->getValue();
 
-    double projectLeft, projectRight;
-    app->getFrameRange(&projectLeft, &projectRight);
+    TimeValue projectLeft, projectRight;
+    app->getProject()->getFrameRange(&projectLeft, &projectRight);
 
     _imp->timeLineGui->setBoundaries(leftBound, rightBound);
     onTimelineBoundariesChanged(leftBound, rightBound);

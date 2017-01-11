@@ -80,6 +80,7 @@ struct TextureInfo
     , mipMapLevel(0)
     , premult(eImagePremultiplicationOpaque)
     , time(0)
+    , originalCanonicalRoi()
     , rod()
     , format()
     , pixelAspectRatio(1.)
@@ -97,6 +98,7 @@ struct TextureInfo
     // These are meta-datas at the time the texture was uploaded
     ImagePremultiplicationEnum premult;
     TimeValue time;
+    RectD originalCanonicalRoi;
     RectD rod;
     RectD format;
     double pixelAspectRatio;
@@ -185,17 +187,6 @@ public:
 
     void initializeGL();
 
-
-
-    void bindTextureAndActivateShader(int i,
-                                      bool useShader);
-
-    void unbindTextureAndReleaseShader(bool useShader);
-
-    /**
-     *@brief Starts using the RGB shader to display the frame
-     **/
-    void activateShaderRGB(int texIndex);
 
     enum WipePolygonEnum
     {
