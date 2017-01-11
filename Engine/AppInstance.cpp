@@ -524,6 +524,12 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
 }
 
 void
+AppInstance::executeCommandLinePythonCommands(const CLArgs& args)
+{
+    _imp->executeCommandLinePythonCommands(args);
+}
+
+void
 AppInstance::load(const CLArgs& cl,
                   bool makeEmptyInstance)
 {
@@ -551,9 +557,7 @@ AppInstance::loadInternal(const CLArgs& cl,
         return;
     }
 
-    const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
-
-    _imp->executeCommandLinePythonCommands(cl);
+    executeCommandLinePythonCommands(cl);
 
     QString exportDocPath = cl.getExportDocsPath();
     if ( !exportDocPath.isEmpty() ) {
@@ -593,8 +597,8 @@ AppInstance::loadInternal(const CLArgs& cl,
             throw std::invalid_argument( tr("%1 only accepts python scripts or .ntp project files.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
 
-
-        ///exec the python script specified via --onload
+        // exec the python script specified via --onload
+        const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
@@ -649,6 +653,8 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         }
 
+        // exec the python script specified via --onload
+        const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
@@ -661,6 +667,8 @@ AppInstance::loadInternal(const CLArgs& cl,
     } else {
         execOnProjectCreatedCallback();
 
+        // exec the python script specified via --onload
+        const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
