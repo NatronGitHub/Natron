@@ -78,13 +78,13 @@ public:
 
 struct PreviouslyComputedTrackFrame
 {
-    int frame;
+    TimeValue frame;
     bool isUserKey;
 
     PreviouslyComputedTrackFrame()
     : frame(0), isUserKey(false) {}
 
-    PreviouslyComputedTrackFrame(int f,
+    PreviouslyComputedTrackFrame(TimeValue f,
                                  bool b)
     : frame(f), isUserKey(b) {}
 };

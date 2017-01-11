@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef EFFECTINSTANCETLSDATA_H
-#define EFFECTINSTANCETLSDATA_H
+#ifndef NATRON_ENGINE_EFFECTINSTANCETLSDATA_H
+#define NATRON_ENGINE_EFFECTINSTANCETLSDATA_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -158,6 +158,8 @@ public:
 
     EffectInstanceTLSData(const EffectInstanceTLSData& other);
 
+    virtual ~EffectInstanceTLSData();
+
     /**
      * @brief Push TLS for an action that is not the render action. Mainly this will be needed by OfxClipInstance::getRegionOfDefinition and OfxClipInstance::getImage
      * This should only be needed for OpenFX plug-ins, as the Natron A.P.I already pass all required arguments in parameter.
@@ -292,4 +294,4 @@ public:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // EFFECTINSTANCETLSDATA_H
+#endif // NATRON_ENGINE_EFFECTINSTANCETLSDATA_H

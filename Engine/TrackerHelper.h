@@ -45,6 +45,7 @@ class AutoTrack;
 }
 
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -121,10 +122,10 @@ public:
      * @param viewer A pointer to the viewer that should be updated throughout the tracking operation.
      **/
     void trackMarkers(const std::list<TrackMarkerPtr >& marks,
-                      int start,
-                      int end,
-                      int frameStep,
-                      OverlaySupport* viewer);
+                      TimeValue start,
+                      TimeValue end,
+                      TimeValue frameStep,
+                      const ViewerNodePtr& viewer);
 
     /**
      * @brief Abort any ongoing tracking. Non blocking: it is not guaranteed the tracking is finished

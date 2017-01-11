@@ -79,6 +79,11 @@ EffectInstanceTLSData::EffectInstanceTLSData(const EffectInstanceTLSData& other)
 {
 }
 
+EffectInstanceTLSData::~EffectInstanceTLSData()
+{
+
+}
+
 void
 EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG

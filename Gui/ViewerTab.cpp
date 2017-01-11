@@ -184,10 +184,6 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     QObject::connect( node.get(), SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
 
 
-   
-    _imp->timeLineGui->connectSlotsToViewerCache();
-
-
     createNodeViewerInterface(node_ui);
     setPluginViewerInterface(node_ui);
     

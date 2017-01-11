@@ -96,28 +96,25 @@ NodeGraphPrivate::pasteNodesInternal(const std::list<std::pair<NodePtr, SERIALIZ
         // Adjust the serialization of all nodes so that it contains the new position relative to the centroid
         QPointF originalCentroidScenePos((xmin + xmax) / 2., (ymin + ymax) / 2.);
 
-        {
-            CreatingNodeTreeFlag_RAII createNodeTree( _publicInterface->getGui()->getApp() );
-            for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
-                 it != originalNodes.end(); ++it) {
 
-                // If the position was not serialized, do not attempt to position the node.
-                if (it->second->_nodePositionCoords[0] == INT_MIN || it->second->_nodePositionCoords[1] == INT_MIN) {
-                    continue;
-                }
+        for (std::list<std::pair<NodePtr, SERIALIZATION_NAMESPACE::NodeSerializationPtr > >::const_iterator it = originalNodes.begin();
+             it != originalNodes.end(); ++it) {
 
-                QPointF originalNodePos(it->second->_nodePositionCoords[0], it->second->_nodePositionCoords[1]);
-
-                // Compute the distance from the original
-                QPointF offset = originalNodePos - originalCentroidScenePos;
-
-                // New pos is relative to the centroid with the same delta
-                QPointF newPos = newCentroidScenePos + offset;
-
-                it->second->_nodePositionCoords[0] = newPos.x();
-                it->second->_nodePositionCoords[1] = newPos.y();
+            // If the position was not serialized, do not attempt to position the node.
+            if (it->second->_nodePositionCoords[0] == INT_MIN || it->second->_nodePositionCoords[1] == INT_MIN) {
+                continue;
             }
 
+            QPointF originalNodePos(it->second->_nodePositionCoords[0], it->second->_nodePositionCoords[1]);
+
+            // Compute the distance from the original
+            QPointF offset = originalNodePos - originalCentroidScenePos;
+
+            // New pos is relative to the centroid with the same delta
+            QPointF newPos = newCentroidScenePos + offset;
+
+            it->second->_nodePositionCoords[0] = newPos.x();
+            it->second->_nodePositionCoords[1] = newPos.y();
         }
     }
 

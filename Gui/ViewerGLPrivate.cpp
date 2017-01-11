@@ -30,6 +30,7 @@
 #include <cstring> // for std::memcpy
 #include <stdexcept>
 
+#include <QThread>
 #include <QApplication> // qApp
 #include "Global/GLIncludes.h" //!<must be included before QGLWidget
 #include <QtOpenGL/QGLWidget>
@@ -73,9 +74,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , iboTriangleStripId(0)
     , displayTextures()
     , partialUpdateTextures()
-    , shaderRGB()
-    , shaderBlack()
-    , shaderLoaded(false)
     , infoViewer()
     , viewerTab(parent)
     , zoomOrPannedSinceLastFit(false)
@@ -106,7 +104,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , checkerboardTileSize(0)
     , savedTexture(0)
     , prevBoundTexture(0)
-    , lastRenderedImageMutex()
     , sizeH()
     , pointerTypeOnPress(ePenTypeLMB)
     , pressureOnPress(1.)
@@ -135,14 +132,7 @@ ViewerGL::Implementation::~Implementation()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
 
-    if (shaderRGB) {
-        shaderRGB->removeAllShaders();
-        shaderRGB.reset();
-    }
-    if (shaderBlack) {
-        shaderBlack->removeAllShaders();
-        shaderBlack.reset();
-    }
+
     for (int i = 0; i < 2; ++i) {
         displayTextures[i].texture.reset();
     }
@@ -219,13 +209,11 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != eImageBitDepthByte;
-
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
-    const TextureRect &roiRounded = this->displayTextures[textureIndex].texture->getTextureRect();
-    const TextureRect& roiNotRounded = this->displayTextures[textureIndex].roiNotRoundedToTileSize;
+    const RectI &roiRounded = this->displayTextures[textureIndex].texture->getBounds();
+    const RectI& roiNotRounded = this->displayTextures[textureIndex].roiNotRoundedToTileSize;
 
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)

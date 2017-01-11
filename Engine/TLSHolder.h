@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef TLSHOLDER_H
-#define TLSHOLDER_H
+#ifndef NATRON_ENGINE_TLSHOLDER_H
+#define NATRON_ENGINE_TLSHOLDER_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,7 +25,6 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
 
 #include <list>
 #include <map>
@@ -33,6 +32,7 @@
 #include <string>
 #include <set>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -180,7 +180,7 @@ private:
  **/
 template <typename T>
 class TLSHolder
-    : public TLSHolderBase
+: public TLSHolderBase
 {
     friend class AppTLS;
 
@@ -194,7 +194,7 @@ class TLSHolder
 public:
 
     TLSHolder()
-        : TLSHolderBase() {}
+    : TLSHolderBase() {}
 
     virtual ~TLSHolder() {}
 
@@ -218,4 +218,4 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // TLSHOLDER_H
+#endif // NATRON_ENGINE_TLSHOLDER_H

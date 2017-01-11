@@ -1172,26 +1172,6 @@
                 <define-ownership class="target" owner="target"/>
             </modify-argument>
         </modify-function>
-        <modify-function signature="getAvailableLayers()const">
-            <inject-code class="target" position="beginning">
-                std::map&lt;ImageLayer,Effect*&gt; comps = %CPPSELF.%FUNCTION_NAME();
-                
-                PyObject* ret = PyDict_New();
-                std::map&lt;ImageLayer,Effect*&gt;::iterator it = comps.begin();
-                for (; it != comps.end(); ++it) {
-                    const ImageLayer&amp; key = it->first;
-                    Effect* value = it->second;
-                    PyObject* pyKey = %CONVERTTOPYTHON[ImageLayer](key);
-                    PyObject* pyValue = %CONVERTTOPYTHON[Effect*](value);
-                    // Ownership transferences.
-                    Shiboken::Object::getOwnership(pyValue);
-                    PyDict_SetItem(ret, pyKey, pyValue);
-                    Py_DECREF(pyKey);
-                    Py_DECREF(pyValue);
-                }
-                return ret;
-            </inject-code>
-        </modify-function>
     </object-type>
 
     

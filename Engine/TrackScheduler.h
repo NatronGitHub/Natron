@@ -65,7 +65,7 @@ public:
 
 private Q_SLOTS:
 
-    void doRenderCurrentFrameForViewer(const ViewerInstancePtr& viewer);
+    void doRenderCurrentFrameForViewer(const ViewerNodePtr& viewer);
 
 
 Q_SIGNALS:
@@ -76,7 +76,7 @@ Q_SIGNALS:
 
     void trackingProgress(double progress);
 
-    void renderCurrentFrameForViewer(const ViewerInstancePtr& viewer);
+    void renderCurrentFrameForViewer(const ViewerNodePtr& viewer);
 
 private:
 

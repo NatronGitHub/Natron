@@ -497,7 +497,7 @@ WriteNodePrivate::checkEncoderCreated(TimeValue time,
     KnobFilePtr fileKnob = outputFileKnob.lock();
 
     assert(fileKnob);
-    std::string pattern = fileKnob->getValueAtTime( std::floor(time + 0.5), DimIdx(0), ViewIdx( view.value() ) );
+    std::string pattern = fileKnob->getValueAtTime( TimeValue(std::floor(time + 0.5)), DimIdx(0), ViewIdx( view.value() ) );
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename is empty.").toStdString() );
 
@@ -542,8 +542,14 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     if (!writeNode) {
         return;
     }
-    double first, last;
-    writeNode->getEffectInstance()->getFrameRange_public(0, &first, &last);
+    RangeD range = {1., 1.};
+    {
+        GetFrameRangeResultsPtr results;
+        ActionRetCodeEnum stat = writeNode->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+        if (!isFailureRetCode(stat)) {
+            results->getFrameRangeResults(&range);
+        }
+    }
 
     {
         KnobIPtr originalFrameRangeKnob = readNode->getKnobByName(kReaderParamNameOriginalFrameRange);
@@ -551,8 +557,8 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         KnobIntPtr originalFrameRange = toKnobInt( originalFrameRangeKnob );
         if (originalFrameRange) {
             std::vector<int> values(2);
-            values[0] = first;
-            values[1] = last;
+            values[0] = range.min;
+            values[1] = range.max;
             originalFrameRange->setValueAcrossDimensions(values);
         }
     }
@@ -561,7 +567,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         assert(firstFrameKnob);
         KnobIntPtr firstFrame = toKnobInt( firstFrameKnob );
         if (firstFrame) {
-            firstFrame->setValue(first);
+            firstFrame->setValue(range.min);
         }
     }
     {
@@ -569,7 +575,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
         assert(lastFrameKnob);
         KnobIntPtr lastFrame = toKnobInt( lastFrameKnob );
         if (lastFrame) {
-            lastFrame->setValue(last);
+            lastFrame->setValue(range.max);
         }
     }
 }
@@ -597,14 +603,23 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
         }
 
         if (writeNode) {
-            double first, last;
-            writeNode->getEffectInstance()->getFrameRange_public(0, &first, &last);
+
+            RangeD range = {1., 1.};
+            {
+                GetFrameRangeResultsPtr results;
+                ActionRetCodeEnum stat = writeNode->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+                if (!isFailureRetCode(stat)) {
+                    results->getFrameRangeResults(&range);
+                }
+            }
+
+
             std::vector<int> originalRange(2);
-            originalRange[0] = (int)first;
-            originalRange[1] = (int)last;
+            originalRange[0] = (int)range.min;
+            originalRange[1] = (int)range.max;
             args->addParamDefaultValueN<int>(kReaderParamNameOriginalFrameRange, originalRange);
-            args->addParamDefaultValue<int>(kParamFirstFrame, (int)first);
-            args->addParamDefaultValue<int>(kParamFirstFrame, (int)last);
+            args->addParamDefaultValue<int>(kParamFirstFrame, (int)range.min);
+            args->addParamDefaultValue<int>(kParamFirstFrame, (int)range.max);
         }
 
 
@@ -687,9 +702,9 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             //Use default
             writerPluginID = appPTR->getWriterPluginIDForFileType(ext);
         } else {
-            std::vector<std::string> entries = pluginChoiceKnob->getEntries();
+            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                writerPluginID = entries[pluginChoice_i];
+                writerPluginID = entries[pluginChoice_i].id;
             }
         }
     }
@@ -703,7 +718,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
             assert(fileKnob);
             if (fileKnob) {
                 // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
+                writeNode->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getTimelineCurrentTime(), ViewSetSpec(0));
             }
             return;
         }
@@ -981,7 +996,7 @@ void
 WriteNode::onEffectCreated(const CreateNodeArgs& args)
 {
 
-    RenderEnginePtr engine = getRenderEngine();
+    RenderEnginePtr engine = getNode()->getRenderEngine();
     assert(engine);
     QObject::connect(engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onSequenceRenderFinished()));
 
@@ -1068,7 +1083,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
       
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryID();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }

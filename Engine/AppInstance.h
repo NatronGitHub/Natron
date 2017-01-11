@@ -286,11 +286,6 @@ public:
      **/
     bool isCreatingNode() const;
 
-    /**
-     * @brief @see CreatingNodeTreeFlag_RAII
-     **/
-    bool isCreatingNodeTree() const;
-    void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
@@ -453,34 +448,6 @@ private:
     boost::scoped_ptr<AppInstancePrivate> _imp;
 };
 
-
-/**
- * @brief Small RAII style class that flags the project is currently creating a tree with potentially a lot of nodes and 
- * that each node itself shouldn't try to refresh their meta-data whilst the tree is undergoing big changes.
- * After this object is destroyed, the caller should ensure to call Project::forceComputeInputDependentDataOnAllTrees()
- * to ensure the tree has correct meta-data flowing through.
- **/
-class CreatingNodeTreeFlag_RAII
-{
-    AppInstanceWPtr _app;
-
-public:
-
-    CreatingNodeTreeFlag_RAII(const AppInstancePtr& app)
-        : _app(app)
-    {
-        app->setIsCreatingNodeTree(true);
-    }
-
-    ~CreatingNodeTreeFlag_RAII()
-    {
-        AppInstancePtr a = _app.lock();
-
-        if (a) {
-            a->setIsCreatingNodeTree(false);
-        }
-    }
-};
 
 NATRON_NAMESPACE_EXIT;
 

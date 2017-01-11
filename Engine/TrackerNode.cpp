@@ -1424,7 +1424,7 @@ TrackerNode::knobChanged(const KnobIPtr& k,
         }
 
         OverlaySupport* overlay = getNode()->getCurrentViewportForOverlays();
-        _imp->trackSelectedMarkers( startFrame, lastFrame, step,  overlay);
+        _imp->trackSelectedMarkers( TimeValue(startFrame), TimeValue(lastFrame), TimeValue(step),  overlay);
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
     } else if ( k == _imp->ui->trackRangeDialogCancelButton.lock() ) {
         _imp->ui->trackRangeDialogGroup.lock()->setValue(false);
@@ -1984,12 +1984,16 @@ TrackerNodePrivate::createMarker()
 }
 
 void
-TrackerNodePrivate::trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer)
+TrackerNodePrivate::trackSelectedMarkers(TimeValue start, TimeValue end, TimeValue frameStep, OverlaySupport* viewer)
 {
     std::list<TrackMarkerPtr > markers;
     knobsTable->getAllEnabledMarkers(&markers);
 
-    tracker->trackMarkers(markers, start, end, frameStep, viewer);
+    ViewerNodePtr viewerNode;
+    if (viewer) {
+        viewerNode = viewer->getViewerNode();
+    }
+    tracker->trackMarkers(markers, start, end, frameStep, viewerNode);
 }
 
 void

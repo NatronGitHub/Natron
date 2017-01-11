@@ -22,7 +22,6 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "TLSHolder.h"
 #include "TLSHolderImpl.h"
 
 #include <cassert>
@@ -37,6 +36,7 @@
 #include <QtCore/QWaitCondition>
 #include <QtCore/QThread>
 #include <QtCore/QDebug>
+
 
 NATRON_NAMESPACE_ENTER;
 
@@ -74,10 +74,8 @@ copyAbortInfo(QThread* fromThread,
 
     if (fromAbortable && toAbortable) {
         bool isRenderResponseToUserInteraction;
-        AbortableRenderInfoPtr abortInfo;
-        EffectInstancePtr treeRoot;
-        fromAbortable->getAbortInfo(&isRenderResponseToUserInteraction, &abortInfo, &treeRoot);
-        toAbortable->setAbortInfo(isRenderResponseToUserInteraction, abortInfo, treeRoot);
+        TreeRenderPtr render = fromAbortable->getCurrentRender();
+        toAbortable->setCurrentRender(render);
     }
 }
 
@@ -123,7 +121,7 @@ AppTLS::cleanupTLSForThread()
     AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
 
     if (isAbortableThread) {
-        isAbortableThread->clearAbortInfo();
+        isAbortableThread->setCurrentRender(TreeRenderPtr());
     }
 
     // Clean-up any thread data on the TLSHolder
@@ -215,7 +213,7 @@ AppTLS::cleanupTLSForThread()
     }
 } // AppTLS::cleanupTLSForThread
 
-template class TLSHolder<EffectInstance::EffectInstanceTLSData>;
+template class TLSHolder<EffectInstanceTLSData>;
 template class TLSHolder<NATRON_NAMESPACE::OfxHost::OfxHostTLSData>;
 template class TLSHolder<Project::ProjectTLSData>;
 template class TLSHolder<OfxClipInstance::ClipTLSData>;

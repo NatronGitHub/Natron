@@ -130,6 +130,11 @@ public:
         return ret;
     }
 
+    virtual ViewerNodePtr getViewerNode() const
+    {
+        return ViewerNodePtr();
+    }
+
     /**
      * @brief Converts the given (x,y) coordinates which are in OpenGL canonical coordinates to widget coordinates.
      **/

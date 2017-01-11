@@ -1031,13 +1031,15 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
 
 struct PreRenderFrame
 {
-    EffectInstancePtr inputNode;
+    EffectInstancePtr inputNode, caller;
+    int inputNb;
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
 };
 
 struct PreRenderResult
 {
     EffectInstance::RenderRoIResults results;
+    int inputNb;
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
     ActionRetCodeEnum stat;
 };
@@ -1047,10 +1049,11 @@ PreRenderResult
 preRenderFrameFunctor(const PreRenderFrame& args)
 {
     // Notify the node that we're going to render something with the input
-    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(args.renderArgs->caller->getNode().get(), args.renderArgs->inputNbInCaller);
+    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(args.caller->getNode().get(), args.inputNb);
 
     PreRenderResult results;
     results.renderArgs = args.renderArgs;
+    results.inputNb = args.inputNb;
 
     // Call renderRoI on the input: not that in output the planes may not be used directly by the caller effect:
     // The image backend may not be the backend used by this image, or the memory layout (coplanar, RGBA packed etc..)
@@ -1173,11 +1176,11 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
                             renderArgs->view = viewIt->first;
                             renderArgs->roi =  inputRoIPixelCoords;
                             renderArgs->components = foundCompsNeeded->second;
-                            renderArgs->caller = effect;
-                            renderArgs->inputNbInCaller = inputNb;
-                            renderArgs->renderArgs = renderArgs;
+                            renderArgs->renderArgs = inputRenderArgs;
 
                             PreRenderFrame preRender;
+                            preRender.caller = effect;
+                            preRender.inputNb = inputNb;
                             preRender.renderArgs = renderArgs;
                             preRenderFrames.push_back(preRender);
                         }
@@ -1241,7 +1244,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
 
         // Hold a pointer to the rendered results until this effect render is finished: subsequent calls to getImagePlanes for this frame/view
         // should return these pointers immediately.
-        thisFrameViewRequest->appendPreRenderedInputs(it->renderArgs->inputNbInCaller,
+        thisFrameViewRequest->appendPreRenderedInputs(it->inputNb,
                                                       it->renderArgs->time,
                                                       it->renderArgs->view,
                                                       it->results.outputPlanes,

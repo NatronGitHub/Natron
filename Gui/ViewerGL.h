@@ -352,7 +352,10 @@ public:
      * @brief Returns the cursor position in canonical coordinates
      **/
     virtual void getCursorPosition(double& x, double& y) const OVERRIDE FINAL;
+
     virtual RangeD getFrameRange() const OVERRIDE FINAL;
+
+    virtual ViewerNodePtr getViewerNode() const OVERRIDE FINAL;
 
     void setZoomOrPannedSinceLastFit(bool enabled);
 

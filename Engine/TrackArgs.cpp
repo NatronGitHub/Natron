@@ -39,7 +39,7 @@ struct TrackArgsPrivate
     int start, end;
     int step;
     TimeLinePtr timeline;
-    ViewerInstancePtr viewer;
+    ViewerNodePtr viewer;
     boost::shared_ptr<mv::AutoTrack> libmvAutotrack;
     boost::shared_ptr<TrackerFrameAccessor> fa;
     std::vector<TrackMarkerAndOptionsPtr > tracks;
@@ -75,7 +75,7 @@ TrackArgs::TrackArgs(int start,
                      int end,
                      int step,
                      const TimeLinePtr& timeline,
-                     const ViewerInstancePtr& viewer,
+                     const ViewerNodePtr& viewer,
                      const boost::shared_ptr<mv::AutoTrack>& autoTrack,
                      const boost::shared_ptr<TrackerFrameAccessor>& fa,
                      const std::vector<TrackMarkerAndOptionsPtr >& tracks,
@@ -173,7 +173,7 @@ TrackArgs::getTimeLine() const
     return _imp->timeline;
 }
 
-ViewerInstancePtr
+ViewerNodePtr
 TrackArgs::getViewer() const
 {
     return _imp->viewer;
@@ -206,7 +206,7 @@ TrackArgs::getEnabledChannels(bool* r,
 }
 
 void
-TrackArgs::getRedrawAreasNeeded(int time,
+TrackArgs::getRedrawAreasNeeded(TimeValue time,
                                 std::list<RectD>* canonicalRects) const
 {
     for (std::vector<TrackMarkerAndOptionsPtr >::const_iterator it = _imp->tracks.begin(); it != _imp->tracks.end(); ++it) {

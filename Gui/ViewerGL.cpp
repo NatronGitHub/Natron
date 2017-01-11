@@ -891,6 +891,12 @@ ViewerGL::getFrameRange() const
     return ret;
 }
 
+ViewerNodePtr
+ViewerGL::getViewerNode() const
+{
+    return getInternalNode();
+}
+
 /**
  *@returns Returns the current zoom factor that is applied to the display.
  **/

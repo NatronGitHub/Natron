@@ -163,10 +163,10 @@ motionModelIndexToLivMVMode(int mode_i)
 
 void
 TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
-                             int start,
-                             int end,
-                             int frameStep,
-                             OverlaySupport* overlayInteract)
+                             TimeValue start,
+                             TimeValue end,
+                             TimeValue frameStep,
+                            const ViewerNodePtr& viewer)
 {
     if ( markers.empty() ) {
         Q_EMIT trackingFinished();
@@ -190,10 +190,6 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
         return;
     }
 
-    ViewerInstancePtr viewer;
-    if (overlayInteract) {
-        viewer = overlayInteract->getInternalViewerNode();
-    }
 
 
     // The channels we are going to use for tracking
@@ -282,7 +278,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( (frameStep > 0) && (*it2 <= start) ) || ( (frameStep < 0) && (*it2 >= start) ) ) {
-                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, true) );
+                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), true) );
             }
         }
 
@@ -298,7 +294,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
             // Add the marker to the markers ordered only if it can contribute to predicting its next position
             if ( ( ( (frameStep > 0) && (*it2 < start) ) || ( (frameStep < 0) && (*it2 > start) ) ) ) {
-                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(*it2, false) );
+                previousFramesOrdered.insert( PreviouslyComputedTrackFrame(TimeValue(*it2), false) );
             }
         }
 
@@ -315,7 +311,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
                     mv::Marker mvMarker;
 
-                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
                     trackContext->AddMarker(mvMarker);
 
                     // insert in the front of the list so that the order is reversed
@@ -331,7 +327,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
 
                     mv::Marker mvMarker;
 
-                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
                     trackContext->AddMarker(mvMarker);
 
                     // insert in the front of the list so that the order is reversed
@@ -341,7 +337,7 @@ TrackerHelper::trackMarkers(const std::list<TrackMarkerPtr >& markers,
                 if (prevFramesIt == previousFramesOrdered.begin() && (int)previouslyComputedMarkersOrdered.size() != max_frames_to_predict_from) {
                     mv::Marker mvMarker;
 
-                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, prevFramesIt->frame, frameStep, formatHeight, &mvMarker);
+                    TrackerHelperPrivate::natronTrackerToLibMVTracker(true, enabledChannels, *t->natronMarker, trackIndex, TimeValue(prevFramesIt->frame), frameStep, formatHeight, &mvMarker);
                     trackContext->AddMarker(mvMarker);
 
                     // insert in the front of the list so that the order is reversed

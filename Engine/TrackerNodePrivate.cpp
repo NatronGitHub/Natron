@@ -190,7 +190,7 @@ TrackerNodeInteract::onTrackAllKeyframesClicked()
 
     int first = *userKeys.begin();
     int last = *userKeys.rbegin() + 1;
-    _p->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
+    _p->trackSelectedMarkers( TimeValue(first), TimeValue(last), TimeValue(1),  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
 }
 
 void
@@ -226,7 +226,7 @@ TrackerNodeInteract::onTrackCurrentKeyframeClicked()
         first = *it;
     }
 
-    _p->trackSelectedMarkers( first, last, 1,  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
+    _p->trackSelectedMarkers( TimeValue(first), TimeValue(last), TimeValue(1.),  _p->publicInterface->getNode()->getCurrentViewportForOverlays() );
 }
 
 void
@@ -243,7 +243,7 @@ TrackerNodeInteract::onTrackBwClicked()
     if ( _p->tracker->isCurrentlyTracking() ) {
         _p->tracker->abortTracking();
     } else {
-        _p->trackSelectedMarkers( startFrame, range.min - 1, -1,  overlay );
+        _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(range.min - 1), TimeValue(-1),  overlay );
     }
 }
 
@@ -252,7 +252,7 @@ TrackerNodeInteract::onTrackPrevClicked()
 {
     OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
-    _p->trackSelectedMarkers( startFrame, startFrame - 2, -1, overlay );
+    _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(startFrame - 2), TimeValue(-1), overlay );
 }
 
 void
@@ -267,7 +267,7 @@ TrackerNodeInteract::onTrackNextClicked()
     OverlaySupport* overlay = _p->publicInterface->getNode()->getCurrentViewportForOverlays();
     assert(overlay);
     TimeValue startFrame = _p->publicInterface->getTimelineCurrentTime();
-    _p->trackSelectedMarkers( startFrame, startFrame + 2, true, overlay );
+    _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(startFrame + 2), TimeValue(1.), overlay );
 }
 
 void
@@ -282,7 +282,7 @@ TrackerNodeInteract::onTrackFwClicked()
     if ( _p->tracker->isCurrentlyTracking() ) {
         _p->tracker->abortTracking();
     } else {
-        _p->trackSelectedMarkers( startFrame, range.max + 1, true,  overlay );
+        _p->trackSelectedMarkers( TimeValue(startFrame), TimeValue(range.max + 1), TimeValue(1.),  overlay );
     }
 }
 
@@ -1196,7 +1196,7 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
 
             const float* srcPixels[4];
             int srcPixelStride;
-            Image::getChannelPointers<float, srcNComps>((float**)srcImage.ptrs, x, y, srcImage.tileBounds, (float**)srcPixels, &srcPixelStride);
+            Image::getChannelPointers<float, srcNComps>((const float**)srcImage.ptrs, x, y, srcImage.tileBounds, (float**)srcPixels, &srcPixelStride);
 
 
             unsigned error[3] = {0x80, 0x80, 0x80};

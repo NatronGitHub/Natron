@@ -582,8 +582,8 @@ struct SolveRequest
 {
     CornerPinSolverWatcher cpWatcher;
     TransformSolverWatcher tWatcher;
-    double refTime;
-    std::set<double> keyframes;
+    TimeValue refTime;
+    std::set<TimeValue> keyframes;
     int jitterPeriod;
     bool jitterAdd;
     bool robustModel;
@@ -719,7 +719,7 @@ public:
 
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
 
-    void trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer);
+    void trackSelectedMarkers(TimeValue start, TimeValue end, TimeValue frameStep, OverlaySupport* viewer);
 
     void exportTrackDataFromExportOptions();
 

@@ -218,15 +218,10 @@ public:
 
     RenderQueuePtr renderQueue;
 
-    // Protects creatingGroupMutex and _creatingTree
-    mutable QMutex creatingGroupMutex;
 
     // Stack to recursively keep track of created nodes
     CreateNodeStack createNodeStack;
 
-    // When a node tree is created to avoid trying to compute meta-data on the tree
-    // whilst it is undergoing massive changes
-    int _creatingTree;
 
     mutable QMutex invalidExprKnobsMutex;
     std::list<KnobIWPtr> invalidExprKnobs;
@@ -246,9 +241,7 @@ public:
         : _publicInterface(app)
         , _currentProject()
         , _appID(appID)
-        , creatingGroupMutex()
         , createNodeStack()
-        , _creatingTree(0)
         , invalidExprKnobsMutex()
         , invalidExprKnobs()
         , mainWindow(0)
@@ -289,29 +282,7 @@ AppInstance::isTopLevelNodeBeingCreated(const NodePtr& node) const
     return _imp->createNodeStack.root->node == node;
 }
 
-bool
-AppInstance::isCreatingNodeTree() const
-{
-    QMutexLocker k(&_imp->creatingGroupMutex);
 
-    return _imp->_creatingTree;
-}
-
-void
-AppInstance::setIsCreatingNodeTree(bool b)
-{
-    QMutexLocker k(&_imp->creatingGroupMutex);
-
-    if (b) {
-        ++_imp->_creatingTree;
-    } else {
-        if (_imp->_creatingTree >= 1) {
-            --_imp->_creatingTree;
-        } else {
-            _imp->_creatingTree = 0;
-        }
-    }
-}
 
 void
 AppInstance::checkForNewVersion() const
@@ -847,8 +818,6 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         // For newer pyPlugs this is taken care of in the Node::load function when creating
         // the container group
         if (isPyPlugEncodedWithPythonScript) {
-#pragma message WARN("Remove thisCreatingNodeTreeFlag_RAII class: this and the AppInstance::isCreatingNodeTree() function should not exist anymore. We still need it until results of getclippreferences are cached.")
-            CreatingNodeTreeFlag_RAII createNodeTree( shared_from_this() );
 
             boost::scoped_ptr<AddCreateNode_RAII> creatingNode_raii;
             if (containerNode) {

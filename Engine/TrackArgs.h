@@ -35,6 +35,7 @@ class AutoTrack;
 }
 
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -50,7 +51,7 @@ public:
               int end,
               int step,
               const TimeLinePtr& timeline,
-              const ViewerInstancePtr& viewer,
+              const ViewerNodePtr& viewer,
               const boost::shared_ptr<mv::AutoTrack>& autoTrack,
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
               const std::vector<TrackMarkerAndOptionsPtr >& tracks,
@@ -76,7 +77,7 @@ public:
     int getStep() const;
 
     TimeLinePtr getTimeLine() const;
-    ViewerInstancePtr getViewer() const;
+    ViewerNodePtr getViewer() const;
 
     int getNumTracks() const;
     const std::vector<TrackMarkerAndOptionsPtr >& getTracks() const;
@@ -84,7 +85,7 @@ public:
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
 
-    void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
+    void getRedrawAreasNeeded(TimeValue time, std::list<RectD>* canonicalRects) const;
 
 private:
     

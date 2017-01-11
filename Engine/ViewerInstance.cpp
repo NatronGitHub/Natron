@@ -941,7 +941,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
             int dstPixelStride;
             unsigned char* dst_pixels[4];
-            Image::getChannelPointers<PIX, srcNComps>((unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.tileBounds, (unsigned char**)dst_pixels, &dstPixelStride);
+            Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.tileBounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
 
             while (x != endX) {
                 float tmpPix[4];
@@ -1102,7 +1102,7 @@ applyViewerProcess32bit_Generic(const RenderViewerArgs& args, const RectI & roi)
 
         int dstPixelStride;
         float* dst_pixels[4];
-        Image::getChannelPointers<PIX, srcNComps>((float**)args.dstImage.ptrs, roi.x1, y, args.dstImage.tileBounds, (float**)dst_pixels, &dstPixelStride);
+        Image::getChannelPointers<float>((const float**)args.dstImage.ptrs, roi.x1, y, args.dstImage.tileBounds, args.dstImage.nComps, (float**)dst_pixels, &dstPixelStride);
 
         for (int x = roi.x1; x < roi.x2; ++x) {
 

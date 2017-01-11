@@ -34,17 +34,6 @@ ViewSetSpec::ViewSetSpec(const ViewIdx& view_i)
     assert(i >= -2);
 }
 
-ViewSetSpec::ViewSetSpec(const ViewIdx& view_get)
-: i(view_get.value())
-{
-    assert(i >= -2);
-}
-
-ViewIdx::ViewIdx(const ViewIdx& view_i)
-: i(view_i.value())
-{
-    assert(i == -2 || i >= 0);
-}
 
 
 NATRON_NAMESPACE_EXIT;
