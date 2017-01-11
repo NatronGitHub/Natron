@@ -1350,7 +1350,7 @@ AppInstance::exportDocs(const QString path)
                     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
                     if (isWriteNode) {
-                        NodePtr subnode = node = isWriteNode->getEmbeddedWriter();
+                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
                         if (subnode) {
                             node = subnode;
                         }
@@ -1375,6 +1375,7 @@ AppInstance::exportDocs(const QString path)
                     }
                 }
 
+                assert(node);
                 QString md = node->makeDocumentation(false);
                 QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
                 if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
