@@ -32,6 +32,7 @@
 #include <cmath>
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if defined(_WIN32)
 #  include <windows.h>
@@ -69,6 +70,7 @@
 #include <QtCore/QString>
 #include <QtCore/QLocale>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 
 #include "Global/GlobalDefines.h"
 
@@ -288,18 +290,23 @@ getAmountFreePhysicalRAM()
 
     return totalAvailableRAM;
 #elif defined(__APPLE__) && defined(__MACH__)
-    mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
-    vm_statistics_data_t vmstat;
+    // see http://opensource.apple.com/source/system_cmds/system_cmds-498.2/vm_stat.tproj/vm_stat.c
     host_name_port_t hostName = mach_host_self();
     kern_return_t kr;
-    kr = host_statistics(hostName, HOST_VM_INFO, (host_info_t)&vmstat, &count);
-    if (kr != KERN_SUCCESS) {
-        throw std::runtime_error(std::string("Unable to get amount of free physical RAM") + " host_statistics returned " + mach_error_string(kr));
-    }
-    vm_size_t pageSize;
+    vm_size_t pageSize = 4096; 	/* set to 4k default */
     kr = host_page_size(hostName, &pageSize);
     if (kr != KERN_SUCCESS) {
-        throw std::runtime_error(std::string("Unable to get amount of free physical RAM") + " host_page_size returned " + mach_error_string(kr));
+        qDebug() << "failed to get pagesize; defaulting to 4K.";
+    }
+    vm_statistics64_data_t vmstat;
+    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
+    kr = host_statistics64(hostName, HOST_VM_INFO64, (host_info64_t)&vmstat, &count);
+    if (kr != KERN_SUCCESS) {
+        std::stringstream ss;
+        ss << "Unable to get amount of free physical RAM, host_statistics64(HOST_VM_INFO64) returned ";
+        ss << (int)kr << " (" << mach_error_string(kr) << ")";
+
+        throw std::runtime_error(ss.str());
     }
 
     /**
