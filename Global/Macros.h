@@ -80,7 +80,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
-//#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
 // *.nps: application/vnd.natron.nodepresets
@@ -166,6 +166,15 @@ namespace NATRON_PYTHON_NAMESPACE { }
 ///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
 //#define NATRON_BUILD_NUMBER 0
 
+
+// Documentation
+#if (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_22) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_22)
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-2.2"
+//#elif (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_30) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_30)
+//#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-3.0"
+#else
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+#endif
 
 #if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
 /*
