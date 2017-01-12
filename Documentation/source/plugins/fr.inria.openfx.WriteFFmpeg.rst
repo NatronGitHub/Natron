@@ -7,6 +7,9 @@ WriteFFmpeg node
 
 *This documentation is for version 1.0 of WriteFFmpeg.*
 
+Description
+-----------
+
 Write images or video file using FFmpeg.
 
 FFmpeg versions (compiled with / running with):

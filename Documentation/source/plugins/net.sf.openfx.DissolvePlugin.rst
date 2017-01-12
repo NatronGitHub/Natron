@@ -7,6 +7,9 @@ Dissolve node
 
 *This documentation is for version 1.0 of Dissolve.*
 
+Description
+-----------
+
 Weighted average of two inputs.
 
 Inputs

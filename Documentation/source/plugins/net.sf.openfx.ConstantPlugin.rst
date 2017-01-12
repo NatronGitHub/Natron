@@ -7,6 +7,9 @@ Constant node
 
 *This documentation is for version 1.0 of Constant.*
 
+Description
+-----------
+
 Generate an image with a constant color.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Constant,\_CheckerBoard,\_ColorBars,\_ColorWheel

@@ -5,6 +5,9 @@ PLogLin node
 
 *This documentation is for version 1.0 of PLogLin.*
 
+Description
+-----------
+
 Convert between logarithmic and linear encoding.
 
 This method uses the so-called "Josh Pines log conversion" or "printing density transform" (as described in http://lists.gnu.org/archive/html/openexr-devel/2005-03/msg00006.html), which is based on a single gray point, rather than the white and black points in the Cineon formula (as implemented in the Log2Lin plugin).

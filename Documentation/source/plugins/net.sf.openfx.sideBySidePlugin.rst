@@ -7,6 +7,9 @@ SideBySide node
 
 *This documentation is for version 1.0 of SideBySide.*
 
+Description
+-----------
+
 Put the left and right view of the input next to each other.
 
 Inputs

@@ -7,6 +7,9 @@ Switch node
 
 *This documentation is for version 1.0 of Switch.*
 
+Description
+-----------
+
 Lets you switch between any number of inputs.
 
 The selected input number may be manually selected using the "which" parameter, or selected automatically if "automatic" is checked.

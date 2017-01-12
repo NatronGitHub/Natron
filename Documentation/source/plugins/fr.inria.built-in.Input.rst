@@ -5,6 +5,9 @@ Input node
 
 *This documentation is for version 1.0 of Input.*
 
+Description
+-----------
+
 This node can only be used within a Group. It adds an input arrow to the group.
 
 Inputs

@@ -7,6 +7,9 @@ FrameBlend node
 
 *This documentation is for version 2.0 of FrameBlend.*
 
+Description
+-----------
+
 Blend frames of the input clip.
 
 If a foreground matte is connected, only pixels with a negative or zero foreground value are taken into account, so that the foreground is not mixed with the background.

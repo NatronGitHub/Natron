@@ -7,6 +7,9 @@ Rand node
 
 *This documentation is for version 1.0 of Rand.*
 
+Description
+-----------
+
 Generate a random field of noise. The field does not resample if you change the resolution or density (you can animate the density without pixels randomly changing).
 
 Inputs

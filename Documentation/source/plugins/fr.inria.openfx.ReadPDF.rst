@@ -7,6 +7,9 @@ ReadPDF node
 
 *This documentation is for version 1.4 of ReadPDF.*
 
+Description
+-----------
+
 Read PDF documents using poppler.
 
 Inputs

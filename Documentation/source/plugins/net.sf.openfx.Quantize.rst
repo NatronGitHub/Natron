@@ -5,6 +5,9 @@ Quantize node
 
 *This documentation is for version 1.0 of Quantize.*
 
+Description
+-----------
+
 Reduce the number of color levels per channel.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Color\_Operation

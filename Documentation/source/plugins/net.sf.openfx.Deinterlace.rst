@@ -7,6 +7,9 @@ Deinterlace node
 
 *This documentation is for version 1.0 of Deinterlace.*
 
+Description
+-----------
+
 Deinterlace input stream.
 
 The following deinterlacing algorithms are supported:

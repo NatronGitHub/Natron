@@ -7,6 +7,9 @@ GodRays node
 
 *This documentation is for version 1.0 of GodRays.*
 
+Description
+-----------
+
 Average an image over a range of transforms.
 
 This can be used to create crepuscular rays (also called God rays) by setting the scale and center parameters: scale governs the length of rays, and center should be set to the Sun or light position (which may be outside of the image).

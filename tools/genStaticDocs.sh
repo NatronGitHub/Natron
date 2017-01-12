@@ -49,9 +49,7 @@ if [ -n "${OFX_PLUGIN_PATH:-}" ]; then
 fi
 
 touch "$TMP_FOLDER/dummy.ntp"
-set -x
 "$NATRON_BIN" ${OPTS[@]+"${OPTS[@]}"} --export-docs "$TMP_FOLDER" "$TMP_FOLDER/dummy.ntp"
-set +x
 rm "$TMP_FOLDER/dummy.ntp"
 
 pushd "$TMP_FOLDER"

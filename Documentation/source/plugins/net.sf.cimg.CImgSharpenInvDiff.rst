@@ -7,6 +7,9 @@ SharpenInvDiff node
 
 *This documentation is for version 2.0 of SharpenInvDiff.*
 
+Description
+-----------
+
 Sharpen selected images by inverse diffusion.
 
 Uses 'sharpen' function from the CImg library.

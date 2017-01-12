@@ -7,6 +7,9 @@ OCIODisplay node
 
 *This documentation is for version 1.0 of OCIODisplay.*
 
+Description
+-----------
+
 Uses the OpenColorIO library to apply a colorspace conversion to an image sequence, so that it can be accurately represented on a specific display device.
 
 Inputs

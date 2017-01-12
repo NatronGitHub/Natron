@@ -7,6 +7,9 @@ Saturation node
 
 *This documentation is for version 2.0 of Saturation.*
 
+Description
+-----------
+
 Modify the color saturation of an image.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Saturation

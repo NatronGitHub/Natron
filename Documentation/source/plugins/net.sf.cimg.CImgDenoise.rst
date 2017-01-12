@@ -7,6 +7,9 @@ SmoothPatchBased node
 
 *This documentation is for version 2.0 of SmoothPatchBased.*
 
+Description
+-----------
+
 Denoise selected images by non-local patch averaging.
 
 This uses the method described in: Non-Local Image Smoothing by Applying Anisotropic Diffusion PDE's in the Space of Patches (D. Tschumperlé, L. Brun), ICIP'09 (https://tschumperle.users.greyc.fr/publications/tschumperle\_icip09.pdf).

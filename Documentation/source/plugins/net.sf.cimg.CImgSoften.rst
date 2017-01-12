@@ -5,6 +5,9 @@ Soften node
 
 *This documentation is for version 4.0 of Soften.*
 
+Description
+-----------
+
 Soften the input stream by reducing its Laplacian.
 
 The effects subtracts the Laplacian (as computed by the Laplacian plugin) times the 'Amount' parameter from the input stream.

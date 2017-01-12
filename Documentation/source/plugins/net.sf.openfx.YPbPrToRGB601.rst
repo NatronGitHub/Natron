@@ -5,6 +5,9 @@ YPbPrToRGB601 node
 
 *This documentation is for version 1.0 of YPbPrToRGB601.*
 
+Description
+-----------
+
 Convert from YPbPr color model (ITU.BT-601) to RGB. RGB is gamma-decompressed using the sRGB Electro-Optical Transfer Function (EOTF) after conversion.
 
 Inputs

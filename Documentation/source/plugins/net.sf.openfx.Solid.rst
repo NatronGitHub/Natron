@@ -5,6 +5,9 @@ Solid node
 
 *This documentation is for version 1.0 of Solid.*
 
+Description
+-----------
+
 Generate an image with a constant opaque color.
 
 Inputs

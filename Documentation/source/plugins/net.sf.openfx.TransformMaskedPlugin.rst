@@ -7,6 +7,9 @@ TransformMasked node
 
 *This documentation is for version 1.0 of TransformMasked.*
 
+Description
+-----------
+
 Translate / Rotate / Scale a 2D image, with optional masking.
 
 This plugin concatenates transforms upstream.

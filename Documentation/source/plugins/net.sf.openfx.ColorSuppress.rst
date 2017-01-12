@@ -5,6 +5,9 @@ ColorSuppress node
 
 *This documentation is for version 1.0 of ColorSuppress.*
 
+Description
+-----------
+
 Remove a color or tint from an image.
 
 The effect can either modify the color and/or extract the amount of color and store it in the alpha channel. It can be used to fix the despill or extract a mask from a color.

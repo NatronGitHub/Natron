@@ -7,6 +7,9 @@ Anaglyph node
 
 *This documentation is for version 1.0 of Anaglyph.*
 
+Description
+-----------
+
 Make an anaglyph image out of the two views of the input.
 
 Inputs

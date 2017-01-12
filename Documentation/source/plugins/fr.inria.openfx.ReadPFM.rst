@@ -7,6 +7,9 @@ ReadPFM node
 
 *This documentation is for version 1.0 of ReadPFM.*
 
+Description
+-----------
+
 Read PFM (Portable Float Map) files.
 
 Inputs

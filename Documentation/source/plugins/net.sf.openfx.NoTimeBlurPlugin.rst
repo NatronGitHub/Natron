@@ -5,6 +5,9 @@ NoTimeBlur node
 
 *This documentation is for version 1.0 of NoTimeBlur.*
 
+Description
+-----------
+
 Rounds fractional frame numbers to integers. This can be used to avoid computing non-integer frame numbers, and to discretize motion (useful for animated objects). This plug-in is usually inserted upstream from TimeBlur.
 
 Inputs

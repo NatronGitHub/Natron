@@ -7,6 +7,9 @@ STMap node
 
 *This documentation is for version 2.0 of STMap.*
 
+Description
+-----------
+
 Move pixels around an image, based on a UVmap.
 
 The U and V channels give, for each pixel in the destination image, the normalized position of the pixel where the color is taken. (0,0) is the bottom left corner of the input image, while (1,1) is the top right corner. This plugin concatenates transforms upstream, so that if the nodes upstream output a 3x3 transform (e.g. Transform, CornerPin, Dot, NoOp, Switch), the original image is sampled only once.

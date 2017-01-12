@@ -7,6 +7,9 @@ SmoothBilateral node
 
 *This documentation is for version 2.0 of SmoothBilateral.*
 
+Description
+-----------
+
 Blur input stream by bilateral filtering.
 
 Uses the 'blur\_bilateral' function from the CImg library.

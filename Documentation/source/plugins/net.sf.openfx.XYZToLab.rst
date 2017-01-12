@@ -5,6 +5,9 @@ XYZToLab node
 
 *This documentation is for version 1.0 of XYZToLab.*
 
+Description
+-----------
+
 Convert from CIE XYZ color space to CIE L\*a\*b color space. L\*a\*b coordinates are divided by 100 for better visualization.
 
 Inputs

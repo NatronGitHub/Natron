@@ -7,6 +7,9 @@ ColorMatrix node
 
 *This documentation is for version 2.0 of ColorMatrix.*
 
+Description
+-----------
+
 Multiply the RGBA channels by an arbitrary 4x4 matrix.
 
 Inputs

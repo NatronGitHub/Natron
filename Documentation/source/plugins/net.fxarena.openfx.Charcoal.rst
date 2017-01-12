@@ -7,9 +7,12 @@ Charcoal node
 
 *This documentation is for version 2.2 of Charcoal.*
 
+Description
+-----------
+
 Charcoal effect node.
 
-Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2017-01-04 http://www.imagemagick.org
+Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2017-01-11 http://www.imagemagick.org
 
 ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
 

@@ -7,6 +7,9 @@ WritePNG node
 
 *This documentation is for version 1.0 of WritePNG.*
 
+Description
+-----------
+
 Write PNG files.
 
 Inputs

@@ -7,6 +7,9 @@ ImageStatistics node
 
 *This documentation is for version 1.0 of ImageStatistics.*
 
+Description
+-----------
+
 Compute image statistics over the whole image or over a rectangle. The statistics can be computed either on RGBA components, in the HSVL colorspace (which is the HSV colorspace with an additional L component from HSL), or the position and value of the pixels with the maximum and minimum luminance values can be computed.
 
 The color values of the minimum and maximum luma pixels for an image sequence can be used as black and white point in a Grade node to remove flicker from the same sequence.

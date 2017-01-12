@@ -7,6 +7,9 @@ SeExpr node
 
 *This documentation is for version 2.0 of SeExpr.*
 
+Description
+-----------
+
 Use the SeExpr expression language (by Walt Disney Animation Studios) to process images.
 
 What is SeExpr?

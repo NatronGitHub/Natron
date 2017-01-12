@@ -7,6 +7,9 @@ Erode node
 
 *This documentation is for version 2.1 of Erode.*
 
+Description
+-----------
+
 Erode (or dilate) input stream by a rectangular structuring element of specified size and Neumann boundary conditions (pixels out of the image get the value of the nearest pixel).
 
 A negative size will perform a dilation instead of an erosion.

@@ -5,6 +5,9 @@ YCbCrToRGB709 node
 
 *This documentation is for version 1.0 of YCbCrToRGB709.*
 
+Description
+-----------
+
 Convert from YCbCr color model (ITU.BT-709) to linear RGB. RGB is gamma-decompressed using the Rec.709 Electro-Optical Transfer Function (EOTF) after conversion.
 
 Inputs

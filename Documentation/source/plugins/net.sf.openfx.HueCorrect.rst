@@ -5,6 +5,9 @@ HueCorrect node
 
 *This documentation is for version 1.0 of HueCorrect.*
 
+Description
+-----------
+
 Apply hue-dependent color adjustments using lookup curves.
 
 Hue and saturation are computed from the the source RGB values. Depending on the hue value, the various adjustment values are computed, and then applied:

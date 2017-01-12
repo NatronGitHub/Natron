@@ -5,6 +5,9 @@ Output node
 
 *This documentation is for version 1.0 of Output.*
 
+Description
+-----------
+
 This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.
 
 Inputs

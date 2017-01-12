@@ -7,6 +7,9 @@ Plasma node
 
 *This documentation is for version 2.0 of Plasma.*
 
+Description
+-----------
+
 Draw a random plasma texture (using the mid-point algorithm).
 
 Note that each render scale gives a different noise, but the image rendered at full scale always has the same noise at a given time. Noise can be modulated using the 'seed' parameter.

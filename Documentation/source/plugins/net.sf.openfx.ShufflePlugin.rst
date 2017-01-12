@@ -7,6 +7,9 @@ Shuffle node
 
 *This documentation is for version 2.0 of Shuffle.*
 
+Description
+-----------
+
 Rearrange channels from one or two inputs and/or convert to different bit depth or components. No colorspace conversion is done (mapping is linear, even for 8-bit and 16-bit types).
 
 Inputs

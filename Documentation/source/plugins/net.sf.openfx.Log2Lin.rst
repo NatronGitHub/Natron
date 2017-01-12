@@ -5,6 +5,9 @@ Log2Lin node
 
 *This documentation is for version 1.0 of Log2Lin.*
 
+Description
+-----------
+
 Convert between the logarithmic encoding used in Cineon files and linear encoding.
 
 This plugin may be used to customize the conversion between the linear and the logarithmic space, using different parameters than the Kodak-recommended settings.

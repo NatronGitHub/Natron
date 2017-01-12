@@ -5,6 +5,9 @@ YUVToRGB709 node
 
 *This documentation is for version 1.0 of YUVToRGB709.*
 
+Description
+-----------
+
 Convert from YUV color model (ITU.BT-709) to RGB. RGB is gamma-decompressed using the Rec.709 Electro-Optical Transfer Function (EOTF) after conversion.
 
 Inputs

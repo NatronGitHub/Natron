@@ -5,6 +5,9 @@ JoinViews node
 
 *This documentation is for version 1.0 of JoinViews.*
 
+Description
+-----------
+
 Take in input separate views to make a multiple view stream output. The first view from each input is copied to one of the view of the output.
 
 Inputs
