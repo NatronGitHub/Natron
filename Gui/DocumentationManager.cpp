@@ -210,7 +210,6 @@ DocumentationManager::handler(QHttpRequest *req,
                         }
 
                         if (plugin) {
-        
                             CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() ));
                             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
@@ -229,7 +228,8 @@ DocumentationManager::handler(QHttpRequest *req,
                                             if (subnode) {
                                                 node = subnode;
                                             }
-                                        }                                    }
+                                        }
+                                    }
 
                                     if ( effectInstance->isWriter() ) {
                                         WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
@@ -240,7 +240,6 @@ DocumentationManager::handler(QHttpRequest *req,
                                                 node = subnode;
                                             }
                                         }
-
                                     }
                                 }
                             }
