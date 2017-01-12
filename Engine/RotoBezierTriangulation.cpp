@@ -24,7 +24,8 @@
 
 #include "RotoBezierTriangulation.h"
 
-#include <cstdint> // uintptr_t
+#include <cmath>
+#include <boost/cstdint.hpp> // uintptr_t
 #include <cstddef> // size_t
 
 #include "libtess.h"
@@ -33,7 +34,7 @@ NATRON_NAMESPACE_ENTER;
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
-using std::uintptr_t;
+using boost::uintptr_t;
 using std::size_t;
 using std::vector;
 
