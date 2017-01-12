@@ -69,15 +69,16 @@ public:
 
     enum ComputeHashTypeEnum
     {
-        // The hash of the node is the same whatever the time and view
+        // The resulting hash is used to cache data that are time and view invariant (such as the frame-range)
         eComputeHashTypeTimeViewInvariant,
 
-        // The hash of the node is the same at any time and view and is computed only from the
-        // parameters that are metadata slave
+        // The hash is computed only from the
+        // parameters that are metadata slave and does not take into account the time and view
         eComputeHashTypeOnlyMetadataSlaves,
 
-        // a frame varying or view varying effect will have the time/view
-        // appended to its hash indicating that results may be different at each frame
+        // The resulting hash is used to cache  data that are time and view variant (such as an Image).
+        // The time and view itself should not be appended to the hash, this is done externally in
+        // EffectInstance::getTimeViewParametersDependingOnFrameViewVariance
         eComputeHashTypeTimeViewVariant
     };
 

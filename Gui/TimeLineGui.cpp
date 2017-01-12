@@ -1158,8 +1158,25 @@ TimeLineGui::setFrameRangeEdited(bool edited)
 void
 TimeLineGui::refreshCachedFramesNow()
 {
+    assert(QThread::currentThread() == qApp->thread());
+
     CachePtr cache = appPTR->getCache();
-#pragma message WARN("TODO: Refresh timeline cached frames here")
+
+    std::list<CacheEntryBasePtr> cachedEntries;
+    cache->getAllEntriesByKeyIDWithCacheSignalEnabled(kCacheKeyUniqueIDImageTile, &cachedEntries);
+
+    _imp->cachedFrames.clear();
+    for (std::list<CacheEntryBasePtr>::const_iterator it = cachedEntries.begin(); it != cachedEntries.end(); ++it) {
+        MemoryBufferedCacheEntryBase* isMemoryEntry = dynamic_cast<MemoryBufferedCacheEntryBase*>(it->get());
+        assert(isMemoryEntry);
+        if (!isMemoryEntry) {
+            continue;
+        }
+        CachedFrame c((SequenceTime)isMemoryEntry->getTime(), isMemoryEntry->getStorageMode());
+        _imp->cachedFrames.insert(c);
+    }
+
+    update();
 
 } // refreshCachedFramesNow
 

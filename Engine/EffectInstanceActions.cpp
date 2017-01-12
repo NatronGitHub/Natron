@@ -365,7 +365,16 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
 
     assert(hash != 0);
 
-    GetComponentsKeyPtr cacheKey(new GetComponentsKey(hash, getNode()->getPluginID()));
+
+    GetComponentsKeyPtr cacheKey;
+
+    {
+
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        cacheKey.reset(new GetComponentsKey(hash, timeKey, viewKey, getNode()->getPluginID()));
+    }
 
     // Ensure the cache fetcher lives as long as we compute the action
     CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
@@ -771,7 +780,15 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
 
     assert(hash != 0);
 
-    GetDistorsionKeyPtr cacheKey(new GetDistorsionKey(hash, mappedScale, getNode()->getPluginID()));
+    GetDistorsionKeyPtr cacheKey;
+
+    {
+
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        cacheKey.reset(new GetDistorsionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
+    }
 
     GetDistorsionResultsPtr ret;
 
@@ -940,7 +957,15 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     IsIdentityKeyPtr cacheKey;
     CacheEntryLockerPtr cacheAccess;
     if (useIdentityCache) {
-        cacheKey.reset(new IsIdentityKey(hash, getNode()->getPluginID()));
+
+
+        {
+
+            TimeValue timeKey;
+            ViewIdx viewKey;
+            getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+            cacheKey.reset(new IsIdentityKey(hash, timeKey, viewKey, getNode()->getPluginID()));
+        }
 
         // Ensure the cache fetcher lives as long as we compute the action
         cacheAccess = appPTR->getCache()->get(cacheKey);
@@ -1057,7 +1082,16 @@ EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
     }
     assert(hash != 0);
 
-    GetRegionOfDefinitionKeyPtr cacheKey(new GetRegionOfDefinitionKey(hash, scale, getNode()->getPluginID()));
+    GetRegionOfDefinitionKeyPtr cacheKey;
+
+    {
+
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, TreeRenderNodeArgsPtr(), &timeKey, &viewKey);
+        cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, scale, getNode()->getPluginID()));
+    }
+
 
     CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
 
@@ -1128,11 +1162,18 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         hash = computeHash(hashArgs);
     }
 
-    GetRegionOfDefinitionKeyPtr cacheKey(new GetRegionOfDefinitionKey(hash, mappedScale, getNode()->getPluginID()));
+    GetRegionOfDefinitionKeyPtr cacheKey;
+
+
     CacheEntryLockerPtr cacheAccess;
     if (useCache) {
         assert(hash != 0);
-        cacheKey.reset(new GetRegionOfDefinitionKey(hash, mappedScale, getNode()->getPluginID()));
+        {
+            TimeValue timeKey;
+            ViewIdx viewKey;
+            getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+            cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
+        }
 
         cacheAccess = appPTR->getCache()->get(cacheKey);
 
@@ -1556,7 +1597,12 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     bool isHashCached = hashValue != 0;
     if (isHashCached) {
 
-        cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
+        {
+            TimeValue timeKey;
+            ViewIdx viewKey;
+            getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+            cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
+        }
 
         cacheAccess = appPTR->getCache()->get(cacheKey);
 
@@ -1643,8 +1689,14 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
 
     if (!cacheKey) {
-        cacheKey.reset(new GetFramesNeededKey(0, getNode()->getPluginID()));
+
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        cacheKey.reset(new GetFramesNeededKey(0, timeKey, viewKey, getNode()->getPluginID()));
+
     }
+    
 
     *results = GetFramesNeededResults::create(cacheKey);
     (*results)->setFramesNeeded(framesNeeded);

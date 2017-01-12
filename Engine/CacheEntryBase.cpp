@@ -43,12 +43,14 @@ struct CacheEntryBasePrivate
     CacheWPtr cache;
     CacheEntryKeyBasePtr key;
     int cacheBucketIndex;
+    bool cacheSignalRequired;
 
     CacheEntryBasePrivate(const CachePtr& cache)
     : lock()
     , cache(cache)
     , key()
     , cacheBucketIndex(-1)
+    , cacheSignalRequired(false)
     {
         
     }
@@ -109,6 +111,39 @@ CacheEntryBase::getHashKey() const
         return 0;
     }
     return _imp->key->getHash();
+}
+
+bool
+CacheEntryBase::isCacheSignalRequired() const
+{
+    QMutexLocker (&_imp->lock);
+    return _imp->cacheSignalRequired;
+}
+
+void
+CacheEntryBase::setCacheSignalRequired(bool required)
+{
+    QMutexLocker (&_imp->lock);
+    _imp->cacheSignalRequired = required;
+}
+
+TimeValue
+CacheEntryBase::getTime() const
+{
+    if (!_imp->key) {
+        return TimeValue(0.);
+    }
+    return _imp->key->getTime();
+
+}
+
+ViewIdx
+CacheEntryBase::getView() const
+{
+    if (!_imp->key) {
+        return ViewIdx(0);
+    }
+    return _imp->key->getView();
 }
 
 struct MemoryBufferedCacheEntryBasePrivate

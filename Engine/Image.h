@@ -40,6 +40,7 @@
 #include "Global/GLIncludes.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/RectI.h"
+#include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
@@ -183,7 +184,19 @@ public:
         // In order to be cached, the tiles of the image need to know the node hash of the node they correspond to.
         //
         // Default - 0
-        U64 nodeHashKey;
+        U64 nodeTimeInvariantHash;
+
+        // In order to be cached, the image may need to be stamped with a time.
+        // Effects that are time invariant should leave this to the default value
+        //
+        // Default - 0
+        TimeValue time;
+
+        // In order to be cached, the image may need to be stamped with a view.
+        // Effects that are view invariant should leave this to the default value
+        //
+        // Default - 0
+        ViewIdx view;
 
         // If the storage is set to OpenGL texture, this is the OpenGL context to which the texture belongs to.
         //
@@ -201,6 +214,14 @@ public:
         //
         // Default - NULL
         MemoryBufferedCacheEntryBasePtr externalBuffer;
+
+        // This is ignored if the cachePolicy is set to eCacheAccessModeNone.
+        // If set to true, this will call setCacheSignalRequired(true) on all internal cached
+        // tiles. Thus the cache will emit the cacheChanged() signal when some of its tiles are removed
+        // or inserted.
+        //
+        // Default - false
+        bool enableCacheNotification;
 
         InitStorageArgs();
     };

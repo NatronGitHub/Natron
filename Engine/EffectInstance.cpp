@@ -114,6 +114,27 @@ EffectInstance::createRenderEngine()
     return new RenderEngine(getNode());
 }
 
+void
+EffectInstance::getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, TimeValue* timeOut, ViewIdx* viewOut)
+{
+    bool frameVarying = isFrameVarying(render);
+
+    // If the node is frame varying, append the time to its hash.
+    // Do so as well if it is view varying
+    if (frameVarying) {
+        // Make sure the time is rounded to the image equality epsilon to account for double precision if we want to reproduce the
+        // same hash
+        *timeOut = roundImageTimeToEpsilon(time);
+    } else {
+        *timeOut = TimeValue(0);
+    }
+
+    if (isViewInvariant() == eViewInvarianceAllViewsVariant) {
+        *viewOut = view;
+    } else {
+        *viewOut = ViewIdx(0);
+    }
+}
 
 void
 EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
@@ -125,25 +146,6 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     // Append the plug-in ID in case for there is a coincidence of all parameter values (and ordering!) between 2 plug-ins
     Hash64::appendQString(QString::fromUtf8(node->getPluginID().c_str()), hash);
 
-    if (args.hashType == eComputeHashTypeTimeViewVariant) {
-
-        bool frameVarying = isFrameVarying(args.render);
-
-        // If the node is frame varying, append the time to its hash.
-        // Do so as well if it is view varying
-        if (frameVarying) {
-            // Make sure the time is rounded to the image equality epsilon to account for double precision if we want to reproduce the
-            // same hash
-            hash->append((double)roundImageTimeToEpsilon(args.time));
-        }
-
-        if (isViewInvariant() == eViewInvarianceAllViewsVariant) {
-            hash->append((int)args.view);
-        }
-    }
-
-
-    
     // Also append the project knobs to the hash. Their hash will only change when the project properties have been invalidated
     U64 projectHash = getApp()->getProject()->computeHash(args);
     hash->append(projectHash);
@@ -231,10 +233,17 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
     // If we used getFramesNeeded, cache it now if possible
     if (framesNeededResults) {
-        GetFramesNeededKeyPtr cacheKey(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
+        GetFramesNeededKeyPtr cacheKey;
+
+        {
+            TimeValue timeKey;
+            ViewIdx viewKey;
+            getTimeViewParametersDependingOnFrameViewVariance(args.time, args.view, args.render, &timeKey, &viewKey);
+            cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
+        }
 
         CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
-
+        
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
             cacheAccess->insertInCache(framesNeededResults);

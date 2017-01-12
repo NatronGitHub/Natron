@@ -38,6 +38,7 @@
 #include "Engine/OSGLFunctions.h"
 #include "Engine/RectI.h"
 #include "Engine/TreeRenderNodeArgs.h"
+#include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
@@ -66,7 +67,6 @@ struct ImagePrivate
 
     // The buffer format
     ImageBufferLayoutEnum bufferFormat;
-
 
     // This must be set if the cache policy is not none.
     // This will be used to prevent inserting in the cache part of images that had

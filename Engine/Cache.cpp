@@ -1141,6 +1141,10 @@ void
 Cache::onEntryInsertedInCache(const CacheEntryBasePtr& entry, int bucketIndex)
 {
     entry->setCacheBucketIndex(bucketIndex);
+
+    if (entry->isCacheSignalRequired()) {
+        Q_EMIT cacheChanged();
+    }
 }
 
 void
@@ -1443,7 +1447,23 @@ Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
     } // for each bucket
 } // getMemoryStats
 
+void
+Cache::getAllEntriesByKeyIDWithCacheSignalEnabled(int uniqueID, std::list<CacheEntryBasePtr>* entries) const
+{
+    for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
+        CacheBucket& bucket = _imp->buckets[bucket_i];
 
+        QMutexLocker k(&bucket.bucketLock);
+        for (CacheIterator it = bucket.container.begin(); it != bucket.container.end(); ++it) {
+            CacheEntryBasePtr& entry = getValueFromIterator(it);
+            if (entry->isCacheSignalRequired()) {
+                if (entry->getKey()->getUniqueID() == uniqueID) {
+                    entries->push_back(entry);
+                }
+            }
+        }
+    } // for each bucket
+} // getAllEntriesByKeyIDWithCacheSignalEnabled
 
 void
 Cache::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) 

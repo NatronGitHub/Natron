@@ -862,6 +862,9 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
         }
     } // isDrawing
 
+    // This flag will make all cached tiles of the image make the cache emit the cacheChanged() signal.
+    // Thus we can then in the timeline gui implementation know which frames are cached.
+    const bool enableCacheChangedNotification = dynamic_cast<ViewerInstance*>(_publicInterface);
 
     // For each requested components, create the corresponding image plane.
     // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
@@ -878,10 +881,13 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
             initArgs.proxyScale = mappedProxyScale;
             initArgs.mipMapLevel = mappedMipMapLevel;
             initArgs.isDraft = isDraftRender;
-            initArgs.nodeHashKey = nodeFrameViewHash;
+            initArgs.nodeTimeInvariantHash = nodeFrameViewHash;
+            initArgs.time = args.time;
+            initArgs.view = args.view;
             initArgs.storage = cacheStorage;
             initArgs.bufferFormat = cacheBufferLayout;
             initArgs.bitdepth = outputBitDepth;
+            initArgs.enableCacheNotification = enableCacheChangedNotification;
             initArgs.layer = *it;
         }
         

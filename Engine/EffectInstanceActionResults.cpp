@@ -33,10 +33,14 @@
 
 NATRON_NAMESPACE_ENTER;
 
-EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeFrameViewHash,
-                                                   const RenderScale& scale,
-                                                   const std::string& pluginID)
-: _nodeFrameViewHash(nodeFrameViewHash)
+EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeTimeInvariantHash,
+                                                         TimeValue time,
+                                                         ViewIdx view,
+                                                         const RenderScale& scale,
+                                                         const std::string& pluginID)
+: _nodeTimeInvariantHash(nodeTimeInvariantHash)
+, _time(time)
+, _view(view)
 , _scale(scale)
 {
     setHolderPluginID(pluginID);
@@ -52,7 +56,9 @@ EffectInstanceActionKeyBase::copy(const CacheEntryKeyBase& other)
         return;
     }
     CacheEntryKeyBase::copy(other);
-    _nodeFrameViewHash = o->_nodeFrameViewHash;
+    _nodeTimeInvariantHash = o->_nodeTimeInvariantHash;
+    _time = o->_time;
+    _view = o->_view;
     _scale = o->_scale;
 }
 
@@ -67,10 +73,15 @@ EffectInstanceActionKeyBase::equals(const CacheEntryKeyBase& other)
         return false;
     }
 
-    if (_nodeFrameViewHash != o->_nodeFrameViewHash) {
+    if (_nodeTimeInvariantHash != o->_nodeTimeInvariantHash) {
         return false;
     }
-
+    if (_time != o->_time) {
+        return false;
+    }
+    if (_view != o->_view) {
+        return false;
+    }
     if (_scale.x != o->_scale.x ||
         _scale.y != o->_scale.y) {
         return false;
@@ -82,7 +93,9 @@ EffectInstanceActionKeyBase::equals(const CacheEntryKeyBase& other)
 void
 EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 {
-    hash->append(_nodeFrameViewHash);
+    hash->append(_nodeTimeInvariantHash);
+    hash->append((double)_time);
+    hash->append((int)_view);
     hash->append(_scale.x);
     hash->append(_scale.y);
 }

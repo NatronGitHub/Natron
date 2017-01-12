@@ -121,10 +121,18 @@ public:
      * @brief If this returns true, the cache will emit a cacheChanged() signal whenever an entry of this type is 
      * inserted or removed from the cache.
      **/
-    virtual bool isCacheSignalRequired() const
-    {
-        return false;
-    }
+    bool isCacheSignalRequired() const;
+    void setCacheSignalRequired(bool required);
+
+    /**
+     * @brief Returns the key time
+     **/
+    TimeValue getTime() const;
+
+    /**
+     * @brief Returns the key view
+     **/
+    ViewIdx getView() const;
 
 private:
 

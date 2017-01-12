@@ -50,13 +50,25 @@ class EffectInstanceActionKeyBase : public CacheEntryKeyBase
 {
 public:
 
-    EffectInstanceActionKeyBase(U64 nodeFrameViewHash,
-                             const RenderScale& scale,
-                             const std::string& pluginID);
+    EffectInstanceActionKeyBase(U64 nodeTimeInvariantHash,
+                                TimeValue time,
+                                ViewIdx view,
+                                const RenderScale& scale,
+                                const std::string& pluginID);
 
     virtual ~EffectInstanceActionKeyBase()
     {
         
+    }
+
+    virtual TimeValue getTime() const OVERRIDE FINAL
+    {
+        return _time;
+    }
+
+    virtual ViewIdx getView() const OVERRIDE FINAL
+    {
+        return _view;
     }
 
     virtual void copy(const CacheEntryKeyBase& other) OVERRIDE FINAL;
@@ -67,7 +79,9 @@ private:
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
 
-    U64 _nodeFrameViewHash;
+    U64 _nodeTimeInvariantHash;
+    TimeValue _time;
+    ViewIdx _view;
     RenderScale _scale;
 };
 
@@ -75,10 +89,12 @@ class GetRegionOfDefinitionKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetRegionOfDefinitionKey(U64 nodeFrameViewHash,
+    GetRegionOfDefinitionKey(U64 nodeTimeInvariantHash,
+                             TimeValue time,
+                             ViewIdx view,
                              const RenderScale& scale,
                              const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, scale, pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, scale, pluginID)
     {
 
     }
@@ -88,12 +104,12 @@ public:
 
     }
 
-private:
-
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDGetRoDResults;
     }
+
+
 
 };
 
@@ -141,9 +157,11 @@ class IsIdentityKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    IsIdentityKey(U64 nodeFrameViewHash,
+    IsIdentityKey(U64 nodeTimeInvariantHash,
+                  TimeValue time,
+                  ViewIdx view,
                   const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, RenderScale(1.), pluginID)
     {
 
     }
@@ -153,12 +171,13 @@ public:
 
     }
 
-private:
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDIsIdentityResults;
     }
+
+
     
 };
 
@@ -208,24 +227,25 @@ class GetFramesNeededKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetFramesNeededKey(U64 nodeFrameViewHash,
-                  const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
+    GetFramesNeededKey(U64 nodeTimeInvariantHash,
+                       TimeValue time,
+                       ViewIdx view,
+                       const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, RenderScale(1.), pluginID)
     {
-
+        
     }
-
+    
     virtual ~GetFramesNeededKey()
     {
 
     }
 
-private:
-
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDFramesNeededResults;
     }
+
 
 };
 
@@ -275,25 +295,28 @@ class GetDistorsionKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetDistorsionKey(U64 nodeFrameViewHash,
-                       const RenderScale& scale,
-                       const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, scale, pluginID)
+    GetDistorsionKey(U64 nodeTimeInvariantHash,
+                     TimeValue time,
+                     ViewIdx view,
+                     const RenderScale& scale,
+                     const std::string& pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, scale, pluginID)
     {
 
     }
 
     virtual ~GetDistorsionKey()
     {
-
+        
     }
 
-private:
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDGetDistorsionResults;
     }
+
+
     
 };
 
@@ -339,9 +362,9 @@ class GetFrameRangeKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetFrameRangeKey(U64 nodeTimeViewInvariantHash,
+    GetFrameRangeKey(U64 nodeTimeInvariantHash,
                      const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeViewInvariantHash, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, TimeValue(0.), ViewIdx(0), RenderScale(1.), pluginID)
     {
 
     }
@@ -351,13 +374,10 @@ public:
 
     }
 
-private:
-
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDGetFrameRangeResults;
     }
-    
 };
 
 
@@ -405,7 +425,7 @@ public:
 
     GetTimeInvariantMetaDatasKey(U64 nodeTimeViewInvariantHash,
                                  const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeViewInvariantHash, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewInvariantHash, TimeValue(0.), ViewIdx(0), RenderScale(1.), pluginID)
     {
 
     }
@@ -415,13 +435,10 @@ public:
 
     }
 
-private:
-
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDGetTimeInvariantMetaDatasResults;
     }
-
 };
 
 
@@ -467,9 +484,11 @@ class GetComponentsKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetComponentsKey(U64 nodeFrameViewHash,
+    GetComponentsKey(U64 nodeTimeInvariantHash,
+                     TimeValue time,
+                     ViewIdx view,
                      const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeFrameViewHash, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, RenderScale(1.), pluginID)
     {
 
     }
@@ -478,8 +497,6 @@ public:
     {
 
     }
-
-private:
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {

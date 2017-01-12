@@ -960,6 +960,7 @@ public:
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
+    void getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, TimeValue* timeOut, ViewIdx* viewOut);
 
 public:
 

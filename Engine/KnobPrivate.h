@@ -424,12 +424,14 @@ public:
         return true;
     }
 
-private:
-
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDExpressionResult;
     }
+    
+private:
+
+
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL
     {

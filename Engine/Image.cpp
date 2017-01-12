@@ -147,9 +147,13 @@ Image::InitStorageArgs::InitStorageArgs()
 , proxyScale(1.)
 , mipMapLevel(0)
 , isDraft(false)
-, nodeHashKey(0)
+, nodeTimeInvariantHash(0)
+, time(0)
+, view(0)
 , glContext()
 , textureTarget(GL_TEXTURE_2D)
+, externalBuffer()
+, enableCacheNotification(false)
 {
     // By default make all channels
     components[0] = components[1] = components[2] = components[3] = 1;
@@ -361,7 +365,9 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             }
 
             // Make-up the key for this tile 
-            ImageTileKeyPtr key(new ImageTileKey(args.nodeHashKey,
+            ImageTileKeyPtr key(new ImageTileKey(args.nodeTimeInvariantHash,
+                                                 args.time,
+                                                 args.view,
                                                  channelName,
                                                  args.proxyScale,
                                                  args.mipMapLevel,
@@ -417,7 +423,9 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
 
                         const bool useDraft = (const bool)draft_i;
 
-                        ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeHashKey,
+                        ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeTimeInvariantHash,
+                                                                        args.time,
+                                                                        args.view,
                                                                         channelName,
                                                                         args.proxyScale,
                                                                         lookupLevel,
@@ -538,6 +546,11 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                 // Allocate the memory for the tile.
                 // This may throw a std::bad_alloc
                 entryBuffer->allocateMemory(*allocArgs);
+
+                // Enable cache notification if requested.
+                if (args.enableCacheNotification) {
+                    entryBuffer->setCacheSignalRequired(true);
+                }
                 
             } // !isCached
 

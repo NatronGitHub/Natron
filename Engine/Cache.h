@@ -324,6 +324,12 @@ public:
     void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const;
 
     /**
+     * @brief Returns all entries in the cache that have their getUniqueID() function 
+     * returning an ID equal to the given one that thave cache signalling enabled.
+     **/
+    void getAllEntriesByKeyIDWithCacheSignalEnabled(int uniqueID, std::list<CacheEntryBasePtr>* entries) const;
+
+    /**
      * @brief Must serialize the cache table of contents
      **/
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;

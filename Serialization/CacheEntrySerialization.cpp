@@ -37,6 +37,13 @@ void CacheEntrySerializationBase::encode(YAML::Emitter& em) const
     em << YAML::Key << "Hash" << YAML::Value;
     em << hash;
 
+    em << YAML::Key << "Time" << YAML::Value;
+    em << time;
+
+    em << YAML::Key << "View" << YAML::Value;
+    em << view;
+
+
 
     if (!pluginID.empty()) {
         em << YAML::Key << "Plugin" << YAML::Value;
@@ -57,6 +64,12 @@ void CacheEntrySerializationBase::decode(const YAML::Node& node)
     }
     if (node["Hash"]) {
         hash = node["Hash"].as<unsigned long long>();
+    }
+    if (node["Time"]) {
+        time = node["Time"].as<double>();
+    }
+    if (node["View"]) {
+        view = node["View"].as<int>();
     }
     if (node["Plugin"]) {
         pluginID = node["Plugin"].as<std::string>();

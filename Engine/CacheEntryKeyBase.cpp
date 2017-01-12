@@ -109,7 +109,9 @@ CacheEntryKeyBase::setHolderPluginID(const std::string& holderID) {
 
 struct ImageTileKeyPrivate
 {
-    U64 nodeFrameViewHashKey;
+    U64 nodeTimeInvariantHash;
+    TimeValue time;
+    ViewIdx view;
     std::string layerChannel;
     RenderScale proxyScale;
     unsigned int mipMapLevel;
@@ -119,7 +121,9 @@ struct ImageTileKeyPrivate
     int tileY;
 
     ImageTileKeyPrivate()
-    : nodeFrameViewHashKey(0)
+    : nodeTimeInvariantHash(0)
+    , time(0)
+    , view(0)
     , layerChannel()
     , proxyScale(1.)
     , mipMapLevel(0)
@@ -133,7 +137,9 @@ struct ImageTileKeyPrivate
 };
 
 
-ImageTileKey::ImageTileKey(U64 nodeFrameViewHashKey,
+ImageTileKey::ImageTileKey(U64 nodeTimeInvariantHash,
+                           TimeValue time,
+                           ViewIdx view,
                            const std::string& layerChannel,
                            const RenderScale& scale,
                            unsigned int mipMapLevel,
@@ -144,7 +150,9 @@ ImageTileKey::ImageTileKey(U64 nodeFrameViewHashKey,
 : CacheEntryKeyBase()
 , _imp(new ImageTileKeyPrivate())
 {
-    _imp->nodeFrameViewHashKey = nodeFrameViewHashKey;
+    _imp->nodeTimeInvariantHash = nodeTimeInvariantHash;
+    _imp->time = time;
+    _imp->view = view;
     _imp->layerChannel = layerChannel;
     _imp->proxyScale = scale;
     _imp->mipMapLevel = mipMapLevel;
@@ -167,9 +175,21 @@ ImageTileKey::~ImageTileKey()
 }
 
 U64
-ImageTileKey::getNodeFrameViewHashKey() const
+ImageTileKey::getNodeTimeInvariantHashKey() const
 {
-    return _imp->nodeFrameViewHashKey;
+    return _imp->nodeTimeInvariantHash;
+}
+
+TimeValue
+ImageTileKey::getTime() const
+{
+    return _imp->time;
+}
+
+ViewIdx
+ImageTileKey::getView() const
+{
+    return _imp->view;
 }
 
 int
@@ -182,6 +202,9 @@ void
 ImageTileKey::appendToHash(Hash64* hash) const
 {
     Hash64::appendQString(QString::fromUtf8(_imp->layerChannel.c_str()), hash);
+    hash->append(_imp->nodeTimeInvariantHash);
+    hash->append((double)_imp->time);
+    hash->append((int)_imp->view);
     hash->append(_imp->proxyScale.x);
     hash->append(_imp->proxyScale.y);
     hash->append(_imp->mipMapLevel);
@@ -189,6 +212,28 @@ ImageTileKey::appendToHash(Hash64* hash) const
     hash->append((int)_imp->bitdepth);
     hash->append(_imp->tileX);
     hash->append(_imp->tileY);
+}
+
+void
+ImageTileKey::copy(const CacheEntryKeyBase& other)
+{
+    const ImageTileKey* otherKey = dynamic_cast<const ImageTileKey*>(&other);
+    assert(otherKey);
+    if (!otherKey) {
+        return;
+    }
+    CacheEntryKeyBase::copy(other);
+
+    _imp->nodeTimeInvariantHash = otherKey->_imp->nodeTimeInvariantHash;
+    _imp->time = otherKey->_imp->time;
+    _imp->view = otherKey->_imp->view;
+    _imp->layerChannel = otherKey->_imp->layerChannel;
+    _imp->proxyScale = otherKey->_imp->proxyScale;
+    _imp->mipMapLevel = otherKey->_imp->mipMapLevel;
+    _imp->draftMode = otherKey->_imp->draftMode;
+    _imp->bitdepth = otherKey->_imp->bitdepth;
+    _imp->tileX = otherKey->_imp->tileX;
+    _imp->tileY = otherKey->_imp->tileY;
 }
 
 bool
@@ -202,7 +247,13 @@ ImageTileKey::equals(const CacheEntryKeyBase& other)
     if (!CacheEntryKeyBase::equals(other)) {
         return false;
     }
-    if (_imp->nodeFrameViewHashKey != otherKey->_imp->nodeFrameViewHashKey) {
+    if (_imp->nodeTimeInvariantHash != otherKey->_imp->nodeTimeInvariantHash) {
+        return false;
+    }
+    if (_imp->time != otherKey->_imp->time) {
+        return false;
+    }
+    if (_imp->view != otherKey->_imp->view) {
         return false;
     }
     if (_imp->layerChannel != otherKey->_imp->layerChannel) {
@@ -312,7 +363,9 @@ ImageTileKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* 
     if (!serialization) {
         return;
     }
-    serialization->nodeHashKey = _imp->nodeFrameViewHashKey;
+    serialization->nodeHashKey = _imp->nodeTimeInvariantHash;
+    serialization->time = _imp->time;
+    serialization->view = _imp->view;
     serialization->layerChannelName = _imp->layerChannel;
     serialization->tileX = _imp->tileX;
     serialization->tileY = _imp->tileY;
@@ -330,7 +383,9 @@ ImageTileKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObje
     if (!serialization) {
         return;
     }
-    _imp->nodeFrameViewHashKey = serialization->nodeHashKey;
+    _imp->nodeTimeInvariantHash = serialization->nodeHashKey;
+    _imp->time = TimeValue(serialization->time);
+    _imp->view = ViewIdx(serialization->view);
     _imp->layerChannel = serialization->layerChannelName;
     _imp->tileX = serialization->tileX;
     _imp->tileY = serialization->tileY;

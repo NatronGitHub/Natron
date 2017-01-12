@@ -38,6 +38,8 @@
 #include "Serialization/SerializationBase.h"
 
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
+#include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -89,8 +91,22 @@ public:
      **/
     std::string getHolderPluginID() const;
     void setHolderPluginID(const std::string& holderID);
-    
-protected:
+
+    /**
+     * @brief Returns the key time
+     **/
+    virtual TimeValue getTime() const
+    {
+        return TimeValue(0.);
+    }
+
+    /**
+     * @brief Returns the key view
+     **/
+    virtual ViewIdx getView() const
+    {
+        return ViewIdx(0);
+    }
 
     /**
      * @brief Must return a unique string identifying this class.
@@ -100,6 +116,10 @@ protected:
      * for each type.
      **/
     virtual int getUniqueID() const = 0;
+    
+protected:
+
+
 
     /**
      * @brief Must append anything that should identify uniquely the cache entry.
@@ -122,7 +142,9 @@ public:
 
     ImageTileKey();
 
-    ImageTileKey(U64 nodeFrameViewHashKey,
+    ImageTileKey(U64 nodeTimeInvariantHash,
+                 TimeValue time,
+                 ViewIdx view,
                  const std::string& layerChannel,
                  const RenderScale& proxyScale,
                  unsigned int mipMapLevel,
@@ -133,7 +155,7 @@ public:
 
     virtual ~ImageTileKey();
 
-    U64 getNodeFrameViewHashKey() const;
+    U64 getNodeTimeInvariantHashKey() const;
 
     std::string getLayerChannel() const;
 
@@ -149,15 +171,22 @@ public:
 
     ImageBitDepthEnum getBitDepth() const;
 
+    virtual TimeValue getTime() const OVERRIDE FINAL;
+
+    virtual ViewIdx getView() const OVERRIDE FINAL;
+
+    virtual void copy(const CacheEntryKeyBase& other) OVERRIDE FINAL;
+
     virtual bool equals(const CacheEntryKeyBase& other) OVERRIDE FINAL;
 
     virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
 
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
 
+    virtual int getUniqueID() const OVERRIDE FINAL;
+
 private:
 
-    virtual int getUniqueID() const OVERRIDE FINAL;
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
 

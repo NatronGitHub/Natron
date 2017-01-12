@@ -44,6 +44,12 @@ public:
     // has a valid hash
     unsigned long long hash;
 
+    // The time corresponding to the entry
+    double time;
+
+    // The view corresponding to the entry
+    int view;
+
     // Even though entries have their filename given by their hash,
     // we need to serialize it as multiple entries can have the same hash.
     // Each entry with the same hash has an index appended
@@ -58,6 +64,8 @@ public:
 
     CacheEntrySerializationBase()
     : hash(0)
+    , time(0)
+    , view(0)
     , filePath()
     , dataOffsetInFile(0)
     , pluginID()
