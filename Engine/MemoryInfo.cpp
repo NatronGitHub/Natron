@@ -81,19 +81,55 @@ NATRON_NAMESPACE_ENTER;
 U64
 getSystemTotalRAM()
 {
-#if defined(__APPLE__)
-    int mib [] = {
-        CTL_HW, HW_MEMSIZE
-    };
-    uint64_t value = 0;
-    size_t length = sizeof(value);
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+    // see http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/kernel32/heap.c
+    uint64_t total;
+#ifdef __APPLE__
+    unsigned int val;
+#else
+    unsigned long val;
+#endif
+    int mib[2];
+    size_t size_sys;
+#ifdef HW_MEMSIZE
+    uint64_t val64 = 0;
+#endif
+    total = 0;
 
-    if ( -1 == sysctl(mib, 2, &value, &length, NULL, 0) ) {
-        //error;
+    mib[0] = CTL_HW;
+#ifdef HW_MEMSIZE
+    mib[1] = HW_MEMSIZE;
+    size_sys = sizeof(val64);
+    if (!sysctl(mib, 2, &val64, &size_sys, NULL, 0) && size_sys == sizeof(val64) && val64) {
+        total = val64;
     }
+#endif
 
-    return value;
+#if defined(__MACH__)
+    if (!total) {
+        host_name_port_t host = mach_host_self();
+        mach_msg_type_number_t count;
 
+        host_basic_info_data_t info;
+        count = HOST_BASIC_INFO_COUNT;
+        if (host_info(host, HOST_BASIC_INFO, (host_info_t)&info, &count) == KERN_SUCCESS) {
+            total = info.max_mem;
+        }
+
+        mach_port_deallocate(mach_task_self(), host);
+    }
+#endif
+
+    if (!total) {
+        mib[1] = HW_PHYSMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val) {
+            total = val;
+        }
+    }
+    
+    return total;
+    
 #elif defined(_WIN32)
     ///On Windows, but not Cygwin, the new GlobalMemoryStatusEx( ) function fills a 64-bit
     ///safe MEMORYSTATUSEX struct with information about physical and virtual memory. Structure fields include:
@@ -295,7 +331,7 @@ getAmountFreePhysicalRAM()
     int mib[2];
     size_t size_sys;
 #ifdef HW_MEMSIZE
-    uint64_t val64;
+    uint64_t val64 = 0;
 #endif
 #if 0
 #ifdef VM_SWAPUSAGE
@@ -326,8 +362,9 @@ getAmountFreePhysicalRAM()
 
         count = HOST_VM_INFO64_COUNT;
         if (host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stat, &count) == KERN_SUCCESS &&
-            host_page_size(host, &page_size) == KERN_SUCCESS)
+            host_page_size(host, &page_size) == KERN_SUCCESS) {
             ullAvailPhys = (vm_stat.free_count + vm_stat.inactive_count) * (unsigned long long)page_size;
+        }
 #endif
         if (!total) {
             host_basic_info_data_t info;
