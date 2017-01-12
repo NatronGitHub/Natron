@@ -28,15 +28,14 @@
 // ***** END PYTHON BLOCK *****
 
 #include <vector>
-#include <cstdint> // uintptr_t
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
-
 #include "Engine/Bezier.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -81,9 +80,6 @@ public:
 
         // Union of all discretized bezier segments
         std::vector<ParametricPoint> bezierPolygonJoined;
-
-        // indices (from 0 to n) of the points in bezierPoygonJoined
-        std::vector<std::uintptr_t> bezierPolygonIndices;
 
         // The computed mesh for the feather
         std::vector<RotoFeatherVertex> featherMesh;

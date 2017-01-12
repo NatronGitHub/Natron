@@ -24,13 +24,21 @@
 
 #include "RotoBezierTriangulation.h"
 
+#include <cstdint> // uintptr_t
+#include <cstddef> // size_t
+
 #include "libtess.h"
 
 NATRON_NAMESPACE_ENTER;
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER;
 
-static void tess_begin_primitive_callback(unsigned int which, void *polygonData)
+using std::uintptr_t;
+using std::size_t;
+using std::vector;
+
+static void tess_begin_primitive_callback(unsigned int which,
+                                          void *polygonData)
 {
 
     RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
@@ -77,7 +85,8 @@ static void tess_end_primitive_callback(void *polygonData)
 
 }
 
-static void tess_vertex_callback(void* data /*per-vertex client data*/, void *polygonData)
+static void tess_vertex_callback(void* data /*per-vertex client data*/,
+                                 void *polygonData)
 {
     RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
     assert(myData);
@@ -86,61 +95,60 @@ static void tess_vertex_callback(void* data /*per-vertex client data*/, void *po
            (!myData->stripsBeingEdited && myData->fanBeingEdited && !myData->trianglesBeingEdited) ||
            (!myData->stripsBeingEdited && !myData->fanBeingEdited && myData->trianglesBeingEdited));
 
-    unsigned int* p = (unsigned int*)data;
-    assert(p);
-    assert(/**p >= 0 &&*/ *p < myData->bezierPolygonJoined.size());
+    uintptr_t index = reinterpret_cast<uintptr_t>(data);
+    assert(/**p >= 0 &&*/ index < myData->bezierPolygonJoined.size());
 #ifndef NDEBUG
-    assert(myData->bezierPolygonJoined[*p].x >= myData->bezierBbox.x1 && myData->bezierPolygonJoined[*p].x <= myData->bezierBbox.x2 &&
-           myData->bezierPolygonJoined[*p].y >= myData->bezierBbox.y1 && myData->bezierPolygonJoined[*p].y <= myData->bezierBbox.y2);
+    assert(myData->bezierPolygonJoined[index].x >= myData->bezierBbox.x1 && myData->bezierPolygonJoined[index].x <= myData->bezierBbox.x2 &&
+           myData->bezierPolygonJoined[index].y >= myData->bezierBbox.y1 && myData->bezierPolygonJoined[index].y <= myData->bezierBbox.y2);
 #endif
     if (myData->stripsBeingEdited) {
-        myData->stripsBeingEdited->indices.push_back(*p);
+        myData->stripsBeingEdited->indices.push_back(index);
     } else if (myData->fanBeingEdited) {
-        myData->fanBeingEdited->indices.push_back(*p);
+        myData->fanBeingEdited->indices.push_back(index);
     } else if (myData->trianglesBeingEdited) {
-        myData->trianglesBeingEdited->indices.push_back(*p);
+        myData->trianglesBeingEdited->indices.push_back(index);
     }
 
 }
 
-static void tess_error_callback(unsigned int error, void *polygonData)
+static void tess_error_callback(unsigned int error,
+                                void *polygonData)
 {
     RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
     assert(myData);
     myData->error = error;
 }
 
-static void tess_intersection_combine_callback(double coords[3], void */*data*/[4] /*4 original vertices*/, double /*w*/[4] /*weights*/, void **dataOut, void *polygonData)
+static void tess_intersection_combine_callback(double coords[3],
+                                               void */*data*/[4] /*4 original vertices*/,
+                                               double /*w*/[4] /*weights*/,
+                                               void **dataOut,
+                                               void *polygonData)
 {
     RotoBezierTriangulation::PolygonData* myData = (RotoBezierTriangulation::PolygonData*)polygonData;
     assert(myData);
-
 
     ParametricPoint v;
     v.x = coords[0];
     v.y = coords[1];
     v.t = 0;
 
-    assert(myData->bezierPolygonIndices.size() == myData->bezierPolygonJoined.size());
-
     uintptr_t index = myData->bezierPolygonJoined.size();
-    myData->bezierPolygonIndices.push_back(index);
     myData->bezierPolygonJoined.push_back(v);
 
-    /*new->r = w[0]*d[0]->r + w[1]*d[1]->r + w[2]*d[2]->r + w[3]*d[3]->r;
-     new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
-     new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
-     new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
-    assert(/**vertexData >= 0 &&*/ index < myData->bezierPolygonIndices.size());
-    *dataOut = (void*)index;
-    
+    assert(index < myData->bezierPolygonJoined.size());
+    *dataOut = reinterpret_cast<void*>(index);
 }
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 void
-RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, ViewIdx view, unsigned int mipmapLevel, double featherDist,
-                                             PolygonData* outArgs)
+RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier,
+                                          double time,
+                                          ViewIdx view,
+                                          unsigned int mipmapLevel,
+                                          double featherDist,
+                                          PolygonData* outArgs)
 {
     ///Note that we do not use the opacity when rendering the bezier, it is rendered with correct floating point opacity/color when converting
     ///to the Natron image.
@@ -174,12 +182,12 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, 
     // First compute the mesh composed of triangles of the feather
     assert( !outArgs->featherPolygon.empty() && !outArgs->bezierPolygon.empty() && outArgs->featherPolygon.size() == outArgs->bezierPolygon.size());
 
-    std::vector<std::vector<ParametricPoint> >::const_iterator fIt = outArgs->featherPolygon.begin();
-    std::vector<std::vector<ParametricPoint> > ::const_iterator prevFSegmentIt = outArgs->featherPolygon.end();
+    vector<vector<ParametricPoint> >::const_iterator fIt = outArgs->featherPolygon.begin();
+    vector<vector<ParametricPoint> > ::const_iterator prevFSegmentIt = outArgs->featherPolygon.end();
     --prevFSegmentIt;
-    std::vector<std::vector<ParametricPoint> > ::const_iterator nextFSegmentIt = outArgs->featherPolygon.begin();
+    vector<vector<ParametricPoint> > ::const_iterator nextFSegmentIt = outArgs->featherPolygon.begin();
     ++nextFSegmentIt;
-    for (std::vector<std::vector<ParametricPoint> > ::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it, ++fIt) {
+    for (vector<vector<ParametricPoint> > ::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it, ++fIt) {
 
         if (prevFSegmentIt == outArgs->featherPolygon.end()) {
             prevFSegmentIt = outArgs->featherPolygon.begin();
@@ -190,19 +198,19 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, 
         // Iterate over each bezier segment.
         // There are the same number of bezier segments for the feather and the internal bezier. Each discretized segment is a contour (list of vertices)
 
-        std::vector<ParametricPoint>::const_iterator bSegmentIt = it->begin();
-        std::vector<ParametricPoint>::const_iterator fSegmentIt = fIt->begin();
+        vector<ParametricPoint>::const_iterator bSegmentIt = it->begin();
+        vector<ParametricPoint>::const_iterator fSegmentIt = fIt->begin();
 
         assert(!it->empty() && !fIt->empty());
 
 
         // prepare iterators to compute derivatives for feather distance
-        std::vector<ParametricPoint>::const_iterator fnext = fSegmentIt;
+        vector<ParametricPoint>::const_iterator fnext = fSegmentIt;
         ++fnext;  // can only be valid since we assert the list is not empty
         if ( fnext == fIt->end() ) {
             fnext = fIt->begin();
         }
-        std::vector<ParametricPoint>::const_iterator fprev = prevFSegmentIt->end();
+        vector<ParametricPoint>::const_iterator fprev = prevFSegmentIt->end();
         --fprev; // can only be valid since we assert the list is not empty
         --fprev;
 
@@ -349,15 +357,15 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, 
     // From README: if you know that all polygons lie in the x-y plane, call
     // gluTessNormal(tess, 0.0, 0.0, 1.0) before rendering any polygons.
     libtess_gluTessNormal(tesselator, 0, 0, 1);
-    libtess_gluTessBeginPolygon(tesselator, (void*)outArgs);
+    libtess_gluTessBeginPolygon(tesselator, outArgs);
     libtess_gluTessBeginContour(tesselator);
 
     // Join the internal polygon into a single vector of vertices now that we don't need per-bezier segments separation.
     // we will need the indices for libtess
-    for (std::vector<std::vector<ParametricPoint> >::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it) {
+    for (vector<vector<ParametricPoint> >::const_iterator it = outArgs->bezierPolygon.begin(); it != outArgs->bezierPolygon.end(); ++it) {
 
         // don't add the first vertex which is the same as the last vertex of the last segment
-        std::vector<ParametricPoint>::const_iterator start = it->begin();
+        vector<ParametricPoint>::const_iterator start = it->begin();
         ++start;
         outArgs->bezierPolygonJoined.insert(outArgs->bezierPolygonJoined.end(), start, it->end());
 
@@ -365,23 +373,18 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, 
     }
     outArgs->bezierPolygon.clear();
 
-    outArgs->bezierPolygonIndices.resize(outArgs->bezierPolygonJoined.size());
 
-    for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
+    for (size_t i = 0; i < outArgs->bezierPolygonJoined.size(); ++i) {
         double coords[3] = {outArgs->bezierPolygonJoined[i].x, outArgs->bezierPolygonJoined[i].y, 1.};
         uintptr_t index = i;
-        outArgs->bezierPolygonIndices[i] = index;
         assert(index < outArgs->bezierPolygonJoined.size());
-        libtess_gluTessVertex(tesselator, coords, (void*)(index) /*per-vertex client data*/);
+        libtess_gluTessVertex(tesselator, coords, reinterpret_cast<void*>(index) /*per-vertex client data*/);
     }
 
     libtess_gluTessEndContour(tesselator);
     libtess_gluTessEndPolygon(tesselator);
     libtess_gluDeleteTess(tesselator);
-    
-    // now delete indices
-    outArgs->bezierPolygonIndices.clear();
-    
+
     // check for errors
     assert(outArgs->error == 0);
     
