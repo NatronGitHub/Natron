@@ -7,6 +7,9 @@ Resize node
 
 *This documentation is for version 1.0 of Resize.*
 
+Description
+-----------
+
 Resize input stream, using OpenImageIO.
 
 Note that only full images can be rendered, so it may be slower for interactive editing than the Reformat plugin.

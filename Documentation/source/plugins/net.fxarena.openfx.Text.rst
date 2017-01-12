@@ -7,6 +7,9 @@ Text node
 
 *This documentation is for version 6.9 of Text.*
 
+Description
+-----------
+
 Advanced text generator node using Pango and Cairo.
 
 Inputs

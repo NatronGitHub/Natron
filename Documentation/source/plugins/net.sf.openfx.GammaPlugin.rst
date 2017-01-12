@@ -7,6 +7,9 @@ Gamma node
 
 *This documentation is for version 2.0 of Gamma.*
 
+Description
+-----------
+
 Apply gamma function to the selected channels. The actual function is pow(x,1/max(1e-8,value)).
 
 Inputs

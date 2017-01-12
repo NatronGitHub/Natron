@@ -5,6 +5,9 @@ MatteMonitor node
 
 *This documentation is for version 1.0 of MatteMonitor.*
 
+Description
+-----------
+
 A Matte Monitor: make alpha values that are strictly between 0 and 1 more visible.
 
 After applying a Keyer, a scaling operation is usually applied to clean the matte. However, it is difficult to visualize on the output values that are very close to 0 or 1, but not equal. This plugin can be used to better visualize these values: connect it to the output of the scaling operator, then to a viewer, and visualize the alpha channel.

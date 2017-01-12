@@ -7,6 +7,9 @@ Equalize node
 
 *This documentation is for version 2.0 of Equalize.*
 
+Description
+-----------
+
 Equalize histogram of pixel values.
 
 To equalize image brightness only, use the HistEQCImg plugin.

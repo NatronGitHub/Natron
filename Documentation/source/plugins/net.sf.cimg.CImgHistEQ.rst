@@ -7,6 +7,9 @@ HistEQ node
 
 *This documentation is for version 2.0 of HistEQ.*
 
+Description
+-----------
+
 Equalize histogram of brightness values.
 
 Uses the 'equalize' function from the CImg library on the 'V' channel of the HSV decomposition of the image.

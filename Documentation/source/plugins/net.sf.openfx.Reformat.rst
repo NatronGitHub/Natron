@@ -7,6 +7,9 @@ Reformat node
 
 *This documentation is for version 1.1 of Reformat.*
 
+Description
+-----------
+
 Convert the image to another format or size
 
 This plugin concatenates transforms.

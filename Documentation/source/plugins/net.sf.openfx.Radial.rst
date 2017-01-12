@@ -7,6 +7,9 @@ Radial node
 
 *This documentation is for version 2.1 of Radial.*
 
+Description
+-----------
+
 Radial ramp.
 
 The ramp is composited with the source image using the 'over' operator.

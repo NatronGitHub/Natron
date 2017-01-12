@@ -5,6 +5,9 @@ Tracker node
 
 *This documentation is for version 1.0 of Tracker.*
 
+Description
+-----------
+
 Track one or more 2D point(s) using LibMV from the Blender open-source software.
 
 Goal

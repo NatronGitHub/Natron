@@ -7,6 +7,9 @@ ColorBars node
 
 *This documentation is for version 1.0 of ColorBars.*
 
+Description
+-----------
+
 Generate an image with SMPTE RP 219:2002 color bars.
 
 The output of this plugin is broadcast-safe of "Output IRE" is unchecked. Be careful that colorbars are defined in a nonlinear colorspace. In order to get linear RGB, this plug-in should be combined with a transformation from the video space to linear.

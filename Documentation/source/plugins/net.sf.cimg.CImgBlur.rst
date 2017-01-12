@@ -7,6 +7,9 @@ Blur node
 
 *This documentation is for version 4.0 of Blur.*
 
+Description
+-----------
+
 Blur input stream or compute derivatives.
 
 The blur filter can be a quasi-Gaussian, a Gaussian, a box, a triangle or a quadratic filter.

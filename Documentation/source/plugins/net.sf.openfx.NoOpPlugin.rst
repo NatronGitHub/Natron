@@ -7,6 +7,9 @@ NoOp node
 
 *This documentation is for version 2.0 of NoOp.*
 
+Description
+-----------
+
 Copies the input to the ouput.
 
 This plugin concatenates transforms.

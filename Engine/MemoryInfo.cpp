@@ -81,19 +81,55 @@ NATRON_NAMESPACE_ENTER;
 U64
 getSystemTotalRAM()
 {
-#if defined(__APPLE__)
-    int mib [] = {
-        CTL_HW, HW_MEMSIZE
-    };
-    uint64_t value = 0;
-    size_t length = sizeof(value);
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+    // see http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/kernel32/heap.c
+    uint64_t total;
+#ifdef __APPLE__
+    unsigned int val;
+#else
+    unsigned long val;
+#endif
+    int mib[2];
+    size_t size_sys;
+#ifdef HW_MEMSIZE
+    uint64_t val64 = 0;
+#endif
+    total = 0;
 
-    if ( -1 == sysctl(mib, 2, &value, &length, NULL, 0) ) {
-        //error;
+    mib[0] = CTL_HW;
+#ifdef HW_MEMSIZE
+    mib[1] = HW_MEMSIZE;
+    size_sys = sizeof(val64);
+    if (!sysctl(mib, 2, &val64, &size_sys, NULL, 0) && size_sys == sizeof(val64) && val64) {
+        total = val64;
     }
+#endif
 
-    return value;
+#if defined(__MACH__)
+    if (!total) {
+        host_name_port_t host = mach_host_self();
+        mach_msg_type_number_t count;
 
+        host_basic_info_data_t info;
+        count = HOST_BASIC_INFO_COUNT;
+        if (host_info(host, HOST_BASIC_INFO, (host_info_t)&info, &count) == KERN_SUCCESS) {
+            total = info.max_mem;
+        }
+
+        mach_port_deallocate(mach_task_self(), host);
+    }
+#endif
+
+    if (!total) {
+        mib[1] = HW_PHYSMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val) {
+            total = val;
+        }
+    }
+    
+    return total;
+    
 #elif defined(_WIN32)
     ///On Windows, but not Cygwin, the new GlobalMemoryStatusEx( ) function fills a 64-bit
     ///safe MEMORYSTATUSEX struct with information about physical and virtual memory. Structure fields include:
@@ -282,42 +318,105 @@ getAmountFreePhysicalRAM()
     totalAvailableRAM *= memInfo.mem_unit;
 
     return totalAvailableRAM;
-#elif defined(__FreeBSD__)
-    unsigned long pagesize = getpagesize();
-    u_int value;
-    size_t value_size = sizeof(value);
-    unsigned long long totalAvailableRAM;
-    if (sysctlbyname("vm.stats.vm.v_free_count", &value, &value_size, NULL, 0) < 0) {
-        throw std::runtime_error("Unable to get amount of free physical RAM");
-    }
-    totalAvailableRAM = value * (unsigned long long)pagesize;
+#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+    // and http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/kernel32/heap.c
+    unsigned long long ullAvailPhys;
+    unsigned long long ullTotalPhys;
+    uint64_t total;
+#ifdef __APPLE__
+    unsigned int val;
+#else
+    unsigned long val;
+#endif
+    int mib[2];
+    size_t size_sys;
+#ifdef HW_MEMSIZE
+    uint64_t val64 = 0;
+#endif
+#if 0
+#ifdef VM_SWAPUSAGE
+    struct xsw_usage swap;
+#endif
+#endif
 
-    return totalAvailableRAM;
-#elif defined(__APPLE__) && defined(__MACH__)
+    total = 0;
+    ullAvailPhys = 0;
+
+    mib[0] = CTL_HW;
+#ifdef HW_MEMSIZE
+    mib[1] = HW_MEMSIZE;
+    size_sys = sizeof(val64);
+    if (!sysctl(mib, 2, &val64, &size_sys, NULL, 0) && size_sys == sizeof(val64) && val64)
+        total = val64;
+#endif
+
+#if defined(__MACH__)
     // see http://opensource.apple.com/source/system_cmds/system_cmds-498.2/vm_stat.tproj/vm_stat.c
-    host_name_port_t hostName = mach_host_self();
-    kern_return_t kr;
-    vm_size_t pageSize = 4096; 	/* set to 4k default */
-    kr = host_page_size(hostName, &pageSize);
-    if (kr != KERN_SUCCESS) {
-        qDebug() << "failed to get pagesize; defaulting to 4K.";
-    }
-    vm_statistics64_data_t vmstat;
-    mach_msg_type_number_t count = HOST_VM_INFO64_COUNT;
-    kr = host_statistics64(hostName, HOST_VM_INFO64, (host_info64_t)&vmstat, &count);
-    if (kr != KERN_SUCCESS) {
-        std::stringstream ss;
-        ss << "Unable to get amount of free physical RAM, host_statistics64(HOST_VM_INFO64) returned ";
-        ss << (int)kr << " (" << mach_error_string(kr) << ")";
+    {
+        host_name_port_t host = mach_host_self();
+        mach_msg_type_number_t count;
 
-        throw std::runtime_error(ss.str());
+#ifdef HOST_VM_INFO64_COUNT
+        vm_size_t page_size;
+        vm_statistics64_data_t vm_stat;
+
+        count = HOST_VM_INFO64_COUNT;
+        if (host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stat, &count) == KERN_SUCCESS &&
+            host_page_size(host, &page_size) == KERN_SUCCESS) {
+            ullAvailPhys = (vm_stat.free_count + vm_stat.inactive_count) * (unsigned long long)page_size;
+        }
+#endif
+        if (!total) {
+            host_basic_info_data_t info;
+            count = HOST_BASIC_INFO_COUNT;
+            if (host_info(host, HOST_BASIC_INFO, (host_info_t)&info, &count) == KERN_SUCCESS) {
+                total = info.max_mem;
+            }
+        }
+
+        mach_port_deallocate(mach_task_self(), host);
+    }
+#endif
+
+    if (!total) {
+        mib[1] = HW_PHYSMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val)
+            total = val;
     }
 
-    /**
-     * Returning only the free_count is not useful because it seems munmap implementations tend to not increase the free_count
-     * but the inactive_count instead
-     **/
-    return (vmstat.free_count + vmstat.inactive_count) * pageSize;
+    if (total) {
+        ullTotalPhys = total;
+    }
+
+    if (!ullAvailPhys) {
+        mib[1] = HW_USERMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val)
+            ullAvailPhys = val;
+    }
+
+    if (!ullAvailPhys) {
+        ullAvailPhys = ullTotalPhys;
+    }
+
+#if 0
+    ullTotalPageFile = ullAvailPhys;
+    ullAvailPageFile = ullAvailPhys;
+
+#ifdef VM_SWAPUSAGE
+    mib[0] = CTL_VM;
+    mib[1] = VM_SWAPUSAGE;
+    size_sys = sizeof(swap);
+    if (!sysctl(mib, 2, &swap, &size_sys, NULL, 0) && size_sys == sizeof(swap))
+    {
+        lpmemex->ullTotalPageFile = swap.xsu_total;
+        lpmemex->ullAvailPageFile = swap.xsu_avail;
+    }
+#endif
+#endif
+
+    return ullAvailPhys;
 #endif
 }
 

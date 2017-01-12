@@ -7,6 +7,9 @@ SlitScan node
 
 *This documentation is for version 1.0 of SlitScan.*
 
+Description
+-----------
+
 Apply per-pixel retiming: the time is computed for each pixel from the retime function, which can be either a horizontal ramp, a vertical ramp, or a retime map.
 
 The default retime function corresponds to a horizontal slit: it is a vertical ramp, which is a linear function of y, which is 0 at the center of the bottom image line, and 1 at the center of the top image line. Optionally, a vertical slit may be used (0 at the center of the leftmost image column, 1 at the center of the rightmost image column), or the optional single-channel "Retime Map" input may also be used.

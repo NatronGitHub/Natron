@@ -7,6 +7,9 @@ OCIOLookTransform node
 
 *This documentation is for version 1.0 of OCIOLookTransform.*
 
+Description
+-----------
+
 OpenColorIO LookTransform
 
 A 'look' is a named color transform, intended to modify the look of an image in a 'creative' manner (as opposed to a colorspace definion which tends to be technically/mathematically defined).

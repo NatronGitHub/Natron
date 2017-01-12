@@ -5,6 +5,9 @@ SeGrain node
 
 *This documentation is for version 1.0 of SeGrain.*
 
+Description
+-----------
+
 Adds synthetic grain.
 
 Push "presets" to get predefined types of grain, these are the correct size for 2K scans.

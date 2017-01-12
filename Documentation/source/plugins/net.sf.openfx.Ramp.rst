@@ -7,6 +7,9 @@ Ramp node
 
 *This documentation is for version 2.0 of Ramp.*
 
+Description
+-----------
+
 Draw a ramp between 2 edges.
 
 The ramp is composited with the source image using the 'over' operator.

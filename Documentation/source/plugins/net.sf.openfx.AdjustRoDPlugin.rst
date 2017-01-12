@@ -7,6 +7,9 @@ AdjustRoD node
 
 *This documentation is for version 1.0 of AdjustRoD.*
 
+Description
+-----------
+
 Enlarges the input image by a given amount of black and transparent pixels.
 
 Inputs

@@ -5,6 +5,9 @@ YPbPrToRGB709 node
 
 *This documentation is for version 1.0 of YPbPrToRGB709.*
 
+Description
+-----------
+
 Convert from YPbPr color model (ITU.BT-709) to RGB. RGB is gamma-decompressed using the Rec.709 Electro-Optical Transfer Function (EOTF) after conversion.
 
 Inputs

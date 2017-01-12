@@ -7,6 +7,9 @@ CheckerBoard node
 
 *This documentation is for version 1.0 of CheckerBoard.*
 
+Description
+-----------
+
 Generate an image with a checkerboard.
 
 A frame range may be specified for operators that need it.

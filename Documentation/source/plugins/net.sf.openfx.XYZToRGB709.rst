@@ -7,6 +7,9 @@ XYZToRGB709 node
 
 *This documentation is for version 1.0 of XYZToRGB709.*
 
+Description
+-----------
+
 Convert from XYZ color model to RGB (Rec.709 with D65 illuminant). X, Y and Z are in the same units as RGB.
 
 Inputs

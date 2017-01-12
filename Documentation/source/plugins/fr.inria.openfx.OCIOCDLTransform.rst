@@ -7,6 +7,9 @@ OCIOCDLTransform node
 
 *This documentation is for version 1.0 of OCIOCDLTransform.*
 
+Description
+-----------
+
 Use OpenColorIO to apply an ASC Color Decision List (CDL) grade.
 
 The formula applied for each channel is:

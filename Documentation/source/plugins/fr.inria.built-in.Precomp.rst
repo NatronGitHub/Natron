@@ -5,6 +5,9 @@ Precomp node
 
 *This documentation is for version 1.0 of Precomp.*
 
+Description
+-----------
+
 The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.
 
 This allows you to save a subset of the node tree as a separate project. A Precomp node can be useful in at least two ways:

@@ -5,6 +5,9 @@ YUVToRGB601 node
 
 *This documentation is for version 1.0 of YUVToRGB601.*
 
+Description
+-----------
+
 Convert from YUV color model (ITU.BT-601) to RGB. RGB is gamma-decompressed using the sRGB Electro-Optical Transfer Function (EOTF) after conversion.
 
 Inputs

@@ -7,6 +7,9 @@ FrameHold node
 
 *This documentation is for version 1.0 of FrameHold.*
 
+Description
+-----------
+
 Hold a given frame for the input clip indefinitely, or use a subsample of the input frames and hold them for several frames.
 
 Inputs

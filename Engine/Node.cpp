@@ -4520,6 +4520,8 @@ Node::makeDocumentation(bool genHTML) const
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
+    ms << "\n" << tr("Description") << "\n--------------------------------------------------------------------------------\n\n";
+
     if (!pluginDescriptionIsMarkdown) {
         if (genHTML) {
             pluginDescription = NATRON_NAMESPACE::convertFromPlainText(pluginDescription, NATRON_NAMESPACE::WhiteSpaceNormal);
@@ -4532,10 +4534,10 @@ Node::makeDocumentation(bool genHTML) const
         }
     }
 
-    ms << pluginDescription << "\n\n";
+    ms << pluginDescription << "\n";
 
     // create markdown table
-    ms << tr("Inputs") << "\n----------\n\n";
+    ms << "\n" << tr("Inputs") << "\n--------------------------------------------------------------------------------\n\n";
     ms << tr("Input") << " | " << tr("Description") << " | " << tr("Optional") << "\n";
     ms << "--- | --- | ---\n";
     if (inputs.size() > 0) {
@@ -4547,7 +4549,7 @@ Node::makeDocumentation(bool genHTML) const
             ms << inputName << " | " << inputDesc << " | " << inputOpt << "\n";
         }
     }
-    ms << tr("Controls") << "\n----------\n\n";
+    ms << "\n" << tr("Controls") << "\n--------------------------------------------------------------------------------\n\n";
     if (!genHTML) {
         // insert a special marker to be replaced in rst by the genStaticDocs.sh script)
         ms << "CONTROLSTABLEPROPS\n\n";

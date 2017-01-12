@@ -5,6 +5,9 @@ TimeDissolve node
 
 *This documentation is for version 1.0 of TimeDissolve.*
 
+Description
+-----------
+
 Dissolves between two inputs, starting the dissolve at the in frame and ending at the out frame.
 
 You can specify the dissolve curve over time, if the OFX host supports it (else it is a traditional smoothstep).

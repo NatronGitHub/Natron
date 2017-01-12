@@ -7,6 +7,9 @@ SharpenShock node
 
 *This documentation is for version 2.0 of SharpenShock.*
 
+Description
+-----------
+
 Sharpen selected images by shock filters.
 
 Uses 'sharpen' function from the CImg library.

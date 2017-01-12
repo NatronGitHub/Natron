@@ -7,6 +7,9 @@ Clamp node
 
 *This documentation is for version 2.0 of Clamp.*
 
+Description
+-----------
+
 Clamp the values of the selected channels.
 
 A special use case for the Clamp plugin is to generate a binary mask image (i.e. each pixel is either 0 or 1) by thresholding an image. Let us say one wants all input pixels whose value is above or equal to some threshold value to become 1, and all values below this threshold to become 0. Set the "Minimum" value to the threshold, set the "Maximum" to any value strictly below the threshold (e.g. 0 if the threshold is positive), and check "Enable MinClampTo" and "Enable MaxClampTo" while keeping the default values for "MinClampTo" (0.0) and "MaxClampTop" (1.0). The result is a binary mask image. To create a non-binary mask, with softer edges, either blur the output of Clamp, or use the Grade plugin instead, setting the "Black Point" and "White Point" to values close to the threshold, and checking the "Clamp Black" and "Clamp White" options.

@@ -7,6 +7,9 @@ IDistort node
 
 *This documentation is for version 2.0 of IDistort.*
 
+Description
+-----------
+
 Distort an image, based on a displacement map.
 
 The U and V channels give the offset in pixels in the destination image to the pixel where the color is taken. For example, if at pixel (45,12) the UV value is (-1.5,3.2), then the color at this pixel is taken from (43.5,15.2) in the source image. This plugin concatenates transforms upstream, so that if the nodes upstream output a 3x3 transform (e.g. Transform, CornerPin, Dot, NoOp, Switch), the original image is sampled only once.

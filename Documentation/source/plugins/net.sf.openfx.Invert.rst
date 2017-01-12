@@ -7,6 +7,9 @@ Invert node
 
 *This documentation is for version 2.0 of Invert.*
 
+Description
+-----------
+
 Inverse the selected channels
 
 Inputs

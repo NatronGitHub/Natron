@@ -7,6 +7,9 @@ ReadSVG node
 
 *This documentation is for version 3.2 of ReadSVG.*
 
+Description
+-----------
+
 Fast SVG (Scalable Vector Graphics) reader using librsvg and Cairo.
 
 Inputs

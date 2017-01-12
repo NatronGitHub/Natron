@@ -7,6 +7,9 @@ ReadKrita node
 
 *This documentation is for version 2.0 of ReadKrita.*
 
+Description
+-----------
+
 Read Krita image format.
 
 Inputs

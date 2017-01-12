@@ -7,6 +7,9 @@ FrameRange node
 
 *This documentation is for version 1.0 of FrameRange.*
 
+Description
+-----------
+
 Set the frame range for a clip. Useful in conjunction with AppendClipOFX.
 
 Inputs

@@ -115,6 +115,10 @@ This is only relevant for Windows: If checked, Natron will not convert a path st
 Documentation
 -------------
 
+**Documentation Source**
+
+Documentation source.
+
 **Documentation local port (0=auto)**
 
 The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself.
