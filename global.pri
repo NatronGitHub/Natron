@@ -140,7 +140,7 @@ CONFIG(enable-osmesa) {
         OSMESA_PATH="/opt/osmesa"
     }
     # When using static Mesa libraries, the LLVM libs (necessary for llvmpipe) are not included
-    OSMESA_LIBS=$$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --libs --static osmesa) $$system($$LLVM_PATH/bin/llvm-config --ldflags --system-libs --libs engine mcjit mcdisassembler)
+    OSMESA_LIBS=$$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --libs --static osmesa) $$system($$LLVM_PATH/bin/llvm-config --ldflags --system-libs --libs engine mcjit mcdisassembler 2>/dev/null || $$LLVM_PATH/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler)
 
     DEFINES += HAVE_OSMESA
     INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --variable=includedir osmesa)
