@@ -44,6 +44,7 @@ fi
 
 OPTS=("--no-settings")
 if [ -n "${OFX_PLUGIN_PATH:-}" ]; then
+    echo "OFX_PLUGIN_PATH=${OFX_PLUGIN_PATH:-}, setting useStdOFXPluginsLocation=False"
     OPTS=(${OPTS[@]+"${OPTS[@]}"} "--setting" "useStdOFXPluginsLocation=False")
 fi
 
