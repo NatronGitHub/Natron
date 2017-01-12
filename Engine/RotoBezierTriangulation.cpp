@@ -123,18 +123,16 @@ static void tess_intersection_combine_callback(double coords[3], void */*data*/[
 
     assert(myData->bezierPolygonIndices.size() == myData->bezierPolygonJoined.size());
 
-    unsigned int* vertexData =  new unsigned int;
-    *vertexData = myData->bezierPolygonJoined.size();
-
-    myData->bezierPolygonIndices.push_back(vertexData);
+    uintptr_t index = myData->bezierPolygonJoined.size();
+    myData->bezierPolygonIndices.push_back(index);
     myData->bezierPolygonJoined.push_back(v);
 
     /*new->r = w[0]*d[0]->r + w[1]*d[1]->r + w[2]*d[2]->r + w[3]*d[3]->r;
      new->g = w[0]*d[0]->g + w[1]*d[1]->g + w[2]*d[2]->g + w[3]*d[3]->g;
      new->b = w[0]*d[0]->b + w[1]*d[1]->b + w[2]*d[2]->b + w[3]*d[3]->b;
      new->a = w[0]*d[0]->a + w[1]*d[1]->a + w[2]*d[2]->a + w[3]*d[3]->a;*/
-    assert(/**vertexData >= 0 &&*/ *vertexData < myData->bezierPolygonIndices.size());
-    *dataOut = (void*)vertexData;
+    assert(/**vertexData >= 0 &&*/ index < myData->bezierPolygonIndices.size());
+    *dataOut = (void*)index;
     
 }
 
@@ -371,11 +369,10 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, 
 
     for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
         double coords[3] = {outArgs->bezierPolygonJoined[i].x, outArgs->bezierPolygonJoined[i].y, 1.};
-        unsigned int* vertexData =  new unsigned int;
-        *vertexData = i;
-        outArgs->bezierPolygonIndices[i] = vertexData;
-        assert(*vertexData >= 0 && *vertexData < outArgs->bezierPolygonJoined.size());
-        libtess_gluTessVertex(tesselator, coords, (void*)(vertexData) /*per-vertex client data*/);
+        uintptr_t index = i;
+        outArgs->bezierPolygonIndices[i] = index;
+        assert(index < outArgs->bezierPolygonJoined.size());
+        libtess_gluTessVertex(tesselator, coords, (void*)(index) /*per-vertex client data*/);
     }
 
     libtess_gluTessEndContour(tesselator);
@@ -383,9 +380,6 @@ RotoBezierTriangulation::computeTriangles(const BezierPtr& bezier, double time, 
     libtess_gluDeleteTess(tesselator);
     
     // now delete indices
-    for (std::size_t i = 0; i < outArgs->bezierPolygonIndices.size(); ++i) {
-        delete outArgs->bezierPolygonIndices[i];
-    }
     outArgs->bezierPolygonIndices.clear();
     
     // check for errors
