@@ -7,6 +7,9 @@ Mirror node
 
 *This documentation is for version 1.0 of Mirror.*
 
+Description
+-----------
+
 Flip (vertical mirror) or flop (horizontal mirror) an image. Interlaced video can not be flipped.
 
 This plugin does not concatenate transforms.

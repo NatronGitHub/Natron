@@ -7,6 +7,9 @@ SmoothAnisotropic node
 
 *This documentation is for version 2.0 of SmoothAnisotropic.*
 
+Description
+-----------
+
 Smooth/Denoise input stream using anisotropic PDE-based smoothing.
 
 Uses the 'blur\_anisotropic' function from the CImg library.

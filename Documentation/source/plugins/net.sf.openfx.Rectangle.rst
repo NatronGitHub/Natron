@@ -7,6 +7,9 @@ Rectangle node
 
 *This documentation is for version 2.1 of Rectangle.*
 
+Description
+-----------
+
 Draw a rectangle.
 
 The rectangle is composited with the source image using the 'over' operator.

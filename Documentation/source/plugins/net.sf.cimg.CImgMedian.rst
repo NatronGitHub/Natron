@@ -5,6 +5,9 @@ Median node
 
 *This documentation is for version 2.0 of Median.*
 
+Description
+-----------
+
 Apply a median filter to input images. Pixel values within a square box of the given size around the current pixel are sorted, and the median value is output if it does not differ from the current value by more than the given. Median filtering is performed per-channel.
 
 Uses the 'blur\_median' function from the CImg library.

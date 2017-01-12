@@ -7,6 +7,9 @@ CornerPinMasked node
 
 *This documentation is for version 1.0 of CornerPinMasked.*
 
+Description
+-----------
+
 Allows an image to fit another in translation, rotation and scale.
 
 The resulting transform is a translation if 1 point is enabled, a similarity if 2 are enabled, an affine transform if 3 are enabled, and a homography if they are all enabled.

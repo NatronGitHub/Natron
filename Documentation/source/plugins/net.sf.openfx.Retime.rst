@@ -7,6 +7,9 @@ Retime node
 
 *This documentation is for version 1.0 of Retime.*
 
+Description
+-----------
+
 Change the timing of the input clip.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Retime

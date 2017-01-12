@@ -7,6 +7,9 @@ ReadCDR node
 
 *This documentation is for version 1.0 of ReadCDR.*
 
+Description
+-----------
+
 Read CorelDRAW(R) document format.
 
 This plugin is not manufactured, approved, or supported by Corel Corporation or Corel Corporation Limited.

@@ -7,6 +7,9 @@ Laplacian node
 
 *This documentation is for version 4.0 of Laplacian.*
 
+Description
+-----------
+
 Blur input stream, and subtract the result from the input image. This is not a mathematically correct Laplacian (which would be the sum of second derivatives over X and Y).
 
 Uses the 'vanvliet' and 'deriche' functions from the CImg library.

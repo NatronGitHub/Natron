@@ -7,6 +7,9 @@ DirBlur node
 
 *This documentation is for version 1.0 of DirBlur.*
 
+Description
+-----------
+
 Apply directional blur to an image.
 
 This plugin concatenates transforms upstream.

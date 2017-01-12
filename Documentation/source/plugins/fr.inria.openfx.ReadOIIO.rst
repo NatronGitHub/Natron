@@ -7,6 +7,9 @@ ReadOIIO node
 
 *This documentation is for version 2.0 of ReadOIIO.*
 
+Description
+-----------
+
 Read images using OpenImageIO.
 
 Ouput is always Premultiplied (alpha is associated).

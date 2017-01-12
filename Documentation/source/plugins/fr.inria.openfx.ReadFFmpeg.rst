@@ -7,6 +7,9 @@ ReadFFmpeg node
 
 *This documentation is for version 1.0 of ReadFFmpeg.*
 
+Description
+-----------
+
 Read images or video using FFmpeg.
 
 FFmpeg versions (compiled with / running with):

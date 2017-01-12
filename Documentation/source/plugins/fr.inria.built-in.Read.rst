@@ -5,6 +5,9 @@ Read node
 
 *This documentation is for version 1.0 of Read.*
 
+Description
+-----------
+
 Node used to read images or videos from disk. The image/video is identified by its filename and its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used.
 
 Inputs

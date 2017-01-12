@@ -7,6 +7,9 @@ Add node
 
 *This documentation is for version 2.0 of Add.*
 
+Description
+-----------
+
 Add a constant to the selected channels.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Add

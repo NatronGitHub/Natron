@@ -7,6 +7,9 @@ ChromaBlur node
 
 *This documentation is for version 4.0 of ChromaBlur.*
 
+Description
+-----------
+
 Blur the chrominance of an input stream. Smoothing is done on the x and y components in the CIE xyY color space. Used to prep strongly compressed and chroma subsampled footage for keying.
 
 The blur filter can be a quasi-Gaussian, a Gaussian, a box, a triangle or a quadratic filter.

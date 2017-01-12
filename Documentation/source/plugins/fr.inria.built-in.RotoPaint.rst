@@ -5,6 +5,9 @@ RotoPaint node
 
 *This documentation is for version 1.0 of RotoPaint.*
 
+Description
+-----------
+
 RotoPaint is a vector based free-hand drawing node that helps for tasks such as rotoscoping, matting, etc...
 
 Inputs

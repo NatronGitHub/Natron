@@ -7,6 +7,9 @@ OpenRaster node
 
 *This documentation is for version 2.1 of OpenRaster.*
 
+Description
+-----------
+
 Read OpenRaster image format.
 
 Inputs

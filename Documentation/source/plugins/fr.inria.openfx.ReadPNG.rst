@@ -7,6 +7,9 @@ ReadPNG node
 
 *This documentation is for version 1.0 of ReadPNG.*
 
+Description
+-----------
+
 Read PNG files.
 
 Inputs

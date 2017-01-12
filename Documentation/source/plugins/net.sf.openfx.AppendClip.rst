@@ -5,6 +5,9 @@ AppendClip node
 
 *This documentation is for version 1.0 of AppendClip.*
 
+Description
+-----------
+
 Append one clip to another.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=AppendClip

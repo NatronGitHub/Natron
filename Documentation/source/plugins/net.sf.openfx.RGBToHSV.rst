@@ -7,6 +7,9 @@ RGBToHSV node
 
 *This documentation is for version 1.0 of RGBToHSV.*
 
+Description
+-----------
+
 Convert from linear RGB to HSV color model (hue, saturation, value, as defined by A. R. Smith in 1978). H is in degrees, S and V are in the same units as RGB. RGB is gamma-compressed using the sRGB Opto-Electronic Transfer Function (OETF) before conversion.
 
 Inputs

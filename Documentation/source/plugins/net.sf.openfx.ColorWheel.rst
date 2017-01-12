@@ -7,6 +7,9 @@ ColorWheel node
 
 *This documentation is for version 1.0 of ColorWheel.*
 
+Description
+-----------
+
 Generate an image with a color wheel.
 
 The color wheel occupies the full area, minus a one-pixel black and transparent border

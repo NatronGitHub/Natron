@@ -7,6 +7,9 @@ WriteOIIO node
 
 *This documentation is for version 1.0 of WriteOIIO.*
 
+Description
+-----------
+
 Write images using OpenImageIO.
 
 OpenImageIO supports writing the following file formats:

@@ -7,6 +7,9 @@ WritePFM node
 
 *This documentation is for version 1.0 of WritePFM.*
 
+Description
+-----------
+
 Write PFM (Portable Float Map) files.
 
 Inputs

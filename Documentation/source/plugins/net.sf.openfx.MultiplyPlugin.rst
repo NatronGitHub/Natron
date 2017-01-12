@@ -7,6 +7,9 @@ Multiply node
 
 *This documentation is for version 2.0 of Multiply.*
 
+Description
+-----------
+
 Multiply the selected channels by a constant.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Multiply

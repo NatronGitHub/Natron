@@ -7,6 +7,9 @@ Transform node
 
 *This documentation is for version 1.0 of Transform.*
 
+Description
+-----------
+
 Translate / Rotate / Scale a 2D image.
 
 This plugin concatenates transforms.

@@ -7,6 +7,9 @@ Difference node
 
 *This documentation is for version 1.0 of Difference.*
 
+Description
+-----------
+
 Produce a rough matte from the difference of two input images.
 
 A is the background without the subject (clean plate). B is the subject with the background. RGB is copied from B, the difference is output to alpha, after applying offset and gain.

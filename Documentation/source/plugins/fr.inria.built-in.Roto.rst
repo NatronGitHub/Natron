@@ -5,6 +5,9 @@ Roto node
 
 *This documentation is for version 1.0 of Roto.*
 
+Description
+-----------
+
 Create masks and shapes
 
 Inputs

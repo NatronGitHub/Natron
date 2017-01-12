@@ -5,6 +5,9 @@ SmoothBilateralGuided node
 
 *This documentation is for version 2.0 of SmoothBilateralGuided.*
 
+Description
+-----------
+
 Apply joint/cross bilateral filtering on image A, guided by the intensity differences of image B. Uses the 'blur\_bilateral' function from the CImg library.
 
 CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see http://cimg.eu).

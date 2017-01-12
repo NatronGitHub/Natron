@@ -7,6 +7,9 @@ GMICExpr node
 
 *This documentation is for version 2.1 of GMICExpr.*
 
+Description
+-----------
+
 Quickly generate or process image from mathematical formula evaluated for each pixel. Full documentation for `G'MIC <http://gmic.eu/>`__/`CImg <http://cimg.eu/>`__ expressions is reproduced below and available online from the `G'MIC help <http://gmic.eu/reference.shtml#section9>`__. The only additions of this plugin are the predefined variables ``T`` (current time) and ``K`` (render scale).
 
 Uses the 'fill' function from the CImg library. CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see http://cimg.eu).

@@ -7,6 +7,9 @@ SmoothRollingGuidance node
 
 *This documentation is for version 2.0 of SmoothRollingGuidance.*
 
+Description
+-----------
+
 Filter out details under a given scale using the Rolling Guidance filter.
 
 Rolling Guidance is described fully in http://www.cse.cuhk.edu.hk/~leojia/projects/rollguidance/

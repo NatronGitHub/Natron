@@ -7,6 +7,9 @@ LensDistortion node
 
 *This documentation is for version 3.0 of LensDistortion.*
 
+Description
+-----------
+
 Add or remove lens distortion, or produce an STMap that can be used to apply that transform.
 
 LensDistortion can directly apply distortion/undistortion, but if the distortion parameters are not animated, the most efficient way to use LensDistortion and avoid repeated distortion function calculations is the following:

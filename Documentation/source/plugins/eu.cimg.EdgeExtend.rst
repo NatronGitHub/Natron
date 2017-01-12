@@ -5,6 +5,9 @@ EdgeExtend node
 
 *This documentation is for version 4.0 of EdgeExtend.*
 
+Description
+-----------
+
 Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte. This effect does nothing an an opaque image.
 
 If the input matte comes from a keyer, the alpha channel of the matte should be first eroded by a small amount to remove pixels containing mixed foreground/background colors. If not, these mixed colors may be extended instead of the pure foreground colors.

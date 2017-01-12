@@ -7,6 +7,9 @@ Swirl node
 
 *This documentation is for version 2.9 of Swirl.*
 
+Description
+-----------
+
 Swirl effect using ImageMagick.
 
 Inputs

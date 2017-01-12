@@ -7,6 +7,9 @@ Keyer node
 
 *This documentation is for version 1.0 of Keyer.*
 
+Description
+-----------
+
 A collection of simple keyers. These work by computing a foreground key from the RGB values of the input image (see the keyerMode parameter).
 
 This foreground key is is a scalar from 0 to 1. From the foreground key, a background key (or transparency) is computed.
