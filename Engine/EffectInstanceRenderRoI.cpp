@@ -1248,7 +1248,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
         if (cacheAccess != eCacheAccessModeNone) {
             ImageBitDepthEnum outputBitDepth = getBitDepth(args.renderArgs, -1);
             int tileWidth, tileHeight;
-            appPTR->getCache()->getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
+            Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
 
             RectI tiledRoundedRoI = renderMappedRoI;
 

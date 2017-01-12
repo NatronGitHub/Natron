@@ -1272,9 +1272,11 @@ OfxEffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render, double *fi
     if (st == kOfxStatOK) {
         *first = range.min;
         *last = range.max;
+        return eActionStatusOK;
     } else if (st == kOfxStatReplyDefault) {
         return EffectInstance::getFrameRange(render, first, last);
     }
+    return eActionStatusFailed;
 } // getFrameRange
 
 ActionRetCodeEnum
@@ -2436,7 +2438,7 @@ OfxEffectInstance::supportsConcurrentOpenGLRenders() const
 }
 
 ActionRetCodeEnum
-OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+OfxEffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& scale, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
 
 

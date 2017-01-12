@@ -236,7 +236,7 @@ static void removeFromLayersList(const std::list<ImageComponents>& toRemove,
                                  std::list<ImageComponents>* toList)
 {
     for (std::list<ImageComponents>::const_iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-        std::list<ImageComponents>::iterator foundMatch = ImageComponents::findEquivalentLayer(*it, toList->begin(), toList->end());
+        std::list<ImageComponents>::iterator foundMatch = ImageComponents::findEquivalentLayer<std::list<ImageComponents>::iterator>(*it, toList->begin(), toList->end());
         if (foundMatch != toList->end()) {
             toList->erase(foundMatch);
         }

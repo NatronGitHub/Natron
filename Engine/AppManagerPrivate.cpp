@@ -293,12 +293,10 @@ AppManagerPrivate::saveCaches()
 
     if (!ofile) {
         std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
-
         return;
     }
 
-
-    typename SERIALIZATION_NAMESPACE::CacheSerialization toc;
+    SERIALIZATION_NAMESPACE::CacheSerialization toc;
     cache->toSerialization(&toc);
 
     try {
@@ -318,11 +316,11 @@ AppManagerPrivate::restoreCaches()
     FStreamsSupport::ifstream ifile;
     FStreamsSupport::open(&ifile, settingsFilePath);
     if (!ifile) {
-        std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
-
+        cache->clearAndRecreateCacheDirectory();
         return;
     }
-    typename SERIALIZATION_NAMESPACE::CacheSerialization toc;
+
+    SERIALIZATION_NAMESPACE::CacheSerialization toc;
     try {
         SERIALIZATION_NAMESPACE::read(std::string(), ifile, &toc);
         cache->fromSerialization(toc);

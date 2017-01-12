@@ -233,7 +233,7 @@ public:
     MMAPAllocateMemoryArgs()
     : AllocateMemoryArgs()
     , cacheFilePath()
-    , cacheFileDataOffset(0)
+    , cacheFileMemChunkIndex(0)
     {
 
     }
@@ -245,7 +245,7 @@ public:
 
     // If not null, this will pick up the tile of the given file at the given offset.
     std::string cacheFilePath;
-    std::size_t cacheFileDataOffset;
+    int cacheFileMemChunkIndex;
 };
 
 /**
@@ -272,7 +272,7 @@ public:
 
     char* getData();
 
-    std::size_t getOffsetInFile() const;
+    std::size_t getCacheFileMemoryChunkIndex() const;
 
     std::string getCacheFileAbsolutePath() const;
 

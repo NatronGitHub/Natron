@@ -107,6 +107,7 @@ CacheEntryKeyBase::setHolderPluginID(const std::string& holderID) {
     _imp->pluginID = holderID;
 }
 
+
 struct ImageTileKeyPrivate
 {
     U64 nodeTimeInvariantHash;

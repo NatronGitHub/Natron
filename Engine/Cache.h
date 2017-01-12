@@ -59,6 +59,26 @@ GCC_DIAG_ON(deprecated)
 
 #include "Engine/EngineFwd.h"
 
+// Each 8 bit tile will have pow(2, tileSizePo2) pixels in each dimension.
+// 16 bit tiles will have one side halved
+// 32 bit tiles will have both dimension halved (so tile size for 32bit is actually pow(2, tileSizePo2-1)
+//
+// default is tileSizePo2=6, thus a 8 bit tile will be 64x64 pixels
+#define NATRON_8BIT_TILE_SIZE_PO2 6
+
+// tileByteSize = std::pow(2, NATRON_8BIT_TILE_SIZE_PO2);
+// tileByteSize *= tileByteSize;
+#define NATRON_TILE_SIZE_BYTES 4096
+
+#define NATRON_TILE_SIZE_X_8_BIT 64
+#define NATRON_TILE_SIZE_Y_8_BIT 64
+
+#define NATRON_TILE_SIZE_X_16_BIT 64
+#define NATRON_TILE_SIZE_Y_16_BIT 32
+
+#define NATRON_TILE_SIZE_X_32_BIT 32
+#define NATRON_TILE_SIZE_Y_32_BIT 32
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -75,15 +95,6 @@ struct CacheReportInfo
     {
 
     }
-};
-
-// This is a cache file with a fixed size that is a multiple of the tileByteSize.
-// A bitset represents the allocated tiles in the file.
-// A value of true means that a tile is used by a cache entry.
-struct TileCacheFile
-{
-    MemoryFilePtr file;
-    std::vector<bool> usedTiles;
 };
 
 
@@ -241,19 +252,9 @@ public:
     std::string getRestoreFilePath() const;
 
     /**
-     * @brief Set the size of a 8bit tile in cache. 
-     * Each 8-bit tile will have pow(2, tileSizePo2) pixels in each dimension.
-     * A 16-bit tile will have pow(2, tileSizePo2 - 1)
-     * A 32-bit tile will have pow(2, tileSizePo2 - 2)
-     **/
-    void set8bitTileSizePo2(int tileSizePo2);
-    int get8bitTileSizePo2() const;
-    std::size_t getTileSizeBytes() const;
-
-    /**
      * @brief Returns the tile size (of one dimension) in pixels for the given bitdepth/
      **/
-    void getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty) const;
+    static void getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty);
 
     /**
      * @brief Set the maximum cache size available for the given storage.
@@ -339,6 +340,8 @@ public:
      **/
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& obj) OVERRIDE FINAL;
 
+    static int getBucketCacheBucketIndex(U64 hash);
+
 Q_SIGNALS:
 
     /**
@@ -363,7 +366,7 @@ private:
      * dataOffset as used (not free).
      * This function is useful when deserializing the cache.
      **/
-    TileCacheFilePtr getTileCacheFile(const std::string& filepath, std::size_t dataOffset);
+    MemoryFilePtr getTileCacheFile(int bucketIndex, const std::string& filename, std::size_t cacheFileChunkIndex);
 
     /**
      * @brief Relevant only for tiled caches. This will allocate the memory required for a tile in the cache and lock it.
@@ -373,12 +376,12 @@ private:
      * This function may throw exceptions in case of failure.
      * To retrieve the exact pointer of the block of memory for this tile use tileFile->file->data() + dataOffset
      **/
-    TileCacheFilePtr allocTile(std::size_t *dataOffset);
+    MemoryFilePtr allocTile(int bucketIndex, std::size_t *cacheFileChunkIndex);
 
     /**
      * @brief Free a tile from the cache that was previously allocated with allocTile. It will be made available again for other entries.
      **/
-    void freeTile(const TileCacheFilePtr& file, std::size_t dataOffset);
+    void freeTile(int bucketIndex, std::size_t cacheFileChunkIndex);
 
     /**
      * @brief Called when an entry is removed from the cache. The bucket mutex may still be locked.

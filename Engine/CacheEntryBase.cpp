@@ -222,15 +222,16 @@ MemoryBufferedCacheEntryBase::deallocateMemory()
 
 struct MemoryMappedCacheEntryPrivate
 {
-    // The cache file used
-    TileCacheFilePtr cacheFile;
+
+    // The cache file used by this entry
+    MemoryFilePtr file;
 
     // The offset in the cache file at which starts this buffer
-    std::size_t cacheFileDataOffset;
+    std::size_t cacheFileMemoryChunkIndex;
 
     MemoryMappedCacheEntryPrivate()
-    : cacheFile()
-    , cacheFileDataOffset(0)
+    : file()
+    , cacheFileMemoryChunkIndex(0)
     {
 
     }
@@ -257,23 +258,16 @@ MemoryMappedCacheEntry::getStorageMode() const
 std::size_t
 MemoryMappedCacheEntry::getSize() const
 {
-    CachePtr cache = getCache();
-    if (!cache) {
-        return 0;
-    }
-    return cache->getTileSizeBytes();
+    return NATRON_TILE_SIZE_BYTES;
 }
 
 RectI
 MemoryMappedCacheEntry::getBounds() const
 {
     RectI ret;
-    CachePtr cache = getCache();
-    if (!cache) {
-        return ret;
-    }
+
     int tileSizeX, tileSizeY;
-    cache->getTileSizePx(getBitDepth(), &tileSizeX, &tileSizeY);
+    Cache::getTileSizePx(getBitDepth(), &tileSizeX, &tileSizeY);
     // Recover the bottom left corner from the tile coords
     {
         CacheEntryKeyBasePtr key = getKey();
@@ -291,13 +285,10 @@ MemoryMappedCacheEntry::getBounds() const
 std::size_t
 MemoryMappedCacheEntry::getRowSize() const
 {
-    CachePtr cache = getCache();
-    if (!cache) {
-        return 0;
-    }
+
     ImageBitDepthEnum bitDepth = getBitDepth();
     int tileSizeX, tileSizeY;
-    cache->getTileSizePx(bitDepth,&tileSizeX, &tileSizeY);
+    Cache::getTileSizePx(bitDepth,&tileSizeX, &tileSizeY);
 
     return tileSizeX * getSizeOfForBitDepth(bitDepth);
 
@@ -306,44 +297,44 @@ MemoryMappedCacheEntry::getRowSize() const
 const char*
 MemoryMappedCacheEntry::getData() const
 {
-    if (!_imp->cacheFile) {
+    if (!_imp->file) {
         return 0;
     }
-    return (const char*)(_imp->cacheFile->file->data() + _imp->cacheFileDataOffset);
+
+    return (const char*)(_imp->file->data() + _imp->cacheFileMemoryChunkIndex * NATRON_TILE_SIZE_BYTES);
 }
 
 char*
 MemoryMappedCacheEntry::getData()
 {
-    if (!_imp->cacheFile) {
+    if (!_imp->file) {
         return 0;
     }
-    return (char*)(_imp->cacheFile->file->data() + _imp->cacheFileDataOffset);
+    return (char*)(_imp->file->data() + _imp->cacheFileMemoryChunkIndex * NATRON_TILE_SIZE_BYTES);
 }
 
 std::size_t
-MemoryMappedCacheEntry::getOffsetInFile() const
+MemoryMappedCacheEntry::getCacheFileMemoryChunkIndex() const
 {
-    return _imp->cacheFileDataOffset;
+    return _imp->cacheFileMemoryChunkIndex;
 }
 
 std::string
 MemoryMappedCacheEntry::getCacheFileAbsolutePath() const
 {
-    return _imp->cacheFile->file->path();
+    return _imp->file->path();
 }
 
 
 void
 MemoryMappedCacheEntry::syncBackingFile()
 {
-    if (!_imp->cacheFile) {
+    if (!_imp->file) {
         return;
     }
 
-    _imp->cacheFile->file->flush(MemoryFile::eFlushTypeAsync, _imp->cacheFile->file->data() + _imp->cacheFileDataOffset, getSize());
+    _imp->file->flush(MemoryFile::eFlushTypeAsync, _imp->file->data() + _imp->cacheFileMemoryChunkIndex * NATRON_TILE_SIZE_BYTES, NATRON_TILE_SIZE_BYTES);
 }
-
 
 void
 MemoryMappedCacheEntry::allocateMemoryImpl(const AllocateMemoryArgs& args)
@@ -356,23 +347,28 @@ MemoryMappedCacheEntry::allocateMemoryImpl(const AllocateMemoryArgs& args)
         throw std::bad_alloc();
     }
 
+
+    U64 hash = getKey()->getHash();
+    int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
+
     if (!mmapArgs->cacheFilePath.empty()) {
+        
         // Check that the provided file exists
         if (!Cache::fileExists(mmapArgs->cacheFilePath)) {
             throw std::bad_alloc();
         }
         try {
-            _imp->cacheFile = cache->getTileCacheFile(mmapArgs->cacheFilePath, mmapArgs->cacheFileDataOffset);
+            _imp->file = cache->getTileCacheFile(bucketIndex, mmapArgs->cacheFilePath, mmapArgs->cacheFileMemChunkIndex);
         } catch (...) {
             throw std::bad_alloc();
         }
-        if (!_imp->cacheFile) {
+        if (!_imp->file) {
             throw std::bad_alloc();
         }
-        _imp->cacheFileDataOffset = mmapArgs->cacheFileDataOffset;
+        _imp->cacheFileMemoryChunkIndex = mmapArgs->cacheFileMemChunkIndex;
     } else {
         try {
-            cache->allocTile(&_imp->cacheFileDataOffset);
+            _imp->file = cache->allocTile(bucketIndex, &_imp->cacheFileMemoryChunkIndex);
         } catch (...) {
             throw std::bad_alloc();
         }
@@ -387,8 +383,11 @@ MemoryMappedCacheEntry::deallocateMemoryImpl()
     if (!cache) {
         return;
     }
+
+    U64 hash = getKey()->getHash();
+    int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
     
-    cache->freeTile(_imp->cacheFile, _imp->cacheFileDataOffset);
+    cache->freeTile(bucketIndex, _imp->cacheFile, _imp->cacheFileDataOffset);
 }
 
 

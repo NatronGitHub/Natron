@@ -170,9 +170,7 @@ public:
     // The total disk space allowed for all Natron's caches
     KnobIntPtr _maxDiskCacheSizeGb;
     KnobIntPtr _maxRAMCacheSizeMb;
-    KnobIntPtr _cacheTileSizePo2;
     KnobPathPtr _diskCachePath;
-    KnobButtonPtr _wipeDiskCache;
 
     // Viewer
     KnobPagePtr _viewersTab;
@@ -1450,7 +1448,11 @@ SettingsPrivate::initializeKnobsCaching()
     _maxDiskCacheSizeGb = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum Disk Cache Size (GiB)") );
     _maxDiskCacheSizeGb->setName("maxDiskCacheMb");
     _maxDiskCacheSizeGb->disableSlider();
-    _maxDiskCacheSizeGb->setRange(0, INT_MAX);
+
+    // The disk should at least allow storage of 1000 tiles accross each bucket
+    std::size_t cacheMinSize = std::pow(2, NATRON_8BIT_TILE_SIZE_PO2);
+    cacheMinSize = cacheMinSize * cacheMinSize * 1000 * 256;
+    _maxDiskCacheSizeGb->setRange(cacheMinSize, INT_MAX);
     _maxDiskCacheSizeGb->setHintToolTip( tr("The maximum Disk size that may be used by the Cache (in GiB)") );
     _cachingTab->addKnob(_maxDiskCacheSizeGb);
 
@@ -1475,23 +1477,6 @@ SettingsPrivate::initializeKnobsCaching()
     knobsRequiringRestart.insert(_diskCachePath);
 
     _cachingTab->addKnob(_diskCachePath);
-
-    _wipeDiskCache = AppManager::createKnob<KnobButton>( thisShared, tr("Wipe Disk Cache") );
-    _wipeDiskCache->setHintToolTip( tr("Cleans-up all caches, deleting all folders that may contain cached data. "
-                                       "This is provided in case %1 lost track of cached images "
-                                       "for some reason.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-
-    _cachingTab->addKnob(_wipeDiskCache);
-
-    _cacheTileSizePo2 = AppManager::createKnob<KnobInt>( thisShared, tr("Cache Tile size is 2 to the power of...") );
-    _cacheTileSizePo2->setName("cacheTiling");
-    _cacheTileSizePo2->setHintToolTip( tr("The dimension of the cache tiles for 8-bit images is 2^n by 2^n (i.e. 128x128 pixels for n=7).\n"
-                                          "To fit in the same amount of memory, 16-bit images will have a one size halved, (128x64 px for n=7) and "
-                                          "32-bit images will have a 2^(n-1) tile size (64x64px for n=7).\n"
-                                          "A high value means more elements in the cache but higher chances to find an already computed area.") );
-    _cacheTileSizePo2->disableSlider();
-    _cacheTileSizePo2->setRange(6, 10);
-    _cacheTileSizePo2->setDisplayRange(4, 9);
 
     _viewersTab->addKnob(_cachingTab);
 } // Settings::initializeKnobsCaching
@@ -1683,7 +1668,6 @@ SettingsPrivate::setDefaultValues()
 
     // Viewer
     _texturesMode->setDefaultValue(0);
-    _cacheTileSizePo2->setDefaultValue(7);
     _checkerboardTileSize->setDefaultValue(5);
     _checkerboardColor1->setDefaultValue(0.5);
     _checkerboardColor1->setDefaultValue(0.5, DimIdx(1));
@@ -2367,11 +2351,6 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         if (cache) {
             cache->setDirectoryContainingCachePath(_imp->_diskCachePath->getValue());
         }
-    } else if ( k == _imp->_wipeDiskCache ) {
-        CachePtr cache = appPTR->getCache();
-        if (cache) {
-            cache->clearAndRecreateCacheDirectory();
-        }
     } else if ( k == _imp->_numberOfThreads ) {
         int nbThreads = _imp->_numberOfThreads->getValue();
 #ifdef DEBUG
@@ -2408,12 +2387,6 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         appPTR->onQueueRendersChanged( _imp->_queueRenders->getValue() );
     } else if ( ( k == _imp->_checkerboardTileSize ) || ( k == _imp->_checkerboardColor1 ) || ( k == _imp->_checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _imp->_cacheTileSizePo2) {
-        CachePtr cache = appPTR->getCache();
-        if (cache) {
-            cache->clear();
-            cache->set8bitTileSizePo2(_imp->_cacheTileSizePo2->getValue());
-        }
     } else if ( k == _imp->_texturesMode &&  !_imp->_restoringSettings) {
         appPTR->clearAllCaches();
     } else if ( ( k == _imp->_hideOptionalInputsAutomatically ) && !_imp->_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
@@ -2505,12 +2478,6 @@ Settings::getViewersBitDepth() const
     } else {
         return eImageBitDepthByte;
     }
-}
-
-int
-Settings::getCache8BitTilesPo2() const
-{
-    return _imp->_cacheTileSizePo2->getValue();
 }
 
 int

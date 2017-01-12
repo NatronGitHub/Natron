@@ -42,6 +42,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QMutex>
+
 #include "Global/GlobalDefines.h"
 #include "Global/StrUtils.h"
 
@@ -52,6 +54,10 @@ NATRON_NAMESPACE_ENTER;
 struct MemoryFilePrivate
 {
     std::string path; //< filepath of the backing file
+
+    // Protects the data pointer if the file gets resized
+    mutable QMutex locker;
+
     char* data; //< pointer to the begining of the mapped file
     size_t size; //< the effective size of the file
 #if defined(__NATRON_UNIX__)
@@ -65,6 +71,7 @@ struct MemoryFilePrivate
 
     MemoryFilePrivate(const std::string & filepath)
         : path(filepath)
+        , locker()
         , data(0)
         , size(0)
 #if defined(__NATRON_UNIX__)
@@ -274,12 +281,14 @@ MemoryFilePrivate::openInternal(MemoryFile::FileOpenModeEnum open_mode)
 char*
 MemoryFile::data() const
 {
+    QMutexLocker k(&_imp->locker);
     return _imp->data;
 }
 
 size_t
 MemoryFile::size() const
 {
+    QMutexLocker k(&_imp->locker);
     return _imp->size;
 }
 
@@ -292,6 +301,7 @@ MemoryFile::path() const
 void
 MemoryFile::resize(size_t new_size)
 {
+    QMutexLocker k(&_imp->locker);
 #if defined(__NATRON_UNIX__)
     if (_imp->data) {
         if (::munmap(_imp->data, _imp->size) < 0) {

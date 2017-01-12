@@ -916,8 +916,6 @@ Node::clearLastRenderedImage()
 void
 Node::setLastRenderedImage(const ImagePtr& lastRenderedImage)
 {
-#pragma message WARN("Check if we still neeed this ?")
-
     ImagePtr curLastRenderedImage;
     {
         QMutexLocker k(&_imp->lastRenderedImageMutex);

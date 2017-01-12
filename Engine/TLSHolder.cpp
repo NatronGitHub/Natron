@@ -73,7 +73,6 @@ copyAbortInfo(QThread* fromThread,
     AbortableThread* toAbortable = dynamic_cast<AbortableThread*>(toThread);
 
     if (fromAbortable && toAbortable) {
-        bool isRenderResponseToUserInteraction;
         TreeRenderPtr render = fromAbortable->getCurrentRender();
         toAbortable->setCurrentRender(render);
     }

@@ -939,36 +939,6 @@ RotoPaintInteract::onBreakMultiStrokeTriggered()
     makeStroke( true, RotoPoint() );
 }
 
-static bool
-isBranchConnectedToRotoNodeRecursive(const NodePtr& node,
-                                     const NodeConstPtr& rotoNode,
-                                     int* recursion,
-                                     std::list<NodePtr>& markedNodes)
-{
-    assert(recursion);
-    if (!node) {
-        return false;
-    }
-    if (rotoNode == node) {
-        return true;
-    }
-    markedNodes.push_back(node);
-    int maxInputs = node->getMaxInputCount();
-    *recursion = *recursion + 1;
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr inp = node->getInput(i);
-        if (inp) {
-            if ( isBranchConnectedToRotoNodeRecursive(inp, rotoNode, recursion, markedNodes) ) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-
-
 void
 RotoPaintInteract::makeStroke(bool prepareForLater,
                               const RotoPoint& point)

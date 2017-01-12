@@ -3247,6 +3247,7 @@ getColorAtRectForDepth(const Image::CPUTileData& image,
             getColorAtRectForSrcNComps<PIX, maxValue, 4>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
             break;
         default:
+            return false;
             break;
     }
 } // getColorAtRectForDepth

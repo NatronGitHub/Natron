@@ -34,6 +34,9 @@
 #include <QWaitCondition>
 #include <QDebug>
 
+#include <boost/unordered_set.hpp>
+#include <boost/format.hpp>
+
 #include <SequenceParsing.h>
 
 #include "Global/GlobalDefines.h"
@@ -57,9 +60,9 @@
 #define NATRON_CACHE_BUCKETS_COUNT 256
 
 
-// Each cache file on disk that is created by MMAP will have a multiple of the tile size so
-// it is the closest to 1GB.
-#define NATRON_TILE_CACHE_FILE_SIZE_BYTES 1073741824
+// Each cache file on disk that is created by MMAP will have a multiple of the tile size.
+// Each time the cache file has to grow, it will be resized to contain 1000 more tiles
+#define NATRON_CACHE_FILE_GROW_N_TILES 1024
 
 // Used to prevent loading older caches when we change the serialization scheme
 #define NATRON_CACHE_SERIALIZATION_VERSION 5
@@ -164,6 +167,23 @@ struct CacheBucket
     // This way, another thread may wait until the computation is done to return the results.
     LockedHashMap lockedHashes;
 
+    // Storage for tiled entries.
+    // Each file contains a multiple of the tile size
+    MemoryFilePtr cacheFile;
+
+    // Indices of the chunnks of memory available in the cache file.
+    boost::unordered_set<int> freeTiles;
+
+    CacheBucket()
+    : bucketLock()
+    , container()
+    , lockedHashes()
+    , cacheFile()
+    , freeTiles()
+    {
+
+    }
+
 };
 
 struct CacheEntryLockerPrivate
@@ -256,26 +276,9 @@ struct CachePrivate
     // too high
     QWaitCondition memoryFullCondition;
 
-    // To support tiles, the cache will consist only of a few large files that each contain tiles of the same size.
-    // This is useful to cache chunks of data that always have the same size.
-    mutable QMutex tileCacheMutex;
-
-    // Each 8 bit tile will have pow(2, tileSizePo2) pixels in each dimension.
-    // pow(2, tileSizePo2 - 1) for 16 bit
-    // pow(2, tileSizePo2 - 2) for 32 bit
-    int tileSizePo2For8bit;
-
-    std::size_t tileByteSize;
 
     // True when clearing the cache, protected by tileCacheMutex
     bool clearingCache;
-
-    // Storage for tiled entries
-    std::list<TileCacheFilePtr> cacheFiles;
-
-    // When set these are used for fast search of a free tile
-    TileCacheFileWPtr nextAvailableCacheFile;
-    int nextAvailableCacheFileIndex;
 
     // True when we are about to destroy the cache.
     bool tearingDown;
@@ -295,17 +298,10 @@ struct CachePrivate
     , cleanerThread()
     , maxPhysicalRAMAttainable(0)
     , memoryFullCondition()
-    , tileCacheMutex()
-    , tileSizePo2For8bit(7) // 128*128 by default for 8 bit
-    , tileByteSize(0)
     , clearingCache(false)
-    , cacheFiles()
-    , nextAvailableCacheFile()
-    , nextAvailableCacheFileIndex(-1)
     , tearingDown(false)
     {
-        tileByteSize = std::pow(2, tileSizePo2For8bit);
-        tileByteSize *= tileByteSize;
+
 
         // Make the system RAM appear as 90% of the RAM so we leave some room for other stuff
         maxPhysicalRAMAttainable = getSystemTotalRAM() * 0.9;
@@ -322,14 +318,6 @@ struct CachePrivate
         cleanerThread.reset(new CacheCleanerThread(_publicInterface->shared_from_this()));
     }
 
-    std::size_t getTileSizeBytesInternal() const;
-
-    static int getBucketCacheBucketIndex(U64 hash)
-    {
-        int index = hash >> (64 - NATRON_CACHE_BUCKETS_N_DIGITS * 4);
-        assert(index >= 0 && index < NATRON_CACHE_BUCKETS_COUNT);
-        return index;
-    }
 
     void ensureCacheDirectoryExists();
 
@@ -372,6 +360,8 @@ struct CachePrivate
                 break;
         }
     }
+
+    QString getBucketAbsoluteDirPath(int bucketIndex) const;
 
 };
 
@@ -432,7 +422,7 @@ CacheEntryLocker::init()
 
     // Get the bucket corresponding to the hash. This will dispatch threads in (hopefully) different
     // buckets
-    _imp->bucket = &_imp->cache->_imp->buckets[CachePrivate::getBucketCacheBucketIndex(hash)];
+    _imp->bucket = &_imp->cache->_imp->buckets[Cache::getBucketCacheBucketIndex(hash)];
 
     // Lock out threads
     QMutexLocker k(&_imp->bucket->bucketLock);
@@ -528,7 +518,7 @@ CacheEntryLocker::insertInCache(const CacheEntryBasePtr& value)
     U64 hash = _imp->key->getHash();
 
     // Set the entry cache bucket index
-    _imp->cache->onEntryInsertedInCache(value, CachePrivate::getBucketCacheBucketIndex(hash));
+    _imp->cache->onEntryInsertedInCache(value, Cache::getBucketCacheBucketIndex(hash));
 
     QMutexLocker locker(&_imp->bucket->bucketLock);
 
@@ -699,6 +689,15 @@ Cache::create()
     return ret;
 }
 
+
+int
+Cache::getBucketCacheBucketIndex(U64 hash)
+{
+    int index = hash >> (64 - NATRON_CACHE_BUCKETS_N_DIGITS * 4);
+    assert(index >= 0 && index < NATRON_CACHE_BUCKETS_COUNT);
+    return index;
+}
+
 bool
 Cache::fileExists(const std::string& filename)
 {
@@ -824,16 +823,52 @@ Cache::setDirectoryContainingCachePath(const std::string& cachePath)
     _imp->ensureCacheDirectoryExists();
 }
 
+static std::string getBucketDirName(int bucketIndex)
+{
+    std::string dirName;
+    {
+        std::string formatStr;
+        {
+
+            std::stringstream ss;
+            ss << "%0";
+            ss << NATRON_CACHE_BUCKETS_N_DIGITS;
+            ss << "x";
+            formatStr = ss.str();
+        }
+
+        std::ostringstream oss;
+        oss <<  boost::format(formatStr) % bucketIndex;
+        dirName = oss.str();
+    }
+    return dirName;
+}
+
+static void createIfNotExistBucketDirs(const QDir& d)
+{
+    // Create a directory for each bucket with the index as name
+    for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
+        QString qDirName = QString::fromUtf8( getBucketDirName(i).c_str() );
+        if (!d.exists(qDirName)) {
+            d.mkdir(qDirName);
+        }
+    }
+
+}
+
 void
 CachePrivate::ensureCacheDirectoryExists()
 {
     QString userDirectoryCache = QString::fromUtf8(directoryContainingCachePath.c_str());
     QDir d(userDirectoryCache);
     if (d.exists()) {
-        QString name = QString::fromUtf8(cacheName.c_str());
-        if (d.exists(name)) {
-            d.mkdir(name);
+        QString cacheDirName = QString::fromUtf8(cacheName.c_str());
+        if (!d.exists(cacheDirName)) {
+            d.mkdir(cacheDirName);
         }
+        d.cd(cacheDirName);
+        createIfNotExistBucketDirs(d);
+
     }
 } // ensureCacheDirectoryExists
 
@@ -845,9 +880,34 @@ Cache::clearAndRecreateCacheDirectory()
     QString userDirectoryCache = QString::fromUtf8(_imp->directoryContainingCachePath.c_str());
     QDir d(userDirectoryCache);
     if (d.exists()) {
-        QString cacheName = d.absolutePath() + QLatin1String("/") + QString::fromUtf8(getCacheName().c_str());
-        QtCompat::removeRecursively(cacheName);
-        d.mkdir(QString::fromUtf8(getCacheName().c_str()));
+        QString cacheName = QString::fromUtf8(getCacheName().c_str());
+        QString absoluteCacheFilePath = d.absolutePath() + QLatin1String("/") + cacheName;
+        QtCompat::removeRecursively(absoluteCacheFilePath);
+
+        d.mkdir(cacheName);
+        d.cd(cacheName);
+
+        // Create a directory for each bucket with the index as name
+        for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
+
+            std::string dirName;
+            {
+                std::string formatStr;
+                {
+
+                    std::stringstream ss;
+                    ss << "%0"; // fill prefix with 0
+                    ss << NATRON_CACHE_BUCKETS_N_DIGITS; // number should be presented with this number of digits
+                    ss << "x"; // number should be displayed as hexadecimal
+                    formatStr = ss.str();
+                }
+
+                std::ostringstream oss;
+                oss <<  boost::format(formatStr) % i;
+                dirName = oss.str();
+            }
+            d.mkdir( QString::fromUtf8( dirName.c_str() ) );
+        }
     }
 } // clearAndRecreateCacheDirectory
 
@@ -873,68 +933,22 @@ Cache::getRestoreFilePath() const
     return newCachePath.toStdString();
 }
 
-
-
 void
-Cache::set8bitTileSizePo2(int tileSizePo2)
+Cache::getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty)
 {
-    {
-        QMutexLocker k(&_imp->tileCacheMutex);
-        if (_imp->tileSizePo2For8bit == tileSizePo2) {
-            return;
-        }
-    }
-    // Clear the cache of entries that don't have the appropriate size
-    clear();
-
-    QMutexLocker k(&_imp->tileCacheMutex);
-    _imp->tileSizePo2For8bit = tileSizePo2;
-    _imp->tileByteSize = std::pow(2, _imp->tileSizePo2For8bit);
-    _imp->tileByteSize *= _imp->tileByteSize;
-
-}
-
-int
-Cache::get8bitTileSizePo2() const
-{
-    QMutexLocker k(&_imp->tileCacheMutex);
-    return _imp->tileSizePo2For8bit;
-}
-
-std::size_t
-CachePrivate::getTileSizeBytesInternal() const
-{
-    // Private - should not lock
-    assert(!tileCacheMutex.tryLock());
-    std::size_t tileSizePx = std::pow(2, tileSizePo2For8bit);
-    // A tile is a mono-channel buffer of NxN pixels
-    return tileSizePx * tileSizePx;
-} // getTileSizeBytesInternal
-
-std::size_t
-Cache::getTileSizeBytes() const
-{
-    QMutexLocker k(&_imp->tileCacheMutex);
-    return _imp->getTileSizeBytesInternal();
-}
-
-void
-Cache::getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty) const
-{
-    QMutexLocker k(&_imp->tileCacheMutex);
     switch (bitdepth) {
         case eImageBitDepthByte:
-            *tx = std::pow(2, _imp->tileSizePo2For8bit);
-            *ty = *tx;
+            *tx = NATRON_TILE_SIZE_X_8_BIT;
+            *ty = NATRON_TILE_SIZE_Y_8_BIT;
             break;
         case eImageBitDepthShort:
         case eImageBitDepthHalf:
-            *tx = std::pow(2, _imp->tileSizePo2For8bit);
-            *ty  = *tx / 2;
+            *tx = NATRON_TILE_SIZE_X_16_BIT;
+            *ty = NATRON_TILE_SIZE_Y_16_BIT;
             break;
         case eImageBitDepthFloat:
-            *tx = std::pow(2, _imp->tileSizePo2For8bit - 1);
-            *ty = *tx;
+            *tx = NATRON_TILE_SIZE_X_32_BIT;
+            *ty = NATRON_TILE_SIZE_Y_32_BIT;
             break;
         case eImageBitDepthNone:
             *tx = *ty = 0;
@@ -942,104 +956,111 @@ Cache::getTileSizePx(ImageBitDepthEnum bitdepth, int *tx, int *ty) const
     }
 }
 
-/**
- * @brief Returns a cache size that rounds the cache size to the multiple of the tile size 
- * nearest enclosing of NATRON_TILE_CACHE_FILE_SIZE_BYTES.
- **/
-static std::size_t getCacheFileSizeFromTileSize(std::size_t tileSizeInBytes)
+QString
+CachePrivate::getBucketAbsoluteDirPath(int bucketIndex) const
 {
-    return std::ceil(NATRON_TILE_CACHE_FILE_SIZE_BYTES / (double)tileSizeInBytes) * tileSizeInBytes;
+    QString bucketDirPath;
+    bucketDirPath = QString::fromUtf8(directoryContainingCachePath.c_str());
+    StrUtils::ensureLastPathSeparator(bucketDirPath);
+    bucketDirPath += QString::fromUtf8(cacheName.c_str());
+    StrUtils::ensureLastPathSeparator(bucketDirPath);
+    bucketDirPath += QString::fromUtf8(getBucketDirName(bucketIndex).c_str());
+    StrUtils::ensureLastPathSeparator(bucketDirPath);
+    return bucketDirPath;
 }
 
-TileCacheFilePtr
-Cache::getTileCacheFile(const std::string& filepath, std::size_t dataOffset)
+
+MemoryFilePtr
+Cache::getTileCacheFile(int bucketIndex, const std::string& filename, std::size_t cacheFileChunkIndex)
 {
-    QMutexLocker k(&_imp->tileCacheMutex);
+    assert(bucketIndex >= 0 && bucketIndex < NATRON_CACHE_BUCKETS_COUNT);
+    if (bucketIndex < 0 && bucketIndex >= NATRON_CACHE_BUCKETS_COUNT) {
+        return MemoryFilePtr();
+    }
 
-    // Find an existing cache file
-    for (std::list<TileCacheFilePtr>::iterator it = _imp->cacheFiles.begin(); it != _imp->cacheFiles.end(); ++it) {
-        if ((*it)->file->path() == filepath) {
-            int index = dataOffset / _imp->tileByteSize;
+    CacheBucket& bucket = _imp->buckets[bucketIndex];
 
-            // The dataOffset should be a multiple of the tile size
-            assert(_imp->tileByteSize * index == dataOffset);
-            assert(!(*it)->usedTiles[index]);
+    // Lock the bucket
+    QMutexLocker k(&bucket.bucketLock);
 
-            // Mark the tile as used
-            (*it)->usedTiles[index] = true;
-            return *it;
+    QString bucketDirPath = _imp->getBucketAbsoluteDirPath(bucketIndex);
+
+    std::string absoluteFileName = bucketDirPath.toStdString() + filename;
+
+    // Check if the file exists on disk, if not fail
+    if (!fileExists(absoluteFileName)) {
+        return MemoryFilePtr();
+    }
+
+    if (!bucket.cacheFile) {
+        // If the memory file object was not created, open the mapping now.
+        bucket.cacheFile.reset(new MemoryFile(absoluteFileName, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail));
+
+        // Ensure the file has a multiple of the tile size in bytes
+        std::size_t curFileSize = bucket.cacheFile->size();
+        if ((curFileSize % NATRON_TILE_SIZE_BYTES) != 0) {
+
+            // Delete the file, it is not valid anyway.
+            bucket.cacheFile->remove();
+            bucket.cacheFile.reset();
+
+            return MemoryFilePtr();
+        }
+
+        // Fill the free tiles list
+        std::size_t nTiles = curFileSize / NATRON_TILE_SIZE_BYTES;
+        for (std::size_t i = 0; i < nTiles; ++i) {
+            bucket.freeTiles.insert(i);
         }
     }
 
-    // Check if the file exists on disk, if not create it.
-    if (!fileExists(filepath)) {
-        return TileCacheFilePtr();
-    } else {
-
-        TileCacheFilePtr ret(new TileCacheFile);
-        ret->file.reset(new MemoryFile(filepath, MemoryFile::eFileOpenModeEnumIfExistsKeepElseFail) );
-        
-        std::size_t nTilesPerFile = std::floor( ( (double)getCacheFileSizeFromTileSize(_imp->tileByteSize)) / _imp->tileByteSize );
-        ret->usedTiles.resize(nTilesPerFile, false);
-        int index = dataOffset / _imp->tileByteSize;
-
-        // The dataOffset should be a multiple of the tile size
-        assert(_imp->tileByteSize * index == dataOffset);
-        assert(index >= 0 && index < (int)ret->usedTiles.size());
-        assert(!ret->usedTiles[index]);
-
-        // Mark the tile as used
-        ret->usedTiles[index] = true;
-        _imp->cacheFiles.push_back(ret);
-        return ret;
-
+    {
+        // Ensure cacheFileChunkIndex is a valid offset in the file.
+        std::size_t curFileSize = bucket.cacheFile->size();
+        if (cacheFileChunkIndex * NATRON_TILE_SIZE_BYTES > (curFileSize - NATRON_TILE_SIZE_BYTES)) {
+            // If the file does not contain this tile, fail
+            return MemoryFilePtr();
+        }
     }
+    // Remove the tile index from the freeTiles set
+    boost::unordered_set<int>::const_iterator found = bucket.freeTiles.find(cacheFileChunkIndex);
+    assert(found != bucket.freeTiles.end());
+    bucket.freeTiles.erase(found);
 
+    return bucket.cacheFile;
 } // getTileCacheFile
 
 
-TileCacheFilePtr
-Cache::allocTile(std::size_t *dataOffset) 
+MemoryFilePtr
+Cache::allocTile(int bucketIndex, std::size_t *cacheFileChunkIndex)
 {
 
-#pragma message WARN("Also split the tileCacheMutex across all cache buckets and handle the cache files allocated chunks by bucket")
-    QMutexLocker k(&_imp->tileCacheMutex);
-
-    // First, search for a file with available space.
-    // If not found create one
-    TileCacheFilePtr foundAvailableFile;
-    int foundTileIndex = -1;
-    {
-
-        // If we just freed a tile before or allocated a new cache file, the nextAvailableCacheFile and nextAvailableCacheFileIndex are set.
-        foundAvailableFile = _imp->nextAvailableCacheFile.lock();
-        if (_imp->nextAvailableCacheFileIndex != -1 && foundAvailableFile) {
-            foundTileIndex = _imp->nextAvailableCacheFileIndex;
-            *dataOffset = foundTileIndex * _imp->tileByteSize;
-            _imp->nextAvailableCacheFileIndex = -1;
-            _imp->nextAvailableCacheFile.reset();
-        } else {
-            foundTileIndex = -1;
-            foundAvailableFile.reset();
-        }
+    assert(bucketIndex >= 0 && bucketIndex < NATRON_CACHE_BUCKETS_COUNT);
+    if (bucketIndex < 0 && bucketIndex >= NATRON_CACHE_BUCKETS_COUNT) {
+        return MemoryFilePtr();
     }
-    if (foundTileIndex == -1) {
 
-        // Cycle through each cache file and search for a non allocated tile
-        for (std::list<TileCacheFilePtr>::iterator it = _imp->cacheFiles.begin(); it != _imp->cacheFiles.end(); ++it) {
-            for (std::size_t i = 0; i < (*it)->usedTiles.size(); ++i) {
-                if (!(*it)->usedTiles[i])  {
-                    foundTileIndex = i;
-                    *dataOffset = i * _imp->tileByteSize;
-                    break;
-                }
-            }
-            if (foundTileIndex != -1) {
-                foundAvailableFile = *it;
-                break;
-            }
+    CacheBucket& bucket = _imp->buckets[bucketIndex];
+
+    QMutexLocker k(&bucket.bucketLock);
+
+    QString bucketDirPath = _imp->getBucketAbsoluteDirPath(bucketIndex);
+
+    std::string absoluteFileName = bucketDirPath.toStdString() + ".storage";
+
+
+    if (!bucket.cacheFile) {
+
+        // If a file already exists on disk, remove it because it is untracked
+        if (fileExists(absoluteFileName)) {
+            ::remove(absoluteFileName.c_str());
         }
+
+        // If the memory file object was not created, open the mapping now.
+        bucket.cacheFile.reset(new MemoryFile(absoluteFileName, MemoryFile::eFileOpenModeEnumIfExistsFailElseCreate));
     }
+
+    std::size_t curFileSize = bucket.cacheFile->size();
 
     if (!foundAvailableFile) {
 
@@ -1049,9 +1070,9 @@ Cache::allocTile(std::size_t *dataOffset)
 
         std::string cacheFilePath;
         {
-            int nCacheFiles = (int)_imp->cacheFiles.size();
+            int nCacheFiles = (int)bucket.cacheFiles.size();
             std::stringstream cacheFilePathSs;
-            cacheFilePathSs << getCacheDirectoryPath() << "/CachePart" << nCacheFiles;
+            cacheFilePathSs << _imp->getBucketAbsoluteDirPath(bucketIndex).toStdString() << nCacheFiles;
             cacheFilePath = cacheFilePathSs.str();
         }
 
@@ -1064,12 +1085,12 @@ Cache::allocTile(std::size_t *dataOffset)
         foundAvailableFile->usedTiles.resize(nTilesPerFile, false);
         *dataOffset = 0;
         foundTileIndex = 0;
-        _imp->cacheFiles.push_back(foundAvailableFile);
+        bucket.cacheFiles.push_back(foundAvailableFile);
 
         // Since we just created a file we can safely ensure that the next tile is free if the file contains at least 2 tiles
         if (nTilesPerFile > 1) {
-            _imp->nextAvailableCacheFile = foundAvailableFile;
-            _imp->nextAvailableCacheFileIndex = 1;
+            bucket.nextAvailableCacheFile = foundAvailableFile;
+            bucket.nextAvailableCacheFileIndex = 1;
         }
     }
 
@@ -1081,14 +1102,21 @@ Cache::allocTile(std::size_t *dataOffset)
 } // allocTile
 
 void
-Cache::freeTile(const TileCacheFilePtr& file, std::size_t dataOffset)
+Cache::freeTile(int bucketIndex, std::size_t cacheFileChunkIndex)
 {
-    QMutexLocker k(&_imp->tileCacheMutex);
+    assert(bucketIndex >= 0 && bucketIndex < NATRON_CACHE_BUCKETS_COUNT);
+    if (bucketIndex < 0 && bucketIndex >= NATRON_CACHE_BUCKETS_COUNT) {
+        return;
+    }
+
+    CacheBucket& bucket = _imp->buckets[bucketIndex];
+
+    QMutexLocker k(&bucket.bucketLock);
 
 
-    std::list<TileCacheFilePtr>::iterator foundTileFile = std::find(_imp->cacheFiles.begin(), _imp->cacheFiles.end(), file);
-    assert(foundTileFile != _imp->cacheFiles.end());
-    if (foundTileFile == _imp->cacheFiles.end()) {
+    std::list<TileCacheFilePtr>::iterator foundTileFile = std::find(bucket.cacheFiles.begin(), bucket.cacheFiles.end(), file);
+    assert(foundTileFile != bucket.cacheFiles.end());
+    if (foundTileFile == bucket.cacheFiles.end()) {
         return;
     }
 
@@ -1110,15 +1138,15 @@ Cache::freeTile(const TileCacheFilePtr& file, std::size_t dataOffset)
         // Do not remove the file except if we are clearing the cache
         if (_imp->clearingCache) {
             (*foundTileFile)->file->remove();
-            _imp->cacheFiles.erase(foundTileFile);
+            bucket.cacheFiles.erase(foundTileFile);
         } else {
             // Invalidate this portion of the cache
             (*foundTileFile)->file->flush(MemoryFile::eFlushTypeInvalidate, (*foundTileFile)->file->data() + dataOffset, _imp->tileByteSize);
         }
     } else {
         // We just freed this tile, mark it available to speed up the next allocTile call.
-        _imp->nextAvailableCacheFile = *foundTileFile;
-        _imp->nextAvailableCacheFileIndex = index;
+        bucket.nextAvailableCacheFile = *foundTileFile;
+        bucket.nextAvailableCacheFileIndex = index;
     }
 } // freeTile
 
@@ -1245,6 +1273,9 @@ Cache::clear()
                 entriesToDelete.push_back(*it);
             }
         }
+
+        // Clear underlying tile storage files.
+        bucket.cacheFiles.clear();
     } // for each bucket
 
     if (!entriesToDelete.empty()) {
@@ -1500,8 +1531,26 @@ Cache::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
                 if (isImageKey) {
                     SERIALIZATION_NAMESPACE::ImageTileSerializationPtr s(new SERIALIZATION_NAMESPACE::ImageTileSerialization);
                     isImageKey->toSerialization(s.get());
+                    serialization = s;
                 }
 
+                serialization->hash = keyBase->getHash();
+                serialization->time = keyBase->getTime();
+                serialization->view = keyBase->getView();
+                serialization->pluginID = keyBase->getHolderPluginID();
+                serialization->dataOffsetInFile = mmapEntry->getOffsetInFile();
+
+                // Do not save the absolute file-path, instead save a relative file-path to the bucket dir.
+                QString filePath = QString::fromUtf8(mmapEntry->getCacheFileAbsolutePath().c_str());
+                {
+                    int foundLastSep = filePath.lastIndexOf(QLatin1Char('/'));
+                    if (foundLastSep != -1) {
+                        filePath = filePath.mid(foundLastSep + 1);
+                    }
+                }
+                serialization->filePath = filePath.toStdString();
+
+                assert(serialization);
 
                 s->entries.push_back(serialization);
 
@@ -1564,6 +1613,11 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
         allocArgs.cacheFilePath = (*it)->filePath;
         allocArgs.cacheFileDataOffset = (*it)->dataOffsetInFile;
 
+        // Set the entry cache bucket index
+        int bucket_i = CachePrivate::getBucketCacheBucketIndex((*it)->hash);
+        CacheBucket& bucket = _imp->buckets[bucket_i];
+        onEntryInsertedInCache(value, bucket_i);
+
         try {
             value->allocateMemory(allocArgs);
         } catch (const std::exception& /*e*/) {
@@ -1572,11 +1626,6 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
 
         usedFilePaths.insert(QString::fromUtf8((*it)->filePath.c_str()));
 
-
-        // Set the entry cache bucket index
-        int bucket_i = CachePrivate::getBucketCacheBucketIndex((*it)->hash);
-        CacheBucket& bucket = _imp->buckets[bucket_i];
-        onEntryInsertedInCache(value, bucket_i);
 
         QMutexLocker locker(&bucket.bucketLock);
 

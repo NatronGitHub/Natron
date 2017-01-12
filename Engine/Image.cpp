@@ -277,7 +277,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
     switch (args.bufferFormat) {
         case eImageBufferLayoutMonoChannelTiled: {
             // The size of a tile depends on the bitdepth
-            cache->getTileSizePx(args.bitdepth, &tileSizeX, &tileSizeY);
+            Cache::getTileSizePx(args.bitdepth, &tileSizeX, &tileSizeY);
             nTilesHeight = std::ceil(_imp->bounds.height() / tileSizeY) * tileSizeY;
             nTilesWidth = std::ceil(_imp->bounds.width() / tileSizeX) * tileSizeX;
         }   break;
