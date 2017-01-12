@@ -68,7 +68,6 @@ HEADERS += \
     SerializationFwd.h \
     SerializationIO.h \
     SerializationCompat.h \
-    TextureRectSerialization.h \
     WorkspaceSerialization.h
 
 
@@ -88,5 +87,4 @@ SOURCES += \
     RectDSerialization.cpp \
     RectISerialization.cpp \
     RotoStrokeItemSerialization.cpp \
-    TextureRectSerialization.cpp \
     WorkspaceSerialization.cpp

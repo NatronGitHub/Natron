@@ -223,7 +223,86 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 ViewerInstance::initializeKnobs()
 {
-#pragma message WARN("TODO")
+    EffectInstancePtr thisShared = shared_from_this();
+    KnobPagePtr page = AppManager::createKnob<KnobPage>( thisShared, tr("Controls") );
+    page->setName("controlsPage");
+
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamOutputLayerLabel) );
+        param->setName(kViewerInstanceParamOutputLayer);
+        param->setHintToolTip(tr(kViewerInstanceParamOutputLayerHint));
+        page->addKnob(param);
+        _imp->layerChoiceKnob = param;
+    }
+
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamAlphaChannelLabel) );
+        param->setName(kViewerInstanceParamAlphaChannel);
+        param->setHintToolTip(tr(kViewerInstanceParamAlphaChannelHint));
+        page->addKnob(param);
+        _imp->alphaChannelChoiceKnob = param;
+    }
+    {
+        std::vector<ChoiceOption> displayChannelEntries;
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamDisplayChannelsLabel) );
+        param->setName(kViewerInstanceParamDisplayChannels);
+        param->setHintToolTip(tr(kViewerInstanceParamDisplayChannelsHint));
+        {
+
+            displayChannelEntries.push_back(ChoiceOption("Luminance", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("RGB", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("Red", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("Green", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("Blue", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("Alpha", "", ""));
+            displayChannelEntries.push_back(ChoiceOption("Matte", "", ""));
+            param->populateChoices(displayChannelEntries);
+        }
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerInstanceNodeParamGainLabel), 1 );
+        param->setName(kViewerInstanceNodeParamGain);
+        param->setHintToolTip(tr(kViewerInstanceNodeParamGainHint));
+        page->addKnob(param);
+        param->setDisplayRange(-6., 6.);
+        _imp->gainKnob = param;
+    }
+    {
+        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerInstanceParamGammaLabel), 1 );
+        param->setName(kViewerInstanceParamGamma);
+        param->setHintToolTip(tr(kViewerInstanceParamGammaHint));
+        param->setDefaultValue(1.);
+        page->addKnob(param);
+        param->setDisplayRange(0., 5.);
+        _imp->gammaKnob = param;
+    }
+    {
+        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamColorspaceLabel) );
+        param->setName(kViewerInstanceParamColorspace);
+        param->setHintToolTip(tr(kViewerInstanceParamColorspaceHint));
+        {
+            std::vector<ChoiceOption> entries;
+            entries.push_back(ChoiceOption("Linear(None)", "", ""));
+            entries.push_back(ChoiceOption("sRGB", "", ""));
+            entries.push_back(ChoiceOption("Rec.709", "", ""));
+            param->populateChoices(entries);
+        }
+        param->setDefaultValue(1);
+        page->addKnob(param);
+        _imp->outputColorspace = param;
+    }
+
+    {
+        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerInstanceParamEnableAutoContrastLabel) );
+        param->setName(kViewerInstanceParamEnableAutoContrast);
+        param->setHintToolTip(tr(kViewerInstanceParamEnableAutoContrastHint));
+        page->addKnob(param);
+        param->setCheckable(true);
+        _imp->autoContrastKnob = param;
+    }
+
+
 } // initializeKnobs
 
 void

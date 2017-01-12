@@ -1969,12 +1969,6 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     checkIfViewPortRoIValidOrRender();
 
-
-    ///Clear green cached line so the user doesn't expect to see things in the cache
-    ///since we're changing the zoom factor
-    if (oldMipMapLevel != newMipMapLevel) {
-        _imp->viewerTab->clearTimelineCacheLine();
-    }
     update();
 } // ViewerGL::wheelEvent
 
@@ -2019,11 +2013,6 @@ ViewerGL::zoomViewport(double newZoomFactor)
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
         _imp->zoomCtx.zoom(centerX, centerY, scale);
         _imp->zoomOrPannedSinceLastFit = true;
-    }
-    ///Clear green cached line so the user doesn't expect to see things in the cache
-    ///since we're changing the zoom factor
-    if (newMipMapLevel != oldMipMapLevel) {
-        _imp->viewerTab->clearTimelineCacheLine();
     }
 
     checkIfViewPortRoIValidOrRender();
@@ -2080,12 +2069,6 @@ ViewerGL::fitImageToFormat()
     ViewerNodePtr viewerNode = getInternalNode();
     if ( viewerNode->isViewersSynchroEnabled() ) {
         _imp->viewerTab->synchronizeOtherViewersProjection();
-    }
-
-    if (newMipMapLevel != oldMipMapLevel) {
-        ///Clear green cached line so the user doesn't expect to see things in the cache
-        ///since we're changing the zoom factor
-        _imp->viewerTab->clearTimelineCacheLine();
     }
 
     checkIfViewPortRoIValidOrRender();
@@ -3192,7 +3175,7 @@ getColorAtRectForSrcNComps(const Image::CPUTileData& image,
 
             float tmpPix[4] = {0., 0., 0., 0.};
             if (srcNComps == 1) {
-                tmpPix[3] == Image::convertPixelDepth<PIX, float>(*pix[0]);
+                tmpPix[3] = Image::convertPixelDepth<PIX, float>(*pix[0]);
             } else {
                 for (int c = 0; c < srcNComps; ++c) {
                     tmpPix[c] = Image::convertPixelDepth<PIX, float>(*pix[c]);
