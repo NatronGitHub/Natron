@@ -31,7 +31,7 @@ Controls
 +=========================================+==========+===========+=======================================================================================================+
 | Convert to Group / ``convertToGroup``   | Button   |           | Converts this node to a Group: the internal node-graph and the user parameters will become editable   |
 +-----------------------------------------+----------+-----------+-------------------------------------------------------------------------------------------------------+
-| Angle / ``angleBlur\_angle``            | Double   | 0         | Determines the direction into which the image is blurred. This is an angle in degrees.                |
+| Angle / ``angleBlur_angle``             | Double   | 0         | Determines the direction into which the image is blurred. This is an angle in degrees.                |
 +-----------------------------------------+----------+-----------+-------------------------------------------------------------------------------------------------------+
-| Distance / ``angleBlur\_distance``      | Double   | 0         | Determines how much the image will be blurred                                                         |
+| Distance / ``angleBlur_distance``       | Double   | 0         | Determines how much the image will be blurred                                                         |
 +-----------------------------------------+----------+-----------+-------------------------------------------------------------------------------------------------------+
