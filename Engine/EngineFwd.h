@@ -325,7 +325,6 @@ typedef boost::shared_ptr<BufferedFrame> BufferedFramePtr;
 typedef boost::shared_ptr<BufferedFrameContainer> BufferedFrameContainerPtr;
 typedef boost::shared_ptr<CompNodeItem> CompNodeItemPtr;
 typedef boost::shared_ptr<Cache> CachePtr;
-typedef boost::shared_ptr<CacheEntryLocker> CacheEntryLockerPtr;
 typedef boost::shared_ptr<Curve> CurvePtr;
 typedef boost::shared_ptr<CacheEntryKeyBase> CacheEntryKeyBasePtr;
 typedef boost::shared_ptr<CacheEntryBase> CacheEntryBasePtr;

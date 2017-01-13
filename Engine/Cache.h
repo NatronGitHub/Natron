@@ -51,6 +51,11 @@ GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/interprocess/smart_ptr/shared_ptr.hpp>
+#include <boost/interprocess/smart_ptr/weak_ptr.hpp>
+#include <boost/interprocess/smart_ptr/scoped_ptr.hpp>
+#include <boost/interprocess/managed_mapped_file.hpp>
+
 #endif
 
 #include "Serialization/CacheSerialization.h"
@@ -79,7 +84,15 @@ GCC_DIAG_ON(deprecated)
 #define NATRON_TILE_SIZE_X_32_BIT 32
 #define NATRON_TILE_SIZE_Y_32_BIT 32
 
+// The name of the directory containing all buckets on disk
+#define NATRON_CACHE_DIRECTORY_NAME "Cache"
+
 NATRON_NAMESPACE_ENTER;
+
+// We share the cache across processed with a memory mapped file so that it is also persistent
+typedef boost::interprocess::managed_mapped_file MemorySegmentType;
+
+typedef boost::interprocess::allocator<void, MemorySegmentType::segment_manager>  void_allocator_type;
 
 
 struct CacheReportInfo
@@ -108,10 +121,11 @@ struct CacheBucket;
  **/
 struct CacheEntryLockerPrivate;
 class CacheEntryLocker;
-typedef boost::shared_ptr<CacheEntryLocker> CacheEntryLockerPtr;
-typedef boost::weak_ptr<CacheEntryLocker> CacheEntryLockerWPtr;
 
-class CacheEntryLocker : public boost::enable_shared_from_this<CacheEntryLocker>
+typedef boost::interprocess::deleter<CacheEntryLocker, MemorySegmentType::segment_manager>  CacheEntryLocker_deleter;
+typedef boost::interprocess::shared_ptr<CacheEntryLocker, void_allocator_type, CacheEntryLocker_deleter> CacheEntryLockerPtr;
+
+class CacheEntryLocker
 {
     // For create
     friend class Cache;
@@ -191,7 +205,6 @@ private:
 struct CachePrivate;
 class Cache
 : public QObject
-, public SERIALIZATION_NAMESPACE::SerializableObjectBase
 , public boost::enable_shared_from_this<Cache>
 {
     GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -224,15 +237,6 @@ public:
     
     virtual ~Cache();
 
-    /**
-     * @brief Set the cache name as it appears on disk and its version (for serialization purposes)
-     **/
-    void setCacheName(const std::string& name);
-
-    /**
-     * @brief Returns the cache name set in setCacheNameAndVersion
-     **/
-    const std::string & getCacheName() const;
 
     /**
      * @brief Set the path to the directory that should contain the Cache directory itself. 
@@ -330,16 +334,6 @@ public:
      **/
     void getAllEntriesByKeyIDWithCacheSignalEnabled(int uniqueID, std::list<CacheEntryBasePtr>* entries) const;
 
-    /**
-     * @brief Must serialize the cache table of contents
-     **/
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj) OVERRIDE FINAL;
-
-    /**
-     * @brief Restores the cache from the table of contents
-     **/
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& obj) OVERRIDE FINAL;
-
     static int getBucketCacheBucketIndex(U64 hash);
 
 Q_SIGNALS:
@@ -352,7 +346,6 @@ Q_SIGNALS:
     void cacheChanged();
     
 private:
-
 
     /**
      * @brief Removes all cache entries for the given pluginID.
@@ -391,7 +384,7 @@ private:
     /**
      * @brief Called when an entry is inserted from the cache. The bucket mutex may still be locked.
      **/
-    void onEntryInsertedInCache(const CacheEntryBasePtr& entry, int bucketIndex);
+    void onEntryInsertedInCache(const CacheEntryBasePtr& entry);
 
     /**
      * @brief Called when an entry is allocated

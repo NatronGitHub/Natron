@@ -34,8 +34,18 @@
 #include <QWaitCondition>
 #include <QDebug>
 
+
 #include <boost/unordered_set.hpp>
 #include <boost/format.hpp>
+#include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/sync/interprocess_mutex.hpp> // regular mutex
+#include <boost/interprocess/sync/scoped_lock.hpp> // scoped lock a regular mutex
+#include <boost/interprocess/sync/interprocess_upgradable_mutex.hpp> // r-w mutex that can upgrade read right to write
+#include <boost/interprocess/sync/interprocess_sharable_mutex.hpp> // r-w mutex
+#include <boost/interprocess/sync/sharable_lock.hpp> // scope lock a r-w mutex
+#include <boost/interprocess/sync/upgradable_lock.hpp> // scope lock a r-w upgradable mutex
+#include <boost/interprocess/sync/interprocess_condition.hpp> // wait cond
+#include <boost/interprocess/file_mapping.hpp>
 
 #include <SequenceParsing.h>
 
@@ -70,138 +80,108 @@
 
 NATRON_NAMESPACE_ENTER;
 
-// The 3 defines below configure the internal LRU storage for the cache.
-// For now we use
-#ifdef USE_VARIADIC_TEMPLATES
 
-    #ifdef NATRON_CACHE_USE_BOOST
-        #ifdef NATRON_CACHE_USE_HASH
-            typedef BoostLRUHashTable<U64, CacheEntryBasePtr>, boost::bimaps::unordered_set_of > CacheContainer;
-        #else
-            typedef BoostLRUHashTable<U64, CacheEntryBasePtr >, boost::bimaps::set_of > CacheContainer;
-        #endif
 
-        typedef CacheContainer::container_type::left_iterator CacheIterator;
-        typedef CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-        static CacheEntryBasePtr &  getValueFromIterator(CacheIterator it)
-        {
-            return it->second;
-        }
 
-    #else // cache use STL
+// Typedef our interprocess types
+typedef bip::allocator<int, MemorySegmentType::segment_manager> MM_allocator_int;
+typedef bip::allocator<char, MemorySegmentType::segment_manager> MM_allocator_char;
 
-        #ifdef NATRON_CACHE_USE_HASH
-            typedef StlLRUHashTable<U64, CacheEntryBasePtr >, std::unordered_map > CacheContainer;
-        #else
-            typedef StlLRUHashTable<U64, CacheEntryBasePtr >, std::map > CacheContainer;
-        #endif
 
-        typedef CacheContainer::key_to_value_type::iterator CacheIterator;
-        typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-        static CacheEntryBasePtr& getValueFromIterator(CacheIterator it)
-        {
-            return it->second;
-        }
-    #endif // NATRON_CACHE_USE_BOOST
+// The unordered set of free tiles indices in a bucket
+typedef boost::unordered_set<int, boost::hash<int>, std::equal_to<int>, MM_allocator_int> MM_unordered_set_int;
 
-#else // !USE_VARIADIC_TEMPLATES
+// Our LRU container: internally an allocator for the key and value type will be used
+typedef LRUHashTable<U64, CacheEntryBasePtr, MemorySegmentType::segment_manager> CacheContainer;
 
-    #ifdef NATRON_CACHE_USE_BOOST
-        typedef BoostLRUHashTable<U64, CacheEntryBasePtr> CacheContainer;
-        typedef CacheContainer::container_type::left_iterator CacheIterator;
-        typedef CacheContainer::container_type::left_const_iterator ConstCacheIterator;
-        static CacheEntryBasePtr& getValueFromIterator(CacheIterator it)
-        {
-            return it->second;
-        }
-    #else // cache use STL and tree (std map)
+inline CacheEntryBasePtr& getValueFromIterator(CacheContainer::iterator it)
+{
+    return it->value;
+}
 
-        typedef StlLRUHashTable<U64, CacheEntryBasePtr > CacheContainer;
-        typedef CacheContainer::key_to_value_type::iterator CacheIterator;
-        typedef CacheContainer::key_to_value_type::const_iterator ConstCacheIterator;
-        static CacheEntryBasePtr& getValueFromIterator(CacheIterator it)
-        {
-            return it->second.first;
-        }
-    #endif // NATRON_CACHE_USE_BOOST
-#endif // USE_VARIADIC_TEMPLATES
-
+struct CacheBucket;
 /**
  * @brief Struct used to prevent multiple threads from computing the same value associated to a hash
  **/
 struct LockedHash
 {
+    // Raw pointer to the bucket, lives in process memory
+    CacheBucket* bucket;
 
-    // This is the wait condition into which waiters will wait. This is protected by the corresponding bucketLock
-    QWaitCondition lockedHashCond;
+    // [IPC] This is the wait condition into which waiters will wait. This is protected by the corresponding bucketLock
+    bip::interprocess_condition lockedHashCond;
 
-    // This is the locker that has the status eCacheEntryStatusMustCompute that is locking the entry and supposed to
-    // compute it.
-    // Protected by bucketLock
-    CacheEntryLockerPtr computeLocker;
+    // [IPC] Indicates whether at least one CacheEntryLocke has the status eCacheEntryStatusMustCompute that is locking the entry.
+    //
+    // Protected by bucketLock accross processes.
+    bool* computeLocker;
 
+
+    LockedHash(const std::string& hashString, CacheBucket* bucket);
+
+    ~LockedHash();
 };
 
 
-typedef boost::shared_ptr<LockedHash> LockedHashPtr;
+typedef bip::deleter<LockedHash, MemorySegmentType::segment_manager>  LockedHash_deleter;
+typedef bip::shared_ptr<LockedHash, void_allocator_type, LockedHash_deleter> LockedHashPtr;
 
-
-typedef std::map<U64, LockedHashPtr> LockedHashMap;
-
+typedef bip::allocator<LockedHashPtr, MemorySegmentType::segment_manager> MM_allocator_LockedHashPtr;
 
 /**
  * @brief The cache is split up into 256 buckets. Each bucket is identified by 2 hexadecimal digits (16*16)
  * This allows concurrent access to the cache without taking a lock: threads are less likely to access to the same bucket.
  * We could also split into 4096 buckets but that's too many data structures to allocate to be worth it.
+ *
+ * The cache bucket is implemented only using interprocess safe data structures so that it can be shared across Natron processes.
  **/
 struct CacheBucket
 {
-    // Protects container
-    QMutex bucketLock;
+    // [IPC] Protects container with an upgradable read-write mutex
+    bip::interprocess_upgradable_mutex bucketLock;
 
-    // Internal LRU container
+    // [IPC] Internal LRU container
     CacheContainer container;
 
-    // To ensure concurrent threads do not compute concurrently multiple stuff, we lock cache keys
-    // of objects that are currently being computed by a thread and that will be inserted later on in the cache.
-    // This way, another thread may wait until the computation is done to return the results.
-    LockedHashMap lockedHashes;
+    // [IPC] Storage for tiled entries: the size of this file is a multiple of the tile byte size.
+    bip::file_mapping tileAlignedFile;
 
-    // Storage for tiled entries.
-    // Each file contains a multiple of the tile size
-    MemoryFilePtr cacheFile;
+    // [IPC] All-purpose Storage: the size of this file can be anything.
+    bip::file_mapping allPurposeFile;
 
-    // Indices of the chunnks of memory available in the cache file.
-    boost::unordered_set<int> freeTiles;
+    // [IPC] Indices of the chunks of memory available in the cache file.
+    MM_unordered_set_int freeTiles;
+
+    // Raw pointer to the memory segment held by the CachePrivate class.
+    // This is ensured to be always valid and lives in process memory.
+    MemorySegmentType* memorySegment;
 
     CacheBucket()
     : bucketLock()
     , container()
-    , lockedHashes()
-    , cacheFile()
+    , tileAlignedFile()
+    , allPurposeFile()
     , freeTiles()
+    , memorySegment(0)
     {
 
     }
-
 };
 
 struct CacheEntryLockerPrivate
 {
+    // Raw pointer to the public interface: lives in process memory
     CacheEntryLocker* _publicInterface;
 
-    // A pointer to the cache that returned this object in Cache::get()
+    // A smart pointer to the cache: lives in process memory
     CachePtr cache;
 
-    // The key of the entry
+    // The key of the entry: lives in process memory
     CacheEntryKeyBasePtr key;
 
-    // A strong reference to the locked object shared amongst CacheEntryLocker that need the value associated
-    // to the hash
-    LockedHashPtr lockObject;
-
-    // Protects the lockObject pointer
-    QMutex lockObjectMutex;
+    // [IPC] A strong reference to the locked object shared amongst CacheEntryLocker (accross processes)
+    // that needs the value associated to the given key.
+    LockedHashPtr* lockObject;
 
     // Holding a pointer to the bucket is safe since they are statically allocated on the cache.
     CacheBucket* bucket;
@@ -215,8 +195,7 @@ struct CacheEntryLockerPrivate
     : _publicInterface(publicInterface)
     , cache(cache)
     , key(key)
-    , lockObject()
-    , lockObjectMutex()
+    , lockObject(0)
     , bucket(0)
     , entry()
     , status(CacheEntryLocker::eCacheEntryStatusMustCompute)
@@ -224,58 +203,88 @@ struct CacheEntryLockerPrivate
 
     }
 
-    void tryCacheLookup();
-
-    void removeLockObjectIfUnique();
+    /**
+     * @brief Lookup the cache. If found, set the entry member and updates the status to 
+     * eCacheEntryStatusCached.
+     * If not found, set the status to eCacheEntryStatusMustCompute.
+     * In output, if the status is eCacheEntryStatusMustCompute and and iterator other than end()
+     * is returned, that means an entry with a matching hash was found but the key did not match.
+     * The caller should then remove erase the iterator from the container (taking a write lock first)
+     * and then compute the entry.
+     *
+     * This function assumes that a read locker is taken.
+     **/
+    CacheContainer::iterator tryCacheLookup();
 
 };
 
 struct CachePrivate
 {
+    // Raw pointer to the public interface: lives in process memory
     Cache* _publicInterface;
 
-    // maximum size allowed for the cache RAM + MMAP
+    // The maximum size allowed for the MMAP cache
+    // This is local to the process as it does not have to be shared necessarily:
+    // if different accross processes then the process with the minimum size will
+    // regulate the cache size.
     std::size_t maximumDiskSize;
 
-    // the maximum size of the in RAM memory in bytes the cache can grow to
+    // The maximum size of the in RAM memory in bytes the cache can grow to
+    // This is local to the process as it does not have to be shared necessarily:
+    // if different accross processes then the process with the minimum size will
+    // regulate the cache size.
     std::size_t maximumInMemorySize;
 
     // The maximum memory that can be taken by GL textures
-    std::size_t maximumGLTextureCacheSize;
+    // This is local to the process as it does not have to be shared necessarily:
+    // if different accross processes then the process with the minimum size will
+    // regulate the cache size.
+    std::size_t maximumGLTextureSize;
 
-    // current size in RAM of the cache in bytes
-    std::size_t memoryCacheSize;
+    // Protects all maximum*Size values above.
+    // Since all they are all in process memory, this mutex
+    // only protects against threads.
+    QMutex maximumSizesMutex;
 
-    // OpenGL textures memory taken so far in bytes
-    std::size_t glTextureCacheSize;
+    // [IPC] Current size in RAM of the cache in bytes:
+    // this is a single std::size_t that lives in shared memory.
+    // It is protected by sizeLock
+    std::size_t* memorySize;
 
-    // current size in MMAP of the cache in bytes
-    std::size_t diskCacheSize;
+    // [IPC] OpenGL textures memory taken so far in bytes
+    // this is a single std::size_t that lives in shared memory.
+    // It is protected by sizeLock
+    std::size_t* glTextureSize;
 
-    // protects all size bits
-    QMutex sizeLock;
+    // [IPC] Current size in MMAP in bytes
+    // this is a single std::size_t that lives in shared memory.
+    // It is protected by sizeLock
+    std::size_t* diskSize;
 
-    // All buckets. Each bucket handle entries with the 2 first hexadecimal numbers of the hash
-    // This allows to hopefully dispatch threads in 256 different buckets so that they are less likely
+    // [IPC] Protects memorySize, glTextureSize and diskSize
+    bip::interprocess_mutex sizeLock;
+
+    // This is the memory segment where all cache state is written to and shared amongst processes.
+    // The scoped_ptr itself lives in memory but the memory segment itself is shared.
+    boost::scoped_ptr<MemorySegmentType> segment;
+
+    // Each bucket handle entries with the 2 first hexadecimal numbers of the hash
+    // This allows to hopefully dispatch threads and processes in 256 different buckets so that they are less likely
     // to take the same lock.
+    // Each bucket is interprocess safe by itself.
     CacheBucket buckets[NATRON_CACHE_BUCKETS_COUNT];
 
-    // The name of the cache (as it appears on Disk)
-    std::string cacheName;
-
     // Path of the directory that should contain the cache directory itself.
+    // This is controled by a Natron setting. By default it points to a standard system dependent
+    // location.
     std::string directoryContainingCachePath;
 
-    // Thread internal to the cache that is used to remove unused entries
+    // Thread internal to the cache that is used to remove unused entries.
+    // This is local to the process.
     boost::scoped_ptr<CacheCleanerThread> cleanerThread;
 
     // Store the system physical total RAM in a member
     std::size_t maxPhysicalRAMAttainable;
-
-    // Protected by sizeLock. This is used to wait the thread trying to insert something in the cache whilst the memory is still
-    // too high
-    QWaitCondition memoryFullCondition;
-
 
     // True when clearing the cache, protected by tileCacheMutex
     bool clearingCache;
@@ -287,17 +296,17 @@ struct CachePrivate
     : _publicInterface(publicInterface)
     , maximumDiskSize((std::size_t)10 * 1024 * 1024 * 1024) // 10GB max by default (RAM + Disk)
     , maximumInMemorySize((std::size_t)4 * 1024 * 1024 * 1024) // 4GB in RAM max by default
-    , maximumGLTextureCacheSize(0) // This is updated once we get GPU infos
-    , memoryCacheSize(0)
-    , glTextureCacheSize(0)
-    , diskCacheSize(0)
+    , maximumGLTextureSize(0) // This is updated once we get GPU infos
+    , maximumSizesMutex()
+    , memorySize(0)
+    , glTextureSize(0)
+    , diskSize(0)
     , sizeLock()
+    , segment()
     , buckets()
-    , cacheName()
     , directoryContainingCachePath()
     , cleanerThread()
     , maxPhysicalRAMAttainable(0)
-    , memoryFullCondition()
     , clearingCache(false)
     , tearingDown(false)
     {
@@ -324,17 +333,17 @@ struct CachePrivate
     void incrementCacheSize(std::size_t size, StorageModeEnum storage)
     {
         // Private - should not lock
-        assert(!sizeLock.tryLock());
+        assert(!sizeLock.try_lock());
 
         switch (storage) {
             case eStorageModeDisk:
-                diskCacheSize += size;
+                *diskSize = *diskSize + size;
                 break;
             case eStorageModeGLTex:
-                glTextureCacheSize += size;
+                *glTextureSize = *glTextureSize + size;
                 break;
             case eStorageModeRAM:
-                memoryCacheSize += size;
+                *memorySize = *memorySize + size;
                 break;
             case eStorageModeNone:
                 break;
@@ -344,17 +353,17 @@ struct CachePrivate
     void decrementCacheSize(std::size_t size, StorageModeEnum storage)
     {
         // Private - should not lock
-        assert(!sizeLock.tryLock());
+        assert(!sizeLock.try_lock());
 
         switch (storage) {
             case eStorageModeDisk:
-                diskCacheSize -= size;
+                *diskSize = *diskSize - size;
                 break;
             case eStorageModeGLTex:
-                glTextureCacheSize -= size;
+                *glTextureSize = *glTextureSize - size;
                 break;
             case eStorageModeRAM:
-                memoryCacheSize -= size;
+                *memorySize = *memorySize - size;
                 break;
             case eStorageModeNone:
                 break;
@@ -365,6 +374,25 @@ struct CachePrivate
 
 };
 
+LockedHash::LockedHash(const std::string& hashString, CacheBucket* bucket)
+: bucket(bucket)
+, lockedHashCond()
+, computeLocker(0)
+{
+    // The bucket should be locked at this point!
+    assert(!bucket->bucketLock.try_lock());
+
+    std::string computeLockerName = hashString + "ComputeLocker";
+    computeLocker = bucket->memorySegment->construct<bool>(computeLockerName.c_str())(false);
+}
+
+LockedHash::~LockedHash()
+{
+    // The bucket should be locked at this point!
+    assert(!bucket->bucketLock.try_lock());
+
+    bucket->memorySegment->deallocate(computeLocker);
+}
 
 CacheEntryLocker::CacheEntryLocker(const CachePtr& cache, const CacheEntryKeyBasePtr& key)
 : _imp(new CacheEntryLockerPrivate(this, cache, key))
@@ -381,32 +409,28 @@ CacheEntryLocker::create(const CachePtr& cache, const CacheEntryKeyBasePtr& key)
     return ret;
 }
 
-void
+CacheContainer::iterator
 CacheEntryLockerPrivate::tryCacheLookup()
 {
      // Private - should not lock
-    assert(!bucket->bucketLock.tryLock());
 
     U64 keyHash = key->getHash();
 
     // Check for a matching entry
-    CacheIterator foundEntry = bucket->container(keyHash);
+    CacheContainer::iterator foundEntry = bucket->container.find(keyHash);
+
     if (foundEntry != bucket->container.end()) {
 
-        CacheEntryBasePtr ret = getValueFromIterator(foundEntry);
+        CacheEntryBasePtr& ret = getValueFromIterator(foundEntry);
         // Ok found one
         // Check if the key is really equal, not just the hash
         if (key->equals(*ret->getKey())) {
             entry = ret;
             status = CacheEntryLocker::eCacheEntryStatusCached;
         }
-
-        // If the key was not equal this may be because 2 hash computations returned the same results.
-        // Erase the current entry
-        bucket->container.erase(foundEntry);
-        foundEntry = bucket->container.end();
     }
     status = CacheEntryLocker::eCacheEntryStatusMustCompute;
+    return foundEntry;
 
 } // tryCacheLookup
 
@@ -424,43 +448,107 @@ CacheEntryLocker::init()
     // buckets
     _imp->bucket = &_imp->cache->_imp->buckets[Cache::getBucketCacheBucketIndex(hash)];
 
-    // Lock out threads
-    QMutexLocker k(&_imp->bucket->bucketLock);
+    {
+        // Take the read lock: many threads/processes can try read at the same time
+        bip::sharable_lock<bip::interprocess_upgradable_mutex> lock(_imp->bucket->bucketLock);
 
-    _imp->tryCacheLookup();
+        CacheContainer::iterator foundEntry = _imp->tryCacheLookup();
+
+        if (_imp->status == eCacheEntryStatusCached) {
+            // We found in cache, nothing to do
+            assert(foundEntry != _imp->bucket->container.end());
+            Q_UNUSED(foundEntry);
+            return;
+        }
+    }
+
+    assert(_imp->status == eCacheEntryStatusMustCompute);
+
+
+    // Ok we either did not find a matching hash or we found a matching hash but the key did not match.
+    //
+    // In any cases, first take an upgradable lock and repeat the find
+    // Only a single thread/process can take the upgradable lock.
+
+    bip::upgradable_lock<bip::interprocess_upgradable_mutex> readLock(_imp->bucket->bucketLock);
+    CacheContainer::iterator foundEntry = _imp->tryCacheLookup();
 
     if (_imp->status == eCacheEntryStatusCached) {
-        // We found in cache, nothing to do
+        // We found in cache, nothing to do: it was probably cached in between the 2 locks.
+        assert(foundEntry != _imp->bucket->container.end());
         return;
     }
 
     assert(_imp->status == eCacheEntryStatusMustCompute);
 
-    LockedHashMap::iterator foundLockedHash = _imp->bucket->lockedHashes.find(hash);
-    if (foundLockedHash == _imp->bucket->lockedHashes.end()) {
 
-        // We are the first call to Cache::get() that was made: it is expected that
-        // we compute the value
-        LockedHashPtr hashLock(new LockedHash);
-        _imp->bucket->lockedHashes.insert(std::make_pair(hash, hashLock));
+    {
+        // Ok we either did not find a matching hash or we found a matching hash but the key did not match.
+        // We need to upgrade the lock to a write lock. This will wait until all other threads have released their
+        // read lock.
+        bip::scoped_lock<bip::interprocess_upgradable_mutex> writeLock(boost::move(readLock));
+        
+        
+        // Now we are the only thread in this portion.
+
+        // If we had a hash match but invalid key, erase it now.
+        _imp->bucket->container.erase(foundEntry);
+
+
+        // Instead of taking the write lock until this thread/process has computed the entry we do things differently.
+        // If we were to take the lock until the entry was computed, we would lock out the entire bucket even for other
+        // objects that may be totally unrelated.
+        //
+        // Instead we register this CacheEntryLocker in a lockedHashes map. Thus on the bucket, we can
+        // track the CacheEntryLocker's interested in the result of the value associated to the hash.
+        // We can then wait into a wait condition specific to that hash.
+        //
+        // If somebody is already computing the entry we mark ourselves with the status eCacheEntryStatusComputationPending
+        // and the caller is expected to call waitForPendingEntry() when needed.
+
+
+        // Create a locker object associated to the provided hash.
+        std::string hashStr;
         {
-            QMutexLocker k(&_imp->lockObjectMutex);
-            _imp->lockObject = hashLock;
+            std::stringstream ss;
+            ss << std::hex << hash;
+            hashStr = ss.str();
         }
-        hashLock->computeLocker = shared_from_this();
-    } else {
-
-        // There's already somebody computing the hash
-        LockedHashPtr &hashLock = foundLockedHash->second;
-        assert(hashLock->computeLocker);
+        std::string sharedPtrName = hashStr + "LockedHashPtr";
         {
-            QMutexLocker k(&_imp->lockObjectMutex);
-            _imp->lockObject = hashLock;
+            std::pair<LockedHashPtr*, MemorySegmentType::size_type> found = _imp->bucket->memorySegment->find<LockedHashPtr>(sharedPtrName.c_str());
+            if (found.first) {
+                // There's already somebody computing the hash
+                // Set the status to pending: caller is expected to call waitForPendingEntry()
+
+                _imp->lockObject = found.first;
+
+                // The compute locker flag should be set to true
+                assert(*(*_imp->lockObject)->computeLocker);
+                _imp->status = eCacheEntryStatusComputationPending;
+
+            } else {
+
+                // We are the first thread/process to call Cache::get() for this hash: we must create the shared lock object.
+
+                std::string objectName = hashStr + "LockedHash";
+
+                _imp->lockObject = _imp->bucket->memorySegment->construct<LockedHashPtr>(sharedPtrName.c_str())
+                ( _imp->bucket->memorySegment->construct<LockedHash>(objectName.c_str())(hashStr, _imp->bucket)      //object to own
+                 , void_allocator_type(_imp->bucket->memorySegment->get_segment_manager())  //allocator
+                 , LockedHash_deleter(_imp->bucket->memorySegment->get_segment_manager())         //deleter
+                 );
+
+                // Set the compute locker flag to true.
+                *(*_imp->lockObject)->computeLocker = true;
+
+            }
         }
 
+    } // writeLock
 
-        _imp->status = eCacheEntryStatusComputationPending;
-    }
+    // Concurrency resumes here!
+
 } // init
 
 CacheEntryKeyBasePtr
@@ -483,28 +571,6 @@ CacheEntryLocker::getCachedEntry() const
 }
 
 void
-CacheEntryLockerPrivate::removeLockObjectIfUnique()
-{
-    // Private - should not lock
-    assert(!bucket->bucketLock.tryLock());
-
-    U64 hash = key->getHash();
-
-    // Find the lock object, it should still be around
-    LockedHashMap::iterator foundLockedHash = bucket->lockedHashes.find(hash);
-    assert(foundLockedHash != bucket->lockedHashes.end());
-
-    if (foundLockedHash != bucket->lockedHashes.end()) {
-
-        // If the use count of the lock objet is 1 that means only this thread is still referencing this hash
-        // hence remove the lock object
-        if (foundLockedHash->second.use_count() == 1) {
-            bucket->lockedHashes.erase(foundLockedHash);
-        }
-    }
-}
-
-void
 CacheEntryLocker::insertInCache(const CacheEntryBasePtr& value)
 {
     // The entry should only be computed and inserted in the cache if the status
@@ -514,37 +580,45 @@ CacheEntryLocker::insertInCache(const CacheEntryBasePtr& value)
 
     _imp->entry = value;
 
-
     U64 hash = _imp->key->getHash();
 
     // Set the entry cache bucket index
-    _imp->cache->onEntryInsertedInCache(value, Cache::getBucketCacheBucketIndex(hash));
-
-    QMutexLocker locker(&_imp->bucket->bucketLock);
-
-    // The entry must not yet exist in the cache. This is ensured by the locker object that was returned from the get()
-    // function.
-    assert(_imp->bucket->container(hash) == _imp->bucket->container.end());
-
-    _imp->bucket->container.insert(hash, value);
-
-    assert(_imp->lockObject);
-    assert(_imp->lockObject->computeLocker.get() == this);
-    _imp->lockObject->computeLocker.reset();
+    value->setCacheBucketIndex(Cache::getBucketCacheBucketIndex(hash));
 
 
-    // Wake up any thread waiting in waitForPendingEntry()
-    _imp->lockObject->lockedHashCond.wakeAll();
-
-    // We no longer need to hold a reference to the lock object since we cache it
     {
-        QMutexLocker k(&_imp->lockObjectMutex);
-        _imp->lockObject.reset();
-    }
+        // Take a write lock on the bucket
+        bip::scoped_lock<bip::interprocess_upgradable_mutex> writeLock(_imp->bucket->bucketLock);
 
-    // Remove the lock object from the cache if we were the only thread using it
-    _imp->removeLockObjectIfUnique();
+        // The entry must not yet exist in the cache. This is ensured by the locker object that was returned from the init()
+        // function.
+        assert(_imp->bucket->container.find(hash) == _imp->bucket->container.end());
 
+        // Insert the value in the container
+        _imp->bucket->container.insert(hash, value);
+
+        assert(_imp->lockObject && *_imp->lockObject);
+
+        // The computeLocker flag should be set to true
+        assert(*(*_imp->lockObject)->computeLocker);
+
+        // Reset it to false
+        *(*_imp->lockObject)->computeLocker = false;
+
+        // Wake up any thread waiting in waitForPendingEntry()
+        (*_imp->lockObject)->lockedHashCond.notify_all();
+
+        // We no longer need to hold a reference to the lock object since we cache it
+        _imp->bucket->memorySegment->deallocate(_imp->lockObject);
+        _imp->lockObject = 0;
+
+    } // writeLock
+
+    _imp->cache->onEntryInsertedInCache(value);
+
+
+    // Concurrency resumes!
+    
 } // insertInCache
 
 CacheEntryLocker::CacheEntryStatusEnum
@@ -562,113 +636,149 @@ CacheEntryLocker::waitForPendingEntry()
         hasReleasedThread = true;
     }
 
+    {
+        // Take a write lock on the bucket
+        bip::scoped_lock<bip::interprocess_upgradable_mutex> writeLock(_imp->bucket->bucketLock);
 
-    // Lock out threads
-    QMutexLocker k(&_imp->bucket->bucketLock);
-    do {
+        do {
+            assert(_imp->lockObject && *_imp->lockObject);
+            (*_imp->lockObject)->lockedHashCond.wait(_imp->bucket->bucketLock);
 
+            // We have been woken up by a thread that either called insertInCache() or was in the
+            // destructor (i.e: it was aborted and did not inserted result in cache).
 
-        _imp->lockObject->lockedHashCond.wait(&_imp->bucket->bucketLock);
+            // If the original compute thread was aborted, we have to compute now, otherwise results
+            // are available.
 
-        // We have been woken up by a thread that either called insertInCache() or was in the
-        // destructor (hence was aborted).
+            CacheContainer::iterator foundEntry = _imp->tryCacheLookup();
 
-        // If the original compute thread was aborted, we have to compute now, else we are now
-        // also cached
+            assert(_imp->status == eCacheEntryStatusMustCompute || _imp->status == eCacheEntryStatusCached);
 
-        _imp->tryCacheLookup();
+            if (_imp->status == eCacheEntryStatusCached) {
 
-        assert(_imp->status == eCacheEntryStatusMustCompute || _imp->status == eCacheEntryStatusCached);
+                // Remove the reference to the lock object
+                (*_imp->lockObject).reset();
 
-        if (_imp->status == eCacheEntryStatusMustCompute) {
-            assert(_imp->lockObject);
-            if (!_imp->lockObject->computeLocker) {
-                _imp->lockObject->computeLocker = shared_from_this();
+                // We no longer need to hold a reference to the lock object since we cache it
+                _imp->bucket->memorySegment->deallocate(_imp->lockObject);
+                _imp->lockObject = 0;
+
             } else {
-                _imp->status = eCacheEntryStatusComputationPending;
-            }
-        } else {
-            // Remove the reference to the lock object
-            {
-                QMutexLocker k(&_imp->lockObjectMutex);
-                _imp->lockObject.reset();
-            }
-            _imp->removeLockObjectIfUnique();
-        }
 
+                // We found an entry in the cache with the same hash but that did not match our key, re-compute.
+                if (foundEntry != _imp->bucket->container.end()) {
+                    _imp->bucket->container.erase(foundEntry);
+                }
 
-    } while(_imp->status == eCacheEntryStatusComputationPending);
+                if (!*(*_imp->lockObject)->computeLocker) {
+                    // We got notified and there's no computeLocker set,
+                    // set the flag so that we are the thread that is supposed
+                    // to compute the entry.
+                    *(*_imp->lockObject)->computeLocker = true;
+                } else {
+                    // Another thread got woken up first, go to sleep again.
+                    _imp->status = eCacheEntryStatusComputationPending;
+                }
+            }
+
+        } while(_imp->status == eCacheEntryStatusComputationPending);
+    } // writeLock
+
+    // Concurrency resumes!
 
     if (hasReleasedThread) {
         QThreadPool::globalInstance()->reserveThread();
     }
-
-
+    
+    
     return _imp->status;
 } // waitForPendingEntry
 
 int
 CacheEntryLocker::getNumberOfLockersInterestedByPendingResults() const
 {
+    assert(_imp->status != eCacheEntryStatusCached);
 
-    QMutexLocker k(&_imp->lockObjectMutex);
     if (!_imp->lockObject) {
         return 0;
     }
-    
-    assert(_imp->status != eCacheEntryStatusCached);
+    if (!(*_imp->lockObject)) {
+        return 0;
+    }
 
-    int useCount = _imp->lockObject.use_count();
-
-    // There must be at least 2 persons referencing it: the Cache and us
-    assert(useCount >= 2);
-
-    // Do not count the cache in the interested items
-    return useCount - 1;
+    int useCount = (*_imp->lockObject).use_count();
+    assert(useCount >= 1);
+    return useCount;
 }
 
 
 CacheEntryLocker::~CacheEntryLocker()
 {
+    // If no lock object, there's nothing to do.
+    if (!_imp->lockObject) {
+        return;
+    }
 
-    // Lock the bucket
-    QMutexLocker k(&_imp->bucket->bucketLock);
+    if (!*_imp->lockObject) {
+        return;
+    }
 
-    // There may still be threads waiting in waitForPendingEntry. If this entry status
-    // is set to eCacheEntryStatusMustCompute, this means that the entry was not computed
-    // or CacheEntryLocker::insertInCache was not called. We need to wake pending threads
-    // and tell them to actually compute
+    // There's still a locker object:
+    // We are either in the eCacheEntryStatusComputationPending or eCacheEntryStatusMustCompute status.
+    // If we are in compute status, make sure other threads get notified we are no longer computing it.
+
+    // Take the bucket lock
+
+    bip::scoped_lock<bip::interprocess_upgradable_mutex> writeLock(_imp->bucket->bucketLock);
     if (_imp->status == eCacheEntryStatusMustCompute) {
-        assert(_imp->lockObject);
-        _imp->lockObject->lockedHashCond.wakeAll();
-    } else {
-
-        // The cache entry is still pending but this thread is no longer interested in it
-        // or it was already cached
-        assert(_imp->status == eCacheEntryStatusCached || _imp->status == eCacheEntryStatusComputationPending);
+        (*_imp->lockObject)->lockedHashCond.notify_all();
+        *(*_imp->lockObject)->computeLocker = false;
     }
-
-    // Remove the reference to the lock object
-    {
-        QMutexLocker k(&_imp->lockObjectMutex);
-        if (_imp->lockObject) {
-            _imp->lockObject->computeLocker.reset();
-            _imp->lockObject.reset();
-        }
-    }
-
-    _imp->removeLockObjectIfUnique();
+    // Drop the reference of the lock object
+    _imp->bucket->memorySegment->deallocate(_imp->lockObject);
 }
 
 
 Cache::Cache()
 : QObject()
-, SERIALIZATION_NAMESPACE::SerializableObjectBase()
 , boost::enable_shared_from_this<Cache>()
 , _imp(new CachePrivate(this))
 {
     // Default to a system specific location
     setDirectoryContainingCachePath(std::string());
+
+    _imp->segment.reset(new MemorySegmentType(bip::open_or_create, NATRON_CACHE_DIRECTORY_NAME, SIZE));
+    for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
+        _imp->buckets[i].memorySegment = _imp->segment.get();
+    }
+
+    // Lock out other processes/threads to retrieve the size parameters
+    bip::scoped_lock<bip::interprocess_mutex> sizeLocker(_imp->sizeLock);
+
+    {
+        std::pair<std::size_t*, MemorySegmentType::size_type> found = _imp->segment->find<std::size_t>("DiskSize");
+        if (found.first) {
+            _imp->diskSize = found.first;
+        } else {
+            _imp->diskSize = _imp->segment->construct<std::size_t>("DiskSize")(0);
+        }
+    }
+    {
+        std::pair<std::size_t*, MemorySegmentType::size_type> found = _imp->segment->find<std::size_t>("MemorySize");
+        if (found.first) {
+            _imp->memorySize = found.first;
+        } else {
+            _imp->memorySize = _imp->segment->construct<std::size_t>("MemorySize")(0);
+        }
+    }
+    {
+        std::pair<std::size_t*, MemorySegmentType::size_type> found = _imp->segment->find<std::size_t>("GLTextureSize");
+        if (found.first) {
+            _imp->glTextureSize = found.first;
+        } else {
+            _imp->glTextureSize = _imp->segment->construct<std::size_t>("GLTextureSize")(0);
+        }
+    }
 }
 
 Cache::~Cache()
@@ -727,7 +837,7 @@ Cache::setMaximumCacheSize(StorageModeEnum storage, std::size_t size)
 {
     std::size_t curSize = getMaximumCacheSize(storage);
     {
-        QMutexLocker k(&_imp->sizeLock);
+        QMutexLocker k(&_imp->maximumSizesMutex);
         switch (storage) {
             case eStorageModeDisk:
                 _imp->maximumDiskSize = size;
@@ -739,7 +849,7 @@ Cache::setMaximumCacheSize(StorageModeEnum storage, std::size_t size)
                 if (size == 0) {
                     size = _imp->maxPhysicalRAMAttainable;
                 }
-                _imp->maximumGLTextureCacheSize = size;
+                _imp->maximumGLTextureSize = size;
             }   break;
             case eStorageModeNone:
                 assert(false);
@@ -758,14 +868,14 @@ std::size_t
 Cache::getMaximumCacheSize(StorageModeEnum storage) const
 {
     {
-        QMutexLocker k(&_imp->sizeLock);
+        QMutexLocker k(&_imp->maximumSizesMutex);
         switch (storage) {
             case eStorageModeDisk:
                 return _imp->maximumDiskSize;
             case eStorageModeGLTex:
                 return _imp->maximumInMemorySize;
             case eStorageModeRAM:
-                return _imp->maximumGLTextureCacheSize;
+                return _imp->maximumGLTextureSize;
             case eStorageModeNone:
                 return 0;
         }
@@ -776,30 +886,19 @@ std::size_t
 Cache::getCurrentSize(StorageModeEnum storage) const
 {
     {
-        QMutexLocker k(&_imp->sizeLock);
+        // Lock out all thread/process
+        bip::scoped_lock<bip::interprocess_mutex> locker(_imp->sizeLock);
         switch (storage) {
             case eStorageModeDisk:
-                return _imp->diskCacheSize;
+                return *_imp->diskSize;
             case eStorageModeGLTex:
-                return _imp->memoryCacheSize;
+                return *_imp->memorySize;
             case eStorageModeRAM:
-                return _imp->glTextureCacheSize;
+                return *_imp->glTextureSize;
             case eStorageModeNone:
                 return 0;
         }
     }
-}
-
-void
-Cache::setCacheName(const std::string& name)
-{
-    _imp->cacheName = name;
-}
-
-const std::string &
-Cache::getCacheName() const
-{
-    return _imp->cacheName;
 }
 
 void
@@ -862,7 +961,7 @@ CachePrivate::ensureCacheDirectoryExists()
     QString userDirectoryCache = QString::fromUtf8(directoryContainingCachePath.c_str());
     QDir d(userDirectoryCache);
     if (d.exists()) {
-        QString cacheDirName = QString::fromUtf8(cacheName.c_str());
+        QString cacheDirName = QString::fromUtf8(NATRON_CACHE_DIRECTORY_NAME);
         if (!d.exists(cacheDirName)) {
             d.mkdir(cacheDirName);
         }
@@ -880,7 +979,7 @@ Cache::clearAndRecreateCacheDirectory()
     QString userDirectoryCache = QString::fromUtf8(_imp->directoryContainingCachePath.c_str());
     QDir d(userDirectoryCache);
     if (d.exists()) {
-        QString cacheName = QString::fromUtf8(getCacheName().c_str());
+        QString cacheName = QString::fromUtf8(NATRON_CACHE_DIRECTORY_NAME);
         QString absoluteCacheFilePath = d.absolutePath() + QLatin1String("/") + cacheName;
         QtCompat::removeRecursively(absoluteCacheFilePath);
 
@@ -918,7 +1017,7 @@ Cache::getCacheDirectoryPath() const
     QString cacheFolderName;
     cacheFolderName = QString::fromUtf8(_imp->directoryContainingCachePath.c_str());
     StrUtils::ensureLastPathSeparator(cacheFolderName);
-    cacheFolderName.append( QString::fromUtf8( getCacheName().c_str() ) );
+    cacheFolderName.append( QString::fromUtf8(NATRON_CACHE_DIRECTORY_NAME) );
     return cacheFolderName.toStdString();
 } // getCacheDirectoryPath
 
@@ -962,7 +1061,7 @@ CachePrivate::getBucketAbsoluteDirPath(int bucketIndex) const
     QString bucketDirPath;
     bucketDirPath = QString::fromUtf8(directoryContainingCachePath.c_str());
     StrUtils::ensureLastPathSeparator(bucketDirPath);
-    bucketDirPath += QString::fromUtf8(cacheName.c_str());
+    bucketDirPath += QString::fromUtf8(NATRON_CACHE_DIRECTORY_NAME);
     StrUtils::ensureLastPathSeparator(bucketDirPath);
     bucketDirPath += QString::fromUtf8(getBucketDirName(bucketIndex).c_str());
     StrUtils::ensureLastPathSeparator(bucketDirPath);
@@ -1166,9 +1265,8 @@ Cache::onEntryRemovedFromCache(const CacheEntryBasePtr& entry)
 }
 
 void
-Cache::onEntryInsertedInCache(const CacheEntryBasePtr& entry, int bucketIndex)
+Cache::onEntryInsertedInCache(const CacheEntryBasePtr& entry)
 {
-    entry->setCacheBucketIndex(bucketIndex);
 
     if (entry->isCacheSignalRequired()) {
         Q_EMIT cacheChanged();
@@ -1184,6 +1282,9 @@ Cache::notifyEntryAllocated(std::size_t size, StorageModeEnum storage)
     }
 
     // We just allocateg something, ensure the cache size remains reasonable.
+    // We cannot block here until the memory stays contained in the user requested memory portion:
+    // if we would do so, then it could deadlock: Natron could require more memory than what
+    // the user requested to render just one node.
     evictLRUEntries(size, storage);
 }
 
@@ -1614,9 +1715,10 @@ Cache::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase&
         allocArgs.cacheFileDataOffset = (*it)->dataOffsetInFile;
 
         // Set the entry cache bucket index
-        int bucket_i = CachePrivate::getBucketCacheBucketIndex((*it)->hash);
+        int bucket_i = Cache::getBucketCacheBucketIndex((*it)->hash);
+        value->setCacheBucketIndex(bucket_i);
+
         CacheBucket& bucket = _imp->buckets[bucket_i];
-        onEntryInsertedInCache(value, bucket_i);
 
         try {
             value->allocateMemory(allocArgs);

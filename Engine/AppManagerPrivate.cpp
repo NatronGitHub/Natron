@@ -115,8 +115,6 @@ AppManagerPrivate::AppManagerPrivate()
     , openGLRenderers()
 {
     setMaxCacheFiles();
-
-    cache->setCacheName("Cache");
 }
 
 AppManagerPrivate::~AppManagerPrivate()
