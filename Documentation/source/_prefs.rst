@@ -33,7 +33,7 @@ Threading
 
 **Number of render threads (0="guess")**
 
-Controls how many threads Natron should use to render. -1: Disable multithreading totally (useful for debugging) 0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 2.
+Controls how many threads Natron should use to render. -1: Disable multithreading totally (useful for debugging) 0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 4.
 
 **Number of parallel renders (0="guess")**
 
@@ -182,7 +182,7 @@ When checked, Natron will cache the output of all images rendered by all nodes, 
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 7.54 GB of RAM.
+This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 8.00 GB of RAM.
 
 **System RAM to keep free (% of total RAM)**
 
@@ -198,7 +198,7 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 **Disk cache path (empty = default)**
 
-WARNING: Changing this parameter requires a restart of the application. This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is: /home/olear/.cache/INRIA/Natron
+WARNING: Changing this parameter requires a restart of the application. This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is: /Users/devernay/Library/Caches/INRIA/Natron
 
 **Wipe Disk Cache**
 
@@ -277,21 +277,25 @@ If checked, upon creation of a new Merge node, the input A will be preferred for
 Plug-ins
 --------
 
-**OpenFX plug-ins search path**
-
-Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX\_PLUGIN\_PATH environment variable. The priority order for system-wide plug-ins, from high to low, is: - plug-ins found in OFX\_PLUGIN\_PATH - plug-ins found in /usr/OFX/Plugins Plug-ins bundled with the binary distribution of Natron may have either higher or lower priority, depending on the "Prefer bundled plug-ins over system-wide plug-ins" setting. Any change will take effect on the next launch of Natron.
-
-**PyPlugs search path**
-
-Search path where Natron should scan for Python group scripts (PyPlugs). The search paths for groups can also be specified using the NATRON\_PLUGIN\_PATH environment variable.
-
 **Use bundled plug-ins**
 
-When checked, Natron also uses the plug-ins bundled with the binary distribution. When unchecked, only system-wide plug-ins are loaded (more information can be found in the help for the "Extra plug-ins search paths" setting).
+When checked, Natron also uses the plug-ins bundled with the binary distribution. When unchecked, only system-wide plug-ins found in are loaded (more information can be found in the help for the "Extra plug-ins search paths" setting).
 
 **Prefer bundled plug-ins over system-wide plug-ins**
 
 When checked, and if "Use bundled plug-ins" is also checked, plug-ins bundled with the Natron binary distribution will take precedence over system-wide plug-ins if they have the same internal ID.
+
+**Enable default OpenFX plugins location**
+
+When checked, Natron also uses the OpenFX plug-ins found in the default location (/Library/OFX/Plugins).
+
+**OpenFX plug-ins search path**
+
+Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX\_PLUGIN\_PATH environment variable. The priority order for system-wide plug-ins, from high to low, is: - plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is checked) - plug-ins found in OFX\_PLUGIN\_PATH - plug-ins found in /Library/OFX/Plugins (if "Enable default OpenFX plug-ins location" is checked) - plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is not checked) Any change will take effect on the next launch of Natron.
+
+**PyPlugs search path**
+
+Search path where Natron should scan for Python group scripts (PyPlugs). The search paths for groups can also be specified using the NATRON\_PLUGIN\_PATH environment variable.
 
 Python
 ------

@@ -1,7 +1,7 @@
-Time
-==========
+Time nodes
+============================================================
 
-Contents:
+The following sections contain documentation about every node in the  Time group. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
 .. toctree::
     :maxdepth: 1
@@ -15,7 +15,5 @@ Contents:
     plugins/net.sf.openfx.Retime.rst
     plugins/net.sf.openfx.SlitScan.rst
     plugins/net.sf.openfx.TimeBlur.rst
-    plugins/net.sf.openfx.TimeBufferRead.rst
-    plugins/net.sf.openfx.TimeBufferWrite.rst
     plugins/net.sf.openfx.timeOffset.rst
 

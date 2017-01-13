@@ -1,16 +1,18 @@
 .. _net.fxarena.openfx.Oilpaint:
 
-OilpaintOFX
-===========
+Oilpaint node
+=============
 
-.. figure:: net.fxarena.openfx.Oilpaint.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 2.1 of OilpaintOFX.*
+*This documentation is for version 2.1 of Oilpaint.*
+
+Description
+-----------
 
 Oilpaint filter node.
 
-Powered by ImageMagick 7.0.3-4 Q32 x86\_64 2016-10-23 http://www.imagemagick.org
+Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2017-01-11 http://www.imagemagick.org
 
 ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
 
@@ -30,10 +32,17 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type      | Default-Value   | Function                                                                                                |
-+===================+===============+===========+=================+=========================================================================================================+
-| Radius            | radius        | Double    | 1               | Adjust radius                                                                                           |
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| OpenMP            | openmp        | Boolean   | Off             | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+| Parameter / script name   | Type      | Default   | Function                                                                                                |
++===========================+===========+===========+=========================================================================================================+
+| Radius / ``radius``       | Double    | 1         | Adjust radius                                                                                           |
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+| OpenMP / ``openmp``       | Boolean   | Off       | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.fxarena.openfx.Oilpaint.png
+   :width: 10.0%

@@ -1,9 +1,12 @@
 .. _net.sf.openfx.MatteMonitorPlugin:
 
-MatteMonitor
-============
+MatteMonitor node
+=================
 
 *This documentation is for version 1.0 of MatteMonitor.*
+
+Description
+-----------
 
 A Matte Monitor: make alpha values that are strictly between 0 and 1 more visible.
 
@@ -29,8 +32,12 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+----------+-----------------+------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type     | Default-Value   | Function                                                   |
-+===================+===============+==========+=================+============================================================+
-| Slope             | slope         | Double   | 0.5             | Slope applied to alpha values striuctly between 0 and 1.   |
-+-------------------+---------------+----------+-----------------+------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++---------------------------+----------+-----------+------------------------------------------------------------+
+| Parameter / script name   | Type     | Default   | Function                                                   |
++===========================+==========+===========+============================================================+
+| Slope / ``slope``         | Double   | 0.5       | Slope applied to alpha values striuctly between 0 and 1.   |
++---------------------------+----------+-----------+------------------------------------------------------------+

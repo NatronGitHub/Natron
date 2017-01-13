@@ -1,12 +1,14 @@
 .. _net.sf.openfx.DifferencePlugin:
 
-DifferenceOFX
-=============
+Difference node
+===============
 
-.. figure:: net.sf.openfx.DifferencePlugin.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 1.0 of DifferenceOFX.*
+*This documentation is for version 1.0 of Difference.*
+
+Description
+-----------
 
 Produce a rough matte from the difference of two input images.
 
@@ -28,10 +30,17 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+----------+-----------------+---------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type     | Default-Value   | Function                                          |
-+===================+===============+==========+=================+===================================================+
-| Offset            | offset        | Double   | 0               | Value subtracted to each pixel of the output      |
-+-------------------+---------------+----------+-----------------+---------------------------------------------------+
-| Gain              | gain          | Double   | 1               | Multiply each pixel of the output by this value   |
-+-------------------+---------------+----------+-----------------+---------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++---------------------------+----------+-----------+---------------------------------------------------+
+| Parameter / script name   | Type     | Default   | Function                                          |
++===========================+==========+===========+===================================================+
+| Offset / ``offset``       | Double   | 0         | Value subtracted to each pixel of the output      |
++---------------------------+----------+-----------+---------------------------------------------------+
+| Gain / ``gain``           | Double   | 1         | Multiply each pixel of the output by this value   |
++---------------------------+----------+-----------+---------------------------------------------------+
+
+.. |pluginIcon| image:: net.sf.openfx.DifferencePlugin.png
+   :width: 10.0%

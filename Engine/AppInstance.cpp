@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -545,6 +545,12 @@ AppInstancePrivate::executeCommandLinePythonCommands(const CLArgs& args)
 }
 
 void
+AppInstance::executeCommandLinePythonCommands(const CLArgs& args)
+{
+    _imp->executeCommandLinePythonCommands(args);
+}
+
+void
 AppInstance::load(const CLArgs& cl,
                   bool makeEmptyInstance)
 {
@@ -570,9 +576,7 @@ AppInstance::loadInternal(const CLArgs& cl,
         return;
     }
 
-    const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
-
-    _imp->executeCommandLinePythonCommands(cl);
+    executeCommandLinePythonCommands(cl);
 
     QString exportDocPath = cl.getExportDocsPath();
     if ( !exportDocPath.isEmpty() ) {
@@ -612,8 +616,8 @@ AppInstance::loadInternal(const CLArgs& cl,
             throw std::invalid_argument( tr("%1 only accepts python scripts or .ntp project files.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString() );
         }
 
-
-        ///exec the python script specified via --onload
+        // exec the python script specified via --onload
+        const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
@@ -673,6 +677,8 @@ AppInstance::loadInternal(const CLArgs& cl,
             }
         }
 
+        // exec the python script specified via --onload
+        const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
@@ -685,6 +691,8 @@ AppInstance::loadInternal(const CLArgs& cl,
     } else {
         execOnProjectCreatedCallback();
 
+        // exec the python script specified via --onload
+        const QString& extraOnProjectCreatedScript = cl.getDefaultOnProjectLoadedScript();
         if ( !extraOnProjectCreatedScript.isEmpty() ) {
             QFileInfo cbInfo(extraOnProjectCreatedScript);
             if ( cbInfo.exists() ) {
@@ -1392,10 +1400,23 @@ void
 AppInstance::exportDocs(const QString path)
 {
     if ( !path.isEmpty() ) {
-        QStringList categories;
+        QStringList groups;
+        groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+        groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+        groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
+        groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+        groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+        groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+        groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
+        groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+        groups << QString::fromUtf8("Extra"); // openfx-arena
         QVector<QStringList> plugins;
 
         // Generate a MD for each plugin
+        // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_group.html"
         std::list<std::string> pluginIDs = appPTR->getPluginIDs();
         for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
             QString pluginID = QString::fromUtf8( it->c_str() );
@@ -1403,84 +1424,122 @@ AppInstance::exportDocs(const QString path)
                 Plugin* plugin = 0;
                 QString pluginID = QString::fromUtf8( it->c_str() );
                 plugin = appPTR->getPluginBinary(pluginID, -1, -1, false);
-                if (plugin) {
-                    if (!plugin->getIsForInternalUseOnly() ) {
-                        QStringList groups = plugin->getGrouping();
-                        categories << groups.at(0);
-                        QStringList plugList;
-                        plugList << plugin->getGrouping().at(0) << pluginID << plugin->getPluginLabel();
-                        plugins << plugList;
-                        CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
-                        args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-                        args.setProperty(kCreateNodeArgsPropOutOfProject, true);
-                        args.setProperty(kCreateNodeArgsPropSilent, true);
-                        qDebug() << pluginID;
-                        NodePtr node = createNode(args);
-                        if (node) {
-                            QDir mdDir(path);
-                            if ( !mdDir.exists() ) {
-                                mdDir.mkpath(path);
-                            }
+                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
+                    QStringList groups = plugin->getGrouping();
+                    groups << groups.at(0);
+                    QStringList plugList;
+                    plugList << plugin->getGrouping().at(0) << pluginID << Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() );
+                    plugins << plugList;
+                    CreateNodeArgs args( pluginID.toStdString(), boost::shared_ptr<NodeCollection>() );
+                    args.setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+                    args.setProperty(kCreateNodeArgsPropOutOfProject, true);
+                    args.setProperty(kCreateNodeArgsPropSilent, true);
+                    qDebug() << pluginID;
+                    // IMPORTANT: this code is *very* similar to DocumentationManager::handler(...) is section "_plugin.html"
+                    NodePtr node = createNode(args);
+                    if ( node &&
+                         pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) &&
+                         pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                        EffectInstPtr effectInstance = node->getEffectInstance();
+                        if ( effectInstance && effectInstance->isReader() ) {
+                            ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-                            mdDir.mkdir(QLatin1String("plugins"));
-                            mdDir.cd(QLatin1String("plugins"));
-
-                            QFile imgFile( plugin->getIconFilePath() );
-                            if ( imgFile.exists() ) {
-                                QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
-                                if (QFile::exists(dstPath)) {
-                                    QFile::remove(dstPath);
-                                }
-                                if ( !imgFile.copy(dstPath) ) {
-                                    std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
+                            if (isReadNode) {
+                                NodePtr subnode = isReadNode->getEmbeddedReader();
+                                if (subnode) {
+                                    node = subnode;
                                 }
                             }
+                        } else if ( effectInstance && effectInstance->isWriter() ) {
+                            WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
-                            QString md = node->makeDocumentation(false);
-                            QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
-                            if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
-                                QTextStream out(&mdFile);
-                                out << md;
-                                mdFile.close();
-                            } else {
-                                std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
+                            if (isWriteNode) {
+                                NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                                if (subnode) {
+                                    node = subnode;
+                                }
                             }
+                        }
+                    }
+                    if (node) {
+                        QDir mdDir(path);
+                        if ( !mdDir.exists() ) {
+                            mdDir.mkpath(path);
+                        }
+
+                        mdDir.mkdir(QLatin1String("plugins"));
+                        mdDir.cd(QLatin1String("plugins"));
+
+                        QFile imgFile( plugin->getIconFilePath() );
+                        if ( imgFile.exists() ) {
+                            QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
+                            if (QFile::exists(dstPath)) {
+                                QFile::remove(dstPath);
+                            }
+                            if ( !imgFile.copy(dstPath) ) {
+                                std::cout << "ERROR: failed to copy image: " << imgFile.fileName().toStdString() << std::endl;
+                            }
+                        }
+
+                        QString md = node->makeDocumentation(false);
+                        QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
+                        if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
+                            QTextStream out(&mdFile);
+                            out << md;
+                            mdFile.close();
+                        } else {
+                            std::cout << "ERROR: failed to write to file: " << mdFile.fileName().toStdString() << std::endl;
                         }
                     }
                 }
             }
         }
 
-        // Generate RST for plugin categories
-        categories.removeDuplicates();
+        // Generate RST for plugin groups
+        // IMPORTANT: this code is *very* similar to DocumentationManager::handler in the "_group.html" section
+        groups.removeDuplicates();
         QString groupMD;
-        groupMD.append( tr("Reference") );
-        groupMD.append( QString::fromUtf8("\n") );
-        groupMD.append( QString::fromUtf8("=========\n\n") );
-        groupMD.append( QString::fromUtf8("Contents:\n\n") );
+        groupMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
+        groupMD.append( tr("Reference Guide") );
+        groupMD.append( QString::fromUtf8("\n============================================================\n\n") );
+        groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+                       .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+        groupMD.append( QString::fromUtf8("\n\n") );
+        //groupMD.append( QString::fromUtf8("Contents:\n\n") );
         groupMD.append( QString::fromUtf8(".. toctree::\n") );
         groupMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
         groupMD.append( QString::fromUtf8("    _prefs.rst\n") );
 
-        Q_FOREACH(const QString &category, categories) {
+        Q_FOREACH(const QString &group, groups) {
             QString plugMD;
 
-            plugMD.append( category );
-            plugMD.append( QString::fromUtf8("\n==========\n\n") );
-            plugMD.append( QString::fromUtf8("Contents:\n\n") );
+            plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
+            plugMD.append( QString::fromUtf8("\n============================================================\n\n") );
+            plugMD.append( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
+            plugMD.append( QString::fromUtf8("\n\n") );
+            //plugMD.append( QString::fromUtf8("Contents:\n\n") );
             plugMD.append( QString::fromUtf8(".. toctree::\n") );
             plugMD.append( QString::fromUtf8("    :maxdepth: 1\n\n") );
 
+            QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
             Q_FOREACH(const QStringList &currPlugin, plugins) {
                 if (currPlugin.size() == 3) {
-                    if ( category == currPlugin.at(0) ) {
-                        plugMD.append( QString::fromUtf8("    plugins/") + currPlugin.at(1) + QString::fromUtf8(".rst\n") );
+                    if ( group == currPlugin.at(0) ) {
+                        pluginsOrderedByLabel[currPlugin.at(2)] = currPlugin.at(1);
                     }
                 }
             }
-            groupMD.append( QString::fromUtf8("    _group") + category + QString::fromUtf8(".rst\n") );
+            for (QMap<QString, QString>::const_iterator i = pluginsOrderedByLabel.constBegin();
+                 i != pluginsOrderedByLabel.constEnd();
+                 ++i) {
+                const QString& plugID = i.value();
+                //const QString& plugName = i.key();
+                plugMD.append( QString::fromUtf8("    plugins/") + plugID + QString::fromUtf8(".rst\n") );
+            }
 
-            QFile plugFile( path + QString::fromUtf8("/_group") + category + QString::fromUtf8(".rst") );
+            groupMD.append( QString::fromUtf8("    _group") + group + QString::fromUtf8(".rst\n") );
+
+            QFile plugFile( path + QString::fromUtf8("/_group") + group + QString::fromUtf8(".rst") );
             plugMD.append( QString::fromUtf8("\n") );
             if ( plugFile.open(QIODevice::Text | QIODevice::WriteOnly | QIODevice::Truncate) ) {
                 QTextStream out(&plugFile);
@@ -2106,12 +2165,17 @@ AppInstance::onGroupCreationFinished(const NodePtr& node,
                                      const boost::shared_ptr<NodeSerialization>& serialization, bool /*autoConnect*/)
 {
     assert(node);
+
+    // If the node is a PyPlug we might have set in the Python scripts the Mask and Optional knobs of the GroupInput
+    // nodes, but nothing updated the inputs since we were loading the PyPlug, ensure they are up to date.
+    node->initializeInputs();
     if ( !_imp->_currentProject->isLoadingProject() && !serialization ) {
         NodeGroup* isGrp = node->isEffectGroup();
         assert(isGrp);
         if (!isGrp) {
             return;
         }
+
         isGrp->forceComputeInputDependentDataOnAllTrees();
     }
 }

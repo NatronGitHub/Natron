@@ -376,7 +376,7 @@
 		1EB121741D87F6EE009646F7 /* guide */ = {isa = PBXFileReference; lastKnownFileType = folder; path = guide; sourceTree = "<group>"; };
 		1EB121751D87F6EE009646F7 /* index.rst */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = index.rst; sourceTree = "<group>"; };
 		1EB121761D87F6EE009646F7 /* plugins */ = {isa = PBXFileReference; lastKnownFileType = folder; path = plugins; sourceTree = "<group>"; };
-		1EB121771D87F6EE009646F7 /* README.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		1EDF0E6F1E1FDCF900C12A4C /* README-Natron-documentation.md */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = net.daringfireball.markdown; name = "README-Natron-documentation.md"; path = "Documentation/README-Natron-documentation.md"; sourceTree = "<group>"; };
 		1EEB0B5B1D1ADF4D00F0D43D /* LICENSE-AGPL-3.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-AGPL-3.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5C1D1ADF4D00F0D43D /* LICENSE-Apache-2.0.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Apache-2.0.txt"; sourceTree = "<group>"; };
 		1EEB0B5D1D1ADF4D00F0D43D /* LICENSE-Boost.txt */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = "LICENSE-Boost.txt"; sourceTree = "<group>"; };
@@ -547,6 +547,7 @@
 		1E70D1631CF33B22000D2932 /* Documentation */ = {
 			isa = PBXGroup;
 			children = (
+				1EDF0E6F1E1FDCF900C12A4C /* README-Natron-documentation.md */,
 				1E70D14F1CF33A0C000D2932 /* BUGS.md */,
 				1E70D1501CF33A0C000D2932 /* CHANGELOG.md */,
 				1E70D1521CF33A0C000D2932 /* CONTRIBUTING.md */,
@@ -645,7 +646,6 @@
 				1EB121741D87F6EE009646F7 /* guide */,
 				1EB121751D87F6EE009646F7 /* index.rst */,
 				1EB121761D87F6EE009646F7 /* plugins */,
-				1EB121771D87F6EE009646F7 /* README.md */,
 			);
 			name = source;
 			path = Documentation/source;

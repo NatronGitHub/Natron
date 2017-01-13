@@ -1,6 +1,6 @@
 # ***** BEGIN LICENSE BLOCK *****
 # This file is part of Natron <http://www.natron.fr/>,
-# Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+# Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
 #
 # Natron is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -124,6 +124,7 @@ SOURCES += \
     Lut.cpp \
     Markdown.cpp \
     MemoryFile.cpp \
+    MemoryInfo.cpp \
     Node.cpp \
     NodeGroup.cpp \
     NodeMetadata.cpp \
@@ -331,6 +332,7 @@ HEADERS += \
     Lut.h \
     Markdown.h \
     MemoryFile.h \
+    MemoryInfo.h \
     MergingEnum.h \
     Node.h \
     Noise.h \
@@ -440,7 +442,6 @@ HEADERS += \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \
-    ../Global/MemoryInfo.h \
     ../Global/ProcInfo.h \
     ../Global/QtCompat.h \
     ../Global/StrUtils.h \

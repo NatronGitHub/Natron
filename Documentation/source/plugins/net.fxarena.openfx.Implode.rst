@@ -1,16 +1,18 @@
 .. _net.fxarena.openfx.Implode:
 
-ImplodeOFX
-==========
+Implode node
+============
 
-.. figure:: net.fxarena.openfx.Implode.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 2.3 of ImplodeOFX.*
+*This documentation is for version 2.3 of Implode.*
+
+Description
+-----------
 
 Implode transform node.
 
-Powered by ImageMagick 7.0.3-4 Q32 x86\_64 2016-10-23 http://www.imagemagick.org
+Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2017-01-11 http://www.imagemagick.org
 
 ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
 
@@ -30,14 +32,21 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type      | Default-Value   | Function                                                                                                |
-+===================+===============+===========+=================+=========================================================================================================+
-| Factor            | factor        | Double    | 0.5             | Implode image by factor                                                                                 |
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Swirl             | swirl         | Double    | 0               | Swirl image by degree                                                                                   |
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Matte             | matte         | Boolean   | Off             | Merge Alpha before applying effect                                                                      |
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| OpenMP            | openmp        | Boolean   | Off             | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
-+-------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+| Parameter / script name   | Type      | Default   | Function                                                                                                |
++===========================+===========+===========+=========================================================================================================+
+| Factor / ``factor``       | Double    | 0.5       | Implode image by factor                                                                                 |
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+| Swirl / ``swirl``         | Double    | 0         | Swirl image by degree                                                                                   |
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+| Matte / ``matte``         | Boolean   | Off       | Merge Alpha before applying effect                                                                      |
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+| OpenMP / ``openmp``       | Boolean   | Off       | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
++---------------------------+-----------+-----------+---------------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.fxarena.openfx.Implode.png
+   :width: 10.0%

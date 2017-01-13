@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@
 #include <fstream>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #include <boost/scoped_ptr.hpp>
 
@@ -47,7 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
 #include "Engine/AppInstance.h"

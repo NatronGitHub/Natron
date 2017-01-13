@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ public:
     std::list<CLArgs::WriterArg> writers;
     std::list<CLArgs::ReaderArg> readers;
     std::list<std::string> pythonCommands;
+    std::list<std::string> settingCommands; //!< executed after loading the settings
     bool isBackground;
     bool useDefaultSettings;
     QString ipcPipe;
@@ -81,6 +82,7 @@ public:
         , writers()
         , readers()
         , pythonCommands()
+        , settingCommands()
         , isBackground(false)
         , useDefaultSettings(false)
         , ipcPipe()
@@ -216,6 +218,7 @@ CLArgs::operator=(const CLArgs& other)
     _imp->writers = other._imp->writers;
     _imp->readers = other._imp->readers;
     _imp->pythonCommands = other._imp->pythonCommands;
+    _imp->settingCommands = other._imp->settingCommands;
     _imp->isBackground = other._imp->isBackground;
     _imp->ipcPipe = other._imp->ipcPipe;
     _imp->error = other._imp->error;
@@ -238,7 +241,7 @@ void
 CLArgs::printBackGroundWelcomeMessage()
 {
     QString msg = tr("%1 Version %2\n"
-                     "Copyright (C) 2016 the %1 developers\n"
+                     "Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat\n"
                      ">>>Use the --help or -h option to print usage.<<<").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) );
     std::cout << msg.toStdString() << std::endl;
 }
@@ -274,9 +277,17 @@ CLArgs::printUsage(const std::string& programName)
         "    script: it must be started explicitely.\n"
         "    %1Renderer and %1 do the same thing in this mode, only the\n"
         "    init.py script is loaded.\n"
-        "  [ --no-settings ]\n"
-        "    When passed to the command-line, the %1 settings will not be restored\n"
-        "    from the preferences file on disk  sothat Natron uses the default ones.\n"
+        "  --no-settings\n"
+        "    When passed on the command-line, the %1 settings will not be restored\n"
+        "    from the preferences file on disk so that %1 uses the default ones.\n"
+        "  --settings name=value\n"
+        "    Sets the named %1 setting to the given value. This is done after loading\n"
+        "    the settings and prior to executing Python commands or loading the project.\n"
+        "  -c [ --cmd ] \"PythonCommand\"\n"
+        "    Execute custom Python code passed as a script prior to executing the Python\n"
+        "    script or loading the project passed as parameter. This option may be used\n"
+        "    multiple times and each python command is executed in the order given on\n"
+        "    the command-line.\n\n"
         "\n"
         /* Text must hold in 80 columns ************************************************/
         "Options for the execution of %1 projects:\n"
@@ -294,7 +305,8 @@ CLArgs::printUsage(const std::string& programName)
         "      The frame-range can also contain a frame-step indicating how many steps\n"
         "      the timeline should do before rendering a frame:\n"
         "       <firstFrame>-<lastFrame>:<frameStep> (e.g:1-10:2 Would render 1,3,5,7,9)\n"
-        "      You can also specify multiple frame-ranges to render by separating them with commas:\n"
+        "      You can also specify multiple frame-ranges to render by separating them\n"
+        "      with commas:\n"
         "      1-10:1,20-30:2,40-50\n"
         "      Individual frames can also be specified:\n"
         "      1329,2450,123,1-10:2\n"
@@ -361,10 +373,6 @@ CLArgs::printUsage(const std::string& programName)
         "    -o1 [ --output1 ] : look for a node named Output1.\n"
         "    -o2 [ --output2 ] : look for a node named Output2 \n"
         "    etc...\n"
-        "  -c [ --cmd ] \"PythonCommand\"\n"
-        "     Execute custom Python code passed as a script prior to executing the Python\n"
-        "script passed in parameter. This option may be used multiple times and each python\n"
-        "command will be executed in the order they were given to the command-line.\n\n"
         "Sample uses:\n"
         "  %1 /Users/Me/MyNatronScripts/MyScript.py\n"
         "  %1 -b -w MyWriter /Users/Me/MyNatronScripts/MyScript.py\n"
@@ -408,6 +416,12 @@ const std::list<std::string>&
 CLArgs::getPythonCommands() const
 {
     return _imp->pythonCommands;
+}
+
+const std::list<std::string>&
+CLArgs::getSettingCommands() const
+{
+    return _imp->settingCommands;
 }
 
 bool
@@ -943,18 +957,50 @@ CLArgsPrivate::parse()
         }
     }
 
-    //Parse python commands
-    for (;; ) {
-        QStringList::iterator it = hasToken( QString::fromUtf8("cmd"), QString::fromUtf8("c") );
+    //Parse settings
+    for (;;) {
+        QStringList::iterator it = hasToken( QString::fromUtf8("setting"), QString() );
         if ( it == args.end() ) {
             break;
         }
 
         if (!isBackground) {
-            std::cout << tr("You cannot use the -c option in interactive mode").toStdString() << std::endl;
+            std::cout << tr("You cannot use the --setting option in interactive mode").toStdString() << std::endl;
             error = 1;
 
             return;
+        }
+
+        QStringList::iterator next = it;
+        if ( next != args.end() ) {
+            ++next;
+        }
+        if ( next == args.end() ) {
+            std::cout << tr("You must specify a setting name and value as \"name=value\" when using the -setting option").toStdString() << std::endl;
+            error = 1;
+
+            return;
+        }
+        int pos = next->indexOf( QLatin1Char('=') );
+        if (pos == -1) {
+            std::cout << tr("You must specify a setting name and value as \"name=value\" when using the -setting option").toStdString() << std::endl;
+            error = 1;
+
+            return;
+        }
+        QString name = next->left(pos);
+        QString value = next->mid(pos+1);
+        settingCommands.push_back( "NatronEngine.natron.getSettings().getParam(\"" + name.toStdString() + "\").setValue(" + value.toStdString() + ")");
+
+        ++next;
+        args.erase(it, next);
+    } // for (;;)
+
+    //Parse python commands
+    for (;; ) {
+        QStringList::iterator it = hasToken( QString::fromUtf8("cmd"), QString::fromUtf8("c") );
+        if ( it == args.end() ) {
+            break;
         }
 
         QStringList::iterator next = it;

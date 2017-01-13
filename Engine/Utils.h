@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,9 @@ enum WhiteSpaceMode {
 };
 
 QString convertFromPlainText(const QString &plain, NATRON_NAMESPACE::WhiteSpaceMode mode);
+
+// use genHTML=true when generating markdown for hoedown. false for pandoc
+QString convertFromPlainTextToMarkdown(const QString &plain, bool genHTML, bool isTableElement);
 
 NATRON_NAMESPACE_EXIT;
 

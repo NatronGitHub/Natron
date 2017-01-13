@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -70,8 +70,8 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_NAMESPACE_ANONYMOUS_ENTER namespace {
 #define NATRON_NAMESPACE_ANONYMOUS_EXIT }
 
-#define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal compositing software."
-#define NATRON_COPYRIGHT "Copyright (C) 2016 the Natron developers."
+#define NATRON_APPLICATION_DESCRIPTION "Open-source, cross-platform, nodal video compositing software."
+#define NATRON_COPYRIGHT "Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat."
 #define NATRON_ORGANIZATION_NAME "INRIA"
 #define NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "fr"
 #define NATRON_ORGANIZATION_DOMAIN_SUB "inria"
@@ -80,7 +80,7 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_WEBSITE_URL "http://www.natron.fr"
 #define NATRON_FORUM_URL "https://forum.natron.fr"
 #define NATRON_ISSUE_TRACKER_URL "https://github.com/MrKepzie/Natron/issues"
-#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+
 // The MIME types for Natron documents are:
 // *.ntp: application/vnd.natron.project
 // *.nps: application/vnd.natron.nodepresets
@@ -115,6 +115,10 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 
 // The currently maintained Natron versions
+#define NATRON_VERSION_MAJOR_30 3
+#define NATRON_VERSION_MINOR_30 0
+#define NATRON_VERSION_REVISION_30 0
+
 #define NATRON_VERSION_MAJOR_22 2
 #define NATRON_VERSION_MINOR_22 2
 #define NATRON_VERSION_REVISION_22 0
@@ -124,9 +128,9 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_VERSION_REVISION_21 10
 
 // The Natron version for this branch
-#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_21
-#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_21
-#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_21
+#define NATRON_VERSION_MAJOR NATRON_VERSION_MAJOR_22
+#define NATRON_VERSION_MINOR NATRON_VERSION_MINOR_22
+#define NATRON_VERSION_REVISION NATRON_VERSION_REVISION_22
 
 
 #define NATRON_LAST_VERSION_URL "http://downloads.natron.fr/LATEST_VERSION.txt"
@@ -162,6 +166,15 @@ namespace NATRON_PYTHON_NAMESPACE { }
 ///For example RC 1, RC 2 etc... This is to be defined from withing the qmake call, passing BUILD_NUMBER=X to the command line
 //#define NATRON_BUILD_NUMBER 0
 
+
+// Documentation
+#if (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_22) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_22)
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-2.2"
+//#elif (NATRON_VERSION_MAJOR == NATRON_VERSION_MAJOR_30) && (NATRON_VERSION_MINOR == NATRON_VERSION_MINOR_30)
+//#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/rb-3.0"
+#else
+#define NATRON_DOCUMENTATION_ONLINE "http://natron.readthedocs.io/en/master"
+#endif
 
 #if defined(__NATRON_LINUX__) || defined(__NATRON_OSX__)
 /*
@@ -204,16 +217,30 @@ namespace NATRON_PYTHON_NAMESPACE { }
         NATRON_VERSION_MINOR, \
         NATRON_VERSION_REVISION)
 
-#define NATRON_VERSION_STRINGIZE_(major, minor, revision) \
+// Natron version string: if revision is 0, use only major.minor, else major.minor.revision
+#if NATRON_VERSION_REVISION > 0
+#define NATRON_VERSION_STRINGIZE__(major, minor, revision) \
     # major "." # minor "." # revision
 
-#define NATRON_VERSION_STRINGIZE(major, minor, revision) \
-    NATRON_VERSION_STRINGIZE_(major, minor, revision)
+#define NATRON_VERSION_STRINGIZE_(major, minor, revision) \
+    NATRON_VERSION_STRINGIZE__(major, minor, revision)
 
-#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE( \
+#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE_( \
         NATRON_VERSION_MAJOR, \
         NATRON_VERSION_MINOR, \
         NATRON_VERSION_REVISION)
+#else
+#define NATRON_VERSION_STRINGIZE__(major, minor) \
+# major "." # minor
+
+#define NATRON_VERSION_STRINGIZE_(major, minor) \
+NATRON_VERSION_STRINGIZE__(major, minor)
+
+#define NATRON_VERSION_STRING NATRON_VERSION_STRINGIZE_( \
+        NATRON_VERSION_MAJOR, \
+        NATRON_VERSION_MINOR)
+#endif
+
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #define NATRON_PATH_ENV_VAR "NATRON_PLUGIN_PATH"

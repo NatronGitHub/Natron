@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,10 +39,12 @@
 #include "Gui/GuiApplicationManager.h" // appPTR
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/Project.h"
-#include "Engine/Node.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
+#include "Engine/WriteNode.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -117,9 +119,51 @@ DocumentationManager::handler(QHttpRequest *req,
 #endif
 
     // override static docs
-    if ( page.contains( QString::fromUtf8("/plugins/") ) ) {
-        page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
+    // plugin pages are generated only if they don't exist
+    QString staticPage, dynamicPage;
+    bool isPlugin = false;
+    bool isStatic = false;
+    if ( page.startsWith( QString::fromUtf8("/plugins/") ) ) {
+        isPlugin = true;
+        isStatic = true;
+        staticPage = page;
+        dynamicPage = page;
+        dynamicPage.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
+    if ( page.startsWith( QString::fromUtf8("/_plugin.html?id=") ) ) {
+        isPlugin = true;
+        isStatic = false;
+        staticPage = page;
+        staticPage.replace( QString::fromUtf8("/_plugin.html?id="), QString::fromUtf8("/plugins/") );
+        staticPage += QString::fromUtf8(".html");
+        dynamicPage = page;
+    }
+    if (isPlugin) {
+        QFileInfo staticFileInfo = docDir + staticPage;
+        if ( ( isStatic && !staticFileInfo.exists() ) ||
+             ( !isStatic && staticFileInfo.exists() ) ) {
+            // must redirect
+            if (isStatic) {
+                page = dynamicPage;
+            } else {
+                page = staticPage;
+            }
+
+            // redirect
+            resp->setHeader(QString::fromUtf8("Location"), page);
+            resp->setHeader(QString::fromUtf8("Connection"), QString::fromUtf8("keep-alive"));
+            resp->setHeader(QString::fromUtf8("Content-Type"), QString::fromUtf8("text/html; charset=utf-8"));
+            resp->writeHead(301); // Moved permanently
+            resp->end( QString::fromUtf8("<HTML><HEAD><meta http-equiv=\"content-type\" content=\"text/html;charset=utf-8\">\n"
+                                         "<TITLE>301 Moved</TITLE></HEAD><BODY>\n"
+                                         "<H1>301 Moved</H1>\n"
+                                         "The document has moved\n"
+                                         "<A HREF=\"%1/\">here</A>.\r\n"
+                                         "</BODY></HTML>").arg(page).toUtf8() );
+            return;
+        }
+    }
+    // always generate group pages on the fly
     if ( page.startsWith( QString::fromUtf8("/_group") ) && !page.contains( QString::fromUtf8("_group.html") ) ) {
         page.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("_group"), QString::fromUtf8("_group.html?id=") );
     }
@@ -170,6 +214,31 @@ DocumentationManager::handler(QHttpRequest *req,
                             args.setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
 
                             NodePtr node = appPTR->getTopLevelInstance()->createNode(args);
+                            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
+                            if ( node &&
+                                 pluginID != QString::fromUtf8(PLUGINID_NATRON_READ) &&
+                                 pluginID != QString::fromUtf8(PLUGINID_NATRON_WRITE) ) {
+                                EffectInstPtr effectInstance = node->getEffectInstance();
+                                if ( effectInstance && effectInstance->isReader() ) {
+                                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+
+                                    if (isReadNode) {
+                                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                                        if (subnode) {
+                                            node = subnode;
+                                        }
+                                    }
+                                } else if ( effectInstance && effectInstance->isWriter() ) {
+                                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                                    if (isWriteNode) {
+                                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                                        if (subnode) {
+                                            node = subnode;
+                                        }
+                                    }
+                                }
+                            }
                             if (node) {
                                 QString html = node->makeDocumentation(true);
                                 html = parser(html, docDir);
@@ -247,7 +316,9 @@ DocumentationManager::handler(QHttpRequest *req,
             }
         }
         if ( !group.isEmpty() ) {
-            QVector<QStringList> plugins;
+            // IMPORTANT: this code is *very* similar to AppInstance::exportDocs
+
+            QMap<QString, QString> pluginsOrderedByLabel; // use a map so that it gets sorted by label
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
@@ -257,17 +328,14 @@ DocumentationManager::handler(QHttpRequest *req,
                 } catch (const std::exception& e) {
                     std::cerr << e.what() << std::endl;
                 }
-
-                if (plugin) {
+                if ( plugin && !plugin->getIsDeprecated() && ( !plugin->getIsForInternalUseOnly() || plugin->isReader() || plugin->isWriter() ) ) {
                     QStringList groupList = plugin->getGrouping();
                     if (groupList.at(0) == group) {
-                        QStringList result;
-                        result << pluginID << plugin->getPluginLabel();
-                        plugins.append(result);
+                        pluginsOrderedByLabel[Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() )] = pluginID;
                     }
                 }
             }
-            if ( !plugins.isEmpty() ) {
+            if ( !pluginsOrderedByLabel.isEmpty() ) {
                 QString groupBodyStart = QString::fromUtf8("<div class=\"document\">"
                                                            "<div class=\"documentwrapper\">"
                                                            "<div class=\"body\">"
@@ -275,25 +343,23 @@ DocumentationManager::handler(QHttpRequest *req,
                                                            "<p>%2</p>"
                                                            "<div class=\"toctree-wrapper compound\">"
                                                            "<ul>")
-                                         .arg( tr( group.toUtf8().constData() ) )
-                                         .arg( tr("This manual is intended as a reference for all the parameters within each node in %1.")
-                                               .arg( tr( group.toUtf8().constData() ) )
+                                         .arg( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) )
+                                         .arg( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")
+ 
                                                );
                 html.append(groupHeader);
-                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), group);
+                html.replace(QString::fromUtf8("__REPLACE_TITLE__"), tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
                 html.append(navHeader);
                 html.append( QString::fromUtf8("<li><a href=\"/_group.html\">%1</a> &raquo;</li>")
                              .arg( tr("Reference Guide") ) );
                 html.append(navFooter);
                 html.append(groupBodyStart);
 
-                for (int i = 0; i < plugins.size(); ++i) {
-                    QStringList pluginInfo = plugins.at(i);
-                    QString plugID, plugName;
-                    if (pluginInfo.length() == 2) {
-                        plugID = pluginInfo.at(0);
-                        plugName = pluginInfo.at(1);
-                    }
+                for (QMap<QString, QString>::const_iterator i = pluginsOrderedByLabel.constBegin();
+                     i != pluginsOrderedByLabel.constEnd();
+                     ++i) {
+                    const QString& plugID = i.value();
+                    const QString& plugName = i.key();
                     if ( !plugID.isEmpty() && !plugName.isEmpty() ) {
                         html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href='/_plugin.html?id=%1'>%2</a></li>")
                                      .arg(plugID)
@@ -312,16 +378,29 @@ DocumentationManager::handler(QHttpRequest *req,
                                                        "<div class=\"toctree-wrapper compound\">"
                                                        "<ul>")
                                      .arg( tr("Reference Guide") )
-                                     .arg ( tr("This manual is intended as a reference for all the parameters within each node in %1.")
-                                            .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+            .arg ( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
+                  .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") + QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.") );
             html.append(groupHeader);
             html.replace( QString::fromUtf8("__REPLACE_TITLE__"), tr("Reference Guide") );
             html.append(navHeader);
             html.append(navFooter);
             html.append(groupBodyStart);
-            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("Preferences") ) );
+            html.append( QString::fromUtf8("<li class=\"toctree-l1\"><a href=\"/_prefs.html\">%1</a></li>").arg( tr("%1 preferences").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) ) );
 
             QStringList groups;
+            groups << QString::fromUtf8(PLUGIN_GROUP_IMAGE);
+            groups << QString::fromUtf8(PLUGIN_GROUP_COLOR);
+            groups << QString::fromUtf8(PLUGIN_GROUP_CHANNEL);
+            groups << QString::fromUtf8(PLUGIN_GROUP_MERGE);
+            groups << QString::fromUtf8(PLUGIN_GROUP_FILTER);
+            groups << QString::fromUtf8(PLUGIN_GROUP_TRANSFORM);
+            groups << QString::fromUtf8(PLUGIN_GROUP_TIME);
+            groups << QString::fromUtf8(PLUGIN_GROUP_PAINT);
+            groups << QString::fromUtf8(PLUGIN_GROUP_KEYER);
+            groups << QString::fromUtf8(PLUGIN_GROUP_MULTIVIEW);
+            groups << QString::fromUtf8(PLUGIN_GROUP_OTHER);
+            groups << QString::fromUtf8("Extra"); // openfx-arena
+
             std::list<std::string> pluginIDs = appPTR->getPluginIDs();
             for (std::list<std::string>::iterator it = pluginIDs.begin(); it != pluginIDs.end(); ++it) {
                 Plugin* plugin = 0;
@@ -341,7 +420,7 @@ DocumentationManager::handler(QHttpRequest *req,
             for (int i = 0; i < groups.size(); ++i) {
                 html.append( QString::fromUtf8("<li class='toctree-l1'><a href='/_group.html?id=%1'>%2</a></li>")
                              .arg( groups.at(i) )
-                             .arg( tr( groups.at(i).toUtf8().constData() ) )
+                             .arg( tr("%1 nodes").arg( tr( groups.at(i).toUtf8().constData() ) ) )
                              );
             }
             html.append(groupBodyEnd);
@@ -351,29 +430,38 @@ DocumentationManager::handler(QHttpRequest *req,
         body = html.toUtf8();
     }
 
-    // get static file
-    QFileInfo staticFileInfo;
-    if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".css") ) || page.endsWith( QString::fromUtf8(".js") ) || page.endsWith( QString::fromUtf8(".txt") ) || page.endsWith( QString::fromUtf8(".png") ) || page.endsWith( QString::fromUtf8(".jpg") ) ) {
+    int status = 200;
+
+    if ( body.isEmpty() && ( page.endsWith( QString::fromUtf8(".html") ) ||
+                             page.endsWith( QString::fromUtf8(".css") ) ||
+                             page.endsWith( QString::fromUtf8(".js") ) ||
+                             page.endsWith( QString::fromUtf8(".txt") ) ||
+                             page.endsWith( QString::fromUtf8(".png") ) ||
+                             page.endsWith( QString::fromUtf8(".jpg") ) ) ) {
+        // get static file
+        QFileInfo staticFileInfo;
+
         if ( page.startsWith( QString::fromUtf8("LOCAL_FILE/") ) ) {
             staticFileInfo = page.replace( QString::fromUtf8("LOCAL_FILE/"), QString::fromUtf8("") ).replace( QString::fromUtf8("%2520"), QString::fromUtf8(" ") ).replace( QString::fromUtf8("%20"), QString::fromUtf8(" ") );
         } else {
             staticFileInfo = docDir + page;
         }
-    }
-    if ( staticFileInfo.exists() && body.isEmpty() ) {
-        QFile staticFile( staticFileInfo.absoluteFilePath() );
-        if ( staticFile.open(QIODevice::ReadOnly) ) {
-            if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
-                QString input = QString::fromUtf8( staticFile.readAll() );
-                body = parser(input, docDir).toUtf8();
-            } else {
-                body = staticFile.readAll();
+#ifdef DEBUG
+        qDebug() << "www client requested page" << page << "->file" << staticFileInfo.absoluteFilePath();
+#endif
+        if ( staticFileInfo.exists() ) {
+            QFile staticFile( staticFileInfo.absoluteFilePath() );
+            if ( staticFile.open(QIODevice::ReadOnly) ) {
+                if ( page.endsWith( QString::fromUtf8(".html") ) || page.endsWith( QString::fromUtf8(".htm") ) ) {
+                    QString input = QString::fromUtf8( staticFile.readAll() );
+                    body = parser(input, docDir).toUtf8();
+                } else {
+                    body = staticFile.readAll();
+                }
+                staticFile.close();
             }
-            staticFile.close();
         }
     }
-
-    // page not found
     if ( body.isEmpty() ) {
         QString notFound = QString::fromUtf8("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">"
                                              "<html>"
@@ -392,9 +480,9 @@ DocumentationManager::handler(QHttpRequest *req,
                                              "</div>"
                                              "</div>"
                                              "</body>"
-                                             "</html>")
-                           .arg( tr("Page not found") );
+                                             "</html>").arg( tr("Page not found") );
         body = parser(notFound, docDir).toUtf8();
+        status = 404;
     }
 
     // set header(s)
@@ -414,7 +502,7 @@ DocumentationManager::handler(QHttpRequest *req,
     }
 
     // return result
-    resp->writeHead(200);
+    resp->writeHead(status);
     resp->end(body);
 }                                             // DocumentationManager::handler
 

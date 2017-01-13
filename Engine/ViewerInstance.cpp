@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,7 +48,6 @@ CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QThreadPool>
 CLANG_DIAG_ON(deprecated)
 
-#include "Global/MemoryInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
@@ -56,6 +55,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
 #include "Engine/MemoryFile.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OpenGLViewerI.h"

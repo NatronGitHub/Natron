@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1001,7 +1001,7 @@ KnobChoice::setValueFromLabel(const std::string & value,
                               int dimension,
                               bool turnOffAutoKeying)
 {
-    int i = choiceMatch(value, _mergedEntries);
+    int i = choiceMatch(value, _mergedEntries, 0);
     if (i >= 0) {
         return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
     }
@@ -1017,7 +1017,7 @@ void
 KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,
                                                     int dimension)
 {
-    int i = choiceMatch(value, _mergedEntries);
+    int i = choiceMatch(value, _mergedEntries, 0);
     if (i >= 0) {
         return setDefaultValueWithoutApplying(i, dimension);
     }
@@ -1028,7 +1028,7 @@ void
 KnobChoice::setDefaultValueFromLabel(const std::string & value,
                                      int dimension)
 {
-    int i = choiceMatch(value, _mergedEntries);
+    int i = choiceMatch(value, _mergedEntries, 0);
     if (i >= 0) {
         return setDefaultValue(i, dimension);
     }
@@ -1043,11 +1043,15 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
 // returns index if choice was matched, -1 if not matched
 int
 KnobChoice::choiceMatch(const std::string& choice,
-                        const std::vector<std::string>& entries)
+                        const std::vector<std::string>& entries,
+                        std::string* matchedEntry)
 {
     // first, try exact match
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if (entries[i] == choice) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
             return i;
         }
     }
@@ -1061,6 +1065,9 @@ KnobChoice::choiceMatch(const std::string& choice,
         std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
 
         if (entrymain == choicemain) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
             return i;
         }
     }
@@ -1068,6 +1075,9 @@ KnobChoice::choiceMatch(const std::string& choice,
     // third, case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if ( boost::iequals(entries[i], choice) ) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
             return i;
         }
     }
@@ -1103,10 +1113,14 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 
     } else {
         // try to find the same label at some other index
-
-        int i = choiceMatch(data->_choiceString, _mergedEntries);
+        std::string matchedEntry;
+        int i = choiceMatch(data->_choiceString, _mergedEntries, &matchedEntry);
 
         if (i >= 0) {
+            {
+                QMutexLocker k(&_entriesMutex);
+                _currentEntryLabel = matchedEntry;
+            }
             setValue(i);
         }
         //   setValue(-1);

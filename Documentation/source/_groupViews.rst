@@ -1,17 +1,14 @@
-Views
-==========
+Views nodes
+============================================================
 
-Contents:
+The following sections contain documentation about every node in the  Views group. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
 .. toctree::
     :maxdepth: 1
 
-    plugins/fr.inria.built-in.JoinViews.rst
-    plugins/fr.inria.built-in.OneView.rst
     plugins/net.sf.openfx.anaglyphPlugin.rst
-    plugins/net.sf.openfx.joinViewsPlugin.rst
+    plugins/fr.inria.built-in.JoinViews.rst
     plugins/net.sf.openfx.mixViewsPlugin.rst
-    plugins/net.sf.openfx.oneViewPlugin.rst
-    plugins/net.sf.openfx.reConvergePlugin.rst
+    plugins/fr.inria.built-in.OneView.rst
     plugins/net.sf.openfx.sideBySidePlugin.rst
 

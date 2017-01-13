@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -728,14 +728,15 @@ Gui::openHelpIssues()
 void
 Gui::openHelpDocumentation()
 {
-    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     int serverPort = appPTR->getDocumentationServerPort();
 
+    QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
+#ifdef NATRON_DOCUMENTATION_ONLINE
+    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
+    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
     if ( (serverPort == 0) && (docSource == 0) ) {
         docSource = 1;
     }
-    QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort);
-    QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
 
     switch (docSource) {
     case 0:
@@ -748,6 +749,9 @@ Gui::openHelpDocumentation()
         Dialogs::informationDialog(tr("Missing documentation").toStdString(), tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
+#else
+    QDesktopServices::openUrl( QUrl(localUrl) );
+#endif
 }
 
 #ifdef Q_OS_MAC

@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -38,7 +38,6 @@
 #include <algorithm> // min, max
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
 #include "Global/StrUtils.h"
 
 GCC_DIAG_OFF(deprecated)
@@ -55,12 +54,13 @@ GCC_DIAG_ON(deprecated)
 #endif
 
 #include "Engine/AppManager.h" //for access to settings
-#include "Engine/Settings.h"
 #include "Engine/CacheEntry.h"
-#include "Engine/LRUHashTable.h"
-#include "Engine/StandardPaths.h"
 #include "Engine/ImageLocker.h"
-#include "Global/MemoryInfo.h"
+#include "Engine/LRUHashTable.h"
+#include "Engine/MemoryInfo.h" // getSystemTotalRAM
+#include "Engine/Settings.h"
+#include "Engine/StandardPaths.h"
+
 #include "Engine/EngineFwd.h"
 
 //Beyond that percentage of occupation, the cache will start evicting LRU entries

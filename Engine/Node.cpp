@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,8 +52,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <ofxNatron.h>
 
-#include "Global/MemoryInfo.h"
-
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -74,15 +72,16 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/OneViewNode.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OneViewNode.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Plugin.h"
 #include "Engine/PrecompNode.h"
@@ -201,7 +200,6 @@ struct PyPlugInfo
     std::string pluginPythonModule; // the absolute filename of the python script
 
     //Set to true when the user has edited a PyPlug
-    bool pyplugChangedSinceScript;
     bool isPyPlug;
     std::string pyPlugID; //< if this is a pyplug, this is the ID of the Plug-in. This is because the plugin handle will be the one of the Group
     std::string pyPlugLabel;
@@ -211,8 +209,7 @@ struct PyPlugInfo
     int pyPlugVersion;
 
     PyPlugInfo()
-    : pyplugChangedSinceScript(false)
-    , isPyPlug(false)
+    : isPyPlug(false)
     , pyPlugVersion(0)
     {
 
@@ -4346,7 +4343,7 @@ Node::makeDocumentation(bool genHTML) const
             }
         } else {
             pluginID = _imp->plugin->getPluginID();
-            pluginLabel =  _imp->plugin->getPluginLabel();
+            pluginLabel =  Plugin::makeLabelWithoutSuffix( _imp->plugin->getPluginLabel() );
             pluginDescription =  QString::fromUtf8( _imp->effect->getPluginDescription().c_str() );
             pluginIcon = _imp->plugin->getIconFilePath();
             pluginGroup = _imp->plugin->getGrouping();
@@ -4355,8 +4352,9 @@ Node::makeDocumentation(bool genHTML) const
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {
             QStringList input;
-            QString optional = _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No");
-            input << QString::fromStdString( _imp->effect->getInputLabel(i) ) << QString::fromStdString( _imp->effect->getInputHint(i) ) << optional;
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputLabel(i) ), genHTML, true );
+            input << convertFromPlainTextToMarkdown( QString::fromStdString( _imp->effect->getInputHint(i) ), genHTML, true );
+            input << ( _imp->effect->isInputOptional(i) ? tr("Yes") : tr("No") );
             inputs.push_back(input);
 
             // Don't show more than doc for 4 inputs otherwise it will just clutter the page
@@ -4406,9 +4404,9 @@ Node::makeDocumentation(bool genHTML) const
             continue;
         }
 
-        QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
-        QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
-        QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
+        QString knobScriptName = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getName().c_str() ), genHTML, true);
+        QString knobLabel = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getLabel().c_str() ), genHTML, true);
+        QString knobHint = NATRON_NAMESPACE::convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getHintToolTip().c_str() ), genHTML, true);
 
         if ( knobScriptName.startsWith( QString::fromUtf8("NatronOfxParam") ) || knobScriptName == QString::fromUtf8("exportAsPyPlug") ) {
             continue;
@@ -4467,12 +4465,36 @@ Node::makeDocumentation(bool genHTML) const
                         }
                         std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
                         if ( entries.size() == entriesHelp.size() ) {
-                            knobHint.append( QString::fromUtf8("\n\n") );
+                            bool first = true;
                             for (size_t i = 0; i < entries.size(); i++) {
                                 QString entry = QString::fromUtf8( entries[i].c_str() );
                                 QString entryHelp = QString::fromUtf8( entriesHelp[i].c_str() );
                                 if (!entry.isEmpty() && !entryHelp.isEmpty() ) {
-                                    knobHint.append( QString::fromUtf8("**%1**: %2\n").arg(entry).arg(entryHelp) );
+                                    if (first) {
+                                        // empty line before the option descriptions
+                                        if (genHTML) {
+                                            knobHint.append( QString::fromUtf8("<br />") );
+                                        } else {
+                                            // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+                                            // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+                                            // genStaticDocs.sh script by a simple sed command after converting to RsT
+                                            if (!knobHint.startsWith( QString::fromUtf8(". ") )) {
+                                                knobHint.prepend( QString::fromUtf8(". ") );
+                                            }
+                                            knobHint.append( QString::fromUtf8("\\\n") );
+                                        }
+                                        first = false;
+                                    }
+                                    if (genHTML) {
+                                        knobHint.append( QString::fromUtf8("<br />") );
+                                    } else {
+                                        knobHint.append( QString::fromUtf8("\\\n") );
+                                        // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
+                                        // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
+                                        // genStaticDocs.sh script by a simple sed command after converting to RsT
+                                        knobHint.append( QString::fromUtf8(". ") );
+                                    }
+                                    knobHint.append( QString::fromUtf8("**%1**: %2").arg( convertFromPlainTextToMarkdown(entry, genHTML, true) ).arg( convertFromPlainTextToMarkdown(entryHelp, genHTML, true) ) );
                                 }
                             }
                         }
@@ -4489,7 +4511,8 @@ Node::makeDocumentation(bool genHTML) const
                     }
                 }
 
-                dimsDefaultValueStr.push_back( std::make_pair(QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), valueStr) );
+                dimsDefaultValueStr.push_back( std::make_pair(convertFromPlainTextToMarkdown( QString::fromUtf8( (*it)->getDimensionName(i).c_str() ), genHTML, true ),
+                                                              convertFromPlainTextToMarkdown(valueStr, genHTML, true)) );
             }
 
             for (std::size_t i = 0; i < dimsDefaultValueStr.size(); ++i) {
@@ -4518,11 +4541,64 @@ Node::makeDocumentation(bool genHTML) const
 
 
     // generate plugin info
-    ms << pluginLabel << "\n==========\n\n";
+    ms << tr("%1 node").arg(pluginLabel) << "\n==========\n\n";
+
+    // a hack to avoid repeating the documentation for the various merge plugins
+    if ( pluginID.startsWith( QString::fromUtf8("net.sf.openfx.Merge") ) ) {
+        std::string id = pluginID.toStdString();
+        std::string op;
+        if (id == PLUGINID_OFX_MERGE) {
+            // do nothing
+        } else if (id == "net.sf.openfx.MergeDifference") {
+            op = "difference (a.k.a. absminus)";
+        } else if (id == "net.sf.openfx.MergeIn") {
+            op = "in";
+        } else if (id == "net.sf.openfx.MergeMatte") {
+            op = "matte";
+        } else if (id == "net.sf.openfx.MergeMax") {
+            op = "max";
+        } else if (id == "net.sf.openfx.MergeMin") {
+            op = "min";
+        } else if (id == "net.sf.openfx.MergeMultiply") {
+            op = "multiply";
+        } else if (id == "net.sf.openfx.MergeOut") {
+            op = "out";
+        } else if (id == "net.sf.openfx.MergePlus") {
+            op = "plus";
+        } else if (id == "net.sf.openfx.MergeScreen") {
+            op = "screen";
+        }
+        if ( !op.empty() ) {
+            // we should use the custom link "[Merge node](|http::/plugins/"PLUGINID_OFX_MERGE".html||rst::net.sf.openfx.MergePlugin|)"
+            // but pandoc borks it
+            ms << tr("The *%1* node is a convenience node identical to the %2, except that the operator is set to *%3* by default.")
+            .arg(pluginLabel)
+            .arg(genHTML ? QString::fromUtf8("<a href=\""PLUGINID_OFX_MERGE".html\">Merge node</a>") :
+                 QString::fromUtf8(":ref:`"PLUGINID_OFX_MERGE"`")
+                 //QString::fromUtf8("[Merge node](http::/plugins/"PLUGINID_OFX_MERGE".html)")
+                 )
+            .arg( QString::fromUtf8( op.c_str() ) );
+            goto OUTPUT;
+        }
+
+    }
+
     if (!pluginIconUrl.isEmpty()) {
-        ms << "![](" << pluginIconUrl << ")\n\n";
+        // add a nonbreaking space so that pandoc doesn't use the alt-text as a caption
+        // http://pandoc.org/MANUAL.html#images
+        ms << "![pluginIcon](" << pluginIconUrl << ")";
+        if (!genHTML) {
+            // specify image width for pandoc-generated printed doc
+            // (for hoedown-generated HTML, this handled by the CSS using the alt=pluginIcon attribute)
+            // see http://pandoc.org/MANUAL.html#images
+            // note that only % units are understood both by pandox and sphinx
+            ms << "{ width=10% }";
+        }
+        ms << "\\ \n\n";
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
+
+    ms << "\n" << tr("Description") << "\n--------------------------------------------------------------------------------\n\n";
 
     if (!pluginDescriptionIsMarkdown) {
         if (genHTML) {
@@ -4532,73 +4608,41 @@ Node::makeDocumentation(bool genHTML) const
             QRegExp re( QString::fromUtf8("((http|ftp|https)://([\\w_-]+(?:(?:\\.[\\w_-]+)+))([\\w.,@?^=%&:/~+#-]*[\\w@?^=%&/~+#-])?)") );
             pluginDescription.replace( re, QString::fromUtf8("<a href=\"\\1\">\\1</a>") );
         } else {
-            pluginDescription.replace( QString::fromUtf8("\n"), QString::fromUtf8("\n\n") );
+            pluginDescription = convertFromPlainTextToMarkdown(pluginDescription, genHTML, false);
         }
     }
 
-    ms << pluginDescription << "\n\n";
+    ms << pluginDescription << "\n";
 
     // create markdown table
-    ms << tr("Inputs") << "\n----------\n\n";
+    ms << "\n" << tr("Inputs") << "\n--------------------------------------------------------------------------------\n\n";
     ms << tr("Input") << " | " << tr("Description") << " | " << tr("Optional") << "\n";
     ms << "--- | --- | ---\n";
     if (inputs.size() > 0) {
         Q_FOREACH(const QStringList &input, inputs) {
             QString inputName = input.at(0);
-            inputName.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputName.isEmpty()) {
-                inputName = QString::fromUtf8("&nbsp;");
-            }
-
             QString inputDesc = input.at(1);
-            inputDesc.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (inputDesc.isEmpty()) {
-                inputDesc = QString::fromUtf8("&nbsp;");
-            }
-
             QString inputOpt = input.at(2);
-            if (inputOpt.isEmpty()) {
-                inputOpt = QString::fromUtf8("&nbsp;");
-            }
 
             ms << inputName << " | " << inputDesc << " | " << inputOpt << "\n";
         }
     }
-    ms << tr("Controls") << "\n----------\n\n";
-    ms << tr("Label (UI Name)") << " | " << tr("Script-Name") << " | " <<tr("Type") << " | " << tr("Default-Value") << " | " << tr("Function") << "\n";
-    ms << "--- | --- | --- | --- | ---\n";
+    ms << "\n" << tr("Controls") << "\n--------------------------------------------------------------------------------\n\n";
+    if (!genHTML) {
+        // insert a special marker to be replaced in rst by the genStaticDocs.sh script)
+        ms << "CONTROLSTABLEPROPS\n\n";
+    }
+    ms << tr("Parameter / script name") << " | " << tr("Type") << " | " << tr("Default") << " | " << tr("Function") << "\n";
+    ms << "--- | --- | --- | ---\n";
     if (items.size() > 0) {
         Q_FOREACH(const QStringList &item, items) {
             QString itemLabel = item.at(0);
-            itemLabel.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemLabel.isEmpty()) {
-                itemLabel = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemScript = item.at(1);
-            itemScript.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemScript.isEmpty()) {
-                itemScript = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemType = item.at(2);
-            if (itemType.isEmpty()) {
-                itemType = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemDefault = item.at(3);
-            itemDefault.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemDefault.isEmpty()) {
-                itemDefault = QString::fromUtf8("&nbsp;");
-            }
-
             QString itemFunction = item.at(4);
-            itemFunction.replace(QString::fromUtf8("\n"),QString::fromUtf8("<br />"));
-            if (itemFunction.isEmpty()) {
-                itemFunction = QString::fromUtf8("&nbsp;");
-            }
 
-            ms << itemLabel << " | " << itemScript << " | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
+            ms << itemLabel << " / `" << itemScript << "` | " << itemType << " | " << itemDefault << " | " << itemFunction << "\n";
         }
     }
 
@@ -4608,12 +4652,15 @@ Node::makeDocumentation(bool genHTML) const
         ms << extraMarkdown;
     }
 
+OUTPUT:
     // output
     if (genHTML) {
+        // use hoedown to convert to HTML
+
         ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
         ts << "<html><head>";
         ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
-        ts << "<link rel=\"stylesheet\" href=\"_static/default.css\" type=\"text/css\" /><link rel=\"stylesheet\" href=\"_static/style.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
+        ts << "<link rel=\"stylesheet\" href=\"_static/markdown.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
         ts << "</head><body>";
         ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
         ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
@@ -4630,6 +4677,8 @@ Node::makeDocumentation(bool genHTML) const
         ts << Markdown::fixNodeHTML(html);
         ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
     } else {
+        // this markdown will be processed externally by pandoc
+
         ts << markdown;
     }
 
@@ -8466,9 +8515,9 @@ Node::setPluginIDAndVersionForGui(const std::list<std::string>& grouping,
     assert( QThread::currentThread() == qApp->thread() );
     boost::shared_ptr<NodeGuiI> nodeGui = getNodeGui();
 
+    setPyPlugEdited(false);
     {
         QMutexLocker k(&_imp->pyPluginInfoMutex);
-        _imp->pyPlugInfo.isPyPlug = true;
         _imp->pyPlugInfo.pyPlugVersion = version;
         _imp->pyPlugInfo.pyPlugID = pluginID;
         _imp->pyPlugInfo.pyPlugDesc = pluginDesc;
@@ -8489,16 +8538,29 @@ Node::hasPyPlugBeenEdited() const
 {
     QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    return _imp->pyPlugInfo.pyplugChangedSinceScript || _imp->pyPlugInfo.pluginPythonModule.empty();
+    return !_imp->pyPlugInfo.isPyPlug || _imp->pyPlugInfo.pluginPythonModule.empty();
 }
 
 void
 Node::setPyPlugEdited(bool edited)
 {
-    QMutexLocker k(&_imp->pyPluginInfoMutex);
+    {
+        QMutexLocker k(&_imp->pyPluginInfoMutex);
 
-    _imp->pyPlugInfo.pyplugChangedSinceScript = edited;
-    _imp->pyPlugInfo.isPyPlug = false;
+        _imp->pyPlugInfo.isPyPlug = !edited;
+    }
+    NodeGroup* isGroup = dynamic_cast<NodeGroup*>(_imp->effect.get());
+    if (isGroup) {
+        boost::shared_ptr<KnobButton> convertToGroupButton = isGroup->getConvertToGroupButton();
+        boost::shared_ptr<KnobButton> exportPyPlugButton = isGroup->getExportAsPyPlugButton();
+        if (convertToGroupButton) {
+            convertToGroupButton->setSecret(edited);
+        }
+        if (exportPyPlugButton) {
+            exportPyPlugButton->setSecret(!edited);
+        }
+
+    }
 }
 
 bool

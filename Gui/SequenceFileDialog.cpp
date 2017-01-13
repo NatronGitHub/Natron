@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,13 +83,13 @@ CLANG_DIAG_ON(uninitialized)
 #include <SequenceParsing.h>
 
 #include "Global/QtCompat.h"
-#include "Global/MemoryInfo.h"
 #include "Global/StrUtils.h"
 
 #include "Gui/GuiDefines.h"
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/KnobFile.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"

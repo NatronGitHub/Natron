@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,9 +41,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-#include "Global/MemoryInfo.h"
-#include "Engine/RotoContextPrivate.h"
-
 #include "Engine/AppInstance.h"
 #include "Engine/Bezier.h"
 #include "Engine/BezierSerialization.h"
@@ -56,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ImageParams.h"
 #include "Engine/Interpolation.h"
 #include "Engine/RenderStats.h"
+#include "Engine/RotoContextPrivate.h"
 #include "Engine/RotoLayerSerialization.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/Settings.h"

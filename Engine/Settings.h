@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -155,6 +155,8 @@ public:
     bool isAutoPreviewOnForNewProjects() const;
 
     void getOpenFXPluginsSearchPaths(std::list<std::string>* paths) const;
+
+    bool getUseStdOFXPluginsLocation() const;
 
     bool isRenderInSeparatedProcessEnabled() const;
 
@@ -346,7 +348,9 @@ public:
 
     std::string getUserStyleSheetFilePath() const;
 
+#ifdef NATRON_DOCUMENTATION_ONLINE
     int getDocumentationSource() const;
+#endif
     int getServerPort() const;
     void setServerPort(int port) const;
 
@@ -449,7 +453,9 @@ private:
     // General/Documentation
     boost::shared_ptr<KnobPage> _documentationPage;
     boost::shared_ptr<KnobInt> _wwwServerPort;
+#ifdef NATRON_DOCUMENTATION_ONLINE
     boost::shared_ptr<KnobChoice> _documentationSource;
+#endif
 
     // General/User Interface
     boost::shared_ptr<KnobPage> _uiPage;
@@ -527,6 +533,7 @@ private:
     // Plugins
     boost::shared_ptr<KnobPage> _pluginsTab;
     boost::shared_ptr<KnobPath> _extraPluginPaths;
+    boost::shared_ptr<KnobBool> _useStdOFXPluginsLocation;
     boost::shared_ptr<KnobPath> _templatesPluginPaths;
     boost::shared_ptr<KnobBool> _preferBundledPlugins;
     boost::shared_ptr<KnobBool> _loadBundledPlugins;

@@ -1,12 +1,14 @@
 .. _net.sf.openfx.switchPlugin:
 
-SwitchOFX
-=========
+Switch node
+===========
 
-.. figure:: net.sf.openfx.switchPlugin.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 1.0 of SwitchOFX.*
+*This documentation is for version 1.0 of Switch.*
+
+Description
+-----------
 
 Lets you switch between any number of inputs.
 
@@ -38,10 +40,17 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type      | Default-Value   | Function                                                                                                                                                                                             |
-+===================+===============+===========+=================+======================================================================================================================================================================================================+
-| Which             | which         | Integer   | 0               | The input to display. Each input is displayed at the value corresponding to the number of the input. For example, setting which to 4 displays the image from input 4.                                |
-+-------------------+---------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Automatic         | automatic     | Boolean   | Off             | When checked, automatically switch to the first connected input with a non-empty region of definition. This can be used to recompose a single clip from effects applied to different frame ranges.   |
-+-------------------+---------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++-----------------------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name     | Type      | Default   | Function                                                                                                                                                                                             |
++=============================+===========+===========+======================================================================================================================================================================================================+
+| Which / ``which``           | Integer   | 0         | The input to display. Each input is displayed at the value corresponding to the number of the input. For example, setting which to 4 displays the image from input 4.                                |
++-----------------------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Automatic / ``automatic``   | Boolean   | Off       | When checked, automatically switch to the first connected input with a non-empty region of definition. This can be used to recompose a single clip from effects applied to different frame ranges.   |
++-----------------------------+-----------+-----------+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.sf.openfx.switchPlugin.png
+   :width: 10.0%

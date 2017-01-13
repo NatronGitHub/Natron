@@ -1,12 +1,14 @@
 .. _net.sf.openfx.Premult:
 
-PremultOFX
-==========
+Premult node
+============
 
-.. figure:: net.sf.openfx.Premult.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 2.0 of PremultOFX.*
+*This documentation is for version 2.0 of Premult.*
+
+Description
+-----------
 
 Multiply the selected channels by alpha (or another channel).
 
@@ -26,10 +28,22 @@ Inputs
 Controls
 --------
 
-+-------------------+------------------+----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name      | Type     | Default-Value   | Function                                                                                                                                                                                   |
-+===================+==================+==========+=================+============================================================================================================================================================================================+
-| By                | premultChannel   | Choice   | A               | The channel to use for (un)premult.\ **None**: Don't multiply/divide\ **R**: R channel from input\ **G**: G channel from input\ **B**: B channel from input\ **A**: A channel from input   |
-+-------------------+------------------+----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Clip Info...      | clipInfo         | Button   | N/A             | Display information about the inputs                                                                                                                                                       |
-+-------------------+------------------+----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++-------------------------------+----------+-----------+-----------------------------------------+
+| Parameter / script name       | Type     | Default   | Function                                |
++===============================+==========+===========+=========================================+
+| By / ``premultChannel``       | Choice   | A         | | The channel to use for (un)premult.   |
+|                               |          |           | | **None**: Don't multiply/divide       |
+|                               |          |           | | **R**: R channel from input           |
+|                               |          |           | | **G**: G channel from input           |
+|                               |          |           | | **B**: B channel from input           |
+|                               |          |           | | **A**: A channel from input           |
++-------------------------------+----------+-----------+-----------------------------------------+
+| Clip Info... / ``clipInfo``   | Button   |           | Display information about the inputs    |
++-------------------------------+----------+-----------+-----------------------------------------+
+
+.. |pluginIcon| image:: net.sf.openfx.Premult.png
+   :width: 10.0%

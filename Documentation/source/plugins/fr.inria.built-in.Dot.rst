@@ -1,9 +1,12 @@
 .. _fr.inria.built-in.Dot:
 
-Dot
-===
+Dot node
+========
 
 *This documentation is for version 1.0 of Dot.*
+
+Description
+-----------
 
 Doesn't do anything to the input image, this is used in the node graph to make bends in the links.
 
@@ -19,7 +22,11 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+--------+-----------------+------------+
-| Label (UI Name)   | Script-Name   | Type   | Default-Value   | Function   |
-+===================+===============+========+=================+============+
-+-------------------+---------------+--------+-----------------+------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++---------------------------+--------+-----------+------------+
+| Parameter / script name   | Type   | Default   | Function   |
++===========================+========+===========+============+
++---------------------------+--------+-----------+------------+

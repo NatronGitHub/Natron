@@ -1,12 +1,14 @@
 .. _net.sf.openfx.timeOffset:
 
-TimeOffsetOFX
-=============
+TimeOffset node
+===============
 
-.. figure:: net.sf.openfx.timeOffset.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 1.0 of TimeOffsetOFX.*
+*This documentation is for version 1.0 of TimeOffset.*
+
+Description
+-----------
 
 Move the input clip forward or backward in time. This can also reverse the order of the input frames so that last one is first.
 
@@ -24,12 +26,19 @@ Inputs
 Controls
 --------
 
-+------------------------+--------------------+-----------+-----------------+-------------------------------------------------------------------+
-| Label (UI Name)        | Script-Name        | Type      | Default-Value   | Function                                                          |
-+========================+====================+===========+=================+===================================================================+
-| Time Offset (Frames)   | timeOffset         | Integer   | 0               | Offset in frames (frame f from the input will be at f+offset)     |
-+------------------------+--------------------+-----------+-----------------+-------------------------------------------------------------------+
-| Reverse Input          | reverseInput       | Boolean   | Off             | Reverse the order of the input frames so that last one is first   |
-+------------------------+--------------------+-----------+-----------------+-------------------------------------------------------------------+
-| Clip to Input Range    | clipToInputRange   | Boolean   | Off             | Never ask for frames outside of the input frame range.            |
-+------------------------+--------------------+-----------+-----------------+-------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++----------------------------------------------+-----------+-----------+-------------------------------------------------------------------+
+| Parameter / script name                      | Type      | Default   | Function                                                          |
++==============================================+===========+===========+===================================================================+
+| Time Offset (Frames) / ``timeOffset``        | Integer   | 0         | Offset in frames (frame f from the input will be at f+offset)     |
++----------------------------------------------+-----------+-----------+-------------------------------------------------------------------+
+| Reverse Input / ``reverseInput``             | Boolean   | Off       | Reverse the order of the input frames so that last one is first   |
++----------------------------------------------+-----------+-----------+-------------------------------------------------------------------+
+| Clip to Input Range / ``clipToInputRange``   | Boolean   | Off       | Never ask for frames outside of the input frame range.            |
++----------------------------------------------+-----------+-----------+-------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.sf.openfx.timeOffset.png
+   :width: 10.0%

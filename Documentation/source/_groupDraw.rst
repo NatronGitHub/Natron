@@ -1,21 +1,20 @@
-Draw
-==========
+Draw nodes
+============================================================
 
-Contents:
+The following sections contain documentation about every node in the  Draw group. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
 .. toctree::
     :maxdepth: 1
 
-    plugins/fr.inria.LightWrap.rst
-    plugins/fr.inria.built-in.Roto.rst
-    plugins/fr.inria.built-in.RotoPaint.rst
-    plugins/net.fxarena.openfx.Text.rst
     plugins/net.sf.cimg.CImgNoise.rst
     plugins/net.sf.cimg.CImgPlasma.rst
-    plugins/net.sf.openfx.Noise.rst
     plugins/net.sf.openfx.Radial.rst
     plugins/net.sf.openfx.Ramp.rst
+    plugins/net.sf.openfx.Noise.rst
     plugins/net.sf.openfx.Rectangle.rst
+    plugins/fr.inria.built-in.Roto.rst
+    plugins/fr.inria.built-in.RotoPaint.rst
     plugins/net.sf.openfx.SeGrain.rst
     plugins/net.sf.openfx.SeNoise.rst
+    plugins/net.fxarena.openfx.Text.rst
 

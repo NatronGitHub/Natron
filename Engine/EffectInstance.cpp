@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,6 +32,7 @@
 #include <bitset>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if !defined(SBK_RUN) && !defined(Q_MOC_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
@@ -47,7 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 #include <QtConcurrentRun> // QtCore on Qt4, QtConcurrent on Qt5
 
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
 #include "Engine/AbortableRenderInfo.h"
@@ -60,6 +60,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/Log.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
@@ -5280,8 +5281,11 @@ EffectInstance::getPreferredMetaDatas_public(NodeMetadata& metadata)
     if (stat == eStatusFailed) {
         return stat;
     }
+    if (!getNode()->isNodeDisabled()) {
+        return getPreferredMetaDatas(metadata);
+    }
+    return stat;
 
-    return getPreferredMetaDatas(metadata);
 }
 
 static ImageComponents

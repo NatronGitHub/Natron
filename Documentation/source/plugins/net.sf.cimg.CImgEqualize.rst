@@ -1,12 +1,14 @@
 .. _net.sf.cimg.CImgEqualize:
 
-EqualizeCImg
-============
+Equalize node
+=============
 
-.. figure:: net.sf.cimg.CImgEqualize.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 2.0 of EqualizeCImg.*
+*This documentation is for version 2.0 of Equalize.*
+
+Description
+-----------
 
 Equalize histogram of pixel values.
 
@@ -30,18 +32,25 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type      | Default-Value   | Function                                                                                                                             |
-+===================+===============+===========+=================+======================================================================================================================================+
-| NbLevels          | nb\_levels    | Integer   | 4096            | Number of histogram levels used for the equalization.                                                                                |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Min Value         | min\_value    | Double    | 0               | Minimum pixel value considered for the histogram computation. All pixel values lower than min\_value will not be counted.            |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Max Value         | max\_value    | Double    | 1               | Maximum pixel value considered for the histogram computation. All pixel values higher than max\_value will not be counted.           |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| (Un)premult       | premult       | Boolean   | Off             | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask       | maskInvert    | Boolean   | Off             | When checked, the effect is fully applied where the mask is 0.                                                                       |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Mix               | mix           | Double    | 1               | Mix factor between the original and the transformed image.                                                                           |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name        | Type      | Default   | Function                                                                                                                             |
++================================+===========+===========+======================================================================================================================================+
+| NbLevels / ``nb\_levels``      | Integer   | 4096      | Number of histogram levels used for the equalization.                                                                                |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Min Value / ``min\_value``     | Double    | 0         | Minimum pixel value considered for the histogram computation. All pixel values lower than min\_value will not be counted.            |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Max Value / ``max\_value``     | Double    | 1         | Maximum pixel value considered for the histogram computation. All pixel values higher than max\_value will not be counted.           |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``      | Boolean   | Off       | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert``   | Boolean   | Off       | When checked, the effect is fully applied where the mask is 0.                                                                       |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                  | Double    | 1         | Mix factor between the original and the transformed image.                                                                           |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.sf.cimg.CImgEqualize.png
+   :width: 10.0%

@@ -1,17 +1,32 @@
-Image
-==========
+Image nodes
+============================================================
 
-Contents:
+The following sections contain documentation about every node in the  Image group. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
 .. toctree::
     :maxdepth: 1
 
-    plugins/fr.inria.built-in.Read.rst
-    plugins/fr.inria.built-in.Write.rst
-    plugins/fr.inria.openfx.RunScript.rst
     plugins/net.sf.openfx.CheckerBoardPlugin.rst
     plugins/net.sf.openfx.ColorBars.rst
     plugins/net.sf.openfx.ColorWheel.rst
     plugins/net.sf.openfx.ConstantPlugin.rst
+    plugins/fr.inria.openfx.OpenRaster.rst
+    plugins/fr.inria.built-in.Read.rst
+    plugins/fr.inria.openfx.ReadCDR.rst
+    plugins/fr.inria.openfx.ReadFFmpeg.rst
+    plugins/fr.inria.openfx.ReadKrita.rst
+    plugins/fr.inria.openfx.ReadMisc.rst
+    plugins/fr.inria.openfx.ReadOIIO.rst
+    plugins/fr.inria.openfx.ReadPDF.rst
+    plugins/fr.inria.openfx.ReadPFM.rst
+    plugins/fr.inria.openfx.ReadPNG.rst
+    plugins/net.fxarena.openfx.ReadPSD.rst
+    plugins/net.fxarena.openfx.ReadSVG.rst
+    plugins/fr.inria.openfx.RunScript.rst
     plugins/net.sf.openfx.Solid.rst
+    plugins/fr.inria.built-in.Write.rst
+    plugins/fr.inria.openfx.WriteFFmpeg.rst
+    plugins/fr.inria.openfx.WriteOIIO.rst
+    plugins/fr.inria.openfx.WritePFM.rst
+    plugins/fr.inria.openfx.WritePNG.rst
 

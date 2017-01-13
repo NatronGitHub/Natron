@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -84,13 +84,14 @@
 #include "Engine/DiskCacheNode.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/JoinViewsNode.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
+#include "Engine/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Engine/Node.h"
-#include "Engine/FileSystemModel.h"
-#include "Engine/JoinViewsNode.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
@@ -805,9 +806,33 @@ AppManager::loadInternal(const CLArgs& cl)
     _imp->_settings->populateOpenGLRenderers(_imp->openGLRenderers);
 
 
+    // Settings: we must load these and set the custom settings (using python) ASAP, before creating the OFX Plugin Cache
     if (!cl.isLoadedUsingDefaultSettings()) {
         ///Call restore after initializing knobs
         _imp->_settings->restoreSettings();
+    }
+
+    _imp->declareSettingsToPython();
+
+    // executeCommandLineSettingCommands
+    {
+        const std::list<std::string>& commands = cl.getSettingCommands();
+
+        for (std::list<std::string>::const_iterator it = commands.begin(); it != commands.end(); ++it) {
+            std::string err;
+            std::string output;
+            bool ok  = NATRON_PYTHON_NAMESPACE::interpretPythonScript(*it, &err, &output);
+            if (!ok) {
+                const QString sp( QString::fromUtf8(" ") );
+                QString m = tr("Failed to execute the following Python command:") + sp +
+                QString::fromUtf8( it->c_str() ) + sp +
+                tr("Error:") + sp +
+                QString::fromUtf8( err.c_str() );
+                throw std::runtime_error( m.toStdString() );
+            } else if ( !output.empty() ) {
+                std::cout << output << std::endl;
+            }
+        }
     }
 
     ///basically show a splashScreen load fonts etc...
@@ -1432,8 +1457,6 @@ AppManager::loadAllPlugins()
 
     // Load OpenFX plug-ins
     _imp->ofxHost->loadOFXPlugins( &_imp->readerPlugins, &_imp->writerPlugins);
-
-    _imp->declareSettingsToPython();
 
     // Load PyPlugs and init.py & initGui.py scripts
     // Should be done after settings are declared

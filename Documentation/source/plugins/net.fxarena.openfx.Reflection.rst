@@ -1,16 +1,18 @@
 .. _net.fxarena.openfx.Reflection:
 
-ReflectionOFX
-=============
+Reflection node
+===============
 
-.. figure:: net.fxarena.openfx.Reflection.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 3.2 of ReflectionOFX.*
+*This documentation is for version 3.2 of Reflection.*
+
+Description
+-----------
 
 Mirror/Reflection tranform node.
 
-Powered by ImageMagick 7.0.3-4 Q32 x86\_64 2016-10-23 http://www.imagemagick.org
+Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2017-01-11 http://www.imagemagick.org
 
 ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
 
@@ -30,18 +32,25 @@ Inputs
 Controls
 --------
 
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Label (UI Name)      | Script-Name   | Type      | Default-Value   | Function                                                                                                |
-+======================+===============+===========+=================+=========================================================================================================+
-| Reflection offset    | offset        | Integer   | 0               | Reflection offset                                                                                       |
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Reflection spacing   | spacing       | Integer   | 0               | Space between image and reflection                                                                      |
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Reflection           | reflection    | Boolean   | On              | Apply reflection                                                                                        |
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Matte                | matte         | Boolean   | Off             | Merge Alpha before applying effect                                                                      |
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| Mirror               | mirror        | Choice    | Undefined       | Select mirror type                                                                                      |
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
-| OpenMP               | openmp        | Boolean   | Off             | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
-+----------------------+---------------+-----------+-----------------+---------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+| Parameter / script name            | Type      | Default     | Function                                                                                                |
++====================================+===========+=============+=========================================================================================================+
+| Reflection offset / ``offset``     | Integer   | 0           | Reflection offset                                                                                       |
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+| Reflection spacing / ``spacing``   | Integer   | 0           | Space between image and reflection                                                                      |
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+| Reflection / ``reflection``        | Boolean   | On          | Apply reflection                                                                                        |
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+| Matte / ``matte``                  | Boolean   | Off         | Merge Alpha before applying effect                                                                      |
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+| Mirror / ``mirror``                | Choice    | Undefined   | Select mirror type                                                                                      |
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+| OpenMP / ``openmp``                | Boolean   | Off         | Enable/Disable OpenMP support. This will enable the plugin to use as many threads as allowed by host.   |
++------------------------------------+-----------+-------------+---------------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.fxarena.openfx.Reflection.png
+   :width: 10.0%

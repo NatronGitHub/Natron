@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,15 +48,17 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Global/GitVersion.h"
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
+
 #include "Engine/AppInstance.h"
-#include "Engine/ProjectPrivate.h"
-#include "Engine/Project.h"
-#include "Engine/TimeLine.h"
+#include "Engine/KnobSerialization.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/Node.h"
 #include "Engine/NodeSerialization.h"
 #include "Engine/NodeGroupSerialization.h"
-#include "Engine/KnobSerialization.h"
+#include "Engine/ProjectPrivate.h"
+#include "Engine/Project.h"
+#include "Engine/TimeLine.h"
+
 #include "Engine/EngineFwd.h"
 
 #define PROJECT_SERIALIZATION_INTRODUCES_NATRON_VERSION 2

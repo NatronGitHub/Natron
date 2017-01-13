@@ -41,7 +41,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Natron'
-copyright = u'2016, Natron Developers'
+copyright = u'2013-2017 The Natron documentation authors, licensed under CC BY-SA 4.0'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -50,11 +50,12 @@ copyright = u'2016, Natron Developers'
 
 # the list of currently maintained versions (those that have to be merged into the master branch)
 version_21 = '2.1.10'
-version_22 = '2.2.0'
+version_22 = '2.2'
+version_30 = '3.0'
 
 # The version for this branch
 # The full version, including alpha/beta/rc tags.
-release = version_21
+release = version_22
 #
 # The short X.Y version.
 version = '.'.join(release.split('.')[0:2])
@@ -179,31 +180,37 @@ htmlhelp_basename = 'Natrondoc'
 
 # -- Options for LaTeX output --------------------------------------------------
 
+mypreamble=ur'''\renewcommand{\code}[1]{\texttt{\footnotesize{}#1}}
+'''
 latex_elements = {
 # The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+'papersize': 'a4paper',
 
 # The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+'pointsize': '10pt',
 
 # Additional stuff for the LaTeX preamble.
-#'preamble': '',
+'preamble': mypreamble
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
   ('index', 'Natron.tex', u'Natron Documentation',
-   u'Natron Developers', 'manual'),
+   u'The Natron documentation authors', 'manual'),
 ]
 
+#geometry = 'margin=1in,marginparwidth=0.5in'
+geometry = 'margin=0.5in,marginparwidth=0.5in'
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
 #latex_logo = None
+latex_logo = '../../Gui/Resources/Images/natronIcon.pdf'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
-#latex_use_parts = False
+latex_use_parts = True
+#latex_toplevel_sectioning = 'part'
 
 # If true, show page references after internal links.
 #latex_show_pagerefs = False
@@ -224,7 +231,7 @@ latex_documents = [
 # (source start file, name, description, authors, manual section).
 man_pages = [
     ('index', 'natron', u'Natron Documentation',
-     [u'Natron Developers'], 1)
+     [u'The Natron documentation authors'], 1)
 ]
 
 # If true, show URL addresses after external links.
@@ -238,7 +245,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
   ('index', 'Natron', u'Natron Documentation',
-   u'Natron Developers', 'Natron', 'One line description of project.',
+   u'The Natron documentation authors', 'Natron', 'Open-source, cross-platform, nodal video compositing software.',
    'Miscellaneous'),
 ]
 
@@ -252,4 +259,4 @@ texinfo_documents = [
 #texinfo_show_urls = 'footnote'
 
 # force default theme on readthedocs
-html_style = '/default.css'
+html_style = 'default.css'

@@ -1,11 +1,14 @@
 .. _net.sf.openfx.XYZToLab:
 
-XYZToxyY
-========
+XYZToLab node
+=============
 
-*This documentation is for version 1.0 of XYZToxyY.*
+*This documentation is for version 1.0 of XYZToLab.*
 
-Convert from CIE XYZ color space to CIE xyY color space.
+Description
+-----------
+
+Convert from CIE XYZ color space to CIE L\*a\*b color space. L\*a\*b coordinates are divided by 100 for better visualization.
 
 Inputs
 ------
@@ -19,7 +22,11 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+--------+-----------------+------------+
-| Label (UI Name)   | Script-Name   | Type   | Default-Value   | Function   |
-+===================+===============+========+=================+============+
-+-------------------+---------------+--------+-----------------+------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++---------------------------+--------+-----------+------------+
+| Parameter / script name   | Type   | Default   | Function   |
++===========================+========+===========+============+
++---------------------------+--------+-----------+------------+

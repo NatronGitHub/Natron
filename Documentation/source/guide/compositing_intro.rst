@@ -6,6 +6,15 @@ What is compositing?
 
 Compositing is the combining of visual elements from separate sources into single images, often to create the illusion that all those elements are parts of the same scene [Wikipedia]_.
 
+Typical examples of compositing are, for example:
+
+- The superimposition of a character filmed on a green background over a scene shot in another place, at another time, or a computer-generated scene;
+- The manual detouring (also called rotoscopy) of an element in a video to embed it in another video, possibly with a different motion;
+- Artistic modifications of a video, after shooting a live-action scene or rendering a CGI scene, in order to modify its lighting, colors, depth of field, camera motion, or to remove noise or add film grain.
+
+A video compositing software is not a 3D computer graphics software, like Blender or Maya, but it is perfectly suited for combining computer-generated elements produced by other software with live-action video or 2D animation. Rather than rendering a full 3D scene with the 3D software, which may cost many hours of computation, the video compositing software can assemble the elements produced separately with a much more reactive interface and an almost instantaneous visual feedback.
+
+
 Theory
 ******
 
@@ -24,8 +33,6 @@ Most of what is described in these books also apply to Natron. It is thus strong
 
 There are also video tutorials available on video streaming platforms (youtube, vimeo) for Natron or other reference compositing software, such as Nuke of Fusion. These tutorials can be used to get acquainted with compositing.
 
-References
-**********
 
 .. [Wikipedia] `Compositing <https://en.wikipedia.org/wiki/Compositing>`_, in Wikipedia, retrieved Sep. 14, 2016 from https://en.wikipedia.org/wiki/Compositing
 
@@ -37,7 +44,7 @@ References
 
 .. [Blinn1994b] Blinn,  James  F., Jim Blinn's Corner: Compositing Part 2: Practice, IEEE Computer Graphics & Applications, Nov 1994, 78-82, `doi:10.1109/38.329100 <http://dx.doi.org/10.1109/38.329100>`_.
 
-.. [Smith1995]  Alvy Ray Smith, `Image Compositing Fundamentals <http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.27.5956>`_, 1994.
+.. [Smith1995]  Alvy Ray Smith, `Image Compositing Fundamentals <http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.27.5956>`_, 1995.
 
 .. [Brinkmann2008] Ron Brinkmann, The Art and Science of Digital Compositing, 2nd Edition, 2008 (ISBN  0123706386)
 

@@ -1,12 +1,14 @@
 .. _net.sf.cimg.CImgSharpenInvDiff:
 
-SharpenInvDiffCImg
-==================
+SharpenInvDiff node
+===================
 
-.. figure:: net.sf.cimg.CImgSharpenInvDiff.png
-   :alt: 
+|pluginIcon| 
 
-*This documentation is for version 2.0 of SharpenInvDiffCImg.*
+*This documentation is for version 2.0 of SharpenInvDiff.*
+
+Description
+-----------
 
 Sharpen selected images by inverse diffusion.
 
@@ -28,16 +30,23 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type      | Default-Value   | Function                                                                                                                             |
-+===================+===============+===========+=================+======================================================================================================================================+
-| Amplitude         | amplitude     | Double    | 0.2             | Standard deviation of the spatial kernel, in pixel units (>=0). Details smaller than this size are filtered out.                     |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Iterations        | iterations    | Integer   | 2               | Number of iterations. A reasonable value is 2.                                                                                       |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| (Un)premult       | premult       | Boolean   | Off             | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Invert Mask       | maskInvert    | Boolean   | Off             | When checked, the effect is fully applied where the mask is 0.                                                                       |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Mix               | mix           | Double    | 1               | Mix factor between the original and the transformed image.                                                                           |
-+-------------------+---------------+-----------+-----------------+--------------------------------------------------------------------------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Parameter / script name        | Type      | Default   | Function                                                                                                                             |
++================================+===========+===========+======================================================================================================================================+
+| Amplitude / ``amplitude``      | Double    | 0.2       | Standard deviation of the spatial kernel, in pixel units (>=0). Details smaller than this size are filtered out.                     |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Iterations / ``iterations``    | Integer   | 2         | Number of iterations. A reasonable value is 2.                                                                                       |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| (Un)premult / ``premult``      | Boolean   | Off       | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Invert Mask / ``maskInvert``   | Boolean   | Off       | When checked, the effect is fully applied where the mask is 0.                                                                       |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+| Mix / ``mix``                  | Double    | 1         | Mix factor between the original and the transformed image.                                                                           |
++--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
+
+.. |pluginIcon| image:: net.sf.cimg.CImgSharpenInvDiff.png
+   :width: 10.0%

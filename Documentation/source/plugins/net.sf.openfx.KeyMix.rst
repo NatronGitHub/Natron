@@ -1,9 +1,12 @@
 .. _net.sf.openfx.KeyMix:
 
-KeyMixOFX
-=========
+KeyMix node
+===========
 
-*This documentation is for version 1.0 of KeyMixOFX.*
+*This documentation is for version 1.0 of KeyMix.*
+
+Description
+-----------
 
 KeyMix takes two images and layers them together according to a third input. It can be used to lay a foreground over a background using the output of a keyer. The only disadvantage to this method is that it outputs an image with no alpha.
 
@@ -29,10 +32,14 @@ Inputs
 Controls
 --------
 
-+-------------------+---------------+-----------+-----------------+------------------------------------------------------------------+
-| Label (UI Name)   | Script-Name   | Type      | Default-Value   | Function                                                         |
-+===================+===============+===========+=================+==================================================================+
-| Invert Mask       | maskInvert    | Boolean   | Off             | When checked, the effect is fully applied where the mask is 0.   |
-+-------------------+---------------+-----------+-----------------+------------------------------------------------------------------+
-| Mix               | mix           | Double    | 1               | Mix factor between the original and the transformed image.       |
-+-------------------+---------------+-----------+-----------------+------------------------------------------------------------------+
+.. tabularcolumns:: |>{\raggedright}p{0.2\columnwidth}|>{\raggedright}p{0.06\columnwidth}|>{\raggedright}p{0.07\columnwidth}|p{0.63\columnwidth}|
+
+.. cssclass:: longtable
+
++--------------------------------+-----------+-----------+------------------------------------------------------------------+
+| Parameter / script name        | Type      | Default   | Function                                                         |
++================================+===========+===========+==================================================================+
+| Invert Mask / ``maskInvert``   | Boolean   | Off       | When checked, the effect is fully applied where the mask is 0.   |
++--------------------------------+-----------+-----------+------------------------------------------------------------------+
+| Mix / ``mix``                  | Double    | 1         | Mix factor between the original and the transformed image.       |
++--------------------------------+-----------+-----------+------------------------------------------------------------------+

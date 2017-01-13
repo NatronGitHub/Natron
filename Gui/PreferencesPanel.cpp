@@ -1,6 +1,6 @@
 /* ***** BEGIN LICENSE BLOCK *****
  * This file is part of Natron <http://www.natron.fr/>,
- * Copyright (C) 2016 INRIA and Alexandre Gauthier-Foichat
+ * Copyright (C) 2013-2017 INRIA and Alexandre Gauthier-Foichat
  *
  * Natron is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,8 +69,17 @@ CLANG_DIAG_ON(uninitialized)
 
 NATRON_NAMESPACE_ENTER;
 
+NATRON_NAMESPACE_ANONYMOUS_ENTER;
+
 struct PreferenceTab
 {
+    PreferenceTab()
+        : treeItem(NULL)
+        , tab(NULL)
+        , page()
+    {
+    }
+
     QTreeWidgetItem* treeItem;
     QFrame* tab;
     boost::weak_ptr<KnobPageGui> page;
@@ -78,6 +87,16 @@ struct PreferenceTab
 
 struct PluginTreeNode
 {
+    PluginTreeNode()
+        : item(NULL)
+        , enabledCheckbox(NULL)
+        , rsCheckbox(NULL)
+        , mtCheckbox(NULL)
+        , glCheckbox(NULL)
+        , plugin(NULL)
+    {
+    }
+
     QTreeWidgetItem* item;
     AnimatedCheckBox* enabledCheckbox;
     AnimatedCheckBox* rsCheckbox;
@@ -91,15 +110,29 @@ typedef std::list<PluginTreeNode> PluginTreeNodeList;
 
 struct GuiBoundAction
 {
+    GuiBoundAction()
+        : item(NULL)
+        , action(NULL)
+    {
+    }
+
     QTreeWidgetItem* item;
     BoundAction* action;
 };
 
 struct GuiShortCutGroup
 {
+    GuiShortCutGroup()
+        : actions()
+        , item(NULL)
+    {
+    }
+
     std::list<GuiBoundAction> actions;
     QTreeWidgetItem* item;
 };
+
+NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 static QString
 keybindToString(const Qt::KeyboardModifiers & modifiers,
@@ -1095,10 +1128,14 @@ PreferencesPanel::onSettingChanged(KnobI* knob)
 void
 PreferencesPanel::openHelp()
 {
-    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     int serverPort = appPTR->getDocumentationServerPort();
     QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_prefs.html");
+#ifdef NATRON_DOCUMENTATION_ONLINE
+    int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
     QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE);
+    if ( (serverPort == 0) && (docSource == 0) ) {
+        docSource = 1;
+    }
 
     switch (docSource) {
     case 0:
@@ -1111,6 +1148,9 @@ PreferencesPanel::openHelp()
         Dialogs::informationDialog(tr("Missing documentation").toStdString(), tr("Missing documentation, please go to settings and select local or online documentation source.").toStdString(), true);
         break;
     }
+#else
+    QDesktopServices::openUrl( QUrl(localUrl) );
+#endif
 }
 
 void
