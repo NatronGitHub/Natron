@@ -13,4 +13,5 @@ The following sections contain documentation about every node in the  Keyer grou
     plugins/net.sf.openfx.KeyerPlugin.rst
     plugins/net.sf.openfx.MatteMonitorPlugin.rst
     plugins/net.sf.openfx.PIK.rst
+    plugins/fr.inria.PIKColor.rst
 

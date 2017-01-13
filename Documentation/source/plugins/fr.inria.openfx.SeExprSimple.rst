@@ -101,7 +101,8 @@ Add green channel to red, keep green, and apply a 50% gain on blue
 ::
 
     r*r2
-    g*g2    b*b2
+    g*g2
+    b*b2
     a+a2-a*a2
 
 *SeExpr:*
