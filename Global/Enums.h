@@ -93,6 +93,7 @@ inline bool isFailureRetCode(ActionRetCodeEnum code)
         case eActionStatusReplyDefault:
             return false;
     }
+    return true;
 }
 
 

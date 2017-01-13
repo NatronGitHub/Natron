@@ -747,6 +747,7 @@ Cache::Cache()
     // Default to a system specific location
     setDirectoryContainingCachePath(std::string());
 
+#warning "SIZE????"
     _imp->segment.reset(new MemorySegmentType(bip::open_or_create, NATRON_CACHE_DIRECTORY_NAME, SIZE));
     for (int i = 0; i < NATRON_CACHE_BUCKETS_COUNT; ++i) {
         _imp->buckets[i].memorySegment = _imp->segment.get();

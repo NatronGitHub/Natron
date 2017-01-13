@@ -38,6 +38,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Global/GLIncludes.h"
+#include "Engine/Cache.h" // CacheEntryLockerPtr - put it in EngineFwd.h?
 #include "Engine/ImageComponents.h"
 #include "Engine/RectI.h"
 #include "Engine/TimeValue.h"
