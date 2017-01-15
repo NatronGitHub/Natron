@@ -1167,7 +1167,7 @@ TimeLineGui::refreshCachedFramesNow()
 
     _imp->cachedFrames.clear();
     for (std::list<CacheEntryBasePtr>::const_iterator it = cachedEntries.begin(); it != cachedEntries.end(); ++it) {
-        MemoryBufferedCacheEntryBase* isMemoryEntry = dynamic_cast<MemoryBufferedCacheEntryBase*>(it->get());
+        ImageStorageBase* isMemoryEntry = dynamic_cast<ImageStorageBase*>(it->get());
         assert(isMemoryEntry);
         if (!isMemoryEntry) {
             continue;

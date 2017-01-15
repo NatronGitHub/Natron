@@ -46,8 +46,6 @@ INCLUDEPATH += $$PWD/../libs/SequenceParsing
 HEADERS += \
     BezierSerialization.h \
     BezierCPSerialization.h \
-    CacheSerialization.h \
-    CacheEntrySerialization.h \
     CurveSerialization.h \
     FormatSerialization.h \
     KnobSerialization.h \
@@ -74,8 +72,6 @@ HEADERS += \
 SOURCES += \
     BezierCPSerialization.cpp \
     BezierSerialization.cpp \
-    CacheSerialization.cpp \
-    CacheEntrySerialization.cpp \
     CurveSerialization.cpp \
     FormatSerialization.cpp \
     KnobSerialization.cpp \

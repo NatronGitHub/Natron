@@ -200,10 +200,6 @@ public:
 
     void loadBuiltinFormats();
 
-    void saveCaches();
-
-    void restoreCaches();
-
     static void addOpenGLRequirementsString(QString& str, OpenGLRequirementsTypeEnum type);
 
 

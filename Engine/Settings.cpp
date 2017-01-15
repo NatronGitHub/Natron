@@ -2345,13 +2345,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
             cache->setMaximumCacheSize(eStorageModeDisk, maxDiskBytes);
         }
 
-    } else if ( k == _imp->_diskCachePath ) {
-
-        CachePtr cache = appPTR->getCache();
-        if (cache) {
-            cache->setDirectoryContainingCachePath(_imp->_diskCachePath->getValue());
-        }
-    } else if ( k == _imp->_numberOfThreads ) {
+    }  else if ( k == _imp->_numberOfThreads ) {
         int nbThreads = _imp->_numberOfThreads->getValue();
 #ifdef DEBUG
         if (nbThreads == -1) {
@@ -2542,6 +2536,12 @@ Settings::isViewerKeysEnabled() const
 
 ///////////////////////////////////////////////////////
 // "Caching" pane
+
+std::string
+Settings::getDiskCachePath() const
+{
+    return _imp->_diskCachePath->getValue();
+}
 
 bool
 Settings::isAggressiveCachingEnabled() const

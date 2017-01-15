@@ -28,7 +28,6 @@
 #include <QMutex>
 
 #include "Engine/Hash64.h"
-#include "Serialization/CacheEntrySerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -66,15 +65,6 @@ CacheEntryKeyBase::~CacheEntryKeyBase()
 }
 
 
-void
-CacheEntryKeyBase::copy(const CacheEntryKeyBase& other)
-{
-    QMutexLocker k(&_imp->lock);
-    QMutexLocker k2(&other._imp->lock);
-    _imp->pluginID = other._imp->pluginID;
-    _imp->hash = other._imp->hash;
-    _imp->hashComputed = other._imp->hashComputed;
-}
 
 U64
 CacheEntryKeyBase::getHash() const
@@ -95,6 +85,14 @@ CacheEntryKeyBase::getHash() const
 }
 
 std::string
+CacheEntryKeyBase::hashToString(U64 hash)
+{
+    std::stringstream ss;
+    ss << std::hex << hash;
+    return ss.str();
+}
+
+std::string
 CacheEntryKeyBase::getHolderPluginID() const
 {
     QMutexLocker k(&_imp->lock);
@@ -105,6 +103,51 @@ void
 CacheEntryKeyBase::setHolderPluginID(const std::string& holderID) {
     QMutexLocker k(&_imp->lock);
     _imp->pluginID = holderID;
+}
+
+std::size_t
+CacheEntryKeyBase::getMetadataSize() const
+{
+    std::size_t ret = 0;
+
+    // Also count the null character.
+    ret += (_imp->pluginID.size() + 1) * sizeof(char);
+    ret += sizeof(_imp->hash);
+
+    return ret;
+}
+
+void
+CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* segment) const
+{
+    writeMMObject(_imp->pluginID, "pluginID", segment);
+
+    // Write a hash as a magic number: the hash should be the last item wrote to the external memory segment.
+    // When reading, if the hash could be recovered correctly, we know that the entry is valid.
+    writeMMObject(_imp->hash, "magic", segment);
+}
+
+
+void
+CacheEntryKeyBase::fromMemorySegment(const ExternalSegmentType& segment)
+{
+    readMMObject("pluginID", segment, &_imp->pluginID);
+
+    U64 serializedHash;
+    readMMObject("magic", segment, &serializedHash);
+
+    // The hash should not have been computed
+    assert(!_imp->hashComputed);
+
+    // We are done serializing, compute the hash and compare against the serialized hash
+    U64 computedHash = getHash();
+    if (computedHash != serializedHash) {
+
+        // They are different: either the process writing this entry crashed or another object type
+        // was associated to the hash.
+        throw std::bad_alloc();
+    }
+
 }
 
 
@@ -215,75 +258,6 @@ ImageTileKey::appendToHash(Hash64* hash) const
     hash->append(_imp->tileY);
 }
 
-void
-ImageTileKey::copy(const CacheEntryKeyBase& other)
-{
-    const ImageTileKey* otherKey = dynamic_cast<const ImageTileKey*>(&other);
-    assert(otherKey);
-    if (!otherKey) {
-        return;
-    }
-    CacheEntryKeyBase::copy(other);
-
-    _imp->nodeTimeInvariantHash = otherKey->_imp->nodeTimeInvariantHash;
-    _imp->time = otherKey->_imp->time;
-    _imp->view = otherKey->_imp->view;
-    _imp->layerChannel = otherKey->_imp->layerChannel;
-    _imp->proxyScale = otherKey->_imp->proxyScale;
-    _imp->mipMapLevel = otherKey->_imp->mipMapLevel;
-    _imp->draftMode = otherKey->_imp->draftMode;
-    _imp->bitdepth = otherKey->_imp->bitdepth;
-    _imp->tileX = otherKey->_imp->tileX;
-    _imp->tileY = otherKey->_imp->tileY;
-}
-
-bool
-ImageTileKey::equals(const CacheEntryKeyBase& other)
-{
-    const ImageTileKey* otherKey = dynamic_cast<const ImageTileKey*>(&other);
-    assert(otherKey);
-    if (!otherKey) {
-        return false;
-    }
-    if (!CacheEntryKeyBase::equals(other)) {
-        return false;
-    }
-    if (_imp->nodeTimeInvariantHash != otherKey->_imp->nodeTimeInvariantHash) {
-        return false;
-    }
-    if (_imp->time != otherKey->_imp->time) {
-        return false;
-    }
-    if (_imp->view != otherKey->_imp->view) {
-        return false;
-    }
-    if (_imp->layerChannel != otherKey->_imp->layerChannel) {
-        return false;
-    }
-    if (_imp->proxyScale.x != otherKey->_imp->proxyScale.x) {
-        return false;
-    }
-    if (_imp->proxyScale.y != otherKey->_imp->proxyScale.y) {
-        return false;
-    }
-    if (_imp->mipMapLevel != otherKey->_imp->mipMapLevel) {
-        return false;
-    }
-    if (_imp->draftMode != otherKey->_imp->draftMode) {
-        return false;
-    }
-    if (_imp->bitdepth != otherKey->_imp->bitdepth) {
-        return false;
-    }
-    if (_imp->tileX != otherKey->_imp->tileX) {
-        return false;
-    }
-    if (_imp->tileY != otherKey->_imp->tileY) {
-        return false;
-    }
-    return true;
-}
-
 std::string
 ImageTileKey::getLayerChannel() const
 {
@@ -326,75 +300,62 @@ ImageTileKey::getBitDepth() const
     return _imp->bitdepth;
 }
 
-static std::string bitDepthToString(ImageBitDepthEnum depth)
+std::size_t
+ImageTileKey::getMetadataSize() const
 {
-    switch (depth) {
-        case eImageBitDepthByte:
-            return kBitDepthSerializationByte;
-        case eImageBitDepthFloat:
-            return kBitDepthSerializationFloat;
-        case eImageBitDepthShort:
-            return kBitDepthSerializationShort;
-        case eImageBitDepthHalf:
-            return kBitDepthSerializationHalf;
-        case eImageBitDepthNone:
-            return "";
-    }
+    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
+
+    // Also count the null character.
+    ret += sizeof(_imp->nodeTimeInvariantHash);
+    ret += (_imp->layerChannel.size() + 1) * sizeof(char);
+    ret += sizeof(_imp->time);
+    ret += sizeof(_imp->view);
+    ret += sizeof(_imp->tileX);
+    ret += sizeof(_imp->tileY);
+    ret += sizeof(_imp->proxyScale.x);
+    ret += sizeof(_imp->proxyScale.y);
+    ret += sizeof(_imp->mipMapLevel);
+    ret += sizeof(_imp->draftMode);
+    ret += sizeof(_imp->bitdepth);
+
+    return ret;
 }
 
-static ImageBitDepthEnum bitDepthFromString(const std::string& depth)
-{
-    if (depth == kBitDepthSerializationByte) {
-        return eImageBitDepthByte;
-    } else if (depth == kBitDepthSerializationFloat) {
-        return eImageBitDepthFloat;
-    } else if (depth == kBitDepthSerializationShort) {
-        return eImageBitDepthShort;
-    } else if (depth == kBitDepthSerializationHalf) {
-        return eImageBitDepthHalf;
-    } else {
-        return eImageBitDepthNone;
-    }
-}
 
 void
-ImageTileKey::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase)
+ImageTileKey::toMemorySegment(ExternalSegmentType* segment) const
 {
-    SERIALIZATION_NAMESPACE::ImageTileSerialization* serialization = dynamic_cast<SERIALIZATION_NAMESPACE::ImageTileSerialization*>(serializationBase);
-    if (!serialization) {
-        return;
-    }
-    serialization->nodeHashKey = _imp->nodeTimeInvariantHash;
-    serialization->time = _imp->time;
-    serialization->view = _imp->view;
-    serialization->layerChannelName = _imp->layerChannel;
-    serialization->tileX = _imp->tileX;
-    serialization->tileY = _imp->tileY;
-    serialization->scale[0] = _imp->proxyScale.x;
-    serialization->scale[1] = _imp->proxyScale.y;
-    serialization->mipMapLevel = _imp->mipMapLevel;
-    serialization->draft = _imp->draftMode;
-    serialization->bitdepth = bitDepthToString(_imp->bitdepth);
+    writeMMObject(_imp->nodeTimeInvariantHash, "hash", segment);
+    writeMMObject(_imp->layerChannel, "channel", segment);
+    writeMMObject(_imp->time, "time", segment);
+    writeMMObject(_imp->view, "view", segment);
+    writeMMObject(_imp->tileX, "tx", segment);
+    writeMMObject(_imp->tileY, "ty", segment);
+    writeMMObject(_imp->proxyScale.x, "sx", segment);
+    writeMMObject(_imp->proxyScale.y, "sy", segment);
+    writeMMObject(_imp->mipMapLevel, "lod", segment);
+    writeMMObject(_imp->draftMode, "draft", segment);
+    writeMMObject(_imp->bitdepth, "depth", segment);
+    CacheEntryKeyBase::toMemorySegment(segment);
 }
 
+
 void
-ImageTileKey::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase)
+ImageTileKey::fromMemorySegment(const ExternalSegmentType& segment)
 {
-    const SERIALIZATION_NAMESPACE::ImageTileSerialization* serialization = dynamic_cast<const SERIALIZATION_NAMESPACE::ImageTileSerialization*>(&serializationBase);
-    if (!serialization) {
-        return;
-    }
-    _imp->nodeTimeInvariantHash = serialization->nodeHashKey;
-    _imp->time = TimeValue(serialization->time);
-    _imp->view = ViewIdx(serialization->view);
-    _imp->layerChannel = serialization->layerChannelName;
-    _imp->tileX = serialization->tileX;
-    _imp->tileY = serialization->tileY;
-    _imp->proxyScale.x = serialization->scale[0];
-    _imp->proxyScale.y = serialization->scale[1];
-    _imp->mipMapLevel = serialization->mipMapLevel;
-    _imp->draftMode = serialization->draft;
-    _imp->bitdepth = bitDepthFromString(serialization->bitdepth);
+    readMMObject("hash", segment, &_imp->nodeTimeInvariantHash);
+    readMMObject("channel", segment, &_imp->layerChannel);
+    readMMObject("time", segment, &_imp->time);
+    readMMObject("view", segment, &_imp->view);
+    readMMObject("tx", segment, &_imp->tileX);
+    readMMObject("ty", segment, &_imp->tileY);
+    readMMObject("sx", segment, &_imp->proxyScale.x);
+    readMMObject("sy", segment, &_imp->proxyScale.y);
+    readMMObject("lod", segment, &_imp->mipMapLevel);
+    readMMObject("draft", segment, &_imp->draftMode);
+    readMMObject("depth", segment, &_imp->bitdepth);
+    CacheEntryKeyBase::fromMemorySegment(segment);
 }
+
 
 NATRON_NAMESPACE_EXIT;

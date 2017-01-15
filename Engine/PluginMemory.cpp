@@ -51,7 +51,7 @@ struct PluginMemory::Implementation
 };
 
 PluginMemory::PluginMemory(const EffectInstancePtr& effect)
-: MemoryBufferedCacheEntryBase(appPTR->getCache())
+: ImageStorageBase(appPTR->getCache())
 , _imp( new Implementation(effect) )
 {
 }

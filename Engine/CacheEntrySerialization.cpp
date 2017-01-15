@@ -16,39 +16,19 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_CacheSerialization_h
-#define Engine_CacheSerialization_h
-
-#include "Serialization/SerializationBase.h"
-#include "Serialization/SerializationFwd.h"
-
-
-SERIALIZATION_NAMESPACE_ENTER;
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
 
+#include "CacheEntrySerialization.h"
 
-class CacheSerialization
-: public SerializationObjectBase
+NATRON_NAMESPACE_ENTER;
+
+CacheEntrySerialization::CacheEntrySerialization()
 {
+}
 
-public:
-
-    int cacheVersion;
-    
-    std::list<CacheEntrySerializationBasePtr> entries;
-
-    // The tile size po2
-    int tileSizePo2;
-
-    virtual void encode(YAML::Emitter& em) const OVERRIDE FINAL;
-
-    virtual void decode(const YAML::Node& node) OVERRIDE FINAL;
-
-    static CacheEntrySerializationBasePtr createSerializationObjectForEntryTag(const std::string& tag);
-};
-
-
-SERIALIZATION_NAMESPACE_EXIT;
-
-
-#endif // Engine_CacheSerialization_h
+NATRON_NAMESPACE_EXIT;

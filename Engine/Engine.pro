@@ -85,6 +85,7 @@ SOURCES += \
     CacheDeleterThread.cpp \
     CacheEntryBase.cpp \
     CacheEntryKeyBase.cpp \
+    CacheEntrySerialization.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
     ColorParser.cpp \
@@ -122,6 +123,7 @@ SOURCES += \
     ImageFill.cpp \
     ImagePrivate.cpp \
     ImageMaskMix.cpp \
+    ImageStorage.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     Knob.cpp \
@@ -315,6 +317,7 @@ HEADERS += \
     CacheDeleterThread.h \
     CacheEntryBase.h \
     CacheEntryKeyBase.h \
+    CacheEntrySerialization.h \
     CoonsRegularization.h \
     ChoiceOption.h \
     ColorParser.h \
@@ -355,6 +358,8 @@ HEADERS += \
     ImagePrivate.h \
     ImageComponents.h \
     Interpolation.h \
+    IPCCommon.h \
+    ImageStorage.h \
     JoinViewsNode.h \
     Knob.h \
     KnobPrivate.h \

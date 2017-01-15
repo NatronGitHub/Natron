@@ -881,8 +881,8 @@ ImagePrivate::convertCPUImage(const RectI & renderWindow,
 
 template <typename GL>
 static void
-copyGLTextureInternal(const GLCacheEntryPtr& from,
-                      const GLCacheEntryPtr& to,
+copyGLTextureInternal(const GLImageStoragePtr& from,
+                      const GLImageStoragePtr& to,
                       const RectI& roi,
                       const OSGLContextPtr& glContext)
 {
@@ -939,8 +939,8 @@ copyGLTextureInternal(const GLCacheEntryPtr& from,
 } // copyGLTextureInternal
 
 static void
-copyGLTexture(const GLCacheEntryPtr& from,
-              const GLCacheEntryPtr& to,
+copyGLTexture(const GLImageStoragePtr& from,
+              const GLImageStoragePtr& to,
               const RectI& roi,
               const OSGLContextPtr& glContext)
 {
@@ -953,9 +953,9 @@ copyGLTexture(const GLCacheEntryPtr& from,
 
 template <typename GL>
 static void
-convertRGBAPackedCPUBufferToGLTextureInternal(const RAMCacheEntryPtr& buffer,
+convertRGBAPackedCPUBufferToGLTextureInternal(const RAMImageStoragePtr& buffer,
                                               const RectI& roi,
-                                              const GLCacheEntryPtr& outTexture,
+                                              const GLImageStoragePtr& outTexture,
                                               const OSGLContextPtr& glContext)
 {
 
@@ -1048,7 +1048,7 @@ convertRGBAPackedCPUBufferToGLTextureInternal(const RAMCacheEntryPtr& buffer,
 
 
 static void
-convertRGBAPackedCPUBufferToGLTexture(const RAMCacheEntryPtr& buffer, const RectI& roi, const GLCacheEntryPtr& outTexture)
+convertRGBAPackedCPUBufferToGLTexture(const RAMImageStoragePtr& buffer, const RectI& roi, const GLImageStoragePtr& outTexture)
 {
     OSGLContextPtr glContext = outTexture->getOpenGLContext();
 
@@ -1061,9 +1061,9 @@ convertRGBAPackedCPUBufferToGLTexture(const RAMCacheEntryPtr& buffer, const Rect
 
 template <typename GL>
 static void
-convertGLTextureToRGBAPackedCPUBufferInternal(const GLCacheEntryPtr& texture,
+convertGLTextureToRGBAPackedCPUBufferInternal(const GLImageStoragePtr& texture,
                                               const RectI& roi,
-                                              const RAMCacheEntryPtr& outBuffer,
+                                              const RAMImageStoragePtr& outBuffer,
                                               const OSGLContextPtr& glContext)
 {
     // The OpenGL context must be current to this thread.
@@ -1108,9 +1108,9 @@ convertGLTextureToRGBAPackedCPUBufferInternal(const GLCacheEntryPtr& texture,
 } // convertGLTextureToRGBAPackedCPUBufferInternal
 
 static void
-convertGLTextureToRGBAPackedCPUBuffer(const GLCacheEntryPtr& texture,
+convertGLTextureToRGBAPackedCPUBuffer(const GLImageStoragePtr& texture,
                                       const RectI& roi,
-                                      const RAMCacheEntryPtr& outBuffer,
+                                      const RAMImageStoragePtr& outBuffer,
                                       const OSGLContextPtr& glContext)
 {
     if (glContext->isGPUContext()) {
@@ -1200,8 +1200,8 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
                toLayout == eImageBufferLayoutRGBAPackedFullRect);
 
-        GLCacheEntryPtr fromIsGLTexture = toGLCacheEntry(fromTile.perChannelTile[0].buffer);
-        GLCacheEntryPtr toIsGLTexture = toGLCacheEntry(toTile.perChannelTile[0].buffer);
+        GLImageStoragePtr fromIsGLTexture = toGLImageStorage(fromTile.perChannelTile[0].buffer);
+        GLImageStoragePtr toIsGLTexture = toGLImageStorage(toTile.perChannelTile[0].buffer);
 
         assert(fromIsGLTexture && toIsGLTexture);
         // OpenGL context must be the same, otherwise one of the texture should have been copied
@@ -1229,8 +1229,8 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
                toLayout == eImageBufferLayoutRGBAPackedFullRect);
 
-        GLCacheEntryPtr fromIsGLTexture = toGLCacheEntry(fromTile.perChannelTile[0].buffer);
-        RAMCacheEntryPtr toIsRAMBuffer = toRAMCacheEntry(toTile.perChannelTile[0].buffer);
+        GLImageStoragePtr fromIsGLTexture = toGLImageStorage(fromTile.perChannelTile[0].buffer);
+        RAMImageStoragePtr toIsRAMBuffer = toRAMImageStorage(toTile.perChannelTile[0].buffer);
 
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.
@@ -1258,8 +1258,8 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         assert(fromLayout == eImageBufferLayoutRGBAPackedFullRect &&
                toLayout == eImageBufferLayoutRGBAPackedFullRect);
 
-        GLCacheEntryPtr toIsGLTexture = toGLCacheEntry(toTile.perChannelTile[0].buffer);
-        RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(fromTile.perChannelTile[0].buffer);
+        GLImageStoragePtr toIsGLTexture = toGLImageStorage(toTile.perChannelTile[0].buffer);
+        RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(fromTile.perChannelTile[0].buffer);
 
         // The buffer can only be a RAM buffer because MMAP only supports mono channel tiles
         // which is not supported for the conversion to OpenGL textures.

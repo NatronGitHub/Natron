@@ -83,7 +83,7 @@ public:
     struct MonoChannelTile
     {
         // A pointer to the internal storage
-        MemoryBufferedCacheEntryBasePtr buffer;
+        ImageStorageBasePtr buffer;
 
         // Used when working with the cache
         // to ensure a single thread computed this tile
@@ -213,7 +213,7 @@ public:
         // of the memory buffer and storage, bitdepth etc... matching the provided buffer properties.
         //
         // Default - NULL
-        MemoryBufferedCacheEntryBasePtr externalBuffer;
+        ImageStorageBasePtr externalBuffer;
 
         // This is ignored if the cachePolicy is set to eCacheAccessModeNone.
         // If set to true, this will call setCacheSignalRequired(true) on all internal cached
@@ -559,7 +559,7 @@ public:
     /**
      * @brief For an image that is represented as an OpenGL texture, returns the associated texture.
      **/
-    GLCacheEntryPtr getGLCacheEntry() const;
+    GLImageStoragePtr getGLImageStorage() const;
 
     /**
      * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
@@ -598,12 +598,6 @@ public:
      * @returns true if everything is rendered, false if there's still tiles to render
      **/
     bool waitForPendingTiles();
-
-    /**
-     * @brief If this image is cached, returns whether other thread(s) are waiting for the resulting tiles or not.
-     * If only this thread is interested on its tiles this function returns false.
-     **/
-    bool hasTilesPendingForOtherThreads() const;
 
     /**
      * @brief If this image is cached, this will return what portion of the image is left to render.

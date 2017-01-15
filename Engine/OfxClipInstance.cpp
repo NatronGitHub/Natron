@@ -1341,7 +1341,7 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
 
     StorageModeEnum storage = internalImage->getStorageMode();
     if (storage == eStorageModeGLTex) {
-        GLCacheEntryPtr texture = internalImage->getGLCacheEntry();
+        GLImageStoragePtr texture = internalImage->getGLImageStorage();
         assert(texture);
         if (!texture) {
             throw std::bad_alloc();

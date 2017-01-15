@@ -19,6 +19,8 @@
 #ifndef Engine_LRUHashTable_h
 #define Engine_LRUHashTable_h
 
+#if 0
+
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -27,20 +29,6 @@
 
 #include "Global/Macros.h"
 
-//
-//Copyright (c) 2010-2011, Tim Day <timday@timday.com>
-//
-//Permission to use, copy, modify, and/or distribute this software for any
-//purpose with or without fee is hereby granted, provided that the above
-//copyright notice and this permission notice appear in all copies.
-//
-//THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-//WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-//MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-//ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-//WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-//ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-//OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <map>
 #include <list>
@@ -60,8 +48,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
-namespace bip = boost::interprocess;
-
 
 NATRON_NAMESPACE_ENTER;
 
@@ -79,10 +65,10 @@ public:
     typedef K key_type;
     typedef V value_type;
 
-    typedef bip::allocator<key_type, SEGMENT_MANAGER> MM_allocator_key_type;
+    typedef boost::interprocess::allocator<key_type, SEGMENT_MANAGER> MM_allocator_key_type;
 
     // Key access history, most recent at back
-    typedef bip::list<key_type, MM_allocator_key_type> key_tracker_type;
+    typedef boost::interprocess::list<key_type, MM_allocator_key_type> key_tracker_type;
 
     struct ValueAge
     {
@@ -90,10 +76,10 @@ public:
         typename key_tracker_type::iterator historyIterator;
     };
 
-    typedef bip::allocator<ValueAge, SEGMENT_MANAGER> MM_allocator_ValueAge;
+    typedef boost::interprocess::allocator<ValueAge, SEGMENT_MANAGER> MM_allocator_ValueAge;
 
     // Key to value and key history iterator
-    typedef bip::map<key_type, ValueAge, std::less<key_type>, MM_allocator_ValueAge> key_to_value_type;
+    typedef boost::interprocess::map<key_type, ValueAge, std::less<key_type>, MM_allocator_ValueAge> key_to_value_type;
 
     // Iterators on the map
     typedef typename key_to_value_type::iterator iterator;
@@ -169,10 +155,7 @@ public:
 
     /**
      * @brief Removes the least recently used element from the container
-     * @param checkUseCount If true the use_count() methode of the value_type
-     * will be checked and the element will be removed only if the use_count is set to 1.
      **/
-    template <bool checkUseCount>
     std::pair<key_type, value_type> evict()
     {
         // Assert method is never called when cache is empty
@@ -182,20 +165,13 @@ public:
         // Identify least recently used key
         iterator it  = _key_to_value.find( _key_tracker.front() );
 
-        while ( it != _key_to_value.end()) {
-            if ( !checkUseCount || it->second.value.use_count() == 1 ) {
-                std::pair<key_type, value_type> ret = std::make_pair(it->first, it->second.value);
-                // Erase both elements to completely purge record
-                _key_to_value.erase(it);
-                _key_tracker.pop_front();
+        std::pair<key_type, value_type> ret = std::make_pair(it->first, it->second.value);
+        
+        // Erase both elements to completely purge record
+        _key_to_value.erase(it);
+        _key_tracker.pop_front();
 
-                return ret;
-            }
-            ++it;
-        }
-        
-        
-        return std::make_pair( key_type(), V() );
+        return ret;
     }
 
     /**
@@ -215,5 +191,5 @@ private:
 };
 
 NATRON_NAMESPACE_EXIT;
-
+#endif // 0
 #endif // ifndef Engine_LRUHashTable_h

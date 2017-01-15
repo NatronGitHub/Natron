@@ -438,9 +438,6 @@ Project::saveProject_imp(const QString & path,
         _imp->isSavingProject = false;
     }
 
-    ///Save caches ToC
-    appPTR->saveCaches();
-
     if (newFilePath) {
         *newFilePath = ret;
     }

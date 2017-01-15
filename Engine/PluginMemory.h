@@ -58,7 +58,7 @@ public:
     }
 };
 
-class PluginMemory : public MemoryBufferedCacheEntryBase
+class PluginMemory : public ImageStorageBase
 {
 public:
 

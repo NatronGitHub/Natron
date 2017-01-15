@@ -363,11 +363,6 @@ oom:
 
 //} // anon namespace
 
-void
-AppManager::saveCaches() const
-{
-    _imp->saveCaches();
-}
 
 int
 AppManager::getHardwareIdealThreadCount()
@@ -610,11 +605,6 @@ AppManager::~AppManager()
 
     _imp->_backgroundIPC.reset();
 
-    try {
-        _imp->saveCaches();
-    } catch (std::runtime_error) {
-        // ignore errors
-    }
 
     ///Caches may have launched some threads to delete images, wait for them to be done
     QThreadPool::globalInstance()->waitForDone();
@@ -873,6 +863,9 @@ AppManager::loadInternal(const CLArgs& cl)
         _imp->_settings->restoreAllSettings();
     }
 
+    // Create cache once we loaded the cache directory path wanted by the user
+    _imp->cache = Cache::create();
+
     _imp->declareSettingsToPython();
 
     // executeCommandLineSettingCommands
@@ -1076,9 +1069,6 @@ bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
 
-    setLoadingStatus( tr("Restoring Cache...") );
-
-    _imp->restoreCaches();
 
     setLoadingStatus( tr("Loading Plug-in Cache...") );
 

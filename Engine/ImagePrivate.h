@@ -187,7 +187,7 @@ struct ImagePrivate
                        float g,
                        float b,
                        float a,
-                       const GLCacheEntryPtr& texture);
+                       const GLImageStoragePtr& texture);
 
     static void fillCPU(void* ptrs[4],
                         float r,
@@ -213,9 +213,9 @@ struct ImagePrivate
                              const RectI& bounds,
                              const RectI& roi);
 
-    static void applyMaskMixGL(const GLCacheEntryPtr& originalTexture,
-                               const GLCacheEntryPtr& maskTexture,
-                               const GLCacheEntryPtr& dstTexture,
+    static void applyMaskMixGL(const GLImageStoragePtr& originalTexture,
+                               const GLImageStoragePtr& maskTexture,
+                               const GLImageStoragePtr& dstTexture,
                                double mix,
                                bool invertMask,
                                const RectI& roi);
@@ -234,8 +234,8 @@ struct ImagePrivate
                                 const RectI& roi,
                                 const TreeRenderNodeArgsPtr& renderArgs);
 
-    static void copyUnprocessedChannelsGL(const GLCacheEntryPtr& originalTexture,
-                                          const GLCacheEntryPtr& dstTexture,
+    static void copyUnprocessedChannelsGL(const GLImageStoragePtr& originalTexture,
+                                          const GLImageStoragePtr& dstTexture,
                                           const std::bitset<4> processChannels,
                                           const RectI& roi);
 

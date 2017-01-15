@@ -161,8 +161,8 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         // the image to CPU
         if (toImage.getStorageMode() == eStorageModeGLTex) {
 
-            GLCacheEntryPtr isGlEntry = toGLCacheEntry(toImage._imp->tiles[0].perChannelTile[0].buffer);
-            GLCacheEntryPtr otherIsGlEntry = toGLCacheEntry(fromImage._imp->tiles[0].perChannelTile[0].buffer);
+            GLImageStoragePtr isGlEntry = toGLImageStorage(toImage._imp->tiles[0].perChannelTile[0].buffer);
+            GLImageStoragePtr otherIsGlEntry = toGLImageStorage(fromImage._imp->tiles[0].perChannelTile[0].buffer);
             assert(isGlEntry && otherIsGlEntry);
             if (isGlEntry->getOpenGLContext() != otherIsGlEntry->getOpenGLContext()) {
                 ImagePtr tmpImage;

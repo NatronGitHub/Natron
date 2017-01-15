@@ -246,9 +246,9 @@ ImagePrivate::applyMaskMixCPU(const void* originalImgPtrs[4],
 }
 
 template <typename GL>
-void applyMaskMixGLInternal(const GLCacheEntryPtr& originalTexture,
-                            const GLCacheEntryPtr& maskTexture,
-                            const GLCacheEntryPtr& dstTexture,
+void applyMaskMixGLInternal(const GLImageStoragePtr& originalTexture,
+                            const GLImageStoragePtr& maskTexture,
+                            const GLImageStoragePtr& dstTexture,
                             double mix,
                             bool maskInvert,
                             const RectI& roi,
@@ -318,9 +318,9 @@ void applyMaskMixGLInternal(const GLCacheEntryPtr& originalTexture,
 } // applyMaskMixGLInternal
 
 void
-ImagePrivate::applyMaskMixGL(const GLCacheEntryPtr& originalTexture,
-                             const GLCacheEntryPtr& maskTexture,
-                             const GLCacheEntryPtr& dstTexture,
+ImagePrivate::applyMaskMixGL(const GLImageStoragePtr& originalTexture,
+                             const GLImageStoragePtr& maskTexture,
+                             const GLImageStoragePtr& dstTexture,
                              double mix,
                              bool invertMask,
                              const RectI& roi)

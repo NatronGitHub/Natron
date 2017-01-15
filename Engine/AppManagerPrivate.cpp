@@ -87,7 +87,7 @@ AppManagerPrivate::AppManagerPrivate()
     , ofxHost( new OfxHost() )
     , multiThreadSuite(new MultiThread())
     , _knobFactory( new KnobFactory() )
-    , cache(Cache::create())
+    , cache()
     , _backgroundIPC()
     , _loaded(false)
     , _binaryPath()
@@ -281,59 +281,6 @@ AppManagerPrivate::declareSettingsToPython()
         (*it)->getName() << " = " << NATRON_ENGINE_PYTHON_MODULE_NAME << ".natron.settings.getParam('" << (*it)->getName() << "')\n";
     }
 }
-
-void
-AppManagerPrivate::saveCaches()
-{
-    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
-
-    if (!ofile) {
-        std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
-        return;
-    }
-
-    SERIALIZATION_NAMESPACE::CacheSerialization toc;
-    cache->toSerialization(&toc);
-
-    try {
-        SERIALIZATION_NAMESPACE::write(ofile, toc, std::string());
-    } catch (const std::exception & e) {
-        qDebug() << "Failed to serialize the cache table of contents:" << e.what();
-    }
-
-} // saveCaches
-
-
-
-void
-AppManagerPrivate::restoreCaches()
-{
-    std::string settingsFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::ifstream ifile;
-    FStreamsSupport::open(&ifile, settingsFilePath);
-    if (!ifile) {
-        cache->clearAndRecreateCacheDirectory();
-        return;
-    }
-
-    SERIALIZATION_NAMESPACE::CacheSerialization toc;
-    try {
-        SERIALIZATION_NAMESPACE::read(std::string(), ifile, &toc);
-        cache->fromSerialization(toc);
-
-
-    } catch (const std::exception & e) {
-        cache->clearAndRecreateCacheDirectory();
-        return;
-    }
-
-    QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
-    restoreFile.remove();
-
-
-} // restoreCaches
 
 
 void

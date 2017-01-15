@@ -33,7 +33,7 @@ fillGLInternal(const RectI & roi,
                float g,
                float b,
                float a,
-               const GLCacheEntryPtr& texture,
+               const GLImageStoragePtr& texture,
                const OSGLContextPtr& glContext)
 {
     RectI bounds = texture->getBounds();
@@ -76,7 +76,7 @@ ImagePrivate::fillGL(const RectI & roi,
                      float g,
                      float b,
                      float a,
-                     const GLCacheEntryPtr& texture)
+                     const GLImageStoragePtr& texture)
 {
 
     OSGLContextPtr glContext = texture->getOpenGLContext();

@@ -358,8 +358,6 @@ public:
 
     bool isAggressiveCachingEnabled() const;
 
-    void saveCaches() const;
-
     PyObject* getMainModule();
 
     QStringList getAllNonOFXPluginsPaths() const;

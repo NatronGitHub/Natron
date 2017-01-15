@@ -836,7 +836,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
 
             // We got an existing buffer
             // The accumulation buffer should be using the same OpenGL context as the current render's one!
-            assert((accumBuffer->getStorageMode() == eStorageModeGLTex && accumBuffer->getGLCacheEntry()->getOpenGLContext() == glContextLocker->getContext()) || accumBuffer->getStorageMode() != eStorageModeGLTex);
+            assert((accumBuffer->getStorageMode() == eStorageModeGLTex && accumBuffer->getGLImageStorage()->getOpenGLContext() == glContextLocker->getContext()) || accumBuffer->getStorageMode() != eStorageModeGLTex);
 
             // Ensure the accumBuffer contains at least the RoI
             accumBuffer->ensureBounds(roi);

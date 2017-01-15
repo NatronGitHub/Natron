@@ -756,9 +756,9 @@ void motionBlurEndSample(int nDivisions,
                          const GLShaderBasePtr &accumShader,
                          const GLShaderBasePtr &copyShader,
                          int target,
-                         const GLCacheEntryPtr& perSampleRenderTexture,
-                         const GLCacheEntryPtr& accumulationTexture,
-                         const GLCacheEntryPtr& tmpAccumulationCpy,
+                         const GLImageStoragePtr& perSampleRenderTexture,
+                         const GLImageStoragePtr& accumulationTexture,
+                         const GLImageStoragePtr& tmpAccumulationCpy,
                          const RectI& roi)
 {
     GL::Disable(GL_BLEND);
@@ -828,7 +828,7 @@ void motionBlurEnd(int nDivisions,
                    const GLShaderBasePtr &divideShader,
                    int target,
                    const ImagePtr& dstImage,
-                   const GLCacheEntryPtr& accumulationTexture,
+                   const GLImageStoragePtr& accumulationTexture,
                    const RectI& roi)
 {
     if (nDivisions > 1) {
@@ -836,7 +836,7 @@ void motionBlurEnd(int nDivisions,
         RectI outputBounds;
         if (GL::isGPU()) {
             outputBounds = dstImage->getBounds();
-            GLCacheEntryPtr texture = dstImage->getGLCacheEntry();
+            GLImageStoragePtr texture = dstImage->getGLImageStorage();
             assert(texture);
             GL::BindTexture(target, texture->getGLTextureID());
             GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, texture->getGLTextureID(), 0 /*LoD*/);
@@ -876,7 +876,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
     // Disable scissors since we are going to do texture ping-pong with different frame buffer texture size
     GL::Disable(GL_SCISSOR_TEST);
 
-    GLCacheEntryPtr dstTexture = dstImage->getGLCacheEntry();
+    GLImageStoragePtr dstTexture = dstImage->getGLImageStorage();
     assert(dstTexture);
 
     Q_UNUSED(roi);
@@ -910,10 +910,10 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
     double interval = nDivisions >= 1 ? (shutterRange.max - shutterRange.min) / nDivisions : 1.;
 
     ImagePtr tmpTex[3];
-    GLCacheEntryPtr perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy;
+    GLImageStoragePtr perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy;
     if (nDivisions > 1) {
 
-        GLCacheEntryPtr *tmpGLEntry[3] = {&perSampleRenderTexture, &accumulationTexture, &tmpAccumulationCpy};
+        GLImageStoragePtr *tmpGLEntry[3] = {&perSampleRenderTexture, &accumulationTexture, &tmpAccumulationCpy};
 
         // Make 2 textures of the same size as the dst image.
         for (int i = 0; i < 3; ++i) {
@@ -925,7 +925,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
             initArgs.glContext = glContext;
             initArgs.textureTarget = dstTexture->getGLTextureTarget();
             tmpTex[i] = Image::create(initArgs);
-            *tmpGLEntry[i] = tmpTex[i]->getGLCacheEntry();
+            *tmpGLEntry[i] = tmpTex[i]->getGLImageStorage();
         }
     }
 
@@ -1379,15 +1379,15 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
     GL::Enable(target);
     GL::ActiveTexture(GL_TEXTURE0);
 
-    GLCacheEntryPtr dstTexture;
+    GLImageStoragePtr dstTexture;
     if (GL::isGPU()) {
-        dstTexture = dstImage->getGLCacheEntry();
+        dstTexture = dstImage->getGLImageStorage();
     }
 
     // With OSMesa we must copy the dstImage which already contains the previous drawing to a tmpTexture because the first
     // time we draw to the default framebuffer, mesa will clear out the framebuffer...
     ImagePtr tmpImage;
-    GLCacheEntryPtr tmpTexture;
+    GLImageStoragePtr tmpTexture;
     if (!GL::isGPU()) {
         // Since we need to render to texture in any case, upload the content of dstImage to a temporary texture
 
@@ -1398,7 +1398,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         initArgs.glContext = glContext;
         initArgs.textureTarget = target;
         tmpImage = Image::create(initArgs);
-        tmpTexture = tmpImage->getGLCacheEntry();
+        tmpTexture = tmpImage->getGLImageStorage();
 
         GL::BindTexture( target, tmpTexture->getGLTextureID() );
         setupTexParams<GL>(target);
@@ -1436,7 +1436,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         initArgs.glContext = glContext;
         initArgs.textureTarget = target;
         tmpImage = Image::create(initArgs);
-        tmpTexture = tmpImage->getGLCacheEntry();
+        tmpTexture = tmpImage->getGLImageStorage();
 
         // Copy the content of the existing dstImage
         glCheckError(GL);
@@ -1473,7 +1473,7 @@ void renderStroke_gl_multiDrawElements(int nbVertices,
         GL::BindFramebuffer(GL_FRAMEBUFFER, 0);
     } else {
         GL::BindFramebuffer(GL_FRAMEBUFFER, fboID);
-        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLCacheEntry()->getGLTextureID(), 0 /*LoD*/);
+        GL::FramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, target, firstPassDstImage->getGLImageStorage()->getGLTextureID(), 0 /*LoD*/);
         glCheckFramebufferError(GL);
     }
     glCheckError(GL);
@@ -1712,10 +1712,10 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextAttacherPtr& glContextAttach
     int target = GL_TEXTURE_2D;
 
     ImagePtr tmpTex[3];
-    GLCacheEntryPtr perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy;
+    GLImageStoragePtr perSampleRenderTexture, accumulationTexture, tmpAccumulationCpy;
     if (nDivisions > 1) {
 
-        GLCacheEntryPtr *tmpGLEntry[3] = {&perSampleRenderTexture, &accumulationTexture, &tmpAccumulationCpy};
+        GLImageStoragePtr *tmpGLEntry[3] = {&perSampleRenderTexture, &accumulationTexture, &tmpAccumulationCpy};
 
         // Make 2 textures of the same size as the dst image.
         for (int i = 0; i < 3; ++i) {
@@ -1727,7 +1727,7 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextAttacherPtr& glContextAttach
             initArgs.glContext = glContext;
             initArgs.textureTarget = target;
             tmpTex[i] = Image::create(initArgs);
-            *tmpGLEntry[i] = tmpTex[i]->getGLCacheEntry();
+            *tmpGLEntry[i] = tmpTex[i]->getGLImageStorage();
         }
     }
 
@@ -1915,7 +1915,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     GL::Enable(target);
     GL::ActiveTexture(GL_TEXTURE0);
 
-    GLCacheEntryPtr dstTexture = dstImage->getGLCacheEntry();
+    GLImageStoragePtr dstTexture = dstImage->getGLImageStorage();
     assert(dstTexture);
 
     // This is the output texture
@@ -1954,7 +1954,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
 
     // Copy the original rectangle to a tmp texture and premultiply by an alpha mask with a dot shape
     ImagePtr tmpImage;
-    GLCacheEntryPtr tmpTexture;
+    GLImageStoragePtr tmpTexture;
 
     {
 
@@ -1971,7 +1971,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         initArgs.glContext = glContext;
         initArgs.textureTarget = GL_TEXTURE_2D;
         tmpImage = Image::create(initArgs);
-        tmpTexture = tmpImage->getGLCacheEntry();
+        tmpTexture = tmpImage->getGLImageStorage();
         // Copy the content of the existing dstImage
 
         GL::BindTexture( target, tmpTexture->getGLTextureID() );
@@ -2155,7 +2155,7 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextAttacherPtr& glContextAttache
         // Disable scissors because we are going to use opengl outside of RoI
         GL_CPU::Disable(GL_SCISSOR_TEST);
         GL_CPU::BindFramebuffer(GL_FRAMEBUFFER, 0);
-        GL_CPU::BindTexture( GL_TEXTURE_2D, dstImage->getGLCacheEntry()->getGLTextureID());
+        GL_CPU::BindTexture( GL_TEXTURE_2D, dstImage->getGLImageStorage()->getGLTextureID());
         setupTexParams<GL_CPU>(GL_TEXTURE_2D);
         RectI bounds = dstImage->getBounds();
         OSGLContext::applyTextureMapping<GL_CPU>(bounds, bounds, bounds);

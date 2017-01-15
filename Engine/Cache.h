@@ -51,17 +51,9 @@ GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
-#include <boost/interprocess/smart_ptr/shared_ptr.hpp>
-#include <boost/interprocess/smart_ptr/weak_ptr.hpp>
-#include <boost/interprocess/smart_ptr/scoped_ptr.hpp>
-#include <boost/interprocess/managed_mapped_file.hpp>
-
 #endif
 
-#include "Serialization/CacheSerialization.h"
-
 #include "Engine/CacheEntryBase.h"
-
 #include "Engine/EngineFwd.h"
 
 // Each 8 bit tile will have pow(2, tileSizePo2) pixels in each dimension.
@@ -88,11 +80,6 @@ GCC_DIAG_ON(deprecated)
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
 NATRON_NAMESPACE_ENTER;
-
-// We share the cache across processed with a memory mapped file so that it is also persistent
-typedef boost::interprocess::managed_mapped_file MemorySegmentType;
-
-typedef boost::interprocess::allocator<void, MemorySegmentType::segment_manager>  void_allocator_type;
 
 
 struct CacheReportInfo
@@ -123,16 +110,16 @@ struct CacheEntryLockerPrivate;
 class CacheEntryLocker;
 
 typedef boost::interprocess::deleter<CacheEntryLocker, MemorySegmentType::segment_manager>  CacheEntryLocker_deleter;
-typedef boost::interprocess::shared_ptr<CacheEntryLocker, void_allocator_type, CacheEntryLocker_deleter> CacheEntryLockerPtr;
+typedef boost::interprocess::shared_ptr<CacheEntryLocker, MM_allocator_void, CacheEntryLocker_deleter> CacheEntryLockerPtr;
 
 class CacheEntryLocker
 {
     // For create
     friend class Cache;
 
-    CacheEntryLocker(const CachePtr& cache, const CacheEntryKeyBasePtr& key);
+    CacheEntryLocker(const CachePtr& cache, const CacheEntryBasePtr& entry);
 
-    static CacheEntryLockerPtr create(const CachePtr& cache, const CacheEntryKeyBasePtr& key);
+    static CacheEntryLockerPtr create(const CachePtr& cache, const CacheEntryBasePtr& entry);
 
 
 public:
@@ -155,10 +142,6 @@ public:
 
     ~CacheEntryLocker();
 
-    /**
-     * @brief Returns the key that was passed to the ctor
-     **/
-    CacheEntryKeyBasePtr getKey() const;
 
     /**
      * @brief Returns the cache entry status
@@ -166,37 +149,26 @@ public:
     CacheEntryStatusEnum getStatus() const;
 
     /**
-     * @brief If the status is set to eCacheEntryStatusCached then this functino
-     * returns the resulting cached entry
-     **/
-    CacheEntryBasePtr getCachedEntry() const;
-
-    /**
      * @brief If the entry status was eCacheEntryStatusMustCompute, it should be called
      * to insert the results into the cache. This will also set the status to eCacheEntryStatusCached
      * and threads waiting for this entry will be woken up and should have it available.
      **/
-    void insertInCache(const CacheEntryBasePtr& value);
+    void insertInCache();
 
     /**
      * @brief If the status was eCacheEntryStatusComputationPending, this waits for the results
      * to be available by another thread that called insert(). 
      * If results are ready when woken up
-     * the status will become eCacheEntryStatusCached and the results can be fetched with getCachedEntry().
+     * the status will become eCacheEntryStatusCached and the entry passed to the constructor is ready.
      * If the status can still not be found in the cache and no other threads is computing it, the status
      * will become eCacheEntryStatusMustCompute and it is expected that this thread computes the entry in turn.
      **/
     CacheEntryStatusEnum waitForPendingEntry();
 
-    /**
-     * @brief Returns the number of CacheEntryLocker alive in the application that are interested in the value associated
-     * to the given key. This number is set to 1 if only this object is alive.
-     **/
-    int getNumberOfLockersInterestedByPendingResults() const;
 
 private:
 
-    void init();
+    void lookupAndSetStatus(bool takeEntryLock);
 
     boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };
@@ -215,13 +187,13 @@ class Cache
     friend class CacheCleanerThread;
 
     // For allocTile, freeTile etc...
-    friend class MemoryMappedCacheEntry;
+    friend class CacheImageStorage;
 
-    // For notifyEntryAllocated, etc...
-    friend class MemoryBufferedCacheEntryBase;
+    // For notifyMemoryAllocated, etc...
+    friend class ImageStorageBase;
 
-    // For insert()
     friend class CacheEntryLocker;
+    friend class CacheBucket;
     
 private:
 
@@ -237,23 +209,10 @@ public:
     
     virtual ~Cache();
 
-
-    /**
-     * @brief Set the path to the directory that should contain the Cache directory itself. 
-     * If empty or an invalid location is provided, the default location is used which is  system dependant.
-     **/
-    void setDirectoryContainingCachePath(const std::string& cachePath);
-
-
     /**
      * @brief Returns the absolute path to the cache directory
      **/
     std::string getCacheDirectoryPath() const;
-
-    /**
-     * @brief Returns the absolute file path to the cache table of contents file
-     **/
-    std::string getRestoreFilePath() const;
 
     /**
      * @brief Returns the tile size (of one dimension) in pixels for the given bitdepth/
@@ -282,7 +241,8 @@ public:
     static bool fileExists(const std::string& filename);
 
     /**
-     * @brief Look-up the cache for an entry whose key matches the given key.
+     * @brief Look-up the cache for the given entry's key.
+     * The entry is assumed to have its key set.
      * This function return a cache entry locker object that itself indicate
      * the CacheEntryLocker:CacheEntryStatusEnum of the entry. Depending
      * on the status the thread must either call CacheEntryLocker::getCachedEntry()
@@ -290,7 +250,7 @@ public:
      * or just wait for another thread that is already computing the entry with
      * CacheEntryLocker::waitForPendingEntry
      **/
-    CacheEntryLockerPtr get(const CacheEntryKeyBasePtr& key) const;
+    CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
 
     /**
      * @brief Clears the cache of its last recently used entries so at least nBytesToFree are available for the given storage.
@@ -305,11 +265,6 @@ public:
      * @brief Clear the cache of entries that can be purged.
      **/
     void clear();
-
-    /**
-     * @brief Clear the cache directory and recreates it
-     **/
-    void clearAndRecreateCacheDirectory();
 
     /**
      * @brief Removes all cache entries for the given pluginID.
@@ -353,33 +308,16 @@ private:
      **/
     void removeAllEntriesForPluginBlocking(const std::string& pluginID);
 
-
     /**
-     * @brief Return the tile cache file associated to the given filePath and mark the tile at the given
-     * dataOffset as used (not free).
-     * This function is useful when deserializing the cache.
+     * @brief Mark one tile in the tiled memory mapped file as allocated. If not enough space is available, the file size 
+     * will grow.
      **/
-    MemoryFilePtr getTileCacheFile(int bucketIndex, const std::string& filename, std::size_t cacheFileChunkIndex);
-
-    /**
-     * @brief Relevant only for tiled caches. This will allocate the memory required for a tile in the cache and lock it.
-     * Note that the calling entry should have exactly the size of a tile in the cache.
-     * In return, a pointer to a memory file is returned and the output parameter dataOffset will be set to the offset - in bytes - where the
-     * contiguous memory block for this tile begin relative to the start of the data of the memory file.
-     * This function may throw exceptions in case of failure.
-     * To retrieve the exact pointer of the block of memory for this tile use tileFile->file->data() + dataOffset
-     **/
-    MemoryFilePtr allocTile(int bucketIndex, std::size_t *cacheFileChunkIndex);
+    std::size_t allocTile(int bucketIndex);
 
     /**
      * @brief Free a tile from the cache that was previously allocated with allocTile. It will be made available again for other entries.
      **/
     void freeTile(int bucketIndex, std::size_t cacheFileChunkIndex);
-
-    /**
-     * @brief Called when an entry is removed from the cache. The bucket mutex may still be locked.
-     **/
-    void onEntryRemovedFromCache(const CacheEntryBasePtr& entry);
 
     /**
      * @brief Called when an entry is inserted from the cache. The bucket mutex may still be locked.
@@ -389,12 +327,12 @@ private:
     /**
      * @brief Called when an entry is allocated
      **/
-    void notifyEntryAllocated(std::size_t size, StorageModeEnum storage);
+    void notifyMemoryAllocated(std::size_t size, StorageModeEnum storage);
 
     /**
      * @brief Called when an entry is deallocated
      **/
-    void notifyEntryDestroyed(std::size_t size, StorageModeEnum storage);
+    void notifyMemoryDeallocated(std::size_t size, StorageModeEnum storage);
 
 private:
 

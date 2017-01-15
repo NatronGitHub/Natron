@@ -112,10 +112,14 @@ public:
     U64 getHashKey() const;
 
     /**
-     * @brief Must return the size in bytes of the entry, so that the cache is aware
-     * of the amount of memory taken by this entry.
+     * @brief This should return exactly the size in bytes of memory taken in the 
+     * memory segment of the cache used to store the table of content.
+     * The base class version returns the size of the key.
+     * Derived version should include the size of any element that is written
+     * to the memory segment in the toMemorySegment function.
+     * Make sure to call the base class version.
      **/
-    virtual std::size_t getSize() const = 0;
+    virtual std::size_t getMetadataSize() const;
 
     /**
      * @brief If this returns true, the cache will emit a cacheChanged() signal whenever an entry of this type is 
@@ -134,317 +138,31 @@ public:
      **/
     ViewIdx getView() const;
 
+    /**
+     * @brief Write this key to the process shared memory segment.
+     * This is thread-safe and this function is only called by the cache.
+     * Derived class should call the base class version AFTER its implementation.
+     * Each member should have a unique name in the segment, prefixed with the hash string.
+     * The function writeMMObject can be used to simplify the serialization of objects to the
+     * memory segment.
+     **/
+    virtual void toMemorySegment(ExternalSegmentType* segment) const;
+
+    /**
+     * @brief Reads this key from shared process memory segment.
+     * Object names in the segment are the ones written to in toMemorySegment
+     * Derived class should call the base class version AFTER its implementation.
+     * The function readMMObject can be used to simplify the serialization of objects from the
+     * memory segment.
+     **/
+    virtual void fromMemorySegment(const ExternalSegmentType& segment);
+
 private:
 
     boost::scoped_ptr<CacheEntryBasePrivate> _imp;
 
 };
 
-
-/**
- * @brief Sub-class this class to pass custom args to the allocateMemory() function of
- * your derivative class of MemoryBufferedCacheEntryBase
- **/
-class AllocateMemoryArgs
-{
-public:
-
-    AllocateMemoryArgs()
-    : bitDepth(eImageBitDepthNone)
-    {
-
-    }
-
-    virtual ~AllocateMemoryArgs()
-    {
-
-    }
-
-    // The bitdpeth of the memory buffer. This information is needed for the cache
-    // in order to know what memory chunk is allocated
-    ImageBitDepthEnum bitDepth;
-};
-
-/**
- * @brief The base class for a cache entry that holds a memory buffer. 
- * The memory itself can be held on different storage types (OpenGL texture, RAM, MMAP'ed file...).
- **/
-struct MemoryBufferedCacheEntryBasePrivate;
-class MemoryBufferedCacheEntryBase : public CacheEntryBase
-{
-public:
-
-    MemoryBufferedCacheEntryBase(const CachePtr& cache);
-
-    virtual ~MemoryBufferedCacheEntryBase();
-
-    /**
-     * @brief Returns the bitdepth of the buffer
-     **/
-    ImageBitDepthEnum getBitDepth() const;
-
-    /**
-     * @brief Allocates the memory for this entry using the custom args.
-     * Note that this function may throw an std::bad_alloc exception if it could not
-     * allocate the required memory.
-     **/
-    void allocateMemory(const AllocateMemoryArgs& args);
-
-    /**
-     * @brief Remove any memory held by this entry. Persistent storage should not remove any
-     * file associated to this memory.
-     **/
-    void deallocateMemory();
-
-    /**
-     * @brief Returns whether the memory of this entry is allocated or not
-     **/
-    bool isAllocated() const;
-
-    /**
-     * @brief Returns the internal storage that your entry uses
-     **/
-    virtual StorageModeEnum getStorageMode() const = 0;
-
-
-protected:
-
-    /**
-     * @brief Implement to allocate the memory for the entry.
-     * Note that this function may throw an std::bad_alloc exception if it could not
-     * allocate the required memory.
-     **/
-    virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) = 0;
-
-    /**
-     * @brief Implement to free the memory held by the entry
-     **/
-    virtual void deallocateMemoryImpl() = 0;
-
-private:
-
-    boost::scoped_ptr<MemoryBufferedCacheEntryBasePrivate> _imp;
-};
-
-class MMAPAllocateMemoryArgs : public AllocateMemoryArgs
-{
-public:
-
-    MMAPAllocateMemoryArgs()
-    : AllocateMemoryArgs()
-    , cacheFilePath()
-    , cacheFileMemChunkIndex(0)
-    {
-
-    }
-
-    virtual ~MMAPAllocateMemoryArgs()
-    {
-
-    }
-
-    // If not null, this will pick up the tile of the given file at the given offset.
-    std::string cacheFilePath;
-    int cacheFileMemChunkIndex;
-};
-
-/**
- * @brief A memory buffered entry back with MMAP.
- * The bounds of a memory mapped entry cover exactly the size of 1 tile in the cache.
- **/
-struct MemoryMappedCacheEntryPrivate;
-class MemoryMappedCacheEntry : public MemoryBufferedCacheEntryBase
-{
-public:
-    MemoryMappedCacheEntry(const CachePtr& cache);
-
-    virtual ~MemoryMappedCacheEntry();
-
-    virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
-
-    virtual std::size_t getSize() const OVERRIDE FINAL;
-
-    RectI getBounds() const;
-
-    const char* getData() const;
-
-    std::size_t getRowSize() const;
-
-    char* getData();
-
-    std::size_t getCacheFileMemoryChunkIndex() const;
-
-    std::string getCacheFileAbsolutePath() const;
-
-    /**
-     * @brief Sync the backing file with the virtual memory currently in RAM
-     **/
-    void syncBackingFile();
-
-
-private:
-
-    virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) OVERRIDE FINAL;
-
-    virtual void deallocateMemoryImpl() OVERRIDE FINAL;
-
-    boost::scoped_ptr<MemoryMappedCacheEntryPrivate> _imp;
-};
-
-inline
-MemoryMappedCacheEntryPtr
-toMemoryMappedCacheEntry(const CacheEntryBasePtr& entry)
-{
-    return boost::dynamic_pointer_cast<MemoryMappedCacheEntry>(entry);
-}
-
-class RAMAllocateMemoryArgs : public AllocateMemoryArgs
-{
-public:
-
-    RAMAllocateMemoryArgs()
-    : AllocateMemoryArgs()
-    , numComponents(0)
-    , externalBuffer(0)
-    , externalBufferSize(0)
-    , externalBufferFreeFunc(0)
-    {
-
-    }
-
-    virtual ~RAMAllocateMemoryArgs()
-    {
-
-    }
-
-    // The bounds of the image buffer
-    RectI bounds;
-
-    // When allocating an image that is not to be in the cache, this is the number of packed components (e.g: RGB) to allocate the buffer for
-    std::size_t numComponents;
-
-    // This is possible to create a RAMCacheEntry above an existing buffer. This enable caching of external data
-    // If not set, a buffer covering the area of the bounds time the num components and the bitdepth will be allocated.
-    void* externalBuffer;
-    std::size_t externalBufferSize;
-
-    typedef void (*ExternalBufferFreeFunction)(void* externalBuffer);
-
-    // Ptr to a func to delete the external buffer
-    ExternalBufferFreeFunction externalBufferFreeFunc;
-
-};
-
-/**
- * @brief A memory buffered entry backed with RAM
- * Since the storage is not handled by the cache directly, the portion covered may not necessarily be a cache tile.
- * In fact this class even supports holding an external memory buffer that is passed to allocateMemory()
- **/
-struct RAMCacheEntryPrivate;
-class RAMCacheEntry : public MemoryBufferedCacheEntryBase
-{
-public:
-
-    RAMCacheEntry(const CachePtr& cache);
-
-    virtual ~RAMCacheEntry();
-
-    RectI getBounds() const;
-
-    std::size_t getNumComponents() const;
-
-    std::size_t getRowSize() const;
-
-    virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
-
-    virtual std::size_t getSize() const OVERRIDE FINAL;
-
-    const char* getData() const;
-
-    char* getData();
-
-private:
-
-    virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) OVERRIDE FINAL;
-
-    virtual void deallocateMemoryImpl() OVERRIDE FINAL;
-
-    boost::scoped_ptr<RAMCacheEntryPrivate> _imp;
-};
-
-inline
-RAMCacheEntryPtr
-toRAMCacheEntry(const CacheEntryBasePtr& entry)
-{
-    return boost::dynamic_pointer_cast<RAMCacheEntry>(entry);
-}
-
-class GLAllocateMemoryArgs : public AllocateMemoryArgs
-{
-public:
-
-    GLAllocateMemoryArgs()
-    : AllocateMemoryArgs()
-    {
-
-    }
-
-    virtual ~GLAllocateMemoryArgs()
-    {
-
-    }
-
-    RectI bounds;
-    U32 textureTarget;
-    OSGLContextPtr glContext;
-};
-
-/**
- * @brief A memory buffered entry back with an OpenGL texture.
- * The rectangle portion may be different than a tile in the cache
- **/
-struct GLCacheEntryPrivate;
-class GLCacheEntry : public MemoryBufferedCacheEntryBase
-{
-public:
-
-    GLCacheEntry(const CachePtr& cache);
-
-    virtual ~GLCacheEntry();
-
-    virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
-
-    virtual std::size_t getSize() const OVERRIDE FINAL;
-
-    RectI getBounds() const;
-
-    OSGLContextPtr getOpenGLContext() const;
-
-    U32 getGLTextureID() const;
-
-    int getGLTextureTarget() const;
-
-    int getGLTextureFormat() const;
-
-    int getGLTextureInternalFormat() const;
-
-    int getGLTextureType() const;
-
-private:
-
-    virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) OVERRIDE FINAL;
-
-    virtual void deallocateMemoryImpl() OVERRIDE FINAL;
-
-    boost::scoped_ptr<GLCacheEntryPrivate> _imp;
-};
-
-inline
-GLCacheEntryPtr
-toGLCacheEntry(const CacheEntryBasePtr& entry)
-{
-    return boost::dynamic_pointer_cast<GLCacheEntry>(entry);
-}
 
 NATRON_NAMESPACE_EXIT;
 

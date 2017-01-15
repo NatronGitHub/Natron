@@ -32,12 +32,13 @@
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #include <boost/noncopyable.hpp>
+
 #endif
 
 #include "Global/GlobalDefines.h"
-#include "Serialization/SerializationBase.h"
 
 #include "Engine/EngineFwd.h"
+#include "Engine/IPCCommon.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
@@ -52,6 +53,8 @@ NATRON_NAMESPACE_ENTER;
 #define kCacheKeyUniqueIDGetComponentsResults 7
 #define kCacheKeyUniqueIDGetFrameRangeResults 8
 #define kCacheKeyUniqueIDExpressionResult 9
+
+
 
 /**
  * @brief The base class for a key of an item in the cache
@@ -69,22 +72,39 @@ public:
     virtual ~CacheEntryKeyBase();
 
     /**
-     * @brief Override to copy the other key. Make sure to call
-     * the base-class version aswell.
+     * @brief Write this key to the process shared memory segment.
+     * This is thread-safe and this function is only called by the cache.
+     * Derived class should call the base class version AFTER their implementation.
+     * Each member should have a unique name in the segment, prefixed with the hash string.
+     * The function writeMMObject can be used to simplify the serialization of objects to the
+     * memory segment.
      **/
-    virtual void copy(const CacheEntryKeyBase& other);
+    virtual void toMemorySegment(ExternalSegmentType* segment) const;
 
     /**
-     * @brief Override to check if this key equals the other key.
-     * This should not compare the hash as the purpose of this function
-     * is to validate that the key matches.
+     * @brief Reads this key from shared process memory segment.
+     * Object names in the segment are the ones written to in toMemorySegment
+     * Derived class should call the base class version AFTER their implementation.
+     * The function readMMObject can be used to simplify the serialization of objects from the
+     * memory segment.
      **/
-    virtual bool equals(const CacheEntryKeyBase& other) = 0;
+    virtual void fromMemorySegment(const ExternalSegmentType& segment);
+
+    /**
+     * @brief This should return exactly the size in bytes of memory taken in the
+     * memory segment of the cache used to store the table of content.
+     * Derived version should include the size of any element that is written
+     * to the memory segment in the toMemorySegment function.
+     * Make sure to call the base class version.
+     **/
+    virtual std::size_t getMetadataSize() const;
 
     /**
      * @brief Get the hash for this key.
      **/
     U64 getHash() const;
+
+    static std::string hashToString(U64 hash);
 
     /**
      * @brief Return the plug-in ID to which this cache entry corresponds to.
@@ -137,7 +157,6 @@ private:
 struct ImageTileKeyPrivate;
 class ImageTileKey
 : public CacheEntryKeyBase
-, public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
@@ -176,13 +195,11 @@ public:
 
     virtual ViewIdx getView() const OVERRIDE FINAL;
 
-    virtual void copy(const CacheEntryKeyBase& other) OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual bool equals(const CacheEntryKeyBase& other) OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL;
 
-    virtual void toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializationBase) OVERRIDE FINAL;
-
-    virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase& serializationBase) OVERRIDE FINAL;
+    virtual void fromMemorySegment(const ExternalSegmentType& segment) OVERRIDE FINAL;
 
     virtual int getUniqueID() const OVERRIDE FINAL;
 

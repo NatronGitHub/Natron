@@ -600,8 +600,8 @@ ImagePrivate::copyUnprocessedChannelsCPU(const void* originalImgPtrs[4],
 
 template <typename GL>
 void
-copyUnProcessedChannelsGLInternal(const GLCacheEntryPtr& originalTexture,
-                                  const GLCacheEntryPtr& dstTexture,
+copyUnProcessedChannelsGLInternal(const GLImageStoragePtr& originalTexture,
+                                  const GLImageStoragePtr& dstTexture,
                                   const std::bitset<4> processChannels,
                                   const RectI& roi,
                                   const OSGLContextPtr& glContext)
@@ -665,8 +665,8 @@ copyUnProcessedChannelsGLInternal(const GLCacheEntryPtr& originalTexture,
 } // copyUnProcessedChannelsGLInternal
 
 void
-ImagePrivate::copyUnprocessedChannelsGL(const GLCacheEntryPtr& originalTexture,
-                                        const GLCacheEntryPtr& dstTexture,
+ImagePrivate::copyUnprocessedChannelsGL(const GLImageStoragePtr& originalTexture,
+                                        const GLImageStoragePtr& dstTexture,
                                         const std::bitset<4> processChannels,
                                         const RectI& roi)
 {

@@ -114,28 +114,6 @@ Image::waitForPendingTiles()
     return !hasStuffToRender;
 } // waitForPendingTiles
 
-bool
-Image::hasTilesPendingForOtherThreads() const
-{
-    if (_imp->cachePolicy == eCacheAccessModeNone) {
-        return false;
-    }
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
-            if (_imp->tiles[i].perChannelTile[c].entryLocker) {
-                int nInterested = _imp->tiles[i].perChannelTile[c].entryLocker->getNumberOfLockersInterestedByPendingResults();
-
-                // There should be at least this image counted as interested
-                assert(nInterested >= 1);
-                if (nInterested > 1) {
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
 Image::InitStorageArgs::InitStorageArgs()
 : bounds()
 , storage(eStorageModeRAM)
@@ -178,9 +156,9 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
 
     Image::MonoChannelTile& perChannelTile = tiles[0].perChannelTile[0];
 
-    GLCacheEntryPtr isGLBuffer = toGLCacheEntry(args.externalBuffer);
-    MemoryMappedCacheEntryPtr isMMAPBuffer = toMemoryMappedCacheEntry(args.externalBuffer);
-    RAMCacheEntryPtr isRAMBuffer = toRAMCacheEntry(args.externalBuffer);
+    GLImageStoragePtr isGLBuffer = toGLImageStorage(args.externalBuffer);
+    CacheImageStoragePtr isMMAPBuffer = toCacheImageStorage(args.externalBuffer);
+    RAMImageStoragePtr isRAMBuffer = toRAMImageStorage(args.externalBuffer);
     if (isGLBuffer) {
         if (args.storage != eStorageModeGLTex) {
             throw std::bad_alloc();
@@ -440,7 +418,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                             entryLocker = cache->get(keyToReadCache);
                         }
                         if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-                            MemoryBufferedCacheEntryBasePtr isBufferedEntry = boost::dynamic_pointer_cast<MemoryBufferedCacheEntryBase>(entryLocker->getCachedEntry());
+                            ImageStorageBasePtr isBufferedEntry = boost::dynamic_pointer_cast<ImageStorageBase>(entryLocker->getCachedEntry());
                             assert(isBufferedEntry);
                             thisChannelTile.buffer = isBufferedEntry;
 
@@ -500,18 +478,18 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                 thisChannelTile.entryLocker = entryLocker;
                 
                 boost::shared_ptr<AllocateMemoryArgs> allocArgs;
-                MemoryBufferedCacheEntryBasePtr entryBuffer;
+                ImageStorageBasePtr entryBuffer;
                 // Allocate a new entry
                 switch (args.storage) {
                     case eStorageModeDisk: {
-                        MemoryMappedCacheEntryPtr buffer(new MemoryMappedCacheEntry(cache));
+                        CacheImageStoragePtr buffer(new CacheImageStorage(cache));
                         entryBuffer = buffer;
-                        boost::shared_ptr<MMAPAllocateMemoryArgs> a(new MMAPAllocateMemoryArgs());
+                        boost::shared_ptr<CacheAllocateMemoryArgs> a(new CacheAllocateMemoryArgs());
                         a->bitDepth = args.bitdepth;
                         allocArgs = a;
                     }   break;
                     case eStorageModeGLTex: {
-                        GLCacheEntryPtr buffer(new GLCacheEntry(cache));
+                        GLImageStoragePtr buffer(new GLImageStorage(cache));
                         entryBuffer = buffer;
                         boost::shared_ptr<GLAllocateMemoryArgs> a(new GLAllocateMemoryArgs());
                         a->textureTarget = args.textureTarget;
@@ -521,7 +499,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                         allocArgs = a;
                     }   break;
                     case eStorageModeRAM: {
-                        RAMCacheEntryPtr buffer(new RAMCacheEntry(cache));
+                        RAMImageStoragePtr buffer(new RAMImageStorage(cache));
                         entryBuffer = buffer;
                         boost::shared_ptr<RAMAllocateMemoryArgs> a(new RAMAllocateMemoryArgs());
                         a->bitDepth = args.bitdepth;
@@ -752,16 +730,16 @@ Image::getBitDepth() const
     return _imp->tiles[0].perChannelTile[0].buffer->getBitDepth();
 }
 
-GLCacheEntryPtr
-Image::getGLCacheEntry() const
+GLImageStoragePtr
+Image::getGLImageStorage() const
 {
     if (_imp->tiles.empty()) {
-        return GLCacheEntryPtr();
+        return GLImageStoragePtr();
     }
     if (_imp->tiles[0].perChannelTile.empty()) {
-        return GLCacheEntryPtr();
+        return GLImageStoragePtr();
     }
-    GLCacheEntryPtr isGLEntry = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+    GLImageStoragePtr isGLEntry = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
     return isGLEntry;
 }
 
@@ -773,8 +751,8 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
     data->bitDepth = eImageBitDepthNone;
 
     for (std::size_t i = 0; i < tile.perChannelTile.size(); ++i) {
-        RAMCacheEntryPtr fromIsRAMBuffer = toRAMCacheEntry(tile.perChannelTile[i].buffer);
-        MemoryMappedCacheEntryPtr fromIsMMAPBuffer = toMemoryMappedCacheEntry(tile.perChannelTile[i].buffer);
+        RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(tile.perChannelTile[i].buffer);
+        CacheImageStoragePtr fromIsMMAPBuffer = toCacheImageStorage(tile.perChannelTile[i].buffer);
 
         if (!fromIsMMAPBuffer || !fromIsRAMBuffer) {
             continue;
@@ -970,7 +948,7 @@ Image::fill(const RectI & roi,
     }
 
     if (getStorageMode() == eStorageModeGLTex) {
-        GLCacheEntryPtr glEntry = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+        GLImageStoragePtr glEntry = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
         _imp->fillGL(roi, r, g, b, a, glEntry);
         return;
     }
@@ -1025,7 +1003,7 @@ Image::ensureBounds(const RectI& roi)
         initArgs.storage = getStorageMode();
         initArgs.mipMapLevel = getMipMapLevel();
         initArgs.proxyScale = getProxyScale();
-        GLCacheEntryPtr isGlEntry = getGLCacheEntry();
+        GLImageStoragePtr isGlEntry = getGLImageStorage();
         if (isGlEntry) {
             initArgs.textureTarget = isGlEntry->getGLTextureTarget();
             initArgs.glContext = isGlEntry->getOpenGLContext();
@@ -1326,16 +1304,16 @@ Image::applyMaskMix(const RectI& roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
 
-        GLCacheEntryPtr originalImageTexture, maskTexture, dstTexture;
+        GLImageStoragePtr originalImageTexture, maskTexture, dstTexture;
         if (originalImg) {
             assert(originalImg->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLCacheEntry(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
+            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
         }
         if (maskImg && masked) {
             assert(maskImg->getStorageMode() == eStorageModeGLTex);
-            maskTexture = toGLCacheEntry(maskImg->_imp->tiles[0].perChannelTile[0].buffer);
+            maskTexture = toGLImageStorage(maskImg->_imp->tiles[0].perChannelTile[0].buffer);
         }
-        dstTexture = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+        dstTexture = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
         ImagePrivate::applyMaskMixGL(originalImageTexture, maskTexture, dstTexture, mix, maskInvert, roi);
         return;
     }
@@ -1440,13 +1418,13 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
     if (getStorageMode() == eStorageModeGLTex) {
 
-        GLCacheEntryPtr originalImageTexture, dstTexture;
+        GLImageStoragePtr originalImageTexture, dstTexture;
         if (originalImg) {
             assert(originalImg->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLCacheEntry(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
+            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
         }
 
-        dstTexture = toGLCacheEntry(_imp->tiles[0].perChannelTile[0].buffer);
+        dstTexture = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
 
         RectI realRoi;
         roi.intersect(dstTexture->getBounds(), &realRoi);

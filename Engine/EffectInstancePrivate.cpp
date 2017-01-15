@@ -358,7 +358,7 @@ static void setupGLForRender(const ImagePtr& image,
     RectI viewportBounds;
     if (GL::isGPU()) {
 
-        GLCacheEntryPtr glTexture = image->getGLCacheEntry();
+        GLImageStoragePtr glTexture = image->getGLImageStorage();
         assert(glTexture);
         assert(glTexture->getOpenGLContext() == glContext);
 
@@ -505,7 +505,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
         if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
             planesToRender->backendType == eRenderBackendTypeOSMesa) {
             if (openGLContext) {
-                GLCacheEntryPtr glEntry = mainImagePlane->getGLCacheEntry();
+                GLImageStoragePtr glEntry = mainImagePlane->getGLImageStorage();
                 assert(glEntry);
                 GL_GPU::BindTexture(glEntry->getGLTextureTarget(), 0);
                 finishGLRender<GL_GPU>();

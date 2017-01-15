@@ -116,6 +116,8 @@ public:
                                     TimeValue time,
                                     ViewSetSpec view) OVERRIDE FINAL;
 
+    std::string getDiskCachePath() const;
+
     std::size_t getMaximumDiskCacheSize() const;
 
     std::size_t getMaximumRAMCacheSize() const;
