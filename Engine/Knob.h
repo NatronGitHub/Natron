@@ -43,12 +43,11 @@
 #include <QtCore/QCoreApplication>
 
 #include "Engine/AnimatingObjectI.h"
-#include "Engine/DimensionIdx.h"
-#include "Engine/Variant.h"
-#include "Engine/AppManager.h"
-#include "Engine/KnobGuiI.h"
 #include "Engine/AppManager.h" // for AppManager::createKnob
+#include "Engine/Cache.h" // CacheEntryLockerPtr - could we put this in EngineFwd.h?
+#include "Engine/DimensionIdx.h"
 #include "Engine/HashableObject.h"
+#include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Variant.h"
 #include "Engine/ViewIdx.h"
