@@ -647,7 +647,6 @@ PrecompNodePrivate::refreshReadNodeInput()
     }
     //Remove all images from the cache associated to the reader since we know they are no longer valid.
     //This is a blocking call so that we are sure there's no old image laying around in the cache after this call
-    readNode->removeAllImagesFromCache();
     readNode->getEffectInstance()->purgeCaches_public();
 
     //Force the reader to reload the sequence/video

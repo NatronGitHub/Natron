@@ -129,7 +129,7 @@ CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* segment) const
 
 
 void
-CacheEntryKeyBase::fromMemorySegment(const ExternalSegmentType& segment)
+CacheEntryKeyBase::fromMemorySegment(ExternalSegmentType* segment)
 {
     readMMObject("pluginID", segment, &_imp->pluginID);
 
@@ -341,7 +341,7 @@ ImageTileKey::toMemorySegment(ExternalSegmentType* segment) const
 
 
 void
-ImageTileKey::fromMemorySegment(const ExternalSegmentType& segment)
+ImageTileKey::fromMemorySegment(ExternalSegmentType* segment)
 {
     readMMObject("hash", segment, &_imp->nodeTimeInvariantHash);
     readMMObject("channel", segment, &_imp->layerChannel);

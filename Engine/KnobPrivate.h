@@ -473,8 +473,6 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     void getResult(double* value, std::string* valueAsString) const
     {
         if (value) {
@@ -487,7 +485,6 @@ public:
 
     void setResult(double value, const std::string& valueAsString)
     {
-        assert(getCacheBucketIndex() == -1);
         _stringResult = valueAsString;
         _valueResult = value;
     }

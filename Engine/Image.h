@@ -216,14 +216,6 @@ public:
         // Default - NULL
         ImageStorageBasePtr externalBuffer;
 
-        // This is ignored if the cachePolicy is set to eCacheAccessModeNone.
-        // If set to true, this will call setCacheSignalRequired(true) on all internal cached
-        // tiles. Thus the cache will emit the cacheChanged() signal when some of its tiles are removed
-        // or inserted.
-        //
-        // Default - false
-        bool enableCacheNotification;
-
         InitStorageArgs();
     };
 

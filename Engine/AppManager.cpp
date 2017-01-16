@@ -84,7 +84,7 @@
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/CacheDeleterThread.h"
+#include "Engine/StorageDeleterThread.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
@@ -604,6 +604,8 @@ AppManager::~AppManager()
     }
 
     _imp->_backgroundIPC.reset();
+
+    _imp->storageDeleteThread->quitThread();
 
 
     ///Caches may have launched some threads to delete images, wait for them to be done
@@ -2409,9 +2411,9 @@ AppManager::getCache() const
 }
 
 void
-AppManager::deleteCacheEntriesInSeparateThread(const std::list<CacheEntryBasePtr> & entriesToDelete)
+AppManager::deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete)
 {
-    _imp->cacheDeleterThread->appendToQueue(entriesToDelete);
+    _imp->storageDeleteThread->appendToQueue(entriesToDelete);
 }
 
 void
@@ -2423,39 +2425,23 @@ AppManager::printCacheMemoryStats() const
 
 
     QString reportStr;
-    std::size_t totalDisk = 0;
-    std::size_t totalRam = 0;
-    std::size_t totalGLTextures = 0;
+    std::size_t totalBytes = 0;
     int totalNEntries = 0;
     reportStr += QLatin1String("\n");
     if (!infos.empty()) {
         for (std::map<std::string, CacheReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
-            if (it->second.ramBytes == 0 && it->second.diskBytes == 0) {
+            if (it->second.nBytes == 0) {
                 continue;
             }
-            totalRam += it->second.ramBytes;
-            totalDisk += it->second.diskBytes;
-            totalGLTextures += it->second.glTextureBytes;
+            totalBytes += it->second.nBytes;
             totalNEntries += it->second.nEntries;
-
-            if (it->second.ramBytes == 0 && it->second.diskBytes == 0 && it->second.glTextureBytes == 0) {
-                continue;
-            }
             
             reportStr += QString::fromUtf8(it->first.c_str());
             reportStr += QLatin1String("--> ");
-            if (it->second.ramBytes > 0) {
-                reportStr += QLatin1String("RAM: ");
-                reportStr += printAsRAM(it->second.ramBytes);
+            if (it->second.nBytes > 0) {
+                reportStr += printAsRAM(it->second.nBytes);
             }
-            if (it->second.diskBytes > 0) {
-                reportStr += QLatin1String(" Disk: ");
-                reportStr += printAsRAM(it->second.diskBytes);
-            }
-            if (it->second.glTextureBytes > 0) {
-                reportStr += QLatin1String(" GL Textures: ");
-                reportStr += printAsRAM(it->second.glTextureBytes);
-            }
+
             if (it->second.nEntries > 0) {
                 reportStr += tr(" Number of Cache Entries: ");
                 reportStr += QString::number(it->second.nEntries);
@@ -2466,19 +2452,13 @@ AppManager::printCacheMemoryStats() const
     }
     reportStr += tr("Total");
     reportStr += QLatin1String("--> ");
-    reportStr += QLatin1String("RAM: ");
-    reportStr += printAsRAM(totalRam);
-    reportStr += QLatin1String(" Disk: ");
-    reportStr += printAsRAM(totalDisk);
-    reportStr += QLatin1String(" GL Textures: ");
-    reportStr += printAsRAM(totalGLTextures);
+    reportStr += printAsRAM(totalBytes);
     reportStr += tr(" taken by %1 cache entries.").arg(QString::number(totalNEntries));
-
 
     appPTR->writeToErrorLog_mt_safe(tr("Cache Report"), QDateTime::currentDateTime(), reportStr);
 
     appPTR->showErrorLog();
-}
+} // printCacheMemoryStats
 
 
 

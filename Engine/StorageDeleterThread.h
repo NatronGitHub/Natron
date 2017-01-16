@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_CacheDeleterThread_h
-#define Engine_CacheDeleterThread_h
+#ifndef Engine_StorageDeleterThread_h
+#define Engine_StorageDeleterThread_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -43,49 +43,21 @@ NATRON_NAMESPACE_ENTER;
  * @brief The point of this thread is to delete the content of the list in a separate thread so the thread calling
  * get() doesn't wait for all the entries to be deleted (which can be expensive for large images)
  **/
-struct CacheDeleterThreadPrivate;
-class CacheDeleterThread
+struct StorageDeleterThreadPrivate;
+class StorageDeleterThread
 : public QThread
 {
     
 
 public:
 
-    CacheDeleterThread();
+    StorageDeleterThread();
 
-    virtual ~CacheDeleterThread();
+    virtual ~StorageDeleterThread();
 
+    void appendToQueue(const ImageStorageBasePtr& entry);
 
-    void appendToQueue(const std::list<CacheEntryBasePtr> & entriesToDelete);
-
-    void quitThread();
-
-    bool isWorking() const;
-
-private:
-
-    virtual void run() OVERRIDE FINAL;
-
-    boost::scoped_ptr<CacheDeleterThreadPrivate> _imp;
-};
-
-
-/**
- * @brief The point of this thread is to remove entries that we are sure are no longer needed
- * e.g: they may have a hash that can no longer be produced
- **/
-struct CacheCleanerThreadPrivate;
-class CacheCleanerThread
-: public QThread
-{
-
-public:
-
-    CacheCleanerThread(const CachePtr& cache);
-
-    virtual ~CacheCleanerThread();
-
-    void appendToQueue(const std::string& pluginID);
+    void appendToQueue(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
     void quitThread();
 
@@ -95,12 +67,10 @@ private:
 
     virtual void run() OVERRIDE FINAL;
 
-    boost::scoped_ptr<CacheCleanerThreadPrivate> _imp;
-
+    boost::scoped_ptr<StorageDeleterThreadPrivate> _imp;
 };
-
 
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Engine_CacheDeleterThread_h
+#endif // Engine_StorageDeleterThread_h

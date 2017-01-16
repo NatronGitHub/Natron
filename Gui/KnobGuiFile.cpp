@@ -313,7 +313,6 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
                 effect->getNode()->abortAnyProcessing_non_blocking();
             }
             effect->purgeCaches_public();
-            effect->getNode()->removeAllImagesFromCache();
             _lastModificationDates.clear();
             ret = true;
         } else {

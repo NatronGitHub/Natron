@@ -25,11 +25,14 @@
 
 
 #include "EffectInstanceActionResults.h"
-
+#include <boost/foreach.hpp>
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/Hash64.h"
 #include "Engine/NodeMetadata.h"
+
+
+namespace bip = boost::interprocess;
 
 NATRON_NAMESPACE_ENTER;
 
@@ -46,50 +49,6 @@ EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeTimeInvariantHa
     setHolderPluginID(pluginID);
 }
 
-
-
-void
-EffectInstanceActionKeyBase::copy(const CacheEntryKeyBase& other)
-{
-    const EffectInstanceActionKeyBase* o = dynamic_cast<const EffectInstanceActionKeyBase*>(&other);
-    if (!o) {
-        return;
-    }
-    CacheEntryKeyBase::copy(other);
-    _nodeTimeInvariantHash = o->_nodeTimeInvariantHash;
-    _time = o->_time;
-    _view = o->_view;
-    _scale = o->_scale;
-}
-
-bool
-EffectInstanceActionKeyBase::equals(const CacheEntryKeyBase& other)
-{
-    const EffectInstanceActionKeyBase* o = dynamic_cast<const EffectInstanceActionKeyBase*>(&other);
-    if (!o) {
-        return false;
-    }
-    if (!CacheEntryKeyBase::equals(other)) {
-        return false;
-    }
-
-    if (_nodeTimeInvariantHash != o->_nodeTimeInvariantHash) {
-        return false;
-    }
-    if (_time != o->_time) {
-        return false;
-    }
-    if (_view != o->_view) {
-        return false;
-    }
-    if (_scale.x != o->_scale.x ||
-        _scale.y != o->_scale.y) {
-        return false;
-    }
-
-    return true;
-}
-
 void
 EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 {
@@ -100,6 +59,38 @@ EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
     hash->append(_scale.y);
 }
 
+void
+EffectInstanceActionKeyBase::toMemorySegment(ExternalSegmentType* segment) const
+{
+    writeMMObject(_nodeTimeInvariantHash, "hash", segment);
+    writeMMObject(_time, "time", segment);
+    writeMMObject(_view, "view", segment);
+    writeMMObject(_scale.x, "sx", segment);
+    writeMMObject(_scale.y, "sy", segment);
+    CacheEntryKeyBase::toMemorySegment(segment);
+} // toMemorySegment
+
+void
+EffectInstanceActionKeyBase::fromMemorySegment(ExternalSegmentType* segment)
+{
+    readMMObject("hash", segment, &_nodeTimeInvariantHash);
+    readMMObject("time", segment, &_time);
+    readMMObject("view", segment, &_view);
+    readMMObject("sx", segment, &_scale.x);
+    readMMObject("sy", segment, &_scale.y);
+    CacheEntryKeyBase::fromMemorySegment(segment);
+} // fromMemorySegment
+
+std::size_t
+EffectInstanceActionKeyBase::getMetadataSize() const
+{
+    std::size_t ret = CacheEntryKeyBase::getMetadataSize();
+    ret += sizeof(_nodeTimeInvariantHash);
+    ret += sizeof(_time);
+    ret += sizeof(_view);
+    ret += sizeof(_scale);
+    return ret;
+}
 
 GetRegionOfDefinitionResults::GetRegionOfDefinitionResults()
 : CacheEntryBase(appPTR->getCache())
@@ -125,15 +116,31 @@ GetRegionOfDefinitionResults::getRoD() const
 void
 GetRegionOfDefinitionResults::setRoD(const RectD& rod)
 {
-    assert(getCacheBucketIndex() == -1);
     _rod = rod;
 }
 
 std::size_t
-GetRegionOfDefinitionResults::getSize() const
+GetRegionOfDefinitionResults::getMetadataSize() const
 {
-    return 0;
+    std::size_t ret = CacheEntryBase::getMetadataSize();
+    ret += sizeof(_rod);
+    return ret;
 }
+
+
+void
+GetRegionOfDefinitionResults::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+{
+    writeMMObject(_rod, "rod", segment);
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+} // toMemorySegment
+
+void
+GetRegionOfDefinitionResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+{
+    readMMObject("rod", segment, &_rod);
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+} // fromMemorySegment
 
 IsIdentityResults::IsIdentityResults()
 : CacheEntryBase(appPTR->getCache())
@@ -165,18 +172,38 @@ IsIdentityResults::getIdentityData(int* identityInputNb, TimeValue* identityTime
 void
 IsIdentityResults::setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView)
 {
-    assert(getCacheBucketIndex() == -1);
     _identityInputNb = identityInputNb;
     _identityTime = identityTime;
     _identityView = identityView;
 }
 
 std::size_t
-IsIdentityResults::getSize() const
+IsIdentityResults::getMetadataSize() const
 {
-    return 0;
+    std::size_t ret = CacheEntryBase::getMetadataSize();
+    ret += sizeof(_identityInputNb);
+    ret += sizeof(_identityTime);
+    ret += sizeof(_identityView);
+    return ret;
 }
 
+void
+IsIdentityResults::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+{
+    writeMMObject(_identityInputNb, "inputNb", segment);
+    writeMMObject(_identityTime, "inputTime", segment);
+    writeMMObject(_identityView, "inputView", segment);
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+} // toMemorySegment
+
+void
+IsIdentityResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+{
+    readMMObject("inputNb", segment, &_identityInputNb);
+    readMMObject("inputTime", segment, &_identityTime);
+    readMMObject("inputView", segment, &_identityView);
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+} // fromMemorySegment
 
 GetFramesNeededResults::GetFramesNeededResults()
 : CacheEntryBase(appPTR->getCache())
@@ -204,16 +231,84 @@ GetFramesNeededResults::getFramesNeeded(FramesNeededMap *framesNeeded) const
 void
 GetFramesNeededResults::setFramesNeeded(const FramesNeededMap &framesNeeded)
 {
-    assert(getCacheBucketIndex() == -1);
     _framesNeeded = framesNeeded;
 }
 
 std::size_t
-GetFramesNeededResults::getSize() const
+GetFramesNeededResults::getMetadataSize() const
 {
-    return sizeof(_framesNeeded);
+    std::size_t ret = CacheEntryBase::getMetadataSize();
+    // Hint a fake size, that's enough to ensure the memory allocation is ok
+    ret += 1024;
+    return ret;
 }
 
+// This is made complicated so it can be inserted in interprocess data structures.
+typedef bip::allocator<void, ExternalSegmentType::segment_manager> void_allocator;
+typedef bip::allocator<ViewIdx, ExternalSegmentType::segment_manager> ViewIdx_allocator;
+typedef bip::allocator<RangeD, ExternalSegmentType::segment_manager> RangeD_allocator;
+
+typedef bip::vector<RangeD, RangeD_allocator> RangeDVector_ExternalSegment;
+
+typedef bip::allocator<RangeDVector_ExternalSegment, ExternalSegmentType::segment_manager> RangeDVector_allocator;
+
+typedef bip::map<ViewIdx, RangeDVector_ExternalSegment, std::less<ViewIdx>, RangeDVector_allocator> FrameRangesMap_ExternalSegment;
+
+typedef std::pair<ViewIdx, RangeDVector_ExternalSegment> FrameRangesMap_value_type;
+
+typedef bip::allocator<FrameRangesMap_ExternalSegment, ExternalSegmentType::segment_manager> FrameRangesMap_ExternalSegment_allocator;
+
+typedef bip::map<int, FrameRangesMap_ExternalSegment, std::less<int>, FrameRangesMap_ExternalSegment_allocator> FramesNeededMap_ExternalSegment;
+
+typedef std::pair<int, FrameRangesMap_ExternalSegment> FramesNeededMap_value_type;
+
+typedef bip::allocator<FramesNeededMap_ExternalSegment, ExternalSegmentType::segment_manager> FramesNeededMap_ExternalSegment_allocator;
+
+void
+GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+{
+    // An allocator convertible to any allocator<T, segment_manager_t> type
+    void_allocator alloc_inst (segment->get_segment_manager());
+
+    FramesNeededMap_ExternalSegment* externalMap = segment->construct<FramesNeededMap_ExternalSegment>("framesNeeded")(alloc_inst);
+
+    for (FramesNeededMap::const_iterator it = _framesNeeded.begin(); it != _framesNeeded.end(); ++it) {
+
+        FrameRangesMap_ExternalSegment extFrameRangeMap(alloc_inst);
+
+        for (FrameRangesMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it) {
+
+            RangeDVector_ExternalSegment extRangeVec(alloc_inst);
+            for (std::size_t i = 0; i < it2->second.size(); ++i) {
+                extRangeVec.push_back(it2->second[i]);
+            }
+            FrameRangesMap_value_type v = std::make_pair(it2->first, extRangeVec);
+            extFrameRangeMap.insert(v);
+        }
+
+        FramesNeededMap_value_type v = std::make_pair(it->first, extFrameRangeMap);
+        externalMap->insert(v);
+    }
+    
+    writeMMObject(externalMap, "framesNeeded", segment);
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+} // toMemorySegment
+
+void
+GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+{
+    FramesNeededMap_ExternalSegment externalMap;
+    readMMObject("framesNeeded", segment, &externalMap);
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+
+
+    for (FramesNeededMap_ExternalSegment::iterator it = externalMap.begin(); it != externalMap.end(); ++it) {
+        FrameRangesMap& frameRnageMap = _framesNeeded[it->first];
+        for (FrameRangesMap_ExternalSegment::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+
+        }
+    }
+} // fromMemorySegment
 
 
 GetDistorsionResults::GetDistorsionResults()
@@ -242,17 +337,19 @@ GetDistorsionResults::getDistorsionResults() const
 void
 GetDistorsionResults::setDistorsionResults(const DistorsionFunction2DPtr &disto)
 {
-    assert(getCacheBucketIndex() == -1);
     _distorsion = disto;
 }
 
 std::size_t
-GetDistorsionResults::getSize() const
+GetDistorsionResults::getMetadataSize() const
 {
+    std::size_t ret = CacheEntryBase::getMetadataSize();
     if (!_distorsion) {
-        return 0;
+        return ret;
     }
-    return (std::size_t)_distorsion->customDataSizeHintInBytes;
+
+    ret += (std::size_t)_distorsion->customDataSizeHintInBytes;
+    return ret;
 }
 
 
@@ -283,14 +380,15 @@ GetFrameRangeResults::getFrameRangeResults(RangeD *range) const
 void
 GetFrameRangeResults::setFrameRangeResults(const RangeD &range)
 {
-    assert(getCacheBucketIndex() == -1);
     _range = range;
 }
 
 std::size_t
-GetFrameRangeResults::getSize() const
+GetFrameRangeResults::getMetadataSize() const
 {
-    return 0;
+    std::size_t ret = CacheEntryBase::getMetadataSize();
+    ret += sizeof(_range);
+    return ret;
 }
 
 
@@ -320,14 +418,16 @@ GetTimeInvariantMetaDatasResults::getMetadatasResults() const
 void
 GetTimeInvariantMetaDatasResults::setMetadatasResults(const NodeMetadataPtr &metadatas)
 {
-    assert(getCacheBucketIndex() == -1);
     _metadatas = metadatas;
 }
 
 std::size_t
-GetTimeInvariantMetaDatasResults::getSize() const
+GetTimeInvariantMetaDatasResults::getMetadataSize() const
 {
-    return sizeof(NodeMetadata);
+    std::size_t ret = CacheEntryBase::getMetadataSize();
+    // Hint a fake size
+    ret += 1024;
+    return ret;
 }
 
 
@@ -385,7 +485,6 @@ GetComponentsResults::setResults(const std::map<int, std::list<ImageComponents> 
                                  std::bitset<4> processChannels,
                                  bool processAllLayers)
 {
-    assert(getCacheBucketIndex() == -1);
     _neededInputLayers = neededInputLayers;
     _producedLayers = producedLayers;
     _passThroughPlanes = passThroughPlanes;
@@ -397,8 +496,11 @@ GetComponentsResults::setResults(const std::map<int, std::list<ImageComponents> 
 }
 
 std::size_t
-GetComponentsResults::getSize() const
+GetComponentsResults::getMetadataSize() const
 {
-    return 0;
+    std::size_t ret = CacheEntryBase::getMetadataSize();
+    // Hint a fake size
+    ret += 1024;
+    return ret;
 }
 NATRON_NAMESPACE_EXIT;

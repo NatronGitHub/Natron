@@ -85,17 +85,6 @@ public:
     CachePtr getCache() const;
 
     /**
-     * @brief When inserted in the cache, this sets the index of the cache bucket into which this entry is inserted.
-     **/
-    void setCacheBucketIndex(int index);
-
-    /**
-     * @brief Get the index of the cache bucket into which this entry belong. This returns -1 if the entry does not belong
-     * to the cache.
-     **/
-    int getCacheBucketIndex() const;
-
-    /**
      * @brief Get the key object for this entry.
      **/
     CacheEntryKeyBasePtr getKey() const;
@@ -122,13 +111,6 @@ public:
     virtual std::size_t getMetadataSize() const;
 
     /**
-     * @brief If this returns true, the cache will emit a cacheChanged() signal whenever an entry of this type is 
-     * inserted or removed from the cache.
-     **/
-    bool isCacheSignalRequired() const;
-    void setCacheSignalRequired(bool required);
-
-    /**
      * @brief Returns the key time
      **/
     TimeValue getTime() const;
@@ -139,6 +121,17 @@ public:
     ViewIdx getView() const;
 
     /**
+     * @brief Returns whether the data storage of this entry is exactly the size of NATRON_TILE_SIZE_BYTES or not.
+     * In this case, Natron optimizes the storage of the entry in a tile aligned memory mapped file.
+     * If true the toMemorySegment and fromMemorySegment function will have their tileDataPtr set to 
+     * a non null value. The implementation should then copy from/to the data exactly NATRON_TILE_SIZE_BYTES bytes.
+     **/
+    virtual bool isStorageTiled() const
+    {
+        return false;
+    }
+
+    /**
      * @brief Write this key to the process shared memory segment.
      * This is thread-safe and this function is only called by the cache.
      * Derived class should call the base class version AFTER its implementation.
@@ -146,7 +139,7 @@ public:
      * The function writeMMObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const;
 
     /**
      * @brief Reads this key from shared process memory segment.
@@ -155,7 +148,7 @@ public:
      * The function readMMObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(const ExternalSegmentType& segment);
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr);
 
 private:
 

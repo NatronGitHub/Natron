@@ -61,7 +61,7 @@ Image::~Image()
     
     // If this image is the last image holding a pointer to memory buffers, ensure these buffers
     // gets deallocated in a specific thread and not a render thread
-    std::list<CacheEntryBasePtr> toDeleteInDeleterThread;
+    std::list<ImageStorageBasePtr> toDeleteInDeleterThread;
     for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
         for (std::size_t c = 0;  c < _imp->tiles[i].perChannelTile.size(); ++c) {
             toDeleteInDeleterThread.push_back(_imp->tiles[i].perChannelTile[c].buffer);
@@ -131,7 +131,6 @@ Image::InitStorageArgs::InitStorageArgs()
 , glContext()
 , textureTarget(GL_TEXTURE_2D)
 , externalBuffer()
-, enableCacheNotification(false)
 {
     // By default make all channels
     components[0] = components[1] = components[2] = components[3] = 1;
@@ -157,7 +156,7 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
     Image::MonoChannelTile& perChannelTile = tiles[0].perChannelTile[0];
 
     GLImageStoragePtr isGLBuffer = toGLImageStorage(args.externalBuffer);
-    CacheImageStoragePtr isMMAPBuffer = toCacheImageStorage(args.externalBuffer);
+    CacheImageTileStoragePtr isMMAPBuffer = toCacheImageTileStorage(args.externalBuffer);
     RAMImageStoragePtr isRAMBuffer = toRAMImageStorage(args.externalBuffer);
     if (isGLBuffer) {
         if (args.storage != eStorageModeGLTex) {
@@ -223,6 +222,10 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
 
     _imp->bounds = args.bounds;
     _imp->cachePolicy = args.cachePolicy;
+    if (args.storage != eStorageModeDisk) {
+        // We can only cache stuff on disk.
+        _imp->cachePolicy = eCacheAccessModeNone;
+    }
     _imp->bufferFormat = args.bufferFormat;
     _imp->layer = args.layer;
     _imp->proxyScale = args.proxyScale;
@@ -342,40 +345,88 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                     break;
             }
 
-            // Make-up the key for this tile 
-            ImageTileKeyPtr key(new ImageTileKey(args.nodeTimeInvariantHash,
-                                                 args.time,
-                                                 args.view,
-                                                 channelName,
-                                                 args.proxyScale,
-                                                 args.mipMapLevel,
-                                                 args.isDraft,
-                                                 args.bitdepth,
-                                                 tx,
-                                                 ty));
 
 
 
-            // If the entry was not in the cache but we want to cache it, this will lock the hash so that another thread
-            // does not compute the same tile.
-            CacheEntryLockerPtr entryLocker;
+
+
+
+            CacheImageTileStoragePtr cachedBuffer;
+            {
+                boost::shared_ptr<AllocateMemoryArgs> allocArgs;
+
+                // Allocate a new entry
+                switch (args.storage) {
+                    case eStorageModeDisk: {
+                        cachedBuffer.reset(new CacheImageTileStorage(cache));
+                        thisChannelTile.buffer = cachedBuffer;
+                        boost::shared_ptr<AllocateMemoryArgs> a(new AllocateMemoryArgs());
+                        a->bitDepth = args.bitdepth;
+                        allocArgs = a;
+                    }   break;
+                    case eStorageModeGLTex: {
+                        GLImageStoragePtr buffer(new GLImageStorage());
+                        thisChannelTile.buffer = buffer;
+                        boost::shared_ptr<GLAllocateMemoryArgs> a(new GLAllocateMemoryArgs());
+                        a->textureTarget = args.textureTarget;
+                        a->glContext = args.glContext;
+                        a->bounds = tile.tileBounds;
+                        a->bitDepth = args.bitdepth;
+                        allocArgs = a;
+                    }   break;
+                    case eStorageModeRAM: {
+                        RAMImageStoragePtr buffer(new RAMImageStorage());
+                        thisChannelTile.buffer = buffer;
+                        boost::shared_ptr<RAMAllocateMemoryArgs> a(new RAMAllocateMemoryArgs());
+                        a->bitDepth = args.bitdepth;
+                        a->bounds = tile.tileBounds;
+
+                        if (thisChannelTile.channelIndex == -1) {
+                            a->numComponents = (std::size_t)args.layer.getNumComponents();
+                        } else {
+                            a->numComponents = 1;
+                        }
+                        allocArgs = a;
+                    }   break;
+                    case eStorageModeNone:
+                        assert(false);
+                        throw std::bad_alloc();
+                        break;
+                }
+                assert(allocArgs && thisChannelTile.buffer);
+                
+                // Allocate the memory for the tile.
+                // This may throw a std::bad_alloc
+                thisChannelTile.buffer->allocateMemory(*allocArgs);
+            } // allocArgs
 
             // If the entry wants to be cached but we don't want to read from the cache
             // we must remove from the cache any entry that already exists at the given hash.
-            if (args.cachePolicy == eCacheAccessModeWriteOnly) {
-                entryLocker = cache->get(key);
-                if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-                    CacheEntryBasePtr cacheEntry = entryLocker->getCachedEntry();
-                    cache->removeEntry(cacheEntry);
-                    cacheEntry.reset();
+            if (_imp->cachePolicy == eCacheAccessModeWriteOnly) {
+                assert(cachedBuffer);
+
+                // Make-up the key for this tile
+                ImageTileKeyPtr key(new ImageTileKey(args.nodeTimeInvariantHash,
+                                                     args.time,
+                                                     args.view,
+                                                     channelName,
+                                                     args.proxyScale,
+                                                     args.mipMapLevel,
+                                                     args.isDraft,
+                                                     args.bitdepth,
+                                                     tx,
+                                                     ty));
+
+                cachedBuffer->setKey(key);
+
+                CacheEntryLockerPtr locker = cache->get(cachedBuffer);
+                if (locker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+                    cache->removeEntry(cachedBuffer);
                 }
             }
 
             // Look in the cache
-            bool isCached = false;
-            if (args.cachePolicy == eCacheAccessModeReadWrite || args.cachePolicy == eCacheAccessModeWriteOnly) {
-
-
+            if (_imp->cachePolicy == eCacheAccessModeReadWrite || _imp->cachePolicy == eCacheAccessModeWriteOnly) {
 
                 // First look for a tile at the proxy + mipmap scale, if not found look for a tile at proxy scale and downscale it.
                 // This is the default cache lookup scale: for OpenGL textures, always assume them at full proxy scale
@@ -390,6 +441,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                     firstLookupLevel = args.mipMapLevel;
                 }
 
+                bool isCached = false;
                 for (int mipmap_i = 0; mipmap_i < nMipMapLookups; ++mipmap_i) {
 
                     const unsigned int lookupLevel = mipmap_i == 0 ? firstLookupLevel : 0;
@@ -412,22 +464,21 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                                                                         tx,
                                                                         ty));
 
-                        // In eCacheAccessModeWriteOnly mode, we already accessed the cache. If we got an entry locker because the entry
-                        // was not cached, do not read a second time.
-                        if (!entryLocker) {
-                            entryLocker = cache->get(keyToReadCache);
-                        }
-                        if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-                            ImageStorageBasePtr isBufferedEntry = boost::dynamic_pointer_cast<ImageStorageBase>(entryLocker->getCachedEntry());
-                            assert(isBufferedEntry);
-                            thisChannelTile.buffer = isBufferedEntry;
+                        assert(cachedBuffer);
+                        cachedBuffer->setKey(keyToReadCache);
 
+                        CacheEntryLockerPtr entryLocker = cache->get(cachedBuffer);
+
+                        if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
                             isCached = true;
                             // We found a cache entry, don't continue to look for a tile computed in draft mode.
                             break;
-                            
+                        } else {
+
+                            // Store the entry locker pointer 
+                            thisChannelTile.entryLocker = entryLocker;
                         }
-                    }
+                    } // for each draft mode to check
                     if (isCached) {
 
                         if (args.storage == eStorageModeRAM || args.storage == eStorageModeDisk) {
@@ -468,70 +519,6 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                     } // isCached
                 } // for each mip map lvel to check
             } // useCache
-            
-            if (!isCached) {
-
-                // Either we don't use the cache or we have a locker object
-                assert(args.cachePolicy == eCacheAccessModeNone || entryLocker);
-
-                // Make the hash locker live as long as this image will live
-                thisChannelTile.entryLocker = entryLocker;
-                
-                boost::shared_ptr<AllocateMemoryArgs> allocArgs;
-                ImageStorageBasePtr entryBuffer;
-                // Allocate a new entry
-                switch (args.storage) {
-                    case eStorageModeDisk: {
-                        CacheImageStoragePtr buffer(new CacheImageStorage(cache));
-                        entryBuffer = buffer;
-                        boost::shared_ptr<CacheAllocateMemoryArgs> a(new CacheAllocateMemoryArgs());
-                        a->bitDepth = args.bitdepth;
-                        allocArgs = a;
-                    }   break;
-                    case eStorageModeGLTex: {
-                        GLImageStoragePtr buffer(new GLImageStorage(cache));
-                        entryBuffer = buffer;
-                        boost::shared_ptr<GLAllocateMemoryArgs> a(new GLAllocateMemoryArgs());
-                        a->textureTarget = args.textureTarget;
-                        a->glContext = args.glContext;
-                        a->bounds = tile.tileBounds;
-                        a->bitDepth = args.bitdepth;
-                        allocArgs = a;
-                    }   break;
-                    case eStorageModeRAM: {
-                        RAMImageStoragePtr buffer(new RAMImageStorage(cache));
-                        entryBuffer = buffer;
-                        boost::shared_ptr<RAMAllocateMemoryArgs> a(new RAMAllocateMemoryArgs());
-                        a->bitDepth = args.bitdepth;
-                        a->bounds = tile.tileBounds;
-
-                        if (thisChannelTile.channelIndex == -1) {
-                            a->numComponents = (std::size_t)args.layer.getNumComponents();
-                        } else {
-                            a->numComponents = 1;
-                        }
-                        allocArgs = a;
-                    }   break;
-                    case eStorageModeNone:
-                        assert(false);
-                        throw std::bad_alloc();
-                        break;
-                }
-                assert(allocArgs && entryBuffer);
-
-                entryBuffer->setKey(key);
-
-                // Allocate the memory for the tile.
-                // This may throw a std::bad_alloc
-                entryBuffer->allocateMemory(*allocArgs);
-
-                // Enable cache notification if requested.
-                if (args.enableCacheNotification) {
-                    entryBuffer->setCacheSignalRequired(true);
-                }
-                
-            } // !isCached
-
 
         } // for each channel
 
@@ -752,7 +739,7 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
 
     for (std::size_t i = 0; i < tile.perChannelTile.size(); ++i) {
         RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(tile.perChannelTile[i].buffer);
-        CacheImageStoragePtr fromIsMMAPBuffer = toCacheImageStorage(tile.perChannelTile[i].buffer);
+        CacheImageTileStoragePtr fromIsMMAPBuffer = toCacheImageTileStorage(tile.perChannelTile[i].buffer);
 
         if (!fromIsMMAPBuffer || !fromIsRAMBuffer) {
             continue;

@@ -1342,11 +1342,6 @@ public:
 
     double getHostMixingValue(TimeValue time, ViewIdx view) const;
 
-    /**
-     * @brief Removes all images from the cache associated to this node
-     **/
-    void removeAllImagesFromCache();
-
 public:
 
 

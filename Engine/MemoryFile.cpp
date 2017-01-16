@@ -432,7 +432,6 @@ MemoryFile::close()
 MemoryFile::~MemoryFile()
 {
     if (_imp->data) {
-        flush(eFlushTypeSync, NULL, 0);
         close();
     }
     delete _imp;

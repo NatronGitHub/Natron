@@ -71,9 +71,11 @@ public:
         return _view;
     }
 
-    virtual void copy(const CacheEntryKeyBase& other) OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE;
 
-    virtual bool equals(const CacheEntryKeyBase& other) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE;
+
+    virtual std::size_t getMetadataSize() const OVERRIDE;
 
 private:
 
@@ -132,12 +134,15 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     const RectD& getRoD() const;
     void setRoD(const RectD& rod);
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+
 
 private:
 
@@ -200,12 +205,14 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     void getIdentityData(int* identityInputNb, TimeValue* identityTime, ViewIdx* identityView) const;
     void setIdentityData(int identityInputNb, TimeValue identityTime, ViewIdx identityView);
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -271,12 +278,14 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     void getFramesNeeded(FramesNeededMap* framesNeeded) const;
     void setFramesNeeded(const FramesNeededMap& framesNeeded);
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -338,12 +347,14 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     DistorsionFunction2DPtr getDistorsionResults() const;
     void setDistorsionResults(const DistorsionFunction2DPtr& disto);
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -399,12 +410,14 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     void getFrameRangeResults(RangeD* range) const;
     void setFrameRangeResults(const RangeD& range);
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -460,12 +473,14 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     const NodeMetadataPtr& getMetadatasResults() const;
     void setMetadatasResults(const NodeMetadataPtr& metadatas);
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -524,8 +539,6 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    // To ensure this you may call
-    // assert(getCacheBucketIndex() == -1) in any setter function.
     void getResults(std::map<int, std::list<ImageComponents> >* neededInputLayers,
                     std::list<ImageComponents>* producedLayers,
                     std::list<ImageComponents>* passThroughPlanes,
@@ -545,8 +558,12 @@ public:
                     bool processAllLayers);
 
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    
 private:
 
     std::map<int, std::list<ImageComponents> > _neededInputLayers;

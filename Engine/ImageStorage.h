@@ -202,7 +202,7 @@ private:
 
 inline
 RAMImageStoragePtr
-toRAMImageStorage(const CacheEntryBasePtr& entry)
+toRAMImageStorage(const ImageStorageBasePtr& entry)
 {
     return boost::dynamic_pointer_cast<RAMImageStorage>(entry);
 }
@@ -269,34 +269,11 @@ private:
 
 inline
 GLImageStoragePtr
-toGLImageStorage(const CacheEntryBasePtr& entry)
+toGLImageStorage(const ImageStorageBasePtr& entry)
 {
     return boost::dynamic_pointer_cast<GLImageStorage>(entry);
 }
 
-
-
-
-class CacheAllocateMemoryArgs : public AllocateMemoryArgs
-{
-public:
-
-    CacheAllocateMemoryArgs()
-    : AllocateMemoryArgs()
-    , cacheFileMemChunkIndex(-1)
-    {
-
-    }
-
-    virtual ~CacheAllocateMemoryArgs()
-    {
-
-    }
-
-    // If set to a value different of -1, this is the index of the tile in the memory mapped bucket file.
-    // Otherwise, this will allocate a chunk of memory in the memory mapped file.
-    int cacheFileMemChunkIndex;
-};
 
 /**
  * @brief Image storage based on the cache shared memory.
@@ -304,15 +281,15 @@ public:
  * exactly the size of a tile in the cache: NATRON_TILE_SIZE_BYTES
  * The allocate() args must be of CacheAllocateMemoryArgs type.
  **/
-struct CacheImageStoragePrivate;
-class CacheImageStorage
+struct CacheImageTileStoragePrivate;
+class CacheImageTileStorage
 : public ImageStorageBase
 , public CacheEntryBase
 {
 public:
-    CacheImageStorage(const CachePtr& cache);
+    CacheImageTileStorage(const CachePtr& cache);
 
-    virtual ~CacheImageStorage();
+    virtual ~CacheImageTileStorage();
 
     virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL;
 
@@ -328,18 +305,11 @@ public:
 
     char* getData();
 
-    int getCacheFileMemoryChunkIndex() const;
+    virtual bool isStorageTiled() const OVERRIDE FINAL;
 
-    std::string getCacheFileAbsolutePath() const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
 
-    /**
-     * @brief Sync the backing file with the virtual memory currently in RAM
-     **/
-    void syncBackingFile();
-
-    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL;
-
-    virtual void fromMemorySegment(const ExternalSegmentType& segment) OVERRIDE FINAL;
+    virtual void fromMemorySegment(const ExternalSegmentType& segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -347,14 +317,21 @@ private:
 
     virtual void deallocateMemoryImpl() OVERRIDE FINAL;
 
-    boost::scoped_ptr<CacheImageStoragePrivate> _imp;
+    boost::scoped_ptr<CacheImageTileStoragePrivate> _imp;
 };
 
 inline
-CacheImageStoragePtr
-toCacheImageStorage(const CacheEntryBasePtr& entry)
+CacheImageTileStoragePtr
+toCacheImageTileStorage(const ImageStorageBasePtr& entry)
 {
-    return boost::dynamic_pointer_cast<CacheImageStorage>(entry);
+    return boost::dynamic_pointer_cast<CacheImageTileStorage>(entry);
+}
+
+inline
+CacheImageTileStoragePtr
+toCacheImageTileStorage(const CacheEntryBasePtr& entry)
+{
+    return boost::dynamic_pointer_cast<CacheImageTileStorage>(entry);
 }
 
 NATRON_NAMESPACE_EXIT;

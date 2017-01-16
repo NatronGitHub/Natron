@@ -82,7 +82,6 @@ SOURCES += \
     Bezier.cpp \
     BezierCP.cpp \
     Cache.cpp \
-    CacheDeleterThread.cpp \
     CacheEntryBase.cpp \
     CacheEntryKeyBase.cpp \
     CacheEntrySerialization.cpp \
@@ -213,6 +212,7 @@ SOURCES += \
     SplitterI.cpp \
     Smooth1D.cpp \
     StandardPaths.cpp \
+    StorageDeleterThread.cpp \
     StringAnimationManager.cpp \
     StubNode.cpp \
     TabWidgetI.cpp \
@@ -314,7 +314,6 @@ HEADERS += \
     BufferableObject.h \
     CLArgs.h \
     Cache.h \
-    CacheDeleterThread.h \
     CacheEntryBase.h \
     CacheEntryKeyBase.h \
     CacheEntrySerialization.h \
@@ -456,6 +455,7 @@ HEADERS += \
     Singleton.h \
     SplitterI.h \
     StandardPaths.h \
+    StorageDeleterThread.h \
     StringAnimationManager.h \
     StubNode.h \
     TabWidgetI.h \

@@ -91,7 +91,10 @@ ImageStorageBase::allocateMemory(const AllocateMemoryArgs& args)
     CachePtr cache = appPTR->getCache();
     if (cache) {
         // Notify the cache about memory changes
-        cache->notifyMemoryAllocated( getBufferSize(), getStorageMode() );
+        std::size_t size = getBufferSize();
+        if (size > 0) {
+            cache->notifyMemoryAllocated( size, getStorageMode() );
+        }
     }
 }
 
@@ -107,7 +110,11 @@ ImageStorageBase::deallocateMemory()
 
     CachePtr cache = appPTR->getCache();
     if (cache) {
-        cache->notifyMemoryDeallocated(getBufferSize(), getStorageMode());
+        // Notify the cache about memory changes
+        std::size_t size = getBufferSize();
+        if (size > 0) {
+            cache->notifyMemoryDeallocated( size, getStorageMode() );
+        }
     }
 }
 
@@ -405,72 +412,73 @@ GLImageStorage::getGLTextureType() const
 }
 
 
-struct CacheImageStoragePrivate
+struct CacheImageTileStoragePrivate
 {
 
-    // The cache file used by this entry
-    boost::shared_ptr<boost::interprocess::file_mapping> file;
 
-    // The offset in the cache file at which starts this buffer
-    int cacheFileMemoryChunkIndex;
+    // Process local buffer: instead of working directly on the memory portion in the memory mapped file
+    // returned by the cache, work on a local copy that is copied from/to the cache to avoid locking
+    // the cache.
+    boost::scoped_ptr<RamBuffer<char> > localBuffer;
+    ImageBitDepthEnum bitdepth;
 
-    CacheImageStoragePrivate()
-    : file()
-    , cacheFileMemoryChunkIndex(-1)
+    CacheImageTileStoragePrivate()
+    : localBuffer()
+    , bitdepth(eImageBitDepthNone)
     {
 
     }
 };
 
-CacheImageStorage::CacheImageStorage(const CachePtr& cache)
+CacheImageTileStorage::CacheImageTileStorage(const CachePtr& cache)
 : ImageStorageBase()
 , CacheEntryBase(cache)
-, _imp(new CacheImageStoragePrivate())
+, _imp(new CacheImageTileStoragePrivate())
 {
 
 }
 
-CacheImageStorage::~CacheImageStorage()
+CacheImageTileStorage::~CacheImageTileStorage()
 {
 
-}
-
-void
-CacheImageStorage::toMemorySegment(ExternalSegmentType* segment) const
-{
-    writeMMObject(_imp->cacheFileMemoryChunkIndex, "chunk", segment);
-    CacheEntryBase::toMemorySegment(segment);
 }
 
 void
-CacheImageStorage::fromMemorySegment(const ExternalSegmentType& segment)
+CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
 {
-    readMMObject("chunk", segment, &_imp->cacheFileMemoryChunkIndex);
-    CacheEntryBase::fromMemorySegment(segment);
+    assert(tileDataPtr && _imp->localBuffer);
+    memcpy(tileDataPtr, _imp->localBuffer->getData(), NATRON_TILE_SIZE_BYTES);
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+}
+
+void
+CacheImageTileStorage::fromMemorySegment(const ExternalSegmentType& segment, const void* tileDataPtr)
+{
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+    assert(tileDataPtr && _imp->localBuffer);
+    memcpy(_imp->localBuffer->getData(), tileDataPtr, NATRON_TILE_SIZE_BYTES);
 }
 
 StorageModeEnum
-CacheImageStorage::getStorageMode() const
+CacheImageTileStorage::getStorageMode() const
 {
     return eStorageModeDisk;
 }
 
 std::size_t
-CacheImageStorage::getBufferSize() const
+CacheImageTileStorage::getBufferSize() const
 {
     return NATRON_TILE_SIZE_BYTES;
 }
 
 std::size_t
-CacheImageStorage::getMetadataSize() const
+CacheImageTileStorage::getMetadataSize() const
 {
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    ret += sizeof(_imp->cacheFileMemoryChunkIndex);
-    return ret;
+    return CacheEntryBase::getMetadataSize();
 }
 
 RectI
-CacheImageStorage::getBounds() const
+CacheImageTileStorage::getBounds() const
 {
     RectI ret;
 
@@ -491,7 +499,7 @@ CacheImageStorage::getBounds() const
 }
 
 std::size_t
-CacheImageStorage::getRowSize() const
+CacheImageTileStorage::getRowSize() const
 {
 
     ImageBitDepthEnum bitDepth = getBitDepth();
@@ -502,100 +510,45 @@ CacheImageStorage::getRowSize() const
 
 }
 
-const char*
-CacheImageStorage::getData() const
+bool
+CacheImageTileStorage::isStorageTiled() const
 {
-    if (!_imp->file) {
+    return true;
+}
+
+const char*
+CacheImageTileStorage::getData() const
+{
+    if (!_imp->localBuffer) {
         return 0;
     }
 
-    return (const char*)(_imp->file->data() + _imp->cacheFileMemoryChunkIndex * NATRON_TILE_SIZE_BYTES);
+    return _imp->localBuffer->getData();
 }
 
 char*
-CacheImageStorage::getData()
+CacheImageTileStorage::getData()
 {
-    if (!_imp->file) {
+    if (!_imp->localBuffer) {
         return 0;
     }
-    return (char*)(_imp->file->data() + _imp->cacheFileMemoryChunkIndex * NATRON_TILE_SIZE_BYTES);
-}
-
-int
-CacheImageStorage::getCacheFileMemoryChunkIndex() const
-{
-    return _imp->cacheFileMemoryChunkIndex;
-}
-
-std::string
-CacheImageStorage::getCacheFileAbsolutePath() const
-{
-    return _imp->file->path();
+    return _imp->localBuffer->getData();
 }
 
 
 void
-CacheImageStorage::syncBackingFile()
+CacheImageTileStorage::allocateMemoryImpl(const AllocateMemoryArgs& args)
 {
-    if (!_imp->file) {
-        return;
-    }
-
-    _imp->file->flush(MemoryFile::eFlushTypeAsync, _imp->file->data() + _imp->cacheFileMemoryChunkIndex * NATRON_TILE_SIZE_BYTES, NATRON_TILE_SIZE_BYTES);
+    assert(!_imp->localBuffer);
+    _imp->localBuffer.reset(new RamBuffer<char>);
+    _imp->localBuffer->resize(NATRON_TILE_SIZE_BYTES);
+    _imp->bitdepth = args.bitDepth;
 }
 
 void
-CacheImageStorage::allocateMemoryImpl(const AllocateMemoryArgs& args)
+CacheImageTileStorage::deallocateMemoryImpl()
 {
-    const CacheAllocateMemoryArgs* mmapArgs = dynamic_cast<const CacheAllocateMemoryArgs*>(&args);
-    assert(mmapArgs);
-
-    CachePtr cache = getCache();
-    if (!cache) {
-        throw std::bad_alloc();
-    }
-
-
-    U64 hash = getKey()->getHash();
-    int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
-
-    if (!mmapArgs->cacheFilePath.empty()) {
-
-        // Check that the provided file exists
-        if (!Cache::fileExists(mmapArgs->cacheFilePath)) {
-            throw std::bad_alloc();
-        }
-        try {
-            _imp->file = cache->getTileCacheFile(bucketIndex, mmapArgs->cacheFilePath, mmapArgs->cacheFileMemChunkIndex);
-        } catch (...) {
-            throw std::bad_alloc();
-        }
-        if (!_imp->file) {
-            throw std::bad_alloc();
-        }
-        _imp->cacheFileMemoryChunkIndex = mmapArgs->cacheFileMemChunkIndex;
-    } else {
-        try {
-            _imp->file = cache->allocTile(bucketIndex, &_imp->cacheFileMemoryChunkIndex);
-        } catch (...) {
-            throw std::bad_alloc();
-        }
-    }
-
-}
-
-void
-CacheImageStorage::deallocateMemoryImpl()
-{
-    CachePtr cache = getCache();
-    if (!cache) {
-        return;
-    }
-
-    U64 hash = getKey()->getHash();
-    int bucketIndex = Cache::getBucketCacheBucketIndex(hash);
-
-    cache->freeTile(bucketIndex, _imp->cacheFile, _imp->cacheFileDataOffset);
+    _imp->localBuffer.reset();
 }
 
 

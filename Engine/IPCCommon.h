@@ -34,29 +34,23 @@
 #include <boost/interprocess/smart_ptr/shared_ptr.hpp>
 #include <boost/interprocess/smart_ptr/weak_ptr.hpp>
 #include <boost/interprocess/smart_ptr/scoped_ptr.hpp>
-#include <boost/interprocess/managed_mapped_file.hpp>
 #include <boost/interprocess/managed_shared_memory.hpp>
 #include <boost/interprocess/managed_external_buffer.hpp>
 #include <boost/interprocess/containers/string.hpp>
 #include <boost/interprocess/containers/list.hpp>
 #include <boost/interprocess/containers/set.hpp>
+#include <boost/interprocess/containers/vector.hpp>
+#include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/offset_ptr.hpp>
 #endif
 
 NATRON_NAMESPACE_ENTER;
 
 
-// We share the cache across processed with a memory mapped file so that it is also persistent
-typedef boost::interprocess::managed_mapped_file MemorySegmentType;
-
 typedef boost::interprocess::managed_external_buffer ExternalSegmentType;
 
-typedef boost::interprocess::allocator<void, MemorySegmentType::segment_manager>  MM_allocator_void;
-
-
-
-// A pointer (in process memory) of a memory mapped file.
-typedef boost::shared_ptr<boost::interprocess::file_mapping> FileMappingPtr;
+typedef boost::interprocess::allocator<char, ExternalSegmentType::segment_manager> CharAllocator_ExternalSegment;
+typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator_ExternalSegment> String_ExternalSegment;
 
 /**
  * @brief Function to serialize to the given memory segment the given object.
@@ -80,13 +74,12 @@ inline void writeMMObject(const T& object, const std::string& objectName,  Exter
 template <>
 inline void writeMMObject(const std::string& object, const std::string& objectName,  ExternalSegmentType* segment)
 {
-    std::size_t strSizeWithoutNullCharacter = object.size();
 
     // Allocate a char array containing the string
-    char* sharedMemObject = segment->construct<char>(objectName.c_str())[strSizeWithoutNullCharacter + 1]();
+    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
+    String_ExternalSegment* sharedMemObject = segment->construct<String_ExternalSegment>(objectName.c_str())(allocator);
     if (sharedMemObject) {
-        strncpy(sharedMemObject, object.c_str(), strSizeWithoutNullCharacter);
-        sharedMemObject[strSizeWithoutNullCharacter] = 1;
+        sharedMemObject->append(object.c_str());
     } else {
         throw std::bad_alloc();
     }
@@ -99,9 +92,9 @@ inline void writeMMObject(const std::string& object, const std::string& objectNa
  * The only supported container is std::string
  **/
 template <class T>
-inline void readMMObject(const std::string& objectName, const ExternalSegmentType& segment, T* object)
+inline void readMMObject(const std::string& objectName, ExternalSegmentType* segment, T* object)
 {
-    std::pair<T*, MemorySegmentType::size_type> found = segment.find<T>(objectName.c_str());
+    std::pair<T*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
     if (found.first) {
         *object = *found.first;
     } else {
@@ -114,11 +107,11 @@ inline void readMMObject(const std::string& objectName, const ExternalSegmentTyp
  * @brief Template specialization for std::string
  **/
 template <>
-inline void readMMObject(const std::string& objectName, const ExternalSegmentType& segment, std::string* object)
+inline void readMMObject(const std::string& objectName, ExternalSegmentType* segment, std::string* object)
 {
-    std::pair<char*, MemorySegmentType::size_type> found = segment.find<char>(objectName.c_str());
+    std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<String_ExternalSegment>(objectName.c_str());
     if (found.first) {
-        *object = std::string(found.first);
+        *object = std::string(found.first->c_str());
     } else {
         throw std::bad_alloc();
     }

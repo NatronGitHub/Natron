@@ -186,7 +186,7 @@ public:
 
     CachePtr getCache() const;
 
-    void deleteCacheEntriesInSeparateThread(const std::list<CacheEntryBasePtr> & entriesToDelete);
+    void deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;

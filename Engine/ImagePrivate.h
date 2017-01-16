@@ -33,6 +33,7 @@
 #include "Engine/CacheEntryKeyBase.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/Image.h"
+#include "Engine/ImageStorage.h"
 #include "Engine/MultiThread.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"

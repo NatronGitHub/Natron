@@ -88,7 +88,7 @@ public:
      * The function readMMObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(const ExternalSegmentType& segment);
+    virtual void fromMemorySegment(ExternalSegmentType* segment);
 
     /**
      * @brief This should return exactly the size in bytes of memory taken in the
@@ -139,8 +139,6 @@ public:
     
     
 protected:
-
-
 
     /**
      * @brief Must append anything that should identify uniquely the cache entry.
@@ -199,7 +197,7 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(const ExternalSegmentType& segment) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE FINAL;
 
     virtual int getUniqueID() const OVERRIDE FINAL;
 

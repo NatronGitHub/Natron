@@ -1009,14 +1009,6 @@ RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGL
         _imp->drawingGlGpuContext = gpuContext;
         _imp->drawingGlCpuContext = cpuContext;
     }
-    // If we change the drawing context, clear the RotoShapeRender node cache since GL textures that are cached are
-    // tied to the drawing context
-    if (getBrushType() == eRotoStrokeTypeSolid) {
-        NodePtr effectNode = getEffectNode();
-        if (effectNode) {
-            effectNode->removeAllImagesFromCache();
-        }
-    }
 }
 
 

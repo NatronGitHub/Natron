@@ -39,15 +39,6 @@
 
 #include "Global/GlobalDefines.h"
 
-GCC_DIAG_OFF(deprecated)
-#include <QtCore/QMutex>
-#include <QtCore/QThread>
-#include <QtCore/QWaitCondition>
-#include <QtCore/QMutexLocker>
-#include <QtCore/QObject>
-#include <QtCore/QBuffer>
-#include <QtCore/QRunnable>
-GCC_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -85,13 +76,11 @@ NATRON_NAMESPACE_ENTER;
 struct CacheReportInfo
 {
     int nEntries;
-    std::size_t ramBytes, diskBytes, glTextureBytes;
+    std::size_t nBytes;
 
     CacheReportInfo()
     : nEntries(0)
-    , ramBytes(0)
-    , diskBytes(0)
-    , glTextureBytes(0)
+    , nBytes(0)
     {
 
     }
@@ -108,9 +97,6 @@ struct CacheBucket;
  **/
 struct CacheEntryLockerPrivate;
 class CacheEntryLocker;
-
-typedef boost::interprocess::deleter<CacheEntryLocker, MemorySegmentType::segment_manager>  CacheEntryLocker_deleter;
-typedef boost::interprocess::shared_ptr<CacheEntryLocker, MM_allocator_void, CacheEntryLocker_deleter> CacheEntryLockerPtr;
 
 class CacheEntryLocker
 {
@@ -176,24 +162,18 @@ private:
 
 struct CachePrivate;
 class Cache
-: public QObject
-, public boost::enable_shared_from_this<Cache>
+:  public boost::enable_shared_from_this<Cache>
 {
-    GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-    GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
     // For removeAllEntriesForPluginBlocking
     friend class CacheCleanerThread;
-
-    // For allocTile, freeTile etc...
-    friend class CacheImageStorage;
 
     // For notifyMemoryAllocated, etc...
     friend class ImageStorageBase;
 
     friend class CacheEntryLocker;
-    friend class CacheBucket;
+    friend struct CacheBucket;
     
 private:
 
@@ -253,13 +233,19 @@ public:
     CacheEntryLockerPtr get(const CacheEntryBasePtr& entry) const;
 
     /**
+     * @brief Returns whether a cache entry exists for the given hash.
+     * This is significantly faster than the get() function but does not return the entry.
+     **/
+    bool hasCacheEntryForHash(U64 hash) const;
+
+    /**
      * @brief Clears the cache of its last recently used entries so at least nBytesToFree are available for the given storage.
      * This should be called before allocating any buffer in the application to ensure we do not hit the swap.
      *
      * This function is not blocking and it is not guaranteed that the memory is available when returning. 
      * Evicted entries will be deleted in a separate thread so this thread can continue its own work.
      **/
-    void evictLRUEntries(std::size_t nBytesToFree, StorageModeEnum storage);
+    void evictLRUEntries(std::size_t nBytesToFree);
 
     /**
      * @brief Clear the cache of entries that can be purged.
@@ -267,16 +253,17 @@ public:
     void clear();
 
     /**
-     * @brief Removes all cache entries for the given pluginID.
-     * @param blocking If true, this function will not return until all entries for the plug-in are removed from the cache,
-     * otherwise they are removed from a separate thread.
-     **/
-    void removeAllEntriesForPlugin(const std::string& pluginID,  bool blocking);
-
-    /**
      * @brief Removes this entry from the cache
      **/
     void removeEntry(const CacheEntryBasePtr& entry);
+
+    /**
+     * @brief Flush the opened memory mapped files on disk to ensure their persistence.
+     * This can be an expensive operation.
+     * @param async If true, the data is not guaranteed to be flushed when returning the function,
+     * otherwise this function does not return before all data is flushed.
+     **/
+    void flushCacheOnDisk(bool async);
 
     /**
      * @brief Returns cache stats for each plug-in
@@ -284,45 +271,12 @@ public:
     void getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const;
 
     /**
-     * @brief Returns all entries in the cache that have their getUniqueID() function 
-     * returning an ID equal to the given one that thave cache signalling enabled.
+     * @brief Return a number 0 <= N <= 255 from the 2 first hexadecimal digits (8-bit) of the hash
      **/
-    void getAllEntriesByKeyIDWithCacheSignalEnabled(int uniqueID, std::list<CacheEntryBasePtr>* entries) const;
-
     static int getBucketCacheBucketIndex(U64 hash);
 
-Q_SIGNALS:
-
-    /**
-     * @brief Emitted whenever an entry that has its isCacheSignalRequired() return true is inserted or
-     * removed from the cache. This is used for example to update the timeline when a cached texture
-     * is inserted or removed.
-     **/
-    void cacheChanged();
     
 private:
-
-    /**
-     * @brief Removes all cache entries for the given pluginID.
-     * This function will not return until all entries for the plug-in are removed from the cache
-     **/
-    void removeAllEntriesForPluginBlocking(const std::string& pluginID);
-
-    /**
-     * @brief Mark one tile in the tiled memory mapped file as allocated. If not enough space is available, the file size 
-     * will grow.
-     **/
-    std::size_t allocTile(int bucketIndex);
-
-    /**
-     * @brief Free a tile from the cache that was previously allocated with allocTile. It will be made available again for other entries.
-     **/
-    void freeTile(int bucketIndex, std::size_t cacheFileChunkIndex);
-
-    /**
-     * @brief Called when an entry is inserted from the cache. The bucket mutex may still be locked.
-     **/
-    void onEntryInsertedInCache(const CacheEntryBasePtr& entry);
 
     /**
      * @brief Called when an entry is allocated

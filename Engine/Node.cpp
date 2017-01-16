@@ -517,26 +517,6 @@ Node::getGroup() const
     return _imp->group.lock();
 }
 
-
-void
-Node::removeAllImagesFromCache()
-{
-    AppInstancePtr app = getApp();
-
-    if (!app) {
-        return;
-    }
-    ProjectPtr proj = app->getProject();
-
-    if ( proj->isProjectClosing() || proj->isLoadingProject() ) {
-        return;
-    }
-    appPTR->getCache()->removeAllEntriesForPlugin(getPluginID(), false);
-}
-
-
-
-
 void
 Node::loadKnob(const KnobIPtr & knob,
                const SERIALIZATION_NAMESPACE::KnobSerializationList & knobsValues)

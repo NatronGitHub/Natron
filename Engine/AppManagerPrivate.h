@@ -64,7 +64,7 @@ GCC_DIAG_ON(deprecated)
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
-#include "Engine/CacheDeleterThread.h"
+#include "Engine/StorageDeleterThread.h"
 #include "Engine/Image.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/GenericSchedulerThreadWatcher.h"
@@ -112,7 +112,7 @@ public:
 
     CachePtr cache; //< Main application cache
 
-    boost::scoped_ptr<CacheDeleterThread> cacheDeleterThread; // thread used to kill cache entries without blocking a render thread
+    boost::scoped_ptr<StorageDeleterThread> storageDeleteThread; // thread used to kill cache entries without blocking a render thread
 
     boost::scoped_ptr<ProcessInputChannel> _backgroundIPC; //< object used to communicate with the main app
 

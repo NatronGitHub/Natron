@@ -93,7 +93,7 @@ convertCairoImageToNatronImageForAccum_noColor(cairo_surface_t* cairoImg,
 
     double color[3];
     for (int i = 0; i < 3; ++i) {
-        color[i] = useOpacity ? shapeColor[0] * opacity : shapeColor[0];
+        color[i] = useOpacity ? shapeColor[i] * opacity : shapeColor[i];
     }
 
     float *dst_pixels[4];

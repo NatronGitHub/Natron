@@ -22,7 +22,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "CacheDeleterThread.h"
+#include "StorageDeleterThread.h"
 
 #include <list>
 
@@ -33,16 +33,16 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct CacheDeleterThreadPrivate
+struct StorageDeleterThreadPrivate
 {
     mutable QMutex entriesQueueMutex;
-    std::list<CacheEntryBasePtr> entriesQueue;
+    std::list<ImageStorageBasePtr> entriesQueue;
     QWaitCondition entriesQueueNotEmptyCond;
     QMutex mustQuitMutex;
     QWaitCondition mustQuitCond;
     bool mustQuit;
 
-    CacheDeleterThreadPrivate()
+    StorageDeleterThreadPrivate()
     : entriesQueueMutex()
     , entriesQueue()
     , entriesQueueNotEmptyCond()
@@ -56,22 +56,28 @@ struct CacheDeleterThreadPrivate
 
 
 
-CacheDeleterThread::CacheDeleterThread()
+StorageDeleterThread::StorageDeleterThread()
 : QThread()
-, _imp(new CacheDeleterThreadPrivate())
+, _imp(new StorageDeleterThreadPrivate())
 {
-    setObjectName( QString::fromUtf8("CacheDeleter") );
+    setObjectName( QString::fromUtf8("StorageDeleter") );
 }
 
-CacheDeleterThread::~CacheDeleterThread()
+StorageDeleterThread::~StorageDeleterThread()
 {
     
 }
 
-
+void
+StorageDeleterThread::appendToQueue(const ImageStorageBasePtr& entry)
+{
+    std::list<ImageStorageBasePtr> tmpList;
+    tmpList.push_back(entry);
+    appendToQueue(tmpList);
+}
 
 void
-CacheDeleterThread::appendToQueue(const std::list<CacheEntryBasePtr> & entriesToDelete)
+StorageDeleterThread::appendToQueue(const std::list<ImageStorageBasePtr> & entriesToDelete)
 {
     if ( entriesToDelete.empty() ) {
         return;
@@ -90,7 +96,7 @@ CacheDeleterThread::appendToQueue(const std::list<CacheEntryBasePtr> & entriesTo
 }
 
 void
-CacheDeleterThread::quitThread()
+StorageDeleterThread::quitThread()
 {
     if ( !isRunning() ) {
         return;
@@ -101,7 +107,7 @@ CacheDeleterThread::quitThread()
 
     {
         QMutexLocker k2(&_imp->entriesQueueMutex);
-        _imp->entriesQueue.push_back( CacheEntryBasePtr() );
+        _imp->entriesQueue.push_back( ImageStorageBasePtr() );
         _imp->entriesQueueNotEmptyCond.wakeOne();
     }
     while (_imp->mustQuit) {
@@ -110,7 +116,7 @@ CacheDeleterThread::quitThread()
 }
 
 bool
-CacheDeleterThread::isWorking() const
+StorageDeleterThread::isWorking() const
 {
     QMutexLocker k(&_imp->entriesQueueMutex);
 
@@ -118,7 +124,7 @@ CacheDeleterThread::isWorking() const
 }
 
 void
-CacheDeleterThread::run()
+StorageDeleterThread::run()
 {
     for (;;) {
         bool quit;
@@ -151,132 +157,6 @@ CacheDeleterThread::run()
      
         } // front. After this scope, the image is guarenteed to be freed
       
-    }
-} // run
-
-struct CleanRequest
-{
-    std::string pluginID;
-};
-
-struct CacheCleanerThreadPrivate
-{
-    mutable QMutex requestQueueMutex;
-
-    std::list<CleanRequest> requestsQueues;
-    QWaitCondition requestsQueueNotEmptyCond;
-    CacheWPtr cache;
-    QMutex mustQuitMutex;
-    QWaitCondition mustQuitCond;
-    bool mustQuit;
-
-    CacheCleanerThreadPrivate(const CachePtr& cache)
-    : requestQueueMutex()
-    , requestsQueues()
-    , requestsQueueNotEmptyCond()
-    , cache(cache)
-    , mustQuitMutex()
-    , mustQuitCond()
-    , mustQuit(false)
-    {
-        
-    }
-};
-
-CacheCleanerThread::CacheCleanerThread(const CachePtr& cache)
-: QThread()
-, _imp(new CacheCleanerThreadPrivate(cache))
-{
-    setObjectName( QString::fromUtf8("CacheCleaner") );
-}
-
-CacheCleanerThread::~CacheCleanerThread()
-{
-}
-
-void
-CacheCleanerThread::appendToQueue(const std::string& pluginID)
-{
-    {
-        QMutexLocker k(&_imp->requestQueueMutex);
-        CleanRequest r;
-        r.pluginID = pluginID;
-        _imp->requestsQueues.push_back(r);
-    }
-    if ( !isRunning() ) {
-        start();
-    } else {
-        QMutexLocker k(&_imp->requestQueueMutex);
-        _imp->requestsQueueNotEmptyCond.wakeOne();
-    }
-}
-
-void
-CacheCleanerThread::quitThread()
-{
-    if ( !isRunning() ) {
-        return;
-    }
-    QMutexLocker k(&_imp->mustQuitMutex);
-    assert(!_imp->mustQuit);
-    _imp->mustQuit = true;
-
-    {
-        QMutexLocker k2(&_imp->requestQueueMutex);
-        CleanRequest r;
-        _imp->requestsQueues.push_back(r);
-        _imp->requestsQueueNotEmptyCond.wakeOne();
-    }
-    while (_imp->mustQuit) {
-        _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
-    }
-}
-
-bool
-CacheCleanerThread::isWorking() const
-{
-    QMutexLocker k(&_imp->requestQueueMutex);
-
-    return !_imp->requestsQueues.empty();
-}
-
-void
-CacheCleanerThread::run()
-{
-    for (;;) {
-        bool quit;
-        {
-            QMutexLocker k(&_imp->mustQuitMutex);
-            quit = _imp->mustQuit;
-        }
-
-        {
-            CleanRequest front;
-            {
-                QMutexLocker k(&_imp->requestQueueMutex);
-                if ( quit && _imp->requestsQueues.empty() ) {
-                    _imp->requestQueueMutex.unlock();
-                    QMutexLocker k(&_imp->mustQuitMutex);
-                    assert(_imp->mustQuit);
-                    _imp->mustQuit = false;
-                    _imp->mustQuitCond.wakeOne();
-
-                    return;
-                }
-                while ( _imp->requestsQueues.empty() ) {
-                    _imp->requestsQueueNotEmptyCond.wait(&_imp->requestQueueMutex);
-                }
-
-                assert( !_imp->requestsQueues.empty() );
-                front = _imp->requestsQueues.front();
-                _imp->requestsQueues.pop_front();
-            }
-            CachePtr c = _imp->cache.lock();
-            if (c) {
-                c->removeAllEntriesForPluginBlocking(front.pluginID);
-            }
-
-        }
     }
 } // run
 

@@ -34,19 +34,13 @@ NATRON_NAMESPACE_ENTER;
 
 struct CacheEntryBasePrivate
 {
-    QMutex lock;
 
     CacheWPtr cache;
     CacheEntryKeyBasePtr key;
-    int cacheBucketIndex;
-    bool cacheSignalRequired;
 
     CacheEntryBasePrivate(const CachePtr& cache)
-    : lock()
-    , cache(cache)
+    : cache(cache)
     , key()
-    , cacheBucketIndex(-1)
-    , cacheSignalRequired(false)
     {
         
     }
@@ -69,59 +63,28 @@ CacheEntryBase::getCache() const
     return _imp->cache.lock();
 }
 
-void
-CacheEntryBase::setCacheBucketIndex(int index)
-{
-    QMutexLocker (&_imp->lock);
-    _imp->cacheBucketIndex = index;
-}
-
-
-int
-CacheEntryBase::getCacheBucketIndex() const
-{
-    QMutexLocker (&_imp->lock);
-    return _imp->cacheBucketIndex;
-}
-
 
 CacheEntryKeyBasePtr
 CacheEntryBase::getKey() const
 {
-    QMutexLocker (&_imp->lock);
     return _imp->key;
 }
 
 void
 CacheEntryBase::setKey(const CacheEntryKeyBasePtr& key)
 {
-    QMutexLocker (&_imp->lock);
     _imp->key = key;
 }
 
 U64
 CacheEntryBase::getHashKey() const
 {
-    QMutexLocker (&_imp->lock);
     if (!_imp->key) {
         return 0;
     }
     return _imp->key->getHash();
 }
 
-bool
-CacheEntryBase::isCacheSignalRequired() const
-{
-    QMutexLocker (&_imp->lock);
-    return _imp->cacheSignalRequired;
-}
-
-void
-CacheEntryBase::setCacheSignalRequired(bool required)
-{
-    QMutexLocker (&_imp->lock);
-    _imp->cacheSignalRequired = required;
-}
 
 TimeValue
 CacheEntryBase::getTime() const
@@ -149,13 +112,13 @@ CacheEntryBase::getMetadataSize() const
 }
 
 void
-CacheEntryBase::toMemorySegment(ExternalSegmentType* segment) const
+CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, void* /*tileDataPtr*/) const
 {
     _imp->key->toMemorySegment(segment);
 }
 
 void
-CacheEntryBase::fromMemorySegment(const ExternalSegmentType& segment)
+CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment, const void* /*tileDataPtr*/)
 {
     _imp->key->fromMemorySegment(segment);
 }

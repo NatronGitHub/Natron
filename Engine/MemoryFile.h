@@ -66,8 +66,8 @@ public:
     MemoryFile();
 
     /**
-     * @brief The destructor flushes data to disk and closes the mapping, removing the RAM portion but not the file.
-     * If you want to discard the data, call remove()
+     * @brief The destructor closes the mapping, removing the RAM portion but not the file.
+     * The data are not guaranteed to be flushed to the disk.
      **/
     ~MemoryFile();
 
