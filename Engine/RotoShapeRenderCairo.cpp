@@ -809,7 +809,7 @@ renderStrokeBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData
     myData->pressureAffectsHardness = pressureAffectsHardness;
     myData->pressureAffectsSize = pressureAffectsSize;
     myData->buildUp = buildUp;
-    memcpy(myData->shapeColor, shapeColor, sizeof(double) * 3);
+    myData->shapeColor =  shapeColor;
     myData->opacity = opacity;
     cairo_set_operator(myData->cr, buildUp ? CAIRO_OPERATOR_OVER : CAIRO_OPERATOR_LIGHTEN);
 
