@@ -25,9 +25,10 @@
 
 #include "RotoShapeRenderGL.h"
 
-#include "Engine/OSGLContext.h"
+#include "Engine/Color.h"
 #include "Engine/Image.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/RotoBezierTriangulation.h"
 #include "Engine/RotoStrokeItem.h"
@@ -940,12 +941,13 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
         double fallOff = bezier->getFeatherFallOffKnob()->getValueAtTime(t, DimIdx(0), view);
         double featherDist = bezier->getFeatherKnob()->getValueAtTime(t, DimIdx(0), view);
-        std::vector<double> shapeColor(3);
+        ColorRgbaD shapeColor;
         {
             KnobColorPtr colorKnob = bezier->getColorKnob();
-            for (int i = 0; i < 3; ++i) {
-                shapeColor[i] = colorKnob->getValueAtTime(t, DimIdx(i), view);
-            }
+            shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
+            shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
+            shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
+            shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
         }
 
 
@@ -967,7 +969,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
 
         rampShader->bind();
-        OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)opacity};
+        OfxRGBAColourF fillColor = {(float)shapeColor.r, (float)shapeColor.g, (float)shapeColor.b, (float)opacity};
         rampShader->setUniform("fillColor", fillColor);
         rampShader->setUniform("fallOff", (float)fallOff);
 
@@ -1004,9 +1006,9 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
                 // since we are operating on a thread-local render clone.
                 assert(roi.contains(v_data[0], v_data[1]));
 
-                c_data[0] = shapeColor[0];
-                c_data[1] = shapeColor[1];
-                c_data[2] = shapeColor[2];
+                c_data[0] = shapeColor.r;
+                c_data[1] = shapeColor.g;
+                c_data[2] = shapeColor.b;
                 if (data.featherMesh[i].isInner) {
                     c_data[3] = opacity;
                 } else {
@@ -1147,7 +1149,7 @@ struct RenderStrokeGLData
     bool pressureAffectsSize;
     bool buildUp;
     bool dstImageIsFinalTexture;
-    double shapeColor[3];
+    ColorRgbaD shapeColor;
     double opacity;
 
     int nbPointsPerSegment;
@@ -1173,7 +1175,7 @@ static void
 getDotTriangleFan(const Point& center,
                   double radius,
                   const int nbOutsideVertices,
-                  double shapeColor[3],
+                  const ColorRgbaD& shapeColor,
                   double opacity,
                   double hardness,
                   bool doBuildUp,
@@ -1219,9 +1221,9 @@ getDotTriangleFan(const Point& center,
         toTexCoords(texBounds, center.x, center.y, &tPtr[0], &tPtr[1]);
         tPtr += 2;
     }
-    cPtr[0] = shapeColor[0];
-    cPtr[1] = shapeColor[1];
-    cPtr[2] = shapeColor[2];
+    cPtr[0] = shapeColor.r;
+    cPtr[1] = shapeColor.g;
+    cPtr[2] = shapeColor.b;
     cPtr[3] = opacity;
     *hPtr = hardness;
     vPtr += 2;
@@ -1242,9 +1244,9 @@ getDotTriangleFan(const Point& center,
 
 
 
-        cPtr[0] = shapeColor[0];
-        cPtr[1] = shapeColor[1];
-        cPtr[2] = shapeColor[2];
+        cPtr[0] = shapeColor.r;
+        cPtr[1] = shapeColor.g;
+        cPtr[2] = shapeColor.b;
         cPtr[3] = 0.;
         cPtr += 4;
 
@@ -1258,15 +1260,15 @@ getDotTriangleFan(const Point& center,
     if (tPtr) {
         toTexCoords(texBounds, vPtr[0], vPtr[1], &tPtr[0], &tPtr[1]);
     }
-    cPtr[0] = shapeColor[0];
-    cPtr[1] = shapeColor[1];
-    cPtr[2] = shapeColor[2];
+    cPtr[0] = shapeColor.r;
+    cPtr[1] = shapeColor.g;
+    cPtr[2] = shapeColor.b;
     cPtr[3] = 0.;
     *hPtr = hardness;
 
 }
 
-static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius, double shapeColor[3], double opacity, double hardness)
+static void renderDot_gl(RenderStrokeGLData& data, const Point &center, double radius, const ColorRgbaD& shapeColor, double opacity, double hardness)
 {
 
     // Create the indices buffer for this triangle fan
@@ -1318,7 +1320,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                      bool pressureAffectsHardness,
                      bool pressureAffectsSize,
                      bool buildUp,
-                     double shapeColor[3],
+                     const ColorRgbaD& shapeColor,
                      double opacity)
 {
     RenderStrokeGLData* myData = (RenderStrokeGLData*)userData;
@@ -1330,7 +1332,7 @@ renderStrokeBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
     myData->pressureAffectsHardness = pressureAffectsHardness;
     myData->pressureAffectsSize = pressureAffectsSize;
     myData->buildUp = buildUp;
-    memcpy(myData->shapeColor, shapeColor, sizeof(double) * 3);
+    myData->shapeColor = shapeColor;
     myData->opacity = opacity;
     myData->nbPointsPerSegment = getNbPointPerSegment(myData->brushSizePixel);
 }
@@ -1595,7 +1597,7 @@ renderStrokeEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData)
         perDrawCount[i] = myData->indicesBuf[i]->size();
     }
 
-    OfxRGBAColourF fillColor = {(float)myData->shapeColor[0], (float)myData->shapeColor[1], (float)myData->shapeColor[2], (float)myData->opacity};
+    OfxRGBAColourF fillColor = {(float)myData->shapeColor.r, (float)myData->shapeColor.g, (float)myData->shapeColor.b, (float)myData->opacity};
 
 
 
@@ -1810,10 +1812,12 @@ renderSmearBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                      bool pressureAffectsOpacity,
                      bool pressureAffectsHardness,
                      bool pressureAffectsSize,
-                     bool /*buildUp*/,
-                     double /*shapeColor*/[3],
+                     bool buildUp,
+                     const ColorRgbaD& shapeColor,
                      double opacity)
 {
+    Q_UNUSED(buildUp);
+    Q_UNUSED(shapeColor);
     RenderSmearGLData* myData = (RenderSmearGLData*)userData;
 
     myData->brushSizePixel = brushSizePixel;
@@ -1889,7 +1893,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
     qDebug() << "Next:" << nextDotBounds.x1<<nextDotBounds.y1<<nextDotBounds.x2<<nextDotBounds.y2;
 
     int nbVertices = myData->nbPointsPerSegment + 2;
-    double shapeColor[3] = {1., 1., 1.};
+    ColorRgbaD shapeColor(1., 1., 1., 1.);
 
     // Get the dot vertices, colors, hardness and tex coords to premultiply the src rect
     bool wasIndicesValid = false;
@@ -1952,7 +1956,7 @@ static bool renderSmearDotInternal(RenderSmearGLData* myData,
         GL::BindTexture( target, dstImage->getGLTextureID() );
 
 
-        OfxRGBAColourF fillColor = {(float)shapeColor[0], (float)shapeColor[1], (float)shapeColor[2], (float)opacity};
+        OfxRGBAColourF fillColor = {(float)shapeColor.r, (float)shapeColor.g, (float)shapeColor.b, (float)opacity};
 
         GLShaderBasePtr smearShader = myData->glData->getOrCreateSmearShader();
         unsigned int iboID = myData->glData->getOrCreateIBOID();

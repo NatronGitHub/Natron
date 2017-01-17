@@ -298,6 +298,7 @@ HEADERS += \
     Cache.h \
     CacheEntry.h \
     CoonsRegularization.h \
+    Color.h \
     ColorParser.h \
     CreateNodeArgs.h \
     Curve.h \

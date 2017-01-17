@@ -24,8 +24,9 @@
 
 #include "RotoShapeRenderNodePrivate.h"
 
-#include "Engine/KnobTypes.h"
 #include "Engine/Image.h"
+#include "Engine/Color.h"
+#include "Engine/KnobTypes.h"
 #include "Engine/RotoShapeRenderNode.h"
 #include "Engine/RotoStrokeItem.h"
 
@@ -120,11 +121,15 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         }
     }
 
-    double shapeColor[3];
+    ColorRgbaD shapeColor;
     {
+        const double t = time;
         KnobColorPtr colorKnob = stroke->getColorKnob();
         for (int i = 0; i < 3; ++i) {
-            shapeColor[i] = colorKnob->getValueAtTime(time, DimIdx(i), view);
+            shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
+            shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
+            shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
+            shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
         }
     }
 

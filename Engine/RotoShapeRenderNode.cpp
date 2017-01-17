@@ -28,6 +28,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
+#include "Engine/Color.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/Hash64.h"
@@ -409,15 +410,16 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             }
 #endif
             if (args.useOpenGL) {
-                double shapeColor[3];
+                ColorRgbaD shapeColor;
                 {
+                    const double t = args.time;
+                    const ViewGetSpec view = args.view;
                     KnobColorPtr colorKnob = rotoItem->getColorKnob();
-                    if (!colorKnob) {
-                        shapeColor[0] = shapeColor[1] = shapeColor[2] = 1.;
-                    } else {
-                        for (int i = 0; i < 3; ++i) {
-                            shapeColor[i] = colorKnob->getValueAtTime(args.time, DimIdx(i), args.view);
-                        }
+                    if (colorKnob) {
+                        shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
+                        shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
+                        shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
+                        shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
                     }
                 }
                 

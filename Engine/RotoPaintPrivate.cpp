@@ -28,6 +28,7 @@
 #include <QtCore/QLineF>
 
 #include "Global/GLIncludes.h"
+#include "Engine/Color.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/MergingEnum.h"
@@ -1060,10 +1061,11 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     KnobDoublePtr translateKnob = strokeBeingPaint->getBrushCloneTranslateKnob();
     KnobDoublePtr effectKnob = strokeBeingPaint->getBrushEffectKnob();
     KnobColorPtr colorWheel = colorWheelButton.lock();
-    std::vector<double> color(3);
-    for (int i = 0; i < 3; ++i) {
-        color[i] = colorWheel->getValue(DimIdx(i));
-    }
+    ColorRgbaD shapeColor;
+    shapeColor.r = colorWheel->getValue( DimIdx(0) );
+    shapeColor.g = colorWheel->getValue( DimIdx(1) );
+    shapeColor.b = colorWheel->getValue( DimIdx(2) );
+    shapeColor.a = colorWheel->getValue( DimIdx(3) );
 
     MergingFunctionEnum compOp = (MergingFunctionEnum)compositingOperatorChoice.lock()->getValue();
     double opacity = opacitySpinbox.lock()->getValue();
@@ -1081,7 +1083,10 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     double time = strokeBeingPaint->getApp()->getTimeLine()->currentFrame();
     strokeBeingPaintedTimelineFrame = time;
     if (colorKnob) {
-        colorKnob->setValueAcrossDimensions(color, DimIdx(0));
+        colorKnob->setValue( shapeColor.r, ViewSetSpec::current(), DimIdx(0) );
+        colorKnob->setValue( shapeColor.g, ViewSetSpec::current(), DimIdx(1) );
+        colorKnob->setValue( shapeColor.b, ViewSetSpec::current(), DimIdx(2) );
+        colorKnob->setValue( shapeColor.a, ViewSetSpec::current(), DimIdx(3) );
     }
     operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp));
     if (opacityKnob) {
@@ -1920,16 +1925,15 @@ RotoPaint::drawOverlay(double time,
                 std::list<std::list<std::pair<Point, double> > > strokes;
                 isStroke->evaluateStroke(0, time, view, &strokes);
                 bool locked = (*it)->isLockedRecursive();
-                double curveColor[4];
+                ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
                 if (!locked) {
                     KnobColorPtr overlayColorKnob = (*it)->getOverlayColorKnob();
-                    for (int i = 0; i < 3; ++i) {
-                        curveColor[i] = overlayColorKnob->getValue(DimIdx(i));
-                    }
-                } else {
-                    curveColor[0] = 0.8; curveColor[1] = 0.8; curveColor[2] = 0.8; curveColor[3] = 1.;
+                    overlayColor.r = overlayColorKnob->getValue( DimIdx(0) );
+                    overlayColor.g = overlayColorKnob->getValue( DimIdx(1) );
+                    overlayColor.b = overlayColorKnob->getValue( DimIdx(2) );
+                    overlayColor.a = overlayColorKnob->getValue( DimIdx(3) );
                 }
-                GL_GPU::Color4dv(curveColor);
+                GL_GPU::Color4d(overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a);
 
                 for (std::list<std::list<std::pair<Point, double> > >::iterator itStroke = strokes.begin(); itStroke != strokes.end(); ++itStroke) {
                     GL_GPU::Begin(GL_LINE_STRIP);
@@ -1959,17 +1963,15 @@ RotoPaint::drawOverlay(double time,
                                                      &points, NULL);
 
                 bool locked = (*it)->isLockedRecursive();
-                double curveColor[4];
+                ColorRgbaD overlayColor(0.8, 0.8, 0.8, 1.);
                 if (!locked) {
                     KnobColorPtr overlayColorKnob = (*it)->getOverlayColorKnob();
-                    for (int i = 0; i < 3; ++i) {
-                        curveColor[i] = overlayColorKnob->getValue(DimIdx(i));
-                    }
-                    curveColor[3] = 1.;
-                } else {
-                    curveColor[0] = 0.8; curveColor[1] = 0.8; curveColor[2] = 0.8; curveColor[3] = 1.;
+                    overlayColor.r = overlayColorKnob->getValue( DimIdx(0) );
+                    overlayColor.g = overlayColorKnob->getValue( DimIdx(1) );
+                    overlayColor.b = overlayColorKnob->getValue( DimIdx(2) );
+                    overlayColor.a = overlayColorKnob->getValue( DimIdx(3) );
                 }
-                GL_GPU::Color4dv(curveColor);
+                GL_GPU::Color4d(overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a);
 
                 GL_GPU::Begin(GL_LINE_STRIP);
                 for (std::vector<ParametricPoint >::const_iterator it2 = points.begin(); it2 != points.end(); ++it2) {
@@ -2146,7 +2148,7 @@ RotoPaint::drawOverlay(double time,
                                 GL_GPU::Color3f(0.2, 1., 0.);
                                 colorChanged = true;
                             } else {
-                                GL_GPU::Color4dv(curveColor);
+                                GL_GPU::Color4d(overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a);
                             }
 
                             double beyondX, beyondY;
@@ -2188,7 +2190,7 @@ RotoPaint::drawOverlay(double time,
                                               GL_GPU::Color3f(0.2, 1., 0.);
                                               colorChanged = true;
                                           } else {
-                                              GL_GPU::Color4dv(curveColor);
+                                              GL_GPU::Color4d(overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a);
                                           }
 
                                     GL_GPU::Begin(GL_LINES);

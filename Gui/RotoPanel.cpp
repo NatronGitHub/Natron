@@ -1014,8 +1014,8 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
         makeSolidIcon(overlayColor, overlayIcon);
         it->treeItem->setIcon(COL_OVERLAY, overlayIcon);
 
-        double shapeColor[3];
-        drawable->getColor(time, shapeColor);
+        ColorRgbaD shapeColor;
+        drawable->getColor(time, &shapeColor);
         QIcon shapeColorIcon;
         makeSolidIcon(shapeColor, shapeColorIcon);
         it->treeItem->setIcon(COL_COLOR, shapeColorIcon);
@@ -1084,8 +1084,8 @@ RotoPanelPrivate::updateSplinesInfoGUI(double time)
         RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
         if (drawable) {
             QIcon shapeColorIC;
-            double shapeColor[3];
-            drawable->getColor(time, shapeColor);
+            ColorRgbaD shapeColor;
+            drawable->getColor(time, &shapeColor);
             makeSolidIcon(shapeColor, shapeColorIC);
             it->treeItem->setIcon(COL_COLOR, shapeColorIC);
    #ifdef NATRON_ROTO_INVERTIBLE
@@ -1197,8 +1197,8 @@ RotoPanelPrivate::insertItemRecursively(double time,
         }
         treeItem->setIcon(COL_OVERLAY, overlayIcon);
         treeItem->setToolTip( COL_OVERLAY, NATRON_NAMESPACE::convertFromPlainText(tr(kRotoOverlayHint), NATRON_NAMESPACE::WhiteSpaceNormal) );
-        double shapeColor[3];
-        drawable->getColor(time, shapeColor);
+        ColorRgbaD shapeColor;
+        drawable->getColor(time, &shapeColor);
         QIcon shapeIcon;
         makeSolidIcon(shapeColor, shapeIcon);
         treeItem->setIcon(COL_COLOR, shapeIcon);
@@ -1435,8 +1435,8 @@ RotoPanel::onRotoItemShapeColorChanged()
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             QIcon icon;
-            double shapeColor[3];
-            item->getColor(time, shapeColor);
+            ColorRgbaD shapeColor;
+            item->getColor(time, &shapeColor);
             makeSolidIcon(shapeColor, icon);
             it->treeItem->setIcon(COL_COLOR, icon);
         }
@@ -1546,26 +1546,27 @@ RotoPanel::onItemColorDialogEdited(const QColor & color)
         RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
         if (drawable) {
             if (_imp->dialogEdition == eColorDialogEditingShapeColor) {
-                KnobColorPtr colorKnob = drawable->getColorKnob();
-                colorKnob->setValues(color.redF(), color.greenF(), color.blueF(), ViewSpec::all(), eValueChangedReasonUserEdited);
                 QIcon icon;
-                double colorArray[3];
-                colorArray[0] = color.redF();
-                colorArray[1] = color.greenF();
-                colorArray[2] = color.blueF();
-                makeSolidIcon(colorArray, icon);
+                ColorRgbaF shapeColor;
+                shapeColor.r = color.redF();
+                shapeColor.g = color.greenF();
+                shapeColor.b = color.blueF();
+                shapeColor.a = color.alphaF();
+                makeSolidIcon(shapeColor, icon);
                 found->treeItem->setIcon(COL_COLOR, icon);
+                KnobColorPtr colorKnob = drawable->getColorKnob();
+                colorKnob->setValues(shapeColor.r, shapeColor.g, shapeColor.b, shapeColor.a, ViewSpec::all(), eValueChangedReasonUserEdited);
                 KnobColorPtr contextKnob = _imp->context->getColorKnob();
-                contextKnob->setValues(colorArray[0], colorArray[1], colorArray[2], ViewSpec::all(), eValueChangedReasonUserEdited);
+                contextKnob->setValues(shapeColor.r, shapeColor.g, shapeColor.b, shapeColor.a, ViewSpec::all(), eValueChangedReasonUserEdited);
             } else if (_imp->dialogEdition == eColorDialogEditingOverlayColor) {
-                double colorArray[4];
-                colorArray[0] = color.redF();
-                colorArray[1] = color.greenF();
-                colorArray[2] = color.blueF();
-                colorArray[3] = color.alphaF();
-                drawable->setOverlayColor(colorArray);
+                ColorRgbaF overlayColor;
+                overlayColor.r = color.redF();
+                overlayColor.g = color.greenF();
+                overlayColor.b = color.blueF();
+                overlayColor.a = color.alphaF();
+                drawable->setOverlayColor(overlayColor);
                 QIcon icon;
-                makeSolidIcon(colorArray, icon);
+                makeSolidIcon(overlayColor, icon);
                 found->treeItem->setIcon(COL_OVERLAY, icon);
             }
         }
@@ -1672,23 +1673,22 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                 dialog.setOption(QColorDialog::DontUseNativeDialog);
                 dialog.setOption(QColorDialog::ShowAlphaChannel);
                 _imp->dialogEdition = eColorDialogEditingOverlayColor;
-                double oc[4];
-                drawable->getOverlayColor(oc);
+                ColorRgbaF overlayColor;
+                drawable->getOverlayColor(&overlayColor);
                 QColor color;
-                color.setRgbF(oc[0], oc[1], oc[2]);
-                color.setAlphaF(oc[3]);
+                color.setRgbF(overlayColor.r, overlayColor.g, overlayColor.b, overlayColor.a);
                 dialog.setCurrentColor(color);
                 QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onItemColorDialogEdited(QColor)) );
                 if ( dialog.exec() ) {
                     color = dialog.selectedColor();
-                    oc[0] = color.redF();
-                    oc[1] = color.greenF();
-                    oc[2] = color.blueF();
-                    oc[3] = color.alphaF();
+                    overlayColor.r = color.redF();
+                    overlayColor.g = color.greenF();
+                    overlayColor.b = color.blueF();
+                    overlayColor.a = color.alphaF();
                 }
                 _imp->dialogEdition = eColorDialogEditingNothing;
-                QPixmap pix(15, 15);
-                pix.fill(color);
+                QIcon icon;
+                makeSolidIcon(overlayColor, icon);
                 QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
                 for (int i = 0; i < selected.size(); ++i) {
                     TreeItems::iterator found = _imp->findItem(selected[i]);
@@ -1696,7 +1696,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                     drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                     if (drawable) {
                         drawable->setOverlayColor(oc);
-                        found->treeItem->setIcon( COL_OVERLAY, QIcon(pix) );
+                        found->treeItem->setIcon( COL_OVERLAY, icon );
                     }
                 }
             }
@@ -1708,21 +1708,23 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
             bool colorChosen = false;
-            double shapeColor[3];
+            ColorRgbaD shapeColor;
             if (drawable) {
                 QColorDialog dialog;
                 dialog.setOption(QColorDialog::DontUseNativeDialog);
+                dialog.setOption(QColorDialog::ShowAlphaChannel);
                 _imp->dialogEdition = eColorDialogEditingShapeColor;
-                drawable->getColor(time, shapeColor);
+                drawable->getColor(time, &shapeColor);
                 QColor color;
-                color.setRgbF(shapeColor[0], shapeColor[1], shapeColor[2]);
+                color.setRgbF(shapeColor.r, shapeColor.g, shapeColor.b, shapeColor.a);
                 dialog.setCurrentColor(color);
                 QObject::connect( &dialog, SIGNAL(currentColorChanged(QColor)), this, SLOT(onItemColorDialogEdited(QColor)) );
                 if ( dialog.exec() ) {
                     color = dialog.selectedColor();
-                    shapeColor[0] = color.redF();
-                    shapeColor[1] = color.greenF();
-                    shapeColor[2] = color.blueF();
+                    shapeColor.r = color.redF();
+                    shapeColor.g = color.greenF();
+                    shapeColor.b = color.blueF();
+                    shapeColor.a = color.alphaF();
                 }
                 _imp->dialogEdition = eColorDialogEditingNothing;
                 QIcon icon;
@@ -1734,7 +1736,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
                     drawable = dynamic_cast<RotoDrawableItem*>( found->rotoItem.get() );
                     if (drawable) {
                         KnobColorPtr colorKnob = drawable->getColorKnob();
-                        colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonUserEdited);
+                        colorKnob->setValues(shapeColor.r, shapeColor.g, shapeColor.b, shapeColor.a, ViewSpec::all(), eValueChangedReasonUserEdited);
                         found->treeItem->setIcon(COL_COLOR, icon);
                     }
                 }
@@ -1742,7 +1744,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
 
             if ( colorChosen && !selected.empty() ) {
                 KnobColorPtr colorKnob = _imp->context->getColorKnob();
-                colorKnob->setValues(shapeColor[0], shapeColor[1], shapeColor[2], ViewSpec::all(), eValueChangedReasonUserEdited);
+                colorKnob->setValues(shapeColor.r, shapeColor.g, shapeColor.b, shapeColor.a, ViewSpec::all(), eValueChangedReasonUserEdited);
             }
 
             break;
