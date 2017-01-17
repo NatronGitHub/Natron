@@ -412,21 +412,18 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
     }
     assert((args.canReturnDeprecatedTransform3x3 && !args.canReturnDistorsionFunc) || (!args.canReturnDeprecatedTransform3x3 && args.canReturnDistorsionFunc));
 
-    GetDistorsionResultsPtr actionResults;
-    ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &actionResults);
+    DistorsionFunction2DPtr disto;
+    ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &disto);
     if (isFailureRetCode(stat)) {
         return stat;
     }
-
-    DistorsionFunction2DPtr disto;
+    if (!disto || disto->inputNbToDistort == -1) {
+        return eActionStatusOK;
+    }
     {
-        const DistorsionFunction2DPtr& originalDisto = actionResults->getDistorsionResults();
-        if (!originalDisto || originalDisto->inputNbToDistort == -1) {
-            return eActionStatusOK;
-        }
-
         // Copy the original distorsion held in the results in case we convert the transformation matrix from canonical to pixels.
-        disto.reset(new DistorsionFunction2D(*originalDisto));
+        DistorsionFunction2DPtr copy(new DistorsionFunction2D(*disto));
+        disto = copy;
     }
 
 
@@ -862,10 +859,6 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
         }
     } // isDrawing
 
-    // This flag will make all cached tiles of the image make the cache emit the cacheChanged() signal.
-    // Thus we can then in the timeline gui implementation know which frames are cached.
-    const bool enableCacheChangedNotification = dynamic_cast<ViewerInstance*>(_publicInterface);
-
     // For each requested components, create the corresponding image plane.
     // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
     // If using the cache, the image has to be in a mono-channel tiled format, hence we later create a temporary copy
@@ -887,7 +880,6 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
             initArgs.storage = cacheStorage;
             initArgs.bufferFormat = cacheBufferLayout;
             initArgs.bitdepth = outputBitDepth;
-            initArgs.enableCacheNotification = enableCacheChangedNotification;
             initArgs.layer = *it;
         }
         

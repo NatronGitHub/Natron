@@ -33,7 +33,7 @@
 #endif
 
 #include "Global/GlobalDefines.h"
-#include "Engine/CacheEntryBase.h"
+#include "Engine/ImageStorage.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -76,7 +76,7 @@ public:
 
     void* getPtr();
 
-    virtual std::size_t getSize() const OVERRIDE FINAL;
+    virtual std::size_t getBufferSize() const OVERRIDE FINAL;
 
     virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL
     {

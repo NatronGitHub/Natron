@@ -253,14 +253,14 @@ typedef bip::vector<RangeD, RangeD_allocator> RangeDVector_ExternalSegment;
 
 typedef bip::allocator<RangeDVector_ExternalSegment, ExternalSegmentType::segment_manager> RangeDVector_allocator;
 
-typedef std::pair<ViewIdx, RangeDVector_ExternalSegment> FrameRangesMap_value_type;
+typedef std::pair<const ViewIdx, RangeDVector_ExternalSegment> FrameRangesMap_value_type;
 
 typedef bip::allocator<FrameRangesMap_value_type, ExternalSegmentType::segment_manager> FrameRangesMap_value_type_allocator;
 
 // A map<ViewIdx, vector<RangeD> >
 typedef bip::map<ViewIdx, RangeDVector_ExternalSegment, std::less<ViewIdx>, FrameRangesMap_value_type_allocator> FrameRangesMap_ExternalSegment;
 
-typedef std::pair<int, FrameRangesMap_ExternalSegment> FramesNeededMap_value_type;
+typedef std::pair<const int, FrameRangesMap_ExternalSegment> FramesNeededMap_value_type;
 
 typedef bip::allocator<FramesNeededMap_value_type, ExternalSegmentType::segment_manager> FramesNeededMap_value_type_allocator;
 
@@ -520,19 +520,26 @@ public:
     String_ExternalSegment layerName, componentsName;
     StringVector_ExternalSegment channels;
 
-    MM_ImageComponents(const CharAllocator_ExternalSegment& charAllocator, const String_ExternalSegment_allocator& stringAllocator)
-    : layerName(charAllocator)
-    , componentsName(stringAllocator)
-    , channels()
+    MM_ImageComponents(const void_allocator& allocator)
+    : layerName(allocator)
+    , componentsName(allocator)
+    , channels(allocator)
     {
 
+    }
+
+    void operator=(const MM_ImageComponents& other)
+    {
+        layerName = other.layerName;
+        componentsName = other.componentsName;
+        channels = other.channels;
     }
 };
 
 typedef bip::allocator<MM_ImageComponents, ExternalSegmentType::segment_manager> ImageComponents_ExternalSegment_allocator;
 typedef bip::vector<MM_ImageComponents, ImageComponents_ExternalSegment_allocator> ImageComponentsVector_ExternalSegment;
 
-typedef std::pair<int, ImageComponentsVector_ExternalSegment> NeededInputLayersValueType;
+typedef std::pair<const int, ImageComponentsVector_ExternalSegment> NeededInputLayersValueType;
 typedef bip::allocator<NeededInputLayersValueType, ExternalSegmentType::segment_manager> NeededInputLayersValueType_allocator;
 
 typedef bip::map<int, ImageComponentsVector_ExternalSegment, std::less<int>, NeededInputLayersValueType_allocator> NeededInputLayersMap_ExternalSegment;
@@ -540,7 +547,7 @@ typedef bip::map<int, ImageComponentsVector_ExternalSegment, std::less<int>, Nee
 static void imageComponentsListToSharedMemoryComponentsList(const void_allocator& allocator, const std::list<ImageComponents>& inComps, ImageComponentsVector_ExternalSegment* outComps)
 {
     for (std::list<ImageComponents>::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
-        MM_ImageComponents comps(allocator, allocator);
+        MM_ImageComponents comps(allocator);
         outComps->push_back(comps);
     }
 }

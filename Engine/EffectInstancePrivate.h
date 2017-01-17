@@ -40,6 +40,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
+#include "Engine/ImageStorage.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/OSGLContext.h"

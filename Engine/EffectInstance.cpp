@@ -242,11 +242,11 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
             cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
         }
 
-        CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+        CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(framesNeededResults);
         
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute) {
-            cacheAccess->insertInCache(framesNeededResults);
+            cacheAccess->insertInCache();
         }
     }
 
@@ -1471,7 +1471,20 @@ EffectInstance::getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int
         return ImageComponents::getNoneComponents();
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        return metadatas->getImageComponents(inputNb);
+        int nComps = metadatas->getColorPlaneNComps(inputNb);
+        switch (nComps) {
+            case 1:
+                return ImageComponents::getAlphaComponents();
+            case 2:
+                return ImageComponents::getXYComponents();
+            case 3:
+                return ImageComponents::getRGBComponents();
+            case 4:
+                return ImageComponents::getRGBAComponents();
+            default:
+                assert(false);
+                return ImageComponents::getNoneComponents();
+        }
     }
 }
 

@@ -51,7 +51,7 @@ struct PluginMemory::Implementation
 };
 
 PluginMemory::PluginMemory(const EffectInstancePtr& effect)
-: ImageStorageBase(appPTR->getCache())
+: ImageStorageBase()
 , _imp( new Implementation(effect) )
 {
 }
@@ -62,7 +62,7 @@ PluginMemory::~PluginMemory()
 }
 
 std::size_t
-PluginMemory::getSize() const
+PluginMemory::getBufferSize() const
 {
     return _imp->data.size();
 }

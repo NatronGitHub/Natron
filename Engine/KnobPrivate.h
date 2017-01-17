@@ -386,49 +386,32 @@ public:
 
     }
 
-    virtual void copy(const CacheEntryKeyBase& other) OVERRIDE FINAL
-    {
-        CacheEntryKeyBase::copy(other);
-        const KnobExpressionKey* o = dynamic_cast<const KnobExpressionKey*>(&other);
-        if (!o) {
-            return;
-        }
-        _nodeTimeInvariantHash = o->_nodeTimeInvariantHash;
-        _dimension = o->_dimension;
-        _time = o->_time;
-        _view = o->_view;
-        _knobScriptName = o->_knobScriptName;
-    }
-
-    virtual bool equals(const CacheEntryKeyBase& other) OVERRIDE FINAL
-    {
-        const KnobExpressionKey* o = dynamic_cast<const KnobExpressionKey*>(&other);
-        if (!o) {
-            return false;
-        }
-        if (_nodeTimeInvariantHash != o->_nodeTimeInvariantHash) {
-            return false;
-        }
-        if (_dimension != o->_dimension) {
-            return false;
-        }
-        if (_time != o->_time) {
-            return false;
-        }
-        if (_view != o->_view) {
-            return false;
-        }
-        if (_knobScriptName != o->_knobScriptName) {
-            return false;
-        }
-        return true;
-    }
 
     virtual int getUniqueID() const OVERRIDE FINAL
     {
         return kCacheKeyUniqueIDExpressionResult;
     }
-    
+
+    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL
+    {
+        writeMMObject(_nodeTimeInvariantHash, "hash", segment);
+        writeMMObject(_time, "time", segment);
+        writeMMObject(_view, "view", segment);
+        writeMMObject(_dimension, "dim", segment);
+        writeMMObject(_knobScriptName, "knob", segment);
+        CacheEntryKeyBase::toMemorySegment(segment);
+    }
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE FINAL
+    {
+        readMMObject("hash", segment, &_nodeTimeInvariantHash);
+        readMMObject("time", segment, &_time);
+        readMMObject("view", segment, &_view);
+        readMMObject("dim", segment, &_dimension);
+        readMMObject("knob", segment, &_knobScriptName);
+        CacheEntryKeyBase::fromMemorySegment(segment);
+    }
+
 private:
 
 
@@ -455,6 +438,12 @@ class KnobExpressionResult : public CacheEntryBase
     KnobExpressionResult();
 
 public:
+
+    enum KnobExpressionResultTypeEnum
+    {
+        eKnobExpressionResultTypePod,
+        eKnobExpressionResultTypeString
+    };
 
     static KnobExpressionResultPtr create(const KnobExpressionKeyPtr& key)
     {
@@ -489,9 +478,39 @@ public:
         _valueResult = value;
     }
 
-    virtual std::size_t getSize() const OVERRIDE FINAL
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL
     {
-        return 0;
+        // Return a fake size
+        return 128;
+    }
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL
+    {
+        if (!_stringResult.empty()) {
+            KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
+            writeMMObject((int)type, "type", segment);
+            writeMMObject(_stringResult, "value", segment);
+        } else {
+            KnobExpressionResultTypeEnum type = eKnobExpressionResultTypePod;
+            writeMMObject((int)type, "type", segment);
+            writeMMObject(_valueResult, "value", segment);
+        }
+        CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+    }
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL
+    {
+        int type_i;
+        readMMObject("type", segment, &type_i);
+        switch ((KnobExpressionResultTypeEnum)type_i) {
+            case eKnobExpressionResultTypePod: {
+                readMMObject("value", segment, &_valueResult);
+            }   break;
+            case eKnobExpressionResultTypeString: {
+                readMMObject("value", segment, &_stringResult);
+            }   break;
+        }
+        CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
     }
 
 private:

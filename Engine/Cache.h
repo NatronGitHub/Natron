@@ -152,6 +152,12 @@ public:
     CacheEntryStatusEnum waitForPendingEntry();
 
 
+    /**
+     * @brief Get the entry that was originally passed to the ctor.
+     **/
+    CacheEntryBasePtr getProcessLocalEntry() const;
+
+
 private:
 
     void lookupAndSetStatus(bool takeEntryLock);

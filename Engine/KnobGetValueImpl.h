@@ -99,8 +99,9 @@ Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
 
 
     KnobExpressionKeyPtr cacheKey(new KnobExpressionKey(effectHash, dimension, time, view, getName()));
+    KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(cacheKey);
 
-    CacheEntryLockerPtr locker = appPTR->getCache()->get(cacheKey);
+    CacheEntryLockerPtr locker = appPTR->getCache()->get(cachedResult);
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = locker->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -133,16 +134,14 @@ Knob<T>::getValueFromExpression(TimeValue time,
     // Check for a cached expression result
     CacheEntryLockerPtr cacheAccess = getKnobExpresionResults(time, view, dimension);
 
+    KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getProcessLocalEntry());
+
     if (cacheAccess->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-        KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getCachedEntry());
-        if (cachedResult) {
-            getValueFromCachedExpressionResult(cachedResult, ret);
-            return true;
-        }
+        getValueFromCachedExpressionResult(cachedResult, ret);
+        return true;
+
     }
 
-    KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(boost::dynamic_pointer_cast<KnobExpressionKey>(cacheAccess->getKey()));
-    
     
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
     {
@@ -165,7 +164,7 @@ Knob<T>::getValueFromExpression(TimeValue time,
     }
 
     setValueFromCachedExpressionResult(cachedResult, *ret);
-    cacheAccess->insertInCache(cachedResult);
+    cacheAccess->insertInCache();
 
     return true;
 } // getValueFromExpression
@@ -234,16 +233,12 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
     // Check for a cached expression result
     CacheEntryLockerPtr cacheAccess = getKnobExpresionResults(time, view, dimension);
 
+    KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getProcessLocalEntry());
+
     if (cacheAccess->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
-        KnobExpressionResultPtr cachedResult = boost::dynamic_pointer_cast<KnobExpressionResult>(cacheAccess->getCachedEntry());
-        if (cachedResult) {
-            getValueFromCachedExpressionResult<double>(cachedResult, ret);
-            return true;
-        }
+        getValueFromCachedExpressionResult<double>(cachedResult, ret);
+        return true;
     }
-
-    KnobExpressionResultPtr cachedResult = KnobExpressionResult::create(boost::dynamic_pointer_cast<KnobExpressionKey>(cacheAccess->getKey()));
-
 
 
     bool exprWasValid = isExpressionValid(dimension, view_i, 0);
@@ -268,7 +263,7 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
     
 
     setValueFromCachedExpressionResult(cachedResult, *ret);
-    cacheAccess->insertInCache(cachedResult);
+    cacheAccess->insertInCache();
 
     
     return true;

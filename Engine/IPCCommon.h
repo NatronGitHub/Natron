@@ -171,10 +171,10 @@ inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* se
 /**
  * @brief Template specialization for std::string
  **/
-template <class T>
+template <>
 inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, std::string* array)
 {
-    std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
+    std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<String_ExternalSegment>(objectName.c_str());
     if (!found.first) {
         throw std::bad_alloc();
     } else {

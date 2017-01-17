@@ -309,7 +309,7 @@ public:
 
     virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(const ExternalSegmentType& segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 

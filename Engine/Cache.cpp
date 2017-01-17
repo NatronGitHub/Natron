@@ -1176,6 +1176,12 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
 
 } // lookupAndSetStatus
 
+CacheEntryBasePtr
+CacheEntryLocker::getProcessLocalEntry() const
+{
+    return _imp->processLocalEntry;
+}
+
 CacheEntryLocker::CacheEntryStatusEnum
 CacheEntryLocker::getStatus() const
 {

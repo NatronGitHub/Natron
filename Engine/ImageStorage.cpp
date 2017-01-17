@@ -26,6 +26,8 @@
 #include "ImageStorage.h"
 
 #include <QMutex>
+#include <QThread>
+#include <QCoreApplication>
 
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
@@ -452,7 +454,7 @@ CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, void* tileD
 }
 
 void
-CacheImageTileStorage::fromMemorySegment(const ExternalSegmentType& segment, const void* tileDataPtr)
+CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
 {
     CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
     assert(tileDataPtr && _imp->localBuffer);
