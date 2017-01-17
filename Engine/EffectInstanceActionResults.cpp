@@ -248,19 +248,25 @@ typedef bip::allocator<void, ExternalSegmentType::segment_manager> void_allocato
 typedef bip::allocator<ViewIdx, ExternalSegmentType::segment_manager> ViewIdx_allocator;
 typedef bip::allocator<RangeD, ExternalSegmentType::segment_manager> RangeD_allocator;
 
+// A vector of RangeD
 typedef bip::vector<RangeD, RangeD_allocator> RangeDVector_ExternalSegment;
 
 typedef bip::allocator<RangeDVector_ExternalSegment, ExternalSegmentType::segment_manager> RangeDVector_allocator;
 
-typedef bip::map<ViewIdx, RangeDVector_ExternalSegment, std::less<ViewIdx>, RangeDVector_allocator> FrameRangesMap_ExternalSegment;
-
 typedef std::pair<ViewIdx, RangeDVector_ExternalSegment> FrameRangesMap_value_type;
 
-typedef bip::allocator<FrameRangesMap_ExternalSegment, ExternalSegmentType::segment_manager> FrameRangesMap_ExternalSegment_allocator;
+typedef bip::allocator<FrameRangesMap_value_type, ExternalSegmentType::segment_manager> FrameRangesMap_value_type_allocator;
 
-typedef bip::map<int, FrameRangesMap_ExternalSegment, std::less<int>, FrameRangesMap_ExternalSegment_allocator> FramesNeededMap_ExternalSegment;
+// A map<ViewIdx, vector<RangeD> >
+typedef bip::map<ViewIdx, RangeDVector_ExternalSegment, std::less<ViewIdx>, FrameRangesMap_value_type_allocator> FrameRangesMap_ExternalSegment;
 
 typedef std::pair<int, FrameRangesMap_ExternalSegment> FramesNeededMap_value_type;
+
+typedef bip::allocator<FramesNeededMap_value_type, ExternalSegmentType::segment_manager> FramesNeededMap_value_type_allocator;
+
+// A map<int,  map<ViewIdx, vector<RangeD> > >
+typedef bip::map<int, FrameRangesMap_ExternalSegment, std::less<int>, FramesNeededMap_value_type_allocator> FramesNeededMap_ExternalSegment;
+
 
 typedef bip::allocator<FramesNeededMap_ExternalSegment, ExternalSegmentType::segment_manager> FramesNeededMap_ExternalSegment_allocator;
 
@@ -271,7 +277,9 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, void* tile
     void_allocator alloc_inst (segment->get_segment_manager());
 
     FramesNeededMap_ExternalSegment* externalMap = segment->construct<FramesNeededMap_ExternalSegment>("framesNeeded")(alloc_inst);
-
+    if (!externalMap) {
+        throw std::bad_alloc();
+    }
     for (FramesNeededMap::const_iterator it = _framesNeeded.begin(); it != _framesNeeded.end(); ++it) {
 
         FrameRangesMap_ExternalSegment extFrameRangeMap(alloc_inst);
@@ -297,60 +305,24 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, void* tile
 void
 GetFramesNeededResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
 {
-    FramesNeededMap_ExternalSegment externalMap;
-    readMMObject("framesNeeded", segment, &externalMap);
+    FramesNeededMap_ExternalSegment *externalMap = segment->find<FramesNeededMap_ExternalSegment>("framesNeeded").first;
+    if (!externalMap) {
+        throw std::bad_alloc();
+    }
     CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
 
 
-    for (FramesNeededMap_ExternalSegment::iterator it = externalMap.begin(); it != externalMap.end(); ++it) {
-        FrameRangesMap& frameRnageMap = _framesNeeded[it->first];
+    for (FramesNeededMap_ExternalSegment::iterator it = externalMap->begin(); it != externalMap->end(); ++it) {
+        FrameRangesMap& frameRangeMap = _framesNeeded[it->first];
         for (FrameRangesMap_ExternalSegment::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            std::vector<RangeD> &rangeVec = frameRangeMap[it2->first];
 
+            for (std::size_t i = 0; i < it2->second.size(); ++i) {
+                rangeVec.push_back(it2->second[i]);
+            }
         }
     }
 } // fromMemorySegment
-
-
-GetDistorsionResults::GetDistorsionResults()
-: CacheEntryBase(appPTR->getCache())
-, _distorsion()
-{
-
-}
-
-GetDistorsionResultsPtr
-GetDistorsionResults::create(const GetDistorsionKeyPtr& key)
-{
-    GetDistorsionResultsPtr ret(new GetDistorsionResults());
-    ret->setKey(key);
-    return ret;
-
-}
-
-
-DistorsionFunction2DPtr
-GetDistorsionResults::getDistorsionResults() const
-{
-    return _distorsion;
-}
-
-void
-GetDistorsionResults::setDistorsionResults(const DistorsionFunction2DPtr &disto)
-{
-    _distorsion = disto;
-}
-
-std::size_t
-GetDistorsionResults::getMetadataSize() const
-{
-    std::size_t ret = CacheEntryBase::getMetadataSize();
-    if (!_distorsion) {
-        return ret;
-    }
-
-    ret += (std::size_t)_distorsion->customDataSizeHintInBytes;
-    return ret;
-}
 
 
 
@@ -392,6 +364,22 @@ GetFrameRangeResults::getMetadataSize() const
 }
 
 
+void
+GetFrameRangeResults::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+{
+    writeMMObject(_range, "range", segment);
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+} // toMemorySegment
+
+void
+GetFrameRangeResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+{
+    readMMObject("range", segment, &_range);
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+} // fromMemorySegment
+
+
+
 GetTimeInvariantMetaDatasResults::GetTimeInvariantMetaDatasResults()
 : CacheEntryBase(appPTR->getCache())
 , _metadatas()
@@ -429,6 +417,22 @@ GetTimeInvariantMetaDatasResults::getMetadataSize() const
     ret += 1024;
     return ret;
 }
+
+
+void
+GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+{
+    _metadatas->toMemorySegment(segment);
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+} // toMemorySegment
+
+void
+GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+{
+    _metadatas->fromMemorySegment(segment);
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+} // fromMemorySegment
+
 
 
 GetComponentsResults::GetComponentsResults()
@@ -503,4 +507,166 @@ GetComponentsResults::getMetadataSize() const
     ret += 1024;
     return ret;
 }
+
+typedef bip::allocator<String_ExternalSegment, ExternalSegmentType::segment_manager> String_ExternalSegment_allocator;
+typedef bip::vector<String_ExternalSegment, String_ExternalSegment_allocator> StringVector_ExternalSegment;
+
+// A simplified version of ImageComponents class that can go in shared memory
+class MM_ImageComponents
+{
+
+public:
+
+    String_ExternalSegment layerName, componentsName;
+    StringVector_ExternalSegment channels;
+
+    MM_ImageComponents(const CharAllocator_ExternalSegment& charAllocator, const String_ExternalSegment_allocator& stringAllocator)
+    : layerName(charAllocator)
+    , componentsName(stringAllocator)
+    , channels()
+    {
+
+    }
+};
+
+typedef bip::allocator<MM_ImageComponents, ExternalSegmentType::segment_manager> ImageComponents_ExternalSegment_allocator;
+typedef bip::vector<MM_ImageComponents, ImageComponents_ExternalSegment_allocator> ImageComponentsVector_ExternalSegment;
+
+typedef std::pair<int, ImageComponentsVector_ExternalSegment> NeededInputLayersValueType;
+typedef bip::allocator<NeededInputLayersValueType, ExternalSegmentType::segment_manager> NeededInputLayersValueType_allocator;
+
+typedef bip::map<int, ImageComponentsVector_ExternalSegment, std::less<int>, NeededInputLayersValueType_allocator> NeededInputLayersMap_ExternalSegment;
+
+static void imageComponentsListToSharedMemoryComponentsList(const void_allocator& allocator, const std::list<ImageComponents>& inComps, ImageComponentsVector_ExternalSegment* outComps)
+{
+    for (std::list<ImageComponents>::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
+        MM_ImageComponents comps(allocator, allocator);
+        outComps->push_back(comps);
+    }
+}
+
+static void imageComponentsListFromSharedMemoryComponentsList(const ImageComponentsVector_ExternalSegment& inComps, std::list<ImageComponents>* outComps)
+{
+    for (ImageComponentsVector_ExternalSegment::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
+        std::string layerName(it->layerName.c_str());
+        std::string compsName(it->componentsName.c_str());
+        std::vector<std::string> channels(it->channels.size());
+
+        int i = 0;
+        for (StringVector_ExternalSegment::const_iterator it2 = it->channels.begin(); it2 != it->channels.end(); ++it2, ++i) {
+            channels[i] = std::string(it2->c_str());
+        }
+        ImageComponents c(layerName, compsName, channels);
+        outComps->push_back(c);
+    }
+}
+
+void
+GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+{
+    // An allocator convertible to any allocator<T, segment_manager_t> type
+    void_allocator alloc_inst(segment->get_segment_manager());
+
+    {
+        NeededInputLayersMap_ExternalSegment *neededLayers = segment->construct<NeededInputLayersMap_ExternalSegment>("neededInputLayers")(alloc_inst);
+        if (!neededLayers) {
+            throw std::bad_alloc();
+        }
+
+        for (std::map<int, std::list<ImageComponents> >::const_iterator it = _neededInputLayers.begin(); it != _neededInputLayers.end(); ++it) {
+            ImageComponentsVector_ExternalSegment vec(alloc_inst);
+            imageComponentsListToSharedMemoryComponentsList(alloc_inst, it->second, &vec);
+
+            NeededInputLayersValueType v = std::make_pair(it->first, vec);
+            neededLayers->insert(v);
+        }
+    }
+    {
+        ImageComponentsVector_ExternalSegment *producedLayers = segment->construct<ImageComponentsVector_ExternalSegment>("producedLayers")(alloc_inst);
+        if (!producedLayers) {
+            throw std::bad_alloc();
+        }
+        imageComponentsListToSharedMemoryComponentsList(alloc_inst, _producedLayers, producedLayers);
+    }
+    {
+        ImageComponentsVector_ExternalSegment *ptPlanes = segment->construct<ImageComponentsVector_ExternalSegment>("passThroughLayers")(alloc_inst);
+        if (!ptPlanes) {
+            throw std::bad_alloc();
+        }
+        imageComponentsListToSharedMemoryComponentsList(alloc_inst, _passThroughPlanes, ptPlanes);
+    }
+
+    writeMMObject(_passThroughTime, "passThroughTime", segment);
+    writeMMObject(_passThroughView, "passThroughView", segment);
+    writeMMObject(_passThroughInputNb, "passThroughInputNb", segment);
+    writeMMObject(_processAllLayers, "processAll", segment);
+
+    bool doR = _processChannels[0];
+    writeMMObject(doR, "doR", segment);
+
+    bool doG = _processChannels[1];
+    writeMMObject(doG, "doG", segment);
+
+    bool doB = _processChannels[2];
+    writeMMObject(doB, "doB", segment);
+
+    bool doA = _processChannels[3];
+    writeMMObject(doA, "doA", segment);
+
+    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+} // toMemorySegment
+
+void
+GetComponentsResults::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+{
+    {
+        NeededInputLayersMap_ExternalSegment *neededLayers = segment->find<NeededInputLayersMap_ExternalSegment>("neededInputLayers").first;
+        if (!neededLayers) {
+            throw std::bad_alloc();
+        }
+        for (NeededInputLayersMap_ExternalSegment::const_iterator it = neededLayers->begin(); it != neededLayers->end(); ++it) {
+            std::list<ImageComponents>& comps = _neededInputLayers[it->first];
+            imageComponentsListFromSharedMemoryComponentsList(it->second, &comps);
+        }
+    }
+    {
+        ImageComponentsVector_ExternalSegment* producedLayers = segment->find<ImageComponentsVector_ExternalSegment>("producedLayers").first;
+        if (!producedLayers) {
+            throw std::bad_alloc();
+        }
+        imageComponentsListFromSharedMemoryComponentsList(*producedLayers, &_producedLayers);
+    }
+    {
+        ImageComponentsVector_ExternalSegment* ptLayers = segment->find<ImageComponentsVector_ExternalSegment>("passThroughLayers").first;
+        if (!ptLayers) {
+            throw std::bad_alloc();
+        }
+        imageComponentsListFromSharedMemoryComponentsList(*ptLayers, &_passThroughPlanes);
+    }
+    readMMObject("passThroughTime", segment, &_passThroughTime);
+    readMMObject("passThroughView", segment, &_passThroughView);
+    readMMObject("passThroughInputNb", segment, &_passThroughInputNb);
+    readMMObject("processAll", segment, &_processAllLayers);
+
+    bool doR;
+    readMMObject("doR", segment, &doR);
+    _processChannels[0] = doR;
+
+    bool doG;
+    readMMObject("doG", segment, &doG);
+    _processChannels[1] = doG;
+
+    bool doB;
+    readMMObject("doB", segment, &doB);
+    _processChannels[2] = doB;
+
+    bool doA;
+    readMMObject("doA", segment, &doA);
+    _processChannels[3] = doA;
+
+
+    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+} // fromMemorySegment
+
+
 NATRON_NAMESPACE_EXIT;

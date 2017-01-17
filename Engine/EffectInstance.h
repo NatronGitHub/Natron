@@ -688,7 +688,7 @@ public:
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     const TreeRenderNodeArgsPtr& render,
-                                    GetDistorsionResultsPtr* distorsion) WARN_UNUSED_RETURN;
+                                    DistorsionFunction2DPtr* distorsion) WARN_UNUSED_RETURN;
 
 
 

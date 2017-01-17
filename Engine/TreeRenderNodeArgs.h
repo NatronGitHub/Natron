@@ -228,12 +228,12 @@ public:
     /**
      * @brief Returns the distorsion action results for this frame/view
      **/
-    GetDistorsionResultsPtr getDistorsionResults() const;
+    DistorsionFunction2DPtr getDistorsionResults() const;
 
     /**
      * @brief Set the distorsion action results for this frame/view
      **/
-    void setDistorsionResults(const GetDistorsionResultsPtr& results);
+    void setDistorsionResults(const DistorsionFunction2DPtr& results);
 
 private:
 

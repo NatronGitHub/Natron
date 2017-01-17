@@ -26,10 +26,12 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Engine/EngineFwd.h"
-
+#include "Global/Macros.h"
 #include <string>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
 #include <boost/shared_ptr.hpp>
 #include <boost/interprocess/smart_ptr/shared_ptr.hpp>
 #include <boost/interprocess/smart_ptr/weak_ptr.hpp>
@@ -42,6 +44,8 @@
 #include <boost/interprocess/containers/vector.hpp>
 #include <boost/interprocess/containers/map.hpp>
 #include <boost/interprocess/offset_ptr.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
 #endif
 
 NATRON_NAMESPACE_ENTER;
@@ -85,6 +89,37 @@ inline void writeMMObject(const std::string& object, const std::string& objectNa
     }
 }
 
+/**
+ * @brief Same as writeMMObject but for arrays
+ **/
+template <class T>
+inline void writeMMObjectN(T *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
+{
+    T* sharedMemObject = segment->construct<T>(objectName.c_str())[count]();
+    if (!sharedMemObject) {
+        throw std::bad_alloc();
+    }
+    memcpy(sharedMemObject, array, count * sizeof(T));
+}
+
+/**
+ * @brief Template specialization for std::string
+ **/
+template <class T>
+inline void writeMMObjectN(std::string *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
+{
+    // Allocate a char array containing the string
+    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
+
+    String_ExternalSegment* sharedMemObject = segment->construct<String_ExternalSegment>(objectName.c_str())[count](allocator);
+    if (!sharedMemObject) {
+        throw std::bad_alloc();
+    }
+    for (int i = 0; i < count; ++i) {
+        sharedMemObject[i].append(array[i].c_str());
+    }
+}
+
 
 /**
  * @brief Function to read from given memory segment the given object.
@@ -116,6 +151,39 @@ inline void readMMObject(const std::string& objectName, ExternalSegmentType* seg
         throw std::bad_alloc();
     }
 }
+
+/**
+ * @brief Same as readMMObject but for arrays
+ **/
+template <class T>
+inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, T* array)
+{
+    std::pair<T*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
+    if (!found.first) {
+        throw std::bad_alloc();
+    } else {
+        for (int i = 0; i < count; ++i) {
+            array[i] = found.first[i];
+        }
+    }
+}
+
+/**
+ * @brief Template specialization for std::string
+ **/
+template <class T>
+inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, std::string* array)
+{
+    std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
+    if (!found.first) {
+        throw std::bad_alloc();
+    } else {
+        for (int i = 0; i < count; ++i) {
+            array[i].append(found.first[i].c_str());
+        }
+    }
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

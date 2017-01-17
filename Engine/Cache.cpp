@@ -59,6 +59,7 @@
 #include "Engine/MemoryFile.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/RamBuffer.h"
 #include "Engine/ThreadPool.h"
 
 
@@ -224,7 +225,7 @@ struct CacheBucket
     {
 
         // Indices of the chunks of memory available in the tileAligned memory-mapped file.
-        boost::scoped_ptr<unordered_set_size_t_ExternalSegment> freeTiles;
+        unordered_set_size_t_ExternalSegment freeTiles;
 
         // Protects the LRU list. This is separate to the bucketLock because even if we just access
         // the cache in read mode (in the get() function) we still need to update the LRU list, thus
@@ -235,8 +236,8 @@ struct CacheBucket
         bip::offset_ptr<LRUListNode> lruListFront, lruListBack;
 
 
-        IPCData()
-        : freeTiles()
+        IPCData(const Size_t_Allocator_ExternalSegment& freeTilesAllocator)
+        : freeTiles(freeTilesAllocator)
         , lruListMutex()
         , lruListFront(0)
         , lruListBack(0)
@@ -246,12 +247,12 @@ struct CacheBucket
     };
 
 
-    // Storage for tiled entries: the size of this file is a multiple of the tile byte size.
+    // Memory mapped file for tiled entries: the size of this file is a multiple of the tile byte size.
     // Any access to the file should be protected by the tileData.segmentMutex mutex located in
     // CachePrivate::IPCData::PerBucketData
     MemoryFilePtr tileAlignedFile;
 
-    // Raw pointer to the memory mapped file used to store interprocess table of contents (IPCData)
+    // Memory mapped file used to store interprocess table of contents (IPCData)
     // It contains for each entry:
     // - A LRUListNode
     // - A MemorySegmentEntry
@@ -263,7 +264,7 @@ struct CacheBucket
     // A memory manager of the tocFile. It is only valid when the tocFile is memory mapped.
     boost::shared_ptr<ExternalSegmentType> tocFileManager;
 
-    // Pointer to the IPC data that live in shared memory (memorySegment)
+    // Pointer to the IPC data that live in tocFile memory mapped file
     IPCData *ipc;
 
     // Weak pointer to the cache
@@ -558,6 +559,7 @@ struct CachePrivate
     // This is the only shared memory segment that we know the size: it never grows.
     boost::scoped_ptr<bip::managed_shared_memory> globalMemorySegment;
 
+    // The IPC data object created in globalMemorySegment shared memory
     IPCData* ipc;
 
     // Path of the directory that should contain the cache directory itself.
@@ -664,7 +666,8 @@ static void reOpenToCData(CacheBucket* bucket)
     bucket->tocFileManager.reset(new ExternalSegmentType(bip::open_only, bucket->tocFile->data(), bucket->tocFile->size()));
 
     // The ipc data pointer must be re-fetched
-    bucket->ipc = bucket->tocFileManager->find_or_construct<CacheBucket::IPCData>("BucketData")();
+    Size_t_Allocator_ExternalSegment freeTilesAllocator(bucket->tocFileManager->get_segment_manager());
+    bucket->ipc = bucket->tocFileManager->find_or_construct<CacheBucket::IPCData>("BucketData")(freeTilesAllocator);
 }
 
 void

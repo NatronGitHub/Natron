@@ -152,7 +152,6 @@ SOURCES += \
     NodeGroup.cpp \
     NodeMetadata.cpp \
     NodePythonInteraction.cpp \
-    NonKeyParams.cpp \
     NoOpBase.cpp \
     Noise.cpp \
     OSGLContext.cpp \
@@ -340,7 +339,6 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
-    FrameParams.h \
     FStreamsSupport.h \
     fstream_mingw.h \
     GenericSchedulerThread.h \
@@ -388,7 +386,6 @@ HEADERS += \
     NodeGraphI.h \
     NodeGuiI.h \
     NodeMetadata.h \
-    NonKeyParams.h \
     NoOpBase.h \
     OSGLContext.h \
     OSGLContext_osmesa.h \

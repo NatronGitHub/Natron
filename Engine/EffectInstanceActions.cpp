@@ -376,8 +376,10 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
         cacheKey.reset(new GetComponentsKey(hash, timeKey, viewKey, getNode()->getPluginID()));
     }
 
+    *results = GetComponentsResults::create(cacheKey);
+
     // Ensure the cache fetcher lives as long as we compute the action
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -385,14 +387,9 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
     }
 
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        *results = toGetComponentsResults(cacheAccess->getCachedEntry());
-        if (*results) {
-            return eActionStatusOK;
-        }
+        return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
-
-    *results = GetComponentsResults::create(cacheKey);
 
 
     // For each input index what layers are required
@@ -454,7 +451,7 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
     if (fvRequest) {
         fvRequest->setComponentsNeededResults(*results);
     }
-    cacheAccess->insertInCache(*results);
+    cacheAccess->insertInCache();
 
     return eActionStatusOK;
     
@@ -721,7 +718,7 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
                                      const TreeRenderNodeArgsPtr& render,
-                                     GetDistorsionResultsPtr* outDisto) {
+                                     DistorsionFunction2DPtr* outDisto) {
     assert(outDisto);
 
     TimeValue time = inArgsTime;
@@ -755,67 +752,19 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
         assert(getNode()->getCurrentCanDistort() || isDeprecatedTransformSupportEnabled);
     }
 
-    U64 hash = 0;
 
     if (fvRequest) {
-        GetDistorsionResultsPtr cachedDisto = fvRequest->getDistorsionResults();
+        DistorsionFunction2DPtr cachedDisto = fvRequest->getDistorsionResults();
         if (cachedDisto) {
             *outDisto = cachedDisto;
             return eActionStatusOK;
         }
-        fvRequest->getHash(&hash);
     }
-
-
-
-    // Get a hash to cache the results
-    if (hash == 0) {
-        ComputeHashArgs hashArgs;
-        hashArgs.render = render;
-        hashArgs.time = time;
-        hashArgs.view = view;
-        hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-        hash = computeHash(hashArgs);
-    }
-
-    assert(hash != 0);
-
-    GetDistorsionKeyPtr cacheKey;
-
-    {
-
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
-        cacheKey.reset(new GetDistorsionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
-    }
-
-    GetDistorsionResultsPtr ret;
-
-    // Ensure the cache fetcher lives as long as we compute the action
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
-
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-    while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-        cacheStatus = cacheAccess->waitForPendingEntry();
-    }
-
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        ret = toGetDistorsionResults(cacheAccess->getCachedEntry());
-    }
-    if (ret) {
-        *outDisto = ret;
-        return eActionStatusOK;
-    }
-
-    assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
-
-    ret = GetDistorsionResults::create(cacheKey);
 
     // If the effect is identity, do not call the getDistorsion action, instead just return an identity
     // identity time and view.
 
-    DistorsionFunction2DPtr distorsion(new DistorsionFunction2D);
+    outDisto->reset(new DistorsionFunction2D);
     bool isIdentity;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
@@ -826,8 +775,8 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     }
 
     if (isIdentity) {
-        distorsion->transformMatrix.reset(new Transform::Matrix3x3);
-        distorsion->transformMatrix->setIdentity();
+        (*outDisto)->transformMatrix.reset(new Transform::Matrix3x3);
+        (*outDisto)->transformMatrix->setIdentity();
     } else {
 
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
@@ -840,34 +789,30 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
                                                   );
 
         // Call the action
-        ActionRetCodeEnum stat = getDistorsion(time, mappedScale, view, render, distorsion.get());
+        ActionRetCodeEnum stat = getDistorsion(time, mappedScale, view, render, (*outDisto).get());
         if (isFailureRetCode(stat)) {
             return stat;
         }
 
         // Either the matrix or the distorsion functor should be set
-        assert(distorsion->transformMatrix || distorsion->func);
+        assert((*outDisto)->transformMatrix || (*outDisto)->func);
 
         // In the deprecated getTransform action, the returned transform is in pixel coordinates, whereas in the getDistorsion
         // action, we return a matrix in canonical coordinates.
         if (isDeprecatedTransformSupportEnabled) {
-            assert(distorsion->transformMatrix);
+            assert((*outDisto)->transformMatrix);
             double par = getAspectRatio(render, -1);
 
             Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, mappedScale.x, mappedScale.y, false);
             Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, mappedScale.x, mappedScale.y, false);
-            *distorsion->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *distorsion->transformMatrix), canonicalToPixel);
+            *(*outDisto)->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *(*outDisto)->transformMatrix), canonicalToPixel);
         }
     }
 
-    ret->setDistorsionResults(distorsion);
-
     if (fvRequest) {
-        fvRequest->setDistorsionResults(ret);
+        fvRequest->setDistorsionResults(*outDisto);
     }
     
-    *outDisto = ret;
-    cacheAccess->insertInCache(ret);
     return eActionStatusOK;
 
 } // getDistorsion_public
@@ -955,20 +900,22 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     }
 
     IsIdentityKeyPtr cacheKey;
+    {
+
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        cacheKey.reset(new IsIdentityKey(hash, timeKey, viewKey, getNode()->getPluginID()));
+    }
+
+
+    *results = IsIdentityResults::create(cacheKey);
+
     CacheEntryLockerPtr cacheAccess;
     if (useIdentityCache) {
 
-
-        {
-
-            TimeValue timeKey;
-            ViewIdx viewKey;
-            getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
-            cacheKey.reset(new IsIdentityKey(hash, timeKey, viewKey, getNode()->getPluginID()));
-        }
-
         // Ensure the cache fetcher lives as long as we compute the action
-        cacheAccess = appPTR->getCache()->get(cacheKey);
+        cacheAccess = appPTR->getCache()->get(*results);
 
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -976,22 +923,18 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         }
 
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-            *results = toIsIdentityResults(cacheAccess->getCachedEntry());
-            if (*results) {
-                return eActionStatusOK;
-            }
+            return eActionStatusOK;
         }
 
         assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
     }
 
 
-    IsIdentityResultsPtr identityData = IsIdentityResults::create(cacheKey);
     bool caught = false;
 
     // Node is disabled or doesn't have any channel to process, be identity on the main input
     if ((getNode()->isNodeDisabledForFrame(time, view) || !getNode()->hasAtLeastOneChannelToProcess() )) {
-        identityData->setIdentityData(getNode()->getPreferredInput(), time, view);
+        (*results)->setIdentityData(getNode()->getPreferredInput(), time, view);
         caught = true;
     }
 
@@ -1040,22 +983,21 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
             }
         }
 
-        identityData->setIdentityData(identityInputNb, identityTime, identityView);
+        (*results)->setIdentityData(identityInputNb, identityTime, identityView);
 
         caught = true;
 
     }
     if (!caught) {
-        identityData->setIdentityData(-1, time, view);
+        (*results)->setIdentityData(-1, time, view);
     }
 
     if (fvRequest) {
-        fvRequest->setIdentityResults(identityData);
+        fvRequest->setIdentityResults((*results));
     }
     if (cacheAccess) {
-        cacheAccess->insertInCache(identityData);
+        cacheAccess->insertInCache();
     }
-    *results = identityData;
     return eActionStatusOK;
 } // isIdentity_public
 
@@ -1092,16 +1034,14 @@ EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
         cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, scale, getNode()->getPluginID()));
     }
 
+    GetRegionOfDefinitionResultsPtr ret = GetRegionOfDefinitionResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(ret);
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        GetRegionOfDefinitionResultsPtr ret = toGetRegionOfDefinitionResults(cacheAccess->getCachedEntry());
-        if (!ret) {
-            return eActionStatusFailed;
-        }
         *results = ret->getRoD();
+        return eActionStatusOK;
     } else {
         return eActionStatusFailed;
     }
@@ -1163,19 +1103,19 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     }
 
     GetRegionOfDefinitionKeyPtr cacheKey;
+    {
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
+    }
 
+    *results = GetRegionOfDefinitionResults::create(cacheKey);
 
     CacheEntryLockerPtr cacheAccess;
     if (useCache) {
-        assert(hash != 0);
-        {
-            TimeValue timeKey;
-            ViewIdx viewKey;
-            getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
-            cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
-        }
 
-        cacheAccess = appPTR->getCache()->get(cacheKey);
+        cacheAccess = appPTR->getCache()->get(*results);
 
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1183,16 +1123,13 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         }
 
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-            *results = toGetRegionOfDefinitionResults(cacheAccess->getCachedEntry());
-            if (*results) {
-                return eActionStatusOK;
-            }
+            return eActionStatusOK;
         }
         assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
     }
 
-    *results = GetRegionOfDefinitionResults::create(cacheKey);
+
 
     // If the effect is identity, do not call the getRegionOfDefinition action, instead just return the input identity at the
     // identity time and view.
@@ -1274,7 +1211,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         fvRequest->setRegionOfDefinitionResults(*results);
     }
     if (cacheAccess) {
-        cacheAccess->insertInCache(*results);
+        cacheAccess->insertInCache();
     }
     
     return eActionStatusOK;
@@ -1589,6 +1526,14 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     NodePtr thisNode = getNode();
 
     GetFramesNeededKeyPtr cacheKey;
+    {
+        TimeValue timeKey;
+        ViewIdx viewKey;
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
+    }
+    *results = GetFramesNeededResults::create(cacheKey);
+
     CacheEntryLockerPtr cacheAccess;
 
     // Only use the cache if we got a hash.
@@ -1597,14 +1542,8 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     bool isHashCached = hashValue != 0;
     if (isHashCached) {
 
-        {
-            TimeValue timeKey;
-            ViewIdx viewKey;
-            getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
-            cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
-        }
 
-        cacheAccess = appPTR->getCache()->get(cacheKey);
+        cacheAccess = appPTR->getCache()->get(*results);
 
         CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
         while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1612,10 +1551,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         }
 
         if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-            *results = toGetFramesNeededResults(cacheAccess->getCachedEntry());
-            if (*results) {
-                return eActionStatusOK;
-            }
+            return eActionStatusOK;
         }
         assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
     }
@@ -1698,7 +1634,6 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     }
     
 
-    *results = GetFramesNeededResults::create(cacheKey);
     (*results)->setFramesNeeded(framesNeeded);
     
     if (fvRequest) {
@@ -1706,7 +1641,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     }
 
     if (cacheAccess) {
-        cacheAccess->insertInCache(*results);
+        cacheAccess->insertInCache();
     }
 
     return eActionStatusOK;
@@ -1782,8 +1717,9 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     }
 
     GetFrameRangeKeyPtr cacheKey(new GetFrameRangeKey(hash, getNode()->getPluginID()));
+    *results = GetFrameRangeResults::create(cacheKey);
 
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1791,10 +1727,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     }
 
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        *results = toGetFrameRangeResults(cacheAccess->getCachedEntry());
-        if (*results) {
-            return eActionStatusOK;
-        }
+        return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
@@ -1817,9 +1750,8 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
         }
     }
 
-    *results = GetFrameRangeResults::create(cacheKey);
     (*results)->setFrameRangeResults(range);
-    cacheAccess->insertInCache(*results);
+    cacheAccess->insertInCache();
 
     if (render) {
         render->setFrameRangeResults(*results);
@@ -1983,7 +1915,10 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     }
 
     GetTimeInvariantMetaDatasKeyPtr cacheKey(new GetTimeInvariantMetaDatasKey(hash, getNode()->getPluginID()));
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(cacheKey);
+    *results = GetTimeInvariantMetaDatasResults::create(cacheKey);
+
+
+    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
 
     CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
     while (cacheStatus == CacheEntryLocker::eCacheEntryStatusComputationPending) {
@@ -1991,10 +1926,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     }
 
     if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        *results = toGetTimeInvariantMetaDatasResults(cacheAccess->getCachedEntry());
-        if (*results) {
-            return eActionStatusOK;
-        }
+        return eActionStatusOK;
     }
     assert(cacheStatus == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
@@ -2031,7 +1963,6 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         return stat;
     }
 
-    *results = GetTimeInvariantMetaDatasResults::create(cacheKey);
 
     if (!isDisabled) {
 
@@ -2064,21 +1995,21 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
     getNode()->onNodeMetadatasRefreshedOnMainThread(metadata);
 
-    cacheAccess->insertInCache(*results);
+    cacheAccess->insertInCache();
     return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public
 
 
-static ImageComponents
-getUnmappedComponentsForInput(const EffectInstancePtr& self,
-                              int inputNb,
-                              const std::vector<NodeMetadataPtr>& inputs,
-                              const ImageComponents& firstNonOptionalConnectedInputComps)
+static int
+getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
+                                      int inputNb,
+                                      const std::vector<NodeMetadataPtr>& inputs,
+                                      int firstNonOptionalConnectedInputComps)
 {
-    ImageComponents rawComps;
+    int rawComps;
 
     if (inputs[inputNb]) {
-        rawComps = inputs[inputNb]->getImageComponents(-1);
+        rawComps = inputs[inputNb]->getColorPlaneNComps(-1);
     } else {
         ///The node is not connected but optional, return the closest supported components
         ///of the first connected non optional input.
@@ -2089,7 +2020,7 @@ getUnmappedComponentsForInput(const EffectInstancePtr& self,
             //None comps
             return rawComps;
         } else {
-            rawComps = self->getNode()->findClosestSupportedNumberOfComponents(inputNb, rawComps.getNumComponents()); //turn that into a comp the plugin expects on that clip
+            rawComps = self->getNode()->findClosestSupportedNumberOfComponents(inputNb, rawComps);
         }
     }
     if (!rawComps) {
@@ -2110,13 +2041,12 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
 
     const bool multiBitDepth = supportsMultipleClipDepths();
     int nInputs = getMaxInputCount();
-    metadata.clearAndResize(nInputs);
 
     // OK find the deepest chromatic component on our input clips and the one with the
     // most components
     bool hasSetCompsAndDepth = false;
     ImageBitDepthEnum deepestBitDepth = eImageBitDepthNone;
-    ImageComponents mostComponents;
+    int mostComponents = 0;
 
     //Default to the project frame rate
     double frameRate = getApp()->getProjectFrameRate();
@@ -2130,8 +2060,8 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
     bool hasOneInputFrameVarying = false;
 
     // Find the components of the first non optional connected input
-    // They will be used for disconnected inpu
-    ImageComponents firstNonOptionalConnectedInputComps;
+    // They will be used for disconnected input
+    int firstNonOptionalConnectedInputComps = 0;
 
 
     std::vector<NodeMetadataPtr> inputMetadatas(nInputs);
@@ -2148,7 +2078,7 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
                 inputMetadatas[i] = results->getMetadatasResults();
 
                 if ( !firstNonOptionalConnectedInputComps && !isInputOptional(i) ) {
-                    firstNonOptionalConnectedInputComps = inputMetadatas[i]->getImageComponents(-1);
+                    firstNonOptionalConnectedInputComps = inputMetadatas[i]->getColorPlaneNComps(-1);
                 }
             }
 
@@ -2178,35 +2108,34 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
             }
         }
 
-        ImageComponents rawComp = getUnmappedComponentsForInput(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
+        int rawComp = getUnmappedNumberOfCompsForColorPlane(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
         ImageBitDepthEnum rawDepth = input ? input->getBitDepth(-1) : eImageBitDepthFloat;
         ImagePremultiplicationEnum rawPreMult = input ? input->getOutputPremult() : eImagePremultiplicationPremultiplied;
 
-        if ( rawComp.isColorPlane() ) {
-            // Note: first chromatic input gives the default output premult too, even if not connected
-            // (else the output of generators may be opaque even if the host default is premultiplied)
-            if ( ( rawComp == ImageComponents::getRGBAComponents() ) && (input || !premultSet) ) {
-                if (rawPreMult == eImagePremultiplicationPremultiplied) {
-                    premult = eImagePremultiplicationPremultiplied;
-                    premultSet = true;
-                } else if ( (rawPreMult == eImagePremultiplicationUnPremultiplied) && ( !premultSet || (premult != eImagePremultiplicationPremultiplied) ) ) {
-                    premult = eImagePremultiplicationUnPremultiplied;
-                    premultSet = true;
-                }
-            }
-
-            if (input) {
-                //Update deepest bitdepth and most components only if the infos are relevant, i.e: only if the clip is connected
-                hasSetCompsAndDepth = true;
-                if ( getSizeOfForBitDepth(deepestBitDepth) < getSizeOfForBitDepth(rawDepth) ) {
-                    deepestBitDepth = rawDepth;
-                }
-
-                if ( rawComp.getNumComponents() > mostComponents.getNumComponents() ) {
-                    mostComponents = rawComp;
-                }
+        // Note: first chromatic input gives the default output premult too, even if not connected
+        // (else the output of generators may be opaque even if the host default is premultiplied)
+        if ( ( rawComp == 4 ) && (input || !premultSet) ) {
+            if (rawPreMult == eImagePremultiplicationPremultiplied) {
+                premult = eImagePremultiplicationPremultiplied;
+                premultSet = true;
+            } else if ( (rawPreMult == eImagePremultiplicationUnPremultiplied) && ( !premultSet || (premult != eImagePremultiplicationPremultiplied) ) ) {
+                premult = eImagePremultiplicationUnPremultiplied;
+                premultSet = true;
             }
         }
+
+        if (input) {
+            //Update deepest bitdepth and most components only if the infos are relevant, i.e: only if the clip is connected
+            hasSetCompsAndDepth = true;
+            if ( getSizeOfForBitDepth(deepestBitDepth) < getSizeOfForBitDepth(rawDepth) ) {
+                deepestBitDepth = rawDepth;
+            }
+
+            if ( rawComp > mostComponents ) {
+                mostComponents = rawComp;
+            }
+        }
+
     } // for each input
 
 
@@ -2282,25 +2211,19 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
             // "Optional input clips can always have their component types remapped"
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id482755
             ImageBitDepthEnum depth = deepestBitDepth;
-            ImageComponents remappedComps;
-            if ( !mostComponents.isColorPlane() ) {
-                // hmm custom component type, don't touch it and pass it through
-                metadata.setImageComponents(i, mostComponents);
-            } else {
-                remappedComps = mostComponents;
-                remappedComps = node->findClosestSupportedNumberOfComponents(i, remappedComps.getNumComponents());
-                metadata.setImageComponents(i, remappedComps);
-                if ( (i == -1) && !premultSet &&
-                    ( ( remappedComps == ImageComponents::getRGBAComponents() ) || ( remappedComps == ImageComponents::getAlphaComponents() ) ) ) {
-                    premult = eImagePremultiplicationPremultiplied;
-                    premultSet = true;
-                }
+            int remappedComps = node->findClosestSupportedNumberOfComponents(i, mostComponents);
+            metadata.setColorPlaneNComps(i, remappedComps);
+            if ( (i == -1) && !premultSet &&
+                ( ( remappedComps == ImageComponents::getRGBAComponents() ) || ( remappedComps == ImageComponents::getAlphaComponents() ) ) ) {
+                premult = eImagePremultiplicationPremultiplied;
+                premultSet = true;
             }
+
 
             metadata.setBitDepth(i, depth);
         } else {
 
-            ImageComponents rawComps = getUnmappedComponentsForInput(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
+            int rawComps = getUnmappedNumberOfCompsForColorPlane(shared_from_this(), i, inputMetadatas, firstNonOptionalConnectedInputComps);
             ImageBitDepthEnum rawDepth;
             if (i >= 0 && inputMetadatas[i]) {
                 rawDepth = inputMetadatas[i]->getBitDepth(-1);
@@ -2308,13 +2231,11 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
                 rawDepth = eImageBitDepthFloat;
             }
 
-            if ( rawComps.isColorPlane() ) {
-                ImageBitDepthEnum depth = multiBitDepth ? node->getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
-                metadata.setBitDepth(i, depth);
-            } else {
-                metadata.setBitDepth(i, rawDepth);
-            }
-            metadata.setImageComponents(i, rawComps);
+
+            ImageBitDepthEnum depth = multiBitDepth ? node->getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
+            metadata.setBitDepth(i, depth);
+
+            metadata.setColorPlaneNComps(i, rawComps);
         }
     }
 
@@ -2366,21 +2287,21 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
         ImageBitDepthEnum depth = md.getBitDepth(i);
         md.setBitDepth( i, node->getClosestSupportedBitDepth(depth));
 
-        ImageComponents comps = md.getImageComponents(i);
+        int nComps = md.getColorPlaneNComps(i);
         bool isAlpha = false;
         bool isRGB = false;
         if (i == -1) {
-            if ( comps == ImageComponents::getRGBComponents() ) {
+            if ( nComps == 3 ) {
                 isRGB = true;
-            } else if ( comps == ImageComponents::getAlphaComponents() ) {
+            } else if ( nComps == 1 ) {
                 isAlpha = true;
             }
         }
-        if ( comps.isColorPlane() ) {
-            comps = node->findClosestSupportedNumberOfComponents(i, comps.getNumComponents());
-        }
 
-        md.setImageComponents(i, comps);
+        nComps = node->findClosestSupportedNumberOfComponents(i, nComps);
+
+
+        md.setColorPlaneNComps(i, nComps);
 
         if (i == -1) {
             // Force opaque for RGB and unpremult for alpha

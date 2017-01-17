@@ -56,7 +56,6 @@ HEADERS += \
     NodeGroupSerialization.h \
     NodeGuiSerialization.h \
     NodeSerialization.h \
-    NonKeyParamsSerialization.h \
     ProjectGuiSerialization.h \
     ProjectSerialization.h \
     RectDSerialization.h \
@@ -78,7 +77,6 @@ SOURCES += \
     KnobTableItemSerialization.cpp \
     NodeSerialization.cpp \
     NodeClipBoard.cpp \
-    NonKeyParamsSerialization.cpp \
     ProjectSerialization.cpp \
     RectDSerialization.cpp \
     RectISerialization.cpp \

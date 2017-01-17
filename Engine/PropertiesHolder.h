@@ -38,6 +38,8 @@ NATRON_NAMESPACE_ENTER
 class PropertiesHolder
 {
 
+public:
+
     /**
      * @class Base class for properties
      **/
@@ -49,6 +51,8 @@ class PropertiesHolder
         }
 
         virtual int getNDimensions() const = 0;
+
+        virtual boost::shared_ptr<PropertyBase> createDuplicate() const = 0;
 
         virtual ~PropertyBase()
         {
@@ -75,11 +79,20 @@ class PropertiesHolder
             return (int)value.size();
         }
 
+        virtual boost::shared_ptr<PropertyBase> createDuplicate() const OVERRIDE FINAL
+        {
+            boost::shared_ptr<Property<T> > ret(new Property<T>());
+            ret->value = value;
+            return ret;
+        }
+
         virtual ~Property()
         {
         }
     };
 
+protected:
+    
     /**
      * @brief Returns a pointer to the property matching the given unique name. 
      * @param failIfNotExisting If true, then this function throws an exception if the property cannot be found
@@ -141,7 +154,6 @@ class PropertiesHolder
         _propertiesInitialized = true;
     }
 
-protected:
 
     /**
      * @brief Creates a one dimensional property
@@ -189,6 +201,8 @@ public:
      * This object is NOT thread-safe
      **/
     PropertiesHolder();
+
+    PropertiesHolder(const PropertiesHolder& other);
 
     virtual ~PropertiesHolder();
 
@@ -258,7 +272,7 @@ public:
      * is invalid.
      **/
     template<typename T>
-    T getProperty(const std::string& name, int index = 0) const
+    const T& getProperty(const std::string& name, int index = 0) const
     {
         ensurePropertiesCreated();
 
@@ -274,7 +288,7 @@ public:
      * @brief Same as getProperty except that it returns all dimensions of the property at once.
      **/
     template<typename T>
-    std::vector<T> getPropertyN(const std::string& name) const
+    const std::vector<T>& getPropertyN(const std::string& name) const
     {
         ensurePropertiesCreated();
 

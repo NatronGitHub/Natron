@@ -147,7 +147,7 @@ struct FrameViewRequestPrivate
     GetComponentsResultsPtr neededComps;
 
     // The distorsion at this frame/view
-    GetDistorsionResultsPtr distorsion;
+    DistorsionFunction2DPtr distorsion;
 
     // True if cache write is allowed but not cache read
     bool byPassCache;
@@ -422,7 +422,7 @@ FrameViewRequest::setComponentsNeededResults(const GetComponentsResultsPtr& comp
     _imp->neededComps = comps;
 }
 
-GetDistorsionResultsPtr
+DistorsionFunction2DPtr
 FrameViewRequest::getDistorsionResults() const
 {
     QMutexLocker k(&_imp->lock);
@@ -430,7 +430,7 @@ FrameViewRequest::getDistorsionResults() const
 }
 
 void
-FrameViewRequest::setDistorsionResults(const GetDistorsionResultsPtr& results)
+FrameViewRequest::setDistorsionResults(const DistorsionFunction2DPtr& results)
 {
     QMutexLocker k(&_imp->lock);
     _imp->distorsion = results;
