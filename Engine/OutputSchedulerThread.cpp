@@ -2196,7 +2196,7 @@ public:
                     inArgs->outputImage->getTileAt(i, &tile);
                     for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
                         if (tile.perChannelTile[c].entryLocker) {
-                            inArgs->viewerProcessImageTileKey = tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey();
+                            inArgs->viewerProcessImageTileKey = toImageTileKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
                             assert(inArgs->viewerProcessImageTileKey);
                             break;
                         }
