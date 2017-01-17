@@ -30,9 +30,11 @@
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/Color.h"
 #include "Engine/RotoBezierTriangulation.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
