@@ -25,7 +25,7 @@
 
 
 #include "EffectInstanceActionResults.h"
-#include <boost/foreach.hpp>
+
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/Hash64.h"

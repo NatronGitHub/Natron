@@ -44,6 +44,7 @@
 #include "Engine/Hash64.h"
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
+#include "Engine/ImageStorage.h"
 #include "Engine/Node.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/GPUContextPool.h"

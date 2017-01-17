@@ -55,8 +55,11 @@
 #include <shlobj.h>
 #endif
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include <libs/hoedown/src/version.h>
 #include <ceres/version.h>
 #include <openMVG/version.hpp>

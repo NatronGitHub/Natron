@@ -420,7 +420,7 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     _imp->getChannelOptions(TreeRenderNodeArgsPtr(), getCurrentTime_TLS(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
     // In ouptut the color plane should be mapped to the display channels.
-    metadata.setImageComponents(-1, selectedDisplayLayer);
+    metadata.setColorPlaneNComps(-1, selectedDisplayLayer.getNumComponents());
 
     // Input should always be float, since we may do color-space conversion.
     metadata.setBitDepth(0, eImageBitDepthFloat);

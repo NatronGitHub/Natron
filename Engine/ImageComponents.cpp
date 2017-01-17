@@ -29,8 +29,10 @@
 #include <cassert>
 #include <stdexcept>
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/NodeSerialization.h"
 
@@ -405,6 +407,23 @@ ImageComponents::getLayerOption() const
     // the same in the parameter.
     return ChoiceOption(_layerName, optionLabel, "");
 
+}
+
+const ImageComponents&
+ImageComponents::getColorPlaneComponents(int nComps)
+{
+    switch (nComps) {
+        case 1:
+            return ImageComponents::getAlphaComponents();
+        case 2:
+            return ImageComponents::getXYComponents();
+        case 3:
+            return ImageComponents::getRGBComponents();
+        case 4:
+            return ImageComponents::getRGBAComponents();
+        default:
+            return ImageComponents::getNoneComponents();
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

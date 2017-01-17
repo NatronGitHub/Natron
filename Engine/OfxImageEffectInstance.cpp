@@ -1127,8 +1127,8 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
         outArgs.createProperty(specComp);
 
-        ImageComponents clipComponents = metadata.getImageComponents(inputNb);
-        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(clipComponents);
+        int nComps = metadata.getColorPlaneNComps(inputNb);
+        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(ImageComponents::getColorPlaneComponents(nComps));
         outArgs.setStringProperty( componentParamName.c_str(), clipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
 
@@ -1210,7 +1210,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 #       endif
 
             defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
-            defaultPrefs.setImageComponents( inputNb, OfxClipInstance::ofxComponentsToNatronComponents( outArgs.getStringProperty(componentParamName) ) );
+            defaultPrefs.setColorPlaneNComps( inputNb, OfxClipInstance::ofxComponentsToNatronComponents( outArgs.getStringProperty(componentParamName) ).getNumComponents() );
             defaultPrefs.setPixelAspectRatio( inputNb, outArgs.getDoubleProperty(parParamName) );
         }
 

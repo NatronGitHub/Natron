@@ -99,13 +99,10 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     // Internally this will return an identity matrix if the node is identity
 
     {
-        GetDistorsionResultsPtr results;
-        stat = currentNode->getDistorsion_public(time, s, view, TreeRenderNodeArgsPtr(), &results);
+        stat = currentNode->getDistorsion_public(time, s, view, TreeRenderNodeArgsPtr(), &disto);
         if (isFailureRetCode(stat)) {
             return false;
-        } else {
-            disto = results->getDistorsionResults();
-        }
+        } 
     }
 
 

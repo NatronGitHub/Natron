@@ -1160,22 +1160,7 @@ TimeLineGui::refreshCachedFramesNow()
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    CachePtr cache = appPTR->getCache();
-
-    std::list<CacheEntryBasePtr> cachedEntries;
-    cache->getAllEntriesByKeyIDWithCacheSignalEnabled(kCacheKeyUniqueIDImageTile, &cachedEntries);
-
-    _imp->cachedFrames.clear();
-    for (std::list<CacheEntryBasePtr>::const_iterator it = cachedEntries.begin(); it != cachedEntries.end(); ++it) {
-        ImageStorageBase* isMemoryEntry = dynamic_cast<ImageStorageBase*>(it->get());
-        assert(isMemoryEntry);
-        if (!isMemoryEntry) {
-            continue;
-        }
-        CachedFrame c((SequenceTime)isMemoryEntry->getTime(), isMemoryEntry->getStorageMode());
-        _imp->cachedFrames.insert(c);
-    }
-
+#pragma message WARN("Todo")
     update();
 
 } // refreshCachedFramesNow

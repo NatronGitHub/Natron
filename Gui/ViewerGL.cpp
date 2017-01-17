@@ -1008,7 +1008,7 @@ ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata)
     }
 
     _imp->displayTextures[inputNb].premult = metadata.getOutputPremult();
-    getViewerTab()->setImageFormat(inputNb, metadata.getImageComponents(0), metadata.getBitDepth(0));
+    getViewerTab()->setImageFormat(inputNb, ImageComponents::getColorPlaneComponents(metadata.getColorPlaneNComps(0)), metadata.getBitDepth(0));
 }
 
 void

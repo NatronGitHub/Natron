@@ -176,16 +176,16 @@ RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 
 
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
-    ImageComponents comps;
+    int nComps;
     if (type == eRotoShapeRenderTypeSolid) {
         int index = _imp->outputComponents.lock()->getValue();
-        comps = index == 0 ? ImageComponents::getRGBAComponents() : ImageComponents::getAlphaComponents();
+        nComps = index == 0 ? 4 : 1;
     } else {
-        comps = ImageComponents::getRGBAComponents();
+        nComps = 4;
     }
 
-    metadata.setImageComponents(-1, comps);
-    metadata.setImageComponents(0, comps);
+    metadata.setColorPlaneNComps(-1, nComps);
+    metadata.setColorPlaneNComps(0, nComps);
     metadata.setIsContinuous(true);
     return eActionStatusOK;
 }

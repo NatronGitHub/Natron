@@ -1472,19 +1472,7 @@ EffectInstance::getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
         int nComps = metadatas->getColorPlaneNComps(inputNb);
-        switch (nComps) {
-            case 1:
-                return ImageComponents::getAlphaComponents();
-            case 2:
-                return ImageComponents::getXYComponents();
-            case 3:
-                return ImageComponents::getRGBComponents();
-            case 4:
-                return ImageComponents::getRGBAComponents();
-            default:
-                assert(false);
-                return ImageComponents::getNoneComponents();
-        }
+        return ImageComponents::getColorPlaneComponents(nComps);
     }
 }
 

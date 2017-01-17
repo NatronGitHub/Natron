@@ -148,6 +148,8 @@ public:
     ChoiceOption getLayerOption() const;
     ChoiceOption getChannelOption(int channelIndex) const;
 
+    static const ImageComponents& getColorPlaneComponents(int nComps);
+
     /**
      * @brief Find a layer equivalent to this layer in the other layers container.
      * ITERATOR must be either a std::vector<ImageComponents>::iterator or std::list<ImageComponents>::iterator

@@ -134,7 +134,7 @@ StorageDeleterThread::run()
         }
 
         {
-            CacheEntryBasePtr front;
+            ImageStorageBasePtr front;
             {
                 QMutexLocker k(&_imp->entriesQueueMutex);
                 if ( quit && _imp->entriesQueue.empty() ) {

@@ -34,7 +34,8 @@
 #include <QWaitCondition>
 #include <QDebug>
 
-
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+GCC_DIAG_OFF(unused-parameter)
 #include <boost/unordered_set.hpp>
 #include <boost/format.hpp>
 #include <boost/interprocess/containers/vector.hpp>
@@ -46,8 +47,8 @@
 #include <boost/interprocess/sync/upgradable_lock.hpp> // scope lock a r-w upgradable mutex
 #include <boost/interprocess/sync/interprocess_condition.hpp> // wait cond
 #include <boost/interprocess/sync/interprocess_condition_any.hpp> // wait cond with a r-w mutex
-
-#include <boost/interprocess/file_mapping.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+GCC_DIAG_ON(unused-parameter)
 
 #include <SequenceParsing.h>
 

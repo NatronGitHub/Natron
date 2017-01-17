@@ -29,6 +29,7 @@
 
 #include "Engine/OSGLContext.h"
 #include "Engine/Image.h"
+#include "Engine/ImageStorage.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/RamBuffer.h"
