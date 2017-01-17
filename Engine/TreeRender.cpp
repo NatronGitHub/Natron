@@ -226,7 +226,7 @@ TreeRender::getTreeRoot() const
 TreeRenderNodeArgsPtr
 TreeRender::getTreeRootRenderNode() const
 {
-    return _imp->rootNodeRenderArgs;
+    return _imp->rootNodeRenderArgs.lock();
 }
 
 OSGLContextPtr
