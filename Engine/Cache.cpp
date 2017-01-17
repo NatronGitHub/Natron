@@ -45,6 +45,8 @@
 #include <boost/interprocess/sync/sharable_lock.hpp> // scope lock a r-w mutex
 #include <boost/interprocess/sync/upgradable_lock.hpp> // scope lock a r-w upgradable mutex
 #include <boost/interprocess/sync/interprocess_condition.hpp> // wait cond
+#include <boost/interprocess/sync/interprocess_condition_any.hpp> // wait cond with a r-w mutex
+
 #include <boost/interprocess/file_mapping.hpp>
 
 #include <SequenceParsing.h>
@@ -324,7 +326,7 @@ struct CacheBucket
      * If the file is empty and minFreeSize is 0, the file will at least be grown to a size of
      * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
      **/
-    void ensureToCFileMappingValid(std::size_t minFreeSize);
+    void ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize);
 
     /**
      * @brief Returns whether the tile aligned memory mapped file mapping is still valid.
@@ -342,7 +344,7 @@ struct CacheBucket
      * If the file is empty and minFreeSize is 0, the file will at least be grown to a size of
      * NATRON_TILE_SIZE_BYTES * NATRON_CACHE_FILE_GROW_N_TILES
      **/
-    void ensureTileMappingValid(std::size_t minFreeSize);
+    void ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize);
 
     /**
      * @brief Grow the ToC memory mapped file. 
@@ -453,7 +455,7 @@ struct CachePrivate
             int nProcessWithMappingValid;
 
             // Threads wait on this condition whilst the mappingValid flag is false
-            bip::interprocess_condition mappingInvalidCond;
+            bip::interprocess_condition_any mappingInvalidCond;
 
             // The thread that wants to grow the memory portion just waits in this condition
             // until nProcessWithToCMappingValid is 0.
@@ -496,7 +498,7 @@ struct CachePrivate
             //          ++nProcessWithMappingValid;
             //    }
             // }
-            bip::interprocess_condition mappedProcessesNotEmpty;
+            bip::interprocess_condition_any mappedProcessesNotEmpty;
 
             SharedMemorySegmentData()
             : segmentMutex()
@@ -640,7 +642,9 @@ CacheBucket::isTileFileMappingValid() const
     return c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid;
 } // isTileFileMappingValid
 
-static void ensureMappingValidInternal(const MemoryFilePtr& memoryMappedFile, CachePrivate::IPCData::SharedMemorySegmentData* segment)
+static void ensureMappingValidInternal(WriteLock& lock,
+                                       const MemoryFilePtr& memoryMappedFile,
+                                       CachePrivate::IPCData::SharedMemorySegmentData* segment)
 {
     memoryMappedFile->close();
     std::string filePath = memoryMappedFile->path();
@@ -653,7 +657,7 @@ static void ensureMappingValidInternal(const MemoryFilePtr& memoryMappedFile, Ca
 
     // Wait until the mapping becomes valid again
     while(!segment->mappingValid) {
-        segment->mappingInvalidCond.wait(segment->segmentMutex);
+        segment->mappingInvalidCond.wait(lock);
     }
 
     memoryMappedFile->open(filePath, MemoryFile::eFileOpenModeOpenOrCreate);
@@ -671,7 +675,7 @@ static void reOpenToCData(CacheBucket* bucket)
 }
 
 void
-CacheBucket::ensureToCFileMappingValid(std::size_t minFreeSize)
+CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 {
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
@@ -683,7 +687,9 @@ CacheBucket::ensureToCFileMappingValid(std::size_t minFreeSize)
     // Save the entire file
     tocFile->flush(MemoryFile::eFlushTypeSync, NULL, 0);
 
-    ensureMappingValidInternal(tocFile, &c->_imp->ipc->bucketsData[bucketIndex].tocData);
+    ensureMappingValidInternal(lock,
+                               tocFile,
+                               &c->_imp->ipc->bucketsData[bucketIndex].tocData);
 
     // Ensure the size of the ToC file is reasonable
     if (tocFile->size() == 0) {
@@ -727,7 +733,7 @@ static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const unorder
 } // flushTileMapping
 
 void
-CacheBucket::ensureTileMappingValid(std::size_t minFreeSize)
+CacheBucket::ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 {
     // Private - the tileData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
@@ -740,7 +746,7 @@ CacheBucket::ensureTileMappingValid(std::size_t minFreeSize)
 
     flushTileMapping(tileAlignedFile, ipc->freeTiles);
     
-    ensureMappingValidInternal(tileAlignedFile, &c->_imp->ipc->bucketsData[bucketIndex].tileData);
+    ensureMappingValidInternal(lock, tileAlignedFile, &c->_imp->ipc->bucketsData[bucketIndex].tileData);
 
     // Ensure the size of the ToC file is reasonable
     if (tileAlignedFile->size() == 0) {
@@ -770,7 +776,7 @@ CacheBucket::growToCFile(std::size_t bytesToAdd)
 
     --c->_imp->ipc->bucketsData[bucketIndex].tocData.nProcessWithMappingValid;
     while (c->_imp->ipc->bucketsData[bucketIndex].tocData.nProcessWithMappingValid > 0) {
-        c->_imp->ipc->bucketsData[bucketIndex].tocData.mappedProcessesNotEmpty.wait(c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex);
+        c->_imp->ipc->bucketsData[bucketIndex].tocData.mappedProcessesNotEmpty.wait<bip::interprocess_upgradable_mutex>(c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex);
     }
 
     // Save the entire file
@@ -804,7 +810,7 @@ CacheBucket::growTileFile(std::size_t bytesToAdd)
 
     --c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid;
     while (c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid > 0) {
-        c->_imp->ipc->bucketsData[bucketIndex].tileData.mappedProcessesNotEmpty.wait(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
+        c->_imp->ipc->bucketsData[bucketIndex].tileData.mappedProcessesNotEmpty.wait<bip::interprocess_upgradable_mutex>(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
     }
 
 
@@ -921,7 +927,7 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntry* cacheEntry,
                     tileReadLock.reset();
                     tileWriteLock.reset(new WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
 
-                    ensureTileMappingValid(0);
+                    ensureTileMappingValid(*tileWriteLock, 0);
                 }
 
 
@@ -981,7 +987,7 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntry* cacheEntry, bool relea
 
         {
             WriteLock writeLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
-            ensureTileMappingValid(0);
+            ensureTileMappingValid(writeLock, 0);
 
             // Invalidate this portion of the memory mapped file
             std::size_t dataOffset = cacheEntry->tileCacheIndex * NATRON_TILE_SIZE_BYTES;
@@ -1049,7 +1055,7 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
             // This could allow other threads to run in-between, but we don't care since nothing happen.
             readLock.reset();
             writeLock.reset(new WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex));
-            _imp->bucket->ensureToCFileMappingValid(0);
+            _imp->bucket->ensureToCFileMappingValid(*writeLock, 0);
         }
 
         // Look-up the cache
@@ -1095,7 +1101,7 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
         // Every time we take the lock, we must ensure the memory mapping is ok
         if (!_imp->bucket->isToCFileMappingValid()) {
             writeLock.reset(new WriteLock(boost::move(upgradableLock)));
-            _imp->bucket->ensureToCFileMappingValid(0);
+            _imp->bucket->ensureToCFileMappingValid(*writeLock, 0);
         }
 
 
@@ -1192,7 +1198,7 @@ CacheEntryLocker::insertInCache()
         std::size_t pageSize = bip::mapped_region::get_page_size();
         const std::size_t entrySize = (std::ceil(_imp->processLocalEntry->getMetadataSize() / (double)pageSize) + 1) * pageSize;
 
-        _imp->bucket->ensureToCFileMappingValid(entrySize);
+        _imp->bucket->ensureToCFileMappingValid(writeLock, entrySize);
 
 
         // Fetch the entry. It must be here!
@@ -1246,7 +1252,7 @@ CacheEntryLocker::insertInCache()
                         tileReadLock.reset();
                         tileWriteLock.reset(new WriteLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tileData.segmentMutex));
 
-                        _imp->bucket->ensureTileMappingValid(NATRON_TILE_SIZE_BYTES);
+                        _imp->bucket->ensureTileMappingValid(*tileWriteLock, NATRON_TILE_SIZE_BYTES);
                     }
                     assert(_imp->bucket->ipc->freeTiles.size() > 0);
                     int freeTileIndex;
@@ -1357,7 +1363,7 @@ CacheEntryLocker::~CacheEntryLocker()
     WriteLock writeLock(_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex);
 
     // Every time we take the lock, we must ensure the memory mapping is ok
-    _imp->bucket->ensureToCFileMappingValid(0);
+    _imp->bucket->ensureToCFileMappingValid(writeLock, 0);
 
 
     MemorySegmentEntry* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
@@ -1438,7 +1444,7 @@ Cache::create()
             ret->_imp->buckets[i].tocFile->open(tocFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
 
             // Ensure the mapping is valid. This will grow the file the first time.
-            ret->_imp->buckets[i].ensureToCFileMappingValid(0);
+            ret->_imp->buckets[i].ensureToCFileMappingValid(writeLock, 0);
         }
 
         // Open the memory-mapped file used for tiled entries data storage.
@@ -1453,7 +1459,7 @@ Cache::create()
             ret->_imp->buckets[i].tileAlignedFile->open(tileCacheFilePath, MemoryFile::eFileOpenModeOpenOrCreate);
 
             // Ensure the mapping is valid. This will grow the file the first time.
-            ret->_imp->buckets[i].ensureTileMappingValid(0);
+            ret->_imp->buckets[i].ensureTileMappingValid(writeLock, 0);
 
         }
 
@@ -1737,7 +1743,7 @@ Cache::hasCacheEntryForHash(U64 hash) const
     if (!bucket.isToCFileMappingValid()) {
         readLock.reset();
         writeLock.reset(new WriteLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex));
-        bucket.ensureToCFileMappingValid(0);
+        bucket.ensureToCFileMappingValid(*writeLock, 0);
     }
 
     std::pair<MemorySegmentEntry*, ExternalSegmentType::size_type> found = bucket.tocFileManager->find<MemorySegmentEntry>(hashStr.c_str());
@@ -1785,7 +1791,7 @@ Cache::removeEntry(const CacheEntryBasePtr& entry)
         WriteLock writeLock(_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex);
 
         // Ensure the file mapping is OK
-        bucket.ensureToCFileMappingValid(0);
+        bucket.ensureToCFileMappingValid(writeLock, 0);
 
         // Deallocate the memory taken by the cache entry in the ToC
         {
@@ -1866,7 +1872,7 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
                 WriteLock writeLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex);
 
                 // Ensure the mapping
-                bucket.ensureToCFileMappingValid(0);
+                bucket.ensureToCFileMappingValid(writeLock, 0);
 
                 U64 entryHash = 0;
                 {
@@ -1938,7 +1944,7 @@ Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
         if (!bucket.isToCFileMappingValid()) {
             readLock.reset();
             writeLock.reset(new WriteLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
-            bucket.ensureToCFileMappingValid(0);
+            bucket.ensureToCFileMappingValid(*writeLock, 0);
         }
 
         try {
@@ -1989,7 +1995,7 @@ Cache::flushCacheOnDisk(bool async)
                 writeLock.reset(new WriteLock(_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex));
 
                 // This function will flush for us.
-                bucket.ensureToCFileMappingValid(0);
+                bucket.ensureToCFileMappingValid(*writeLock, 0);
             } else {
                 bucket.tocFile->flush(async ? MemoryFile::eFlushTypeAsync : MemoryFile::eFlushTypeSync, NULL, 0);
             }
@@ -2006,7 +2012,7 @@ Cache::flushCacheOnDisk(bool async)
                 writeLockTile.reset(new WriteLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex));
 
                  // This function will flush for us.
-                bucket.ensureTileMappingValid(0);
+                bucket.ensureTileMappingValid(*writeLock, 0);
             } else {
                 flushTileMapping(bucket.tileAlignedFile, bucket.ipc->freeTiles);
             }
