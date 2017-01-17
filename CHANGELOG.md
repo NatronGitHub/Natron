@@ -40,7 +40,8 @@
 - Grade: fix a bug where negative values were clamped even when gamma=1 #1533
 - STMap, IDistort, LensDistortion, Transform, CornerPin: reduce supersampling to avoid artifacts
 - LensDistortion: add STMap output mode, add undistort output, add PFBarrel and 3DEqualizer distortions model, add proper region of definition support.
-
+- RotoMerge: a merge plugin that takes an external mask as the alpha for the A input.
+- WriteFFmpeg: DNxHD codec now supports DNxHR HQ, DNxHR SQ and DNxHR LB profiles.
 
 ## Version 2.1.9
 
