@@ -1148,7 +1148,6 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
             if (deserializeFailed) {
                 _imp->bucket->deallocateCacheEntryImpl(cacheEntry, takeEntryLock /*releaseLock*/);
                 cacheEntry = 0;
-                deserializeFailed = false;
             }
 
             assert(!cacheEntry);
