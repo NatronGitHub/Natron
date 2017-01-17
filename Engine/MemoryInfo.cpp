@@ -172,16 +172,16 @@ printAsRAM(U64 bytes)
     const U64 tb = 1024 * gb;
 
     if (bytes >= tb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 TB").arg( QLocale().toString(qreal(bytes) / tb, 'f', 3) );
+        return QCoreApplication::translate("MemoryInfo", "%1 TiB").arg( QLocale().toString(qreal(bytes) / tb, 'f', 3) );
     }
     if (bytes >= gb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 GB").arg( QLocale().toString(qreal(bytes) / gb, 'f', 2) );
+        return QCoreApplication::translate("MemoryInfo", "%1 GiB").arg( QLocale().toString(qreal(bytes) / gb, 'f', 2) );
     }
     if (bytes >= mb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 MB").arg( QLocale().toString(qreal(bytes) / mb, 'f', 1) );
+        return QCoreApplication::translate("MemoryInfo", "%1 MiB").arg( QLocale().toString(qreal(bytes) / mb, 'f', 1) );
     }
     if (bytes >= kb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 KB").arg( QLocale().toString( (uint)(bytes / kb) ) );
+        return QCoreApplication::translate("MemoryInfo", "%1 KiB").arg( QLocale().toString( (uint)(bytes / kb) ) );
     }
 
     return QCoreApplication::translate("MemoryInfo", "%1 byte(s)").arg( QLocale().toString( (uint)bytes ) );
