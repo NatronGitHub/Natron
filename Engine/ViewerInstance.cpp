@@ -415,12 +415,12 @@ ActionRetCodeEnum
 ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
 
-    ImageComponents selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
-    int alphaChannelIndex;
-    _imp->getChannelOptions(TreeRenderNodeArgsPtr(), getCurrentTime_TLS(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+   // ImageComponents selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
+   // int alphaChannelIndex;
+   // _imp->getChannelOptions(TreeRenderNodeArgsPtr(), getCurrentTime_TLS(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
-    // In ouptut the color plane should be mapped to the display channels.
-    metadata.setColorPlaneNComps(-1, selectedDisplayLayer.getNumComponents());
+    // For now we always output 4 channel images
+    metadata.setColorPlaneNComps(-1, 4);
 
     // Input should always be float, since we may do color-space conversion.
     metadata.setBitDepth(0, eImageBitDepthFloat);

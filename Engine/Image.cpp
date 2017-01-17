@@ -467,16 +467,13 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                         assert(cachedBuffer);
                         cachedBuffer->setKey(keyToReadCache);
 
-                        CacheEntryLockerPtr entryLocker = cache->get(cachedBuffer);
+                        // Store the entry locker pointer
+                        thisChannelTile.entryLocker = cache->get(cachedBuffer);
 
-                        if (entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
+                        if (thisChannelTile.entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusCached) {
                             isCached = true;
                             // We found a cache entry, don't continue to look for a tile computed in draft mode.
                             break;
-                        } else {
-
-                            // Store the entry locker pointer 
-                            thisChannelTile.entryLocker = entryLocker;
                         }
                     } // for each draft mode to check
                     if (isCached) {
@@ -501,6 +498,9 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                                     tmpArgs.proxyScale = args.proxyScale;
                                     tmpArgs.mipMapLevel = args.mipMapLevel;
                                     tmpArgs.externalBuffer = thisChannelTile.buffer;
+                                    tmpArgs.nodeTimeInvariantHash = args.nodeTimeInvariantHash;
+                                    tmpArgs.time = args.time;
+                                    tmpArgs.view = args.view;
                                     fullScaleImage = Image::create(args);
                                 }
 

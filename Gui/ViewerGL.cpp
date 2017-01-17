@@ -1019,6 +1019,24 @@ ViewerGL::clearLastRenderedImage()
     }
 }
 
+void
+ViewerGL::getViewerProcessHashStored(std::map<TimeValue, ImageTileKeyPtr>* hashes) const
+{
+    QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
+    *hashes = _imp->uploadedTexturesViewerHash;
+}
+
+
+void
+ViewerGL::removeViewerProcessHashAtTime(TimeValue time)
+{
+    QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
+    std::map<TimeValue, ImageTileKeyPtr>::iterator found = _imp->uploadedTexturesViewerHash.find(time);
+    if (found != _imp->uploadedTexturesViewerHash.end()) {
+        _imp->uploadedTexturesViewerHash.erase(found);
+    }
+}
+
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
@@ -1028,7 +1046,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                                      const RectD& originalCanonicalRoi,
                                      const RectD& rod,
                                      bool recenterViewer,
-                                     const Point& viewportCenter)
+                                     const Point& viewportCenter,
+                                     const ImageTileKeyPtr& viewerProcessNodeTileKey)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
@@ -1064,6 +1083,12 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
         image->getCPUTileData(tile, &imageData);
     }
 
+
+    // Insert the hash in the frame/hash map so we can update the timeline's cache bar
+    if (!isPartialRect && textureIndex == 0) {
+        QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
+        _imp->uploadedTexturesViewerHash[time] = viewerProcessNodeTileKey;
+    }
     
 
     GLTexturePtr tex;

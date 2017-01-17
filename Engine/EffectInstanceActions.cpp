@@ -287,7 +287,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
     }
 
     // Ensure the color layer is always the first one available in the list
-    for (std::list<ImageComponents>::const_iterator it = passThroughLayers.begin(); it != passThroughLayers.end(); ++it) {
+    for (std::list<ImageComponents>::iterator it = passThroughLayers.begin(); it != passThroughLayers.end(); ++it) {
         if (it->isColorPlane()) {
             availableLayers->push_front(*it);
             passThroughLayers.erase(it);

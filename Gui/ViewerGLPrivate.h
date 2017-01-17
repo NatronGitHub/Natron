@@ -177,6 +177,13 @@ struct ViewerGL::Implementation
     bool renderOnPenUp;
     int updateViewerPboIndex;  // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
 
+    // A map storing the hash of the viewerProcess A node accross time.
+    // This is used to display the timeline cache bar.
+    std::map<TimeValue, ImageTileKeyPtr> uploadedTexturesViewerHash;
+
+    // Protects uploadedTexturesViewerHash
+    mutable QMutex uploadedTexturesViewerHashMutex;
+
 public:
 
     /**

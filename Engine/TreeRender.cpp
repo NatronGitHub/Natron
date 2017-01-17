@@ -223,6 +223,12 @@ TreeRender::getTreeRoot() const
     return _imp->treeRoot;
 }
 
+TreeRenderNodeArgsPtr
+TreeRender::getTreeRootRenderNode() const
+{
+    return _imp->rootNodeRenderArgs;
+}
+
 OSGLContextPtr
 TreeRender::getGPUOpenGLContext() const
 {

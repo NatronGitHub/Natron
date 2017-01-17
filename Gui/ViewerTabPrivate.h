@@ -45,6 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/ComboBox.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/NodeViewerContext.h"
+#include "Gui/CachedFramesThread.h"
 
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -71,6 +72,10 @@ struct ViewerTabPrivate
 
     /*frame seeker*/
     TimeLineGui* timeLineGui;
+
+
+    boost::scoped_ptr<CachedFramesThread> cachedFramesThread;
+
 
     // This is all nodes that have a viewer context
     std::map<NodeGuiWPtr, NodeViewerContextPtr> nodesContext;

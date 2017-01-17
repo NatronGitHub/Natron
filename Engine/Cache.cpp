@@ -1412,16 +1412,12 @@ Cache::create()
 
     // Create the main memory segment containing the CachePrivate::IPCData
     {
-        // Give the global memory segment a little bit more room for its own internal state.
+        // Allocate 1 page for the global data.
+        // This gives the global memory segment a little bit of room for its own housekeeping of memory.
         std::size_t pageSize = bip::mapped_region::get_page_size();
-
-        // Allocate 500KB for the global data. This shouldn't need more, unless too many processes
-        // are inserted in the sets in CachePrivate::IPCData. (very unlikely to happen).
-        std::size_t desiredSize = 1024 * 500;
-        desiredSize = std::ceil(desiredSize / (double)pageSize) * pageSize;
         std::stringstream ss;
         ss << NATRON_CACHE_DIRECTORY_NAME  << "_GlobalData";
-        ret->_imp->globalMemorySegment.reset(new bip::managed_shared_memory(bip::open_or_create, ss.str().c_str(), desiredSize));
+        ret->_imp->globalMemorySegment.reset(new bip::managed_shared_memory(bip::open_or_create, ss.str().c_str(), pageSize));
         ret->_imp->ipc = ret->_imp->globalMemorySegment->find_or_construct<CachePrivate::IPCData>("CacheData")();
 
     }

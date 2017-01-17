@@ -95,6 +95,7 @@ SOURCES += \
     AutoHideToolBar.cpp \
     BackdropGui.cpp \
     Button.cpp \
+    CachedFramesThread.cpp \
     ClickableLabel.cpp \
     ColoredFrame.cpp \
     ComboBox.cpp \
@@ -250,6 +251,7 @@ HEADERS += \
     AutoHideToolBar.h \
     BackdropGui.h \
     Button.h \
+    CachedFramesThread.h \
     ClickableLabel.h \
     ColoredFrame.h \
     ComboBox.h \

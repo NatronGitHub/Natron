@@ -2059,6 +2059,7 @@ public:
     , isPartialRect(false)
     , viewerProcessImages()
     , canonicalRoi()
+    , viewerProcessImageKey()
     {
 
     }
@@ -2070,6 +2071,7 @@ public:
     bool isPartialRect;
     ImagePtr viewerProcessImages[2];
     RectD canonicalRoi[2];
+    ImageTileKeyPtr viewerProcessImageKey[2];
 };
 
 class ViewerRenderBufferedFrameContainer : public BufferedFrameContainer
@@ -2103,6 +2105,12 @@ struct RenderViewerProcessFunctorArgs
     ActionRetCodeEnum retCode;
     ImagePtr outputImage;
     RectD roi;
+
+    // Store the key of the first tile in the outputImage
+    // so that we can later on check in the gui if
+    // the image is still cached to update the cache line
+    // on the timeline.
+    ImageTileKeyPtr viewerProcessImageTileKey;
     unsigned int viewerMipMapLevel;
     bool isDraftModeEnabled;
     bool isPlayback;
@@ -2178,6 +2186,27 @@ public:
         // Convert the image to a format that can be uploaded to a OpenGL texture
         {
             inArgs->outputImage = planes.begin()->second;
+
+            // Find the key of the first tile in the image and store it so that in the gui
+            // we can later on re-use this key to check the cache for the timeline's cache line
+            {
+                int nTiles = inArgs->outputImage->getNumTiles();
+                for (int i = 0; i < nTiles; ++i) {
+                    Image::Tile tile;
+                    inArgs->outputImage->getTileAt(i, &tile);
+                    for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
+                        if (tile.perChannelTile[c].entryLocker) {
+                            inArgs->viewerProcessImageTileKey = tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey();
+                            assert(inArgs->viewerProcessImageTileKey);
+                            break;
+                        }
+                    }
+                    if (inArgs->viewerProcessImageTileKey) {
+                        break;
+                    }
+                }
+            }
+
             Image::InitStorageArgs initArgs;
             initArgs.bounds = inArgs->outputImage->getBounds();
 
@@ -2193,6 +2222,8 @@ public:
             copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
             mappedImage->copyPixels(*inArgs->outputImage, copyArgs);
             inArgs->outputImage = mappedImage;
+
+
         }
     }
 
@@ -2307,6 +2338,7 @@ private:
 
             for (int d = 0; d < 2; ++d) {
                 bufferObject->canonicalRoi[i] = processArgs[i]->renderObject->getCanonicalRoI();
+                bufferObject->viewerProcessImageKey[i] = processArgs[i]->viewerProcessImageTileKey;
             }
 
             assert(processArgs.size() == 2);
@@ -2395,6 +2427,7 @@ ViewerDisplayScheduler::processFrame(const BufferedFrameContainerPtr& frames)
             ViewerNode::UpdateViewerArgs::TextureUpload upload;
             upload.canonicalRoI = viewerObject->canonicalRoi[i];
             upload.image = viewerObject->viewerProcessImages[i];
+            upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
             args.viewerUploads[i].push_back(upload);
         }
         isViewer->updateViewer(args);
@@ -3149,6 +3182,7 @@ public:
 
             for (int d = 0; d < 2; ++d) {
                 bufferObject->canonicalRoi[i] = processArgs[i]->renderObject->getCanonicalRoI();
+                bufferObject->viewerProcessImageKey[i] = processArgs[i]->viewerProcessImageTileKey;
             }
 
             // Register the current renders and their age on the scheduler so that they can be aborted
@@ -3421,6 +3455,7 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
             ViewerNode::UpdateViewerArgs::TextureUpload upload;
             upload.canonicalRoI = viewerObject->canonicalRoi[i];
             upload.image = viewerObject->viewerProcessImages[i];
+            upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
             args.viewerUploads[i].push_back(upload);
         }
         viewerNode->updateViewer(args);
@@ -3433,11 +3468,9 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
 
     }
 
-
-
     // At least redraw the viewer, we might be here when the user removed a node upstream of the viewer.
     viewerNode->redrawViewer();
-}
+} // processProducedFrame
 
 void
 ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)

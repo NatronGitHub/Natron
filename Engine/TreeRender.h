@@ -211,6 +211,11 @@ public:
     NodePtr getTreeRoot() const;
 
     /**
+     * @brief Get the tree root render args
+     **/
+    TreeRenderNodeArgsPtr getTreeRootRenderNode() const;
+
+    /**
      * @brief Returns the object used to gather stats for this rende
      **/
     RenderStatsPtr getStatsObject() const;

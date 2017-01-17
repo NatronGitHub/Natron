@@ -113,6 +113,7 @@ StorageDeleterThread::quitThread()
     while (_imp->mustQuit) {
         _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
     }
+    wait();
 }
 
 bool

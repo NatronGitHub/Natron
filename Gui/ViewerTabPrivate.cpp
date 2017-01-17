@@ -60,6 +60,7 @@ ViewerTabPrivate::ViewerTabPrivate(ViewerTab* publicInterface,
     , mainLayout(NULL)
     , infoWidget()
     , timeLineGui(NULL)
+    , cachedFramesThread()
     , nodesContext()
     , currentNodeContext()
     , isFileDialogViewer(false)

@@ -271,6 +271,9 @@ public:
 
             // A pointer to the image on CPU
             ImagePtr image;
+
+            // The hash of the viewer process node
+            ImageTileKeyPtr viewerProcessImageKey;
         };
         std::list<TextureUpload> viewerUploads[2];
         bool recenterViewer;

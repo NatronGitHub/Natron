@@ -240,6 +240,12 @@ ViewerTab::getTimeLine() const
     return _imp->timeLineGui->getTimeline();
 }
 
+TimeLineGui*
+ViewerTab::getTimeLineGui() const
+{
+    return _imp->timeLineGui;
+}
+
 void
 ViewerTab::onMousePressCalledInViewer()
 {

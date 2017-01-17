@@ -163,7 +163,8 @@ public:
                                             const RectD& originalCanonicalRoi,
                                             const RectD& rod,
                                             bool recenterViewer,
-                                            const Point& viewportCenter) OVERRIDE FINAL;
+                                            const Point& viewportCenter,
+                                            const ImageTileKeyPtr& viewerProcessNodeTileKey) OVERRIDE FINAL;
 
 
     virtual void disconnectInputTexture(int textureIndex, bool clearRoD) OVERRIDE FINAL;
@@ -405,6 +406,17 @@ public:
     void getTopLeftAndBottomRightInZoomCoords(QPointF* topLeft, QPointF* bottomRight) const;
 
     void checkIfViewPortRoIValidOrRender();
+
+    /**
+     * @brief Returns the viewer process hash for each frame that was uploaded on the viewer.
+     * This is used to display the cache green line on the timeline
+     **/
+    void getViewerProcessHashStored(std::map<TimeValue, ImageTileKeyPtr>* hashes) const;
+
+    /**
+     * @brief Removes a hash stored in the viewer process frame/hash map
+     **/
+    void removeViewerProcessHashAtTime(TimeValue time);
 
     void s_selectionCleared()
     {
