@@ -12,6 +12,7 @@
 - Natron can now be launched in 32-bits mode on macOS
 - Documentation is now licensed under CC BY-SA 4.0, and external contributions are welcome
 - Organize nodes documentation
+- New project formats: HD_720, UHD_4K, 2K_DCP, 4K_DCP
 
 ### Plugins
 
