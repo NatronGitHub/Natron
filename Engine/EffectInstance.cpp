@@ -5280,10 +5280,6 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         return false;
     }
 
-    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
-        node->onFileNameParameterChanged(k);
-    }
-
     bool ret = false;
 
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
@@ -5301,6 +5297,10 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             } 
             ret |= knobChanged(k, reason, view, time);
         }
+    }
+
+    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
+        node->onFileNameParameterChanged(k);
     }
 
     if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {

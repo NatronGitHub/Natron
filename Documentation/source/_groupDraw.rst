@@ -6,6 +6,7 @@ The following sections contain documentation about every node in the  Draw group
 .. toctree::
     :maxdepth: 1
 
+    plugins/fr.inria.LightWrap.rst
     plugins/net.sf.cimg.CImgNoise.rst
     plugins/net.sf.cimg.CImgPlasma.rst
     plugins/net.sf.openfx.Radial.rst
