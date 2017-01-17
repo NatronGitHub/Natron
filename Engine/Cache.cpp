@@ -354,7 +354,7 @@ struct CacheBucket
      *
      * This function is called internally by ensureToCFileMappingValid()
      **/
-    void growToCFile(std::size_t bytesToAdd);
+    void growToCFile(WriteLock& lock, std::size_t bytesToAdd);
 
     /**
      * @brief Grow the tile memory mapped file. 
@@ -364,7 +364,7 @@ struct CacheBucket
      *
      * This function is called internally by ensureTileMappingValid()
      **/
-    void growTileFile(std::size_t bytesToAdd);
+    void growTileFile(WriteLock& lock, std::size_t bytesToAdd);
 };
 
 struct CacheEntryLockerPrivate
@@ -693,7 +693,7 @@ CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 
     // Ensure the size of the ToC file is reasonable
     if (tocFile->size() == 0) {
-        growToCFile(minFreeSize);
+        growToCFile(lock, minFreeSize);
     } else {
         reOpenToCData(this);
 
@@ -701,7 +701,7 @@ CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
         ExternalSegmentType::size_type freeMem = tocFileManager->get_free_memory();
         if (freeMem < minFreeSize) {
             std::size_t minbytesToGrow = minFreeSize - freeMem;
-            growToCFile(minbytesToGrow);
+            growToCFile(lock, minbytesToGrow);
         }
     }
     assert(tocFileManager->get_free_memory() >= minFreeSize);
@@ -750,7 +750,7 @@ CacheBucket::ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 
     // Ensure the size of the ToC file is reasonable
     if (tileAlignedFile->size() == 0) {
-        growTileFile(minFreeSize);
+        growTileFile(lock, minFreeSize);
     } else {
 
         std::size_t freeMem = ipc->freeTiles.size() * NATRON_TILE_SIZE_BYTES;
@@ -758,7 +758,7 @@ CacheBucket::ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize)
         // Check that there's enough memory, if not grow the file
         if (freeMem < minFreeSize) {
             std::size_t minbytesToGrow = minFreeSize - freeMem;
-            growTileFile(minbytesToGrow);
+            growTileFile(lock, minbytesToGrow);
         }
     }
     assert(ipc->freeTiles.size() * NATRON_TILE_SIZE_BYTES >= minFreeSize);
@@ -766,7 +766,7 @@ CacheBucket::ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 } // ensureTileMappingValid
 
 void
-CacheBucket::growToCFile(std::size_t bytesToAdd)
+CacheBucket::growToCFile(WriteLock& lock, std::size_t bytesToAdd)
 {
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
 
@@ -776,7 +776,7 @@ CacheBucket::growToCFile(std::size_t bytesToAdd)
 
     --c->_imp->ipc->bucketsData[bucketIndex].tocData.nProcessWithMappingValid;
     while (c->_imp->ipc->bucketsData[bucketIndex].tocData.nProcessWithMappingValid > 0) {
-        c->_imp->ipc->bucketsData[bucketIndex].tocData.mappedProcessesNotEmpty.wait<bip::interprocess_upgradable_mutex>(c->_imp->ipc->bucketsData[bucketIndex].tocData.segmentMutex);
+        c->_imp->ipc->bucketsData[bucketIndex].tocData.mappedProcessesNotEmpty.wait(lock);
     }
 
     // Save the entire file
@@ -799,7 +799,7 @@ CacheBucket::growToCFile(std::size_t bytesToAdd)
 } // growToCFile
 
 void
-CacheBucket::growTileFile(std::size_t bytesToAdd)
+CacheBucket::growTileFile(WriteLock& lock, std::size_t bytesToAdd)
 {
     // Private - the tileData.segmentMutex is assumed to be taken for write lock
     // the tocData.segmentMutex is assumed to be taken for write lock because we need to read/write the free tiles
@@ -810,7 +810,7 @@ CacheBucket::growTileFile(std::size_t bytesToAdd)
 
     --c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid;
     while (c->_imp->ipc->bucketsData[bucketIndex].tileData.nProcessWithMappingValid > 0) {
-        c->_imp->ipc->bucketsData[bucketIndex].tileData.mappedProcessesNotEmpty.wait<bip::interprocess_upgradable_mutex>(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex);
+        c->_imp->ipc->bucketsData[bucketIndex].tileData.mappedProcessesNotEmpty.wait(lock);
     }
 
 
@@ -1819,14 +1819,14 @@ Cache::clear()
             std::string tocFilePath = bucket.tocFile->path();
             bucket.tocFile->remove();
             bucket.tocFile->open(tocFilePath, MemoryFile::eFileOpenModeOpenTruncateOrCreate);
-            bucket.growToCFile(0);
+            bucket.ensureTileMappingValid(writeLock, 0);
         }
         {
             WriteLock writeLock(_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex);
             std::string tileFilePath = bucket.tileAlignedFile->path();
             bucket.tileAlignedFile->remove();
             bucket.tileAlignedFile->open(tileFilePath, MemoryFile::eFileOpenModeOpenTruncateOrCreate);
-            bucket.growTileFile(0);
+            bucket.ensureTileMappingValid(writeLock, 0);
         }
 
     } // for each bucket
