@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_BufferableObject_h
-#define Engine_BufferableObject_h
+#ifndef Engine_BufferedFrame_h
+#define Engine_BufferedFrame_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -31,37 +31,47 @@
 #include <list>
 
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
+#include "Engine/ViewIdx.h"
 NATRON_NAMESPACE_ENTER;
 
 /**
- * @brief Stub class used by internal implementation of OutputSchedulerThread to pass objects through signal/slots
+ * @brief An object that get passed between a render thread and the scheduler thread
  **/
-class BufferableObject
+class BufferedFrame
 {
-    int uniqueID; //< used to differentiate frames which may belong to the same time/view (e.g when wipe is enabled)
 
 public:
 
-    int getUniqueID() const
-    {
-        return uniqueID;
-    }
+    BufferedFrame()
+    : view(0)
+    {}
 
-    BufferableObject()
-        : uniqueID(0) {}
+    virtual ~BufferedFrame() {}
 
-    virtual ~BufferableObject() {}
-
-    void setUniqueID(int aid)
-    {
-        uniqueID = aid;
-    }
-
-    virtual std::size_t sizeInRAM() const = 0;
+    ViewIdx view;
+    RenderStatsPtr stats;
 };
 
-typedef std::list<BufferableObjectPtr > BufferableObjectList;
+class BufferedFrameContainer
+{
+public:
+
+    BufferedFrameContainer()
+    {
+
+    }
+
+    virtual ~BufferedFrameContainer() {}
+
+    TimeValue time;
+
+    // The list of frames that should be processed together by the scheduler
+    std::list<BufferedFramePtr> frames;
+
+
+};
+
 
 NATRON_NAMESPACE_EXIT;
 

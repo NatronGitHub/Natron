@@ -123,7 +123,7 @@ CustomParamInteract::paintGL()
         /*A parameter's interact draw function will have full responsibility for drawing the interact, including clearing the background and swapping buffers.*/
         OfxPointD scale;
         scale.x = scale.y = 1.;
-        double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+        TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
         _imp->entryPoint->drawAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
         glCheckError(GL_GPU);
     } // GLProtectAttrib a(GL_TRANSFORM_BIT);
@@ -330,7 +330,7 @@ CustomParamInteract::mousePressEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
@@ -349,7 +349,7 @@ CustomParamInteract::mouseMoveEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
@@ -368,7 +368,7 @@ CustomParamInteract::mouseReleaseEvent(QMouseEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     OfxPointD pos;
     OfxPointI viewportPos;
     pos.x = e->x();
@@ -387,7 +387,7 @@ CustomParamInteract::focusInEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     OfxStatus stat = _imp->entryPoint->gainFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
@@ -400,7 +400,7 @@ CustomParamInteract::focusOutEvent(QFocusEvent* /*e*/)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     OfxStatus stat = _imp->entryPoint->loseFocusAction(time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0);
     if (stat == kOfxStatOK) {
         update();
@@ -413,7 +413,7 @@ CustomParamInteract::keyPressEvent(QKeyEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     QByteArray keyStr;
     OfxStatus stat;
     if ( e->isAutoRepeat() ) {
@@ -432,7 +432,7 @@ CustomParamInteract::keyReleaseEvent(QKeyEvent* e)
     OfxPointD scale;
 
     scale.x = scale.y = 1.;
-    double time = _imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(_imp->knob.lock()->getKnob()->getHolder()->getApp()->getTimeLine()->currentFrame());
     QByteArray keyStr;
     OfxStatus stat = _imp->entryPoint->keyUpAction( time, scale, /*view=*/ 0, _imp->entryPoint->hasColorPicker() ? &_imp->entryPoint->getLastColorPickerColor() : /*colourPicker=*/0, (int)QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), keyStr.data() );
     if (stat == kOfxStatOK) {

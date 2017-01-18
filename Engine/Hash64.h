@@ -34,6 +34,7 @@
 #endif
 
 #include "Global/GlobalDefines.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -47,18 +48,24 @@ class Hash64
 {
 public:
     Hash64()
+    : hash(0)
+    , node_values()
+    , hashValid(false)
     {
-        hash = 0;
     }
 
     ~Hash64()
     {
-        node_values.clear();
     }
 
     U64 value() const
     {
         return hash;
+    }
+
+    bool isEmpty() const
+    {
+        return node_values.empty();
     }
 
     void computeHash();
@@ -67,7 +74,7 @@ public:
 
     bool valid() const
     {
-        return hash != 0;
+        return hashValid;
     }
 
     template<typename T>
@@ -87,6 +94,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
     void append(T value)
     {
         node_values.push_back( toU64(value) );
+        hashValid = false;
     }
 
     static void appendQString(const QString & str, Hash64* hash);
@@ -121,6 +129,7 @@ private:
 
     U64 hash;
     std::vector<U64> node_values;
+    bool hashValid;
 };
 
 

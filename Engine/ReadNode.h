@@ -34,6 +34,10 @@
 
 #include "Engine/EffectInstance.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 #define NATRON_READER_INPUT_NAME "Sync"
 
 #define kNatronReadNodeParamDecodingPluginChoice "decodingPluginChoice"
@@ -41,7 +45,6 @@
 
 #define kNatronReadNodeOCIOParamInputSpace "ocioInputSpace"
 
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A wrapper around all OpenFX Readers nodes so that to the user they all appear under a single Read node that has a dynamic
@@ -89,7 +92,6 @@ public:
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsMultiResolution() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -99,30 +101,32 @@ public:
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
     virtual void onEffectCreated(const CreateNodeArgs& defaultParamValues) OVERRIDE FINAL;
 
 private:
 
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual void onKnobsAboutToBeLoaded(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                EffectInstance::ComponentsNeededMap* comps,
-                                                SequenceTime* passThroughTime,
-                                                int* passThroughView,
-                                                NodePtr* passThroughInput) OVERRIDE;
-    virtual StatusEnum beginSequenceRender(double first,
+                             TimeValue time) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getComponentsAction(TimeValue time,
+                                                ViewIdx view,
+                                                const TreeRenderNodeArgsPtr& render,
+                                                std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                std::list<ImageComponents>* layersProduced,
+                                                TimeValue* passThroughTime,
+                                                ViewIdx* passThroughView,
+                                                int* passThroughInputNb) OVERRIDE;
+    virtual ActionRetCodeEnum beginSequenceRender(double first,
                                            double last,
                                            double step,
                                            bool interactive,
@@ -131,9 +135,10 @@ private:
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
                                            ViewIdx view,
-                                           bool isOpenGLRender,
-                                           const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum endSequenceRender(double first,
+                                           RenderBackendTypeEnum backend,
+                                           const EffectOpenGLContextDataPtr& glContextData,
+                                           const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum endSequenceRender(double first,
                                          double last,
                                          double step,
                                          bool interactive,
@@ -142,16 +147,17 @@ private:
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
                                          ViewIdx view,
-                                         bool isOpenGLRender,
-                                         const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getRegionsOfInterest(double time,
+                                         RenderBackendTypeEnum backend,
+                                         const EffectOpenGLContextDataPtr& glContextData,
+                                         const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
-                                      const RectD & outputRoD, //!< full RoD in canonical coordinates
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
+                                      const TreeRenderNodeArgsPtr& render,
                                       RoIMap* ret) OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded) OVERRIDE WARN_UNUSED_RETURN;
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 

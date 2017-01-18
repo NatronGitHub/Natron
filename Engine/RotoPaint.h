@@ -33,7 +33,10 @@
 
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define ROTOPAINT_MAX_INPUTS_COUNT 11
 #define ROTOPAINT_MASK_INPUT_INDEX 10
@@ -383,8 +386,6 @@ enum RotoMotionBlurModeEnum
 #define kRotoRemoveItemParamLabel "Remove"
 #define kRotoRemoveItemParamHint "Remove the selected item(s) from the table"
 
-NATRON_NAMESPACE_ENTER;
-
 struct RotoPaintPrivate;
 class RotoPaint
     : public NodeGroup
@@ -419,12 +420,6 @@ public:
 
     RotoPaint::RotoPaintTypeEnum getRotoPaintNodeType() const;
 
-    virtual bool isRotoPaintNode() const OVERRIDE FINAL WARN_UNUSED_RETURN  { return true; }
-
-
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
-
     virtual bool supportsTiles() const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         return true;
@@ -441,8 +436,7 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -488,9 +482,9 @@ public:
      * @brief Make a new bezier curve and append it into the currently selected layer.
      * @param baseName A hint to name the item. It can be something like "Bezier", "Ellipse", "Rectangle" , etc...
      **/
-    BezierPtr makeBezier(double x, double y, const std::string & baseName, double time, bool isOpenBezier);
-    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, double time);
-    BezierPtr makeSquare(double x, double y, double initialSize, double time);
+    BezierPtr makeBezier(double x, double y, const std::string & baseName, TimeValue time, bool isOpenBezier);
+    BezierPtr makeEllipse(double x, double y, double diameter, bool fromCenter, TimeValue time);
+    BezierPtr makeSquare(double x, double y, double initialSize, TimeValue time);
     RotoStrokeItemPtr makeStroke(RotoStrokeType type,
                                  bool clearSel);
     CompNodeItemPtr makeCompNodeItem();
@@ -505,7 +499,7 @@ public:
 
     void refreshSourceKnobs(const RotoDrawableItemPtr& item);
 
-    void getMergeChoices(std::vector<std::string>* aInput, std::vector<std::string>* maskInput) const;
+    void getMergeChoices(std::vector<ChoiceOption>* aInput, std::vector<ChoiceOption>* maskInput) const;
 
     void addSoloItem(const RotoDrawableItemPtr& item);
     void removeSoloItem(const RotoDrawableItemPtr& item);
@@ -536,7 +530,6 @@ protected:
 
 private:
 
-    void refreshInputChoices(const std::string& oldInputLabel, const std::string& newInputLabel);
 
     virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
 
@@ -545,29 +538,29 @@ private:
     virtual bool hasOverlay() const OVERRIDE FINAL;
 
 
-    virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
-                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenDoubleClicked(double time,
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(TimeValue time,
                                            const RenderScale & renderScale,
                                            ViewIdx view,
                                            const QPointF & viewportPos,
                                            const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
+                             TimeValue time) OVERRIDE FINAL;
 
-    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, double time)  OVERRIDE FINAL;
+    virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE FINAL;
 
     
     boost::scoped_ptr<RotoPaintPrivate> _imp;

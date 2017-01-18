@@ -121,7 +121,7 @@ static bool getViewSpecFromViewNameInternal(const ItemBase* item, bool allowAll,
 }
 
 bool
-ItemBase::getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const
+ItemBase::getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const
 {
     return getViewSpecFromViewNameInternal(this, false, viewName, view);
 }
@@ -282,8 +282,8 @@ ItemBase::getUserKeyframes(std::list<double>* keys, const QString& view) const
         return;
     }
 
-    ViewGetSpec viewSpec;
-    if (!getViewGetSpecFromViewName(view, &viewSpec)) {
+    ViewIdx viewSpec;
+    if (!getViewIdxFromViewName(view, &viewSpec)) {
         PythonSetInvalidViewName(view);
         return;
     }
@@ -313,7 +313,7 @@ ItemBase::setUserKeyframe(double frame, const QString& view)
         PythonSetInvalidViewName(view);
         return;
     }
-    item->setKeyFrame(frame, viewSpec, 0);
+    item->setKeyFrame(TimeValue(frame), viewSpec, 0);
 }
 
 void
@@ -335,7 +335,7 @@ ItemBase::deleteUserKeyframe(double frame, const QString& view)
         PythonSetInvalidViewName(view);
         return;
     }
-    item->deleteValueAtTime(frame, viewSpec, DimSpec::all(), eValueChangedReasonUserEdited);
+    item->deleteValueAtTime(TimeValue(frame), viewSpec, DimSpec::all(), eValueChangedReasonUserEdited);
 
 }
 

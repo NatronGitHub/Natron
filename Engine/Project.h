@@ -48,13 +48,14 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Knob.h"
+#include "Engine/ChoiceOption.h"
 #include "Engine/Format.h"
 #include "Engine/TimeLine.h"
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
 #include "Serialization/SerializationBase.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -156,7 +157,7 @@ public:
 
     bool getProjectFormatAtIndex(int index, Format* f) const;
 
-    void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
+    void getProjectFormatEntries(std::vector<ChoiceOption>* formatStrings, int* currentValue) const;
 
     bool getFormatNameFromRect(const RectI& rect, double par, std::string* name) const;
 
@@ -178,7 +179,7 @@ public:
     bool isGPURenderingEnabledInProject() const;
 
     std::vector<std::string> getProjectDefaultLayerNames() const;
-    std::vector<ImageComponents> getProjectDefaultLayers() const;
+    std::list<ImageComponents> getProjectDefaultLayers() const;
 
     void addProjectDefaultLayer(const ImageComponents& comps);
 
@@ -296,9 +297,9 @@ public:
 
     bool isFrameRangeLocked() const;
 
-    void getFrameRange(double* first, double* last) const;
+    void getFrameRange(TimeValue* first, TimeValue* last) const;
 
-    void unionFrameRangeWith(int first, int last);
+    void unionFrameRangeWith(TimeValue first, TimeValue last);
 
     void recomputeFrameRangeFromReaders();
 
@@ -443,7 +444,7 @@ private:
      **/
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view)  OVERRIDE FINAL;
 
     bool load(const SERIALIZATION_NAMESPACE::ProjectSerialization & obj, const QString& name, const QString& path);

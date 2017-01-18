@@ -41,10 +41,11 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-
+#include "Engine/TimeValue.h"
 #include "Gui/ComboBox.h"
 #include "Gui/GuiFwd.h"
 #include "Gui/NodeViewerContext.h"
+#include "Gui/CachedFramesThread.h"
 
 
 #define NATRON_TRANSFORM_AFFECTS_OVERLAYS
@@ -71,6 +72,10 @@ struct ViewerTabPrivate
 
     /*frame seeker*/
     TimeLineGui* timeLineGui;
+
+
+    boost::scoped_ptr<CachedFramesThread> cachedFramesThread;
+
 
     // This is all nodes that have a viewer context
     std::map<NodeGuiWPtr, NodeViewerContextPtr> nodesContext;
@@ -103,17 +108,17 @@ struct ViewerTabPrivate
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
     // return the tronsform to apply to the overlay as a 3x3 homography in canonical coordinates
-    bool getOverlayTransform(double time,
+    bool getOverlayTransform(TimeValue time,
                              ViewIdx view,
                              const NodePtr& target,
                              const EffectInstancePtr& currentNode,
                              Transform::Matrix3x3* transform) const;
 
-    bool getTimeTransform(double time,
+    bool getTimeTransform(TimeValue time,
                           ViewIdx view,
                           const NodePtr& target,
                           const EffectInstancePtr& currentNode,
-                          double *newTime) const;
+                          TimeValue *newTime) const;
 
 #endif
 

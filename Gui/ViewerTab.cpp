@@ -57,6 +57,7 @@
 #include "Gui/InfoViewerWidget.h"
 #include "Gui/Label.h"
 #include "Gui/NodeGui.h"
+#include "Gui/NodeGraph.h"
 #include "Gui/ScaleSliderQWidget.h"
 #include "Gui/SpinBox.h"
 #include "Gui/TimeLineGui.h"
@@ -168,8 +169,8 @@ ViewerTab::ViewerTab(const std::string& scriptName,
     leftBound = node->getPlaybackInPointKnob()->getValue();
     rightBound = node->getPlaybackOutPointKnob()->getValue();
 
-    double projectLeft, projectRight;
-    app->getFrameRange(&projectLeft, &projectRight);
+    TimeValue projectLeft, projectRight;
+    app->getProject()->getFrameRange(&projectLeft, &projectRight);
 
     _imp->timeLineGui->setBoundaries(leftBound, rightBound);
     onTimelineBoundariesChanged(leftBound, rightBound);
@@ -178,14 +179,10 @@ ViewerTab::ViewerTab(const std::string& scriptName,
 
     manageTimelineSlot(false, timeline);
 
-    QObject::connect( node.get(), SIGNAL(renderStatsAvailable(int,ViewIdx,double,RenderStatsMap)),
-                      this, SLOT(onRenderStatsAvailable(int,ViewIdx,double,RenderStatsMap)) );
+    QObject::connect( node.get(), SIGNAL(renderStatsAvailable(int,double,RenderStatsMap)),
+                      this, SLOT(onRenderStatsAvailable(int,double,RenderStatsMap)) );
     QObject::connect( _imp->viewer, SIGNAL(zoomChanged(int)), this, SLOT(updateZoomComboBox(int)) );
     QObject::connect( node.get(), SIGNAL(viewerDisconnected()), this, SLOT(disconnectViewer()) );
-
-
-   
-    connectToViewerCache();
 
 
     createNodeViewerInterface(node_ui);
@@ -225,7 +222,48 @@ ViewerTab::ViewerTab(const std::string& scriptName,
             node->setViewersSynchroEnabled(true);
         }
     }
+
+    _imp->cachedFramesThread.reset(new CachedFramesThread(this));
+    _imp->cachedFramesThread->start();
 }
+
+
+ViewerTab::~ViewerTab()
+{
+
+    _imp->cachedFramesThread->quitThread();
+
+    Gui* gui = getGui();
+    if (gui) {
+        NodeGraph* graph = 0;
+        ViewerNodePtr internalNode = getInternalNode();
+        if (internalNode) {
+            NodeCollectionPtr collection = internalNode->getNode()->getGroup();
+            if (collection) {
+                NodeGroupPtr isGrp = toNodeGroup(collection);
+                if (isGrp) {
+                    NodeGraphI* graph_i = isGrp->getNodeGraph();
+                    if (graph_i) {
+                        graph = dynamic_cast<NodeGraph*>(graph_i);
+                        assert(graph);
+                    }
+                } else {
+                    graph = gui->getNodeGraph();
+                }
+            }
+            internalNode->invalidateUiContext();
+        } else {
+            graph = gui->getNodeGraph();
+        }
+        assert(graph);
+        GuiAppInstancePtr app = gui->getApp();
+        if ( app && !app->isClosing() && graph && (graph->getLastSelectedViewer() == this) ) {
+            graph->setLastSelectedViewer(0);
+        }
+    }
+    _imp->nodesContext.clear();
+}
+
 
 QVBoxLayout*
 ViewerTab::getMainLayout() const

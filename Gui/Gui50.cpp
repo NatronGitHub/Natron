@@ -53,7 +53,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
@@ -71,7 +71,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
-#include "Engine/FileSystemModel.h" // FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
@@ -303,25 +304,7 @@ Gui::minimizeMaximizeAllPanels(bool clicked)
     getApp()->redrawAllViewers();
 }
 
-void
-Gui::connectViewersToViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
 
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->connectToViewerCache();
-    }
-}
-
-void
-Gui::disconnectViewersFromViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->disconnectFromViewerCache();
-    }
-}
 
 void
 Gui::moveEvent(QMoveEvent* e)
@@ -751,7 +734,7 @@ Gui::isGUIFrozen() const
 void
 Gui::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
 {
-    int time = getApp()->getProject()->getCurrentTime();
+    TimeValue time = getApp()->getProject()->getTimelineCurrentTime();
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         (*it)->refreshNodesKnobsAtTime(true, time);
@@ -788,7 +771,7 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     _imp->_propertiesBin->setEnabled(!clicked);
 
     if (!clicked) {
-        int time = getApp()->getProject()->getCurrentTime();
+        TimeValue time(getApp()->getProject()->getTimelineCurrentTime());
         for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
             (*it)->refreshNodesKnobsAtTime(false, time);
         }
@@ -822,26 +805,41 @@ Gui::redrawAllViewers()
 }
 
 void
-Gui::renderAllViewers(bool canAbort)
+Gui::renderAllViewers()
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(canAbort);
+            (*it)->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
         }
     }
 }
 
 void
-Gui::abortAllViewers()
+Gui::abortAllViewers(bool autoRestartPlayback)
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->getNode()->abortAnyProcessing_non_blocking();
+        if ( !(*it)->isVisible() ) {
+            continue;
+        }
+        ViewerNodePtr viewerGroup = (*it)->getInternalNode();
+        if (!viewerGroup) {
+            continue;
+        }
+
+        RenderEnginePtr engine = viewerGroup->getNode()->getRenderEngine();
+        if (!engine) {
+            continue;
+        }
+
+        if (autoRestartPlayback) {
+            engine->abortRenderingAutoRestart();
+        } else {
+            engine->abortRenderingNoRestart();
         }
     }
-}
+} // abortAllViewers
 
 void
 Gui::toggleAutoHideGraphInputs()

@@ -132,7 +132,7 @@ public:
 
     void refreshSelectionBboxAndRedrawView();
 
-    int getTimelineCurrentTime() const;
+    TimeValue getTimelineCurrentTime() const;
 
     AnimationModuleView* getView() const;
 
@@ -176,6 +176,11 @@ public:
     void setItemVisibility(QTreeWidgetItem* item, bool visible, bool recurseOnParent);
     void setItemsVisibility(const std::list<QTreeWidgetItem*>& items, bool visible, bool recurseOnParent);
     void invertItemVisibility(QTreeWidgetItem* item);
+
+    void onMustRefreshExpressionResultsLaterReceived();
+Q_SIGNALS:
+
+    void mustRefreshExpressionResultsLater();
     
 public Q_SLOTS:
 

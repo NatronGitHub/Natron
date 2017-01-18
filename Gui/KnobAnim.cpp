@@ -587,7 +587,7 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
     if (useExpressionIfAny && knob) {
         std::string expr = knob->getExpression(dimension, view);
         if (!expr.empty()) {
-            return knob->getValueAtWithExpression(x, view, dimension);
+            return knob->getValueAtWithExpression(TimeValue(x), view, dimension);
         }
     }
     CurvePtr curve = getCurve(dimension, view);
@@ -609,7 +609,7 @@ KnobAnim::evaluateCurve(bool useExpressionIfAny, double x, DimIdx dimension, Vie
             return 0;
         }
     } else {
-        return curve->getValueAt(x, false /*doClamp*/);
+        return curve->getValueAt(TimeValue(x), false /*doClamp*/);
     }
 
 }

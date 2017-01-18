@@ -92,6 +92,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/Project.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"
@@ -3011,12 +3012,18 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         }
         _preview->viewerNode->getNode()->connectInput(reader, 0);
 
-        double firstFrame, lastFrame;
-        reader->getEffectInstance()->getFrameRange_public(0, &firstFrame, &lastFrame);
-        _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
-        _preview->viewerUI->centerOn(firstFrame, lastFrame);
+        RangeD range = {1., 1.};
+        {
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = reader->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                results->getFrameRangeResults(&range);
+            }
+        }
+        _preview->viewerUI->setTimelineBounds(range.min, range.max);
+        _preview->viewerUI->centerOn(range.min, range.max);
     }
-    _preview->viewerUI->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(true);
+    _preview->viewerUI->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
 }
 
 ///Reset everything as it was prior to the dialog being opened, also avoid the nodes being deleted

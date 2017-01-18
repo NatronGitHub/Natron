@@ -58,10 +58,9 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/Hash64.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/StringAnimationManager.h"
 
-
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -120,7 +119,6 @@ Knob<T>::Knob(const KnobHolderPtr& holder,
     : KnobHelper(holder, description, dimension, declaredByPlugin)
     , _defaultValueMutex()
     , _defaultValues(dimension)
-    , _exprRes(dimension)
     , _minMaxMutex(QMutex::Recursive)
     , _minimums(dimension)
     , _maximums(dimension)
@@ -442,7 +440,7 @@ hashFunction(unsigned int a)
 
 template <typename T>
 bool
-Knob<T>::evaluateExpression(double time,
+Knob<T>::evaluateExpression(TimeValue time,
                             ViewIdx view,
                             DimIdx dimension,
                             T* value,
@@ -464,7 +462,7 @@ Knob<T>::evaluateExpression(double time,
 
 template <typename T>
 bool
-Knob<T>::evaluateExpression_pod(double time,
+Knob<T>::evaluateExpression_pod(TimeValue time,
                                 ViewIdx view,
                                 DimIdx dimension,
                                 double* value,
@@ -498,7 +496,7 @@ Knob<T>::evaluateExpression_pod(double time,
 
 template <typename T>
 void
-Knob<T>::makeKeyFrame(double time,
+Knob<T>::makeKeyFrame(TimeValue time,
                       const T& v,
                       ViewIdx /*view*/,
                       KeyFrame* key)
@@ -527,7 +525,7 @@ Knob<T>::makeKeyFrame(double time,
 
 template <>
 void
-KnobStringBase::makeKeyFrame(double time,
+KnobStringBase::makeKeyFrame(TimeValue time,
                              const std::string& v,
                              ViewIdx view,
                              KeyFrame* key)
@@ -889,67 +887,6 @@ Knob<T>::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx thisV
 }
 
 
-
-
-
-
-template <typename T>
-void
-Knob<T>::cloneExpressionsResults(const KnobIPtr& other,
-                                 ViewSetSpec view,
-                                 ViewSetSpec otherView,
-                                 DimSpec dimension,
-                                 DimSpec otherDimension)
-{
-    if (!other) {
-        return;
-    }
-    assert((view.isAll() && otherView.isAll()) || (view.isViewIdx() && view.isViewIdx()));
-    assert((dimension.isAll() && otherDimension.isAll()) || (!dimension.isAll() && !otherDimension.isAll()));
-
-    boost::shared_ptr<Knob<T> > otherKnob = boost::dynamic_pointer_cast<Knob<T> >(other);
-    if (!otherKnob) {
-        return;
-    }
-
-    std::list<ViewIdx> views = other->getViewsList();
-    if (dimension.isAll()) {
-        int dimMin = std::min( getNDimensions(), other->getNDimensions() );
-        for (int i = 0; i < dimMin; ++i) {
-            if (view.isAll()) {
-                for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                    FrameValueMap results;
-                    otherKnob->getExpressionResults(DimIdx(i), *it, results);
-                    QMutexLocker k(&_defaultValueMutex);
-                    _exprRes[i][*it] = results;
-                }
-            } else {
-                FrameValueMap results;
-                otherKnob->getExpressionResults(DimIdx(i), ViewIdx(otherView), results);
-                QMutexLocker k(&_defaultValueMutex);
-                _exprRes[i][ViewIdx(view)] = results;
-            }
-        }
-    } else {
-        if (view.isAll()) {
-            for (std::list<ViewIdx>::const_iterator it= views.begin(); it != views.end(); ++it) {
-                FrameValueMap results;
-                otherKnob->getExpressionResults(DimIdx(otherDimension), *it, results);
-                QMutexLocker k(&_defaultValueMutex);
-                _exprRes[dimension][*it] = results;
-            }
-        } else {
-            FrameValueMap results;
-            otherKnob->getExpressionResults(DimIdx(otherDimension), ViewIdx(otherView), results);
-            QMutexLocker k(&_defaultValueMutex);
-            _exprRes[dimension][ViewIdx(view)] = results;
-        }
-
-
-    }
-}
-
-
 template <typename T>
 void
 Knob<T>::cloneDefaultValues(const KnobIPtr& other)
@@ -1030,7 +967,7 @@ template <typename T>
 void
 Knob<T>::copyValuesFromCurve(DimIdx dim, ViewIdx view)
 {
-    double time = getCurrentTime();
+    TimeValue time = getHolder()->getTimelineCurrentTime();
     T v = getValueAtTime(time, dim, view);
 
     KnobDimViewBasePtr data = getDataForDimView(dim, view);
@@ -1095,22 +1032,59 @@ void appendValueToHash(const std::string& v, Hash64* hash)
 
 template <typename T>
 void
-Knob<T>::appendToHash(double time, ViewIdx view, Hash64* hash)
+Knob<T>::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     int nDims = getNDimensions();
 
     KnobFrameViewHashingStrategyEnum hashingStrat = getHashingStrategy();
-
+    bool isMetadataSlave = getIsMetadataSlave();
 
     for (int i = 0; i < nDims; ++i) {
-        if (hashingStrat == eKnobHashingStrategyAnimation && isAnimated(DimIdx(i), view)) {
-            handleAnimatedHashing(this, view, DimIdx(i), hash);
-        } else {
-            T v = getValueAtTime(time, DimIdx(i), view);
-            appendValueToHash(v, hash);
+        switch (args.hashType) {
+            case HashableObject::eComputeHashTypeTimeViewVariant: {
+                if (isAnimated(DimIdx(i), args.view)) {
+                    if (hashingStrat == eKnobHashingStrategyAnimation) {
+                        // A parameter such as the speed param of the Retime node need to serialize the entire Curve
+                        // because a value change at another time can influence the result at the current time.
+                        handleAnimatedHashing(this, args.view, DimIdx(i), hash);
+                    } else {
+                        T v = getValueAtTime(args.time, DimIdx(i), args.view);
+                        appendValueToHash(v, hash);
+                    }
+                } else {
+                    T v = getValue(DimIdx(i), args.view);
+                    appendValueToHash(v, hash);
+                }
+            }   break;
+            case HashableObject::eComputeHashTypeTimeViewInvariant: {
+
+                // Ignore animated parameters for time view invariant
+                if (isAnimated(DimIdx(i), ViewIdx(0))) {
+                    continue;
+                }
+
+                T v = getValue(DimIdx(i), ViewIdx(0));
+                appendValueToHash(v, hash);
+
+            }   break;
+            case HashableObject::eComputeHashTypeOnlyMetadataSlaves: {
+
+                // Ignore non metadata slave parameters
+                if (!isMetadataSlave) {
+                    continue;
+                }
+                // Ignore animated parameters for time view invariant
+                if (isAnimated(DimIdx(i), ViewIdx(0))) {
+                    continue;
+                }
+
+                T v = getValue(DimIdx(i), ViewIdx(0));
+                appendValueToHash(v, hash);
+
+            }   break;
         }
     }
-}
+} // appendToHash
 
 template <>
 AnimatingObjectI::KeyframeDataTypeEnum
@@ -1140,65 +1114,8 @@ Knob<std::string>::getKeyFrameDataType() const
     return AnimatingObjectI::eKeyframeDataTypeString;
 }
 
-template <typename T>
-void
-Knob<T>::clearExpressionsResults(DimSpec dimension, ViewSetSpec view)
-{
-    QMutexLocker k(&_defaultValueMutex);
-
-    if (dimension.isAll()) {
-        for (int i = 0; i < getNDimensions(); ++i) {
-            if (view.isAll()) {
-                for (typename PerViewFrameValueMap::iterator it = _exprRes[i].begin(); it!=_exprRes[i].end(); ++it) {
-                    it->second.clear();
-                }
-            } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                typename PerViewFrameValueMap::iterator foundView = _exprRes[i].find(view_i);
-                if (foundView == _exprRes[i].end()) {
-                    return;
-                }
-                foundView->second.clear();
-            }
-        }
-    } else {
-        if (dimension < 0 || dimension >= getNDimensions()) {
-            throw std::invalid_argument("Knob::clearExpressionsResults: Dimension out of range");
-        }
-        if (view.isAll()) {
-            for (typename PerViewFrameValueMap::iterator it = _exprRes[dimension].begin(); it!=_exprRes[dimension].end(); ++it) {
-                it->second.clear();
-            }
-        } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            typename PerViewFrameValueMap::iterator foundView = _exprRes[dimension].find(view_i);
-            if (foundView == _exprRes[dimension].end()) {
-                return;
-            }
-            foundView->second.clear();
-        }
-    }
-
-}
-
-template <typename T>
-void
-Knob<T>::getExpressionResults(DimIdx dim, ViewGetSpec view, FrameValueMap& map) const
-{
-    if (dim < 0 || dim >= getNDimensions()) {
-        throw std::invalid_argument("Knob::getExpressionResults: Dimension out of range");
-    }
-
-    QMutexLocker k(&_defaultValueMutex);
 
 
-    ViewIdx view_i = getViewIdxFromGetSpec(view);
-    typename PerViewFrameValueMap::const_iterator foundView = _exprRes[dim].find(view_i);
-    if (foundView == _exprRes[dim].end()) {
-        return;
-    }
-    map = foundView->second;
-}
 
 template <typename T>
 bool

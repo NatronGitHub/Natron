@@ -35,6 +35,11 @@ static PyMethodDef NatronEngine_methods[] = {
 };
 
 // Classes initialization functions ------------------------------------------------------------
+void init_Int2DTuple(PyObject* module);
+void init_Int3DTuple(PyObject* module);
+void init_Double2DTuple(PyObject* module);
+void init_Double3DTuple(PyObject* module);
+void init_ColorTuple(PyObject* module);
 void init_RectI(PyObject* module);
 void init_RectD(PyObject* module);
 void init_ExprUtils(PyObject* module);
@@ -43,17 +48,17 @@ void init_Group(PyObject* module);
 void init_App(PyObject* module);
 void init_AppSettings(PyObject* module);
 void init_NodeCreationProperty(PyObject* module);
-void init_IntNodeCreationProperty(PyObject* module);
-void init_BoolNodeCreationProperty(PyObject* module);
 void init_FloatNodeCreationProperty(PyObject* module);
 void init_StringNodeCreationProperty(PyObject* module);
+void init_IntNodeCreationProperty(PyObject* module);
+void init_BoolNodeCreationProperty(PyObject* module);
 void init_ItemBase(PyObject* module);
-void init_Track(PyObject* module);
 void init_BezierCurve(PyObject* module);
 void init_StrokeItem(PyObject* module);
+void init_Track(PyObject* module);
 void init_ItemsTable(PyObject* module);
-void init_Roto(PyObject* module);
 void init_Tracker(PyObject* module);
+void init_Roto(PyObject* module);
 void init_StrokePoint(PyObject* module);
 void init_ImageLayer(PyObject* module);
 void init_UserParamHolder(PyObject* module);
@@ -63,7 +68,13 @@ void init_ButtonParam(PyObject* module);
 void init_SeparatorParam(PyObject* module);
 void init_GroupParam(PyObject* module);
 void init_PageParam(PyObject* module);
+void init_ParametricParam(PyObject* module);
 void init_AnimatedParam(PyObject* module);
+void init_DoubleParam(PyObject* module);
+void init_Double2DParam(PyObject* module);
+void init_Double3DParam(PyObject* module);
+void init_ColorParam(PyObject* module);
+void init_ChoiceParam(PyObject* module);
 void init_BooleanParam(PyObject* module);
 void init_StringParamBase(PyObject* module);
 void init_StringParam(PyObject* module);
@@ -72,17 +83,6 @@ void init_PathParam(PyObject* module);
 void init_IntParam(PyObject* module);
 void init_Int2DParam(PyObject* module);
 void init_Int3DParam(PyObject* module);
-void init_DoubleParam(PyObject* module);
-void init_Double2DParam(PyObject* module);
-void init_Double3DParam(PyObject* module);
-void init_ColorParam(PyObject* module);
-void init_ChoiceParam(PyObject* module);
-void init_ParametricParam(PyObject* module);
-void init_Int2DTuple(PyObject* module);
-void init_Int3DTuple(PyObject* module);
-void init_Double2DTuple(PyObject* module);
-void init_Double3DTuple(PyObject* module);
-void init_ColorTuple(PyObject* module);
 void init_NATRON_NAMESPACE(PyObject* module);
 
 // Required modules' type and converter arrays.
@@ -114,63 +114,6 @@ static PythonToCppFunc is_PyLong_PythonToCpp_std_size_t_Convertible(PyObject* py
 
 
 // Container Type converters.
-
-// C++ to Python conversion for type 'std::pair<QString, QString >'.
-static PyObject* std_pair_QString_QString__CppToPython_std_pair_QString_QString_(const void* cppIn) {
-    ::std::pair<QString, QString >& cppInRef = *((::std::pair<QString, QString >*)cppIn);
-
-                    PyObject* pyOut = PyTuple_New(2);
-                    PyTuple_SET_ITEM(pyOut, 0, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppInRef.first));
-                    PyTuple_SET_ITEM(pyOut, 1, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppInRef.second));
-                    return pyOut;
-
-}
-static void std_pair_QString_QString__PythonToCpp_std_pair_QString_QString_(PyObject* pyIn, void* cppOut) {
-    ::std::pair<QString, QString >& cppOutRef = *((::std::pair<QString, QString >*)cppOut);
-
-                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], PySequence_Fast_GET_ITEM(pyIn, 0), &(cppOutRef.first));
-                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], PySequence_Fast_GET_ITEM(pyIn, 1), &(cppOutRef.second));
-
-}
-static PythonToCppFunc is_std_pair_QString_QString__PythonToCpp_std_pair_QString_QString__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::convertiblePairTypes(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], false, SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], false, pyIn))
-        return std_pair_QString_QString__PythonToCpp_std_pair_QString_QString_;
-    return 0;
-}
-
-// C++ to Python conversion for type 'const std::list<std::pair<QString, QString > > &'.
-static PyObject* conststd_list_std_pair_QString_QString__REF_CppToPython_conststd_list_std_pair_QString_QString__REF(const void* cppIn) {
-    ::std::list<std::pair<QString, QString > >& cppInRef = *((::std::list<std::pair<QString, QString > >*)cppIn);
-
-                    // TEMPLATE - stdListToPyList - START
-            PyObject* pyOut = PyList_New((int) cppInRef.size());
-            ::std::list<std::pair<QString, QString > >::const_iterator it = cppInRef.begin();
-            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
-            ::std::pair<QString, QString > cppItem(*it);
-            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], &cppItem));
-            }
-            return pyOut;
-        // TEMPLATE - stdListToPyList - END
-
-}
-static void conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF(PyObject* pyIn, void* cppOut) {
-    ::std::list<std::pair<QString, QString > >& cppOutRef = *((::std::list<std::pair<QString, QString > >*)cppOut);
-
-                    // TEMPLATE - pyListToStdList - START
-        for (int i = 0; i < PySequence_Size(pyIn); i++) {
-        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
-        ::std::pair<QString, QString > cppItem = ::std::pair<QString, QString >();
-        Shiboken::Conversions::pythonToCppCopy(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], pyItem, &(cppItem));
-        cppOutRef.push_back(cppItem);
-        }
-    // TEMPLATE - pyListToStdList - END
-
-}
-static PythonToCppFunc is_conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF_Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::convertibleSequenceTypes(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], pyIn))
-        return conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF;
-    return 0;
-}
 
 // C++ to Python conversion for type 'std::list<ItemBase * >'.
 static PyObject* std_list_ItemBasePTR__CppToPython_std_list_ItemBasePTR_(const void* cppIn) {
@@ -665,46 +608,37 @@ static PythonToCppFunc is_conststd_list_int_REF_PythonToCpp_conststd_list_int_RE
     return 0;
 }
 
-// C++ to Python conversion for type 'std::map<ImageLayer, Effect * >'.
-static PyObject* std_map_ImageLayer_EffectPTR__CppToPython_std_map_ImageLayer_EffectPTR_(const void* cppIn) {
-    ::std::map<ImageLayer, Effect * >& cppInRef = *((::std::map<ImageLayer, Effect * >*)cppIn);
+// C++ to Python conversion for type 'std::list<ImageLayer >'.
+static PyObject* std_list_ImageLayer__CppToPython_std_list_ImageLayer_(const void* cppIn) {
+    ::std::list<ImageLayer >& cppInRef = *((::std::list<ImageLayer >*)cppIn);
 
-                    // TEMPLATE - stdMapToPyDict - START
-            PyObject* pyOut = PyDict_New();
-            ::std::map<ImageLayer, Effect * >::const_iterator it = cppInRef.begin();
-            for (; it != cppInRef.end(); ++it) {
-            ::ImageLayer key = it->first;
-            ::Effect* value = it->second;
-            PyObject* pyKey = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], &key);
-            PyObject* pyValue = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value);
-            PyDict_SetItem(pyOut, pyKey, pyValue);
-            Py_DECREF(pyKey);
-            Py_DECREF(pyValue);
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<ImageLayer >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::ImageLayer cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], &cppItem));
             }
             return pyOut;
-        // TEMPLATE - stdMapToPyDict - END
+        // TEMPLATE - stdListToPyList - END
 
 }
-static void std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_(PyObject* pyIn, void* cppOut) {
-    ::std::map<ImageLayer, Effect * >& cppOutRef = *((::std::map<ImageLayer, Effect * >*)cppOut);
+static void std_list_ImageLayer__PythonToCpp_std_list_ImageLayer_(PyObject* pyIn, void* cppOut) {
+    ::std::list<ImageLayer >& cppOutRef = *((::std::list<ImageLayer >*)cppOut);
 
-                    // TEMPLATE - pyDictToStdMap - START
-        PyObject* key;
-        PyObject* value;
-        Py_ssize_t pos = 0;
-        while (PyDict_Next(pyIn, &pos, &key, &value)) {
-        ::ImageLayer cppKey = ::ImageLayer(::QString(), ::QString(), ::QStringList());
-        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], key, &(cppKey));
-        ::Effect* cppValue = ((::Effect*)0);
-        Shiboken::Conversions::pythonToCppPointer((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value, &(cppValue));
-        cppOutRef.insert(std::make_pair(cppKey, cppValue));
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::ImageLayer cppItem = ::ImageLayer(::QString(), ::QString(), ::QStringList());
+        Shiboken::Conversions::pythonToCppCopy((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
         }
-    // TEMPLATE - pyDictToStdMap - END
+    // TEMPLATE - pyListToStdList - END
 
 }
-static PythonToCppFunc is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible(PyObject* pyIn) {
-    if (Shiboken::Conversions::convertibleDictTypes(SBK_CONVERTER(SbkNatronEngineTypes[SBK_IMAGELAYER_IDX]), false, SBK_CONVERTER(SbkNatronEngineTypes[SBK_EFFECT_IDX]), true, pyIn))
-        return std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_;
+static PythonToCppFunc is_std_list_ImageLayer__PythonToCpp_std_list_ImageLayer__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleSequenceTypes((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], pyIn))
+        return std_list_ImageLayer__PythonToCpp_std_list_ImageLayer_;
     return 0;
 }
 
@@ -775,6 +709,63 @@ static void std_list_std_vector_std_string__PTR_PythonToCpp_std_list_std_vector_
 static PythonToCppFunc is_std_list_std_vector_std_string__PTR_PythonToCpp_std_list_std_vector_std_string__PTR_Convertible(PyObject* pyIn) {
     if (Shiboken::Conversions::convertibleSequenceTypes(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_STD_STRING_IDX], pyIn))
         return std_list_std_vector_std_string__PTR_PythonToCpp_std_list_std_vector_std_string__PTR;
+    return 0;
+}
+
+// C++ to Python conversion for type 'std::pair<QString, QString >'.
+static PyObject* std_pair_QString_QString__CppToPython_std_pair_QString_QString_(const void* cppIn) {
+    ::std::pair<QString, QString >& cppInRef = *((::std::pair<QString, QString >*)cppIn);
+
+                    PyObject* pyOut = PyTuple_New(2);
+                    PyTuple_SET_ITEM(pyOut, 0, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppInRef.first));
+                    PyTuple_SET_ITEM(pyOut, 1, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppInRef.second));
+                    return pyOut;
+
+}
+static void std_pair_QString_QString__PythonToCpp_std_pair_QString_QString_(PyObject* pyIn, void* cppOut) {
+    ::std::pair<QString, QString >& cppOutRef = *((::std::pair<QString, QString >*)cppOut);
+
+                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], PySequence_Fast_GET_ITEM(pyIn, 0), &(cppOutRef.first));
+                    Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], PySequence_Fast_GET_ITEM(pyIn, 1), &(cppOutRef.second));
+
+}
+static PythonToCppFunc is_std_pair_QString_QString__PythonToCpp_std_pair_QString_QString__Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertiblePairTypes(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], false, SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], false, pyIn))
+        return std_pair_QString_QString__PythonToCpp_std_pair_QString_QString_;
+    return 0;
+}
+
+// C++ to Python conversion for type 'const std::list<std::pair<QString, QString > > &'.
+static PyObject* conststd_list_std_pair_QString_QString__REF_CppToPython_conststd_list_std_pair_QString_QString__REF(const void* cppIn) {
+    ::std::list<std::pair<QString, QString > >& cppInRef = *((::std::list<std::pair<QString, QString > >*)cppIn);
+
+                    // TEMPLATE - stdListToPyList - START
+            PyObject* pyOut = PyList_New((int) cppInRef.size());
+            ::std::list<std::pair<QString, QString > >::const_iterator it = cppInRef.begin();
+            for (int idx = 0; it != cppInRef.end(); ++it, ++idx) {
+            ::std::pair<QString, QString > cppItem(*it);
+            PyList_SET_ITEM(pyOut, idx, Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], &cppItem));
+            }
+            return pyOut;
+        // TEMPLATE - stdListToPyList - END
+
+}
+static void conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF(PyObject* pyIn, void* cppOut) {
+    ::std::list<std::pair<QString, QString > >& cppOutRef = *((::std::list<std::pair<QString, QString > >*)cppOut);
+
+                    // TEMPLATE - pyListToStdList - START
+        for (int i = 0; i < PySequence_Size(pyIn); i++) {
+        Shiboken::AutoDecRef pyItem(PySequence_GetItem(pyIn, i));
+        ::std::pair<QString, QString > cppItem = ::std::pair<QString, QString >();
+        Shiboken::Conversions::pythonToCppCopy(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], pyItem, &(cppItem));
+        cppOutRef.push_back(cppItem);
+        }
+    // TEMPLATE - pyListToStdList - END
+
+}
+static PythonToCppFunc is_conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF_Convertible(PyObject* pyIn) {
+    if (Shiboken::Conversions::convertibleSequenceTypes(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], pyIn))
+        return conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF;
     return 0;
 }
 
@@ -936,6 +927,11 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
 #endif
 
     // Initialize classes in the type system
+    init_Int2DTuple(module);
+    init_Int3DTuple(module);
+    init_Double2DTuple(module);
+    init_Double3DTuple(module);
+    init_ColorTuple(module);
     init_RectI(module);
     init_RectD(module);
     init_ExprUtils(module);
@@ -944,17 +940,17 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_App(module);
     init_AppSettings(module);
     init_NodeCreationProperty(module);
-    init_IntNodeCreationProperty(module);
-    init_BoolNodeCreationProperty(module);
     init_FloatNodeCreationProperty(module);
     init_StringNodeCreationProperty(module);
+    init_IntNodeCreationProperty(module);
+    init_BoolNodeCreationProperty(module);
     init_ItemBase(module);
-    init_Track(module);
     init_BezierCurve(module);
     init_StrokeItem(module);
+    init_Track(module);
     init_ItemsTable(module);
-    init_Roto(module);
     init_Tracker(module);
+    init_Roto(module);
     init_StrokePoint(module);
     init_ImageLayer(module);
     init_UserParamHolder(module);
@@ -964,7 +960,13 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_SeparatorParam(module);
     init_GroupParam(module);
     init_PageParam(module);
+    init_ParametricParam(module);
     init_AnimatedParam(module);
+    init_DoubleParam(module);
+    init_Double2DParam(module);
+    init_Double3DParam(module);
+    init_ColorParam(module);
+    init_ChoiceParam(module);
     init_BooleanParam(module);
     init_StringParamBase(module);
     init_StringParam(module);
@@ -973,17 +975,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     init_IntParam(module);
     init_Int2DParam(module);
     init_Int3DParam(module);
-    init_DoubleParam(module);
-    init_Double2DParam(module);
-    init_Double3DParam(module);
-    init_ColorParam(module);
-    init_ChoiceParam(module);
-    init_ParametricParam(module);
-    init_Int2DTuple(module);
-    init_Int3DTuple(module);
-    init_Double2DTuple(module);
-    init_Double3DTuple(module);
-    init_ColorTuple(module);
     init_NATRON_NAMESPACE(module);
 
     // Register converter for type 'NatronEngine.std::size_t'.
@@ -994,21 +985,6 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         PyLong_PythonToCpp_std_size_t,
         is_PyLong_PythonToCpp_std_size_t_Convertible);
 
-
-    // Register converter for type 'std::pair<QString,QString>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_pair_QString_QString__CppToPython_std_pair_QString_QString_);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], "std::pair<QString,QString>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX],
-        std_pair_QString_QString__PythonToCpp_std_pair_QString_QString_,
-        is_std_pair_QString_QString__PythonToCpp_std_pair_QString_QString__Convertible);
-
-    // Register converter for type 'const std::list<std::pair<QString,QString>>&'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, conststd_list_std_pair_QString_QString__REF_CppToPython_conststd_list_std_pair_QString_QString__REF);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX], "const std::list<std::pair<QString,QString>>&");
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX], "std::list<std::pair<QString,QString>>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX],
-        conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF,
-        is_conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF_Convertible);
 
     // Register converter for type 'std::list<ItemBase*>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_ITEMBASEPTR_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ItemBasePTR__CppToPython_std_list_ItemBasePTR_);
@@ -1115,12 +1091,12 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
         conststd_list_int_REF_PythonToCpp_conststd_list_int_REF,
         is_conststd_list_int_REF_PythonToCpp_conststd_list_int_REF_Convertible);
 
-    // Register converter for type 'std::map<ImageLayer,Effect*>'.
-    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX] = Shiboken::Conversions::createConverter(&PyDict_Type, std_map_ImageLayer_EffectPTR__CppToPython_std_map_ImageLayer_EffectPTR_);
-    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX], "std::map<ImageLayer,Effect*>");
-    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_MAP_IMAGELAYER_EFFECTPTR_IDX],
-        std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR_,
-        is_std_map_ImageLayer_EffectPTR__PythonToCpp_std_map_ImageLayer_EffectPTR__Convertible);
+    // Register converter for type 'std::list<ImageLayer>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_IMAGELAYER_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_list_ImageLayer__CppToPython_std_list_ImageLayer_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_IMAGELAYER_IDX], "std::list<ImageLayer>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_IMAGELAYER_IDX],
+        std_list_ImageLayer__PythonToCpp_std_list_ImageLayer_,
+        is_std_list_ImageLayer__PythonToCpp_std_list_ImageLayer__Convertible);
 
     // Register converter for type 'std::vector<RectI>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_VECTOR_RECTI_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_vector_RectI__CppToPython_std_vector_RectI_);
@@ -1135,6 +1111,21 @@ SBK_MODULE_INIT_FUNCTION_BEGIN(NatronEngine)
     Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_VECTOR_STD_STRING_IDX],
         std_list_std_vector_std_string__PTR_PythonToCpp_std_list_std_vector_std_string__PTR,
         is_std_list_std_vector_std_string__PTR_PythonToCpp_std_list_std_vector_std_string__PTR_Convertible);
+
+    // Register converter for type 'std::pair<QString,QString>'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, std_pair_QString_QString__CppToPython_std_pair_QString_QString_);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX], "std::pair<QString,QString>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_PAIR_QSTRING_QSTRING_IDX],
+        std_pair_QString_QString__PythonToCpp_std_pair_QString_QString_,
+        is_std_pair_QString_QString__PythonToCpp_std_pair_QString_QString__Convertible);
+
+    // Register converter for type 'const std::list<std::pair<QString,QString>>&'.
+    SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, conststd_list_std_pair_QString_QString__REF_CppToPython_conststd_list_std_pair_QString_QString__REF);
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX], "const std::list<std::pair<QString,QString>>&");
+    Shiboken::Conversions::registerConverterName(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX], "std::list<std::pair<QString,QString>>");
+    Shiboken::Conversions::addPythonToCppValueConversion(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX],
+        conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF,
+        is_conststd_list_std_pair_QString_QString__REF_PythonToCpp_conststd_list_std_pair_QString_QString__REF_Convertible);
 
     // Register converter for type 'QList<QVariant>'.
     SbkNatronEngineTypeConverters[SBK_NATRONENGINE_QLIST_QVARIANT_IDX] = Shiboken::Conversions::createConverter(&PyList_Type, _QList_QVariant__CppToPython__QList_QVariant_);

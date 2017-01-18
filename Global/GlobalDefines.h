@@ -77,7 +77,7 @@ struct RenderScale
 {
     RenderScale() { x = y = 1.; }
 
-    RenderScale(double scale) { x = y = scale; }
+    RenderScale(double scale) { assert(scale != 0.); x = y = scale; }
 
     RenderScale(double scaleX,
                 double scaleY) { x = scaleX; y = scaleY; }
@@ -101,11 +101,6 @@ typedef OfxRangeD RangeD;
 #define kAbortRenderingStringShort "-a"
 
 #define kBgProcessServerCreatedShort "--bg_server_created"
-
-//Increment this to wipe all disk cache structure and ensure that the user has a clean cache when starting the next version of Natron
-#define NATRON_CACHE_VERSION 4
-#define kNatronCacheVersionSettingsKey "NatronCacheVersionSettingsKey"
-
 
 #define kNodeGraphObjectName "nodeGraph"
 #define kAnimationModuleEditorObjectName "animationModule"

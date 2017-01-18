@@ -28,20 +28,22 @@
 #include "Global/Macros.h"
 
 #include <list>
-#include <QtCore/QPointF>
-#include <QtCore/QRectF>
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include <QtCore/QPointF>
+#include <QtCore/QRectF>
+
+
 #include <ofxNatron.h>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -531,7 +533,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(double time, ViewIdx view, bool onlyActivated = true) const;
+    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(TimeValue time, ViewIdx view, bool onlyActivated = true) const;
 
     SelectedItems getSelectedDrawableItems() const;
 
@@ -853,12 +855,12 @@ public:
 
     void handleControlPointSelection(const std::pair<BezierCPPtr, BezierCPPtr > & p);
 
-    void drawSelectedCp(double time,
+    void drawSelectedCp(TimeValue time,
                         const BezierCPPtr & cp,
                         double x, double y,
                         const Transform::Matrix3x3& transform);
 
-    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(double time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
+    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(TimeValue time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
 
@@ -879,7 +881,7 @@ public:
     * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
     * which would be used to find the exact bezier point lying on the curve.
     **/
-    BezierPtr isNearbyBezier(double x, double y, double time, ViewIdx view, double acceptance, int* index, double* t, bool *feather) const;
+    BezierPtr isNearbyBezier(double x, double y, TimeValue time, ViewIdx view, double acceptance, int* index, double* t, bool *feather) const;
 
     bool isNearbySelectedCpsBoundingBox(const QPointF & pos, double tolerance) const;
 
@@ -888,8 +890,6 @@ public:
     bool isBboxClickAnywhereEnabled() const;
 
     void makeStroke(bool prepareForLater, const RotoPoint& p);
-
-    void checkViewersAreDirectlyConnected();
 
     void showMenuForControlPoint(const BezierCPPtr& cp);
 
@@ -916,8 +916,8 @@ public:
 
     BezierPtr getBezierBeingBuild() const;
 
-    bool smoothSelectedCurve(double time, ViewIdx view);
-    bool cuspSelectedCurve(double time, ViewIdx view);
+    bool smoothSelectedCurve(TimeValue time, ViewIdx view);
+    bool cuspSelectedCurve(TimeValue time, ViewIdx view);
     bool removeFeatherForSelectedCurve(ViewIdx view);
     bool lockSelectedCurves();
 
@@ -926,7 +926,7 @@ public:
      *@brief Moves of the given pixel the selected control points.
      * This takes into account the zoom factor.
      **/
-    bool moveSelectedCpsWithKeyArrows(int x, int y, double time, ViewIdx view);
+    bool moveSelectedCpsWithKeyArrows(int x, int y, TimeValue time, ViewIdx view);
 
     void autoSaveAndRedraw();
 

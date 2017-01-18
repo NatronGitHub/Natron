@@ -47,8 +47,8 @@ CLANG_DIAG_ON(tautological-undefined-compare)
 CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -156,7 +156,7 @@ public:
     /**
      * We add some output parameters to the function so that we can delay the actual setting of the clip preferences
      **/
-    StatusEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
+    ActionRetCodeEnum getClipPreferences_safe(NodeMetadata& defaultPrefs);
 
     virtual OfxStatus createInstanceAction() OVERRIDE FINAL;
 
@@ -243,8 +243,6 @@ public:
     bool isInAnalysis() const;
 #endif
 
-
-    bool getInputsHoldingTransform(std::list<int>* inputs) const;
 
     const std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>& getClips() const;
     static bool ofxCursorToNatronCursor(const std::string& ofxCursor, CursorEnum* cursor);

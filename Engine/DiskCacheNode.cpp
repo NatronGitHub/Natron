@@ -31,6 +31,8 @@
 #include "Engine/Image.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Project.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
@@ -72,10 +74,9 @@ DiskCacheNode::createPlugin()
 
 
 DiskCacheNode::DiskCacheNode(const NodePtr& node)
-    : OutputEffectInstance(node)
+    : EffectInstance(node)
     , _imp( new DiskCacheNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 DiskCacheNode::~DiskCacheNode()
@@ -84,11 +85,9 @@ DiskCacheNode::~DiskCacheNode()
 
 void
 DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImageComponents>* comps)
+                                     std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -99,10 +98,10 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
-                                 double /*time*/,
-                                 ViewIdx /*view*/,
+                                 const TreeRenderNodeArgsPtr& /*render*/,
                                  int /*visitsCount*/) const
 {
+    // The disk cache node always caches.
     return true;
 }
 
@@ -114,11 +113,13 @@ DiskCacheNode::initializeKnobs()
 
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
-    std::vector<std::string> choices;
-    choices.push_back("Input frame range");
-    choices.push_back("Project frame range");
-    choices.push_back("Manual");
-    frameRange->populateChoices(choices);
+    {
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("Input frame range", "", ""));
+        choices.push_back(ChoiceOption("Project frame range", "", ""));
+        choices.push_back(ChoiceOption("Manual","", ""));
+        frameRange->populateChoices(choices);
+    }
     frameRange->setEvaluateOnChange(false);
     frameRange->setDefaultValue(0);
     page->addKnob(frameRange);
@@ -157,7 +158,7 @@ bool
 DiskCacheNode::knobChanged(const KnobIPtr& k,
                            ValueChangedReasonEnum /*reason*/,
                            ViewSetSpec /*view*/,
-                           double /*time*/)
+                           TimeValue /*time*/)
 {
     bool ret = true;
 
@@ -177,16 +178,14 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
             break;
         }
     } else if (_imp->preRender.lock() == k) {
-        AppInstance::RenderWork w;
-        w.writer = toOutputEffectInstance( shared_from_this() );
-        assert(w.writer);
-        w.firstFrame = INT_MIN;
-        w.lastFrame = INT_MAX;
-        w.frameStep = 1;
+        RenderQueue::RenderWork w;
+        w.renderLabel = tr("Caching").toStdString();
+        w.treeRoot = getNode();
+        w.frameStep = TimeValue(1.);
         w.useRenderStats = false;
-        std::list<AppInstance::RenderWork> works;
+        std::list<RenderQueue::RenderWork> works;
         works.push_back(w);
-        getApp()->renderWritersNonBlocking(works);
+        getApp()->getRenderQueue()->renderNonBlocking(works);
     } else {
         ret = false;
     }
@@ -194,8 +193,9 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
     return ret;
 }
 
-void
-DiskCacheNode::getFrameRange(double *first,
+ActionRetCodeEnum
+DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
+                             double *first,
                              double *last)
 {
     int idx = _imp->frameRange.lock()->getValue();
@@ -204,12 +204,28 @@ DiskCacheNode::getFrameRange(double *first,
     case 0: {
         EffectInstancePtr input = getInput(0);
         if (input) {
-            input->getFrameRange_public(0, first, last);
+            TreeRenderNodeArgsPtr inputRender;
+            if (render) {
+                inputRender = render->getInputRenderArgs(0);
+            }
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = input->getFrameRange_public(inputRender, &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            RangeD range;
+            results->getFrameRangeResults(&range);
+            *first = range.min;
+            *last = range.max;
+
         }
         break;
     }
     case 1: {
-        getApp()->getFrameRange(first, last);
+        TimeValue left, right;
+        getApp()->getProject()->getFrameRange(&left, &right);
+        *first = left;
+        *last = right;
         break;
     }
     case 2: {
@@ -219,59 +235,42 @@ DiskCacheNode::getFrameRange(double *first,
     default:
         break;
     }
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 DiskCacheNode::render(const RenderActionArgs& args)
 {
-    assert(args.outputPlanes.size() == 1);
-
-    EffectInstancePtr input = getInput(0);
-    if (!input) {
-        return eStatusFailed;
-    }
-
-
-    const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
+    // fetch source images and copy them
 
     for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
-        RectI roiPixel;
-        ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
-        if (!srcImg) {
-            return eStatusFailed;
+        std::list<ImageComponents> layersToFetch;
+        layersToFetch.push_back(it->first);
+
+        GetImageInArgs inArgs;
+        inArgs.inputNb = 0;
+        inArgs.inputTime = args.time;
+        inArgs.inputView = args.view;
+        inArgs.currentTime = args.time;
+        inArgs.currentView = args.view;
+        inArgs.currentScale = args.renderScale;
+        inArgs.layers = &layersToFetch;
+        inArgs.renderBackend = &args.backendType;
+        GetImageOutArgs outArgs;
+        if (!getImagePlanes(inArgs, &outArgs)) {
+            return eActionStatusInputDisconnected;
         }
-        if ( srcImg->getMipMapLevel() != output.second->getMipMapLevel() ) {
-            throw std::runtime_error("Host gave image with wrong scale");
-        }
-        if ( ( srcImg->getComponents() != output.second->getComponents() ) || ( srcImg->getBitDepth() != output.second->getBitDepth() ) ) {
-            srcImg->convertToFormat( args.roi, getApp()->getDefaultColorSpaceForBitDepth( srcImg->getBitDepth() ),
-                                     getApp()->getDefaultColorSpaceForBitDepth( output.second->getBitDepth() ), 3, true, false, output.second.get() );
-        } else {
-            output.second->pasteFrom( *srcImg, args.roi, output.second->usesBitMap() && srcImg->usesBitMap() );
-        }
+
+        ImagePtr inputImage = outArgs.imagePlanes.begin()->second;
+
+        Image::CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = args.roi;
+        it->second->copyPixels(*inputImage, cpyArgs);
     }
+    return eActionStatusOK;
 
-    return eStatusOK;
-}
+} // render
 
-bool
-DiskCacheNode::isIdentity(double time,
-                          const RenderScale & /*scale*/,
-                          const RectI & /*renderWindow*/,
-                          ViewIdx view,
-                          double* inputTime,
-                          ViewIdx* inputView,
-                          int* inputNb)
-{
-    if (!appPTR->isBackground()) {
-        return false;
-    }
-    *inputNb = 0;
-    *inputTime = time;
-    *inputView = view;
-    return true;
-
-}
 
 bool
 DiskCacheNode::isHostChannelSelectorSupported(bool* /*defaultR*/,

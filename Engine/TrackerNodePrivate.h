@@ -35,7 +35,6 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-
 #include <QFutureWatcher>
 #include <QtConcurrentRun>
 #include <QtCore/QPointF>
@@ -43,7 +42,6 @@
 
 #include <ofxNatron.h>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/RectI.h"
 #include "Engine/KnobItemsTable.h"
@@ -54,6 +52,9 @@
 
 #include "Global/GLIncludes.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #ifdef DEBUG
 // Enable usage of markers that track using TrackerPM internally
@@ -459,10 +460,6 @@
 
 #define kCornerPinParamMatrix "transform"
 
-
-NATRON_NAMESPACE_ENTER;
-
-
 enum TrackerTransformNodeEnum
 {
     eTrackerTransformNodeTransform,
@@ -535,14 +532,14 @@ enum TrackerDrawStateEnum
     eDrawStateShowScalingHint,
 };
 
-typedef QFutureWatcher<std::pair<ImagePtr, RectI> > TrackWatcher;
+typedef QFutureWatcher<std::pair<ImagePtr, RectD> > TrackWatcher;
 typedef boost::shared_ptr<TrackWatcher> TrackWatcherPtr;
 
 struct TrackRequestKey
 {
-    int time;
+    TimeValue time;
     boost::weak_ptr<TrackMarker> track;
-    RectI roi;
+    RectD roi;
 };
 
 struct TrackRequestKey_compareLess
@@ -585,8 +582,8 @@ struct SolveRequest
 {
     CornerPinSolverWatcher cpWatcher;
     TransformSolverWatcher tWatcher;
-    double refTime;
-    std::set<double> keyframes;
+    TimeValue refTime;
+    std::set<TimeValue> keyframes;
     int jitterPeriod;
     bool jitterAdd;
     bool robustModel;
@@ -697,8 +694,7 @@ public:
     TrackMarkerPtr createMarker();
 
     static void getMotionModelsAndHelps(bool addPerspective,
-                                        std::vector<std::string>* models,
-                                        std::vector<std::string>* tooltips,
+                                        std::vector<ChoiceOption>* models,
                                         std::map<int, std::string> *icons);
 
     bool
@@ -715,7 +711,7 @@ public:
 
     void setFromPointsToInputRod();
 
-    RectD getInputRoD(double time, ViewIdx view) const;
+    RectD getInputRoD(TimeValue time, ViewIdx view) const;
 
     void resetTransformCenter();
 
@@ -723,7 +719,7 @@ public:
 
     void refreshVisibilityFromTransformTypeInternal(TrackerTransformNodeEnum transformType);
 
-    void trackSelectedMarkers(int start, int end, int frameStep, OverlaySupport* viewer);
+    void trackSelectedMarkers(TimeValue start, TimeValue end, TimeValue frameStep, OverlaySupport* viewer);
 
     void exportTrackDataFromExportOptions();
 
@@ -770,7 +766,7 @@ public:
     virtual bool isBruteForcePreTrackEnabled() const OVERRIDE FINAL;
     virtual bool isNormalizeIntensitiesEnabled() const OVERRIDE FINAL;
     virtual double getPreBlurSigma() const OVERRIDE FINAL;
-    virtual RectD getNormalizationRoD(double time, ViewIdx view) const OVERRIDE FINAL;
+    virtual RectD getNormalizationRoD(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
     ////////////////////
 
     void averageSelectedTracks();
@@ -877,13 +873,11 @@ public:
     TrackerDrawStateEnum hoverState;
     TrackMarkerPtr interactMarker, hoverMarker;
 
-    typedef std::map<int, GLTexturePtr > KeyFrameTexIDs;
+    typedef std::map<TimeValue, GLTexturePtr > KeyFrameTexIDs;
     typedef std::map<boost::weak_ptr<TrackMarker>, KeyFrameTexIDs> TrackKeysMap;
     TrackKeysMap trackTextures;
     TrackKeyframeRequests trackRequestsMap;
     GLTexturePtr selectedMarkerTexture;
-    int selectedMarkerTextureTime;
-    RectI selectedMarkerTextureRoI;
     //If theres a single selection, this points to it
     boost::weak_ptr<TrackMarker> selectedMarker;
     GLuint pboID;
@@ -892,6 +886,7 @@ public:
     RenderScale selectedMarkerScale;
     boost::weak_ptr<Image> selectedMarkerImg;
     bool isTracking;
+    int nSelectedMarkerTextureRefreshRequests;
 
 
     TrackerNodeInteract(TrackerNodePrivate* p);
@@ -938,16 +933,18 @@ public:
     bool nudgeSelectedTracks(int x, int y);
 
 
-    void transformPattern(double time, TrackerMouseStateEnum state, const Point& delta);
+    void transformPattern(TimeValue time, TrackerMouseStateEnum state, const Point& delta);
 
-    void refreshSelectedMarkerTexture();
+    void refreshSelectedMarkerTextureLater();
+
+    void refreshSelectedMarkerTextureNow();
 
     void convertImageTosRGBOpenGLTexture(const ImagePtr& image, const boost::shared_ptr<Texture>& tex, const RectI& renderWindow);
 
-    void makeMarkerKeyTexture(int time, const TrackMarkerPtr& track);
+    void makeMarkerKeyTexture(TimeValue time, const TrackMarkerPtr& track);
 
     void drawSelectedMarkerTexture(const std::pair<double, double>& pixelScale,
-                                   int currentTime,
+                                   TimeValue currentTime,
                                    const Point& selectedCenter,
                                    const Point& offset,
                                    const Point& selectedPtnTopLeft,
@@ -957,10 +954,10 @@ public:
                                    const Point& selectedSearchWndBtmLeft,
                                    const Point& selectedSearchWndTopRight);
 
-    void drawSelectedMarkerKeyframes(const std::pair<double, double>& pixelScale, int currentTime);
+    void drawSelectedMarkerKeyframes(const std::pair<double, double>& pixelScale, TimeValue currentTime);
 
     ///Filter allkeys so only that only the MAX_TRACK_KEYS_TO_DISPLAY surrounding are displayed
-    static KeyFrameTexIDs getKeysToRenderForMarker(double currentTime, const KeyFrameTexIDs& allKeys);
+    static KeyFrameTexIDs getKeysToRenderForMarker(TimeValue currentTime, const KeyFrameTexIDs& allKeys);
 
     void computeTextureCanonicalRect(const Texture& tex, int xOffset, int texWidthPx, RectD* rect) const;
     void computeSelectedMarkerCanonicalRect(RectD* rect) const;
@@ -968,7 +965,7 @@ public:
     bool isInsideSelectedMarkerTexture(const QPointF& pos) const;
 
     ///Returns the keyframe time if the mouse is inside a keyframe texture
-    int isInsideKeyFrameTexture(double currentTime, const QPointF& pos, const QPointF& viewportPos) const;
+    int isInsideKeyFrameTexture(TimeValue currentTime, const QPointF& pos, const QPointF& viewportPos) const;
 
     static Point toMagWindowPoint(const Point& ptnPoint,
                                   const RectD& canonicalSearchWindow,
@@ -982,7 +979,7 @@ public:
                        double xWidget,
                        double yWidget,
                        double toleranceWidget,
-                       double time);
+                       TimeValue time);
 
     bool isNearbyPoint(const QPointF& p,
                        double xWidget,
@@ -1003,7 +1000,13 @@ public:
                                      const Point& l2,
                                      Point* inter);
 
+Q_SIGNALS:
+
+    void requestRefreshSelectedMarkerTexture();
+
 public Q_SLOTS:
+
+    void onRequestRefreshSelectedMarkerReceived();
 
     void onTrackingStarted(int step);
 

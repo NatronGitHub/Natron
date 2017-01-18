@@ -674,7 +674,9 @@ template<class Archive>
 void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
                const unsigned int version)
 {
-    ar & ::boost::serialization::make_nvp("Time", _time);
+    double time = _time;
+    ar & ::boost::serialization::make_nvp("Time", time);
+    _time = TimeValue(time);
     ar & ::boost::serialization::make_nvp("Value", _value);
     ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
     ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);

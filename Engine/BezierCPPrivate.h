@@ -36,6 +36,7 @@
 #include <QtCore/QReadWriteLock>
 
 #include "Engine/Curve.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

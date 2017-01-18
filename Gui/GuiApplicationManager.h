@@ -179,7 +179,7 @@ public:
 
     bool handleImageFileOpenRequest(const std::string& imageFile);
 
-    void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
+    void appendTaskToPreviewThread(const NodeGuiPtr& node, TimeValue time);
 
     int getDocumentationServerPort();
 
@@ -220,7 +220,6 @@ private:
     void handleOpenFileRequest();
 
     virtual void onLoadCompleted() OVERRIDE FINAL;
-    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
     /**
      * @brief Load shortcuts from QSettings
      **/

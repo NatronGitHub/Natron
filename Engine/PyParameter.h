@@ -48,8 +48,12 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/ViewIdx.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
 
 /**
  * @brief Specify that an action (a setter) must be applied on all split views in the parameter
@@ -71,9 +75,6 @@ CLANG_DIAG_ON(uninitialized)
 #define PythonSetNonUserKnobError() (PyErr_SetString(PyExc_ValueError, tr("Cannot do this on a non-user parameter").toStdString().c_str()))
 #define PythonSetInvalidViewName(view) (PyErr_SetString(PyExc_ValueError, tr("%1: Invalid view").arg(view).toStdString().c_str()))
 
-
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
 
 class Param
 {
@@ -307,7 +308,7 @@ protected:
     void _addAsDependencyOf(Param* param, int fromExprDimension, int thisDimension, const QString& fromExprView, const QString& thisView);
 
     bool getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const;
-    bool getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const;
+    bool getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const;
     
 };
 
@@ -1270,31 +1271,31 @@ public:
 
     void getCurveColor(int dimension, ColorTuple& ret) const;
 
-    NATRON_NAMESPACE::StatusEnum addControlPoint(int dimension, double key, double value, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
-    NATRON_NAMESPACE::StatusEnum addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
+    bool addControlPoint(int dimension, double key, double value, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
+    bool addControlPoint(int dimension, double key, double value, double leftDerivative, double rightDerivative, NATRON_NAMESPACE::KeyframeTypeEnum interpolation = eKeyframeTypeSmooth);
 
     double getValue(int dimension, double parametricPosition) const;
 
     int getNControlPoints(int dimension) const;
 
     // NATRON_NAMESPACE is necessary for shiboken
-    NATRON_NAMESPACE::StatusEnum getNthControlPoint(int dimension,
-                                                    int nthCtl,
-                                                    double *key,
-                                                    double *value,
-                                                    double *leftDerivative,
-                                                    double *rightDerivative) const;
-    NATRON_NAMESPACE::StatusEnum setNthControlPoint(int dimension,
-                                                    int nthCtl,
-                                                    double key,
-                                                    double value,
-                                                    double leftDerivative,
-                                                    double rightDerivative);
-    NATRON_NAMESPACE::StatusEnum setNthControlPointInterpolation(int dimension,
-                                                                 int nThCtl,
-                                                                 KeyframeTypeEnum interpolation);
-    NATRON_NAMESPACE::StatusEnum deleteControlPoint(int dimension, int nthCtl);
-    NATRON_NAMESPACE::StatusEnum deleteAllControlPoints(int dimension);
+    bool getNthControlPoint(int dimension,
+                            int nthCtl,
+                            double *key,
+                            double *value,
+                            double *leftDerivative,
+                            double *rightDerivative) const;
+    bool setNthControlPoint(int dimension,
+                            int nthCtl,
+                            double key,
+                            double value,
+                            double leftDerivative,
+                            double rightDerivative);
+    bool setNthControlPointInterpolation(int dimension,
+                                         int nThCtl,
+                                         KeyframeTypeEnum interpolation);
+    bool deleteControlPoint(int dimension, int nthCtl);
+    bool deleteAllControlPoints(int dimension);
 
     void setDefaultCurvesFromCurrentCurves();
 };

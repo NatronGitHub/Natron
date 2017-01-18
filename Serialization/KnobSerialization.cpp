@@ -16,6 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
+#include "KnobSerialization.h"
+
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,9 +31,12 @@
 #include <iostream>
 #include <sstream> // stringstream
 
-#include <yaml-cpp/yaml.h>
+#include "Global/Macros.h"
 
-#include "KnobSerialization.h"
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <yaml-cpp/yaml.h>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 
 #include "Serialization/CurveSerialization.h"
 

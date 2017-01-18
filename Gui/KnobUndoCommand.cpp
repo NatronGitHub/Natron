@@ -286,7 +286,7 @@ PasteKnobClipBoardUndoCommand::copyFrom(const SERIALIZATION_NAMESPACE::KnobSeria
                         } catch (...) {
                         }
                     } else { // !isRedo
-                        internalKnob->clearExpression(DimIdx(i), *it, true);
+                        internalKnob->clearExpression(DimIdx(i), *it);
                     } // isRedo
                     break;
                 }
@@ -400,7 +400,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
                                                            const PerDimViewVariantMap& oldValue,
                                                            const Variant & newValue,
                                                            DimSpec dimension,
-                                                           double time,
+                                                           TimeValue time,
                                                            ViewSetSpec view)
     : QUndoCommand()
     , knobs()
@@ -419,7 +419,7 @@ MultipleKnobEditsUndoCommand::MultipleKnobEditsUndoCommand(const KnobIPtr& knob,
 
     if (!setKeyFrame) {
         // Ensure the time is correct in case auto-keying is on and we add a keyframe
-        v.time = knob->getCurrentTime();
+        v.time = knob->getHolder()->getTimelineCurrentTime();
     } else {
         v.time = time;
     }
@@ -455,7 +455,7 @@ static ValueChangedReturnCodeEnum setOldValueForDimView(const KnobIntBasePtr& is
                                                         const KnobStringBasePtr& isString,
                                                         ValueChangedReasonEnum reason,
                                                         bool setKeyFrame,
-                                                        double time,
+                                                        TimeValue time,
                                                         bool hasChanged,
                                                         ValueChangedReturnCodeEnum retCode,
                                                         DimIdx dim,
@@ -554,7 +554,7 @@ MultipleKnobEditsUndoCommand::undo()
                             hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                         }
                     } else {
-                        ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(it2->view));
+                        ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewIdx(it2->view));
                         hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(i), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 }
@@ -565,7 +565,7 @@ MultipleKnobEditsUndoCommand::undo()
                         hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), *it3, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                     }
                 } else {
-                    ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewGetSpec(it2->view));
+                    ViewIdx view_i = knob->getViewIdxFromGetSpec(ViewIdx(it2->view));
                     hasChanged |= setOldValueForDimView(isInt, isBool, isDouble, isString, it2->reason, it2->setKeyFrame, it2->time, hasChanged,  it2->setValueRetCode, DimIdx(it2->dimension), view_i, it2->oldValues) != eValueChangedReturnCodeNothingChanged;
                 }
             }
@@ -828,9 +828,9 @@ RestoreDefaultsCommand::redo()
 
     //   Call instanceChange on all knobs afterwards to put back the plug-in
     //   in a correct state
-    double time = 0;
+    TimeValue time(0);
     if (app) {
-        time = app->getTimeLine()->currentFrame();
+        time = TimeValue(app->getTimeLine()->currentFrame());
     }
     for (std::list<KnobIWPtr >::iterator it = _knobs.begin(); it != _knobs.end(); ++it) {
         KnobIPtr itKnob = it->lock();

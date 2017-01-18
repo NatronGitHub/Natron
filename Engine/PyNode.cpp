@@ -691,7 +691,7 @@ Effect::getParam(const QString& name) const
     }
 }
 
-int
+double
 Effect::getCurrentTime() const
 {
     NodePtr n = getInternalNode();
@@ -700,7 +700,7 @@ Effect::getCurrentTime() const
         PythonSetNullError();
         return 0.;
     }
-    return n->getEffectInstance()->getCurrentTime();
+    return n->getEffectInstance()->getCurrentTime_TLS();
 }
 
 void
@@ -1443,10 +1443,12 @@ Effect::getRegionOfDefinition(double time,
     }
     RenderScale s(1.);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(0, time, s, ViewIdx(view), &rod);
-    if (stat != eStatusOK) {
-        return RectD();
+    GetRegionOfDefinitionResultsPtr results;
+    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(TimeValue(time), s, ViewIdx(view), TreeRenderNodeArgsPtr(), &results);
+    if (isFailureRetCode(stat)) {
+        return rod;
     }
+    rod = results->getRoD();
 
     return rod;
 }
@@ -1523,10 +1525,10 @@ Effect::addUserPlane(const QString& planeName,
     return n->addUserComponents(comp);
 }
 
-std::map<ImageLayer, Effect*>
-Effect::getAvailableLayers() const
+std::list<ImageLayer>
+Effect::getAvailableLayers(int inputNb) const
 {
-    std::map<ImageLayer, Effect*> ret;
+    std::list<ImageLayer> ret;
 
     NodePtr n = getInternalNode();
 
@@ -1535,15 +1537,12 @@ Effect::getAvailableLayers() const
         return ret;
     }
 
-    EffectInstance::ComponentsAvailableMap availComps;
-    n->getEffectInstance()->getComponentsAvailable(true, true, getInternalNode()->getEffectInstance()->getCurrentTime(), &availComps);
-    for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
-        NodePtr node = it->second.lock();
-        if (node) {
-            Effect* effect = App::createEffectFromNodeWrapper(node);
-            ImageLayer layer(it->first);
-            ret.insert( std::make_pair(layer, effect) );
-        }
+    TimeValue time(n->getApp()->getTimeLine()->currentFrame());
+
+    std::list<ImageComponents> availComps;
+    n->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, TreeRenderNodeArgsPtr(), &availComps);
+    for (std::list<ImageComponents>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+        ret.push_back(ImageLayer(*it));
     }
 
     return ret;
@@ -1559,7 +1558,7 @@ Effect::getFrameRate() const
         return 24.;
     }
 
-    return node->getEffectInstance()->getFrameRate();
+    return node->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
 }
 
 double
@@ -1572,7 +1571,7 @@ Effect::getPixelAspectRatio() const
         return 1.;
     }
 
-    return node->getEffectInstance()->getAspectRatio(-1);
+    return node->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
 }
 
 ImageBitDepthEnum
@@ -1585,7 +1584,7 @@ Effect::getBitDepth() const
         return eImageBitDepthFloat;
     }
 
-    return node->getEffectInstance()->getBitDepth(-1);
+    return node->getEffectInstance()->getBitDepth(TreeRenderNodeArgsPtr(), -1);
 }
 
 ImagePremultiplicationEnum
@@ -1598,7 +1597,7 @@ Effect::getPremult() const
         return eImagePremultiplicationPremultiplied;
     }
 
-    return node->getEffectInstance()->getPremult();
+    return node->getEffectInstance()->getPremult(TreeRenderNodeArgsPtr());
 }
 
 void

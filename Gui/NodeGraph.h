@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGraphI.h"
 #include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 #include "Gui/PanelWidget.h"
 #include "Gui/GuiFwd.h"
@@ -140,7 +141,7 @@ public:
 
     bool areKnobLinksVisible() const;
 
-    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, SequenceTime time);
+    void refreshNodesKnobsAtTime(bool onlyTimeEvaluationKnobs, TimeValue time);
 
     bool areOptionalInputsAutoHidden() const;
 

@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef APPINSTANCE_H
-#define APPINSTANCE_H
+#ifndef Engine_AppInstance_h
+#define Engine_AppInstance_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -44,6 +44,8 @@
 
 #include "Global/GlobalDefines.h"
 #include "Engine/RectD.h"
+#include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -110,39 +112,7 @@ public:
     virtual bool isBackground() const { return true; }
 
 
-    struct RenderWork
-    {
-        OutputEffectInstancePtr writer;
-        int firstFrame;
-        int lastFrame;
-        int frameStep;
-        bool useRenderStats;
-        bool isRestart;
 
-        RenderWork()
-            : writer()
-            , firstFrame(0)
-            , lastFrame(0)
-            , frameStep(0)
-            , useRenderStats(false)
-            , isRestart(false)
-        {
-        }
-
-        RenderWork(const OutputEffectInstancePtr& writer,
-                   int firstFrame,
-                   int lastFrame,
-                   int frameStep,
-                   bool useRenderStats)
-            : writer(writer)
-            , firstFrame(firstFrame)
-            , lastFrame(lastFrame)
-            , frameStep(frameStep)
-            , useRenderStats(useRenderStats)
-            , isRestart(false)
-        {
-        }
-    };
 
     void load(const CLArgs& cl, bool makeEmptyInstance);
 
@@ -174,19 +144,14 @@ public:
     ProjectPtr getProject() const;
     TimeLinePtr getTimeLine() const;
 
+    RenderQueuePtr getRenderQueue() const;
+
     /*true if the user is NOT scrubbing the timeline*/
     virtual bool shouldRefreshPreview() const
     {
         return false;
     }
 
-    virtual void connectViewersToViewerCache()
-    {
-    }
-
-    virtual void disconnectViewersFromViewerCache()
-    {
-    }
 
     virtual void errorDialog(const std::string & title, const std::string & message, bool useHtml) const;
     virtual void errorDialog(const std::string & title, const std::string & message, bool* stopAsking, bool useHtml) const;
@@ -224,16 +189,16 @@ public:
     }
 
     virtual void notifyRenderStarted(const QString & /*sequenceName*/,
-                                     int /*firstFrame*/,
-                                     int /*lastFrame*/,
-                                     int /*frameStep*/,
+                                     TimeValue /*firstFrame*/,
+                                     TimeValue /*lastFrame*/,
+                                     TimeValue /*frameStep*/,
                                      bool /*canPause*/,
-                                     const OutputEffectInstancePtr& /*writer*/,
+                                     const NodePtr& /*writer*/,
                                      const ProcessHandlerPtr & /*process*/)
     {
     }
 
-    virtual void notifyRenderRestarted( const OutputEffectInstancePtr& /*writer*/,
+    virtual void notifyRenderRestarted( const NodePtr& /*writer*/,
                                         const ProcessHandlerPtr & /*process*/)
     {
     }
@@ -307,29 +272,11 @@ public:
 
     void onOCIOConfigPathChanged(const std::string& path);
 
-
-    /**
-     * @brief Given writer names, render the given frame ranges. If empty all Writers in the project
-     * will be rendered using the frame ranges. It internally calls renderWritersBlocking if the parameter
-     * doBlockingRender is true, otherwise it calls renderWritersNonBlocking.
-     **/
-    void startWritersRenderingFromNames(bool enableRenderStats,
-                                        bool doBlockingRender,
-                                        const std::list<std::string>& writers,
-                                        const std::list<std::pair<int, std::pair<int, int> > >& frameRanges);
-    void renderWritersBlocking(const std::list<RenderWork>& writers);
-    void renderWritersNonBlocking(const std::list<RenderWork>& writers);
-
-private:
-
-    void renderWritersInternal(bool blocking, const std::list<RenderWork>& writers);
 public:
 
     void addInvalidExpressionKnob(const KnobIPtr& knob);
     void removeInvalidExpressionKnob(const KnobIConstPtr& knob);
     void recheckInvalidExpressions();
-
-    virtual void clearViewersLastRenderedTexture() {}
 
     virtual void toggleAutoHideGraphInputs() {}
 
@@ -339,30 +286,23 @@ public:
      **/
     bool isCreatingNode() const;
 
-    /**
-     * @brief @see CreatingNodeTreeFlag_RAII
-     **/
-    bool isCreatingNodeTree() const;
-    void setIsCreatingNodeTree(bool b);
 
     virtual void appendToScriptEditor(const std::string& str);
     virtual void printAutoDeclaredVariable(const std::string& str);
 
-    void getFrameRange(double* first, double* last) const;
-
     virtual void setLastViewerUsingTimeline(const NodePtr& /*node*/) {}
 
-    virtual ViewerInstancePtr getLastViewerUsingTimeline() const { return ViewerInstancePtr(); }
+    virtual ViewerNodePtr getLastViewerUsingTimeline() const { return ViewerNodePtr(); }
 
     bool loadPythonScript(const QFileInfo& file);
 
     bool loadPythonScriptAndReportToScriptEditor(const QString& script);
 
-    virtual void queueRedrawForAllViewers() {}
+    virtual void getAllViewers(std::list<ViewerNodePtr>* viewers) const { Q_UNUSED(viewers); }
 
-    virtual void renderAllViewers(bool /* canAbort*/) {}
+    virtual void renderAllViewers() {}
 
-    virtual void abortAllViewers() {}
+    virtual void abortAllViewers(bool /*autoRestartPlayback*/) {}
 
     virtual void refreshAllPreviews() {}
 
@@ -409,11 +349,6 @@ public:
 
     virtual void createGroupGui(const NodePtr & /*group*/, const CreateNodeArgs& /*args*/) {}
 
-    /**
-     * @brief Remove from the render queue a render that was not yet started. This is useful for the GUI
-     * if the user wants to cancel a render request.
-     **/
-    void removeRenderFromQueue(const OutputEffectInstancePtr& writer);
 
     virtual void reloadScriptEditorFonts() {}
 
@@ -482,15 +417,8 @@ public Q_SLOTS:
 
     void newVersionCheckError();
 
-    /**
-    * @brief Called when a render started with renderWritersInternal is finished from another process
-    **/
-    void onBackgroundRenderProcessFinished();
 
-    /**
-     * @brief Called when a render started with renderWritersInternal is finished
-     **/
-    void onQueuedRenderFinished(int retCode);
+
 
 Q_SIGNALS:
 
@@ -508,14 +436,7 @@ protected:
 
 private:
 
-    /**
-     * @brief Remove the given writer from the active renders queue and startup a new render
-     * if the queue is not empty
-     **/
-    void startNextQueuedRender(const OutputEffectInstancePtr& finishedWriter);
 
-
-    void getWritersWorkForCL(const CLArgs& cl, std::list<AppInstance::RenderWork>& requests);
 
     bool openFileDialogIfNeeded(const CreateNodeArgsPtr& args);
 
@@ -528,34 +449,6 @@ private:
 };
 
 
-/**
- * @brief Small RAII style class that flags the project is currently creating a tree with potentially a lot of nodes and 
- * that each node itself shouldn't try to refresh their meta-data whilst the tree is undergoing big changes.
- * After this object is destroyed, the caller should ensure to call Project::forceComputeInputDependentDataOnAllTrees()
- * to ensure the tree has correct meta-data flowing through.
- **/
-class CreatingNodeTreeFlag_RAII
-{
-    AppInstanceWPtr _app;
-
-public:
-
-    CreatingNodeTreeFlag_RAII(const AppInstancePtr& app)
-        : _app(app)
-    {
-        app->setIsCreatingNodeTree(true);
-    }
-
-    ~CreatingNodeTreeFlag_RAII()
-    {
-        AppInstancePtr a = _app.lock();
-
-        if (a) {
-            a->setIsCreatingNodeTree(false);
-        }
-    }
-};
-
 NATRON_NAMESPACE_EXIT;
 
-#endif // APPINSTANCE_H
+#endif // Engine_AppInstance_h

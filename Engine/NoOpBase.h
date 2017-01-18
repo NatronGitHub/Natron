@@ -31,8 +31,9 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -42,7 +43,7 @@ NATRON_NAMESPACE_ENTER;
  * and it is also used to implement the "Dot" node.
  **/
 class NoOpBase
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 public:
 
@@ -61,22 +62,16 @@ public:
         return 1;
     }
 
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
+    virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN { return true; }
 
     virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE
     {
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
-    virtual StatusEnum getTransform(double time,
-                                    const RenderScale & renderScale,
-                                    ViewIdx view,
-                                    int* inputToTransform,
-                                    Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
@@ -91,13 +86,14 @@ private:
     /**
      * @brief A NoOp is always an identity on its input.
      **/
-    virtual bool isIdentity(double time,
-                            const RenderScale & scale,
-                            const RectI & renderWindow,
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
+                                  const RenderScale & scale,
+                                  const RectI & renderWindow,
+                                  ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
+                                  TimeValue* inputTime,
+                                  ViewIdx* inputView,
+                                  int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 inline NoOpBasePtr

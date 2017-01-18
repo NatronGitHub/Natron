@@ -49,9 +49,12 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/AfterQuitProcessingI.h"
 #include "Engine/Plugin.h"
 #include "Engine/KnobFactory.h"
-#include "Engine/ImageLocker.h"
 #include "Engine/LogEntry.h"
+#include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 /*macro to get the unique pointer to the controler*/
 #define appPTR AppManager::instance()
@@ -60,10 +63,6 @@ CLANG_DIAG_ON(deprecated)
 #define TO_DPI(x, y) ( appPTR->adjustSizeToDPI(x, y) )
 #define TO_DPIX(x) ( appPTR->adjustSizeToDPIX(x) )
 #define TO_DPIY(y) ( appPTR->adjustSizeToDPIY(y) )
-
-class QDir;
-
-NATRON_NAMESPACE_ENTER;
 
 enum AppInstanceStatusEnum
 {
@@ -185,76 +184,9 @@ public:
     Format findExistingFormat(int w, int h, double par = 1.0) const WARN_UNUSED_RETURN;
     const std::vector<Format> & getFormats() const WARN_UNUSED_RETURN;
 
-    /**
-     * @brief Attempts to load an image from cache, returns true if it could find a matching image, false otherwise.
-     **/
-    bool getImage(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
+    CachePtr getCache() const;
 
-    /**
-     * @brief Same as getImage, but if it couldn't find a matching image in the cache, it will create one with the given parameters.
-     **/
-    bool getImageOrCreate(const ImageKey & key, const ImageParamsPtr& params,
-                          ImageLocker* locker,
-                          ImagePtr* returnValue) const;
-
-
-    bool getImage_diskCache(const ImageKey & key, std::list<ImagePtr >* returnValue) const;
-
-
-    bool getImageOrCreate_diskCache(const ImageKey & key, const ImageParamsPtr& params,
-                                    ImagePtr* returnValue) const;
-
-    bool getTexture(const FrameKey & key,
-                    std::list<FrameEntryPtr>* returnValue) const;
-
-    bool getTextureOrCreate(const FrameKey & key, const boost::shared_ptr<FrameParams>& params,
-                            FrameEntryLocker* locker,
-                            FrameEntryPtr* returnValue) const;
-
-
-    U64 getCachesTotalMemorySize() const;
-    U64 getCachesTotalDiskSize() const;
-    boost::shared_ptr<CacheSignalEmitter> getOrActivateViewerCacheSignalEmitter() const;
-
-    void setApplicationsCachesMaximumMemoryPercent(double p);
-
-    void setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size);
-
-    void setApplicationsCachesMaximumDiskSpace(unsigned long long size);
-
-    /**
-     * @brief Removes from the node cache the given image.
-     **/
-    void removeFromNodeCache(const ImagePtr & image);
-
-    /**
-     * @brief Removes from the texture cache the given texture.
-     **/
-    void removeFromViewerCache(const FrameEntryPtr & texture);
-
-    /**
-     * @brief Removes from the node cache all images matching the same hash
-     **/
-    void removeFromNodeCache(U64 hash);
-
-    /**
-     * @brief Removes from the texture cache all textures matching the same hash
-     **/
-    void removeFromViewerCache(U64 hash);
-
-    /**
-     * @brief Removes from the cache all entries associated to the given holder.
-     * The entries are destroyed in a separate thread.
-     **/
-    void removeAllCacheEntriesForPlugin(const std::string& pluginID);
-
-
-    /**
-     * @brief Adds images to delete in a separate thread
-     **/
-    void queueEntriesForDeletion(const std::list<ImagePtr>& images);
-    void queueEntriesForDeletion(const std::list<FrameEntryPtr>& images);
-
+    void deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete);
 
 
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
@@ -364,17 +296,6 @@ public:
 
     void registerPlugin(const PluginPtr& plugin);
 
-    bool isNCacheFilesOpenedCapped() const;
-    size_t getNCacheFilesOpened() const;
-    void increaseNCacheFilesOpened();
-    void decreaseNCacheFilesOpened();
-
-    /**
-     * @brief Called by the caches to check that there's enough free memory on the computer to perform the allocation.
-     * WARNING: This functin may remove some entries from the caches.
-     **/
-    void checkCacheFreeMemoryIsGoodEnough();
-
     void onCheckerboardSettingsChanged() { Q_EMIT checkerboardSettingsChanged(); }
 
     void onOCIOConfigPathChanged(const std::string& path);
@@ -383,40 +304,6 @@ public:
 
 
     int getHardwareIdealThreadCount();
-
-
-    /**
-     * @brief Toggle on/off multi-threading globally in Natron
-     **/
-    void setNumberOfThreads(int threadsNb);
-
-    /**
-     * @brief The value held by the Number of render threads settings.
-     * It is stored it for faster access (1 mutex instead of 3 read/write locks)
-     *
-     * WARNING: This has nothing to do with the setNumberOfThreads function!
-     * This function is just called by the Settings so that the getNThreadsSettings
-     * function is cheap (no need to pass by the Knob API), whereas the
-     * setNumberOfThreads function actually set the value of the Knob in the settings!
-     **/
-    void setNThreadsToRender(int nThreads);
-    void setNThreadsPerEffect(int nThreadsPerEffect);
-    void setUseThreadPool(bool useThreadPool);
-
-    void getNThreadsSettings(int* nThreadsToRender, int* nThreadsPerEffect) const;
-    bool getUseThreadPool() const;
-
-    /**
-     * @brief Updates the global runningThreadsCount maintained across the whole application
-     **/
-    void fetchAndAddNRunningThreads(int nThreads);
-
-    /**
-     * @brief Returns the number of threads that were launched by Natron for rendering.
-     * This sums up threads launched by the multi-thread suite and threads launched for
-     * parallel rendering.
-     **/
-    int getNRunningThreads() const;
 
     void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
 
@@ -469,14 +356,7 @@ public:
     }
 
 
-    bool isNodeCacheAlmostFull() const;
-
     bool isAggressiveCachingEnabled() const;
-
-    void setDiskCacheLocation(const QString& path);
-    const QString& getDiskCacheLocation() const;
-
-    void saveCaches() const;
 
     PyObject* getMainModule();
 
@@ -511,6 +391,8 @@ public:
     AppTLS* getAppTLS() const;
     const OfxHost* getOFXHost() const;
     GPUContextPool* getGPUContextPool() const;
+
+    const MultiThread* getMultiThreadHandler() const;
 
 
     /**
@@ -547,9 +429,6 @@ public:
     bool isSpawnedFromCrashReporter() const;
 
     virtual void reloadScriptEditorFonts() {}
-
-    void setPluginsUseInputImageCopyToRender(bool b);
-    bool isCopyInputImageForPluginRenderEnabled() const;
 
     QString getBoostVersion() const;
 
@@ -624,29 +503,12 @@ public Q_SLOTS:
         exitApp(true);
     }
 
-    void onViewerTileCacheSizeChanged();
 
     void toggleAutoHideGraphInputs();
-
-    void clearPlaybackCache();
-
-    void clearViewerCache();
-
-    void clearDiskCache();
-
-    void clearNodeCache();
-
-    void clearExceedingEntriesFromNodeCache();
 
     void clearPluginsLoadedCache();
 
     void clearAllCaches();
-
-    void wipeAndCreateDiskCacheStructure();
-
-    void onNodeMemoryRegistered(qint64 mem);
-
-    qint64 getTotalNodesMemoryRegistered() const;
 
     void onMaxPanelsOpenedChanged(int maxPanels);
 
@@ -685,7 +547,6 @@ protected:
     virtual void onPluginLoaded(const PluginPtr& /*plugin*/) {}
 
     virtual void onAllPluginsLoaded();
-    virtual void clearLastRenderedTextures() {}
 
     virtual void initBuiltinPythonModules();
 

@@ -33,6 +33,10 @@
 
 #include "Engine/Image.h"
 #include "Engine/Smooth1D.h"
+#include "Engine/Node.h"
+#include "Engine/TreeRender.h"
+#include "Engine/ViewerNode.h"
+#include "Engine/ViewerInstance.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -40,37 +44,41 @@ struct HistogramRequest
 {
     int binsCount;
     int mode;
-    ImagePtr image;
-    RectI rect;
+    ViewerNodePtr viewer;
+    int viewerInputNb;
+    RectD roiParam;
     double vmin;
     double vmax;
     int smoothingKernelSize;
 
     HistogramRequest()
-        : binsCount(0)
-        , mode(0)
-        , image()
-        , rect()
-        , vmin(0)
-        , vmax(0)
-        , smoothingKernelSize(0)
+    : binsCount(0)
+    , mode(0)
+    , viewer()
+    , viewerInputNb(0)
+    , roiParam()
+    , vmin(0)
+    , vmax(0)
+    , smoothingKernelSize(0)
     {
     }
-
+    
     HistogramRequest(int binsCount,
                      int mode,
-                     const ImagePtr & image,
-                     const RectI & rect,
+                     const ViewerNodePtr & viewer,
+                     int viewerInputNb,
+                     const RectD& roiParam,
                      double vmin,
                      double vmax,
                      int smoothingKernelSize)
-        : binsCount(binsCount)
-        , mode(mode)
-        , image(image)
-        , rect(rect)
-        , vmin(vmin)
-        , vmax(vmax)
-        , smoothingKernelSize(smoothingKernelSize)
+    : binsCount(binsCount)
+    , mode(mode)
+    , viewer(viewer)
+    , viewerInputNb(viewerInputNb)
+    , roiParam(roiParam)
+    , vmin(vmin)
+    , vmax(vmax)
+    , smoothingKernelSize(smoothingKernelSize)
     {
     }
 };
@@ -137,23 +145,26 @@ HistogramCPU::~HistogramCPU()
 
 void
 HistogramCPU::computeHistogram(int mode,      //< corresponds to the enum Histogram::DisplayModeEnum
-                               const ImagePtr & image,
-                               const RectI & rect,
+                               const ViewerNodePtr & viewer,
+                               int viewerInputNb,
+                               const RectD& roiParam,
                                int binsCount,
                                double vmin,
                                double vmax,
                                int smoothingKernelSize)
 {
     /*Starting or waking-up the thread*/
-    QMutexLocker quitLocker(&_imp->mustQuitMutex);
-    QMutexLocker locker(&_imp->requestMutex);
+    bool mustQuit;
+    {
+        QMutexLocker quitLocker(&_imp->mustQuitMutex);
+        mustQuit = _imp->mustQuit;
+    }
 
-    _imp->requests.push_back( HistogramRequest(binsCount, mode, image, rect, vmin, vmax, smoothingKernelSize) );
-    if (!isRunning() && !_imp->mustQuit) {
-        quitLocker.unlock();
+    QMutexLocker locker(&_imp->requestMutex);
+    _imp->requests.push_back( HistogramRequest(binsCount, mode, viewer, viewerInputNb, roiParam, vmin, vmax, smoothingKernelSize) );
+    if (!isRunning() && !mustQuit) {
         start(HighestPriority);
     } else {
-        quitLocker.unlock();
         _imp->requestCond.wakeOne();
     }
 }
@@ -168,7 +179,7 @@ HistogramCPU::quitAnyComputation()
 
         ///post a fake request to wakeup the thread
         l.unlock();
-        computeHistogram(0, ImagePtr(), RectI(), 0, 0, 0, 0);
+        computeHistogram(0, ViewerNodePtr(), -1, RectD(), 0, 0, 0, 0);
         l.relock();
         while (_imp->mustQuit) {
             _imp->mustQuitCond.wait(&_imp->mustQuitMutex);
@@ -218,82 +229,141 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
     return true;
 }
 
-///putting these in an anonymous namespace will yield this error on gcc 4.2:
-///"function has not external linkage"
-struct pix_red
-{
-    static float val(const float *pix)
-    {
-        return pix[0];
-    }
-};
 
-struct pix_green
-{
-    static float val(const float *pix)
-    {
-        return pix[1];
-    }
-};
-
-struct pix_blue
-{
-    static float val(const float *pix)
-    {
-        return pix[2];
-    }
-};
-
-struct pix_alpha
-{
-    static float val(const float *pix)
-    {
-        return pix[3];
-    }
-};
-
-struct pix_lum
-{
-    static float val(const float *pix)
-    {
-        return 0.299 * pix[0] + 0.587 * pix[1] + 0.114 * pix[2];
-    }
-};
-
-
-template <float pix_func(const float*)>
+template <int srcNComps, int mode>
 void
-computeHisto(const HistogramRequest & request,
-             int upscale,
-             std::vector<float> *histo)
+computeHisto_internal(const HistogramRequest & request,
+                      const Image::CPUTileData& imageData,
+                      const RectI& roi,
+                      int upscale,
+                      std::vector<float> *histo)
 {
     assert(histo);
     histo->resize(request.binsCount * upscale);
     std::fill(histo->begin(), histo->end(), 0.f);
     double binSize = (request.vmax - request.vmin) / histo->size();
 
-    ///Images come from the viewer which is in float.
-    assert(request.image->getBitDepth() == eImageBitDepthFloat);
+    int pixelStride;
+    const float* src_pixels[4];
+    Image::getChannelPointers<float>((const float**)imageData.ptrs, roi.x1, roi.y1, imageData.tileBounds, imageData.nComps, (float**)src_pixels, &pixelStride);
 
-    Image::ReadAccess acc = request.image->getReadRights();
+    for (int y = roi.y1; y < roi.y2; ++y) {
 
-    for (int y = request.rect.bottom(); y < request.rect.top(); ++y) {
-        for (int x = request.rect.left(); x < request.rect.right(); ++x) {
-            const float *pix = (const float*)acc.pixelAt(x, y);
-            float v = pix_func(pix);
+        for (int x = roi.x1; x < roi.x2; ++x) {
+
+            float v;
+            switch (mode) {
+                case 1: // A
+                    if (srcNComps == 1) {
+                        v = *src_pixels[0];
+                    } else if (srcNComps < 4) {
+                        v = 1.;
+                    } else {
+                        v = *src_pixels[3];
+                    }
+                    break;
+                case 2: { // Y
+                    float tmpPix[3];
+                    for (int i = 0; i < 3; ++i) {
+                        if (src_pixels[i]) {
+                            tmpPix[i] = *src_pixels[i];
+                        } else {
+                            tmpPix[i] = 0;
+                        }
+                    }
+                    v = 0.299 * tmpPix[0] + 0.587 * tmpPix[1] + 0.114 * tmpPix[2];
+                }   break;
+                case 3: // R
+                    if (srcNComps == 1) {
+                        v = 0;
+                    } else {
+                        v = *src_pixels[0];
+                    }
+                    break;
+                case 4: // G
+                    if (srcNComps < 2) {
+                        v = 0;
+                    } else {
+                        v = *src_pixels[1];
+                    }
+                    break;
+                case 5: // B
+                    if (srcNComps < 3) {
+                        v = 0;
+                    } else {
+                        v = *src_pixels[3];
+                    }
+                    break;
+                default:
+                    assert(false);
+                    break;
+            } // switch (mode)
+
             if ( (request.vmin <= v) && (v < request.vmax) ) {
                 int index = (int)( (v - request.vmin) / binSize );
                 assert( 0 <= index && index < (int)histo->size() );
                 (*histo)[index] += 1.f;
             }
+
+            for (int c = 0; c < srcNComps; ++c) {
+                if (src_pixels[c]) {
+                    src_pixels[c] += pixelStride;
+                }
+            }
+        } // for each pixel along the lin
+
+        // Remove what was done on the previous line and go to the next
+        for (int c = 0; c < srcNComps; ++c) {
+            if (src_pixels[c]) {
+                src_pixels[c] += ((imageData.tileBounds .width()- roi.width()) * pixelStride);
+            }
         }
+    } // for each scan-line
+}
+
+template <int srcNComps>
+void
+computeHistoForNComps(const HistogramRequest & request,
+                      const Image::CPUTileData& imageData,
+                      const RectI& roi,
+                      int upscale,
+                      int histogramIndex,
+                      std::vector<float> *histo)
+{
+    int mode = request.mode;
+    ///if the mode is RGB, adjust the mode to either R,G or B depending on the histogram index
+    if (mode == 0) {
+        mode = histogramIndex + 2;
+    }
+    /// keep the mode parameter in sync with Histogram::DisplayModeEnum
+    switch (request.mode) {
+        case 1:     //< A
+            computeHisto_internal<srcNComps, 1>(request, imageData, roi, upscale, histo);
+            break;
+        case 2:     //<Y
+            computeHisto_internal<srcNComps, 2>(request, imageData, roi, upscale, histo);
+            break;
+        case 3:     //< R
+            computeHisto_internal<srcNComps, 3>(request, imageData, roi, upscale, histo);
+            break;
+        case 4:     //< G
+            computeHisto_internal<srcNComps, 4>(request, imageData, roi, upscale, histo);
+            break;
+        case 5:     //< B
+            computeHisto_internal<srcNComps, 5>(request, imageData, roi, upscale, histo);
+            break;
+            
+        default:
+            assert(false);
+            break;
     }
 }
 
 
-
 static void
 computeHistogramStatic(const HistogramRequest & request,
+                       const Image::CPUTileData& imageData,
+                       const RectI& roi,
                        boost::shared_ptr<FinishedHistogram> ret,
                        int histogramIndex)
 {
@@ -318,39 +388,28 @@ computeHistogramStatic(const HistogramRequest & request,
         return;
     }
 
-    /// keep the mode parameter in sync with Histogram::DisplayModeEnum
-
-    int mode = request.mode;
-
-    ///if the mode is RGB, adjust the mode to either R,G or B depending on the histogram index
-    if (mode == 0) {
-        mode = histogramIndex + 2;
-    }
-
-    ret->pixelsCount = request.rect.area();
     // a histogram with upscale more bins
     std::vector<float> histo_upscaled;
-    switch (mode) {
-    case 1:     //< A
-        computeHisto<&pix_alpha::val>(request, upscale, &histo_upscaled);
-        break;
-    case 2:     //<Y
-        computeHisto<&pix_lum::val>(request, upscale, &histo_upscaled);
-        break;
-    case 3:     //< R
-        computeHisto<&pix_red::val>(request, upscale, &histo_upscaled);
-        break;
-    case 4:     //< G
-        computeHisto<&pix_green::val>(request, upscale, &histo_upscaled);
-        break;
-    case 5:     //< B
-        computeHisto<&pix_blue::val>(request, upscale, &histo_upscaled);
-        break;
 
-    default:
-        assert(false);
-        break;
+    switch (imageData.nComps) {
+        case 1:
+            computeHistoForNComps<1>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            break;
+        case 2:
+            computeHistoForNComps<2>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            break;
+        case 3:
+            computeHistoForNComps<3>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            break;
+        case 4:
+            computeHistoForNComps<4>(request, imageData, roi, upscale, histogramIndex, &histo_upscaled);
+            break;
     }
+
+
+    ret->pixelsCount = roi.area();
+
+
     double sigma = upscale;
     if (request.smoothingKernelSize > 1) {
         sigma *= request.smoothingKernelSize;
@@ -401,26 +460,99 @@ HistogramCPU::run()
                 return;
             }
         }
+        
+        assert(request.viewer);
+
+        NodePtr treeRoot = request.viewer->getViewerProcessNode(request.viewerInputNb)->getNode();
+
+        ImagePtr image;
+        {
+            TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
+            args->treeRoot = treeRoot;
+            assert(args->treeRoot);
+            args->time = request.viewer->getTimelineCurrentTime();
+            args->view = request.viewer->getCurrentView_TLS();
+            
+            // Render all layers produced by the viewer process node
+            args->layers = 0;
+            
+            // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
+            int downcale_i = request.viewer->getDownscaleMipMapLevelKnobIndex();
+            assert(downcale_i >= 0);
+            if (downcale_i > 0) {
+                args->mipMapLevel = downcale_i;
+            } else {
+                args->mipMapLevel = request.viewer->getMipMapLevelFromZoomFactor();
+            }
+            
+            args->proxyScale = RenderScale(1.);
+            args->canonicalRoI = request.roiParam.isNull() ? 0 : &request.roiParam;
+            args->draftMode = false;
+            args->playback = false;
+            args->byPassCache = false;
+            
+            TreeRenderPtr render = TreeRender::create(args);
+            std::map<ImageComponents, ImagePtr> planes;
+            ActionRetCodeEnum stat = render->launchRender(&planes);
+            if (isFailureRetCode(stat)) {
+                continue;
+            }
+            image = planes.begin()->second;
+
+            // We only support full rect float RAM images
+            if (image->getStorageMode() == eStorageModeGLTex || image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || image->getBitDepth() != eImageBitDepthFloat) {
+                Image::InitStorageArgs initArgs;
+                initArgs.bounds = image->getBounds();
+                initArgs.bitdepth = eImageBitDepthFloat;
+                initArgs.layer = image->getLayer();
+                initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+                initArgs.mipMapLevel = image->getMipMapLevel();
+                initArgs.storage = eStorageModeRAM;
+                ImagePtr mappedImage = Image::create(initArgs);
+
+                Image::CopyPixelsArgs copyArgs;
+                copyArgs.roi = image->getBounds();
+                mappedImage->copyPixels(*image, copyArgs);
+            }
+        }
+        if (!image) {
+            continue;
+        }
+        
         boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;
         ret->vmax = request.vmax;
-        ret->mipMapLevel = request.image->getMipMapLevel();
+        ret->mipMapLevel = image->getMipMapLevel();
 
+        Image::CPUTileData imageData;
+        {
+            Image::Tile tile;
+            image->getTileAt(0, &tile);
+            image->getCPUTileData(tile, &imageData);
+        }
+
+        RectI roiPixels;
+        if (request.roiParam.isNull()) {
+            roiPixels = image->getBounds();
+        } else {
+            request.roiParam.toPixelEnclosing(image->getMipMapLevel(), treeRoot->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1), &roiPixels);
+            roiPixels.intersect(imageData.tileBounds, &roiPixels);
+        }
 
         switch (request.mode) {
         case 0:     //< RGB
-            computeHistogramStatic(request, ret, 1);
-            computeHistogramStatic(request, ret, 2);
-            computeHistogramStatic(request, ret, 3);
+            computeHistogramStatic(request, imageData, roiPixels, ret, 1);
+            computeHistogramStatic(request, imageData, roiPixels, ret, 2);
+            computeHistogramStatic(request, imageData, roiPixels, ret, 3);
             break;
         case 1:
         case 2:
         case 3:
         case 4:
         case 5:
-            computeHistogramStatic(request, ret, 1);
+            computeHistogramStatic(request, imageData, roiPixels, ret, 1);
             break;
         default:
             assert(false);     //< unknown case.

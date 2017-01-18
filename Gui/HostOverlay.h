@@ -38,6 +38,8 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/OfxOverlayInteract.h"
+#include "Engine/TimeValue.h"
+
 #include "Gui/GuiFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -62,7 +64,7 @@ public:
     virtual ~DefaultInteractI();
 
     virtual bool isInteractForKnob(const KnobIConstPtr& knob) const = 0;
-    virtual void draw(double time,
+    virtual void draw(TimeValue time,
                       const RenderScale& renderScale,
                       ViewIdx view,
                       const OfxPointD& pscale,
@@ -71,7 +73,7 @@ public:
                       const OfxPointD& shadow,
                       const QFont& font,
                       const QFontMetrics& fm);
-    virtual bool penMotion(double time,
+    virtual bool penMotion(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view,
                            const OfxPointD& pscale,
@@ -79,7 +81,7 @@ public:
                            const QPointF &penPos,
                            const QPoint &penPosViewport,
                            double pressure);
-    virtual bool penUp(double time,
+    virtual bool penUp(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        const OfxPointD& pscale,
@@ -87,7 +89,7 @@ public:
                        const QPointF &penPos,
                        const QPoint &penPosViewport,
                        double pressure);
-    virtual bool penDown(double time,
+    virtual bool penDown(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view,
                          const OfxPointD& pscale,
@@ -95,32 +97,32 @@ public:
                          const QPointF &penPos,
                          const QPoint &penPosViewport,
                          double pressure);
-    virtual bool penDoubleClicked(double time,
+    virtual bool penDoubleClicked(TimeValue time,
                                   const RenderScale& renderScale,
                                   ViewIdx view,
                                   const OfxPointD& pscale,
                                   const QPointF& lastPenPos,
                                   const QPointF &penPos,
                                   const QPoint &penPosViewport);
-    virtual bool keyDown(double time,
+    virtual bool keyDown(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view,
                          int key,
                          char*   keyString);
-    virtual bool keyUp(double time,
+    virtual bool keyUp(TimeValue time,
                        const RenderScale& renderScale,
                        ViewIdx view,
                        int key,
                        char*   keyString);
-    virtual bool keyRepeat(double time,
+    virtual bool keyRepeat(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view,
                            int key,
                            char*   keyString);
-    virtual bool gainFocus(double time,
+    virtual bool gainFocus(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view);
-    virtual bool loseFocus(double time,
+    virtual bool loseFocus(TimeValue time,
                            const RenderScale& renderScale,
                            ViewIdx view);
 
@@ -161,12 +163,12 @@ public:
     bool addInteract(const HostOverlayKnobsPtr& knobs);
 
 
-    void draw(double time,
+    void draw(TimeValue time,
               const RenderScale& renderScale,
               ViewIdx view);
 
 
-    bool penMotion(double time,
+    bool penMotion(TimeValue time,
                    const RenderScale& renderScale,
                    ViewIdx view,
                    const QPointF &penPos,
@@ -174,7 +176,7 @@ public:
                    double pressure);
 
 
-    bool penUp(double time,
+    bool penUp(TimeValue time,
                const RenderScale& renderScale,
                ViewIdx view,
                const QPointF &penPos,
@@ -182,47 +184,47 @@ public:
                double pressure);
 
 
-    bool penDown(double time,
+    bool penDown(TimeValue time,
                  const RenderScale& renderScale,
                  ViewIdx view,
                  const QPointF &penPos,
                  const QPoint &penPosViewport,
                  double pressure);
 
-    bool penDoubleClicked(double time,
+    bool penDoubleClicked(TimeValue time,
                           const RenderScale& renderScale,
                           ViewIdx view,
                           const QPointF &penPos,
                           const QPoint &penPosViewport);
 
 
-    bool keyDown(double time,
+    bool keyDown(TimeValue time,
                  const RenderScale& renderScale,
                  ViewIdx view,
                  int key,
                  char*   keyString);
 
 
-    bool keyUp(double time,
+    bool keyUp(TimeValue time,
                const RenderScale& renderScale,
                ViewIdx view,
                int key,
                char*   keyString);
 
 
-    bool keyRepeat(double time,
+    bool keyRepeat(TimeValue time,
                    const RenderScale& renderScale,
                    ViewIdx view,
                    int key,
                    char*   keyString);
 
 
-    bool gainFocus(double time,
+    bool gainFocus(TimeValue time,
                    const RenderScale& renderScale,
                    ViewIdx view);
 
 
-    bool loseFocus(double time,
+    bool loseFocus(TimeValue time,
                    const RenderScale& renderScale,
                    ViewIdx view);
 

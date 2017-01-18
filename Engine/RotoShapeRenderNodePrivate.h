@@ -33,6 +33,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/Color.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/TimeValue.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -65,7 +66,8 @@ public:
      **/
     typedef void (*PFNRenderStrokeBeginRender) (
     RenderStrokeDataPtr userData,
-    double brushSizePixel,
+    double brushSizePixelX,
+    double brushSizePixelY,
     double brushSpacing,
     double brushHardness,
     bool pressureAffectsOpacity,
@@ -107,9 +109,9 @@ public:
                                      const RotoDrawableItemPtr& stroke,
                                      bool doBuildup,
                                      double opacity,
-                                     double time,
+                                     TimeValue time,
                                      ViewIdx view,
-                                     unsigned int mipmapLevel,
+                                     const RenderScale& scale,
                                      double* distToNextOut,
                                      Point* lastCenterPoint);
 

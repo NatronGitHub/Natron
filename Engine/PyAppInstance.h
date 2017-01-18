@@ -27,11 +27,6 @@
 
 #include "Global/Macros.h"
 
-/**
- * @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
- * Engine module.
- **/
-
 #include <map>
 
 CLANG_DIAG_OFF(deprecated)
@@ -43,13 +38,20 @@ CLANG_DIAG_ON(uninitialized)
 
 
 #include "Engine/PyNode.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+NATRON_PYTHON_NAMESPACE_ENTER;
+
+/**
+ * @brief Simple wrap for the AppInstance class that is the API we want to expose to the Python
+ * Engine module.
+ **/
 
 // Used as a temp variable to retrieve existing objects without creating new object.
 #define kPythonTmpCheckerVariable "_tmp_checker_"
 
-NATRON_NAMESPACE_ENTER;
-NATRON_PYTHON_NAMESPACE_ENTER;
 
 class AppSettings
 {

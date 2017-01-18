@@ -142,9 +142,7 @@ struct TimelineGuiPrivate
     bool isFrameRangeEdited;
     bool seekingTimeline;
 
-    // Use a timer to refresh the timeline on a timed basis rather than for each change
-    // so that we limit the amount of redraws
-    QTimer keyframeChangesUpdateTimer;
+    int nRefreshCacheFrameRequests;
 
     TimelineGuiPrivate(TimeLineGui *qq,
                        const ViewerNodePtr& viewer,
@@ -171,7 +169,7 @@ struct TimelineGuiPrivate
         , frameRangeEditedMutex()
         , isFrameRangeEdited(false)
         , seekingTimeline(false)
-        , keyframeChangesUpdateTimer()
+        , nRefreshCacheFrameRequests(0)
     {
     }
 
@@ -194,12 +192,7 @@ struct TimelineGuiPrivate
         }
     }
 
-    void startKeyframeChangesTimer()
-    {
-        if (!keyframeChangesUpdateTimer.isActive()) {
-            keyframeChangesUpdateTimer.start(200);
-        }
-    }
+
 };
 
 TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
@@ -213,8 +206,8 @@ TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
 
-    _imp->keyframeChangesUpdateTimer.setSingleShot(true);
-    connect(&_imp->keyframeChangesUpdateTimer, SIGNAL(timeout()), this, SLOT(onKeyframeChangesUpdateTimerTimeout()));
+    connect(this, SIGNAL(refreshCachedFramesLaterReceived()), this, SLOT(onRefreshCachedFramesLaterReceived()));
+
 }
 
 TimeLineGui::~TimeLineGui()
@@ -351,14 +344,14 @@ TimeLineGui::paintGL()
 
 
         /// change the backgroud color of the portion of the timeline where images are lying
-        double firstFrame, lastFrame;
+        TimeValue firstFrame, lastFrame;
         if ( !_imp->viewerTab->isFileDialogViewer() ) {
-            _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
+            _imp->gui->getApp()->getProject()->getFrameRange(&firstFrame, &lastFrame);
         } else {
             int f, l;
             _imp->viewerTab->getTimelineBounds(&f, &l);
-            firstFrame = (double)f;
-            lastFrame = (double)l;
+            firstFrame = TimeValue(f);
+            lastFrame = TimeValue(l);
         }
         QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame, 0);
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame, 0);
@@ -776,7 +769,7 @@ void
 TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
-        ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
+        ViewerNodePtr viewer = _imp->viewer.lock();
         _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
         _imp->seekingTimeline = true;
         _imp->timeline->onFrameChanged(time);
@@ -845,7 +838,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         update();
     } else if ( (_imp->state == eTimelineStateDraggingCursor) && !onEditingFinishedOnly ) {
         if ( tseq != _imp->timeline->currentFrame() ) {
-            ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
+            ViewerNodePtr viewer = _imp->viewer.lock();
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
             _imp->seekingTimeline = true;
@@ -926,8 +919,8 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             std::swap(leftBound, rightBound);
         } else if (leftBound == rightBound) {
             if ( !_imp->viewerTab->isFileDialogViewer() ) {
-                double firstFrame, lastFrame;
-                _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
+                TimeValue firstFrame, lastFrame;
+                _imp->gui->getApp()->getProject()->getFrameRange(&firstFrame, &lastFrame);
                 leftBound = std::floor(firstFrame + 0.5);
                 rightBound = std::floor(lastFrame + 0.5);
             } else {
@@ -958,12 +951,12 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             double t = toTimeLine( e->x() );
             SequenceTime tseq = std::floor(t + 0.5);
             if ( ( tseq != _imp->timeline->currentFrame() ) ) {
-                ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
+                ViewerNodePtr viewer = _imp->viewer.lock();
                 _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
                 _imp->timeline->onFrameChanged(tseq);
             }
         } else if (autoProxyEnabled && wasScrubbing) {
-            _imp->gui->getApp()->renderAllViewers(true);
+            _imp->gui->getApp()->renderAllViewers();
         }
     }
 
@@ -1146,48 +1139,6 @@ TimeLineGui::toWidgetCoordinates(double x,
     return QPoint( toWidget(x), ( (y - top) / (bottom - top) ) * h );
 }
 
-void
-TimeLineGui::onKeyframesIndicatorsChanged()
-{
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::onKeyframeChangesUpdateTimerTimeout()
-{
-    update();
-}
-
-void
-TimeLineGui::connectSlotsToViewerCache()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
-    QObject::connect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
-    QObject::connect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
-                      SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
-    QObject::connect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
-    QObject::connect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
-}
-
-void
-TimeLineGui::disconnectSlotsFromViewerCache()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
-    QObject::disconnect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
-    QObject::disconnect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
-                         SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
-    QObject::disconnect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
-    QObject::disconnect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
-}
-
 bool
 TimeLineGui::isFrameRangeEdited() const
 {
@@ -1205,72 +1156,37 @@ TimeLineGui::setFrameRangeEdited(bool edited)
 }
 
 void
-TimeLineGui::onCachedFrameAdded(SequenceTime time)
+TimeLineGui::refreshCachedFramesNow()
 {
-    _imp->cachedFrames.insert( CachedFrame(time, eStorageModeRAM) );
-}
+    assert(QThread::currentThread() == qApp->thread());
+
+#pragma message WARN("Todo")
+    update();
+
+} // refreshCachedFramesNow
 
 void
-TimeLineGui::onCachedFrameRemoved(SequenceTime time,
-                                  int /*storage*/)
+TimeLineGui::onRefreshCachedFramesLaterReceived()
 {
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->time == time) {
-            _imp->cachedFrames.erase(it);
-            break;
-        }
+    if (!_imp->nRefreshCacheFrameRequests) {
+        return;
     }
-    _imp->startKeyframeChangesTimer();
+    _imp->nRefreshCacheFrameRequests = 0;
+    refreshCachedFramesNow();
 }
 
 void
-TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,
-                                         int /*oldStorage*/,
-                                         int newStorage)
+TimeLineGui::refreshCachedFramesLater()
 {
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->time == time) {
-            _imp->cachedFrames.erase(it);
-            _imp->cachedFrames.insert( CachedFrame(time, (StorageModeEnum)newStorage) );
-            break;
-        }
-    }
+    ++_imp->nRefreshCacheFrameRequests;
+    Q_EMIT refreshCachedFramesLaterReceived();
 }
 
 void
-TimeLineGui::onMemoryCacheCleared()
+TimeLineGui::onCacheStatusChanged()
 {
-    CachedFrames copy;
-
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->mode == eStorageModeDisk) {
-            copy.insert(*it);
-        }
-    }
-    _imp->cachedFrames = copy;
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::onDiskCacheCleared()
-{
-    CachedFrames copy;
-
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->mode == eStorageModeRAM) {
-            copy.insert(*it);
-        }
-    }
-    _imp->cachedFrames = copy;
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::clearCachedFrames()
-{
-    _imp->cachedFrames.clear();
-    _imp->startKeyframeChangesTimer();
-}
+    refreshCachedFramesLater();
+} // onCacheStatusChanged
 
 void
 TimeLineGui::onProjectFrameRangeChanged(int left,

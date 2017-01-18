@@ -258,7 +258,7 @@ public:
 
     void createDefaultReadNode();
 
-    bool checkDecoderCreated(double time, ViewIdx view);
+    bool checkDecoderCreated(TimeValue time, ViewIdx view);
 
     static QString getFFProbeBinaryPath()
     {
@@ -298,7 +298,6 @@ ReadNode::ReadNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new ReadNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 ReadNode::~ReadNode()
@@ -515,14 +514,14 @@ ReadNodePrivate::createDefaultReadNode()
 }
 
 bool
-ReadNodePrivate::checkDecoderCreated(double time,
+ReadNodePrivate::checkDecoderCreated(TimeValue time,
                                      ViewIdx view)
 {
     KnobFilePtr fileKnob = inputFileKnob.lock();
     if (!fileKnob) {
         return false;
     }
-    std::string pattern = fileKnob->getValueAtTime(std::floor(time + 0.5), DimIdx(0), view);
+    std::string pattern = fileKnob->getValueAtTime(TimeValue(std::floor(time + 0.5)), DimIdx(0), view);
     if ( pattern.empty() ) {
         _publicInterface->setPersistentMessage( eMessageTypeError, tr("Filename empty").toStdString() );
 
@@ -579,9 +578,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             //Use default
             readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
-            std::vector<std::string> entries = pluginChoiceKnob->getEntries();
+            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                readerPluginID = entries[pluginChoice_i];
+                readerPluginID = entries[pluginChoice_i].id;
             }
         }
     }
@@ -592,7 +591,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         assert(fileKnob);
         if (fileKnob) {
             // Make sure instance changed action is called on the decoder and not caught in our knobChanged handler.
-            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime(), ViewSetSpec(0));
+            embeddedPlugin->getEffectInstance()->onKnobValueChanged_public(fileKnob, eValueChangedReasonUserEdited, _publicInterface->getCurrentTime_TLS(), ViewSetSpec(0));
 
         }
 
@@ -744,9 +743,8 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
-    std::vector<std::string> entries, help;
-    entries.push_back(kPluginSelectorParamEntryDefault);
-    help.push_back("Use the default plug-in chosen from the Preferences to read this file format");
+    std::vector<ChoiceOption> entries;
+    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", _publicInterface->tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
@@ -759,18 +757,16 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
             PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
-            entries.push_back( plugin->getPluginID());
-            std::stringstream ss;
-            ss << "Use " << plugin->getPluginLabel() << " version ";
-            ss << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0) << "." << plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
-            ss << " to read this file format";
-            help.push_back( ss.str() );
+
+            QString tooltip = tr("Use %1 version %2.%3 to read this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1));
+            entries.push_back( ChoiceOption(plugin->getPluginID(), "", tooltip.toStdString()));
+
         }
     }
 
     KnobChoicePtr pluginChoice = pluginSelectorKnob.lock();
 
-    pluginChoice->populateChoices(entries, help);
+    pluginChoice->populateChoices(entries);
     pluginChoice->blockValueChanges();
     pluginChoice->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     pluginChoice->unblockValueChanges();
@@ -842,11 +838,6 @@ ReadNode::supportsMultipleClipDepths() const
     return p ? p->getEffectInstance()->supportsMultipleClipDepths() : EffectInstance::supportsMultipleClipDepths();
 }
 
-bool
-ReadNode::getCanTransform() const
-{
-    return false;
-}
 
 SequentialPreferenceEnum
 ReadNode::getSequentialPreference() const
@@ -910,13 +901,13 @@ ReadNode::isInputMask(int /*inputNb*/) const
 
 void
 ReadNode::addAcceptedComponents(int inputNb,
-                                std::list<ImageComponents>* comps)
+                                std::bitset<4>* comps)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
         p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
     } else {
-        comps->push_back( ImageComponents::getRGBAComponents() );
+        (*comps)[3] = 1;
     }
 }
 
@@ -932,11 +923,11 @@ ReadNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 void
-ReadNode::onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode)
+ReadNode::onInputChanged(int inputNo)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->onInputChanged(inputNo, oldNode, newNode);
+        p->getEffectInstance()->onInputChanged(inputNo);
     }
 }
 
@@ -945,26 +936,17 @@ ReadNode::purgeCaches()
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->purgeCaches();
+        p->getEffectInstance()->purgeCaches_public();
     }
 }
 
-StatusEnum
-ReadNode::getPreferredMetaDatas(NodeMetadata& metadata)
+ActionRetCodeEnum
+ReadNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
     NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->getPreferredMetaDatas(metadata) : EffectInstance::getPreferredMetaDatas(metadata);
+    return p ? p->getEffectInstance()->getTimeInvariantMetaDatas(metadata) : EffectInstance::getTimeInvariantMetaDatas(metadata);
 }
 
-void
-ReadNode::onMetaDatasRefreshed(const NodeMetadata& metadata)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->setMetaDatasInternal(metadata);
-        p->getEffectInstance()->onMetaDatasRefreshed(metadata);
-    }
-}
 
 void
 ReadNode::initializeKnobs()
@@ -1058,7 +1040,7 @@ bool
 ReadNode::knobChanged(const KnobIPtr& k,
                       ValueChangedReasonEnum reason,
                       ViewSetSpec view,
-                      double time)
+                      TimeValue time)
 {
     bool ret =  true;
 
@@ -1090,7 +1072,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
     
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText();
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryID();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }
@@ -1154,50 +1136,55 @@ ReadNode::knobChanged(const KnobIPtr& k,
     return ret;
 } // ReadNode::knobChanged
 
-StatusEnum
-ReadNode::getRegionOfDefinition(double time,
+ActionRetCodeEnum
+ReadNode::getRegionOfDefinition(TimeValue time,
                                 const RenderScale & scale,
                                 ViewIdx view,
+                                const TreeRenderNodeArgsPtr& render,
                                 RectD* rod)
 {
     if ( !_imp->checkDecoderCreated(time, view) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, rod);
+        return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, render, rod);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
-void
-ReadNode::getFrameRange(double *first,
+ActionRetCodeEnum
+ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
+                        double *first,
                         double *last)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getFrameRange(first, last);
+        return p->getEffectInstance()->getFrameRange(render, first, last);
     } else {
-        *first = *last = 1;
+        return eActionStatusFailed;
     }
 }
 
-void
-ReadNode::getComponentsNeededAndProduced(double time,
+ActionRetCodeEnum
+ReadNode::getComponentsAction(TimeValue time,
                                          ViewIdx view,
-                                         EffectInstance::ComponentsNeededMap* comps,
-                                         SequenceTime* passThroughTime,
-                                         int* passThroughView,
-                                         NodePtr* passThroughInput)
+                                         const TreeRenderNodeArgsPtr& render,
+                                         std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                         std::list<ImageComponents>* layersProduced,
+                                         TimeValue* passThroughTime,
+                                         ViewIdx* passThroughView,
+                                         int* passThroughInputNb)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInput);
+        return p->getEffectInstance()->getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     }
+    return eActionStatusFailed;
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::beginSequenceRender(double first,
                               double last,
                               double step,
@@ -1207,18 +1194,19 @@ ReadNode::beginSequenceRender(double first,
                               bool isRenderResponseToUserInteraction,
                               bool draftMode,
                               ViewIdx view,
-                              bool isOpenGLRender,
-                              const EffectOpenGLContextDataPtr& glContextData)
+                              RenderBackendTypeEnum backend,
+                              const EffectOpenGLContextDataPtr& glContextData,
+                              const TreeRenderNodeArgsPtr& render)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::endSequenceRender(double first,
                             double last,
                             double step,
@@ -1228,55 +1216,56 @@ ReadNode::endSequenceRender(double first,
                             bool isRenderResponseToUserInteraction,
                             bool draftMode,
                             ViewIdx view,
-                            bool isOpenGLRender,
-                            const EffectOpenGLContextDataPtr& glContextData)
+                            RenderBackendTypeEnum backend,
+                            const EffectOpenGLContextDataPtr& glContextData,
+                            const TreeRenderNodeArgsPtr& render)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, isOpenGLRender, glContextData);
+        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 ReadNode::render(const RenderActionArgs& args)
 {
     if ( !_imp->checkDecoderCreated(args.time, args.view) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     NodePtr p = getEmbeddedReader();
     if (p) {
         return p->getEffectInstance()->render(args);
     } else {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 }
 
-void
-ReadNode::getRegionsOfInterest(double time,
+ActionRetCodeEnum
+ReadNode::getRegionsOfInterest(TimeValue time,
                                const RenderScale & scale,
-                               const RectD & outputRoD,    //!< full RoD in canonical coordinates
                                const RectD & renderWindow,    //!< the region to be rendered in the output image, in Canonical Coordinates
                                ViewIdx view,
+                               const TreeRenderNodeArgsPtr& render,
                                RoIMap* ret)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        p->getEffectInstance()->getRegionsOfInterest(time, scale, outputRoD, renderWindow, view, ret);
+        return p->getEffectInstance()->getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
     }
+    return eActionStatusFailed;
 }
 
-FramesNeededMap
-ReadNode::getFramesNeeded(double time,
-                          ViewIdx view)
+ActionRetCodeEnum
+ReadNode::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getFramesNeeded(time, view);
+        return p->getEffectInstance()->getFramesNeeded(time, view, render, framesNeeded);
     } else {
-        return FramesNeededMap();
+        return eActionStatusFailed;
     }
 }
 

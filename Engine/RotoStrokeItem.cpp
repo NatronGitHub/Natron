@@ -51,7 +51,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Project.h"
@@ -200,7 +199,7 @@ struct RotoStrokeItemPrivate
      **/
     bool copyStrokeForRendering(const RotoStrokeItemPrivate& other);
 
-    RectD computeBoundingBox(double time, ViewGetSpec view) const;
+    RectD computeBoundingBox(TimeValue time, ViewIdx view) const;
 
     U64 computeHashFromStrokes();
 
@@ -330,11 +329,12 @@ RotoStrokeItemPrivate::copyStrokeForRendering(const RotoStrokeItemPrivate& other
     // In order for the getBoundingBox function to return something decent, we still need
     // to know the bounding box of the full stroke
     if (isCurrentlyDrawing && hasDoneSomething) {
+
         // The bounding box computation requires a time and view parameters:
         // we are OK to assume that the time view are the current ones in the UI
         // since we are drawing anyway nothing else is happening.
-        double time = _publicInterface->getCurrentTime();
-        ViewIdx view = _publicInterface->getCurrentView();
+        TimeValue time = _publicInterface->getCurrentTime_TLS();
+        ViewIdx view = _publicInterface->getCurrentView_TLS();
 
         lastStrokeStepBbox = computeBoundingBox(time, view);
         renderCachedBbox = other.computeBoundingBox(time, view);
@@ -514,7 +514,7 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
                        const KeyFrameSet& yCurve,
                        const KeyFrameSet& pCurve,
                        const Transform::Matrix3x3& transform,
-                       unsigned int mipMapLevel,
+                       const RenderScale& scale,
                        double halfBrushSize,
                        bool pressureAffectsSize,
                        std::list<std::pair<Point, double> >* points,
@@ -552,8 +552,6 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
     }
 
 
-    int pot = 1 << mipMapLevel;
-
     if ( (xCurve.size() == 1) && ( xIt != xCurve.end() ) && ( yIt != yCurve.end() ) && ( pIt != pCurve.end() ) ) {
         assert( xNext == xCurve.end() && yNext == yCurve.end() && pNext == pCurve.end() );
         Transform::Point3D p;
@@ -564,8 +562,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
         p = Transform::matApply(transform, p);
 
         Point pixelPoint;
-        pixelPoint.x = p.x / pot;
-        pixelPoint.y = p.y / pot;
+        pixelPoint.x = p.x * scale.x;
+        pixelPoint.y = p.y * scale.y;
         points->push_back( std::make_pair( pixelPoint, pIt->getValue() ) );
         if (bbox) {
             bbox->x1 = p.x;
@@ -664,8 +662,8 @@ evaluateStrokeInternal(const KeyFrameSet& xCurve,
             }
 
             double pi = Bezier::bezierEval(pressp0, pressp1, pressp2, pressp3, t);
-            p.x /= pot;
-            p.y /= pot;
+            p.x *= scale.x;
+            p.y *= scale.y;
             points->push_back( std::make_pair(p, pi) );
         }
 
@@ -845,14 +843,14 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
         int ki; // index of the new keyframe (normally nk, but just in case)
         {
             KeyFrame k;
-            k.setTime(t);
+            k.setTime(TimeValue(t));
             k.setValue(p.pos().x);
             addKeyFrameOk = stroke->xCurve->addKeyFrame(k);
             ki = ( addKeyFrameOk ? nk : (nk - 1) );
         }
         {
             KeyFrame k;
-            k.setTime(t);
+            k.setTime(TimeValue(t));
             k.setValue(p.pos().y);
             bool aok = stroke->yCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
@@ -863,7 +861,7 @@ RotoStrokeItem::appendPoint(const RotoPoint& p)
 
         {
             KeyFrame k;
-            k.setTime(t);
+            k.setTime(TimeValue(t));
             k.setValue( p.pressure() );
             bool aok = stroke->pressureCurve->addKeyFrame(k);
             assert(aok == addKeyFrameOk);
@@ -1009,14 +1007,6 @@ RotoStrokeItem::setDrawingGLContext(const OSGLContextPtr& gpuContext, const OSGL
         _imp->drawingGlGpuContext = gpuContext;
         _imp->drawingGlCpuContext = cpuContext;
     }
-    // If we change the drawing context, clear the RotoShapeRender node cache since GL textures that are cached are
-    // tied to the drawing context
-    if (getBrushType() == eRotoStrokeTypeSolid) {
-        NodePtr effectNode = getEffectNode();
-        if (effectNode) {
-            effectNode->removeAllImagesFromCache();
-        }
-    }
 }
 
 
@@ -1151,7 +1141,7 @@ RotoStrokeItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
 }
 
 RectD
-RotoStrokeItemPrivate::computeBoundingBox(double time, ViewGetSpec view) const
+RotoStrokeItemPrivate::computeBoundingBox(TimeValue time, ViewIdx view) const
 {
     // Private - should not lock
     assert(!lock.tryLock());
@@ -1268,7 +1258,7 @@ RotoStrokeItemPrivate::computeBoundingBox(double time, ViewGetSpec view) const
 
 
 RectD
-RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
+RotoStrokeItem::getBoundingBox(TimeValue time, ViewIdx view) const
 {
     bool enabled = isActivated(time, view);
 
@@ -1285,7 +1275,6 @@ RotoStrokeItem::getBoundingBox(double time, ViewGetSpec view) const
 std::list<CurvePtr >
 RotoStrokeItem::getXControlPoints() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
     std::list<CurvePtr > ret;
     QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
@@ -1298,7 +1287,6 @@ RotoStrokeItem::getXControlPoints() const
 std::list<CurvePtr >
 RotoStrokeItem::getYControlPoints() const
 {
-    assert( QThread::currentThread() == qApp->thread() );
     std::list<CurvePtr > ret;
     QMutexLocker k(&_imp->lock);
     for (std::vector<RotoStrokeItemPrivate::StrokeCurves>::const_iterator it = _imp->strokes.begin(); it != _imp->strokes.end(); ++it) {
@@ -1322,9 +1310,9 @@ RotoStrokeItem::getNumControlPoints(int strokeIndex) const
 }
 
 void
-RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
-                               double time,
-                               ViewGetSpec view,
+RotoStrokeItem::evaluateStroke(const RenderScale& scale,
+                               TimeValue time,
+                               ViewIdx view,
                                std::list<std::list<std::pair<Point, double> > >* strokes,
                                RectD* bbox,
                                bool ignoreTransform) const
@@ -1352,7 +1340,7 @@ RotoStrokeItem::evaluateStroke(unsigned int mipMapLevel,
         std::list<std::pair<Point, double> > points;
         RectD strokeBbox;
 
-        evaluateStrokeInternal(xSet, ySet, pSet, transform, mipMapLevel, brushSize, pressureAffectsSize, &points, &strokeBbox);
+        evaluateStrokeInternal(xSet, ySet, pSet, transform, scale, brushSize, pressureAffectsSize, &points, &strokeBbox);
         if (bbox) {
             if (bboxSet) {
                 bbox->merge(strokeBbox);
@@ -1388,8 +1376,11 @@ RotoStrokeItemPrivate::computeHashFromStrokes()
 }
 
 void
-RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
+RotoStrokeItem::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
+    if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
+        return;
+    }
     {
         // Append the item knobs
         QMutexLocker k(&_imp->lock);
@@ -1398,7 +1389,7 @@ RotoStrokeItem::appendToHash(double time, ViewIdx view, Hash64* hash)
     }
 
 
-    RotoDrawableItem::appendToHash(time, view, hash);
+    RotoDrawableItem::appendToHash(args, hash);
 }
 
 void

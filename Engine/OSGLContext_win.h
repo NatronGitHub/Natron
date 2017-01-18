@@ -27,11 +27,14 @@
 
 #include "Global/Macros.h"
 
-#include "Global/GLIncludes.h"
-
 #ifdef __NATRON_WIN32__
 
+#include "Global/GLIncludes.h"
 #include <windows.h>
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define WGL_NUMBER_PIXEL_FORMATS_ARB 0x2000
 #define WGL_SUPPORT_OPENGL_ARB 0x2010
@@ -145,8 +148,6 @@ typedef VOID (*PFNWGLBLITCONTEXTFRAMEBUFFERAMD)(HGLRC dstCtx, GLint srcX0, GLint
 #define GPU_MEMORY_INFO_CURRENT_AVAILABLE_VIDMEM_NVX  0x9049
 #define GPU_MEMORY_INFO_EVICTION_COUNT_NVX            0x904A
 #define GPU_MEMORY_INFO_EVICTED_MEMORY_NVX            0x904B
-
-NATRON_NAMESPACE_ENTER;
 
 struct OSGLContext_wgl_data
 {

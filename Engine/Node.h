@@ -45,12 +45,16 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
+#include "Engine/ChoiceOption.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/ImageComponents.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/Markdown.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kNodePageParamName "nodePage"
 #define kNodePageParamLabel "Node"
@@ -144,8 +148,6 @@ CLANG_DIAG_ON(deprecated)
 #define kNatronNodeKnobKeepInAnimationModuleButton "keepInAnimationModuleButton"
 #define kNatronNodeKnobKeepInAnimationModuleButtonLabel "Keep In Animation Module"
 #define kNatronNodeKnobKeepInAnimationModuleButtonHint "When checked, this node will always be visible in the Animation Module regardless of whether its settings panel is opened or not"
-
-NATRON_NAMESPACE_ENTER;
 
 struct NodePrivate;
 class Node
@@ -377,27 +379,18 @@ public:
      **/
     const std::vector< KnobIPtr > & getKnobs() const;
 
+
     /**
-     * @brief When frozen is true all the knobs of this effect read-only so the user can't interact with it.
-     * @brief This function will be called on all input nodes aswell
+     * @brief If this node is an output node, return the render engine
      **/
-    void setKnobsFrozen(bool frozen);
+    RenderEnginePtr getRenderEngine() const;
 
+    /**
+     * @brief Is this node render engine currently doing playback ?
+     **/
+    bool isDoingSequentialRender() const;
 
-    /*Returns in viewers the list of all the viewers connected to this node*/
-    void hasViewersConnected(std::list<ViewerInstancePtr>* viewers) const;
-
-    void hasOutputNodesConnected(std::list<OutputEffectInstancePtr>* writers) const;
-
-private:
-
-    void hasViewersConnectedInternal(std::list<ViewerInstancePtr >* viewers,
-                                     std::list<const Node*>* markedNodes) const;
-
-    void hasOutputNodesConnectedInternal(std::list<OutputEffectInstancePtr >* writers,
-                                         std::list<const Node*>* markedNodes) const;
-
-public:
+  
 
     /**
      * @brief Forwarded to the live effect instance
@@ -420,21 +413,12 @@ public:
      **/
     bool isOutputNode() const;
 
-    /**
-     * @brief Forwarded to the live effect instance
-     **/
-    bool isOpenFXNode() const;
-
 
     /**
      * @brief Returns true if this node is a backdrop
      **/
     bool isBackdropNode() const;
 
-    /**
-     * @brief Returns true if the node is a rotopaint node
-     **/
-    bool isRotoPaintingNode() const;
 
     ViewerNodePtr isEffectViewerNode() const;
 
@@ -445,8 +429,6 @@ public:
     StubNodePtr isEffectStubNode() const;
 
     PrecompNodePtr isEffectPrecompNode() const;
-
-    OutputEffectInstancePtr isEffectOutput() const;
 
     GroupInputPtr isEffectGroupInput() const;
 
@@ -478,13 +460,10 @@ public:
     bool isSupportedComponent(int inputNb, const ImageComponents& comp) const;
 
     /**
-     * @brief Returns the most appropriate components that can be supported by the inputNb.
+     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    ImageComponents findClosestSupportedComponents(int inputNb, const ImageComponents& comp) const;
-    static ImageComponents findClosestInList(const ImageComponents& comp,
-                                             const std::list<ImageComponents> &components,
-                                             bool multiPlanar);
+    ImageComponents findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
 
     ImageBitDepthEnum getBestSupportedBitDepth() const;
     bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
@@ -498,7 +477,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
+    int getMaskChannel(int inputNb, ImageComponents* comps) const;
 
     int isMaskChannelKnob(const KnobIConstPtr& knob) const;
 
@@ -592,6 +571,7 @@ public:
 
     NodePtr getPreferredInputNode() const;
 
+
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
     RenderSafetyEnum getPluginRenderThreadSafety() const;
@@ -603,11 +583,17 @@ public:
     void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
     SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
 
+    void setCurrentCanDistort(bool support);
+    bool getCurrentCanDistort() const;
+
     void setCurrentCanTransform(bool support);
     bool getCurrentCanTransform() const;
 
     void setCurrentSupportTiles(bool support);
     bool getCurrentSupportTiles() const;
+
+    void setCurrentSupportRenderScale(bool support);
+    bool getCurrentSupportRenderScale() const;
 
     void refreshDynamicProperties();
 
@@ -729,7 +715,6 @@ public:
 
     bool isUserSelected() const;
 
-    bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const;
 
     /**
      * @brief If the session is a GUI session, then this function sets the position of the node on the nodegraph.
@@ -881,16 +866,7 @@ public:
      **/
     void destroyNode(bool blockingDestroy, bool autoReconnect);
 
-    /**
-     * @brief Wrapper around EffectInstance::renderRoI that setup things correctly for a render
-     **/
-    RenderRoIRetCode renderFrame(const double time,
-                                 const ViewIdx view,
-                                 const unsigned int mipMapLevel,
-                                 const bool isPlayback,
-                                 const RectI* roiParam,
-                                 const std::list<ImageComponents>& layersToRender,
-                                 std::map<ImageComponents, ImagePtr> *planes);
+
 
 private:
     
@@ -905,9 +881,6 @@ public:
      **/
     KnobIPtr getKnobByName(const std::string & name) const;
 
-    /*@brief The derived class should query this to abort any long process
-       in the engine function.*/
-    bool aborted() const;
 
     bool makePreviewByDefault() const;
 
@@ -916,20 +889,21 @@ public:
     bool isPreviewEnabled() const;
 
     /**
-     * @brief Makes a small 8bits preview image of size width x height of format ARGB32.
+     * @brief Makes a small 8-bit preview image of size width x height with a ARGB32 format.
      * Pre-condition:
      *  - buf has been allocated for the correct amount of memory needed to fill the buffer.
      * Post-condition:
      *  - buf must not be freed or overflown.
      * It will serve as a preview on the node's graphical user interface.
-     * This function is called directly by the GUI to display the preview.
+     * This function is called directly by the PreviewThread.
+     *
      * In order to notify the GUI that you want to refresh the preview, just
      * call refreshPreviewImage(time).
      *
      * The width and height might be modified by the function, so their value can
      * be queried at the end of the function
      **/
-    bool makePreviewImage(SequenceTime time, int *width, int *height, unsigned int* buf);
+    bool makePreviewImage(TimeValue time, int *width, int *height, unsigned int* buf);
 
     /**
      * @brief Returns true if the node is currently rendering a preview image.
@@ -981,8 +955,6 @@ private:
 public:
 
 
-    void purgeAllInstancesCaches();
-
     bool notifyInputNIsRendering(int inputNb);
 
     void notifyInputNIsFinishedRendering(int inputNb);
@@ -995,25 +967,14 @@ public:
 
     int getIsNodeRenderingCounter() const;
 
-    /**
-     * @brief forwarded to the live instance
-     **/
-    void setOutputFilesForWriter(const std::string & pattern);
-
-
-    ///called by EffectInstance
-    void registerPluginMemory(size_t nBytes);
-
-    ///called by EffectInstance
-    void unregisterPluginMemory(size_t nBytes);
 
     //see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
     //only 1 clone can render at any time
     QMutex & getRenderInstancesSharedMutex();
 
-    void refreshPreviewsRecursivelyDownstream(double time);
+    void refreshPreviewsRecursivelyDownstream(TimeValue time);
 
-    void refreshPreviewsRecursivelyUpstream(double time);
+    void refreshPreviewsRecursivelyUpstream(TimeValue time);
 
 public:
 
@@ -1026,34 +987,17 @@ public:
 
     KnobStringPtr getOFXSubLabelKnob() const;
 
-    /**
-     * @brief Attemps to lock an image for render. If it successfully obtained the lock,
-     * the thread can continue and render normally. If another thread is currently
-     * rendering that image, this function will wait until the image is available for render again.
-     * This is used internally by EffectInstance::renderRoI
-     **/
-    void lock(const ImagePtr& entry);
-    bool tryLock(const ImagePtr& entry);
-    void unlock(const ImagePtr& entry);
-
-
-    /**
-     * @brief DO NOT EVER USE THIS FUNCTION. This is provided for compatibility with plug-ins that
-     * do not respect the OpenFX specification.
-     **/
-    ImagePtr getImageBeingRendered(double time, unsigned int mipMapLevel, ViewIdx view);
-
     void beginInputEdition();
 
     void endInputEdition(bool triggerRender);
 
-    void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode);
+    void onInputChanged(int inputNb);
 
     bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
 
     bool getDisabledKnobValue() const;
 
-    bool isNodeDisabledForFrame(double time, ViewIdx view) const;
+    bool isNodeDisabledForFrame(TimeValue time, ViewIdx view) const;
 
     void setNodeDisabled(bool disabled);
 
@@ -1171,10 +1115,6 @@ private:
 public:
 
 
-    void onSetSupportRenderScaleMaybeSet(int support);
-
-    bool useScaleOneImagesWhenRenderScaleSupportIsDisabled() const;
-
     /**
      * @brief Returns true if the parallel render args thread-storage is set
      **/
@@ -1273,47 +1213,63 @@ public:
     void setCurrentCursor(CursorEnum defaultCursor);
     bool setCurrentCursor(const QString& customCursorFilePath);
 
-    bool shouldDrawOverlay(double time, ViewIdx view) const;
+private:
+
+    friend class DuringInteractActionSetter_RAII;
+    void setDuringInteractAction(bool b);
+
+public:
 
 
-    void drawHostOverlay(double time,
+    void setCurrentViewportForOverlays_public(OverlaySupport* viewport);
+
+    OverlaySupport* getCurrentViewportForOverlays() const;
+
+    RenderScale getOverlayInteractRenderScale() const;
+
+    bool isDoingInteractAction() const;
+
+    bool shouldDrawOverlay(TimeValue time, ViewIdx view) const;
+
+
+    void drawHostOverlay(TimeValue time,
                          const RenderScale& renderScale,
                          ViewIdx view);
 
-    bool onOverlayPenDownDefault(double time,
+    bool onOverlayPenDownDefault(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenDoubleClickedDefault(double time,
+    bool onOverlayPenDoubleClickedDefault(TimeValue time,
                                           const RenderScale& renderScale,
                                           ViewIdx view, const QPointF & viewportPos, const QPointF & pos) WARN_UNUSED_RETURN;
 
 
-    bool onOverlayPenMotionDefault(double time,
+    bool onOverlayPenMotionDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayPenUpDefault(double time,
+    bool onOverlayPenUpDefault(TimeValue time,
                                const RenderScale& renderScale,
                                ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyDownDefault(double time,
+    bool onOverlayKeyDownDefault(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyUpDefault(double time,
+    bool onOverlayKeyUpDefault(TimeValue time,
                                const RenderScale& renderScale,
                                ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayKeyRepeatDefault(double time,
+    bool onOverlayKeyRepeatDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view, Key key, KeyboardModifiers modifiers) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusGainedDefault(double time,
+    bool onOverlayFocusGainedDefault(TimeValue time,
                                      const RenderScale& renderScale,
                                      ViewIdx view) WARN_UNUSED_RETURN;
 
-    bool onOverlayFocusLostDefault(double time,
+    bool onOverlayFocusLostDefault(TimeValue time,
                                    const RenderScale& renderScale,
                                    ViewIdx view) WARN_UNUSED_RETURN;
 
@@ -1384,22 +1340,10 @@ public:
 
     void removeParameterFromPython(const std::string& parameterName);
 
-    double getHostMixingValue(double time, ViewIdx view) const;
-
-    /**
-     * @brief Removes all images from the cache associated to this node
-     **/
-    void removeAllImagesFromCache();
+    double getHostMixingValue(TimeValue time, ViewIdx view) const;
 
 public:
 
-
-    bool isDraftModeUsed() const;
-    bool isInputRelatedDataDirty() const;
-
-    void forceRefreshAllInputRelatedData();
-
-    void markAllInputRelatedDataDirty();
 
     KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
 
@@ -1414,7 +1358,7 @@ public:
 
     int getFrameStepKnobValue() const;
 
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool loadingProject);
+    void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
 
     bool handleFormatKnob(const KnobIPtr& knob);
 
@@ -1437,12 +1381,13 @@ public:
 
     void setStreamWarning(StreamWarningEnum warning, const QString& message);
     void setStreamWarnings(const std::map<StreamWarningEnum, QString>& warnings);
-    void clearStreamWarning(StreamWarningEnum warning);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
     void refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps);
 
     bool isNodeUpstream(const NodeConstPtr& input) const;
+
+    void onNodeMetadatasRefreshedOnMainThread(const NodeMetadata& meta);
 
 private:
 
@@ -1458,23 +1403,7 @@ private:
 
     void refreshCreatedViews(const KnobIPtr& knob);
 
-    void refreshInputRelatedDataRecursiveInternal(std::set<NodePtr>& markedNodes);
-
-    void refreshInputRelatedDataRecursive();
-
-    void refreshAllInputRelatedData(bool canChangeValues);
-
     bool refreshMaskEnabledNess(int inpubNb);
-
-    void markInputRelatedDataDirtyRecursive();
-
-    void markInputRelatedDataDirtyRecursiveInternal(std::list<NodePtr>& markedNodes, bool recurse);
-
-    bool refreshAllInputRelatedData(bool hasSerializationData, const std::vector<NodeWPtr >& inputs);
-
-    bool refreshInputRelatedDataInternal(bool domarking, std::set<NodePtr>& markedNodes);
-
-    bool refreshDraftFlagInternal(const std::vector<NodeWPtr >& inputs);
 
     void setNameInternal(const std::string& name, bool throwErrors);
 
@@ -1496,13 +1425,13 @@ public Q_SLOTS:
     }
 
     /*will force a preview re-computation not matter of the project's preview mode*/
-    void computePreviewImage(double time)
+    void computePreviewImage(TimeValue time)
     {
         Q_EMIT previewRefreshRequested(time);
     }
 
     /*will refresh the preview only if the project is in auto-preview mode*/
-    void refreshPreviewImage(double time)
+    void refreshPreviewImage(TimeValue time)
     {
         Q_EMIT previewImageChanged(time);
     }
@@ -1599,6 +1528,8 @@ private:
 
     std::string makeInfoForInput(int inputNumber) const;
 
+    void refreshInfos();
+
 
     void declareNodeVariableToPython(const std::string& nodeName);
     void setNodeVariableToPython(const std::string& oldName, const std::string& newName);
@@ -1609,6 +1540,22 @@ private:
 };
 
 
+class DuringInteractActionSetter_RAII
+{
+    NodePtr _node;
+public:
+
+    DuringInteractActionSetter_RAII(const NodePtr& node)
+    : _node(node)
+    {
+        node->setDuringInteractAction(true);
+    }
+
+    ~DuringInteractActionSetter_RAII()
+    {
+        _node->setDuringInteractAction(false);
+    }
+};
 
 NATRON_NAMESPACE_EXIT;
 

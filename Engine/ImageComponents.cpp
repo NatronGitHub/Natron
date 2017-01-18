@@ -29,7 +29,12 @@
 #include <cassert>
 #include <stdexcept>
 
-#include "Serialization/ImageParamsSerialization.h"
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
+#include "Serialization/NodeSerialization.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -39,70 +44,7 @@ static const char* alphaComps[1] = {"Alpha"};
 static const char* motionComps[2] = {"U", "V"};
 static const char* disparityComps[2] = {"X", "Y"};
 static const char* xyComps[2] = {"X", "Y"};
-const char* ImageComponents::defaultComponents[][2] =
-{
-    {kNatronRGBAComponentsName, kNatronRGBAPlaneUserName},
-    {kNatronRGBComponentsName, kNatronRGBPlaneUserName},
-    {kNatronAlphaComponentsName, kNatronAlphaPlaneUserName},
-    {kNatronDisparityLeftPlaneName, kNatronDisparityLeftPlaneUserName},
-    {kNatronDisparityRightPlaneName, kNatronDisparityRightPlaneUserName},
-    {kNatronBackwardMotionVectorsPlaneName, kNatronBackwardMotionVectorsPlaneUserName},
-    {kNatronForwardMotionVectorsPlaneName, kNatronForwardMotionVectorsPlaneUserName},
-    {0, 0}
-};
-const ImageComponents&
-ImageComponents::getDefaultComponent(const std::string& planeName)
-{
-    if (planeName == kNatronRGBAComponentsName) {
-        return getRGBAComponents();
-    } else if (planeName == kNatronRGBComponentsName) {
-        return getRGBComponents();
-    } else if (planeName == kNatronRGBComponentsName) {
-        return getRGBComponents();
-    } else if (planeName == kNatronAlphaComponentsName) {
-        return getAlphaComponents();
-    } else if (planeName == kNatronDisparityLeftPlaneName) {
-        return getDisparityLeftComponents();
-    } else if (planeName == kNatronDisparityRightPlaneName) {
-        return getDisparityRightComponents();
-    } else if (planeName == kNatronBackwardMotionVectorsPlaneName) {
-        return getBackwardMotionComponents();
-    } else if (planeName == kNatronForwardMotionVectorsPlaneName) {
-        return getForwardMotionComponents();
-    }
 
-    return getNoneComponents();
-}
-
-std::string
-ImageComponents::mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName)
-{
-    int i = 0;
-
-    while (defaultComponents[i][0] != 0) {
-        if ( userfriendlyPlaneName == std::string(defaultComponents[i][1]) ) {
-            return std::string(defaultComponents[i][0]);
-        }
-        ++i;
-    }
-
-    return userfriendlyPlaneName;
-}
-
-std::string
-ImageComponents::mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName)
-{
-    int i = 0;
-
-    while (defaultComponents[i][0] != 0) {
-        if ( planeName == std::string(defaultComponents[i][0]) ) {
-            return std::string(defaultComponents[i][1]);
-        }
-        ++i;
-    }
-
-    return planeName;
-}
 
 ImageComponents::ImageComponents()
     : _layerName("none")
@@ -312,7 +254,7 @@ ImageComponents::getNoneComponents()
 const ImageComponents&
 ImageComponents::getRGBAComponents()
 {
-    static const ImageComponents comp(kNatronColorPlaneName, kNatronRGBAComponentsName, rgbaComps, 4);
+    static const ImageComponents comp(kNatronColorPlaneName, "", rgbaComps, 4);
 
     return comp;
 }
@@ -320,7 +262,7 @@ ImageComponents::getRGBAComponents()
 const ImageComponents&
 ImageComponents::getRGBComponents()
 {
-    static const ImageComponents comp(kNatronColorPlaneName, kNatronRGBComponentsName, rgbComps, 3);
+    static const ImageComponents comp(kNatronColorPlaneName, "", rgbComps, 3);
 
     return comp;
 }
@@ -328,7 +270,7 @@ ImageComponents::getRGBComponents()
 const ImageComponents&
 ImageComponents::getAlphaComponents()
 {
-    static const ImageComponents comp(kNatronColorPlaneName, kNatronAlphaComponentsName, alphaComps, 1);
+    static const ImageComponents comp(kNatronColorPlaneName, "", alphaComps, 1);
 
     return comp;
 }
@@ -336,7 +278,7 @@ ImageComponents::getAlphaComponents()
 const ImageComponents&
 ImageComponents::getBackwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneUserName, kNatronMotionComponentsName, motionComps, 2);
+    static const ImageComponents comp(kNatronBackwardMotionVectorsPlaneName, kNatronMotionComponentsName, motionComps, 2);
 
     return comp;
 }
@@ -344,7 +286,7 @@ ImageComponents::getBackwardMotionComponents()
 const ImageComponents&
 ImageComponents::getForwardMotionComponents()
 {
-    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneUserName, kNatronMotionComponentsName, motionComps, 2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneName, kNatronMotionComponentsName, motionComps, 2);
 
     return comp;
 }
@@ -352,7 +294,7 @@ ImageComponents::getForwardMotionComponents()
 const ImageComponents&
 ImageComponents::getDisparityLeftComponents()
 {
-    static const ImageComponents comp(kNatronDisparityLeftPlaneUserName, kNatronDisparityComponentsName, disparityComps, 2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneName, kNatronDisparityComponentsName, disparityComps, 2);
 
     return comp;
 }
@@ -360,7 +302,7 @@ ImageComponents::getDisparityLeftComponents()
 const ImageComponents&
 ImageComponents::getDisparityRightComponents()
 {
-    static const ImageComponents comp(kNatronDisparityRightPlaneUserName, kNatronDisparityComponentsName, disparityComps, 2);
+    static const ImageComponents comp(kNatronDisparityRightPlaneName, kNatronDisparityComponentsName, disparityComps, 2);
 
     return comp;
 }
@@ -378,7 +320,7 @@ ImageComponents&
 ImageComponents::getPairedMotionVectors()
 {
     //static const ImageComponents comp(kFnOfxImagePlaneForwardMotionVector,kFnOfxImagePlaneBackwardMotionVector,kFnOfxImageComponentMotionVectors,motionComps,2);
-    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneUserName, kNatronBackwardMotionVectorsPlaneUserName, kNatronMotionComponentsName, motionComps, 2);
+    static const ImageComponents comp(kNatronForwardMotionVectorsPlaneName, kNatronBackwardMotionVectorsPlaneName, kNatronMotionComponentsName, motionComps, 2);
 
     return comp;
 }
@@ -387,10 +329,11 @@ const ImageComponents&
 ImageComponents::getPairedStereoDisparity()
 {
     //static const ImageComponents comp(kFnOfxImagePlaneStereoDisparityLeft,kFnOfxImagePlaneStereoDisparityRight,kFnOfxImageComponentStereoDisparity,xyComps,2);
-    static const ImageComponents comp(kNatronDisparityLeftPlaneUserName, kNatronDisparityRightPlaneUserName, kNatronDisparityComponentsName, xyComps, 2);
+    static const ImageComponents comp(kNatronDisparityLeftPlaneName, kNatronDisparityRightPlaneName, kNatronDisparityComponentsName, xyComps, 2);
 
     return comp;
 }
+
 
 void
 ImageComponents::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)
@@ -415,6 +358,72 @@ ImageComponents::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationO
     _globalComponentsName = s->globalCompsName;
     _componentNames = s->channelNames;
 
+}
+
+static std::string generateChannelID(const std::string& channelName)
+{
+    if (boost::iequals(channelName, "a") || boost::iequals(channelName, "alpha")) {
+        return "a";
+    } else if (boost::iequals(channelName, "r") || boost::iequals(channelName, "red")) {
+        return "r";
+    } else if (boost::iequals(channelName, "g") || boost::iequals(channelName, "green")) {
+        return "g";
+    } else if (boost::iequals(channelName, "b") || boost::iequals(channelName, "blue")) {
+        return "b";
+    } else {
+        return channelName;
+    }
+}
+
+ChoiceOption
+ImageComponents::getChannelOption(int channelIndex) const
+{
+    if (channelIndex < 0 || channelIndex >= (int)_componentNames.size()) {
+        assert(false);
+        return ChoiceOption("","","");
+    }
+    std::string optionID, optionLabel;
+    optionID += _layerName;
+    if ( !_layerName.empty() ) {
+        optionID += '.';
+    }
+    optionLabel = optionID;
+
+    // For the option label, append the name of the channel
+    optionLabel += _componentNames[channelIndex];
+
+    // For the option ID, if this is the alpha channel we need to do something different:
+    // The Color.RGBA and Color.Alpha planes both have alpha. To overcome this
+    optionID += generateChannelID(_componentNames[channelIndex]);
+    return ChoiceOption(optionID, optionLabel, "");
+}
+
+ChoiceOption
+ImageComponents::getLayerOption() const
+{
+    std::string optionLabel = _layerName + "." + _globalComponentsName;
+
+    // The option ID is always the name of the layer, this ensures for the Color plane that even if the components type changes, the choice stays
+    // the same in the parameter.
+    return ChoiceOption(_layerName, optionLabel, "");
+
+}
+
+const ImageComponents&
+ImageComponents::getColorPlaneComponents(int nComps)
+{
+    switch (nComps) {
+        case 1:
+            return ImageComponents::getAlphaComponents();
+        case 2:
+            return ImageComponents::getXYComponents();
+        case 3:
+            return ImageComponents::getRGBComponents();
+        case 4:
+            return ImageComponents::getRGBAComponents();
+        default:
+            return ImageComponents::getNoneComponents();
+    }
 }
 
 NATRON_NAMESPACE_EXIT;

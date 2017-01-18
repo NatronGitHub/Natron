@@ -1124,7 +1124,7 @@ GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
 
 void
 GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node,
-                                                 double time)
+                                                 TimeValue time)
 {
     _imp->previewRenderThread.appendToQueue(node, time);
 }

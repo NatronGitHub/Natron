@@ -32,11 +32,33 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
+#include "Global/GlobalDefines.h"
+#include "Engine/ImageStorage.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-class PluginMemory
+class PluginMemAllocateMemoryArgs : public AllocateMemoryArgs
+{
+public:
+
+    std::size_t _nBytes;
+
+    PluginMemAllocateMemoryArgs(std::size_t nBytes)
+    : AllocateMemoryArgs()
+    , _nBytes(nBytes)
+    {
+        bitDepth = eImageBitDepthByte;
+    }
+
+    virtual ~PluginMemAllocateMemoryArgs()
+    {
+
+    }
+};
+
+class PluginMemory : public ImageStorageBase
 {
 public:
 
@@ -50,25 +72,23 @@ public:
      **/
     PluginMemory(const EffectInstancePtr& effect);
 
-    ~PluginMemory();
-
-    // If unregister is true, the destructor will attempt to remove this memory instance from the effect
-    void setUnregisterOnDestructor(bool unregister);
-
-    ///throws std::bad_alloc if the allocation failed. Returns false if the memory is already locked.
-    ///Returns true on success.
-    bool alloc(size_t nBytes);
-
-    ///Frees the memory, it doesn't have to be unlocked.
-    void freeMem();
+    virtual ~PluginMemory();
 
     void* getPtr();
 
-    void lock();
+    virtual std::size_t getBufferSize() const OVERRIDE FINAL;
 
-    void unlock();
+    virtual StorageModeEnum getStorageMode() const OVERRIDE FINAL
+    {
+        return eStorageModeRAM;
+    }
 
 private:
+
+    virtual void allocateMemoryImpl(const AllocateMemoryArgs& args) OVERRIDE FINAL;
+
+    virtual void deallocateMemoryImpl() OVERRIDE FINAL;
+
     struct Implementation;
     boost::scoped_ptr<Implementation> _imp; //!< PImpl
 };

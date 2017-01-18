@@ -56,20 +56,47 @@ enum TimelineChangeReasonEnum
     eTimelineChangeReasonOtherSeek
 };
 
-enum StatusEnum
+enum ActionRetCodeEnum
 {
-    eStatusOK = 0,
-    eStatusFailed = 1,
-    eStatusOutOfMemory = 2,
-    eStatusReplyDefault = 14
+    // Everything went ok, the operation completed successfully
+    eActionStatusOK = 0,
+
+    // Something failed, the plug-in is expected to post an error message
+    // with setPersistentMessage
+    eActionStatusFailed,
+
+    // The render failed because a mandatory input of a node is diconnected
+    // In this case there's no need for a persistent message, a black image is enough
+    eActionStatusInputDisconnected,
+
+    // The render was aborted, everything should abort ASAP and
+    // the UI should not be updated with the processed images
+    eActionStatusAborted,
+
+    // The action failed because of a lack of memory.
+    // If the action is using a GPU backend, it may re-try the same action on CPU right away
+    eActionStatusOutOfMemory,
+
+    // The operation completed with default implementation
+    eActionStatusReplyDefault
 };
 
-enum RenderRoIRetCode
+inline bool isFailureRetCode(ActionRetCodeEnum code)
 {
-        eRenderRoIRetCodeOk = 0,
-        eRenderRoIRetCodeAborted,
-        eRenderRoIRetCodeFailed
-};
+    switch (code) {
+        case eActionStatusAborted:
+        case eActionStatusFailed:
+        case eActionStatusOutOfMemory:
+        case eActionStatusInputDisconnected:
+            return true;
+        case eActionStatusOK:
+        case eActionStatusReplyDefault:
+            return false;
+    }
+    return true;
+}
+
+
 
 /*Copy of QMessageBox::StandardButton*/
 enum StandardButtonEnum
@@ -496,6 +523,61 @@ enum SequentialPreferenceEnum
     eSequentialPreferenceNotSequential = 0,
     eSequentialPreferenceOnlySequential,
     eSequentialPreferencePreferSequential
+};
+
+enum CacheAccessModeEnum
+{
+    // The image should not use the cache at all
+    eCacheAccessModeNone,
+
+    // The image shoud try to look for a match in the cache
+    // if possible. Tiles that are allocated or modified will be
+    // pushed to the cache.
+    eCacheAccessModeReadWrite,
+
+    // The image should use cached tiles but can write to the cache
+    eCacheAccessModeWriteOnly
+};
+
+enum ImageBufferLayoutEnum
+{
+    // This will make an image with an internal storage composed
+    // of one or multiple tiles, each of which is a single channel buffer.
+    // This is the preferred storage format for the Cache.
+    eImageBufferLayoutMonoChannelTiled,
+
+
+    // This will make an image with an internal storage composed of a single
+    // buffer for all r g b and a channels. The buffer is layout as such:
+    // all red pixels first, then all greens, then blue then alpha:
+    // RRRRRRGGGGGBBBBBAAAAA
+    eImageBufferLayoutRGBACoplanarFullRect,
+
+    // This will make an image with an internal storage composed of a single
+    // packed RGBA buffer. Pixels layout is as such: RGBARGBARGBA
+    // This is the preferred layout by default for OpenFX.
+    // OpenGL textures only support this mode for now.
+    eImageBufferLayoutRGBAPackedFullRect,
+};
+
+enum RenderBackendTypeEnum
+{
+    // Render is done on CPU, this is the default
+    eRenderBackendTypeCPU,
+
+    // GPU OpenGL: the image is an OpenGL texture
+    eRenderBackendTypeOpenGL,
+
+    // CPU OpenGL with OSMesa (only if plug-ins returns true to canCPUImplementationSupportOSMesa())
+    // The image is a RAM image but is bound to the default framebuffer and the plug-in can do an OpenGL render
+    eRenderBackendTypeOSMesa
+};
+
+enum RenderScaleSupportEnum
+{
+    eSupportsMaybe = -1, // We don't know yet if the effect supports render scale
+    eSupportsNo = 0, // Does not support, the effect can only render at scale 1
+    eSupportsYes = 1 // Supports it, the effect can render at any scale
 };
 
 enum StorageModeEnum

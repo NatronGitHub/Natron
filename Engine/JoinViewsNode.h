@@ -29,6 +29,8 @@
 
 #include "Engine/EffectInstance.h"
 
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct JoinViewsNodePrivate;
@@ -64,7 +66,7 @@ public:
         return true;
     }
 
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 
@@ -95,11 +97,12 @@ public Q_SLOTS:
 private:
 
 
-    virtual bool isIdentity(double time,
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            double* inputTime,
+                            const TreeRenderNodeArgsPtr& render,
+                            TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<JoinViewsNodePrivate> _imp;

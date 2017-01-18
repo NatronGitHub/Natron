@@ -33,13 +33,14 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 // A class that inherits from QThreadStorage, but never sets local data in the main thread.
 // It uses an actual instance of the data.
 // That way, the ThreadStorage class can be destroyed before leaving the main thread.
 //
 // Of course, as a consequence the main thread always has "local data", which is just a global variable.
 
-NATRON_NAMESPACE_ENTER;
 template <class T>
 class ThreadStorage
     : public QThreadStorage<T>

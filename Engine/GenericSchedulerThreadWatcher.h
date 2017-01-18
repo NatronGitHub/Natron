@@ -33,7 +33,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include <QThread>
+#include <QtCore/QThread>
 
 #include "Engine/EngineFwd.h"
 

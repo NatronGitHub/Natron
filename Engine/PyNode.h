@@ -42,6 +42,7 @@
 #include "Engine/PyNodeGroup.h" // Group
 #include "Engine/PyItemsTable.h"
 #include "Engine/RectD.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -338,7 +339,7 @@ public:
      * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render
      * is ongoing in that thread.
      **/
-    int getCurrentTime() const;
+    double getCurrentTime() const;
 
     /**
      * @brief Set the position of the top left corner of the node in the nodegraph. This is ignored in background mode.
@@ -389,7 +390,7 @@ public:
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
 
-    std::map<ImageLayer, Effect*> getAvailableLayers() const;
+    std::list<ImageLayer> getAvailableLayers(int inputNb) const;
 
     double getFrameRate() const;
 

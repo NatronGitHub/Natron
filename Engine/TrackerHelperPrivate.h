@@ -49,19 +49,14 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 GCC_DIAG_ON(maybe-uninitialized)
 #endif
 
-
-
-
-#include "Engine/EngineFwd.h"
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerParamsProvider.h"
 #include "Engine/TrackerFrameAccessor.h"
 #include "Engine/TrackScheduler.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
-
-
 
 enum libmv_MarkerChannelEnum
 {
@@ -83,13 +78,13 @@ public:
 
 struct PreviouslyComputedTrackFrame
 {
-    int frame;
+    TimeValue frame;
     bool isUserKey;
 
     PreviouslyComputedTrackFrame()
     : frame(0), isUserKey(false) {}
 
-    PreviouslyComputedTrackFrame(int f,
+    PreviouslyComputedTrackFrame(TimeValue f,
                                  bool b)
     : frame(f), isUserKey(b) {}
 };
@@ -129,8 +124,8 @@ public:
                                             bool trackChannels[3],
                                             const TrackMarker &marker,
                                             int trackIndex,
-                                            int time,
-                                            int frameStep,
+                                            TimeValue time,
+                                            TimeValue frameStep,
                                             double formatHeight,
                                             mv::Marker * mvMarker);
     static void setKnobKeyframesFromMarker(int formatHeight,

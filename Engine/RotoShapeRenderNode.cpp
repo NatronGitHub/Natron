@@ -41,7 +41,6 @@
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/RotoShapeRenderGL.h"
 #include "Engine/RotoPaint.h"
-#include "Engine/ParallelRenderArgs.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -69,7 +68,6 @@ RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 : EffectInstance(n)
 , _imp(new RotoShapeRenderNodePrivate())
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 RotoShapeRenderNode::~RotoShapeRenderNode()
@@ -90,12 +88,9 @@ RotoShapeRenderNode::canCPUImplementationSupportOSMesa() const
 
 void
 RotoShapeRenderNode::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<ImageComponents>* comps)
+                                 std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getXYComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -112,9 +107,9 @@ RotoShapeRenderNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamOutputComponentsLabel));
         param->setName(kRotoShapeRenderNodeParamOutputComponents);
         {
-            std::vector<std::string> options;
-            options.push_back(kRotoShapeRenderNodeParamOutputComponentsRGBA);
-            options.push_back(kRotoShapeRenderNodeParamOutputComponentsAlpha);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsRGBA, "", ""));
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsAlpha, "", ""));
             param->populateChoices(options);
         }
         param->setIsMetadataSlave(true);
@@ -125,9 +120,9 @@ RotoShapeRenderNode::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamTypeLabel));
         param->setName(kRotoShapeRenderNodeParamType);
         {
-            std::vector<std::string> options;
-            options.push_back(kRotoShapeRenderNodeParamTypeSolid);
-            options.push_back(kRotoShapeRenderNodeParamTypeSmear);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamTypeSolid, "", ""));
+            options.push_back(ChoiceOption(kRotoShapeRenderNodeParamTypeSmear, "", ""));
             param->populateChoices(options);
         }
         param->setIsMetadataSlave(true);
@@ -137,22 +132,25 @@ RotoShapeRenderNode::initializeKnobs()
 }
 
 void
-RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
+RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
     assert(item);
 
-    // The render of the Roto shape/stroke depends on the points at the current time/view
-    RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
-    BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
-    if (isBezier) {
-        U64 bh = isBezier->computeHash(time, view);
-        hash->append(bh);
+    if (args.hashType == HashableObject::eComputeHashTypeTimeViewVariant) {
+        // The render of the Roto shape/stroke depends on the points at the current time/view
+        RotoStrokeItemPtr isStroke = boost::dynamic_pointer_cast<RotoStrokeItem>(item);
+        BezierPtr isBezier = boost::dynamic_pointer_cast<Bezier>(item);
+        if (isBezier) {
+            U64 bh = isBezier->computeHash(args);
+            hash->append(bh);
 
-    } else if (isStroke) {
-        U64 sh = isStroke->computeHash(time, view);
-        hash->append(sh);
+        } else if (isStroke) {
+            U64 sh = isStroke->computeHash(args);
+            hash->append(sh);
+        }
     }
+
 
     RotoPaintPtr rotoPaintNode;
     KnobItemsTablePtr model = item->getModel();
@@ -164,36 +162,36 @@ RotoShapeRenderNode::appendToHash(double time, ViewIdx view, Hash64* hash)
     // If we had a knob that would be linked to it we wouldn't need this, but since
     // we directly refer to this knob, we must explicitly add it to the hash.
     if  (rotoPaintNode) {
-        U64 sh = rotoPaintNode->getMotionBlurTypeKnob()->computeHash(time, view);
+        U64 sh = rotoPaintNode->getMotionBlurTypeKnob()->computeHash(args);
         hash->append(sh);
     }
 
 
-    EffectInstance::appendToHash(time, view, hash);
+    EffectInstance::appendToHash(args, hash);
 
 }
 
-StatusEnum
-RotoShapeRenderNode::getPreferredMetaDatas(NodeMetadata& metadata)
+ActionRetCodeEnum
+RotoShapeRenderNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
 
 
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
-    ImageComponents comps;
+    int nComps;
     if (type == eRotoShapeRenderTypeSolid) {
         int index = _imp->outputComponents.lock()->getValue();
-        comps = index == 0 ? ImageComponents::getRGBAComponents() : ImageComponents::getAlphaComponents();
+        nComps = index == 0 ? 4 : 1;
     } else {
-        comps = ImageComponents::getRGBAComponents();
+        nComps = 4;
     }
 
-    metadata.setImageComponents(-1, comps);
-    metadata.setImageComponents(0, comps);
+    metadata.setColorPlaneNComps(-1, nComps);
+    metadata.setColorPlaneNComps(0, nComps);
     metadata.setIsContinuous(true);
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx view, RectD* rod)
+static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, ViewIdx view, RectD* rod)
 {
     // Account for motion-blur
     RangeD range;
@@ -205,7 +203,7 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx
         RectD maskRod;
         try {
             double t = divisions > 1 ? range.min + i * interval : time;
-            maskRod = item->getBoundingBox(t, view);
+            maskRod = item->getBoundingBox(TimeValue(t), view);
         } catch (...) {
         }
 
@@ -219,13 +217,13 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, double time, ViewIdx
 }
 
 
-StatusEnum
-RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod)
+ActionRetCodeEnum
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod)
 {
    
 
-    StatusEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
-    if (st != eStatusOK && st != eStatusReplyDefault) {
+    ActionRetCodeEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, render, rod);
+    if (isFailureRetCode(st)) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
 
@@ -233,22 +231,23 @@ RotoShapeRenderNode::getRegionOfDefinition(double time, const RenderScale & scal
     assert(item);
     getRoDFromItem(item, time, view, rod);
 
-    return eStatusOK;
+    return eActionStatusOK;
 
 }
 
-bool
-RotoShapeRenderNode::isIdentity(double time,
-                const RenderScale & scale,
-                const RectI & roi,
-                ViewIdx view,
-                double* inputTime,
-                ViewIdx* inputView,
-                int* inputNb)
+ActionRetCodeEnum
+RotoShapeRenderNode::isIdentity(TimeValue time,
+                                const RenderScale & scale,
+                                const RectI & roi,
+                                ViewIdx view,
+                                const TreeRenderNodeArgsPtr& render,
+                                TimeValue* inputTime,
+                                ViewIdx* inputView,
+                                int* inputNb)
 {
     *inputView = view;
     NodePtr node = getNode();
-
+    
 
     RotoDrawableItemPtr rotoItem = node->getAttachedRotoItem();
     assert(rotoItem);
@@ -257,27 +256,25 @@ RotoShapeRenderNode::isIdentity(double time,
         *inputTime = time;
         *inputNb = 0;
 
-        return true;
+        return eActionStatusOK;
     }
 
     RectD maskRod;
     getRoDFromItem(rotoItem, time, view, &maskRod);
 
     RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
+    maskRod.toPixelEnclosing(scale, getAspectRatio(render, -1), &maskPixelRod);
     if ( !maskPixelRod.intersects(roi) ) {
         *inputTime = time;
         *inputNb = 0;
-        
-        return true;
     }
     
-    return false;
+    return eActionStatusOK;
 }
 
 
 
-StatusEnum
+ActionRetCodeEnum
 RotoShapeRenderNode::render(const RenderActionArgs& args)
 {
 
@@ -287,23 +284,26 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #endif
 
 #if !defined(ROTO_SHAPE_RENDER_ENABLE_CAIRO)
-    if (!args.useOpenGL) {
+    if (args.backendType == eRenderBackendTypeCPU) {
         setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node. This might be because you are trying to render an image too big for OpenGL.").toStdString());
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 #endif
 
+    // Get the Roto item attached to this node. It will be a render-local clone of the original item.
     RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     // To be thread-safe we can only operate on a render clone.
     assert(rotoItem->isRenderClone());
 
+    // Is it a smear or regular solid render ?
     RotoShapeRenderTypeEnum type = (RotoShapeRenderTypeEnum)_imp->renderType.lock()->getValue();
 
+    // We only support rendering bezier or strokes
     RotoStrokeItemPtr isStroke = toRotoStrokeItem(rotoItem);
     BezierPtr isBezier = toBezier(rotoItem);
 
@@ -311,33 +311,28 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     RotoStrokeItemPtr nonRenderStroke = toRotoStrokeItem(getNode()->getOriginalAttachedItem());
 
     if (type == eRotoShapeRenderTypeSmear && !isStroke) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
     assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || (isBezier->isCurveFinished(args.view) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
 
-    ParallelRenderArgsPtr frameArgs = getParallelRenderArgsTLS();
-    const OSGLContextPtr& glContext = args.glContext;
-    AbortableRenderInfoPtr abortInfo;
-    if (frameArgs) {
-        abortInfo = frameArgs->abortInfo.lock();
-    }
-    assert( abortInfo && (!args.useOpenGL || glContext) );
-    if (args.useOpenGL && (!glContext || !abortInfo)) {
-        setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
-        return eStatusFailed;
-    }
+    OSGLContextAttacherPtr glContext = args.glContextAttacher;
 
-    const unsigned int mipmapLevel = Image::getLevelFromScale(args.mappedScale.x);
+    // There must be an OpenGL context bound when using OpenGL.
+    if ((args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) && !glContext) {
+        setPersistentMessage(eMessageTypeError, tr("An OpenGL context is required to draw with the Roto node").toStdString());
+        return eActionStatusFailed;
+    }
 
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
     const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
 
-
-
+    // True if this render was trigger because the user is painting (with a pen or mouse)
     bool isDuringPainting = isStroke && isStroke->isCurrentlyDrawing();
+
+    // These variables are useful to pick the stroke drawing algorithm where it was at the previous draw step.
     double distNextIn = 0.;
     Point lastCenterIn = { INT_MIN, INT_MIN };
     int strokeStartPointIndex = 0;
@@ -365,18 +360,20 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // Now we are good to start rendering
 
+    // This is the state of the stroke aglorithm in output of this draw step
     double distToNextOut = 0.;
     Point lastCenterOut;
 
+    // Retrieve the OpenGL context local data that were allocated in attachOpenGLContext
     RotoShapeRenderNodeOpenGLDataPtr glData;
     if (args.glContextData) {
         glData = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(args.glContextData);
         assert(glData);
     }
 
-    // First first time we draw this clear the background.
+    // Firs time we draw this clear the background since we are not going to render the full image with OpenGL.
     if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
-        outputPlane.second->fillBoundsZero(glContext);
+        outputPlane.second->fillBoundsZero();
     }
 
     switch (type) {
@@ -393,112 +390,128 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 divisions = 1;
             }
 
-            if (isBezier) {
-                RotoPaintPtr rotoPaintNode;
-                KnobItemsTablePtr model = isBezier->getModel();
-                if (model) {
-                    rotoPaintNode = toRotoPaint(model->getNode()->getEffectInstance());
-                }
-            }
-
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-            if (!args.useOpenGL) {
-                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, mipmapLevel, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
+            // When cairo is enabled, render with it for a CPU render
+            if (args.backendType == eRenderBackendTypeCPU) {
+                RotoShapeRenderCairo::renderMaskInternal_cairo(rotoItem, args.roi, outputPlane.first, args.time, args.view, range, divisions, args.renderScale, isDuringPainting, distNextIn, lastCenterIn, outputPlane.second, &distToNextOut, &lastCenterOut);
                 if (isDuringPainting && isStroke) {
                     nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                 }
             }
 #endif
-            if (args.useOpenGL) {
+            // Otherwise render with OpenGL or OSMesa
+            else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+
+                // Figure out the shape color
                 ColorRgbaD shapeColor;
                 {
                     const double t = args.time;
-                    const ViewGetSpec view = args.view;
                     KnobColorPtr colorKnob = rotoItem->getColorKnob();
                     if (colorKnob) {
-                        shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
-                        shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
-                        shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
-                        shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
+                        shapeColor.r = colorKnob->getValueAtTime(TimeValue(t), DimIdx(0), args.view);
+                        shapeColor.g = colorKnob->getValueAtTime(TimeValue(t), DimIdx(1), args.view);
+                        shapeColor.b = colorKnob->getValueAtTime(TimeValue(t), DimIdx(2), args.view);
+                        shapeColor.a = colorKnob->getValueAtTime(TimeValue(t), DimIdx(3), args.view);
                     }
                 }
-                
+
+                // Figure out the opacity
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
 
+                // For a stroke or an opened bezier, use the generic stroke algorithm
                 if ( isStroke || ( isBezier && isBezier->isOpenBezier() ) ) {
                     bool doBuildUp = isStroke->getBuildupKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, mipmapLevel, &distToNextOut, &lastCenterOut);
+                    RotoShapeRenderGL::renderStroke_gl(glContext, glData, args.roi, outputPlane.second, isDuringPainting, distNextIn, lastCenterIn, isStroke, doBuildUp, opacity, args.time, args.view, range, divisions, args.renderScale, &distToNextOut, &lastCenterOut);
+
+                    // Update the stroke algorithm in output
                     if (isDuringPainting && isStroke) {
                         nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                     }
                 } else {
+                    // Render a bezier
                     RotoShapeRenderGL::renderBezier_gl(glContext, glData,
                                                        args.roi,
-                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, mipmapLevel, outputPlane.second->getGLTextureTarget());
+                                                       isBezier, outputPlane.second, opacity, args.time, args.view, range, divisions, args.renderScale, GL_TEXTURE_2D);
                 }
-            }
+            } // useOpenGL
         }   break;
         case eRotoShapeRenderTypeSmear: {
 
-            OSGLContextAttacherPtr contextLocker;
-            if (!glContext->isGPUContext()) {
+            if (!glContext->getContext()->isGPUContext()) {
                 // When rendering smear with OSMesa we need to write to the full image bounds and not only the RoI, so re-attach the default framebuffer
-                RectI bounds = outputPlane.second->getBounds();
-                Image::WriteAccess outputWriteAccess(outputPlane.second.get());
-                unsigned char* data = outputWriteAccess.pixelAt(bounds.x1, bounds.y1);
-                assert(data);
-                contextLocker = OSGLContextAttacher::create(glContext, bounds.width(), bounds.height(), bounds.width(), data);
-                contextLocker->attach();
+                Image::CPUTileData imageData;
+                {
+                    Image::Tile tile;
+                    outputPlane.second->getTileAt(0, &tile);
+                    outputPlane.second->getCPUTileData(tile, &imageData);
+                }
+
+                glContext = OSGLContextAttacher::create(glContext->getContext(), imageData.tileBounds.width(), imageData.tileBounds.height(), imageData.tileBounds.width(), imageData.ptrs[0]);
             }
 
             // Ensure that initially everything in the background is the source image
             if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
-                RectI bgImgRoI;
-                ImagePtr bgImg = getImage(0 /*inputNb*/, args.time, args.mappedScale, args.view, 0 /*optionalBounds*/, 0 /*optionalLayer*/, false /*mapToClipPrefs*/, false /*dontUpscale*/, (args.useOpenGL && glContext->isGPUContext()) ? eStorageModeGLTex : eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
-
-                if (!bgImg) {
+                GetImageOutArgs outArgs;
+                GetImageInArgs inArgs(args);
+                inArgs.inputNb = 0;
+                if (!getImagePlanes(inArgs, &outArgs)) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
-                    return eStatusFailed;
+                    return eActionStatusFailed;
                 }
 
-                // With OSMesa we cannot re-use the existing output plane as source because mesa clears the framebuffer out upon the first draw
-                // The only option is to draw in a tmp texture that will live for the whole stroke painting life
-                if (!glContext->isGPUContext()) {
-                    const RectD& rod = outputPlane.second->getRoD();
-                    RectI pixelRoD;
-                    rod.toPixelEnclosing(0, outputPlane.second->getPixelAspectRatio(), &pixelRoD);
-                    _imp->osmesaSmearTmpTexture = EffectInstance::convertRAMImageRoIToOpenGLTexture(bgImg, pixelRoD, glContext);
+                ImagePtr bgImage = outArgs.imagePlanes.begin()->second;
+
+
+                if (glContext->getContext()->isGPUContext()) {
+
+                    // Copy the BG image
+                    Image::CopyPixelsArgs cpyArgs;
+                    cpyArgs.roi = outputPlane.second->getBounds();
+                    outputPlane.second->copyPixels(*bgImage, cpyArgs);
+                } else {
+
+                    // With OSMesa we cannot re-use the existing output plane as source because mesa clears the framebuffer out upon the first draw
+                    // The only option is to draw in a tmp texture that will live for the whole stroke painting life
+
+                    Image::InitStorageArgs initArgs;
+                    initArgs.bounds = bgImage->getBounds();
+                    initArgs.bitdepth = outputPlane.second->getBitDepth();
+                    initArgs.storage = eStorageModeGLTex;
+                    initArgs.glContext = glContext->getContext();
+                    initArgs.textureTarget = GL_TEXTURE_2D;
+                    _imp->osmesaSmearTmpTexture = Image::create(initArgs);
+
                     // Make sure the texture is ready before rendering the smear
                     GL_CPU::Flush();
                     GL_CPU::Finish();
-                } else {
-                    outputPlane.second->pasteFrom(*bgImg, outputPlane.second->getBounds(), false, glContext);
                 }
             } else {
-                if (strokeStartPointIndex == 0 && !glContext->isGPUContext()) {
+                if (!glContext->getContext()->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
-                    const RectD& rod = outputPlane.second->getRoD();
-                    RectI pixelRoD;
-                    rod.toPixelEnclosing(0, outputPlane.second->getPixelAspectRatio(), &pixelRoD);
-                    _imp->osmesaSmearTmpTexture->ensureBounds(glContext, pixelRoD);
+                    _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
                 }
             }
 
             bool renderedDot;
 #ifdef ROTO_SHAPE_RENDER_ENABLE_CAIRO
-            if (!args.useOpenGL) {
-                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, mipmapLevel, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
+            // Render with cairo if we need to render on CPU
+            if (args.backendType == eRenderBackendTypeCPU) {
+                renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, args.renderScale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
             }
 #endif
-            if (args.useOpenGL) {
+            else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+
+                // Render with OpenGL
+
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
+                ImagePtr dstImage = glContext->getContext()->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
-                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, mipmapLevel, &distToNextOut, &lastCenterOut);
+                renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, args.renderScale, &distToNextOut, &lastCenterOut);
             }
 
+            // Update the stroke algorithm in output
             if (isDuringPainting) {
                 Q_UNUSED(renderedDot);
                 nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
@@ -509,7 +522,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
 
 
-    return eStatusOK;
+    return eActionStatusOK;
 
 } // RotoShapeRenderNode::render
 
@@ -529,21 +542,21 @@ RotoShapeRenderNode::purgeCaches()
 
 
 
-StatusEnum
-RotoShapeRenderNode::attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+ActionRetCodeEnum
+RotoShapeRenderNode::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
     *data = ret;
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
-RotoShapeRenderNode::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
+ActionRetCodeEnum
+RotoShapeRenderNode::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(data);
     assert(ret);
     ret->cleanup();
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 NATRON_NAMESPACE_EXIT;

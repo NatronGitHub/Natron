@@ -631,7 +631,7 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
             }
         }
         row.push_back( QString::fromUtf8( channelsStr.c_str() ) );
-
+        row.push_back(QString::fromUtf8(comps.getComponentsGlobalName().c_str()));
         return true;
     }
 
@@ -647,7 +647,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
     for (int i = 0; i < splits.size(); ++i) {
         channels.push_back( splits[i].toStdString() );
     }
-    ImageComponents original(row[0].toStdString(), std::string(), channels);;
+    ImageComponents original(row[0].toStdString(), row[2].toStdString(), channels);;
     NewLayerDialog dialog( original, getKnobGui()->getGui() );
     if ( dialog.exec() ) {
         ImageComponents comps = dialog.getComponents();
@@ -680,7 +680,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
             }
         }
         row[1] = ( QString::fromUtf8( channelsStr.c_str() ) );
-
+        row[2] = QString::fromUtf8(comps.getComponentsGlobalName().c_str());
         return true;
     }
 

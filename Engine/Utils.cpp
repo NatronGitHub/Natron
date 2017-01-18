@@ -30,6 +30,7 @@
 #include <QtCore/QChar>
 #include <QtCore/QDebug>
 
+
 NATRON_NAMESPACE_ENTER;
 
 /*!

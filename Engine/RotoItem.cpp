@@ -49,7 +49,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Format.h"
 #include "Engine/Hash64.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Node.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/Interpolation.h"
@@ -292,7 +291,7 @@ RotoItem::isLockedRecursive() const
 bool
 RotoItem::onKnobValueChanged(const KnobIPtr& knob,
                              ValueChangedReasonEnum reason,
-                             double /*time*/,
+                             TimeValue /*time*/,
                              ViewSetSpec /*view*/)
 {
     if (knob == _imp->lockedKnob.lock()) {

@@ -29,7 +29,6 @@
 
 #include "Engine/EngineFwd.h"
 
-
 NATRON_NAMESPACE_ENTER;
 
 // same as Qt::WhiteSpaceMode

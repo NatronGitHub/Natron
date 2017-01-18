@@ -16,10 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef OSGLCONTEXT_OSMESA_H
 #define OSGLCONTEXT_OSMESA_H
-
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -29,13 +27,13 @@
 
 #include "Global/Macros.h"
 
-#include "Engine/EngineFwd.h"
-
-#include "Global/GlobalDefines.h"
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
+#include "Global/GlobalDefines.h"
+
+#include "Engine/EngineFwd.h"
 
 #ifdef HAVE_OSMESA
 

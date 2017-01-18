@@ -31,8 +31,9 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -40,7 +41,7 @@ NATRON_NAMESPACE_ENTER;
 struct DiskCacheNodePrivate;
 
 class DiskCacheNode
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -66,8 +67,6 @@ public:
         return 1;
     }
 
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
-
 
     virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -79,7 +78,7 @@ public:
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 
@@ -99,27 +98,20 @@ public:
     }
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
 private:
 
-    virtual bool isIdentity(double time,
-                            const RenderScale & scale,
-                            const RectI & renderWindow,
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE FINAL;
 
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, double time, ViewIdx view, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+                             TimeValue time) OVERRIDE FINAL;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, const TreeRenderNodeArgsPtr& render, int visitsCount) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<DiskCacheNodePrivate> _imp;
 };
 

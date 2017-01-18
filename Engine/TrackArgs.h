@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef TRACKARGS_H
 #define TRACKARGS_H
 
@@ -26,13 +25,17 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Engine/EngineFwd.h"
+#include "Global/Macros.h"
+
 #include "Engine/GenericSchedulerThread.h"
 
 namespace mv
 {
 class AutoTrack;
 }
+
+#include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -48,7 +51,7 @@ public:
               int end,
               int step,
               const TimeLinePtr& timeline,
-              const ViewerInstancePtr& viewer,
+              const ViewerNodePtr& viewer,
               const boost::shared_ptr<mv::AutoTrack>& autoTrack,
               const boost::shared_ptr<TrackerFrameAccessor>& fa,
               const std::vector<TrackMarkerAndOptionsPtr >& tracks,
@@ -74,7 +77,7 @@ public:
     int getStep() const;
 
     TimeLinePtr getTimeLine() const;
-    ViewerInstancePtr getViewer() const;
+    ViewerNodePtr getViewer() const;
 
     int getNumTracks() const;
     const std::vector<TrackMarkerAndOptionsPtr >& getTracks() const;
@@ -82,7 +85,7 @@ public:
 
     void getEnabledChannels(bool* r, bool* g, bool* b) const;
 
-    void getRedrawAreasNeeded(int time, std::list<RectD>* canonicalRects) const;
+    void getRedrawAreasNeeded(TimeValue time, std::list<RectD>* canonicalRects) const;
 
 private:
     

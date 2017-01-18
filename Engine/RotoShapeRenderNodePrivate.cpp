@@ -68,16 +68,16 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
                                                  const RotoDrawableItemPtr& stroke,
                                                  bool doBuildup,
                                                  double opacity,
-                                                 double time,
+                                                 TimeValue time,
                                                  ViewIdx view,
-                                                 unsigned int mipmapLevel,
+                                                 const RenderScale& scale,
                                                  double* distToNextOut,
                                                  Point* lastCenterPoint)
 {
     assert(distToNextOut && lastCenterPoint);
     *distToNextOut = 0;
 
-    double brushSize, brushSizePixel, brushSpacing, brushHardness, writeOnStart, writeOnEnd;
+    double brushSize, brushSizePixelX, brushSizePixelY, brushSpacing, brushHardness, writeOnStart, writeOnEnd;
     bool pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize;
     {
         KnobDoublePtr brushSizeKnob = stroke->getBrushSizeKnob();
@@ -115,10 +115,11 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
             pressureAffectsSize = pressureSizeKnob->getValueAtTime(time);
             pressureAffectsHardness = pressureHardnessKnob->getValueAtTime(time);
         }
-        brushSizePixel = brushSize;
-        if (mipmapLevel != 0) {
-            brushSizePixel = std::max( 1., brushSizePixel / (1 << mipmapLevel) );
-        }
+        brushSizePixelX = brushSize;
+        brushSizePixelY = brushSizePixelX;
+
+        brushSizePixelX = std::max( 1., brushSizePixelX * scale.x);
+        brushSizePixelY = std::max( 1., brushSizePixelY * scale.y);
     }
 
     ColorRgbaD shapeColor;
@@ -126,17 +127,17 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         const double t = time;
         KnobColorPtr colorKnob = stroke->getColorKnob();
         for (int i = 0; i < 3; ++i) {
-            shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
-            shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
-            shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
-            shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
+            shapeColor.r = colorKnob->getValueAtTime(TimeValue(t), DimIdx(0), view);
+            shapeColor.g = colorKnob->getValueAtTime(TimeValue(t), DimIdx(1), view);
+            shapeColor.b = colorKnob->getValueAtTime(TimeValue(t), DimIdx(2), view);
+            shapeColor.a = colorKnob->getValueAtTime(TimeValue(t), DimIdx(3), view);
         }
     }
 
     double distToNext = distToNextIn;
 
     bool hasRenderedDot = false;
-    beginCallback(userData, brushSizePixel, brushSpacing, brushHardness, pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize, doBuildup, shapeColor, opacity);
+    beginCallback(userData, brushSizePixelX, brushSizePixelY, brushSpacing, brushHardness, pressureAffectsOpacity, pressureAffectsHardness, pressureAffectsSize, doBuildup, shapeColor, opacity);
 
 
     *lastCenterPoint = lastCenterPointIn;

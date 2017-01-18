@@ -108,14 +108,14 @@ RotoPaintInteract::RotoPaintInteract(RotoPaintPrivate* p)
 void
 RotoPaintInteract::autoSaveAndRedraw()
 {
-    p->publicInterface->redrawOverlayInteract();
+    p->publicInterface->requestOverlayInteractRefresh();
     p->publicInterface->getApp()->triggerAutoSave();
 }
 
 void
 RotoPaintInteract::redrawOverlays()
 {
-    p->publicInterface->redrawOverlayInteract();
+    p->publicInterface->requestOverlayInteractRefresh();
 }
 
 bool
@@ -163,7 +163,7 @@ RotoPaintInteract::isBboxClickAnywhereEnabled() const
 }
 
 void
-RotoPaintInteract::drawSelectedCp(double time,
+RotoPaintInteract::drawSelectedCp(TimeValue time,
                                   const BezierCPPtr & cp,
                                   double x,
                                   double y,
@@ -344,7 +344,7 @@ RotoPaintInteract::drawSelectedCpsBBOX()
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     {
         GLProtectAttrib<GL_GPU> a(GL_HINT_BIT | GL_ENABLE_BIT | GL_LINE_BIT | GL_POINT_BIT | GL_COLOR_BUFFER_BIT | GL_CURRENT_BIT | GL_TRANSFORM_BIT);
@@ -495,7 +495,7 @@ RotoPaintInteract::removeItemFromSelection(const RotoDrawableItemPtr& b)
 }
 
 static void
-handleControlPointMaximum(double time,
+handleControlPointMaximum(TimeValue time,
                           const BezierCP & p,
                           double* l,
                           double *b,
@@ -802,7 +802,7 @@ RotoPaintInteract::computeSelectedCpsBBOX()
         return;
     }
 
-    double time = p->publicInterface->getCurrentTime();
+    TimeValue time = p->publicInterface->getTimelineCurrentTime();
 
     double l = INT_MAX, r = INT_MIN, b = INT_MAX, t = INT_MIN;
     for (SelectedCPs::iterator it = selectedCps.begin(); it != selectedCps.end(); ++it) {
@@ -880,16 +880,24 @@ RotoPaintInteract::showMenuForControlPoint(const BezierCPPtr& /*cp*/)
     if (!menu) {
         return;
     }
-    std::vector<std::string> choices;
 
-    choices.push_back( removeItemsMenuAction.lock()->getName() );
-    choices.push_back( smoothItemMenuAction.lock()->getName() );
-    choices.push_back( cuspItemMenuAction.lock()->getName() );
-    choices.push_back( removeItemFeatherMenuAction.lock()->getName() );
-    choices.push_back( nudgeLeftMenuAction.lock()->getName() );
-    choices.push_back( nudgeBottomMenuAction.lock()->getName() );
-    choices.push_back( nudgeRightMenuAction.lock()->getName() );
-    choices.push_back( nudgeTopMenuAction.lock()->getName() );
+
+    std::vector<KnobButtonPtr> menuKnobs;
+
+    menuKnobs.push_back( removeItemsMenuAction.lock());
+    menuKnobs.push_back( smoothItemMenuAction.lock());
+    menuKnobs.push_back( cuspItemMenuAction.lock());
+    menuKnobs.push_back( removeItemFeatherMenuAction.lock());
+    menuKnobs.push_back( nudgeLeftMenuAction.lock());
+    menuKnobs.push_back( nudgeBottomMenuAction.lock() );
+    menuKnobs.push_back( nudgeRightMenuAction.lock());
+    menuKnobs.push_back( nudgeTopMenuAction.lock());
+
+    std::vector<ChoiceOption> choices(menuKnobs.size());
+    for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
+        choices[i].id = menuKnobs[i]->getName();
+        choices[i].tooltip = menuKnobs[i]->getHintToolTip();
+    }
     menu->populateChoices(choices);
 } // showMenuForControlPoint
 
@@ -901,20 +909,28 @@ RotoPaintInteract::showMenuForCurve(const BezierPtr & curve)
     if (!menu) {
         return;
     }
-    std::vector<std::string> choices;
 
-    choices.push_back( selectAllMenuAction.lock()->getName() );
-    choices.push_back( removeItemsMenuAction.lock()->getName() );
+    std::vector<KnobButtonPtr> menuKnobs;
+
+    menuKnobs.push_back( selectAllMenuAction.lock());
+    menuKnobs.push_back( removeItemsMenuAction.lock());
     if ( !curve->isOpenBezier() ) {
-        choices.push_back( openCloseCurveAction.lock()->getName() );
+        menuKnobs.push_back( openCloseCurveAction.lock());
     }
 
-    choices.push_back( smoothItemMenuAction.lock()->getName() );
-    choices.push_back( cuspItemMenuAction.lock()->getName() );
+    menuKnobs.push_back( smoothItemMenuAction.lock());
+    menuKnobs.push_back( cuspItemMenuAction.lock());
     if ( !curve->isOpenBezier() ) {
-        choices.push_back( removeItemFeatherMenuAction.lock()->getName() );
+        menuKnobs.push_back( removeItemFeatherMenuAction.lock());
     }
-    choices.push_back( lockShapeMenuAction.lock()->getName() );
+    menuKnobs.push_back( lockShapeMenuAction.lock() );
+
+    std::vector<ChoiceOption> choices(menuKnobs.size());
+    for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
+        choices[i].id = menuKnobs[i]->getName();
+        choices[i].tooltip = menuKnobs[i]->getHintToolTip();
+    }
+
     menu->populateChoices(choices);
 } // showMenuForCurve
 
@@ -922,66 +938,6 @@ void
 RotoPaintInteract::onBreakMultiStrokeTriggered()
 {
     makeStroke( true, RotoPoint() );
-}
-
-static bool
-isBranchConnectedToRotoNodeRecursive(const NodePtr& node,
-                                     const NodeConstPtr& rotoNode,
-                                     int* recursion,
-                                     std::list<NodePtr>& markedNodes)
-{
-    assert(recursion);
-    if (!node) {
-        return false;
-    }
-    if (rotoNode == node) {
-        return true;
-    }
-    markedNodes.push_back(node);
-    int maxInputs = node->getMaxInputCount();
-    *recursion = *recursion + 1;
-    for (int i = 0; i < maxInputs; ++i) {
-        NodePtr inp = node->getInput(i);
-        if (inp) {
-            if ( isBranchConnectedToRotoNodeRecursive(inp, rotoNode, recursion, markedNodes) ) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-void
-RotoPaintInteract::checkViewersAreDirectlyConnected()
-{
-    NodePtr rotoNode = p->publicInterface->getNode();
-    std::list<ViewerInstancePtr> viewers;
-
-    rotoNode->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        NodePtr viewerNode = (*it)->getNode();
-        int maxInputs = viewerNode->getMaxInputCount();
-        int hasBranchConnectedToRoto = -1;
-        for (int i = 0; i < maxInputs; ++i) {
-            NodePtr input = viewerNode->getInput(i);
-            if (input) {
-                std::list<NodePtr> markedNodes;
-                int recursion = 0;
-                if ( isBranchConnectedToRotoNodeRecursive(input, rotoNode, &recursion, markedNodes) ) {
-                    if (recursion == 0) {
-                        //This viewer is already connected to the Roto node directly.
-                        break;
-                    }
-                    viewerNode->disconnectInput(i);
-                    if (hasBranchConnectedToRoto == -1) {
-                        viewerNode->connectInput(rotoNode, i);
-                        hasBranchConnectedToRoto = i;
-                    }
-                }
-            }
-        }
-    }
 }
 
 void
@@ -1076,17 +1032,17 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     bool pressHarness = pressureHardnessButton.lock()->getValue();
     bool buildUp = buildUpButton.lock()->getValue();
     double timeOffset = timeOffsetSpinBox.lock()->getValue();
-    double timeOffsetMode_i = timeOffsetModeChoice.lock()->getValue();
+    int timeOffsetMode_i = timeOffsetModeChoice.lock()->getValue();
     int sourceType_i = sourceTypeChoice.lock()->getValue();
     double effectValue = effectSpinBox.lock()->getValue();
 
-    double time = strokeBeingPaint->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(strokeBeingPaint->getApp()->getTimeLine()->currentFrame());
     strokeBeingPaintedTimelineFrame = time;
     if (colorKnob) {
-        colorKnob->setValue( shapeColor.r, ViewSetSpec::current(), DimIdx(0) );
-        colorKnob->setValue( shapeColor.g, ViewSetSpec::current(), DimIdx(1) );
-        colorKnob->setValue( shapeColor.b, ViewSetSpec::current(), DimIdx(2) );
-        colorKnob->setValue( shapeColor.a, ViewSetSpec::current(), DimIdx(3) );
+        colorKnob->setValue( shapeColor.r, ViewIdx(0), DimIdx(0) );
+        colorKnob->setValue( shapeColor.g, ViewIdx(0), DimIdx(1) );
+        colorKnob->setValue( shapeColor.b, ViewIdx(0), DimIdx(2) );
+        colorKnob->setValue( shapeColor.a, ViewIdx(0), DimIdx(3) );
     }
     operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp));
     if (opacityKnob) {
@@ -1128,7 +1084,7 @@ RotoPaintInteract::isNearbySelectedCpsCrossHair(const QPointF & pos) const
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     double xHairMidSizeX = kXHairSelectedCpsBox * pixelScale.first;
     double xHairMidSizeY = kXHairSelectedCpsBox * pixelScale.second;
@@ -1434,7 +1390,7 @@ RotoPaintInteract::isNearbySelectedCpsBoundingBox(const QPointF & pos,
 }
 
 std::pair<BezierCPPtr, BezierCPPtr >
-RotoPaintInteract::isNearbyFeatherBar(double time,
+RotoPaintInteract::isNearbyFeatherBar(TimeValue time,
                                       ViewIdx view,
                                       const std::pair<double, double> & pixelScale,
                                       const QPointF & pos) const
@@ -1571,7 +1527,7 @@ RotoPaintInteract::isNearbyFeatherBar(double time,
 BezierPtr
 RotoPaintInteract::isNearbyBezier(double x,
                                   double y,
-                                  double time, ViewIdx view,
+                                  TimeValue time, ViewIdx view,
                                   double acceptance,
                                   int* index,
                                   double* t,
@@ -1681,11 +1637,11 @@ BezierPtr RotoPaintInteract::getBezierBeingBuild() const
 }
 
 bool
-RotoPaintInteract::smoothSelectedCurve(double time, ViewIdx view)
+RotoPaintInteract::smoothSelectedCurve(TimeValue time, ViewIdx view)
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
     if ( !selectedCps.empty() ) {
@@ -1722,11 +1678,11 @@ RotoPaintInteract::smoothSelectedCurve(double time, ViewIdx view)
 }
 
 bool
-RotoPaintInteract::cuspSelectedCurve(double time, ViewIdx view)
+RotoPaintInteract::cuspSelectedCurve(TimeValue time, ViewIdx view)
 {
     std::pair<double, double> pixelScale;
 
-    p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     std::list<SmoothCuspUndoCommand::SmoothCuspCurveData> datas;
 
@@ -1820,7 +1776,7 @@ RotoPaintInteract::lockSelectedCurves()
 bool
 RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
                                                 int y,
-                                                double time,
+                                                TimeValue time,
                                                 ViewIdx view)
 {
     std::list< std::pair<BezierCPPtr, BezierCPPtr > > points;
@@ -1848,7 +1804,7 @@ RotoPaintInteract::moveSelectedCpsWithKeyArrows(int x,
 
     if ( !points.empty() ) {
         std::pair<double, double> pixelScale;
-        p->publicInterface->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+        p->publicInterface->getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
         p->publicInterface->pushUndoCommand( new MoveControlPointsUndoCommand(shared_from_this(), points, (double)x * pixelScale.first,
                                                                               (double)y * pixelScale.second, time, view) );
         computeSelectedCpsBBOX();
@@ -1877,7 +1833,7 @@ RotoPaint::hasOverlay() const
 }
 
 void
-RotoPaint::drawOverlay(double time,
+RotoPaint::drawOverlay(TimeValue time,
                        const RenderScale & /*renderScale*/,
                        ViewIdx view)
 {
@@ -1886,8 +1842,8 @@ RotoPaint::drawOverlay(double time,
     std::pair<double, double> pixelScale;
     std::pair<double, double> viewportSize;
 
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
-    getCurrentViewportForOverlays()->getViewportSize(viewportSize.first, viewportSize.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getViewportSize(viewportSize.first, viewportSize.second);
 
     bool featherVisible = _imp->ui->isFeatherVisible();
 
@@ -1949,7 +1905,7 @@ RotoPaint::drawOverlay(double time,
 
 
                 RectD bbox = isBezier->getBoundingBox(time, view);
-                if ( !getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
+                if ( !getNode()->getCurrentViewportForOverlays()->isVisibleInViewport(bbox) ) {
                     continue;
                 }
 
@@ -2234,8 +2190,8 @@ RotoPaint::drawOverlay(double time,
              ( _imp->ui->selectedRole == eRotoRoleCloneBrush) ) &&
             ( _imp->ui->selectedTool != eRotoToolOpenBezier) ) {
             Point cursorPos;
-            getCurrentViewportForOverlays()->getCursorPosition(cursorPos.x, cursorPos.y);
-            RectD viewportRect = getCurrentViewportForOverlays()->getViewportRect();
+            getNode()->getCurrentViewportForOverlays()->getCursorPosition(cursorPos.x, cursorPos.y);
+            RectD viewportRect = getNode()->getCurrentViewportForOverlays()->getViewportRect();
 
             if ( viewportRect.contains(cursorPos.x, cursorPos.y) ) {
                 //Draw a circle  around the cursor
@@ -2342,8 +2298,8 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
         selectionMode = 2;
     }
 
-    double time = getCurrentTime();
-    ViewIdx view = getCurrentView();
+    TimeValue time = getTimelineCurrentTime();
+    ViewIdx view = getCurrentView_TLS();
 
     bool featherVisible = _imp->ui->isFeatherVisible();
     std::list<RotoDrawableItemPtr > curves = _imp->knobsTable->getRotoItemsByRenderOrder(time, view);
@@ -2388,7 +2344,7 @@ RotoPaint::onInteractViewportSelectionUpdated(const RectD& rectangle,
 } // RotoPaint::onInteractViewportSelectionUpdated
 
 bool
-RotoPaint::onOverlayPenDoubleClicked(double time,
+RotoPaint::onOverlayPenDoubleClicked(TimeValue time,
                                      const RenderScale & /*renderScale*/,
                                      ViewIdx view,
                                      const QPointF & /*viewportPos*/,
@@ -2397,7 +2353,7 @@ RotoPaint::onOverlayPenDoubleClicked(double time,
     bool didSomething = false;
     std::pair<double, double> pixelScale;
 
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     if (_imp->ui->selectedTool == eRotoToolSelectAll) {
         double bezierSelectionTolerance = kBezierSelectionTolerance * pixelScale.first;
@@ -2430,20 +2386,20 @@ RotoPaint::onOverlayPenDoubleClicked(double time,
 } // onOverlayPenDoubleClicked
 
 bool
-RotoPaint::onOverlayPenDown(double time,
+RotoPaint::onOverlayPenDown(TimeValue time,
                             const RenderScale & /*renderScale*/,
                             ViewIdx view,
                             const QPointF & /*viewportPos*/,
                             const QPointF & pos,
                             double pressure,
-                            double timestamp,
+                            TimeValue timestamp,
                             PenType pen)
 {
 
     NodePtr node = getNode();
 
     std::pair<double, double> pixelScale;
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     bool didSomething = false;
     double tangentSelectionTol = kTangentHandleSelectionTolerance * pixelScale.first;
@@ -2839,18 +2795,18 @@ RotoPaint::onOverlayPenDown(double time,
 } // penDown
 
 bool
-RotoPaint::onOverlayPenMotion(double time,
+RotoPaint::onOverlayPenMotion(TimeValue time,
                               const RenderScale & /*renderScale*/,
                               ViewIdx view,
                               const QPointF & /*viewportPos*/,
                               const QPointF & pos,
                               double pressure,
-                              double timestamp)
+                              TimeValue timestamp)
 {
 
     std::pair<double, double> pixelScale;
 
-    getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
+    getNode()->getCurrentViewportForOverlays()->getPixelScale(pixelScale.first, pixelScale.second);
 
     bool didSomething = false;
     HoverStateEnum lastHoverState = _imp->ui->hoverState;
@@ -3245,13 +3201,13 @@ RotoPaint::onOverlayPenMotion(double time,
 } // onOverlayPenMotion
 
 bool
-RotoPaint::onOverlayPenUp(double /*time*/,
+RotoPaint::onOverlayPenUp(TimeValue /*time*/,
                           const RenderScale & /*renderScale*/,
                           ViewIdx /*view*/,
                           const QPointF & /*viewportPos*/,
                           const QPointF & /*pos*/,
                           double /*pressure*/,
-                          double /*timestamp*/)
+                          TimeValue /*timestamp*/)
 {
 
 
@@ -3259,7 +3215,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
         invalidateCacheHashAndEvaluate(true, false);
 
         //sync other viewers linked to this roto
-        redrawOverlayInteract();
+        requestOverlayInteractRefresh();
         _imp->ui->evaluateOnPenUp = false;
     }
 
@@ -3316,7 +3272,7 @@ RotoPaint::onOverlayPenUp(double /*time*/,
 } // onOverlayPenUp
 
 bool
-RotoPaint::onOverlayKeyDown(double /*time*/,
+RotoPaint::onOverlayKeyDown(TimeValue /*time*/,
                             const RenderScale & /*renderScale*/,
                             ViewIdx view,
                             Key key,
@@ -3356,7 +3312,7 @@ RotoPaint::onOverlayKeyDown(double /*time*/,
 } //onOverlayKeyDown
 
 bool
-RotoPaint::onOverlayKeyUp(double /*time*/,
+RotoPaint::onOverlayKeyUp(TimeValue /*time*/,
                           const RenderScale & /*renderScale*/,
                           ViewIdx /*view*/,
                           Key key,
@@ -3394,7 +3350,7 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
     
     if (_imp->ui->evaluateOnKeyUp) {
         invalidateCacheHashAndEvaluate(true, false);
-        redrawOverlayInteract();
+        requestOverlayInteractRefresh();
         _imp->ui->evaluateOnKeyUp = false;
     }
     
@@ -3402,7 +3358,7 @@ RotoPaint::onOverlayKeyUp(double /*time*/,
 } // onOverlayKeyUp
 
 bool
-RotoPaint::onOverlayKeyRepeat(double /*time*/,
+RotoPaint::onOverlayKeyRepeat(TimeValue /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/,
                               Key /*key*/,
@@ -3412,7 +3368,7 @@ RotoPaint::onOverlayKeyRepeat(double /*time*/,
 } // onOverlayKeyRepeat
 
 bool
-RotoPaint::onOverlayFocusGained(double /*time*/,
+RotoPaint::onOverlayFocusGained(TimeValue /*time*/,
                                 const RenderScale & /*renderScale*/,
                                 ViewIdx /*view*/)
 {
@@ -3420,7 +3376,7 @@ RotoPaint::onOverlayFocusGained(double /*time*/,
 } // onOverlayFocusGained
 
 bool
-RotoPaint::onOverlayFocusLost(double /*time*/,
+RotoPaint::onOverlayFocusLost(TimeValue /*time*/,
                               const RenderScale & /*renderScale*/,
                               ViewIdx /*view*/)
 {

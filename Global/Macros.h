@@ -115,7 +115,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
 
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
-#define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
 
@@ -306,11 +305,6 @@ NATRON_VERSION_STRINGIZE__(major, minor)
 #define NATRON_FONT "Droid Sans"
 #define NATRON_FONT_ALT "Droid Sans"
 #define NATRON_SCRIPT_FONT "Courier New"
-
-//Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
-//When enabled the value of 2 is a code for a pixel being rendered but not yet available.
-//In this context, the reader of the bitmap should then wait for the pixel to be available.
-#define NATRON_ENABLE_TRIMAP 1
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x

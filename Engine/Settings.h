@@ -35,17 +35,16 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
-
-NATRON_NAMESPACE_ENTER;
 
 enum KnownHostNameEnum
 {
@@ -114,32 +113,20 @@ public:
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view) OVERRIDE FINAL;
 
-    double getRamMaximumPercent() const;
+    std::string getDiskCachePath() const;
 
-    U64 getMaximumViewerDiskCacheSize() const;
+    std::size_t getMaximumDiskCacheSize() const;
 
-    U64 getMaximumDiskCacheNodeSize() const;
-
-    double getUnreachableRamPercent() const;
+    std::size_t getMaximumRAMCacheSize() const;
 
     bool getColorPickerLinear() const;
 
     int getNumberOfThreads() const;
 
     void setNumberOfThreads(int threadsNb);
-
-    int getNumberOfParallelRenders() const;
-
-    void setNumberOfParallelRenders(int nb);
-
-    int getNumberOfThreadsPerEffect() const;
-
-    bool useGlobalThreadPool() const;
-
-    void setUseGlobalThreadPool(bool use);
 
     void restorePluginSettings();
 
@@ -237,8 +224,8 @@ public:
 
     ///////////////////////////////////////////////////////
     // "Viewers" pane
+    KnobChoicePtr getViewerBitDepthKnob() const;
     ImageBitDepthEnum getViewersBitDepth() const;
-    int getViewerTilesPowerOf2() const;
     int getCheckerboardTileSize() const;
     void getCheckerboardColor1(double* r, double* g, double* b, double* a) const;
     void getCheckerboardColor2(double* r, double* g, double* b, double* a) const;
@@ -340,8 +327,6 @@ public:
     void getPluginIconFrameColor(int *r, int *g, int *b) const;
 
     bool isNaNHandlingEnabled() const;
-
-    bool isCopyInputImageForPluginRenderEnabled() const;
 
     bool isDefaultAppearanceOutdated() const;
     void restoreDefaultAppearance();

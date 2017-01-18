@@ -33,6 +33,16 @@ PropertiesHolder::PropertiesHolder()
 {
 }
 
+PropertiesHolder::PropertiesHolder(const PropertiesHolder& other)
+: _properties()
+, _propertiesInitialized(other._propertiesInitialized)
+{
+    for (std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator it = other._properties.begin(); it!=other._properties.end(); ++it) {
+        boost::shared_ptr<PropertyBase> duplicate = it->second->createDuplicate();
+        _properties.insert(std::make_pair(it->first, duplicate));
+    }
+}
+
 PropertiesHolder::~PropertiesHolder()
 {
     

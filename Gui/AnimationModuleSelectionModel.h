@@ -125,9 +125,9 @@ public:
     /**
      * @brief Returns true if the given keyframe is selected for the item/dimension/view
      **/
-    bool isKeyframeSelectedOnCurve(const AnimItemBasePtr &item, DimIdx dimension ,ViewIdx view, double time, bool alsoCheckForExistence) const;
+    bool isKeyframeSelectedOnCurve(const AnimItemBasePtr &item, DimIdx dimension ,ViewIdx view, TimeValue time, bool alsoCheckForExistence) const;
 
-    bool isKeyframeSelected(const AnimItemBasePtr &item, DimSpec dimension ,ViewSetSpec view, double time) const;
+    bool isKeyframeSelected(const AnimItemBasePtr &item, DimSpec dimension ,ViewSetSpec view, TimeValue time) const;
 
     /**
      * @brief Returns whether the given node is selected

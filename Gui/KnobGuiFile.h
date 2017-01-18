@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/TimeValue.h"
 #include "Gui/KnobGuiTable.h"
 #include "Gui/KnobGuiWidgets.h"
 #include "Gui/GuiFwd.h"
@@ -90,7 +91,7 @@ public Q_SLOTS:
 
 private:
 
-    bool checkFileModificationAndWarnInternal(bool doCheck, SequenceTime time, bool errorAndAbortRender);
+    bool checkFileModificationAndWarnInternal(bool doCheck, TimeValue time, bool errorAndAbortRender);
 
 
     virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;

@@ -29,12 +29,13 @@
 #include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QApplication>
 
-#include <QThread>
+#include <QtCore/QThread>
 #include <QDebug>
 #include <QImage>
 
 #include "Engine/KnobTypes.h"
 #include "Engine/OSGLFunctions.h"
+#include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/TimeLine.h"
@@ -148,8 +149,8 @@ AnimationModuleViewPrivate::drawTimelineMarkers(const ZoomContext& ctx)
         GL_GPU::Hint(GL_LINE_SMOOTH_HINT, GL_DONT_CARE);
         GL_GPU::Color4f(boundsR, boundsG, boundsB, 1.);
 
-        double leftBound, rightBound;
-        _gui->getApp()->getFrameRange(&leftBound, &rightBound);
+        TimeValue leftBound, rightBound;
+        _gui->getApp()->getProject()->getFrameRange(&leftBound, &rightBound);
         GL_GPU::Begin(GL_LINES);
         GL_GPU::Vertex2f( leftBound, btmRight.y() );
         GL_GPU::Vertex2f( leftBound, topLeft.y() );
@@ -407,7 +408,7 @@ AnimationModuleViewPrivate::drawTexturedKeyframe(AnimationModuleViewPrivate::Key
 }
 
 void
-AnimationModuleViewPrivate::drawKeyFrameTime(const ZoomContext& ctx,  double time, const QColor& textColor, const RectD& rect) const
+AnimationModuleViewPrivate::drawKeyFrameTime(const ZoomContext& ctx,  TimeValue time, const QColor& textColor, const RectD& rect) const
 {
     QString text = QString::number(time);
     QPointF p = ctx.toWidgetCoordinates( rect.right(), rect.bottom() );
@@ -1095,7 +1096,7 @@ AnimationModuleViewPrivate::moveCurrentFrameIndicator(int frame)
     _gui->getApp()->setLastViewerUsingTimeline( NodePtr() );
 
     _gui->setDraftRenderEnabled(true);
-    timeline->seekFrame(frame, false, OutputEffectInstancePtr(), eTimelineChangeReasonAnimationModuleSeek);
+    timeline->seekFrame(frame, false, EffectInstancePtr(), eTimelineChangeReasonAnimationModuleSeek);
 }
 
 void

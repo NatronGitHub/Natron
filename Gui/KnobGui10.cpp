@@ -447,7 +447,7 @@ KnobGui::onSetKeyActionTriggered()
     KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
 
 
-    double time = internalKnob->getCurrentTime();
+    TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
     AnimItemDimViewKeyFramesMap keysToAdd;
 
     int nDims = internalKnob->getNDimensions();
@@ -516,7 +516,7 @@ KnobGui::onRemoveKeyActionTriggered()
     AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
 
 
-    double time = internalKnob->getCurrentTime();
+    TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
     AnimItemDimViewKeyFramesMap keysToRemove;
 
     int nDims = internalKnob->getNDimensions();

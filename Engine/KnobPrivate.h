@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ENGINE_KNOBPRIVATE_H
 #define ENGINE_KNOBPRIVATE_H
 
@@ -26,11 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
+#include "Knob.h"
+
 #include <algorithm> // min, max
 #include <cassert>
 #include <stdexcept>
-
-#include "Knob.h"
 
 #include <QtCore/QDataStream>
 #include <QtCore/QDateTime>
@@ -50,6 +51,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Curve.h"
+#include "Engine/Cache.h"
+#include "Engine/CacheEntryBase.h"
+#include "Engine/CacheEntryKeyBase.h"
 #include "Engine/DockablePanelI.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
@@ -71,10 +75,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Engine/EngineFwd.h"
 
-#define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
-
-
 NATRON_NAMESPACE_ENTER
+
+#define EXPR_RECURSION_LEVEL() ExprRecursionLevel_RAII __recursionLevelIncrementer__(this)
 
 typedef std::map<ViewIdx, KnobDimViewBasePtr> PerViewKnobDataMap;
 typedef std::vector<PerViewKnobDataMap> PerDimensionKnobDataMap;
@@ -355,6 +358,165 @@ struct KnobHelperPrivate
      * @param addTab, if true, the script should be indented by one tab
      **/
     std::string getReachablePythonAttributesForExpression(bool addTab, DimIdx dimension, ViewIdx view);
+
+
+};
+
+
+class KnobExpressionKey : public CacheEntryKeyBase
+{
+public:
+
+    KnobExpressionKey(U64 nodeTimeInvariantHash,
+                      int dimension,
+                      TimeValue time,
+                      ViewIdx view,
+                      const std::string& knobScriptName)
+    : _nodeTimeInvariantHash(nodeTimeInvariantHash)
+    , _dimension(dimension)
+    , _time(time)
+    , _view(view)
+    , _knobScriptName(knobScriptName)
+    {
+
+    }
+
+    virtual ~KnobExpressionKey()
+    {
+
+    }
+
+
+    virtual int getUniqueID() const OVERRIDE FINAL
+    {
+        return kCacheKeyUniqueIDExpressionResult;
+    }
+
+    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL
+    {
+        writeMMObject(_nodeTimeInvariantHash, "hash", segment);
+        writeMMObject(_time, "time", segment);
+        writeMMObject(_view, "view", segment);
+        writeMMObject(_dimension, "dim", segment);
+        writeMMObject(_knobScriptName, "knob", segment);
+        CacheEntryKeyBase::toMemorySegment(segment);
+    }
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE FINAL
+    {
+        readMMObject("hash", segment, &_nodeTimeInvariantHash);
+        readMMObject("time", segment, &_time);
+        readMMObject("view", segment, &_view);
+        readMMObject("dim", segment, &_dimension);
+        readMMObject("knob", segment, &_knobScriptName);
+        CacheEntryKeyBase::fromMemorySegment(segment);
+    }
+
+private:
+
+
+
+    virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL
+    {
+        hash->append(_nodeTimeInvariantHash);
+        hash->append(_dimension);
+        hash->append((double)_time);
+        hash->append((int)_view);
+        Hash64::appendQString(QString::fromUtf8(_knobScriptName.c_str()), hash);
+    }
+
+    U64 _nodeTimeInvariantHash;
+    int _dimension;
+    TimeValue _time;
+    ViewIdx _view;
+    std::string _knobScriptName;
+};
+
+
+class KnobExpressionResult : public CacheEntryBase
+{
+    KnobExpressionResult();
+
+public:
+
+    enum KnobExpressionResultTypeEnum
+    {
+        eKnobExpressionResultTypePod,
+        eKnobExpressionResultTypeString
+    };
+
+    static KnobExpressionResultPtr create(const KnobExpressionKeyPtr& key)
+    {
+        KnobExpressionResultPtr ret(new KnobExpressionResult());
+        ret->setKey(key);
+        return ret;
+    }
+
+    virtual ~KnobExpressionResult()
+    {
+
+    }
+
+    // This is thread-safe and doesn't require a mutex:
+    // The thread computing this entry and calling the setter is guaranteed
+    // to be the only one interacting with this object. Then all objects
+    // should call the getter.
+    //
+    void getResult(double* value, std::string* valueAsString) const
+    {
+        if (value) {
+            *value = _valueResult;
+        }
+        if (valueAsString) {
+            *valueAsString = _stringResult;
+        }
+    }
+
+    void setResult(double value, const std::string& valueAsString)
+    {
+        _stringResult = valueAsString;
+        _valueResult = value;
+    }
+
+    virtual std::size_t getMetadataSize() const OVERRIDE FINAL
+    {
+        // Return a fake size
+        return 128;
+    }
+
+    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL
+    {
+        if (!_stringResult.empty()) {
+            KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
+            writeMMObject((int)type, "type", segment);
+            writeMMObject(_stringResult, "value", segment);
+        } else {
+            KnobExpressionResultTypeEnum type = eKnobExpressionResultTypePod;
+            writeMMObject((int)type, "type", segment);
+            writeMMObject(_valueResult, "value", segment);
+        }
+        CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+    }
+
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL
+    {
+        int type_i;
+        readMMObject("type", segment, &type_i);
+        switch ((KnobExpressionResultTypeEnum)type_i) {
+            case eKnobExpressionResultTypePod: {
+                readMMObject("value", segment, &_valueResult);
+            }   break;
+            case eKnobExpressionResultTypeString: {
+                readMMObject("value", segment, &_stringResult);
+            }   break;
+        }
+        CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+    }
+
+private:
+    
+    std::string _stringResult;
+    double _valueResult;
 
 };
 

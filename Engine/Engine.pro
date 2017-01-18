@@ -74,7 +74,6 @@ DEPENDPATH += $$PWD/NatronEngine
 DEPENDPATH += $$PWD/../Global
 
 SOURCES += \
-    AbortableRenderInfo.cpp \
     AnimatingObjectI.cpp \
     AppInstance.cpp \
     AppManager.cpp \
@@ -82,16 +81,21 @@ SOURCES += \
     Backdrop.cpp \
     Bezier.cpp \
     BezierCP.cpp \
-    BlockingBackgroundRender.cpp \
     Cache.cpp \
+    CacheEntryBase.cpp \
+    CacheEntryKeyBase.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
     ColorParser.cpp \
     CreateNodeArgs.cpp \
     Curve.cpp \
     DiskCacheNode.cpp \
+    Distorsion2D.cpp \
     Dot.cpp \
     EffectInstance.cpp \
+    EffectInstanceTLSData.cpp \
+    EffectInstanceActions.cpp \
+    EffectInstanceActionResults.cpp \
     EffectInstancePrivate.cpp \
     EffectInstanceRenderRoI.cpp \
     EffectOpenGLContextData.cpp \
@@ -100,8 +104,6 @@ SOURCES += \
     FileSystemModel.cpp \
     FitCurve.cpp \
     Format.cpp \
-    FrameEntry.cpp \
-    FrameKey.cpp \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
@@ -114,10 +116,12 @@ SOURCES += \
     HostOverlaySupport.cpp \
     Image.cpp \
     ImageConvert.cpp \
+    ImageComponents.cpp  \
     ImageCopyChannels.cpp \
-    ImageComponents.cpp \
-    ImageKey.cpp \
+    ImageFill.cpp \
+    ImagePrivate.cpp \
     ImageMaskMix.cpp \
+    ImageStorage.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
     Knob.cpp \
@@ -133,12 +137,21 @@ SOURCES += \
     Lut.cpp \
     Markdown.cpp \
     MemoryFile.cpp \
+    MultiThread.cpp \
     MemoryInfo.cpp \
     Node.cpp \
+    NodeChannelSelectors.cpp \
+    NodeDocumentation.cpp \
+    NodeDefaultKnobs.cpp \
+    NodeInputs.cpp \
+    NodeMain.cpp \
+    NodeName.cpp \
+    NodeOverlay.cpp \
+    NodeRenderPreview.cpp \
     NodePrivate.cpp \
     NodeGroup.cpp \
     NodeMetadata.cpp \
-    NonKeyParams.cpp \
+    NodePythonInteraction.cpp \
     NoOpBase.cpp \
     Noise.cpp \
     OSGLContext.cpp \
@@ -156,9 +169,7 @@ SOURCES += \
     OfxOverlayInteract.cpp \
     OfxParamInstance.cpp \
     OneViewNode.cpp \
-    OutputEffectInstance.cpp \
     OutputSchedulerThread.cpp \
-    ParallelRenderArgs.cpp \
     Plugin.cpp \
     PluginMemory.cpp \
     PrecompNode.cpp \
@@ -181,6 +192,7 @@ SOURCES += \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
+    RenderQueue.cpp \
     RotoBezierTriangulation.cpp \
     RotoDrawableItem.cpp \
     RotoItem.cpp \
@@ -199,11 +211,11 @@ SOURCES += \
     SplitterI.cpp \
     Smooth1D.cpp \
     StandardPaths.cpp \
+    StorageDeleterThread.cpp \
     StringAnimationManager.cpp \
     StubNode.cpp \
     TabWidgetI.cpp \
     Texture.cpp \
-    TextureRect.cpp \
     ThreadPool.cpp \
     TimeLine.cpp \
     Timer.cpp \
@@ -216,11 +228,16 @@ SOURCES += \
     TrackerNodePrivate.cpp \
     TrackerNodeTransformExport.cpp \
     TrackScheduler.cpp \
+    TreeRender.cpp \
+    TreeRenderNodeArgs.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     Utils.cpp \
     ViewerInstance.cpp \
     ViewerNode.cpp \
+    ViewerNodePrivate.cpp \
+    ViewerNodeKnobs.cpp \
+    ViewerNodeOverlays.cpp \
     ViewIdx.cpp \
     WriteNode.cpp \
     ../Global/glad_source.c \
@@ -281,8 +298,9 @@ SOURCES += \
 
 
 
+
+
 HEADERS += \
-    AbortableRenderInfo.h \
     AfterQuitProcessingI.h \
     AnimatingObjectI.h \
     AppInstance.h \
@@ -292,23 +310,27 @@ HEADERS += \
     Bezier.h \
     BezierCP.h \
     BezierCPPrivate.h \
-    BlockingBackgroundRender.h \
     BufferableObject.h \
     CLArgs.h \
     Cache.h \
-    CacheEntry.h \
+    CacheEntryBase.h \
+    CacheEntryKeyBase.h \
     CoonsRegularization.h \
+    ChoiceOption.h \
     Color.h \
     ColorParser.h \
     CreateNodeArgs.h \
     Curve.h \
     CurvePrivate.h \
     DimensionIdx.h \
+    Distorsion2D.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \
     EffectInstance.h \
+    EffectInstanceTLSData.h \
     EffectInstancePrivate.h \
+    EffectInstanceActionResults.h \
     EffectOpenGLContextData.h \
     ExistenceCheckThread.h \
     EngineFwd.h \
@@ -317,9 +339,6 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
-    FrameEntry.h \
-    FrameKey.h \
-    FrameParams.h \
     FStreamsSupport.h \
     fstream_mingw.h \
     GenericSchedulerThread.h \
@@ -333,13 +352,12 @@ HEADERS += \
     HistogramCPU.h \
     HostOverlaySupport.h \
     Image.h \
+    ImagePrivate.h \
     ImageComponents.h \
-    ImageKey.h \
-    ImageLocker.h \
-    ImageParams.h \
     Interpolation.h \
+    IPCCommon.h \
+    ImageStorage.h \
     JoinViewsNode.h \
-    KeyHelper.h \
     Knob.h \
     KnobPrivate.h \
     KnobGuiI.h \
@@ -360,6 +378,7 @@ HEADERS += \
     MemoryFile.h \
     MemoryInfo.h \
     MergingEnum.h \
+    MultiThread.h \
     Node.h \
     NodePrivate.h \
     Noise.h \
@@ -368,7 +387,6 @@ HEADERS += \
     NodeGraphI.h \
     NodeGuiI.h \
     NodeMetadata.h \
-    NonKeyParams.h \
     NoOpBase.h \
     OSGLContext.h \
     OSGLContext_osmesa.h \
@@ -387,10 +405,8 @@ HEADERS += \
     OfxParamInstance.h \
     OneViewNode.h \
     OpenGLViewerI.h \
-    OutputEffectInstance.h \
     OutputSchedulerThread.h \
     OverlaySupport.h \
-    ParallelRenderArgs.h \
     Plugin.h \
     PluginActionShortcut.h \
     PluginMemory.h \
@@ -410,11 +426,13 @@ HEADERS += \
     PyTracker.h \
     Pyside_Engine_Python.h \
     PyPanelI.h \
+    RamBuffer.h \
     ReadNode.h \
     RectD.h \
     RectI.h \
     RenderStats.h \
     RenderValuesCache.h \
+    RenderQueue.h \
     RotoBezierTriangulation.h \
     RotoDrawableItem.h \
     RotoLayer.h \
@@ -435,16 +453,17 @@ HEADERS += \
     Singleton.h \
     SplitterI.h \
     StandardPaths.h \
+    StorageDeleterThread.h \
     StringAnimationManager.h \
     StubNode.h \
     TabWidgetI.h \
     Texture.h \
-    TextureRect.h \
     ThreadStorage.h \
     ThreadPool.h \
     TimeLine.h \
     TimeLineKeys.h \
     Timer.h \
+    TimeValue.h \
     TrackArgs.h \
     TrackerHelper.h \
     TrackerHelperPrivate.h \
@@ -454,16 +473,17 @@ HEADERS += \
     TrackerParamsProvider.h \
     TrackScheduler.h \
     TrackMarker.h \
+    TreeRender.h \
+    TreeRenderNodeArgs.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \
-    UpdateViewerParams.h \
     UndoCommand.h \
     Utils.h \
     Variant.h \
     ViewerInstance.h \
-    ViewerInstancePrivate.h \
     ViewerNode.h \
+    ViewerNodePrivate.h \
     ViewIdx.h \
     WriteNode.h \
     ../Global/Enums.h \

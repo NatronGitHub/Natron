@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef TLSHOLDER_H
-#define TLSHOLDER_H
+#ifndef NATRON_ENGINE_TLSHOLDER_H
+#define NATRON_ENGINE_TLSHOLDER_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -25,7 +25,6 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
 
 #include <list>
 #include <map>
@@ -33,6 +32,7 @@
 #include <string>
 #include <set>
 
+#include "Global/Macros.h"
 #include "Global/GlobalDefines.h"
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -42,6 +42,7 @@
 #endif
 
 #include <QtCore/QReadWriteLock>
+#include <QMutex>
 #include <QtCore/QThread>
 
 #include "Engine/EngineFwd.h"
@@ -174,10 +175,12 @@ private:
  * @param multipleInstance If true, then the TLS object will be mapped against this object
  * so that there can be multiple instance of it in the global TLS. Otherwise only
  * a single instance of the TLS object will be present.
+ *
+ *
  **/
 template <typename T>
 class TLSHolder
-    : public TLSHolderBase
+: public TLSHolderBase
 {
     friend class AppTLS;
 
@@ -191,10 +194,13 @@ class TLSHolder
 public:
 
     TLSHolder()
-        : TLSHolderBase() {}
+    : TLSHolderBase() {}
 
     virtual ~TLSHolder() {}
 
+    // Even though these data are unique to the holder thread, we need a Mutex when copying one thread data
+    // over another one.
+    // Each data member of sub-classes must be protected by this mutex in getters/setters
     boost::shared_ptr<T> getTLSData() const;
     boost::shared_ptr<T> getOrCreateTLSData() const;
 
@@ -212,4 +218,4 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // TLSHOLDER_H
+#endif // NATRON_ENGINE_TLSHOLDER_H

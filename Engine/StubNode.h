@@ -32,13 +32,15 @@
 #endif
 
 #include "Engine/NoOpBase.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kStubNodeParamSerialization "content"
 #define kStubNodeParamSerializationLabel "Content"
 #define kStubNodeParamSerializationHint "The content of the node that was saved in the project"
 
-NATRON_NAMESPACE_ENTER;
 
 struct StubNodePrivate;
 
@@ -82,7 +84,7 @@ private:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
+                             TimeValue time) OVERRIDE FINAL;
 
 private:
 

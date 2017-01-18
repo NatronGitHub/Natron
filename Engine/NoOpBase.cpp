@@ -33,18 +33,15 @@
 NATRON_NAMESPACE_ENTER;
 
 NoOpBase::NoOpBase(const NodePtr& n)
-    : OutputEffectInstance(n)
+    : EffectInstance(n)
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
-                                std::list<ImageComponents>* comps)
+                                std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -55,12 +52,13 @@ NoOpBase::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthFloat);
 }
 
-bool
-NoOpBase::isIdentity(double time,
+ActionRetCodeEnum
+NoOpBase::isIdentity(TimeValue time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
                      ViewIdx view,
-                     double* inputTime,
+                     const TreeRenderNodeArgsPtr& /*render*/,
+                     TimeValue* inputTime,
                      ViewIdx* inputView,
                      int* inputNb)
 {
@@ -68,7 +66,7 @@ NoOpBase::isIdentity(double time,
     *inputNb = 0;
     *inputView = view;
 
-    return true;
+    return eActionStatusOK;
 }
 
 bool
@@ -78,29 +76,6 @@ NoOpBase::isHostChannelSelectorSupported(bool* /*defaultR*/,
                                          bool* /*defaultA*/) const
 {
     return false;
-}
-
-StatusEnum
-NoOpBase::getTransform(double /*time*/,
-                       const RenderScale & /*renderScale*/,
-                       ViewIdx /*view*/,
-                       int* inputToTransform,
-                       Transform::Matrix3x3* transform)
-{
-    *inputToTransform = 0;
-    transform->a = 1.; transform->b = 0.; transform->c = 0.;
-    transform->d = 0.; transform->e = 1.; transform->f = 0.;
-    transform->g = 0.; transform->h = 0.; transform->i = 1.;
-
-    return eStatusOK;
-}
-
-bool
-NoOpBase::getInputsHoldingTransform(std::list<int>* inputs) const
-{
-    inputs->push_back(0);
-
-    return true;
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -104,6 +104,8 @@ Gui::Gui(const GuiAppInstancePtr& app,
     QObject::connect( qApp, SIGNAL(focusChanged(QWidget*,QWidget*)), this, SLOT(onFocusChanged(QWidget*,QWidget*)) );
     QObject::connect (this, SIGNAL(s_showLogOnMainThread()), this, SLOT(onShowLogOnMainThreadReceived()));
     QObject::connect (this, SIGNAL(mustRefreshTimelineGuiKeyframesLater()), this, SLOT(onMustRefreshTimelineGuiKeyframesLaterReceived()), Qt::QueuedConnection);
+    QObject::connect (this, SIGNAL(mustRefreshTimelineGuiKeyframesLater()), this, SLOT(onMustRefreshTimelineGuiKeyframesLaterReceived()), Qt::QueuedConnection);
+    QObject::connect (this, SIGNAL(mustRefreshViewersAndKnobsLater()), this, SLOT(onMustRefreshViewersAndKnobsLaterReceived()), Qt::QueuedConnection);
 
     setAcceptDrops(true);
 
@@ -161,11 +163,6 @@ bool
 Gui::closeProject()
 {
     bool ret = abortProject(true, true, true);
-
-    ///When closing a project we can remove the ViewerCache from memory and put it on disk
-    ///since we're not sure it will be used right away
-    appPTR->clearPlaybackCache();
-
     return ret;
 }
 

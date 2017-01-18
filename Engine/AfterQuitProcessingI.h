@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef AFTERQUITPROCESSINGI_H
-#define AFTERQUITPROCESSINGI_H
+#ifndef Engine_AfterQuitProcessingI_h
+#define Engine_AfterQuitProcessingI_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -53,4 +53,4 @@ protected:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // AFTERQUITPROCESSINGI_H
+#endif // Engine_AfterQuitProcessingI_h

@@ -133,7 +133,7 @@ TrackerNodePrivate::exportTrackDataFromExportOptions()
     thisNode->getSize(&thisNodeSize[0], &thisNodeSize[1]);
     createdNode->setPosition(thisNodePos[0] + thisNodeSize[0] * 2., thisNodePos[1]);
 
-    int timeForFromPoints = referenceFrame.lock()->getValue();
+    TimeValue timeForFromPoints(referenceFrame.lock()->getValue());
 
 
     switch (transformType) {
@@ -296,7 +296,7 @@ TrackerNodePrivate::solveTransformParams()
     KnobChoicePtr motionTypeKnob = motionType.lock();
     int motionType_i = motionTypeKnob->getValue();
     TrackerMotionTypeEnum type =  (TrackerMotionTypeEnum)motionType_i;
-    double refTime = (double)referenceFrame.lock()->getValue();
+    TimeValue refTime(referenceFrame.lock()->getValue());
     int jitterPer = 0;
     bool jitterAdd = false;
     switch (type) {
@@ -316,13 +316,13 @@ TrackerNodePrivate::solveTransformParams()
 
     setSolverParamsEnabled(false);
 
-    std::set<double> keyframes;
+    std::set<TimeValue> keyframes;
     {
         for (std::size_t i = 0; i < markers.size(); ++i) {
             std::set<double> keys;
             markers[i]->getCenterKeyframes(&keys);
             for (std::set<double>::iterator it = keys.begin(); it != keys.end(); ++it) {
-                keyframes.insert(*it);
+                keyframes.insert(TimeValue(*it));
             }
         }
     }
@@ -679,8 +679,8 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
     // Get reference corner pin
     CornerPinPoints refFrom;
     for (int c = 0; c < 4; ++c) {
-        refFrom.pts[c].x = fromPointsKnob[c]->getValueAtTime(refTime);
-        refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(refTime, DimIdx(1));
+        refFrom.pts[c].x = fromPointsKnob[c]->getValueAtTime(TimeValue(refTime));
+        refFrom.pts[c].y = fromPointsKnob[c]->getValueAtTime(TimeValue(refTime), DimIdx(1));
     }
 
     // Create temporary curves and clone the toPoint internal curves at once because setValueAtTime will be slow since it emits
@@ -775,7 +775,7 @@ TrackerNodePrivate::computeCornerParamsFromTracksEnd(double refTime,
     }
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonUserEdited);
+        (*it)->evaluateValueChange(DimSpec::all(), TimeValue(refTime), ViewSetSpec::all(), eValueChangedReasonUserEdited);
     }
 
     endSolve();
@@ -955,7 +955,7 @@ TrackerNodePrivate::computeTransformParamsFromTracksEnd(double refTime,
 
     for (std::list<KnobIPtr>::iterator it = animatedKnobsChanged.begin(); it != animatedKnobsChanged.end(); ++it) {
         (*it)->unblockValueChanges();
-        (*it)->evaluateValueChange(DimSpec::all(), refTime, ViewSetSpec::all(), eValueChangedReasonUserEdited);
+        (*it)->evaluateValueChange(DimSpec::all(), TimeValue(refTime), ViewSetSpec::all(), eValueChangedReasonUserEdited);
     }
     endSolve();
 } // TrackerNodePrivate::computeTransformParamsFromTracksEnd

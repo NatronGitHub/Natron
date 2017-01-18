@@ -47,7 +47,10 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/RotoItem.h"
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kMergeParamOutputChannelsR      "OutputChannelsR"
 #define kMergeParamOutputChannelsG      "OutputChannelsG"
@@ -77,9 +80,6 @@ CLANG_DIAG_ON(deprecated-declarations)
 #define kTimeBlurParamShutter "shutter"
 #define kTimeBlurParamShutterOffset "shutterOffset"
 #define kTimeBlurParamCustomOffset "shutterCustomOffset"
-
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -163,12 +163,12 @@ public:
      * @brief When deactivated the spline will not be taken into account when rendering, neither will it be visible on the viewer.
      * If isGloballyActivated() returns false, this function will return false aswell.
      **/
-    bool isActivated(double time, ViewGetSpec view) const;
+    bool isActivated(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Get the frame-range(s) through which the item is activated
      **/
-    std::vector<RangeD> getActivatedRanges(ViewGetSpec view) const;
+    std::vector<RangeD> getActivatedRanges(ViewIdx view) const;
 
     std::string getCompositingOperatorToolTip() const;
 
@@ -194,18 +194,18 @@ public:
     KnobDoublePtr getBrushVisiblePortionKnob() const;
 
 
-    void getMotionBlurSettings(const double time,
-                               ViewGetSpec view,
+    void getMotionBlurSettings(const TimeValue time,
+                               ViewIdx view,
                                RangeD* range,
                                int* divisions) const;
 
-    void setKeyframeOnAllTransformParameters(double time);
+    void setKeyframeOnAllTransformParameters(TimeValue time);
 
-    virtual RectD getBoundingBox(double time, ViewGetSpec view) const = 0;
+    virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const = 0;
 
-    void getTransformAtTime(double time, ViewGetSpec view, Transform::Matrix3x3* matrix) const;
+    void getTransformAtTime(TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix) const;
 
-    void setExtraMatrix(bool setKeyframe, double time, ViewSetSpec view, const Transform::Matrix3x3& mat);
+    void setExtraMatrix(bool setKeyframe, TimeValue time, ViewSetSpec view, const Transform::Matrix3x3& mat);
 
     /**
      * @brief Return pointer to internal node
@@ -249,17 +249,17 @@ public:
     /**
      * @brief Can only be called on a non render clone. This will create a render clone for the given renderID.
      **/
-    RotoDrawableItemPtr getOrCreateCachedDrawable(const AbortableRenderInfoPtr& renderID);
+    RotoDrawableItemPtr getOrCreateCachedDrawable(const TreeRenderPtr& render);
 
     /**
      * @brief Retrieves the render clone for the given renderID
      **/
-    RotoDrawableItemPtr getCachedDrawable(const AbortableRenderInfoPtr& renderID) const;
+    RotoDrawableItemPtr getCachedDrawable(const TreeRenderPtr& render) const;
 
     /**
      * @brief Remove a cached drawable previously registered with getOrCreateCachedDrawable
      **/
-    void removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const;
+    void removeCachedDrawable(const TreeRenderPtr& render) const;
 
 
 Q_SIGNALS:
@@ -277,10 +277,10 @@ protected:
 
     virtual bool onKnobValueChanged(const KnobIPtr& k,
                                     ValueChangedReasonEnum reason,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view) OVERRIDE;
 
-    virtual void onTransformSet(double /*time*/, ViewSetSpec /*view*/) {}
+    virtual void onTransformSet(TimeValue /*time*/, ViewSetSpec /*view*/) {}
 
 private:
 
@@ -313,7 +313,7 @@ public:
         return eRotoStrokeTypeComp;
     }
 
-    virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
+    virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
 
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 

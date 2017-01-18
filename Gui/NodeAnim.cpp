@@ -636,12 +636,28 @@ NodeAnimPrivate::computeRetimeRange()
         return;
     }
     if (input) {
-        double inputFirst, inputLast;
-        input->getEffectInstance()->getFrameRange_public(0, &inputFirst, &inputLast);
+        RangeD inputRange = {0, 0};
+        {
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = input->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                results->getFrameRangeResults(&inputRange);
+            }
+        }
 
-        U64 hash;
-        FramesNeededMap framesFirst = node->getEffectInstance()->getFramesNeeded_public(inputFirst, ViewIdx(0), false, AbortableRenderInfoPtr(), &hash);
-        FramesNeededMap framesLast = node->getEffectInstance()->getFramesNeeded_public(inputLast, ViewIdx(0), false, AbortableRenderInfoPtr(), &hash);
+        FramesNeededMap framesFirst, framesLast;
+        {
+            GetFramesNeededResultsPtr results;
+            ActionRetCodeEnum stat = node->getEffectInstance()->getFramesNeeded_public(TimeValue(inputRange.min), ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                results->getFramesNeeded(&framesFirst);
+            }
+
+            stat = node->getEffectInstance()->getFramesNeeded_public(TimeValue(inputRange.max), ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                results->getFramesNeeded(&framesLast);
+            }
+        }
         assert( !framesFirst.empty() && !framesLast.empty() );
         if ( framesFirst.empty() || framesLast.empty() ) {
             return;

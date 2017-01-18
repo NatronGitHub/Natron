@@ -26,87 +26,46 @@
 #include "Engine/RectI.h"
 #include <cassert>
 #include <vector>
+#include <sstream>
+
+#include "Engine/PropertiesHolder.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
-struct PerInputData
+
+
+class NodeMetadata::Implementation : public PropertiesHolder
 {
-    //Either 1 or 2 components in the case of MotionVectors/Disparity
-    double pixelAspectRatio;
-    ImageComponents components;
-    ImageBitDepthEnum bitdepth;
-
-    PerInputData()
-        : pixelAspectRatio(1.)
-        , components()
-        , bitdepth(eImageBitDepthFloat)
-    {
-    }
-};
-
-struct NodeMetadataPrivate
-{
-    //The premult in output of the node
-    ImagePremultiplicationEnum outputPremult;
-
-    //The image fielding in output
-    ImageFieldingOrderEnum outputFielding;
-
-    //The fps in output
-    double frameRate;
-    PerInputData outputData;
-
-    //For each input specific datas
-    std::vector<PerInputData> inputsData;
-
-    //True if the images can only be sampled continuously (eg: the clip is infact an animating roto spline and can be rendered anywhen).
-    //False if the images can only be sampled at discreet times (eg: the clip is a sequence of frames),
-    bool canRenderAtNonframes;
-
-    //True if the effect changes throughout the time
-    bool isFrameVarying;
-
-    // The output format in pixel coords
-    RectI outputFormat;
+public:
 
 
-    NodeMetadataPrivate()
-        : outputPremult(eImagePremultiplicationPremultiplied)
-        , outputFielding(eImageFieldingOrderNone)
-        , frameRate(24.)
-        , outputData()
-        , inputsData()
-        , canRenderAtNonframes(true)
-        , isFrameVarying(false)
-        , outputFormat()
+    Implementation()
+    : PropertiesHolder()
     {
     }
 
-    NodeMetadataPrivate(const NodeMetadataPrivate& other)
+    Implementation(const Implementation& other)
+    : PropertiesHolder(other)
     {
-        *this = other;
+
     }
 
-    void operator=(const NodeMetadataPrivate& other)
+    virtual void initializeProperties() const OVERRIDE FINAL;
+
+    void toMemorySegment(ExternalSegmentType* segment) const;
+
+    void fromMemorySegment(ExternalSegmentType* segment);
+
+    virtual ~Implementation()
     {
-        outputPremult = other.outputPremult;
-        outputFielding = other.outputFielding;
-        frameRate = other.frameRate;
-        outputData = other.outputData;
-        inputsData = other.inputsData;
-        canRenderAtNonframes = other.canRenderAtNonframes;
-        isFrameVarying = other.isFrameVarying;
-        outputFormat = other.outputFormat;
+
     }
+
 };
 
 NodeMetadata::NodeMetadata()
-    : _imp( new NodeMetadataPrivate() )
-{
-}
-
-NodeMetadata::NodeMetadata(const NodeMetadata& other)
-    : _imp( new NodeMetadataPrivate(*other._imp) )
+    : _imp( new Implementation() )
 {
 }
 
@@ -115,207 +74,417 @@ NodeMetadata::~NodeMetadata()
 }
 
 void
-NodeMetadata::clearAndResize(int inputCount)
+NodeMetadata::Implementation::initializeProperties() const
 {
-    _imp->inputsData.resize(inputCount);
+
 }
 
 void
-NodeMetadata::operator=(const NodeMetadata& other)
+NodeMetadata::setIntMetadata(const std::string& name, int value, int index, bool createIfNotExists)
 {
-    *_imp = *other._imp;
+    try {
+        _imp->setProperty(name, value, index, !createIfNotExists);
+    } catch (...) {
+
+    }
+}
+
+void
+NodeMetadata::setDoubleMetadata(const std::string& name, double value, int index, bool createIfNotExists)
+{
+    try {
+        _imp->setProperty(name, value, index, !createIfNotExists);
+    } catch (...) {
+
+    }
+}
+
+void
+NodeMetadata::setStringMetadata(const std::string& name, const std::string& value, int index, bool createIfNotExists)
+{
+    try {
+        _imp->setProperty(name, value, index, !createIfNotExists);
+    } catch (...) {
+
+    }
+}
+
+void
+NodeMetadata::setIntNMetadata(const std::string& name, const int value[], int count, bool createIfNotExists)
+{
+    try {
+        std::vector<int> values(&value[0], (&value[count -1]) + 1);
+        _imp->setPropertyN(name, values, !createIfNotExists);
+    } catch (...) {
+
+    }
+}
+
+void
+NodeMetadata::setDoubleNMetadata(const std::string& name, const double value[], int count, bool createIfNotExists)
+{
+    try {
+        std::vector<double> values(&value[0], (&value[count -1]) + 1);
+        _imp->setPropertyN(name, values, !createIfNotExists);
+    } catch (...) {
+
+    }
+}
+
+void
+NodeMetadata::setStringNMetadata(const std::string& name, const std::string value[], int count, bool createIfNotExists)
+{
+    try {
+        std::vector<std::string> values(&value[0], (&value[count -1]) + 1);
+        _imp->setPropertyN(name, values, !createIfNotExists);
+    } catch (...) {
+
+    }
 }
 
 bool
-NodeMetadata::operator==(const NodeMetadata& other) const
+NodeMetadata::getIntMetadata(const std::string& name, int index, int *value) const
 {
-    if (_imp->outputPremult != other._imp->outputPremult) {
+    try {
+        *value = _imp->getProperty<int>(name, index);
+        return true;
+    } catch (...) {
         return false;
     }
-    if (_imp->outputFielding != other._imp->outputFielding) {
+}
+
+bool
+NodeMetadata::getDoubleMetadata(const std::string& name, int index, double *value) const
+{
+    try {
+        *value = _imp->getProperty<double>(name, index);
+        return true;
+    } catch (...) {
         return false;
     }
-    if (_imp->frameRate != other._imp->frameRate) {
+}
+
+bool
+NodeMetadata::getStringMetadata(const std::string& name, int index, std::string *value) const
+{
+    try {
+        *value = _imp->getProperty<std::string>(name, index);
+        return true;
+    } catch (...) {
         return false;
     }
-    if (_imp->canRenderAtNonframes != other._imp->canRenderAtNonframes) {
+}
+
+bool
+NodeMetadata::getIntNMetadata(const std::string& name, int count, int *value) const
+{
+    try {
+        const std::vector<int>& values = _imp->getPropertyN<int>(name);
+        int nVal = std::min(count, (int)values.size());
+        memcpy(value, values.data(), sizeof(int) * nVal);
+        return true;
+    } catch (...) {
         return false;
     }
-    if (_imp->isFrameVarying != other._imp->isFrameVarying) {
+}
+
+bool
+NodeMetadata::getDoubleNMetadata(const std::string& name, int count, double *value) const
+{
+    try {
+        const std::vector<double>& values = _imp->getPropertyN<double>(name);
+        int nVal = std::min(count, (int)values.size());
+        memcpy(value, values.data(), sizeof(double) * nVal);
+        return true;
+    } catch (...) {
         return false;
     }
-    if (_imp->outputData.bitdepth != other._imp->outputData.bitdepth) {
-        return false;
-    }
-    if (_imp->outputData.pixelAspectRatio != other._imp->outputData.pixelAspectRatio) {
-        return false;
-    }
-    if (_imp->outputData.components != other._imp->outputData.components) {
-        return false;
-    }
-    if ( _imp->inputsData.size() != other._imp->inputsData.size() ) {
-        return false;
-    }
-    if (_imp->outputFormat != other._imp->outputFormat) {
-        return false;
-    }
-    for (std::size_t i = 0; i < _imp->inputsData.size(); ++i) {
-        if (_imp->inputsData[i].pixelAspectRatio != other._imp->inputsData[i].pixelAspectRatio) {
-            return false;
+}
+
+bool
+NodeMetadata::getStringNMetadata(const std::string& name, int count, std::string *value) const
+{
+    try {
+        const std::vector<std::string>& values = _imp->getPropertyN<std::string>(name);
+        int nVal = std::min(count, (int)values.size());
+        for (int i = 0; i < nVal; ++i) {
+            value[i] = values[i];
         }
-        if (_imp->inputsData[i].bitdepth != other._imp->inputsData[i].bitdepth) {
-            return false;
-        }
-        if (_imp->inputsData[i].components != other._imp->inputsData[i].components) {
-            return false;
-        }
+        return true;
+    } catch (...) {
+        return false;
     }
 
-    return true;
 }
+
+int
+NodeMetadata::getMetadataDimension(const std::string& name) const
+{
+    return _imp->getPropertyDimension(name, false /*throwIfFailed*/);
+}
+
+void
+NodeMetadata::toMemorySegment(ExternalSegmentType* segment) const
+{
+    _imp->toMemorySegment(segment);
+}
+
+void
+NodeMetadata::fromMemorySegment(ExternalSegmentType* segment)
+{
+    _imp->fromMemorySegment(segment);
+}
+
+enum NodeMetadataDataTypeEnum
+{
+    eNodeMetadataDataTypeInt = 0,
+    eNodeMetadataDataTypeDouble,
+    eNodeMetadataDataTypeString
+};
+
+void
+NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment) const
+{
+    // Add a prefix to the meta-data name in the memory segment to ensure that the meta-data name is not the same as
+    // another item we serialized to the segment.
+    static const std::string prefix = "NodeMetadata";
+    int nElements = _properties.size();
+    writeMMObject(nElements, prefix + "NElements", segment);
+
+    int i = 0;
+    for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties.begin(); it != _properties.end(); ++it, ++i) {
+        std::stringstream ss;
+        ss << prefix << i;
+        std::string metadataPrefix = ss.str();
+
+        {
+            std::string metadataName = metadataPrefix + "Name";
+            writeMMObject(it->first, metadataName, segment);
+        }
+
+        int nDims = it->second->getNDimensions();
+        writeMMObject(nDims, metadataPrefix + "NDims", segment);
+
+        PropertiesHolder::Property<int>* isInt = dynamic_cast<PropertiesHolder::Property<int>*>(it->second.get());
+        PropertiesHolder::Property<double>* isDouble = dynamic_cast<PropertiesHolder::Property<double>*>(it->second.get());
+        PropertiesHolder::Property<std::string>* isString = dynamic_cast<PropertiesHolder::Property<std::string>*>(it->second.get());
+
+        std::string metadataData = metadataPrefix + "Data";
+        std::string metadataType = metadataPrefix + "Type";
+        assert(isInt || isDouble || isString);
+        if (isInt) {
+            NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeInt;
+            writeMMObject((int)type, metadataType, segment);
+            writeMMObjectN(isInt->value.data(), nDims, metadataData, segment);
+        } else if (isDouble) {
+            NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeDouble;
+            writeMMObject((int)type, metadataType, segment);
+            writeMMObjectN(isDouble->value.data(), nDims, metadataData, segment);
+        } else if (isString) {
+            NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeString;
+            writeMMObject((int)type, metadataType, segment);
+            writeMMObjectN(isString->value.data(), nDims, metadataData, segment);
+        }
+        
+    }
+} // toMemorySegment
+
+void
+NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment)
+{
+    static const std::string prefix = "NodeMetadata";
+    int nElements;
+    readMMObject(prefix + "NElements", segment, &nElements);
+
+    for (int i = 0; i < nElements; ++i) {
+        std::stringstream ss;
+        ss << prefix << i;
+        std::string metadataPrefix = ss.str();
+
+        std::string metadataName;
+        readMMObject(metadataPrefix + "Name", segment, &metadataName);
+
+        int nDims;
+        readMMObject(metadataPrefix + "NDims", segment, &nDims);
+        int type_i;
+        readMMObject(metadataPrefix + "Type", segment, &type_i);
+
+        std::string metadataData = metadataPrefix + "Data";
+        switch ((NodeMetadataDataTypeEnum)type_i) {
+            case eNodeMetadataDataTypeInt: {
+                boost::shared_ptr<Property<int> > prop = createPropertyInternal<int>(metadataName);
+                prop->value.resize(nDims);
+                readMMObjectN<int>(metadataData, segment, nDims, prop->value.data());
+            }   break;
+            case eNodeMetadataDataTypeDouble: {
+                boost::shared_ptr<Property<double> > prop = createPropertyInternal<double>(metadataName);
+                prop->value.resize(nDims);
+                readMMObjectN<double>(metadataData, segment, nDims, prop->value.data());
+            }   break;
+
+            case eNodeMetadataDataTypeString: {
+                boost::shared_ptr<Property<std::string> > prop = createPropertyInternal<std::string>(metadataName);
+                prop->value.resize(nDims);
+                readMMObjectN<std::string>(metadataData, segment, nDims, prop->value.data());
+            }   break;
+        }
+
+    }
+} // fromMemorySegment
+
 
 void
 NodeMetadata::setOutputPremult(ImagePremultiplicationEnum premult)
 {
-    _imp->outputPremult = premult;
+    setIntMetadata(kNatronMetadataOutputPremult, (int)premult, 0, true);
 }
 
 ImagePremultiplicationEnum
 NodeMetadata::getOutputPremult() const
 {
-    return _imp->outputPremult;
+    int ret;
+    if (getIntMetadata(kNatronMetadataOutputPremult, 0, &ret)) {
+        return (ImagePremultiplicationEnum)ret;
+    }
+    return eImagePremultiplicationPremultiplied;
 }
 
 void
 NodeMetadata::setOutputFrameRate(double fps)
 {
-    _imp->frameRate = fps;
+    setDoubleMetadata(kNatronMetadataOutputFrameRate, fps, 0, true);
 }
 
 double
 NodeMetadata::getOutputFrameRate() const
 {
-    return _imp->frameRate;
+    double ret;
+    if (getDoubleMetadata(kNatronMetadataOutputFrameRate, 0, &ret)) {
+        return ret;
+    }
+    return 24.;
 }
 
 void
 NodeMetadata::setOutputFielding(ImageFieldingOrderEnum fielding)
 {
-    _imp->outputFielding = fielding;
+    setIntMetadata(kNatronMetadataOutputFielding, (int)fielding, 0, true);
 }
 
 ImageFieldingOrderEnum
 NodeMetadata::getOutputFielding() const
 {
-    return _imp->outputFielding;
+    int ret;
+    if (getIntMetadata(kNatronMetadataOutputFielding, 0, &ret)) {
+        return (ImageFieldingOrderEnum)ret;
+    }
+    return eImageFieldingOrderNone;
 }
 
 void
 NodeMetadata::setIsContinuous(bool continuous)
 {
-    _imp->canRenderAtNonframes = continuous;
+    setIntMetadata(kNatronMetadataIsContinuous, (int)continuous, 0, true);
 }
 
 bool
 NodeMetadata::getIsContinuous() const
 {
-    return _imp->canRenderAtNonframes;
+    int ret;
+    if (getIntMetadata(kNatronMetadataIsContinuous, 0, &ret)) {
+        return (bool)ret;
+    }
+    return false;
 }
 
 void
 NodeMetadata::setIsFrameVarying(bool varying)
 {
-    _imp->isFrameVarying = varying;
+    setIntMetadata(kNatronMetadataIsFrameVarying, (int)varying, 0, true);
 }
 
 bool
 NodeMetadata::getIsFrameVarying() const
 {
-    return _imp->isFrameVarying;
+    int ret;
+    if (getIntMetadata(kNatronMetadataIsFrameVarying, 0, &ret)) {
+        return (bool)ret;
+    }
+    return false;
 }
 
 void
-NodeMetadata::setPixelAspectRatio(int inputNb,
-                                  double par)
+NodeMetadata::setPixelAspectRatio(int inputNb, double par)
 {
-    if (inputNb == -1) {
-        _imp->outputData.pixelAspectRatio = par;
-    } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].pixelAspectRatio = par;
-    }
+    std::stringstream ss;
+    ss << kNatronMetadataPixelAspectRatio << inputNb;
+    setDoubleMetadata(ss.str(), par, 0, true);
 }
 
 double
 NodeMetadata::getPixelAspectRatio(int inputNb) const
 {
-    if (inputNb == -1) {
-        return _imp->outputData.pixelAspectRatio;
-    } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].pixelAspectRatio;
+    std::stringstream ss;
+    ss << kNatronMetadataPixelAspectRatio << inputNb;
+    double ret;
+    if (getDoubleMetadata(ss.str(), 0, &ret)) {
+        return ret;
     }
+    return 1.;
 }
 
 void
-NodeMetadata::setBitDepth(int inputNb,
-                          ImageBitDepthEnum depth)
+NodeMetadata::setBitDepth(int inputNb, ImageBitDepthEnum depth)
 {
-    if (inputNb == -1) {
-        _imp->outputData.bitdepth = depth;
-    } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].bitdepth = depth;
-    }
+    std::stringstream ss;
+    ss << kNatronMetadataBitDepth << inputNb;
+    setIntMetadata(ss.str(), (int)depth, 0, true);
 }
 
 ImageBitDepthEnum
 NodeMetadata::getBitDepth(int inputNb) const
 {
-    if (inputNb == -1) {
-        return _imp->outputData.bitdepth;
-    } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].bitdepth;
+    std::stringstream ss;
+    ss << kNatronMetadataBitDepth << inputNb;
+    int ret;
+    if (getIntMetadata(ss.str(), 0, &ret)) {
+        return (ImageBitDepthEnum)ret;
     }
+    return eImageBitDepthFloat;
 }
 
 void
-NodeMetadata::setImageComponents(int inputNb,
-                                 const ImageComponents& components)
+NodeMetadata::setColorPlaneNComps(int inputNb, int nComps)
 {
-    if (inputNb == -1) {
-        _imp->outputData.components = components;
-    } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-        _imp->inputsData[inputNb].components = components;
-    }
+    std::stringstream ss;
+    ss << kNatronMetadataColorPlaneNComps << inputNb;
+    setIntMetadata(ss.str(), (int)nComps, 0, true);
 }
 
-const ImageComponents&
-NodeMetadata::getImageComponents(int inputNb) const
+int
+NodeMetadata::getColorPlaneNComps(int inputNb) const
 {
-    if (inputNb == -1) {
-        return _imp->outputData.components;
-    } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].components;
+    std::stringstream ss;
+    ss << kNatronMetadataColorPlaneNComps << inputNb;
+    int ret;
+    if (getIntMetadata(ss.str(), 0, &ret)) {
+        return ret;
     }
+    return 4;
 }
 
 void
 NodeMetadata::setOutputFormat(const RectI& format)
 {
-    _imp->outputFormat = format;
+    setIntNMetadata(kNatronMetadataOutputFormat, &format.x1, 4, true);
 }
 
-const RectI&
+RectI
 NodeMetadata::getOutputFormat() const
 {
-    return _imp->outputFormat;
+    RectI ret;
+    getIntNMetadata(kNatronMetadataOutputFormat, 4, &ret.x1);
+    return ret;
 }
 
 NATRON_NAMESPACE_EXIT;

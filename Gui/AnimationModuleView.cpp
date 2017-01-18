@@ -29,7 +29,7 @@
 #include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QApplication>
 
-#include <QThread>
+#include <QtCore/QThread>
 #include <QImage>
 
 #include "Engine/Image.h"
@@ -1181,7 +1181,7 @@ AnimationModuleView::mouseReleaseEvent(QMouseEvent* e)
         _imp->_gui->setDraftRenderEnabled(false);
         bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
         if (autoProxyEnabled) {
-            _imp->_gui->renderAllViewers(true);
+            _imp->_gui->renderAllViewers();
         }
     }
 

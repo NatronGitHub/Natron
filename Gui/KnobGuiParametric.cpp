@@ -422,7 +422,7 @@ KnobGuiParametric::resetSelectedCurves()
             }
         }
     }
-    k->evaluateValueChange(DimIdx(0), k->getCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
+    k->evaluateValueChange(DimIdx(0), k->getHolder()->getTimelineCurrentTime(), ViewIdx(0), eValueChangedReasonUserEdited);
 }
 
 void

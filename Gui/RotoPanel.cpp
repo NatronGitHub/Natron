@@ -446,7 +446,7 @@ public:
         assert(n && context);
     }
 
-    void updateSplinesInfoGUI(double time);
+    void updateSplinesInfoGUI(TimeValue time);
 
     void buildTreeFromContext();
 
@@ -472,7 +472,7 @@ public:
         return items.end();
     }
 
-    void insertItemRecursively(double time, const RotoItemPtr& item, int indexInParentLayer);
+    void insertItemRecursively(TimeValue time, const RotoItemPtr& item, int indexInParentLayer);
 
     void removeItemRecursively(const RotoItemPtr& item);
 
@@ -482,15 +482,15 @@ public:
 
     void setChildrenLockedRecursively(bool locked, QTreeWidgetItem* item);
 
-    bool itemHasKey(const RotoItemPtr& item, double time) const;
+    bool itemHasKey(const RotoItemPtr& item, TimeValue time) const;
 
-    void setItemKey(const RotoItemPtr& item, double time);
+    void setItemKey(const RotoItemPtr& item, TimeValue time);
 
-    void removeItemKey(const RotoItemPtr& item, double time);
+    void removeItemKey(const RotoItemPtr& item, TimeValue time);
 
     void removeItemAnimation(const RotoItemPtr& item);
 
-    void insertItemInternal(int reason, double time, const RotoItemPtr& item, int indexInParentLayer);
+    void insertItemInternal(int reason, TimeValue time, const RotoItemPtr& item, int indexInParentLayer);
 
     void setVisibleItemKeyframes(const std::set<double>& keys, bool visible, bool emitSignal);
 };
@@ -861,7 +861,7 @@ RotoPanel::onSelectionChangedInternal()
     _imp->clearAnimation->setEnabled(enabled);
 
 
-    double time = _imp->context->getTimelineCurrentTime();
+    TimeValue time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
     _imp->updateSplinesInfoGUI(time);
@@ -891,7 +891,7 @@ RotoPanel::onSelectionChanged(int reason)
 }
 
 void
-RotoPanel::onSelectedBezierKeyframeSet(double time)
+RotoPanel::onSelectedBezierKeyframeSet(TimeValue time)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
     BezierPtr isBezier;
@@ -906,7 +906,7 @@ RotoPanel::onSelectedBezierKeyframeSet(double time)
 }
 
 void
-RotoPanel::onSelectedBezierKeyframeRemoved(double time)
+RotoPanel::onSelectedBezierKeyframeRemoved(TimeValue time)
 {
     Bezier* b = qobject_cast<Bezier*>( sender() );
     BezierPtr isBezier;
@@ -999,7 +999,7 @@ makeSolidIcon(double *color,
 void
 RotoPanel::updateItemGui(QTreeWidgetItem* item)
 {
-    double time = _imp->context->getTimelineCurrentTime();
+    TimeValue time = _imp->context->getTimelineCurrentTime();
     TreeItems::iterator it = _imp->findItem(item);
 
     assert( it != _imp->items.end() );
@@ -1033,7 +1033,7 @@ RotoPanel::updateItemGui(QTreeWidgetItem* item)
 }
 
 void
-RotoPanelPrivate::updateSplinesInfoGUI(double time)
+RotoPanelPrivate::updateSplinesInfoGUI(TimeValue time)
 {
     std::set<double> keyframes;
 
@@ -1125,7 +1125,7 @@ scriptNameToolTipFromItem(const RotoItemPtr& item)
 }
 
 void
-RotoPanelPrivate::insertItemRecursively(double time,
+RotoPanelPrivate::insertItemRecursively(TimeValue time,
                                         const RotoItemPtr & item,
                                         int indexInParentLayer)
 {
@@ -1305,14 +1305,14 @@ RotoPanel::onItemInserted(int index,
                           int reason)
 {
     RotoItemPtr lastInsertedItem = _imp->context->getLastInsertedItem();
-    double time = _imp->context->getTimelineCurrentTime();
+    TimeValue time = _imp->context->getTimelineCurrentTime();
 
     _imp->insertItemInternal(reason, time, lastInsertedItem, index);
 }
 
 void
 RotoPanelPrivate::insertItemInternal(int reason,
-                                     double time,
+                                     TimeValue time,
                                      const RotoItemPtr & item,
                                      int indexInParentLayer)
 {
@@ -1368,7 +1368,7 @@ RotoPanel::onItemRemoved(const RotoItemPtr& item,
 void
 RotoPanelPrivate::buildTreeFromContext()
 {
-    double time = context->getTimelineCurrentTime();
+    TimeValue time = context->getTimelineCurrentTime();
     const std::list< RotoLayerPtr > & layers = context->getLayers();
 
     tree->blockSignals(true);
@@ -1411,7 +1411,7 @@ RotoPanel::onRotoItemInvertedStateChanged()
         item = boost::dynamic_pointer_cast<RotoDrawableItem>( i->shared_from_this() );
     }
     if (item) {
-        double time = _imp->context->getTimelineCurrentTime();
+        TimeValue time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             it->treeItem->setIcon(COL_INVERTED, item->getInverted(time)  ? _imp->iconInverted : _imp->iconUninverted);
@@ -1431,7 +1431,7 @@ RotoPanel::onRotoItemShapeColorChanged()
     }
 
     if (item) {
-        double time = _imp->context->getTimelineCurrentTime();
+        TimeValue time = _imp->context->getTimelineCurrentTime();
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             QIcon icon;
@@ -1506,7 +1506,7 @@ RotoPanel::onItemClicked(QTreeWidgetItem* item,
             QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
             bool inverted = false;
             bool invertedSet = false;
-            double time = _imp->context->getTimelineCurrentTime();
+            TimeValue time = _imp->context->getTimelineCurrentTime();
             for (int i = 0; i < selected.size(); ++i) {
                 TreeItems::iterator found = _imp->findItem(selected[i]);
                 assert( found != _imp->items.end() );
@@ -1704,7 +1704,7 @@ RotoPanel::onItemDoubleClicked(QTreeWidgetItem* item,
         }
 
         case COL_COLOR: {
-            double time = _imp->context->getTimelineCurrentTime();
+            TimeValue time = _imp->context->getTimelineCurrentTime();
             RotoDrawableItem* drawable = dynamic_cast<RotoDrawableItem*>( it->rotoItem.get() );
             QList<QTreeWidgetItem*> selected = _imp->tree->selectedItems();
             bool colorChosen = false;
@@ -1920,7 +1920,7 @@ RotoPanel::onItemSelectionChanged()
     _imp->removeKeyframe->setEnabled(enabled);
     _imp->clearAnimation->setEnabled(enabled);
 
-    double time = _imp->context->getTimelineCurrentTime();
+    TimeValue time = _imp->context->getTimelineCurrentTime();
 
     ///update the splines info GUI
     _imp->updateSplinesInfoGUI(time);
@@ -2357,7 +2357,7 @@ RotoPanel::selectAll()
 
 bool
 RotoPanelPrivate::itemHasKey(const RotoItemPtr& item,
-                             double time) const
+                             TimeValue time) const
 {
     ItemKeys::const_iterator it = keyframes.find(item);
 
@@ -2373,7 +2373,7 @@ RotoPanelPrivate::itemHasKey(const RotoItemPtr& item,
 
 void
 RotoPanelPrivate::setItemKey(const RotoItemPtr& item,
-                             double time)
+                             TimeValue time)
 {
     ItemKeys::iterator it = keyframes.find(item);
 
@@ -2392,7 +2392,7 @@ RotoPanelPrivate::setItemKey(const RotoItemPtr& item,
 
 void
 RotoPanelPrivate::removeItemKey(const RotoItemPtr& item,
-                                double time)
+                                TimeValue time)
 {
     ItemKeys::iterator it = keyframes.find(item);
 

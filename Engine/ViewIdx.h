@@ -35,7 +35,7 @@ NATRON_NAMESPACE_ENTER;
 
 
 class ViewIdx;
-class ViewGetSpec;
+class ViewIdx;
 
 class ViewSetSpec
 {
@@ -55,7 +55,6 @@ public:
     }
 
     ViewSetSpec(const ViewIdx& view_i);
-    ViewSetSpec(const ViewGetSpec& view_get);
 
     // cast to int is implicit
     operator int() const
@@ -74,75 +73,24 @@ public:
 
     bool isAll() const { return i == -1; }
 
-    bool isCurrent() const { return i == -2; }
-
     bool isViewIdx() const { return i >= 0; }
 
     static ViewSetSpec all() { return ViewSetSpec(-1); };
-    static ViewSetSpec current() { return ViewSetSpec(-2); };
 };
 
-
-class ViewGetSpec
-{
-    int i;
-
-public:
-    ViewGetSpec()
-    : i(0)
-    {
-    }
-
-    // cast from int must be explicit
-    explicit ViewGetSpec(int index)
-    : i(index)
-    {
-        assert(index == -2 || index >= 0);
-    }
-
-    ViewGetSpec(const ViewIdx& view_i);
-
-    // cast to int is implicit
-    operator int() const
-    {
-        return i;
-    }
-
-    bool operator<(const ViewGetSpec& b) const {
-        return i < b.i;
-    }
-
-    int value() const
-    {
-        return static_cast<int>(*this);
-    }
-
-    bool isCurrent() const { return i == -2; }
-
-    bool isViewIdx() const { return i >= 0; }
-
-    static ViewGetSpec current() { return ViewGetSpec(-2); };
-
-private:
-
-    bool isAll() const { return false; }
-
-    static ViewIdx all(); // overload with no implementation
-
-};
 
 class ViewIdx
-    : public ViewGetSpec
+    : public ViewSetSpec
 {
 public:
     ViewIdx()
-        : ViewGetSpec(0)
+        : ViewSetSpec(0)
     {
     }
 
     // cast from int must be explicit
     explicit ViewIdx(int index)
-        : ViewGetSpec(index)
+        : ViewSetSpec(index)
     {
         assert(index >= 0);
     }
@@ -158,9 +106,14 @@ public:
 
 private:
 
-    bool isCurrent() const { return false; }
+    bool isAll() const { return false; }
 
-    static ViewIdx current(); // overload with no implementation
+    bool isViewIdx() const { return true; }
+
+    static ViewSetSpec all(); // overload with no implementation
+
+
+
 };
 
 NATRON_NAMESPACE_EXIT;

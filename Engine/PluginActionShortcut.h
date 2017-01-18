@@ -30,6 +30,8 @@
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct PluginActionShortcut

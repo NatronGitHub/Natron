@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
@@ -32,6 +34,9 @@
 #include <set>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/TimeValue.h"
+#include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER
@@ -62,20 +67,48 @@ public:
     void addHashListener(const HashableObjectPtr& parent);
 
 
-    /**
-     * @brief Look for a hash in the cache. Returns 0 if nothing is found
-     **/
-    bool findCachedHash(double time, ViewIdx view, U64 *hash) const;
+    enum ComputeHashTypeEnum
+    {
+        // The resulting hash is used to cache data that are time and view invariant (such as the frame-range)
+        eComputeHashTypeTimeViewInvariant,
+
+        // The hash is computed only from the
+        // parameters that are metadata slave and does not take into account the time and view
+        eComputeHashTypeOnlyMetadataSlaves,
+
+        // The resulting hash is used to cache  data that are time and view variant (such as an Image).
+        // The time and view itself should not be appended to the hash, this is done externally in
+        // EffectInstance::getTimeViewParametersDependingOnFrameViewVariance
+        eComputeHashTypeTimeViewVariant
+    };
+
+    struct ComputeHashArgs
+    {
+        // The time at which to compute the hash
+        TimeValue time;
+
+        // The view at which to compute the hash
+        ViewIdx view;
+
+        ComputeHashTypeEnum hashType;
+
+        // Pointer to the node render args if any
+        TreeRenderNodeArgsPtr render;
+
+        ComputeHashArgs()
+        : time(0)
+        , view(0)
+        , hashType(eComputeHashTypeTimeViewInvariant)
+        , render()
+        {
+
+        }
+    };
 
     /**
      * @brief Compute has hash at the given time/view but does not use the hash cache at all.
      **/
-    void computeHash_noCache(double time, ViewIdx view, Hash64* hash);
-
-    /**
-     * @brief Set the hash for the given frame view in the cache
-     **/
-    void addHashToCache(double time, ViewIdx view, U64 hashValue);
+    void computeHash_noCache(const ComputeHashArgs& args, Hash64* hash);
 
 
     /**
@@ -84,8 +117,25 @@ public:
      * : findCachedHash, computeHash_noCache, addHashToCache except that everything
      * is protected under the same mutex for guarenteed atomicity.
      **/
-    U64 computeHash(double time, ViewIdx view);
-    
+    U64 computeHash(const ComputeHashArgs& args);
+
+    struct FindHashArgs
+    {
+        // The time at which to compute the hash
+        TimeValue time;
+
+        // The view at which to compute the hash
+        ViewIdx view;
+
+        ComputeHashTypeEnum hashType;
+    };
+
+    /**
+     * @brief Look for a hash in the cache. Returns 0 if nothing is found
+     **/
+    bool findCachedHash(const FindHashArgs& args, U64 *hash) const;
+
+
     /**
      * @brief Invalidate the hash cache and invalidate recursively the listeners as well.
      * This should be called after anything that the hash computation relies on has changed.
@@ -114,7 +164,7 @@ protected:
      * When adding a class inheriting HashableObject to the hash, make sure to call
      * computeHash to get the cache working.
      **/
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) = 0;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) = 0;
 
 private:
 

@@ -532,7 +532,7 @@ AnimationModuleSelectionModel::getSelectedKeyframesCount() const
 }
 
 bool
-AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &item, DimSpec dimension ,ViewSetSpec view, double time) const
+AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &item, DimSpec dimension ,ViewSetSpec view, TimeValue time) const
 {
     std::list<DimensionViewPair> curvesToProcess;
     if (dimension.isAll()) {
@@ -579,7 +579,7 @@ AnimationModuleSelectionModel::isKeyframeSelected(const AnimItemBasePtr &item, D
 } // isKeyframeSelected
 
 bool
-AnimationModuleSelectionModel::isKeyframeSelectedOnCurve(const AnimItemBasePtr &anim, DimIdx dimension ,ViewIdx view, double time, bool alsoCheckForExistence) const
+AnimationModuleSelectionModel::isKeyframeSelectedOnCurve(const AnimItemBasePtr &anim, DimIdx dimension ,ViewIdx view, TimeValue time, bool alsoCheckForExistence) const
 {
     AnimItemDimViewIndexID key(anim, view, dimension);
     AnimItemDimViewKeyFramesMap::const_iterator found = _imp->selectedKeyframes.find(key);

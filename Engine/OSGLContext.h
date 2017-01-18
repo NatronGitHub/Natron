@@ -31,23 +31,22 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
-
 #include <cstddef>
 #include <string>
 #include <vector>
 #include <list>
-
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Engine/OSGLFramebufferConfig.h"
 #include "Engine/GLShader.h"
+#include "Engine/RectI.h"
 #include "Global/GLIncludes.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -143,6 +142,63 @@ public:
 
     QThread* getCurrentThread() const;
 
+    /**
+     * @brief Helper function to setup the OpenGL viewport when doing processing on a texture
+     **/
+    template <typename GL>
+    static void setupGLViewport(const RectI& bounds, const RectI& roi)
+    {
+        GL::Viewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
+        glCheckError(GL);
+        GL::MatrixMode(GL_PROJECTION);
+        GL::LoadIdentity();
+        GL::Ortho( roi.x1, roi.x2,
+                  roi.y1, roi.y2,
+                  -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
+        glCheckError(GL);
+        GL::MatrixMode(GL_MODELVIEW);
+        GL::LoadIdentity();
+    } // setupGLViewport
+
+    /**
+     * @brief Helper function to apply texture mapping assuming both in and out textures are bounded to the context.
+     **/
+    template <typename GL>
+    static void applyTextureMapping(const RectI& srcBounds, const RectI& dstBounds, const RectI& roi)
+    {
+        setupGLViewport<GL>(dstBounds, roi);
+
+        // Compute the texture coordinates to match the srcRoi
+        Point srcTexCoords[4], vertexCoords[4];
+        vertexCoords[0].x = roi.x1;
+        vertexCoords[0].y = roi.y1;
+        srcTexCoords[0].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[0].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[1].x = roi.x2;
+        vertexCoords[1].y = roi.y1;
+        srcTexCoords[1].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[1].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[2].x = roi.x2;
+        vertexCoords[2].y = roi.y2;
+        srcTexCoords[2].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[2].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
+
+        vertexCoords[3].x = roi.x1;
+        vertexCoords[3].y = roi.y2;
+        srcTexCoords[3].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
+        srcTexCoords[3].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
+
+        GL::Begin(GL_POLYGON);
+        for (int i = 0; i < 4; ++i) {
+            GL::TexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
+            GL::Vertex2d(vertexCoords[i].x, vertexCoords[i].y);
+        }
+        GL::End();
+        glCheckError(GL);
+    } // applyTextureMapping
+
 private:
 
     void setContextCurrentInternal(int width, int height, int rowWidth, void* buffer);
@@ -205,7 +261,7 @@ public:
     OSGLContextPtr getContext() const;
 
     /**
-     * @brief Attaches the context to the current thread. Does nothing if already attached.
+     * @brief Attaches the context to the current thread. Does nothing if already attached. 
      **/
     void attach();
 

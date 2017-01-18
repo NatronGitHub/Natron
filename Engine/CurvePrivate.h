@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_ENGINE_CURVEPRIVATE_H
-#define NATRON_ENGINE_CURVEPRIVATE_H
+#ifndef Engine_CurvePrivate_h
+#define Engine_CurvePrivate_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -38,16 +38,16 @@
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/EngineFwd.h"
 
-//#define NATRON_CURVE_USE_CACHE
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
+//#define NATRON_CURVE_USE_CACHE
+
+
 struct CurvePrivate
 {
-   
-
     KeyFrameSet keyFrames;
 
 #ifdef NATRON_CURVE_USE_CACHE
@@ -105,4 +105,4 @@ struct CurvePrivate
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // NATRON_ENGINE_CURVEPRIVATE_H
+#endif // Engine_CurvePrivate_h

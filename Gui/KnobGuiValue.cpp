@@ -204,7 +204,7 @@ KnobGuiValue::valueAccordingToType(const bool doNormalize,
     if (state != eValueIsNormalizedNone) {
         KnobIPtr knob = _imp->getKnob();
         if (knob) {
-            SequenceTime time = knob->getCurrentTime();
+            TimeValue time = knob->getCurrentTime_TLS();
             if (doNormalize) {
                 return normalize(dimension, time, value);
             } else {
@@ -804,9 +804,9 @@ KnobGuiValue::updateGUI()
     double refValue = 0.;
     std::vector<std::string> expressions(knobDim);
     std::string refExpresion;
-    SequenceTime time = 0;
+    TimeValue time(0);
     if ( knob->getHolder() && knob->getHolder()->getApp() ) {
-        time = knob->getCurrentTime();
+        time = knob->getHolder()->getTimelineCurrentTime();
     }
 
     bool isGuiDifferentFromInternalValues = false;
@@ -829,7 +829,7 @@ KnobGuiValue::updateGUI()
             isGuiDifferentFromInternalValues = true;
         }
 
-        expressions[i] = knob->getExpression(DimIdx(i));
+        expressions[i] = knob->getExpression(DimIdx(i), getView());
     }
 
 
@@ -907,7 +907,7 @@ KnobGuiValue::onSliderEditingFinished(bool hasMovedOnce)
         double v = _imp->slider->getPosition();
         sliderEditingEnd(v);
     } else if (autoProxyEnabled && hasMovedOnce) {
-        getKnobGui()->getGui()->renderAllViewers(true);
+        getKnobGui()->getGui()->renderAllViewers();
     }
 }
 
@@ -1205,7 +1205,7 @@ KnobGuiDouble::getNormalizationPolicy(DimIdx dimension) const
 
 double
 KnobGuiDouble::denormalize(DimIdx dimension,
-                           double time,
+                           TimeValue time,
                            double value) const
 {
     return _knob.lock()->denormalize(dimension, time, value);
@@ -1213,7 +1213,7 @@ KnobGuiDouble::denormalize(DimIdx dimension,
 
 double
 KnobGuiDouble::normalize(DimIdx dimension,
-                         double time,
+                         TimeValue time,
                          double value) const
 {
     return _knob.lock()->normalize(dimension, time, value);

@@ -41,8 +41,9 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Serialization/SerializationBase.h"
+#include "Engine/TimeValue.h"
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -107,11 +108,11 @@ public:
 
     void copyControlPoint(const BezierCP & other);
 
-    void setPositionAtTime(double time, double x, double y);
+    void setPositionAtTime(TimeValue time, double x, double y);
 
-    void setLeftBezierPointAtTime(double time, double x, double y);
+    void setLeftBezierPointAtTime(TimeValue time, double x, double y);
 
-    void setRightBezierPointAtTime(double time, double x, double y);
+    void setRightBezierPointAtTime(TimeValue time, double x, double y);
 
     void setStaticPosition(double x, double y);
 
@@ -120,10 +121,10 @@ public:
     void setRightBezierStaticPosition(double x, double y);
 
     ///returns true if a keyframe was set
-    bool cuspPoint(double time,bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    bool cuspPoint(TimeValue time,bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
     ///returns true if a keyframe was set
-    bool smoothPoint(double time, ViewGetSpec view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
+    bool smoothPoint(TimeValue time, ViewIdx view, bool autoKeying, bool rippleEdit, const std::pair<double, double>& pixelScale);
 
 
     virtual bool isFeatherPoint() const
@@ -131,7 +132,7 @@ public:
         return false;
     }
 
-    bool equalsAtTime(double time, const BezierCP & other) const;
+    bool equalsAtTime(TimeValue time, const BezierCP & other) const;
 
     bool operator==(const BezierCP& other) const;
 
@@ -140,17 +141,17 @@ public:
         return !(*this == other);
     }
 
-    bool getPositionAtTime(double time, double* x, double* y) const;
+    bool getPositionAtTime(TimeValue time, double* x, double* y) const;
 
-    bool getLeftBezierPointAtTime(double time, double* x, double* y) const;
+    bool getLeftBezierPointAtTime(TimeValue time, double* x, double* y) const;
 
-    bool getRightBezierPointAtTime(double time, double *x, double *y) const;
+    bool getRightBezierPointAtTime(TimeValue time, double *x, double *y) const;
 
-    void removeKeyframe(double time);
+    void removeKeyframe(TimeValue time);
 
     void setKeyFrameInterpolation(KeyframeTypeEnum interp, int index);
 
-    int getControlPointsCount(ViewGetSpec view) const;
+    int getControlPointsCount(ViewIdx view) const;
 
     void getKeyframeTimes(std::set<double>* keys) const;
 
@@ -168,7 +169,7 @@ public:
      * This function can also return the tangent of a feather point, to find out if the point is a feather point call
      * isFeatherPoint() on the returned control point.
      **/
-    int isNearbyTangent(double time, ViewGetSpec view, double x, double y, double acceptance) const;
+    int isNearbyTangent(TimeValue time, ViewIdx view, double x, double y, double acceptance) const;
 
     SequenceTime getOffsetTime() const;
 

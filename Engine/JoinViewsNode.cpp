@@ -63,7 +63,6 @@ JoinViewsNode::JoinViewsNode(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new JoinViewsNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
     if (node) {
         ProjectPtr project = node->getApp()->getProject();
         QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
@@ -94,11 +93,9 @@ JoinViewsNode::getInputLabel (int inputNb) const
 
 void
 JoinViewsNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImageComponents>* comps)
+                                     std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -124,12 +121,13 @@ JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-bool
-JoinViewsNode::isIdentity(double time,
+ActionRetCodeEnum
+JoinViewsNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,
-                          double* inputTime,
+                          const TreeRenderNodeArgsPtr& /*render*/,
+                          TimeValue* inputTime,
                           ViewIdx* inputView,
                           int* inputNb)
 {
@@ -137,7 +135,7 @@ JoinViewsNode::isIdentity(double time,
     *inputNb = getMaxInputCount() - 1 - view.value();
     *inputView = view;
 
-    return true;
+    return eActionStatusOK;
 }
 
 void

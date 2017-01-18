@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef COONSREGULARIZATION_H
-#define COONSREGULARIZATION_H
+#ifndef Engine_CoonsRegularization_h
+#define Engine_CoonsRegularization_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -33,17 +33,18 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #endif
-#include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
 namespace CoonsRegularization {
-void regularize(const std::list<BezierCPPtr >& coonsPatch,
-                double time,
-                std::list<std::list<BezierCPPtr > >* fixedPatch);
+void regularize(const std::list<BezierCPPtr>& coonsPatch,
+                TimeValue time,
+                std::list<std::list<BezierCPPtr> >* fixedPatch);
 } // namespace CoonsRegularization
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // COONSREGULARIZATION_H
+#endif // Engine_CoonsRegularization_h

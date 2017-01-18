@@ -29,45 +29,30 @@
 
 #include <string>
 #include <vector>
+#include <list>
 
 #include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
+#include "Engine/ChoiceOption.h"
 #include "Serialization/SerializationBase.h"
 
-#define kNatronColorPlaneName "Color"
-#define kNatronBackwardMotionVectorsPlaneName "Backward.Motion"
-#define kNatronForwardMotionVectorsPlaneName "Forward.Motion"
-#define kNatronDisparityLeftPlaneName "DisparityLeft.Disparity"
-#define kNatronDisparityRightPlaneName "DisparityRight.Disparity"
-
-#define kNatronRGBAComponentsName "RGBA"
-#define kNatronRGBComponentsName "RGB"
-#define kNatronAlphaComponentsName "Alpha"
-
-#define kNatronDisparityComponentsName "XY"
-#define kNatronMotionComponentsName "UV"
-
-#define kNatronAlphaPlaneUserName kNatronColorPlaneName "." kNatronAlphaComponentsName
-#define kNatronRGBAPlaneUserName kNatronColorPlaneName "." kNatronRGBAComponentsName
-#define kNatronRGBPlaneUserName kNatronColorPlaneName "." kNatronRGBComponentsName
-#define kNatronDisparityLeftPlaneUserName kNatronDisparityLeftPlaneName
-#define kNatronDisparityRightPlaneUserName kNatronDisparityRightPlaneName
-#define kNatronBackwardMotionVectorsPlaneUserName kNatronBackwardMotionVectorsPlaneName
-#define kNatronForwardMotionVectorsPlaneUserName kNatronForwardMotionVectorsPlaneName
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
+#define kNatronColorPlaneName "Color"
+#define kNatronBackwardMotionVectorsPlaneName "Backward"
+#define kNatronForwardMotionVectorsPlaneName "Forward"
+#define kNatronDisparityLeftPlaneName "DisparityLeft"
+#define kNatronDisparityRightPlaneName "DisparityRight"
+
+#define kNatronDisparityComponentsName "Disparity"
+#define kNatronMotionComponentsName "Motion"
 
 class ImageComponents : public SERIALIZATION_NAMESPACE::SerializableObjectBase
 {
 public:
 
-    /**
-     * @brief The default components registered in Natron, you can iterate until {0,0}
-     **/
-    static const char* defaultComponents[][2];
-    static std::string mapUserFriendlyPlaneNameToNatronInternalPlaneName(const std::string& userfriendlyPlaneName);
-    static std::string mapNatronInternalPlaneNameToUserFriendlyPlaneName(const std::string& planeName);
-    static const ImageComponents& getDefaultComponent(const std::string& planeName);
 
     ImageComponents();
 
@@ -158,6 +143,44 @@ public:
     {
         return getNumComponents() == 0;
     }
+
+
+    ChoiceOption getLayerOption() const;
+    ChoiceOption getChannelOption(int channelIndex) const;
+
+    static const ImageComponents& getColorPlaneComponents(int nComps);
+
+    /**
+     * @brief Find a layer equivalent to this layer in the other layers container.
+     * ITERATOR must be either a std::vector<ImageComponents>::iterator or std::list<ImageComponents>::iterator
+     **/
+    template <typename ITERATOR>
+    static ITERATOR findEquivalentLayer(const ImageComponents& layer, ITERATOR begin, ITERATOR end)
+    {
+        bool isColor = layer.isColorPlane();
+
+        ITERATOR foundExistingColorMatch = end;
+        ITERATOR foundExistingComponents = end;
+
+        for (ITERATOR it = begin; it != end; ++it) {
+            if (it->isColorPlane() && isColor) {
+                foundExistingColorMatch = it;
+            } else {
+                if (*it == layer) {
+                    foundExistingComponents = it;
+                    break;
+                }
+            }
+        } // for each output components
+
+        if (foundExistingComponents != end) {
+            return foundExistingComponents;
+        } else if (foundExistingColorMatch != end) {
+            return foundExistingColorMatch;
+        } else {
+            return end;
+        }
+    } // findEquivalentLayer
 
     /*
      * These are default presets image components

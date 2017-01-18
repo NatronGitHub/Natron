@@ -29,11 +29,10 @@
 
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
+
 #define kNatronProjectSettingsPanelSerializationNameOld "Natron_Project_Settings_Panel"
 #define kNatronProjectSettingsPanelSerializationNameNew "ProjectSettings"
-
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief Interface used by the Engine Knob class to interact with the gui for dynamic parmeter creation

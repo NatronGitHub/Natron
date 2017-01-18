@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef GLSHADER_H
 #define GLSHADER_H
 
@@ -32,9 +31,10 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Global/GlobalDefines.h"
 #include "Global/GLIncludes.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

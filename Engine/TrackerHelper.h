@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <set>
 #include <list>
 
@@ -36,13 +38,14 @@
 
 #include <QObject>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/Transform.h"
 
 namespace mv {
 class AutoTrack;
 }
 
+#include "Engine/EngineFwd.h"
+#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -64,7 +67,7 @@ public:
 
     Transform::Matrix3x3 h;
     int nbEnabledPoints;
-    double time;
+    TimeValue time;
     bool valid;
     double rms;
 };
@@ -91,7 +94,7 @@ public:
     double rotation;
     double scale;
     bool hasRotationAndScale;
-    double time;
+    TimeValue time;
     bool valid;
     double rms;
 };
@@ -119,10 +122,10 @@ public:
      * @param viewer A pointer to the viewer that should be updated throughout the tracking operation.
      **/
     void trackMarkers(const std::list<TrackMarkerPtr >& marks,
-                      int start,
-                      int end,
-                      int frameStep,
-                      OverlaySupport* viewer);
+                      TimeValue start,
+                      TimeValue end,
+                      TimeValue frameStep,
+                      const ViewerNodePtr& viewer);
 
     /**
      * @brief Abort any ongoing tracking. Non blocking: it is not guaranteed the tracking is finished
@@ -222,7 +225,7 @@ public:
      * from the original points to get the high frequencies. We then add those high frequencies back to the original
      * points to increase shaking/motion
      **/
-    static void extractSortedPointsFromMarkers(double x1Time, double x2Time,
+    static void extractSortedPointsFromMarkers(TimeValue x1Time, TimeValue x2Time,
                                                const std::vector<TrackMarkerPtr>& markers,
                                                int jitterPeriod,
                                                bool jitterAdd,
@@ -234,8 +237,8 @@ public:
      * @brief Given the markers that have been tracked, computes the affine transform mapping from refTime
      * to time.
      **/
-    static TransformData computeTransformParamsFromTracksAtTime(double refTime,
-                                                                double time,
+    static TransformData computeTransformParamsFromTracksAtTime(TimeValue refTime,
+                                                                TimeValue time,
                                                                 int jitterPeriod,
                                                                 bool jitterAdd,
                                                                 bool robustModel,
@@ -248,8 +251,8 @@ public:
      * @brief Given the markers that have been tracked, computes the CornerPin mapping from refTime
      * to time.
      **/
-    static CornerPinData computeCornerPinParamsFromTracksAtTime(double refTime,
-                                                                double time,
+    static CornerPinData computeCornerPinParamsFromTracksAtTime(TimeValue refTime,
+                                                                TimeValue time,
                                                                 int jitterPeriod,
                                                                 bool jitterAdd,
                                                                 bool robustModel,

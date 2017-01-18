@@ -1060,7 +1060,7 @@ KnobSpinBox::focusInEvent(QFocusEvent* e)
     if (!knob) {
         return;
     }
-    std::string expr = knob->getExpression(dimension);
+    std::string expr = knob->getExpression(dimension, view);
     if ( expr.empty() ) {
         return;
     } else {

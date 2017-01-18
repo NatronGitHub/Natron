@@ -25,6 +25,8 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 #include <vector>
 #include "Engine/EngineFwd.h"
@@ -34,19 +36,21 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include <QMetaType>
-#include <QString>
+#include <QtCore/QMetaType>
+#include <QtCore/QString>
 
 #include "Engine/Knob.h"
 
 #include "Serialization/KnobSerialization.h"
 
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
+
 /**
  * @brief String passed to setColumn to indicate that a column corresponds to the label
  **/
 #define kKnobTableItemColumnLabel "KnobTableItemColumnLabel"
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A KnobTableItem represents one row in an item view. Each column of the row can be the view of a Knob (or only
@@ -270,27 +274,27 @@ public:
     }
     virtual bool splitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
     virtual bool unSplitView(ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual KeyframeDataTypeEnum getKeyFrameDataType() const OVERRIDE FINAL;
-    virtual CurvePtr getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const OVERRIDE FINAL;
+    virtual CurvePtr getAnimationCurve(ViewIdx idx, DimIdx dimension) const OVERRIDE FINAL;
     virtual bool cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* stringAnimation) OVERRIDE;
     virtual void deleteValuesAtTime(const std::list<double>& times, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE;
     virtual bool warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  DimSpec dimension, const Curve::KeyFrameWarp& warp, std::vector<KeyFrame>* keyframes = 0) OVERRIDE ;
     virtual void removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason) OVERRIDE ;
-    virtual void deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
-    virtual void deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
+    virtual void deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
+    virtual void deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSpec dimension) OVERRIDE ;
     virtual void setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const std::list<double>& times, KeyframeTypeEnum interpolation, std::vector<KeyFrame>* newKeys = 0) OVERRIDE ;
-    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
+    virtual bool setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)  OVERRIDE WARN_UNUSED_RETURN;
+    virtual bool setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft) OVERRIDE WARN_UNUSED_RETURN;
     
-    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(double time, double value, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
-    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::current(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
-    virtual void setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::current(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
+    virtual ValueChangedReturnCodeEnum setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, KeyFrame* newKey = 0) OVERRIDE ;
+    virtual void setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair>& keys, ViewSetSpec view = ViewSetSpec::all(), DimSpec dimension = DimSpec(0), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<KeyFrame>* newKey = 0) OVERRIDE ;
+    virtual void setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex = DimIdx(0), ViewSetSpec view = ViewSetSpec::all(), ValueChangedReasonEnum reason = eValueChangedReasonUserEdited, std::vector<ValueChangedReturnCodeEnum>* retCodes = 0) OVERRIDE ;
     virtual void setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubleValuesList& keysPerDimension, ValueChangedReasonEnum reason = eValueChangedReasonUserEdited) OVERRIDE ;
     //////////// End from AnimatingObjectI
     
     
-    ValueChangedReturnCodeEnum setKeyFrame(double time,
+    ValueChangedReturnCodeEnum setKeyFrame(TimeValue time,
                                            ViewSetSpec view,
                                            KeyFrame* newKey);
 
@@ -302,39 +306,39 @@ public:
     /**
      * @brief Returns the next user keyframe time after time, or double infinity otherwise
      **/
-    double getNextMasterKeyframeTime(double time, ViewGetSpec view) const;
+    double getNextMasterKeyframeTime(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Returns the previous user keyframe time before time, or minus double infinity otherwise
      **/
-    double getPreviousMasterKeyframeTime(double time, ViewGetSpec view) const;
+    double getPreviousMasterKeyframeTime(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Returns the number of user keyframes on the item
      **/
-    int getMasterKeyframesCount(ViewGetSpec view) const;
+    int getMasterKeyframesCount(ViewIdx view) const;
 
     /**
      * @brief Returns the keyframe corresponding to the given index
      * @return True if found, false otherwise
      **/
-    bool getMasterKeyframe(int index, ViewGetSpec view, KeyFrame* k) const;
+    bool getMasterKeyframe(int index, ViewIdx view, KeyFrame* k) const;
 
     /**
      * @brief If there is a master keyframe at the given time and view returns true
      * otherwise returns false
      **/
-    bool getHasMasterKeyframe(double time, ViewGetSpec view) const;
+    bool getHasMasterKeyframe(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Convenience function that calls getCurve()->getKeyFrames
      **/
-    void getMasterKeyFrameTimes(ViewGetSpec view, std::set<double>* times) const;
+    void getMasterKeyFrameTimes(ViewIdx view, std::set<double>* times) const;
 
     /**
      * @brief Convenience function that checks if a keyframe exists at the given time/view
      **/
-    bool hasMasterKeyframeAtTime(double time, ViewGetSpec view) const;
+    bool hasMasterKeyframeAtTime(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Returns what should be the default base-name for the item, e.g "Bezier" or "Brush" etc...
@@ -375,15 +379,15 @@ private:
 protected:
 
 
-    ValueChangedReturnCodeEnum setKeyFrameInternal(double time,
+    ValueChangedReturnCodeEnum setKeyFrameInternal(TimeValue time,
                                                    ViewSetSpec view,
                                                    KeyFrame* newKey);
 
-    void deleteAnimationConditional(double time, ViewSetSpec view, bool before);
+    void deleteAnimationConditional(TimeValue time, ViewSetSpec view, bool before);
 
     void setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec view,  std::vector<KeyFrame>* newKeys = 0);
 
-    void setKeyFrameRecursively(double time, ViewSetSpec view);
+    void setKeyFrameRecursively(TimeValue time, ViewSetSpec view);
 
 protected:
 
@@ -416,7 +420,7 @@ protected:
     /**
      * @brief Callback called when a new keyframe is set on the animation curve of the user keyframes at the given time/view
      **/
-    virtual void onKeyFrameSet(double time, ViewSetSpec view)
+    virtual void onKeyFrameSet(TimeValue time, ViewSetSpec view)
     {
         Q_UNUSED(time);
         Q_UNUSED(view);
@@ -425,7 +429,7 @@ protected:
     /**
      * @brief Callback called when a new keyframe is removed on the animation curve of the user keyframes at the given time/view
      **/
-    virtual void onKeyFrameRemoved(double time, ViewSetSpec view) {
+    virtual void onKeyFrameRemoved(TimeValue time, ViewSetSpec view) {
         Q_UNUSED(time);
         Q_UNUSED(view);
     }
@@ -439,7 +443,7 @@ protected:
     /**
      * @brief Refresh all animated knobs and recurses on children items
      **/
-    void refreshAfterTimeChange(bool isPlayback, double time);
+    void refreshAfterTimeChange(bool isPlayback, TimeValue time);
 
     // Ensures the item has a unique script-name, a label and that its
     // knobs are initialized
@@ -716,12 +720,12 @@ public:
     /**
      * @brief Set a master keyframe on the selected items
      **/
-    void setMasterKeyframeOnSelectedItems(double time, ViewSetSpec view);
+    void setMasterKeyframeOnSelectedItems(TimeValue time, ViewSetSpec view);
 
     /**
      * @brief Remove a master keyframe on the selected items
      **/
-    void removeMasterKeyframeOnSelectedItems(double time, ViewSetSpec view);
+    void removeMasterKeyframeOnSelectedItems(TimeValue time, ViewSetSpec view);
 
     /**
      * @brief Clear user keyframes animation on selection
@@ -731,12 +735,12 @@ public:
     /**
      * @brief Seeks the nearest previous master keyframe amongst selected items
      **/
-    void goToPreviousMasterKeyframe(ViewGetSpec view);
+    void goToPreviousMasterKeyframe(ViewIdx view);
 
     /**
      * @brief Seeks the nearest next master keyframe amongst selected items
      **/
-    void goToNextMasterKeyframe(ViewGetSpec view);
+    void goToNextMasterKeyframe(ViewIdx view);
 
     /**
      * @brief Returns true if at least one item is animated
@@ -746,7 +750,7 @@ public:
     /**
      * @brief Refresh all animated knob gui
      **/
-    void refreshAfterTimeChange(bool isPlayback, double time);
+    void refreshAfterTimeChange(bool isPlayback, TimeValue time);
 
     /**
      * @brief  Implement to create an item from a serialization object.

@@ -47,16 +47,15 @@ CLANG_DIAG_ON(deprecated-declarations)
 #include "Engine/FitCurve.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoPoint.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 // The number of pressure levels is 256 on an old Wacom Graphire 4, and 512 on an entry-level Wacom Bamboo
 // 512 should be OK, see:
 // http://www.davidrevoy.com/article182/calibrating-wacom-stylus-pressure-on-krita
 #define ROTO_PRESSURE_LEVELS 512
-
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @class A base class for all items made by the roto context
@@ -202,12 +201,13 @@ public:
 
     static RotoStrokeType strokeTypeFromSerializationString(const std::string& s);
     
-    virtual RectD getBoundingBox(double time, ViewGetSpec view) const OVERRIDE FINAL;
+    virtual RectD getBoundingBox(TimeValue time, ViewIdx view) const OVERRIDE FINAL;
 
 
     ///bbox is in canonical coords
-    void evaluateStroke(unsigned int mipMapLevel, double time,
-                        ViewGetSpec view,
+    void evaluateStroke(const RenderScale& scale,
+                        TimeValue time,
+                        ViewIdx view,
                         std::list<std::list<std::pair<Point, double> > >* strokes,
                         RectD* bbox = 0,
                         bool ignoreTransform = false) const;
@@ -235,7 +235,7 @@ public:
     KnobChoicePtr getBrushCloneFilterKnob() const;
     KnobBoolPtr getBrushCloneBlackOutsideKnob() const;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE FINAL;
 
     virtual std::string getBaseItemName() const OVERRIDE FINAL;
 

@@ -97,6 +97,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/FStreamsSupport.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/MultiThread.h"
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/OfxEffectInstance.h"
@@ -112,9 +113,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Serialization/NodeSerialization.h"
 
-
-//An effect may not use more than this amount of threads
-#define NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU 4
 
 NATRON_NAMESPACE_ENTER;
 // to disambiguate with the global-scope ::OfxHost
@@ -154,10 +152,6 @@ struct OfxHostPrivate
     boost::shared_ptr<OFX::Host::ImageEffect::PluginCache> imageEffectPluginCache;
     boost::shared_ptr<TLSHolder<OfxHost::OfxHostTLSData> > tlsData;
 
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    std::list<QMutex*> pluginsMutexes;
-    QMutex* pluginsMutexesLock; //<protects _pluginsMutexes
-#endif
     std::string loadingPluginID; // ID of the plugin being loaded
     int loadingPluginVersionMajor;
     int loadingPluginVersionMinor;
@@ -165,10 +159,6 @@ struct OfxHostPrivate
     OfxHostPrivate()
         : imageEffectPluginCache()
         , tlsData( new TLSHolder<OfxHost::OfxHostTLSData>() )
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-        , pluginsMutexes()
-        , pluginsMutexesLock(0)
-#endif
         , loadingPluginID()
         , loadingPluginVersionMajor(0)
         , loadingPluginVersionMinor(0)
@@ -187,9 +177,6 @@ OfxHost::~OfxHost()
     //Clean up, to be polite.
     OFX::Host::PluginCache::clearPluginCache();
 
-#ifdef MULTI_THREAD_SUITE_USES_THREAD_SAFE_MUTEX_ALLOCATION
-    delete _imp->pluginsMutexesLock;
-#endif
 }
 
 OfxHost::OfxHostDataTLSPtr
@@ -1145,126 +1132,34 @@ OfxHost::newMemoryInstance(size_t nBytes)
 
 void
 OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
-                                 bool actionCaller)
+                                 bool /*actionCaller*/)
 {
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
 
     tls->lastEffectCallingMainEntry = instance;
-    if (actionCaller) {
-        tls->threadIndexes.push_back(-1);
-    } else {
-        assert( !tls->threadIndexes.empty() );
-        tls->threadIndexes.pop_back();
-    }
+
 }
 
-NATRON_NAMESPACE_ANONYMOUS_ENTER
-
-///Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
-///to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
-///We think this is because Furnace must keep an internal thread-local state that becomes then dirty
-///if we re-use the same thread.
-
-static OfxStatus
-threadFunctionWrapper(OfxThreadFunctionV1 func,
-                      unsigned int threadIndex,
-                      unsigned int threadMax,
-                      QThread* spawnerThread,
-                      void *customArg)
+struct OfxFunctorArgs
 {
-    assert(threadIndex < threadMax);
-    OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
-    tls->threadIndexes.push_back( (int)threadIndex );
-
-    QThread* spawnedThread = QThread::currentThread();
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->softCopy(spawnerThread, spawnedThread);
-    }
-
-    OfxStatus ret = kOfxStatOK;
-    try {
-        func(threadIndex, threadMax, customArg);
-    } catch (const std::bad_alloc & ba) {
-        ret =  kOfxStatErrMemory;
-    } catch (...) {
-        ret =  kOfxStatFailed;
-    }
-
-    ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-    tls->threadIndexes.pop_back();
-
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
-
-    return ret;
-}
-
-class OfxThread
-    : public QThread
-      , public AbortableThread
-{
-public:
-    OfxThread(OfxThreadFunctionV1 func,
-              unsigned int threadIndex,
-              unsigned int threadMax,
-              QThread* spawnerThread,
-              void *customArg,
-              OfxStatus *stat)
-        : QThread()
-        , AbortableThread(this)
-        , _func(func)
-        , _threadIndex(threadIndex)
-        , _threadMax(threadMax)
-        , _spawnerThread(spawnerThread)
-        , _customArg(customArg)
-        , _stat(stat)
-    {
-        setThreadName("Multi-thread suite");
-    }
-
-    void run() OVERRIDE
-    {
-        assert(_threadIndex < _threadMax);
-        OfxHost::OfxHostDataTLSPtr tls = appPTR->getOFXHost()->getTLSData();
-        tls->threadIndexes.push_back( (int)_threadIndex );
-
-        appPTR->getAppTLS()->softCopy(_spawnerThread, this);
-
-        assert(*_stat == kOfxStatFailed);
-        try {
-            _func(_threadIndex, _threadMax, _customArg);
-            *_stat = kOfxStatOK;
-        } catch (const std::bad_alloc & ba) {
-            *_stat = kOfxStatErrMemory;
-        } catch (...) {
-        }
-
-        ///reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        tls->threadIndexes.pop_back();
-
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
-
-private:
-    OfxThreadFunctionV1 *_func;
-    unsigned int _threadIndex;
-    unsigned int _threadMax;
-    QThread* _spawnerThread;
-    void *_customArg;
-    OfxStatus *_stat;
+    void* customArg;
+    OfxThreadFunctionV1* ofxFunc;
 };
 
-NATRON_NAMESPACE_ANONYMOUS_EXIT
+static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
+                                               unsigned int threadMax,
+                                               void *customArg,
+                                               const TreeRenderNodeArgsPtr& /*renderArgs*/)
+{
+    OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
+    try {
+        args->ofxFunc(threadIndex, threadMax, customArg);
+        return eActionStatusOK;
+    } catch (...) {
+        return eActionStatusFailed;
+    }
 
-
-// Function to spawn SMP threads
-//  This function will spawn nThreads separate threads of computation (typically one per CPU) to allow something to perform symmetric multi processing. Each thread will call 'func' passing in the index of the thread and the number of threads actually launched.
-// multiThread will not return until all the spawned threads have returned. It is up to the host how it waits for all the threads to return (busy wait, blocking, whatever).
-// nThreads can be more than the value returned by multiThreadNumCPUs, however the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs.
-// This function cannot be called recursively.
-// Note that the thread indexes are from 0 to nThreads-1.
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
+} // ofxMultiThreadFunctor
 
 OfxStatus
 OfxHost::multiThread(OfxThreadFunctionV1 func,
@@ -1275,206 +1170,48 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
         return kOfxStatFailed;
     }
 
-    unsigned int maxConcurrentThread;
-    OfxStatus st = multiThreadNumCPUS(&maxConcurrentThread);
-    if (st != kOfxStatOK) {
-        return st;
-    }
-
-    // from the documentation:
-    // "nThreads can be more than the value returned by multiThreadNumCPUs, however
-    // the threads will be limitted to the number of CPUs returned by multiThreadNumCPUs."
-
-    if ( (nThreads == 1) || (maxConcurrentThread <= 1) || (appPTR->getCurrentSettings()->getNumberOfThreads() == -1) ) {
-        try {
-            for (unsigned int i = 0; i < nThreads; ++i) {
-                func(i, nThreads, customArg);
-            }
-
-            return kOfxStatOK;
-        } catch (...) {
-            return kOfxStatFailed;
-        }
-    }
-
-    QThread* spawnerThread = QThread::currentThread();
-    bool useThreadPool = appPTR->getUseThreadPool();
-
-    if (useThreadPool) {
-        std::vector<unsigned int> threadIndexes(nThreads);
-        for (unsigned int i = 0; i < nThreads; ++i) {
-            threadIndexes[i] = i;
-        }
-
-        // If the current thread is a thread-pool thread, make it also do an iteration instead
-        // of waiting for other threads
-        bool isThreadPoolThread = isRunningInThreadPoolThread();
-        if (isThreadPoolThread) {
-            threadIndexes.pop_back();
-        }
-        /// DON'T set the maximum thread count, this is a global application setting, and see the documentation excerpt above
-        //QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
-        QFuture<OfxStatus> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, func, _1, nThreads, spawnerThread, customArg) );
-
-        // Do one iteration in this thread
-        if (isThreadPoolThread) {
-            OfxStatus stat = threadFunctionWrapper(func, nThreads - 1, nThreads, spawnerThread, customArg);
-            if (stat != kOfxStatOK) {
-                future.waitForFinished();
-                return stat;
-            }
-        }
-
-        // Wait for other threads
-        future.waitForFinished();
-        ///DON'T reset back to the original value the maximum thread count
-        //QThreadPool::globalInstance()->setMaxThreadCount(QThread::idealThreadCount());
-
-        for (QFuture<OfxStatus>::const_iterator it = future.begin(); it != future.end(); ++it) {
-            OfxStatus stat = *it;
-            if (stat != kOfxStatOK) {
-                return stat;
-            }
-        }
+    OfxFunctorArgs args;
+    args.ofxFunc = func;
+    args.customArg = customArg;
+    // OpenFX does not pass the image effect instance pointer back to us so we loose the context...
+    // The only way to recover it will be in the aborted() function entry point with help of thread local storage.
+    ActionRetCodeEnum stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, TreeRenderNodeArgsPtr());
+    if (stat == eActionStatusFailed) {
+        return kOfxStatFailed;
+    } else if (stat == eActionStatusOutOfMemory) {
+        return kOfxStatErrMemory;
     } else {
-        QVector<OfxStatus> status(nThreads); // vector for the return status of each thread
-        status.fill(kOfxStatFailed); // by default, a thread fails
-        {
-            // at most maxConcurrentThread should be running at the same time
-            QVector<OfxThread*> threads(nThreads);
-            for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new OfxThread(func, i, nThreads, spawnerThread, customArg, &status[i]);
-            }
-            unsigned int i = 0; // index of next thread to launch
-            unsigned int running = 0; // number of running threads
-            unsigned int j = 0; // index of first running thread. all threads before this one are finished running
-            while (j < nThreads) {
-                // have no more than maxConcurrentThread threads launched at the same time
-                int threadsStarted = 0;
-                while (i < nThreads && running < maxConcurrentThread) {
-                    threads[i]->start();
-                    ++i;
-                    ++running;
-                    ++threadsStarted;
-                }
-
-                ///We just started threadsStarted threads
-                appPTR->fetchAndAddNRunningThreads(threadsStarted);
-
-                // now we've got at most maxConcurrentThread running. wait for each thread and launch a new one
-                threads[j]->wait();
-                assert( !threads[j]->isRunning() );
-                assert( threads[j]->isFinished() );
-                delete threads[j];
-                ++j;
-                --running;
-
-                ///We just stopped 1 thread
-                appPTR->fetchAndAddNRunningThreads(-1);
-            }
-            assert(running == 0);
-        }
-        // check the return status of each thread, return the first error found
-        for (QVector<OfxStatus>::const_iterator it = status.begin(); it != status.end(); ++it) {
-            OfxStatus stat = *it;
-            if (stat != kOfxStatOK) {
-                return stat;
-            }
-        }
-    } // useThreadPool
-
-    return kOfxStatOK;
+        return kOfxStatOK;
+    }
 } // multiThread
 
-// Function which indicates the number of CPUs available for SMP processing
-//  This value may be less than the actual number of CPUs on a machine, as the host may reserve other CPUs for itself.
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadNumCPUs
 OfxStatus
 OfxHost::multiThreadNumCPUS(unsigned int *nCPUs) const
 {
     if (!nCPUs) {
         return kOfxStatFailed;
     }
-
-    int nThreadsToRender, nThreadsPerEffect;
-    appPTR->getNThreadsSettings(&nThreadsToRender, &nThreadsPerEffect);
-
-    if (nThreadsToRender == -1) {
-        *nCPUs = 1;
-    } else {
-        // activeThreadCount may be negative (for example if releaseThread() is called)
-        int activeThreadsCount = QThreadPool::globalInstance()->activeThreadCount();
-
-        // Add the number of threads already running by the multiThreadSuite + parallel renders
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-        activeThreadsCount += appPTR->getNRunningThreads();
-#endif
-
-        // Clamp to 0
-        activeThreadsCount = std::max( 0, activeThreadsCount);
-
-        assert(activeThreadsCount >= 0);
-
-        // better than QThread::idealThreadCount();, because it can be set by a global preference:
-        int maxThreadsCount = QThreadPool::globalInstance()->maxThreadCount();
-        assert(maxThreadsCount >= 0);
-
-        if (nThreadsPerEffect == 0) {
-            ///Simple heuristic: limit 1 effect to start at most 8 threads because otherwise it might spend too much
-            ///time scheduling than just processing
-            int hwConcurrency = appPTR->getHardwareIdealThreadCount();
-
-            if (hwConcurrency <= 0) {
-                nThreadsPerEffect = 1;
-            } else {
-                nThreadsPerEffect = hwConcurrency;
-            }
-            /*else if (hwConcurrency <= NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU) {
-                nThreadsPerEffect = hwConcurrency;
-               } else {
-                nThreadsPerEffect = NATRON_MULTI_THREAD_SUITE_MAX_NUM_CPU;
-               }*/
-        }
-        ///+1 because the current thread is going to wait during the multiThread call so we're better off
-        ///not counting it.
-        *nCPUs = std::max( 1, std::min(maxThreadsCount - activeThreadsCount + 1, nThreadsPerEffect) );
-    }
-
+    *nCPUs = MultiThread::getNCPUsAvailable();
     return kOfxStatOK;
 }
 
-// Function which indicates the index of the current thread
-//  This function returns the thread index, which is the same as the threadIndex argument passed to the OfxThreadFunctionV1.
-// If there are no threads currently spawned, then this function will set threadIndex to 0
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIndex
-// Note that the thread indexes are from 0 to nThreads-1, so a return value of 0 does not mean that it's not a spawned thread
-// (use multiThreadIsSpawnedThread() to check if it's a spawned thread)
 OfxStatus
 OfxHost::multiThreadIndex(unsigned int *threadIndex) const
 {
     if (!threadIndex) {
         return kOfxStatFailed;
     }
-    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    if ( !tls->threadIndexes.empty() && (tls->threadIndexes.back() != -1) ) {
-        *threadIndex = tls->threadIndexes.back();
-    } else {
-        *threadIndex = 0;
+    ActionRetCodeEnum stat = MultiThread::getCurrentThreadIndex(threadIndex);
+    if (stat == eActionStatusFailed) {
+        return kOfxStatFailed;
     }
-
-
     return kOfxStatOK;
 }
 
-// Function to enquire if the calling thread was spawned by multiThread
-// http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThreadIsSpawnedThread
 int
 OfxHost::multiThreadIsSpawnedThread() const
 {
-    OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-    return !tls->threadIndexes.empty() && tls->threadIndexes.back() != -1;
+    return (int)MultiThread::isCurrentThreadSpawnedThread();
 }
 
 // Create a mutex

@@ -35,6 +35,8 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include "Engine/TimeValue.h"
+
 #include "Gui/GuiFwd.h"
 
 
@@ -67,9 +69,9 @@ private:
 
     ProgressTaskInfo(ProgressPanel* panel,
                      const NodePtr& node,
-                     const int firstFrame,
-                     const int lastFrame,
-                     const int frameStep,
+                     const TimeValue firstFrame,
+                     const TimeValue lastFrame,
+                     const TimeValue frameStep,
                      const bool canPause,
                      const bool canCancel,
                      const QString& message,
@@ -78,9 +80,9 @@ private:
 public:
     static boost::shared_ptr<ProgressTaskInfo> create(ProgressPanel* panel,
                                                       const NodePtr& node,
-                                                      const int firstFrame,
-                                                      const int lastFrame,
-                                                      const int frameStep,
+                                                      const TimeValue firstFrame,
+                                                      const TimeValue lastFrame,
+                                                      const TimeValue frameStep,
                                                       const bool canPause,
                                                       const bool canCancel,
                                                       const QString& message,

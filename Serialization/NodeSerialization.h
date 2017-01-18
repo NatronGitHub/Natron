@@ -29,12 +29,45 @@
 
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
-#include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
 
 SERIALIZATION_NAMESPACE_ENTER;
+
+class ImageComponentsSerialization
+: public SerializationObjectBase
+{
+public:
+
+    ImageComponentsSerialization()
+    : SerializationObjectBase()
+    {
+
+    }
+
+    virtual ~ImageComponentsSerialization()
+    {
+
+    }
+
+    // The layer name, e.g: Beauty
+    std::string layerName;
+
+    // The components global label, e.g: "RGBA" or "MotionPass"
+    // If not provided, this is just the concatenation of all channel names
+    std::string globalCompsName;
+
+    // Each individual channel names, e.g: "R", "G", "B", "A"
+    std::vector<std::string> channelNames;
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+    
+};
+
+
 
 /**
  * @class This is the main class for everything related to the serialization of nodes.

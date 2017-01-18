@@ -205,7 +205,6 @@ RotoPaint::RotoPaint(const NodePtr& node,
     : NodeGroup(node)
     , _imp( new RotoPaintPrivate(this, type) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 RotoPaint::~RotoPaint()
@@ -341,23 +340,18 @@ RotoPaint::initLifeTimeKnobs(const KnobPagePtr& generalPage)
         param->setAddNewLine(false);
         param->setAnimationEnabled(false);
         {
-            std::vector<std::string> choices, helps;
+            std::vector<ChoiceOption> choices;
             assert(choices.size() == eRotoPaintItemLifeTimeTypeAll);
-            choices.push_back(kRotoDrawableItemLifeTimeAll);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeAllHelp).toStdString() );
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeAll, "",tr(kRotoDrawableItemLifeTimeAllHelp).toStdString() ));
             assert(choices.size() == eRotoPaintItemLifeTimeTypeSingle);
-            choices.push_back(kRotoDrawableItemLifeTimeSingle);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString() );
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeSingle, "", tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString()));
             assert(choices.size() == eRotoPaintItemLifeTimeTypeFromStart);
-            choices.push_back(kRotoDrawableItemLifeTimeFromStart);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeFromStartHelp).toStdString() );
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeFromStart, "", tr(kRotoDrawableItemLifeTimeFromStartHelp).toStdString()));
             assert(choices.size() == eRotoPaintItemLifeTimeTypeToEnd);
-            choices.push_back(kRotoDrawableItemLifeTimeToEnd);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString() );
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd, "" ,tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString()));
             assert(choices.size() == eRotoPaintItemLifeTimeTypeCustom);
-            choices.push_back(kRotoDrawableItemLifeTimeCustom);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString() );
-            param->populateChoices(choices, helps);
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom, "", tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString()));
+            param->populateChoices(choices);
         }
         // Default to single frame lifetime, otherwise default to
         param->setDefaultValue(defaultLifeTime, DimSpec(0));
@@ -480,18 +474,15 @@ RotoPaint::initShapePageKnobs()
         param->setHintToolTip( tr(kRotoFeatherFallOffTypeHint) );
         param->setName(kRotoFeatherFallOffType);
         {
-            std::vector<std::string> entries,helps;
-            entries.push_back(kRotoFeatherFallOffTypeLinear);
-            helps.push_back(kRotoFeatherFallOffTypeLinearHint);
-            entries.push_back(kRotoFeatherFallOffTypePLinear);
-            helps.push_back(kRotoFeatherFallOffTypePLinearHint);
-            entries.push_back(kRotoFeatherFallOffTypeEaseIn);
-            helps.push_back(kRotoFeatherFallOffTypeEaseInHint);
-            entries.push_back(kRotoFeatherFallOffTypeEaseOut);
-            helps.push_back(kRotoFeatherFallOffTypeEaseOutHint);
-            entries.push_back(kRotoFeatherFallOffTypeSmooth);
-            helps.push_back(kRotoFeatherFallOffTypeSmoothHint);
-            param->populateChoices(entries, helps);
+            std::vector<ChoiceOption> entries;
+            entries.push_back(ChoiceOption(kRotoFeatherFallOffTypeLinear, "", tr(kRotoFeatherFallOffTypeLinearHint).toStdString()));
+            entries.push_back(ChoiceOption(kRotoFeatherFallOffTypePLinear, "", tr(kRotoFeatherFallOffTypePLinearHint).toStdString()));
+            entries.push_back(ChoiceOption(kRotoFeatherFallOffTypeEaseIn, "", tr(kRotoFeatherFallOffTypeEaseInHint).toStdString()));
+            entries.push_back(ChoiceOption(kRotoFeatherFallOffTypeEaseOut, "", tr(kRotoFeatherFallOffTypeEaseOutHint).toStdString()));
+            entries.push_back(ChoiceOption(kRotoFeatherFallOffTypeSmooth, "", tr(kRotoFeatherFallOffTypeLinearHint).toStdString()));
+            entries.push_back(ChoiceOption(kRotoFeatherFallOffTypeLinear, "", tr(kRotoFeatherFallOffTypeSmoothHint).toStdString()));
+
+            param->populateChoices(entries);
         }
         shapePage->addKnob(param);
         _imp->knobsTable->addPerItemKnobMaster(param);
@@ -706,9 +697,9 @@ RotoPaint::initTransformPageKnobs()
         param->setHintToolTip( tr(kRotoDrawableItemSkewOrderParamHint) );
         param->setDefaultValue(0);
         {
-            std::vector<std::string> choices;
-            choices.push_back("XY");
-            choices.push_back("YX");
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("XY", "", ""));
+            choices.push_back(ChoiceOption("YX", "", ""));
             param->populateChoices(choices);
         }
         param->setAnimationEnabled(false);
@@ -914,9 +905,9 @@ RotoPaint::initClonePageKnobs()
         param->setHintToolTip( tr(kRotoBrushSkewOrderParamHint) );
         param->setDefaultValue(0);
         {
-            std::vector<std::string> choices;
-            choices.push_back("XY");
-            choices.push_back("YX");
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("XY", "", ""));
+            choices.push_back(ChoiceOption("YX", "", ""));
             param->populateChoices(choices);
         }
         param->setAnimationEnabled(false);
@@ -974,26 +965,17 @@ RotoPaint::initClonePageKnobs()
         param->setName(kRotoBrushFilterParam);
         param->setHintToolTip( tr(kRotoBrushFilterParamHint) );
         {
-            std::vector<std::string> choices, helps;
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption(kFilterImpulse, "", tr(kFilterImpulseHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterBilinear, "", tr(kFilterBilinearHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterCubic, "", tr(kFilterCubicHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterKeys, "", tr(kFilterKeysHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterSimon, "", tr(kFilterSimonHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterRifman, "", tr(kFilterRifmanHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterMitchell, "", tr(kFilterMitchellHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterParzen, "", tr(kFilterParzenHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterNotch, "", tr(kFilterNotchHint).toStdString()));
 
-            choices.push_back(kFilterImpulse);
-            helps.push_back(kFilterImpulseHint);
-            choices.push_back(kFilterBilinear);
-            helps.push_back(kFilterBilinearHint);
-            choices.push_back(kFilterCubic);
-            helps.push_back(kFilterCubicHint);
-            choices.push_back(kFilterKeys);
-            helps.push_back(kFilterKeysHint);
-            choices.push_back(kFilterSimon);
-            helps.push_back(kFilterSimonHint);
-            choices.push_back(kFilterRifman);
-            helps.push_back(kFilterRifmanHint);
-            choices.push_back(kFilterMitchell);
-            helps.push_back(kFilterMitchellHint);
-            choices.push_back(kFilterParzen);
-            helps.push_back(kFilterParzenHint);
-            choices.push_back(kFilterNotch);
-            helps.push_back(kFilterNotchHint);
             param->populateChoices(choices);
         }
         param->setDefaultValue(2);
@@ -1026,9 +1008,9 @@ RotoPaint::initClonePageKnobs()
         param->setName(kRotoBrushTimeOffsetModeParam);
         param->setHintToolTip( tr(kRotoBrushTimeOffsetModeParamHint) );
         {
-            std::vector<std::string> modes;
-            modes.push_back("Relative");
-            modes.push_back("Absolute");
+            std::vector<ChoiceOption> modes;
+            modes.push_back(ChoiceOption("Relative", "", ""));
+            modes.push_back(ChoiceOption("Absolute", "", ""));
             param->populateChoices(modes);
         }
         clonePage->addKnob(param);
@@ -1050,16 +1032,13 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setHintToolTip( tr(kRotoMotionBlurModeParamHint) );
         param->setAnimationEnabled(false);
         {
-            std::vector<std::string> entries, helps;
+            std::vector<ChoiceOption> entries;
             assert((int)entries.size() == eRotoMotionBlurModeNone);
-            entries.push_back(kRotoMotionBlurModeNone);
-            helps.push_back(tr(kRotoMotionBlurModeNoneHint).toStdString());
+            entries.push_back(ChoiceOption(kRotoMotionBlurModeNone, "", tr(kRotoMotionBlurModeNoneHint).toStdString()));
             assert((int)entries.size() == eRotoMotionBlurModePerShape);
-            entries.push_back(kRotoMotionBlurModePerShape);
-            helps.push_back(tr(kRotoMotionBlurModePerShapeHint).toStdString());
+            entries.push_back(ChoiceOption(kRotoMotionBlurModePerShape, "", tr(kRotoMotionBlurModePerShapeHint).toStdString()));
             assert((int)entries.size() == eRotoMotionBlurModeGlobal);
-            entries.push_back(kRotoMotionBlurModeGlobal);
-            helps.push_back(tr(kRotoMotionBlurModeGlobalHint).toStdString());
+            entries.push_back(ChoiceOption(kRotoMotionBlurModeGlobal, "", tr(kRotoMotionBlurModeGlobalHint).toStdString()));
             param->populateChoices(entries);
         }
         mbPage->addKnob(param);
@@ -1096,16 +1075,13 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         param->setDefaultValue(0);
         {
-            std::vector<std::string> options, helps;
-            options.push_back("Centered");
-            helps.push_back(kRotoShutterOffsetCenteredHint);
-            options.push_back("Start");
-            helps.push_back(kRotoShutterOffsetStartHint);
-            options.push_back("End");
-            helps.push_back(kRotoShutterOffsetEndHint);
-            options.push_back("Custom");
-            helps.push_back(kRotoShutterOffsetCustomHint);
-            param->populateChoices(options, helps);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption("Centered", "", tr(kRotoShutterOffsetCenteredHint).toStdString()));
+            options.push_back(ChoiceOption("Start", "", tr(kRotoShutterOffsetStartHint).toStdString()));
+            options.push_back(ChoiceOption("End", "", tr(kRotoShutterOffsetEndHint).toStdString()));
+            options.push_back(ChoiceOption("Custom", "", tr(kRotoShutterOffsetCustomHint).toStdString()));
+
+            param->populateChoices(options);
         }
         param->setAddNewLine(false);
         mbPage->addKnob(param);
@@ -1153,16 +1129,13 @@ RotoPaint::initMotionBlurPageKnobs()
         param->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         param->setDefaultValue(0);
         {
-            std::vector<std::string> options, helps;
-            options.push_back("Centered");
-            helps.push_back(kRotoShutterOffsetCenteredHint);
-            options.push_back("Start");
-            helps.push_back(kRotoShutterOffsetStartHint);
-            options.push_back("End");
-            helps.push_back(kRotoShutterOffsetEndHint);
-            options.push_back("Custom");
-            helps.push_back(kRotoShutterOffsetCustomHint);
-            param->populateChoices(options, helps);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption("Centered", "", tr(kRotoShutterOffsetCenteredHint).toStdString()));
+            options.push_back(ChoiceOption("Start", "", tr(kRotoShutterOffsetStartHint).toStdString()));
+            options.push_back(ChoiceOption("End", "", tr(kRotoShutterOffsetEndHint).toStdString()));
+            options.push_back(ChoiceOption("Custom", "", tr(kRotoShutterOffsetCustomHint).toStdString()));
+
+            param->populateChoices(options);
         }
         param->setAddNewLine(false);
         param->setSecret(true);
@@ -1494,9 +1467,9 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     blendingModes->setEvaluateOnChange(false);
     blendingModes->setSecret(true);
     {
-        std::vector<std::string> choices, helps;
-        Merge::getOperatorStrings(&choices, &helps);
-        blendingModes->populateChoices(choices, helps);
+        std::vector<ChoiceOption> choices;
+        Merge::getOperatorStrings(&choices);
+        blendingModes->populateChoices(choices);
     }
     blendingModes->setDefaultValue( (int)eMergeOver );
     generalPage->addKnob(blendingModes);
@@ -1621,12 +1594,10 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     timeOffsetMode->setEvaluateOnChange(false);
     timeOffsetMode->setSecret(true);
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back("Relative");
-        helps.push_back("The time offset is a frame number in the source");
-        choices.push_back("Absolute");
-        helps.push_back("The time offset is a relative amount of frames relative to the current frame");
-        timeOffsetMode->populateChoices(choices, helps);
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("Relative", "", tr("The time offset is a frame number in the source").toStdString()));
+        choices.push_back(ChoiceOption("Absolute", "", tr("The time offset is a relative amount of frames relative to the current frame").toStdString()));
+        timeOffsetMode->populateChoices(choices);
     }
     timeOffsetMode->setDefaultValue(0);
     generalPage->addKnob(timeOffsetMode);
@@ -1638,12 +1609,12 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     sourceType->setEvaluateOnChange(false);
     sourceType->setSecret(true);
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back("foreground");
-        choices.push_back("background");
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("foreground", "", ""));
+        choices.push_back(ChoiceOption("background", "", ""));
         for (int i = 1; i < 10; ++i) {
-            QString str = tr("background") + QString::number(i + 1);
-            choices.push_back( str.toStdString() );
+            QString str = QString::fromUtf8("background") + QString::number(i + 1);
+            choices.push_back( ChoiceOption(str.toStdString(), "", ""));
         }
         sourceType->populateChoices(choices);
     }
@@ -2371,7 +2342,7 @@ RotoPaint::onKnobsLoaded()
 
     // Refresh solo items
     std::list<RotoDrawableItemPtr> allItems;
-    _imp->knobsTable->getRotoItemsByRenderOrder(0, ViewIdx(0), false /*onlyActives*/);
+    _imp->knobsTable->getRotoItemsByRenderOrder(TimeValue(0), ViewIdx(0), false /*onlyActives*/);
     for (std::list<RotoDrawableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
         if ((*it)->getSoloKnob()->getValue()) {
             _imp->soloItems.insert(*it);
@@ -2383,7 +2354,7 @@ bool
 RotoPaint::knobChanged(const KnobIPtr& k,
                        ValueChangedReasonEnum /*reason*/,
                        ViewSetSpec view,
-                       double time)
+                       TimeValue time)
 {
     if (!k) {
         return false;
@@ -2488,8 +2459,8 @@ RotoPaint::knobChanged(const KnobIPtr& k,
                 if (!isBezier) {
                     continue;
                 }
-                std::list<BezierCPPtr > cps = isBezier->getControlPoints(getCurrentView());
-                std::list<BezierCPPtr > fps = isBezier->getFeatherPoints(getCurrentView());
+                std::list<BezierCPPtr > cps = isBezier->getControlPoints(view_i);
+                std::list<BezierCPPtr > fps = isBezier->getFeatherPoints(view_i);
                 assert( cps.size() == fps.size() );
 
                 std::list<BezierCPPtr >::const_iterator cpIT = cps.begin();
@@ -2566,7 +2537,7 @@ RotoPaintPrivate::refreshMotionBlurKnobsVisibility()
 
 void
 RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
-                                             double time)
+                                             TimeValue time)
 {
     NodeGroup::refreshExtraStateAfterTimeChanged(isPlayback, time);
     if (time != _imp->ui->strokeBeingPaintedTimelineFrame) {
@@ -2585,71 +2556,23 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
     _imp->ui->computeSelectedCpsBBOX();
 }
 
-StatusEnum
-RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
-{
-    metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
-    /*KnobBoolPtr premultKnob = _imp->premultKnob.lock();
-       assert(premultKnob);
-       bool premultiply = premultKnob->getValue();
-       if (premultiply) {
-        metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-       } else {
-        ImagePremultiplicationEnum srcPremult = eImagePremultiplicationOpaque;
-        EffectInstancePtr input = getInput(0);
-        if (input) {
-            srcPremult = input->getPremult();
-        }
-        bool processA = getNode()->getProcessChannel(3);
-        if ( (srcPremult == eImagePremultiplicationOpaque) && processA ) {
-            metadata.setOutputPremult(eImagePremultiplicationUnPremultiplied);
-        } else {
-            metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-        }
-       }*/
-    metadata.setOutputPremult(eImagePremultiplicationPremultiplied);
-
-    return eStatusOK;
-}
-
-static void adjustChoiceParamOption(const std::string& oldOption, const std::string& newOption, const KnobChoicePtr& knob)
-{
-    std::vector<std::string> entries = knob->getEntries();
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i] == oldOption) {
-            entries[i] = newOption;
-            knob->populateChoices(entries);
-            if (knob->getActiveEntryText() == oldOption) {
-                knob->setValue(i);
-            }
-            break;
-        }
-    }
-}
-
 void
-RotoPaint::onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode)
+RotoPaint::onInputChanged(int inputNb)
 {
 
-    if (oldNode && newNode && oldNode != newNode) {
-        // We know what changed, switch choices automatically so things don't get disconnected
-        const std::string& oldNodeLabel = oldNode->getLabel();
-        const std::string& newNodeLabel = newNode->getLabel();
-        refreshInputChoices(oldNodeLabel, newNodeLabel);
-    } else {
-        // We have to refresh menus only
-        _imp->refreshSourceKnobs();
-    }
+
+    _imp->refreshSourceKnobs();
+
     refreshRotoPaintTree();
     
-    NodeGroup::onInputChanged(inputNb, oldNode, newNode);
+    NodeGroup::onInputChanged(inputNb);
 }
 
 
 static void
 getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
                                   const KnobTableItemPtr& item,
-                                  double time, ViewIdx view,
+                                  TimeValue time, ViewIdx view,
                                   bool onlyActives)
 {
     RotoDrawableItemPtr isDrawable = boost::dynamic_pointer_cast<RotoDrawableItem>(item);
@@ -2667,7 +2590,7 @@ getRotoItemsByRenderOrderInternal(std::list< RotoDrawableItemPtr > * curves,
 }
 
 std::list< RotoDrawableItemPtr >
-RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(double time, ViewIdx view, bool onlyActivated) const
+RotoPaintKnobItemsTable::getRotoItemsByRenderOrder(TimeValue time, ViewIdx view, bool onlyActivated) const
 {
     std::list< RotoDrawableItemPtr > ret;
     std::vector<KnobTableItemPtr> topLevelItems = getTopLevelItems();
@@ -2718,7 +2641,7 @@ void
 RotoPaintPrivate::resetTransformsCenter(bool doClone,
                                    bool doTransform)
 {
-    double time = publicInterface->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(publicInterface->getApp()->getTimeLine()->currentFrame());
     ViewIdx view(0);
     RectD bbox;
     {
@@ -2853,7 +2776,7 @@ RotoPaint::onEnableOpenGLKnobValueChanged(bool /*activated*/)
 void
 RotoPaint::onModelSelectionChanged(std::list<KnobTableItemPtr> /*addedToSelection*/, std::list<KnobTableItemPtr> /*removedFromSelection*/, TableChangeReasonEnum /*reason*/)
 {
-    redrawOverlayInteract();
+    requestOverlayInteractRefresh();
 }
 
 
@@ -2995,7 +2918,7 @@ RotoPaintPrivate::isRotoPaintTreeConcatenatableInternal(const std::list<RotoDraw
 bool
 RotoPaint::isRotoPaintTreeConcatenatable() const
 {
-    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime(), getCurrentView(), false);
+    std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime_TLS(), getCurrentView_TLS(), false);
     int bop;
     return _imp->isRotoPaintTreeConcatenatableInternal(items, &bop);
 }
@@ -3208,8 +3131,8 @@ RotoPaint::refreshRotoPaintTree()
     if (_imp->treeRefreshBlocked) {
         return;
     }
-    double time = getCurrentTime();
-    ViewIdx view = getCurrentView();
+    TimeValue time = getCurrentTime_TLS();
+    ViewIdx view = getCurrentView_TLS();
 
     // Get the items by render order. In the GUI they appear from bottom to top.
     std::list<RotoDrawableItemPtr > items = _imp->knobsTable->getRotoItemsByRenderOrder(time, view, false);
@@ -3483,7 +3406,7 @@ BezierPtr
 RotoPaint::makeBezier(double x,
                         double y,
                         const std::string & baseName,
-                        double time,
+                        TimeValue time,
                         bool isOpenBezier)
 {
 
@@ -3527,7 +3450,7 @@ RotoPaint::makeEllipse(double x,
                          double y,
                          double diameter,
                          bool fromCenter,
-                         double time)
+                         TimeValue time)
 {
     double half = diameter / 2.;
     BezierPtr curve = makeBezier(x, fromCenter ? y - half : y, tr(kRotoEllipseBaseName).toStdString(), time, false);
@@ -3572,7 +3495,7 @@ BezierPtr
 RotoPaint::makeSquare(double x,
                         double y,
                         double initialSize,
-                        double time)
+                        TimeValue time)
 {
     BezierPtr curve = makeBezier(x, y, kRotoRectangleBaseName, time, false);
 
@@ -3605,7 +3528,7 @@ RotoPaint::getMixKnob() const
 void
 RotoPaint::refreshSourceKnobs(const RotoDrawableItemPtr& item)
 {
-    std::vector<std::string> inputAChoices, maskChoices;
+    std::vector<ChoiceOption> inputAChoices, maskChoices;
     getMergeChoices(&inputAChoices, &maskChoices);
     {
         KnobChoicePtr itemSourceKnob = item->getMergeInputAChoiceKnob();
@@ -3622,13 +3545,14 @@ RotoPaint::refreshSourceKnobs(const RotoDrawableItemPtr& item)
 }
 
 void
-RotoPaint::getMergeChoices(std::vector<std::string>* inputAChoices, std::vector<std::string>* maskChoices) const
+RotoPaint::getMergeChoices(std::vector<ChoiceOption>* inputAChoices, std::vector<ChoiceOption>* maskChoices) const
 {
-    maskChoices->push_back("None");
+    ChoiceOption noneChoice("None", tr("None").toStdString(), "");
+    maskChoices->push_back(noneChoice);
     if (_imp->nodeType != RotoPaint::eRotoPaintTypeComp) {
-        inputAChoices->push_back("Foreground");
+        inputAChoices->push_back(ChoiceOption("Foreground", tr("Foreground").toStdString(), ""));
     } else {
-        inputAChoices->push_back("None");
+        inputAChoices->push_back(noneChoice);
     }
     for (int i = 1; i < LAYERED_COMP_MAX_INPUTS_COUNT; ++i) {
         EffectInstancePtr input = getInput(i);
@@ -3637,47 +3561,23 @@ RotoPaint::getMergeChoices(std::vector<std::string>* inputAChoices, std::vector<
         }
         QObject::connect(input->getNode().get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onSourceNodeLabelChanged(QString,QString)), Qt::UniqueConnection);
         const std::string& inputLabel = input->getNode()->getLabel();
+        ChoiceOption opt(QString::number(i).toStdString(), inputLabel, "");
         bool isMask = i >= LAYERED_COMP_FIRST_MASK_INPUT_INDEX;
         if (!isMask) {
-            inputAChoices->push_back(inputLabel);
+            inputAChoices->push_back(opt);
         } else {
-            maskChoices->push_back(inputLabel);
+            maskChoices->push_back(opt);
         }
     }
 }
 
-void
-RotoPaint::refreshInputChoices(const std::string& oldInputLabel, const std::string& newInputLabel)
-{
-    KnobChoicePtr inputAKnob = _imp->mergeInputAChoiceKnob.lock();
-    if (inputAKnob) {
-        adjustChoiceParamOption(oldInputLabel, newInputLabel, inputAKnob);
-    }
 
-
-    // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = _imp->knobsTable->getRotoItemsByRenderOrder(getCurrentTime(), ViewIdx(0), false);
-    for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
-        {
-            KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
-            if (itemSourceKnob) {
-                adjustChoiceParamOption(oldInputLabel, newInputLabel, itemSourceKnob);
-            }
-        }
-        {
-            KnobChoicePtr maskSourceKnob = (*it)->getMergeMaskChoiceKnob();
-            if (maskSourceKnob) {
-                adjustChoiceParamOption(oldInputLabel, newInputLabel, maskSourceKnob);
-            }
-        }
-    }
-} // refreshInputChoices
 
 void
 RotoPaintPrivate::refreshSourceKnobs()
 {
 
-    std::vector<std::string> inputAChoices, maskChoices;
+    std::vector<ChoiceOption> inputAChoices, maskChoices;
     publicInterface->getMergeChoices(&inputAChoices, &maskChoices);
 
 
@@ -3688,7 +3588,7 @@ RotoPaintPrivate::refreshSourceKnobs()
 
 
     // Refresh all items menus aswell
-    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getCurrentTime(), ViewIdx(0), false);
+    std::list< RotoDrawableItemPtr > drawables = knobsTable->getRotoItemsByRenderOrder(publicInterface->getTimelineCurrentTime(), ViewIdx(0), false);
     for (std::list< RotoDrawableItemPtr > ::const_iterator it = drawables.begin(); it != drawables.end(); ++it) {
         {
             KnobChoicePtr itemSourceKnob = (*it)->getMergeInputAChoiceKnob();
@@ -3706,10 +3606,10 @@ RotoPaintPrivate::refreshSourceKnobs()
 } // refreshSourceKnobs
 
 void
-RotoPaint::onSourceNodeLabelChanged(const QString& oldLabel, const QString& newLabel)
+RotoPaint::onSourceNodeLabelChanged(const QString& /*oldLabel*/, const QString& /*newLabel*/)
 {
 
-    refreshInputChoices(oldLabel.toStdString(), newLabel.toStdString());
+    _imp->refreshSourceKnobs();
 }
 
 void

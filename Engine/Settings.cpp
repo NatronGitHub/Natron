@@ -42,6 +42,7 @@
 
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
+#include "Engine/Cache.h"
 #include "Engine/KnobFactory.h"
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
@@ -110,16 +111,12 @@ public:
     // General/Threading
     KnobPagePtr _threadingPage;
     KnobIntPtr _numberOfThreads;
-    KnobIntPtr _numberOfParallelRenders;
-    KnobBoolPtr _useThreadPool;
-    KnobIntPtr _nThreadsPerEffect;
     KnobBoolPtr _renderInSeparateProcess;
     KnobBoolPtr _queueRenders;
 
     // General/Rendering
     KnobPagePtr _renderingPage;
     KnobBoolPtr _convertNaNValues;
-    KnobBoolPtr _pluginUseImageCopyForSource;
     KnobBoolPtr _activateRGBSupport;
     KnobBoolPtr _activateTransformConcatenationSupport;
 
@@ -169,33 +166,15 @@ public:
     // Caching
     KnobPagePtr _cachingTab;
     KnobBoolPtr _aggressiveCaching;
-    ///The percentage of the value held by _maxRAMPercent to dedicate to playback cache (viewer cache's in-RAM portion) only
-    KnobStringPtr _maxPlaybackLabel;
 
-    ///The percentage of the system total's RAM to dedicate to caching in theory. In practise this is limited
-    ///by _unreachableRamPercent that determines how much RAM should be left free for other use on the computer
-    KnobIntPtr _maxRAMPercent;
-    KnobStringPtr _maxRAMLabel;
-
-    ///The percentage of the system total's RAM you want to keep free from cache usage
-    ///When the cache grows and reaches a point where it is about to cross that threshold
-    ///it starts freeing the LRU entries regardless of the _maxRAMPercent and _maxPlaybackPercent
-    ///A reasonable value should be set for it, allowing Natron's caches to always stay in RAM and
-    ///avoid being swapped-out on disk. Assuming the user isn't using many applications at the same time,
-    ///10% seems a reasonable value.
-    KnobIntPtr _unreachableRAMPercent;
-    KnobStringPtr _unreachableRAMLabel;
-
-    ///The total disk space allowed for all Natron's caches
-    KnobIntPtr _maxViewerDiskCacheGB;
-    KnobIntPtr _maxDiskCacheNodeGB;
+    // The total disk space allowed for all Natron's caches
+    KnobIntPtr _maxDiskCacheSizeGb;
+    KnobIntPtr _maxRAMCacheSizeMb;
     KnobPathPtr _diskCachePath;
-    KnobButtonPtr _wipeDiskCache;
 
     // Viewer
     KnobPagePtr _viewersTab;
     KnobChoicePtr _texturesMode;
-    KnobIntPtr _powerOf2Tiling;
     KnobIntPtr _checkerboardTileSize;
     KnobColorPtr _checkerboardColor1;
     KnobColorPtr _checkerboardColor2;
@@ -303,7 +282,7 @@ public:
     KnobColorPtr _defaultMergeGroupColor;
     KnobColorPtr _defaultViewsGroupColor;
     KnobColorPtr _defaultDeepGroupColor;
-    std::vector<std::string> _knownHostNames;
+    std::vector<ChoiceOption> _knownHostNames;
 
     Settings* _publicInterface;
 
@@ -352,7 +331,6 @@ public:
     void initializeKnobsNodeGraphColors();
     void initializeKnobsScriptEditorColors();
 
-    void setCachingLabels();
     void setDefaultValues();
 
     bool tryLoadOpenColorIOConfig();
@@ -502,85 +480,59 @@ SettingsPrivate::initializeKnobsGeneral()
                                   "restrict their usage to specific OpenFX host(s). "
                                   "If a Host is not listed here, use the \"Custom\" entry to enter a custom host name.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _knownHostNames.clear();
-    std::vector<std::string> visibleHostEntries, hostEntriesHelp;
-    assert(_knownHostNames.size() == (int)eKnownHostNameNatron);
-    _knownHostNames.push_back(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
-    visibleHostEntries.push_back(NATRON_APPLICATION_NAME);
-    assert(_knownHostNames.size() == (int)eKnownHostNameNuke);
-    _knownHostNames.push_back("uk.co.thefoundry.nuke");
-    visibleHostEntries.push_back("Nuke");
-    assert(_knownHostNames.size() == (int)eKnownHostNameFusion);
-    _knownHostNames.push_back("com.eyeonline.Fusion");
-    visibleHostEntries.push_back("Fusion");
-    assert(_knownHostNames.size() == (int)eKnownHostNameCatalyst);
-    _knownHostNames.push_back("com.sony.Catalyst.Edit");
-    visibleHostEntries.push_back("Sony Catalyst Edit");
-    assert(_knownHostNames.size() == (int)eKnownHostNameVegas);
-    _knownHostNames.push_back("com.sonycreativesoftware.vegas");
-    visibleHostEntries.push_back("Sony Vegas");
-    assert(_knownHostNames.size() == (int)eKnownHostNameToxik);
-    _knownHostNames.push_back("Autodesk Toxik");
-    visibleHostEntries.push_back("Toxik");
-    assert(_knownHostNames.size() == (int)eKnownHostNameScratch);
-    _knownHostNames.push_back("Assimilator");
-    visibleHostEntries.push_back("Scratch");
-    assert(_knownHostNames.size() == (int)eKnownHostNameDustBuster);
-    _knownHostNames.push_back("Dustbuster");
-    visibleHostEntries.push_back("DustBuster");
-    assert(_knownHostNames.size() == (int)eKnownHostNameResolve);
-    _knownHostNames.push_back("DaVinciResolve");
-    visibleHostEntries.push_back("Da Vinci Resolve");
-    assert(_knownHostNames.size() == (int)eKnownHostNameResolveLite);
-    _knownHostNames.push_back("DaVinciResolveLite");
-    visibleHostEntries.push_back("Da Vinci Resolve Lite");
-    assert(_knownHostNames.size() == (int)eKnownHostNameMistika);
-    _knownHostNames.push_back("Mistika");
-    visibleHostEntries.push_back("SGO Mistika");
-    assert(_knownHostNames.size() == (int)eKnownHostNamePablo);
-    _knownHostNames.push_back("com.quantel.genq");
-    visibleHostEntries.push_back("Quantel Pablo Rio");
-    assert(_knownHostNames.size() == (int)eKnownHostNameMotionStudio);
-    _knownHostNames.push_back("com.idtvision.MotionStudio");
-    visibleHostEntries.push_back("IDT Motion Studio");
-    assert(_knownHostNames.size() == (int)eKnownHostNameShake);
-    _knownHostNames.push_back("com.apple.shake");
-    visibleHostEntries.push_back("Shake");
-    assert(_knownHostNames.size() == (int)eKnownHostNameBaselight);
-    _knownHostNames.push_back("Baselight");
-    visibleHostEntries.push_back("Baselight");
-    assert(_knownHostNames.size() == (int)eKnownHostNameFrameCycler);
-    _knownHostNames.push_back("IRIDAS Framecycler");
-    visibleHostEntries.push_back("FrameCycler");
-    assert(_knownHostNames.size() == (int)eKnownHostNameNucoda);
-    _knownHostNames.push_back("Nucoda");
-    visibleHostEntries.push_back("Nucoda Film Master");
-    assert(_knownHostNames.size() == (int)eKnownHostNameAvidDS);
-    _knownHostNames.push_back("DS OFX HOST");
-    visibleHostEntries.push_back("Avid DS");
-    assert(_knownHostNames.size() == (int)eKnownHostNameDX);
-    _knownHostNames.push_back("com.chinadigitalvideo.dx");
-    visibleHostEntries.push_back("China Digital Video DX");
-    assert(_knownHostNames.size() == (int)eKnownHostNameTitlerPro);
-    _knownHostNames.push_back("com.newblue.titlerpro");
-    visibleHostEntries.push_back("NewBlueFX Titler Pro");
-    assert(_knownHostNames.size() == (int)eKnownHostNameNewBlueOFXBridge);
-    _knownHostNames.push_back("com.newblue.ofxbridge");
-    visibleHostEntries.push_back("NewBlueFX OFX Bridge");
-    assert(_knownHostNames.size() == (int)eKnownHostNameRamen);
-    _knownHostNames.push_back("Ramen");
-    visibleHostEntries.push_back("Ramen");
-    assert(_knownHostNames.size() == (int)eKnownHostNameTuttleOfx);
-    _knownHostNames.push_back("TuttleOfx");
-    visibleHostEntries.push_back("TuttleOFX");
+    std::vector<ChoiceOption> visibleHostEntries;
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
+    visibleHostEntries.push_back(ChoiceOption(NATRON_APPLICATION_NAME, NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNuke);
+    visibleHostEntries.push_back(ChoiceOption("uk.co.thefoundry.nuke", "Nuke", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameFusion);
+    visibleHostEntries.push_back(ChoiceOption("com.eyeonline.Fusion", "Fusion", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
+    visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);
+    visibleHostEntries.push_back(ChoiceOption("com.sonycreativesoftware.vegas", "Sony Vegas", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameToxik);
+    visibleHostEntries.push_back(ChoiceOption("Autodesk Toxik", "Toxik", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameScratch);
+    visibleHostEntries.push_back(ChoiceOption("Assimilator", "Scratch", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameDustBuster);
+    visibleHostEntries.push_back(ChoiceOption("Dustbuster", "DustBuster", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameResolve);
+    visibleHostEntries.push_back(ChoiceOption("DaVinciResolve", "Da Vinci Resolve", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameResolveLite);
+    visibleHostEntries.push_back(ChoiceOption("DaVinciResolveLite", "Da Vinci Resolve Lite", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameMistika);
+    visibleHostEntries.push_back(ChoiceOption("Mistika", "SGO Mistika", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNamePablo);
+    visibleHostEntries.push_back(ChoiceOption("com.quantel.genq", "Quantel Pablo Rio", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameMotionStudio);
+    visibleHostEntries.push_back(ChoiceOption("com.idtvision.MotionStudio", "IDT Motion Studio", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameShake);
+    visibleHostEntries.push_back(ChoiceOption("com.apple.shake", "Shake", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameBaselight);
+    visibleHostEntries.push_back(ChoiceOption("Baselight", "Baselight", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameFrameCycler);
+    visibleHostEntries.push_back(ChoiceOption("IRIDAS Framecycler", "FrameCycler", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNucoda);
+    visibleHostEntries.push_back(ChoiceOption("Nucoda", "Nucoda Film Master", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameAvidDS);
+    visibleHostEntries.push_back(ChoiceOption("DS OFX HOST", "Avid DS", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameDX);
+    visibleHostEntries.push_back(ChoiceOption("com.chinadigitalvideo.dx", "China Digital Video DX", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameTitlerPro);
+    visibleHostEntries.push_back(ChoiceOption("com.newblue.titlerpro", "NewBlueFX Titler Pro", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameNewBlueOFXBridge);
+    visibleHostEntries.push_back(ChoiceOption("com.newblue.ofxbridge", "NewBlueFX OFX Bridge", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameRamen);
+    visibleHostEntries.push_back(ChoiceOption("Ramen", "Ramen", ""));
+    assert(visibleHostEntries.size() == (int)eKnownHostNameTuttleOfx);
+    visibleHostEntries.push_back(ChoiceOption("TuttleOfx", "TuttleOFX", ""));
 
+    _knownHostNames = visibleHostEntries;
 
-    assert( visibleHostEntries.size() == _knownHostNames.size() );
-    hostEntriesHelp = _knownHostNames;
+    visibleHostEntries.push_back(ChoiceOption(NATRON_CUSTOM_HOST_NAME_ENTRY, "Custom host name", ""));
 
-    visibleHostEntries.push_back(NATRON_CUSTOM_HOST_NAME_ENTRY);
-    hostEntriesHelp.push_back("Custom host name");
-
-    _hostName->populateChoices(visibleHostEntries, hostEntriesHelp);
+    _hostName->populateChoices(visibleHostEntries);
     _hostName->setAddNewLine(false);
     _generalTab->addKnob(_hostName);
 
@@ -607,53 +559,20 @@ SettingsPrivate::initializeKnobsThreading()
     _numberOfThreads = AppManager::createKnob<KnobInt>( thisShared, tr("Number of render threads (0=\"guess\")") );
     _numberOfThreads->setName("noRenderThreads");
 
+    int hwThreadsCount = appPTR->getHardwareIdealThreadCount();
     QString numberOfThreadsToolTip = tr("Controls how many threads %1 should use to render. \n"
-                                        "-1: Disable multithreading totally (useful for debugging) \n"
-                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QThread::idealThreadCount() );
+                                        "0: Guess the thread count from the number of cores. The ideal threads count for this hardware is %2.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( hwThreadsCount );
     _numberOfThreads->setHintToolTip( numberOfThreadsToolTip.toStdString() );
     _numberOfThreads->disableSlider();
-    _numberOfThreads->setRange(-1, INT_MAX);
-    _numberOfThreads->setDisplayRange(-1, 30);
+#ifdef DEBUG
+    // -1: Disable multithreading totally (useful for debugging)
+    _numberOfThreads->setRange(-1, hwThreadsCount);
+#else
+    _numberOfThreads->setRange(0, hwThreadsCount);
+#endif
+    _numberOfThreads->setDisplayRange(0, hwThreadsCount);
     _threadingPage->addKnob(_numberOfThreads);
 
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders = AppManager::createKnob<KnobInt>( thisShared, tr("Number of parallel renders (0=\"guess\")") );
-    _numberOfParallelRenders->setHintToolTip( tr("Controls the number of parallel frame that will be rendered at the same time by the renderer."
-                                                 "A value of 0 indicate that %1 should automatically determine "
-                                                 "the best number of parallel renders to launch given your CPU activity. "
-                                                 "Setting a value different than 0 should be done only if you know what you're doing and can lead "
-                                                 "in some situations to worse performances. Overall to get the best performances you should have your "
-                                                 "CPU at 100% activity without idle times.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _numberOfParallelRenders->setName("nParallelRenders");
-    _numberOfParallelRenders->setRange(0, INT_MAX);
-    _numberOfParallelRenders->disableSlider();
-    _threadingPage->addKnob(_numberOfParallelRenders);
-#endif
-
-    _useThreadPool = AppManager::createKnob<KnobBool>( thisShared, tr("Effects use the thread-pool") );
-
-    _useThreadPool->setName("useThreadPool");
-    _useThreadPool->setHintToolTip( tr("When checked, all effects will use a global thread-pool to do their processing instead of launching "
-                                       "their own threads. "
-                                       "This suppresses the overhead created by the operating system creating new threads on demand for "
-                                       "each rendering of a special effect. As a result of this, the rendering might be faster on systems "
-                                       "with a lot of cores (>= 8). \n"
-                                       "WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially "
-                                       "some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, "
-                                       "make sure to uncheck this option first otherwise it will crash %1.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _threadingPage->addKnob(_useThreadPool);
-
-    _nThreadsPerEffect = AppManager::createKnob<KnobInt>( thisShared, tr("Max threads usable per effect (0=\"guess\")") );
-    _nThreadsPerEffect->setName("nThreadsPerEffect");
-    _nThreadsPerEffect->setHintToolTip( tr("Controls how many threads a specific effect can use at most to do its processing. "
-                                           "A high value will allow 1 effect to spawn lots of thread and might not be efficient because "
-                                           "the time spent to launch all the threads might exceed the time spent actually processing."
-                                           "By default (0) the renderer applies an heuristic to determine what's the best number of threads "
-                                           "for an effect.") );
-
-    _nThreadsPerEffect->setRange(0, INT_MAX);
-    _nThreadsPerEffect->disableSlider();
-    _threadingPage->addKnob(_nThreadsPerEffect);
 
     _renderInSeparateProcess = AppManager::createKnob<KnobBool>( thisShared, tr("Render in a separate process") );
     _renderInSeparateProcess->setName("renderNewProcess");
@@ -681,16 +600,6 @@ SettingsPrivate::initializeKnobsRendering()
                                           "division by zero. Disabling this option will keep the NaN(s) in the buffers: this may lead to an "
                                           "undefined behavior.") );
     _renderingPage->addKnob(_convertNaNValues);
-
-    _pluginUseImageCopyForSource = AppManager::createKnob<KnobBool>( thisShared, tr("Copy input image before rendering any plug-in") );
-    _pluginUseImageCopyForSource->setName("copyInputImage");
-    _pluginUseImageCopyForSource->setHintToolTip( tr("If checked, when before rendering any node, %1 will copy "
-                                                     "the input image to a local temporary image. This is to work-around some plug-ins "
-                                                     "that write to the source image, thus modifying the output of the node upstream in "
-                                                     "the cache. This is a known bug of an old version of RevisionFX REMap for instance. "
-                                                     "By default, this parameter should be leaved unchecked, as this will require an extra "
-                                                     "image allocation and copy before rendering any plug-in.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _renderingPage->addKnob(_pluginUseImageCopyForSource);
 
     _activateRGBSupport = AppManager::createKnob<KnobBool>( thisShared, tr("RGB components support") );
     _activateRGBSupport->setHintToolTip( tr("When checked %1 is able to process images with only RGB components "
@@ -723,11 +632,11 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     _imp->_nOpenGLContexts->setSecret(false);
     _imp->_enableOpenGL->setSecret(false);
 
-    std::vector<std::string> entries( renderers.size() );
+    std::vector<ChoiceOption> entries( renderers.size() );
     int i = 0;
     for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
-        entries[i] = option;
+        entries[i].id = option;
     }
     _imp->_availableOpenGLRenderers->populateChoices(entries);
     _imp->_availableOpenGLRenderers->setSecret(renderers.size() == 1);
@@ -735,9 +644,9 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
 
 #ifdef HAVE_OSMESA
 #ifdef OSMESA_GALLIUM_DRIVER
-    std::vector<std::string> mesaDrivers;
-    mesaDrivers.push_back("softpipe");
-    mesaDrivers.push_back("llvmpipe");
+    std::vector<ChoiceOption> mesaDrivers;
+    mesaDrivers.push_back(ChoiceOption("softpipe", "",""));
+    mesaDrivers.push_back(ChoiceOption("llvmpipe", "",""));
     _imp->_osmesaRenderers->populateChoices(mesaDrivers);
     _imp->_osmesaRenderers->setSecret(false);
 #else
@@ -835,18 +744,14 @@ SettingsPrivate::initializeKnobsGPU()
     _enableOpenGL = AppManager::createKnob<KnobChoice>( thisShared, tr("OpenGL Rendering") );
     _enableOpenGL->setName("enableOpenGLRendering");
     {
-        std::vector<std::string> entries;
-        std::vector<std::string> helps;
+        std::vector<ChoiceOption> entries;
         assert(entries.size() == (int)Settings::eEnableOpenGLEnabled);
-        entries.push_back("Enabled");
-        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        entries.push_back(ChoiceOption("Enabled", "",  tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabled);
-        entries.push_back("Disabled");
-        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
         assert(entries.size() == (int)Settings::eEnableOpenGLDisabledIfBackground);
-        entries.push_back("Disabled If Background");
-        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
-        _enableOpenGL->populateChoices(entries, helps);
+        entries.push_back(ChoiceOption("Disabled If Background", "", tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
+        _enableOpenGL->populateChoices(entries);
     }
     _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
     _gpuPage->addKnob(_enableOpenGL);
@@ -896,9 +801,9 @@ SettingsPrivate::initializeKnobsDocumentation()
     _documentationSource = AppManager::createKnob<KnobChoice>( thisShared, tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
-    _documentationSource->appendChoice("Local");
-    _documentationSource->appendChoice("Online");
-    _documentationSource->appendChoice("None");
+    _documentationSource->appendChoice(ChoiceOption("Local", "",""));
+    _documentationSource->appendChoice(ChoiceOption("Online", "",""));
+    _documentationSource->appendChoice(ChoiceOption("None", "",""));
     _documentationPage->addKnob(_documentationSource);
 #endif
 
@@ -986,7 +891,7 @@ SettingsPrivate::initializeKnobsColorManagement()
 
     _ocioConfigKnob->setName("ocioConfig");
 
-    std::vector<std::string> configs;
+    std::vector<ChoiceOption> configs;
     int defaultIndex = 0;
     QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
     Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
@@ -998,13 +903,13 @@ SettingsPrivate::initializeKnobsColorManagement()
                 if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
-                configs.push_back( entries[j].toStdString() );
+                configs.push_back(ChoiceOption( entries[j].toStdString(), "",""));
             }
 
             break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
-    configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
+    configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME, "", ""));
     _ocioConfigKnob->populateChoices(configs);
     _ocioConfigKnob->setDefaultValue(defaultIndex);
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
@@ -1393,31 +1298,17 @@ SettingsPrivate::initializeKnobsViewers()
 
     _texturesMode = AppManager::createKnob<KnobChoice>( thisShared, tr("Viewer textures bit depth") );
     _texturesMode->setName("texturesBitDepth");
-    std::vector<std::string> textureModes;
-    std::vector<std::string> helpStringsTextureModes;
-    textureModes.push_back("Byte");
-    helpStringsTextureModes.push_back( tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                          "by the CPU. As a results, the size of cached textures is smaller.").toStdString() );
+    std::vector<ChoiceOption> textureModes;
+    textureModes.push_back(ChoiceOption("Byte", "", tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                                        "by the CPU. As a results, the size of cached textures is smaller.").toStdString() ));
     //textureModes.push_back("16bits half-float");
     //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back("32bits floating-point");
-    helpStringsTextureModes.push_back( tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                          "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString() );
-    _texturesMode->populateChoices(textureModes, helpStringsTextureModes);
+    textureModes.push_back(ChoiceOption("32bits floating-point", "",tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString()));
+    _texturesMode->populateChoices(textureModes);
     _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
                                       " Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
-
-    _powerOf2Tiling = AppManager::createKnob<KnobInt>( thisShared, tr("Viewer tile size is 2 to the power of...") );
-    _powerOf2Tiling->setName("viewerTiling");
-    _powerOf2Tiling->setHintToolTip( tr("The dimension of the viewer tiles is 2^n by 2^n (i.e. 256 by 256 pixels for n=8). "
-                                        "A high value means that the viewer renders large tiles, so that "
-                                        "rendering is done less often, but on larger areas.") );
-    _powerOf2Tiling->disableSlider();
-    _powerOf2Tiling->setRange(4, 9);
-    _powerOf2Tiling->setDisplayRange(4, 9);
-
-    _viewersTab->addKnob(_powerOf2Tiling);
 
     _checkerboardTileSize = AppManager::createKnob<KnobInt>( thisShared, tr("Checkerboard tile size (pixels)") );
     _checkerboardTileSize->setName("checkerboardTileSize");
@@ -1452,12 +1343,12 @@ SettingsPrivate::initializeKnobsViewers()
 
     _autoProxyLevel = AppManager::createKnob<KnobChoice>( thisShared, tr("Auto-proxy level") );
     _autoProxyLevel->setName("autoProxyLevel");
-    std::vector<std::string> autoProxyChoices;
-    autoProxyChoices.push_back("2");
-    autoProxyChoices.push_back("4");
-    autoProxyChoices.push_back("8");
-    autoProxyChoices.push_back("16");
-    autoProxyChoices.push_back("32");
+    std::vector<ChoiceOption> autoProxyChoices;
+    autoProxyChoices.push_back(ChoiceOption("2", "",""));
+    autoProxyChoices.push_back(ChoiceOption("4", "",""));
+    autoProxyChoices.push_back(ChoiceOption("8", "",""));
+    autoProxyChoices.push_back(ChoiceOption("16", "",""));
+    autoProxyChoices.push_back(ChoiceOption("32", "",""));
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _viewersTab->addKnob(_autoProxyLevel);
 
@@ -1545,93 +1436,49 @@ SettingsPrivate::initializeKnobsCaching()
     /////////// Caching tab
     _cachingTab = AppManager::createKnob<KnobPage>( thisShared, tr("Caching") );
 
-    _aggressiveCaching = AppManager::createKnob<KnobBool>( thisShared, tr("Aggressive caching") );
+    _aggressiveCaching = AppManager::createKnob<KnobBool>( thisShared, tr("Aggressive Caching") );
     _aggressiveCaching->setName("aggressiveCaching");
     _aggressiveCaching->setHintToolTip( tr("When checked, %1 will cache the output of all images "
                                            "rendered by all nodes, regardless of their \"Force caching\" parameter. When enabling this option "
                                            "you need to have at least 8GiB of RAM, and 16GiB is recommended.\n"
-                                           "If not checked, %1 will only cache the  nodes "
-                                           "which have multiple outputs, or their parameter \"Force caching\" checked or if one of its "
-                                           "output has its settings panel opened.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                                           "If not checked, %1 will only cache the nodes when needed").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _cachingTab->addKnob(_aggressiveCaching);
 
-    _maxRAMPercent = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum amount of RAM memory used for caching (% of total RAM)") );
-    _maxRAMPercent->setName("maxRAMPercent");
-    _maxRAMPercent->disableSlider();
-    _maxRAMPercent->setRange(0, 100);
-    QString ramHint( tr("This setting indicates the percentage of the total RAM which can be used by the memory caches. "
-                        "This system has %1 of RAM.").arg( printAsRAM( getSystemTotalRAM() ) ) );
-    if ( isApplication32Bits() && (getSystemTotalRAM() > 4ULL * 1024ULL * 1024ULL * 1024ULL) ) {
-        ramHint.append( QString::fromUtf8("\n") );
-        ramHint.append( tr("The version of %1 you are running is 32 bits, which means the available RAM "
-                           "is limited to 4GiB. The amount of RAM used for caching is 4GiB * MaxRamPercent.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    }
 
-    _maxRAMPercent->setHintToolTip(ramHint);
-    _maxRAMPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_maxRAMPercent);
+    _maxDiskCacheSizeGb = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum Disk Cache Size (GiB)") );
+    _maxDiskCacheSizeGb->setName("maxDiskCacheMb");
+    _maxDiskCacheSizeGb->disableSlider();
 
-    _maxRAMLabel = AppManager::createKnob<KnobString>( thisShared, std::string() );
-    _maxRAMLabel->setName("maxRamLabel");
-    _maxRAMLabel->setIsPersistent(false);
-    _maxRAMLabel->setAsLabel();
-    _cachingTab->addKnob(_maxRAMLabel);
+    // The disk should at least allow storage of 1000 tiles accross each bucket
+    std::size_t cacheMinSize = std::pow(2, NATRON_8BIT_TILE_SIZE_PO2);
+    cacheMinSize = cacheMinSize * cacheMinSize * 1000 * 256;
+    _maxDiskCacheSizeGb->setRange(cacheMinSize, INT_MAX);
+    _maxDiskCacheSizeGb->setHintToolTip( tr("The maximum Disk size that may be used by the Cache (in GiB)") );
+    _cachingTab->addKnob(_maxDiskCacheSizeGb);
+
+    _maxRAMCacheSizeMb = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum RAM Cache Size (MiB) (0 = All)") );
+    _maxRAMCacheSizeMb->setName("maxRAMCacheMb");
+    _maxRAMCacheSizeMb->disableSlider();
+    _maxRAMCacheSizeMb->setRange(0, INT_MAX);
+    _maxRAMCacheSizeMb->setHintToolTip( tr("The maximum RAM that may be used by the Cache (in MiB)") );
+    _cachingTab->addKnob(_maxRAMCacheSizeMb);
 
 
-    _unreachableRAMPercent = AppManager::createKnob<KnobInt>( thisShared, tr("System RAM to keep free (% of total RAM)") );
-    _unreachableRAMPercent->setName("unreachableRAMPercent");
-    _unreachableRAMPercent->disableSlider();
-    _unreachableRAMPercent->setRange(0, 90);
-    _unreachableRAMPercent->setHintToolTip(tr("This determines how much RAM should be kept free for other applications "
-                                              "running on the same system. "
-                                              "When this limit is reached, the caches start recycling memory instead of growing. "
-                                              //"A reasonable value should be set for it allowing the caches to stay in physical RAM " // users don't understand what swap is
-                                              //"and avoid being swapped-out on disk. "
-                                              "This value should reflect the amount of memory "
-                                              "you want to keep available on your computer for other usage. "
-                                              "A low value may result in a massive slowdown and high disk usage.")
-                                           );
-    _unreachableRAMPercent->setAddNewLine(false);
-    _cachingTab->addKnob(_unreachableRAMPercent);
-    _unreachableRAMLabel = AppManager::createKnob<KnobString>( thisShared, std::string() );
-    _unreachableRAMLabel->setName("unreachableRAMLabel");
-    _unreachableRAMLabel->setIsPersistent(false);
-    _unreachableRAMLabel->setAsLabel();
-    _cachingTab->addKnob(_unreachableRAMLabel);
-
-    _maxViewerDiskCacheGB = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum playback disk cache size (GiB)") );
-    _maxViewerDiskCacheGB->setName("maxViewerDiskCache");
-    _maxViewerDiskCacheGB->disableSlider();
-    _maxViewerDiskCacheGB->setRange(0, 100);
-    _maxViewerDiskCacheGB->setHintToolTip( tr("The maximum size that may be used by the playback cache on disk (in GiB)") );
-    _cachingTab->addKnob(_maxViewerDiskCacheGB);
-
-    _maxDiskCacheNodeGB = AppManager::createKnob<KnobInt>( thisShared, tr("Maximum DiskCache node disk usage (GiB)") );
-    _maxDiskCacheNodeGB->setName("maxDiskCacheNode");
-    _maxDiskCacheNodeGB->disableSlider();
-    _maxDiskCacheNodeGB->setRange(0, 100);
-    _maxDiskCacheNodeGB->setHintToolTip( tr("The maximum size that may be used by the DiskCache node on disk (in GiB)") );
-    _cachingTab->addKnob(_maxDiskCacheNodeGB);
-
-
-    _diskCachePath = AppManager::createKnob<KnobPath>( thisShared, tr("Disk cache path (empty = default)") );
+    _diskCachePath = AppManager::createKnob<KnobPath>( thisShared, tr("Disk Cache Path (empty = default)") );
     _diskCachePath->setName("diskCachePath");
     _diskCachePath->setMultiPath(false);
 
     QString defaultLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-    QString diskCacheTt( tr("WARNING: Changing this parameter requires a restart of the application. \n"
-                            "This is points to the location where %1 on-disk caches will be. "
+    QString diskCacheTt( tr("This is the location where the disk cache is. "
                             "This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, "
-                            "the default location will be used. The default location is: \n").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
+                            "the default location will be used. The default location is: %1\n").arg(defaultLocation) );
 
-    _diskCachePath->setHintToolTip( diskCacheTt + defaultLocation );
+    _diskCachePath->setHintToolTip(diskCacheTt);
+    knobsRequiringRestart.insert(_diskCachePath);
+
     _cachingTab->addKnob(_diskCachePath);
 
-    _wipeDiskCache = AppManager::createKnob<KnobButton>( thisShared, tr("Wipe Disk Cache") );
-    _wipeDiskCache->setHintToolTip( tr("Cleans-up all caches, deleting all folders that may contain cached data. "
-                                       "This is provided in case %1 lost track of cached images "
-                                       "for some reason.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-    _cachingTab->addKnob(_wipeDiskCache);
+    _viewersTab->addKnob(_cachingTab);
 } // Settings::initializeKnobsCaching
 
 void
@@ -1754,16 +1601,6 @@ SettingsPrivate::initializeKnobsPython()
     _pythonPage->addKnob(_echoVariableDeclarationToPython);
 } // initializeKnobs
 
-void
-SettingsPrivate::setCachingLabels()
-{
-    int maxTotalRam = _maxRAMPercent->getValue();
-    U64 systemTotalRam = getSystemTotalRAM();
-    U64 maxRAM = (U64)( ( (double)maxTotalRam / 100. ) * systemTotalRam );
-
-    _maxRAMLabel->setValue( printAsRAM(maxRAM).toStdString() );
-    _unreachableRAMLabel->setValue( printAsRAM( (double)systemTotalRam * ( (double)_unreachableRAMPercent->getValue() / 100. ) ).toStdString() );
-}
 
 void
 SettingsPrivate::setDefaultValues()
@@ -1776,28 +1613,15 @@ SettingsPrivate::setDefaultValues()
     _checkForUpdates->setDefaultValue(false);
     _enableCrashReports->setDefaultValue(true);
     _autoSaveUnSavedProjects->setDefaultValue(true);
-    _autoSaveDelay->setDefaultValue(5);
-    _hostName->setDefaultValue(0);
-    _customHostName->setDefaultValue(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
-
-    // General/Threading
-    _numberOfThreads->setDefaultValue(0);
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _numberOfParallelRenders->setDefaultValue(0);
-#endif
-    _useThreadPool->setDefaultValue(true);
-    _nThreadsPerEffect->setDefaultValue(0);
-    _renderInSeparateProcess->setDefaultValue(false);
-    _queueRenders->setDefaultValue(false);
-
-    // General/Rendering
+    _maxUndoRedoNodeGraph->setDefaultValue(20);
+    _linearPickers->setDefaultValue(true);
     _convertNaNValues->setDefaultValue(true);
-    _pluginUseImageCopyForSource->setDefaultValue(false);
-    _activateRGBSupport->setDefaultValue(true);
-    _activateTransformConcatenationSupport->setDefaultValue(true);
+    _snapNodesToConnections->setDefaultValue(true);
+    _useBWIcons->setDefaultValue(false);
+    _loadProjectsWorkspace->setDefaultValue(false);
+    _numberOfThreads->setDefaultValue(0);
 
-    // General/GPU rendering
-    //_openglRendererString
+
     _osmesaRenderers->setDefaultValue(defaultMesaDriver);
     _nOpenGLContexts->setDefaultValue(2);
 #if NATRON_VERSION_MAJOR < 2 || (NATRON_VERSION_MAJOR == 2 && NATRON_VERSION_MINOR < 2)
@@ -1809,6 +1633,8 @@ SettingsPrivate::setDefaultValues()
     _enableOpenGL->setDefaultValue((int)eEnableOpenGLDisabledIfBackground);
 #  endif
 #endif
+    _renderInSeparateProcess->setDefaultValue(false);
+    _queueRenders->setDefaultValue(false);
 
     // General/Projects setup
     _firstReadSetProjectFormat->setDefaultValue(true);
@@ -1839,18 +1665,9 @@ SettingsPrivate::setDefaultValues()
     _ocioStartupCheck->setDefaultValue(true);
     //_customOcioConfigFile
 
-    // Caching
-    _aggressiveCaching->setDefaultValue(false);
-    _maxRAMPercent->setDefaultValue(50);
-    _unreachableRAMPercent->setDefaultValue(5);
-    _maxViewerDiskCacheGB->setDefaultValue(5);
-    _maxDiskCacheNodeGB->setDefaultValue(10);
-    //_diskCachePath
-    setCachingLabels();
 
     // Viewer
     _texturesMode->setDefaultValue(0);
-    _powerOf2Tiling->setDefaultValue(8);
     _checkerboardTileSize->setDefaultValue(5);
     _checkerboardColor1->setDefaultValue(0.5);
     _checkerboardColor1->setDefaultValue(0.5, DimIdx(1));
@@ -1866,7 +1683,18 @@ SettingsPrivate::setDefaultValues()
     _maximumNodeViewerUIOpened->setDefaultValue(2);
     _viewerKeys->setDefaultValue(true);
 
+    _ocioStartupCheck->setDefaultValue(true);
+
+    _aggressiveCaching->setDefaultValue(false);
+
+    // Default to 10GiB on disk
+    _maxDiskCacheSizeGb->setDefaultValue(10);
+
+    // Default to All ram
+    _maxRAMCacheSizeMb->setDefaultValue(0);
+
     // Nodegraph
+
     _autoScroll->setDefaultValue(false);
     _autoTurbo->setDefaultValue(false);
     _snapNodesToConnections->setDefaultValue(true);
@@ -2206,10 +2034,10 @@ Settings::saveSettings(const KnobsVec& knobs,
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         int newIndex = isChoice->getValue(DimIdx(j));
-                        const std::vector<std::string> entries = isChoice->getEntries();
+                        const std::vector<ChoiceOption> entries = isChoice->getEntries();
                         if ( newIndex < (int)entries.size() ) {
                             QString oldValue = settings.value(dimensionName).toString();
-                            QString newValue = QString::fromUtf8( entries[newIndex].c_str() );
+                            QString newValue = QString::fromUtf8( entries[newIndex].id.c_str() );
                             if (oldValue != newValue) {
                                 changedKnobs.push_back(knobs[i]);
                             }
@@ -2275,11 +2103,11 @@ Settings::restoreSettings(const KnobsVec& knobs)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<std::string> entries = isChoice->getEntries();
+                        const std::vector<ChoiceOption> entries = isChoice->getEntries();
                         int found = -1;
 
                         for (U32 k = 0; k < entries.size(); ++k) {
-                            if (entries[k] == value) {
+                            if (entries[k].id == value) {
                                 found = (int)k;
                                 break;
                             }
@@ -2319,10 +2147,6 @@ Settings::restoreSettings(const KnobsVec& knobs)
             saveSetting(_imp->_defaultAppearanceVersion );
         }
 
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
-        appPTR->setNThreadsToRender( getNumberOfThreads() );
-        appPTR->setUseThreadPool( _imp->_useThreadPool->getValue() );
-        appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
     } catch (std::logic_error) {
         // ignore
     }
@@ -2345,7 +2169,7 @@ Settings::restoreAllSettings()
 
     // Restore opengl renderer
     {
-        std::vector<std::string> availableRenderers = _imp->_availableOpenGLRenderers->getEntries();
+        std::vector<ChoiceOption> availableRenderers = _imp->_availableOpenGLRenderers->getEntries();
         QString missingGLError;
         bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
 
@@ -2362,6 +2186,10 @@ Settings::restoreAllSettings()
             int i = 0;
             for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
                 if (i == curIndex) {
+                    CachePtr cache = appPTR->getCache();
+                    if (cache) {
+                        cache->setMaximumCacheSize(eStorageModeGLTex, it->maxMemBytes);
+                    }
                     QString maxMemoryString = it->maxMemBytes == 0 ? tr("Unknown") : printAsRAM(it->maxMemBytes);
                     QString curRenderer = (QString::fromUtf8("<p><h2>") +
                                            tr("OpenGL Renderer Infos:") +
@@ -2422,7 +2250,7 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText().c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryID().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2494,53 +2322,53 @@ crash_application()
 bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
-                             double /*time*/,
+                             TimeValue /*time*/,
                              ViewSetSpec /*view*/)
 {
 
     Q_EMIT settingChanged(k, reason);
     bool ret = true;
 
-    if ( k == _imp->_maxViewerDiskCacheGB ) {
-        if (!_imp->_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumViewerDiskSpace( getMaximumViewerDiskCacheSize() );
+    if ( k == _imp->_maxRAMCacheSizeMb ) {
+        std::size_t maxRamBytes = (std::size_t)_imp->_maxRAMCacheSizeMb->getValue() * 1024 * 1024;
+
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->setMaximumCacheSize(eStorageModeRAM, maxRamBytes);
         }
-    } else if ( k == _imp->_maxDiskCacheNodeGB ) {
-        if (!_imp->_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumDiskSpace( getMaximumDiskCacheNodeSize() );
+
+    } else if ( k == _imp->_maxDiskCacheSizeGb ) {
+
+        std::size_t maxDiskBytes = (std::size_t)_imp->_maxDiskCacheSizeGb->getValue() * 1024 * 1024 * 1024;
+        CachePtr cache = appPTR->getCache();
+        if (cache) {
+            cache->setMaximumCacheSize(eStorageModeDisk, maxDiskBytes);
         }
-    } else if ( k == _imp->_maxRAMPercent ) {
-        if (!_imp->_restoringSettings) {
-            appPTR->setApplicationsCachesMaximumMemoryPercent( getRamMaximumPercent() );
-        }
-        _imp->setCachingLabels();
-    } else if ( k == _imp->_diskCachePath ) {
-        appPTR->setDiskCacheLocation( QString::fromUtf8( _imp->_diskCachePath->getValue().c_str() ) );
-    } else if ( k == _imp->_wipeDiskCache ) {
-        appPTR->wipeAndCreateDiskCacheStructure();
-    } else if ( k == _imp->_numberOfThreads ) {
-        int nbThreads = getNumberOfThreads();
-        appPTR->setNThreadsToRender(nbThreads);
+
+    }  else if ( k == _imp->_numberOfThreads ) {
+        int nbThreads = _imp->_numberOfThreads->getValue();
+#ifdef DEBUG
         if (nbThreads == -1) {
-            QThreadPool::globalInstance()->setMaxThreadCount(1);
-            appPTR->abortAnyProcessing();
-        } else if (nbThreads == 0) {
-            QThreadPool::globalInstance()->setMaxThreadCount( QThread::idealThreadCount() );
+            nbThreads = 1;
+        }
+#endif
+        assert(nbThreads >= 0);
+        if (nbThreads == 0) {
+            int idealCount = appPTR->getHardwareIdealThreadCount();
+            assert(idealCount > 0);
+            idealCount = std::max(idealCount, 1);
+            QThreadPool::globalInstance()->setMaxThreadCount(idealCount);
         } else {
             QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
         }
-    } else if ( k == _imp->_nThreadsPerEffect ) {
-        appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
+
     } else if ( k == _imp->_ocioConfigKnob ) {
-        if (_imp->_ocioConfigKnob->getActiveEntryText() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+        if (_imp->_ocioConfigKnob->getActiveEntryID() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);
         } else {
             _imp->_customOcioConfigFile->setEnabled(false);
         }
         _imp->tryLoadOpenColorIOConfig();
-    } else if ( k == _imp->_useThreadPool ) {
-        bool useTP = _imp->_useThreadPool->getValue();
-        appPTR->setUseThreadPool(useTP);
     } else if ( k == _imp->_customOcioConfigFile ) {
         if ( _imp->_customOcioConfigFile->isEnabled() ) {
             _imp->tryLoadOpenColorIOConfig();
@@ -2553,10 +2381,8 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         appPTR->onQueueRendersChanged( _imp->_queueRenders->getValue() );
     } else if ( ( k == _imp->_checkerboardTileSize ) || ( k == _imp->_checkerboardColor1 ) || ( k == _imp->_checkerboardColor2 ) ) {
         appPTR->onCheckerboardSettingsChanged();
-    } else if ( k == _imp->_powerOf2Tiling && !_imp->_restoringSettings) {
-        appPTR->onViewerTileCacheSizeChanged();
     } else if ( k == _imp->_texturesMode &&  !_imp->_restoringSettings) {
-        appPTR->onViewerTileCacheSizeChanged();
+        appPTR->clearAllCaches();
     } else if ( ( k == _imp->_hideOptionalInputsAutomatically ) && !_imp->_restoringSettings && (reason == eValueChangedReasonUserEdited) ) {
         appPTR->toggleAutoHideGraphInputs();
     } else if ( k == _imp->_autoProxyWhenScrubbingTimeline ) {
@@ -2598,7 +2424,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                        appPTR->reloadStylesheets();
                    }
                } else if ( k == _imp->_hostName ) {
-                   std::string hostName = _imp->_hostName->getActiveEntryText();
+                   std::string hostName = _imp->_hostName->getActiveEntryID();
                    bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
                    _imp->_customHostName->setSecret(!isCustom);
                } else if ( ( k == _imp->_testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
@@ -2611,8 +2437,6 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                    }
                } else if ( ( k == _imp->_scriptEditorFontChoice ) || ( k == _imp->_scriptEditorFontSize ) ) {
                    appPTR->reloadScriptEditorFonts();
-               } else if ( k == _imp->_pluginUseImageCopyForSource ) {
-                   appPTR->setPluginsUseInputImageCopyToRender( _imp->_pluginUseImageCopyForSource->getValue() );
                } else if ( k == _imp->_enableOpenGL ) {
                    appPTR->refreshOpenGLRenderingFlagOnAllInstances();
                    if (!_imp->_restoringSettings) {
@@ -2627,6 +2451,11 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
 
 ////////////////////////////////////////////////////////
 // "Viewers" pane
+KnobChoicePtr
+Settings::getViewerBitDepthKnob() const
+{
+    return _imp->_texturesMode;
+}
 
 ImageBitDepthEnum
 Settings::getViewersBitDepth() const
@@ -2643,12 +2472,6 @@ Settings::getViewersBitDepth() const
     } else {
         return eImageBitDepthByte;
     }
-}
-
-int
-Settings::getViewerTilesPowerOf2() const
-{
-    return _imp->_powerOf2Tiling->getValue();
 }
 
 int
@@ -2714,48 +2537,34 @@ Settings::isViewerKeysEnabled() const
 ///////////////////////////////////////////////////////
 // "Caching" pane
 
+std::string
+Settings::getDiskCachePath() const
+{
+    return _imp->_diskCachePath->getValue();
+}
+
 bool
 Settings::isAggressiveCachingEnabled() const
 {
     return _imp->_aggressiveCaching->getValue();
 }
 
-double
-Settings::getRamMaximumPercent() const
+std::size_t
+Settings::getMaximumDiskCacheSize() const
 {
-    return (double)_imp->_maxRAMPercent->getValue() / 100.;
+    return _imp->_maxDiskCacheSizeGb->getValue() * 1024 * 1024 * 1024;
 }
 
-U64
-Settings::getMaximumViewerDiskCacheSize() const
+std::size_t
+Settings::getMaximumRAMCacheSize() const
 {
-    return (U64)( _imp->_maxViewerDiskCacheGB->getValue() ) * std::pow(1024., 3.);
-}
-
-U64
-Settings::getMaximumDiskCacheNodeSize() const
-{
-    return (U64)( _imp->_maxDiskCacheNodeGB->getValue() ) * std::pow(1024., 3.);
-}
-
-///////////////////////////////////////////////////
-
-double
-Settings::getUnreachableRamPercent() const
-{
-    return (double)_imp->_unreachableRAMPercent->getValue() / 100.;
+    return _imp->_maxRAMCacheSizeMb->getValue() * 1024 * 1024;
 }
 
 bool
 Settings::getColorPickerLinear() const
 {
     return _imp->_linearPickers->getValue();
-}
-
-int
-Settings::getNumberOfThreadsPerEffect() const
-{
-    return _imp->_nThreadsPerEffect->getValue();
 }
 
 int
@@ -2866,8 +2675,12 @@ void
 Settings::populateSystemFonts(const QSettings& settings,
                               const std::vector<std::string>& fonts)
 {
-    _imp->_systemFontChoice->populateChoices(fonts);
-    _imp->_scriptEditorFontChoice->populateChoices(fonts);
+    std::vector<ChoiceOption> options(fonts.size());
+    for (std::size_t i = 0; i < fonts.size(); ++i) {
+        options[i].id = fonts[i];
+    }
+    _imp->_systemFontChoice->populateChoices(options);
+    _imp->_scriptEditorFontChoice->populateChoices(options);
     for (U32 i = 0; i < fonts.size(); ++i) {
         if (fonts[i] == NATRON_FONT) {
             _imp->_systemFontChoice->setDefaultValue(i);
@@ -2937,7 +2750,6 @@ Settings::restoreDefault()
     for (U32 i = 0; i < knobs.size(); ++i) {
         knobs[i]->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     }
-    _imp->setCachingLabels();
     endChanges();
 
     if (_imp->_nRedrawStyleSheetRequests > 0) {
@@ -3181,13 +2993,13 @@ std::string
 Settings::getHostName() const
 {
     int entry_i =  _imp->_hostName->getValue();
-    std::vector<std::string> entries = _imp->_hostName->getEntries();
+    std::vector<ChoiceOption> entries = _imp->_hostName->getEntries();
 
-    if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i] == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
+    if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i].id == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
         return _imp->_customHostName->getValue();
     } else {
         if ( (entry_i >= 0) && ( entry_i < (int)_imp->_knownHostNames.size() ) ) {
-            return _imp->_knownHostNames[entry_i];
+            return _imp->_knownHostNames[entry_i].id;
         }
 
         return std::string();
@@ -3197,7 +3009,7 @@ Settings::getHostName() const
 const std::string&
 Settings::getKnownHostName(KnownHostNameEnum e) const
 {
-    return _imp->_knownHostNames[(int)e];
+    return _imp->_knownHostNames[(int)e].id;
 }
 
 bool
@@ -3248,26 +3060,6 @@ Settings::isAutoFixRelativeFilePathEnabled() const
     return _imp->_fixPathsOnProjectPathChanged->getValue();
 }
 
-int
-Settings::getNumberOfParallelRenders() const
-{
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-
-    return _imp->_numberOfParallelRenders->getValue();
-#else
-
-    return 1;
-#endif
-}
-
-void
-Settings::setNumberOfParallelRenders(int nb)
-{
-#ifndef NATRON_PLAYBACK_USES_THREAD_POOL
-    _imp->_numberOfParallelRenders->setValue(nb);
-#endif
-}
-
 bool
 Settings::areRGBPixelComponentsSupported() const
 {
@@ -3278,18 +3070,6 @@ bool
 Settings::isTransformConcatenationEnabled() const
 {
     return _imp->_activateTransformConcatenationSupport->getValue();
-}
-
-bool
-Settings::useGlobalThreadPool() const
-{
-    return _imp->_useThreadPool->getValue();
-}
-
-void
-Settings::setUseGlobalThreadPool(bool use)
-{
-    _imp->_useThreadPool->setValue(use);
 }
 
 bool
@@ -3312,11 +3092,11 @@ Settings::doOCIOStartupCheckIfNeeded()
 
     if (docheck && mainInstance) {
         int entry_i = _imp->_ocioConfigKnob->getValue();
-        std::vector<std::string> entries = _imp->_ocioConfigKnob->getEntries();
+        std::vector<ChoiceOption> entries = _imp->_ocioConfigKnob->getEntries();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
-        } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
+        } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
@@ -3335,7 +3115,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         if (reply == eStandardButtonYes) {
             int defaultIndex = -1;
             for (unsigned i = 0; i < entries.size(); ++i) {
-                if (entries[i].find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
+                if (entries[i].id.find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
                     defaultIndex = i;
                     break;
                 }
@@ -3787,7 +3567,7 @@ Settings::getSEFontSize() const
 std::string
 Settings::getSEFontFamily() const
 {
-    return _imp->_scriptEditorFontChoice->getActiveEntryText();
+    return _imp->_scriptEditorFontChoice->getActiveEntryID();
 }
 
 void
@@ -3804,12 +3584,6 @@ bool
 Settings::isNaNHandlingEnabled() const
 {
     return _imp->_convertNaNValues->getValue();
-}
-
-bool
-Settings::isCopyInputImageForPluginRenderEnabled() const
-{
-    return _imp->_pluginUseImageCopyForSource->getValue();
 }
 
 void

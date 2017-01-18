@@ -16,9 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
-#ifndef CREATENODEARGS_H
-#define CREATENODEARGS_H
+#ifndef Engine_CreateNodeArgs_h
+#define Engine_CreateNodeArgs_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -26,8 +25,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #include "Engine/PropertiesHolder.h"
+
+#include "Engine/EngineFwd.h"
+
+
+NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief x1 std::string property indicating the ID of the plug-in instance to create
@@ -180,8 +185,6 @@
  **/
 #define kCreateNodeArgsPropMetaNodeContainer "CreateNodeArgsPropMetaNodeContainer"
 
-NATRON_NAMESPACE_ENTER;
-
 struct CreateNodeArgsPrivate;
 class CreateNodeArgs : public PropertiesHolder
 {
@@ -228,4 +231,4 @@ private:
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // CREATENODEARGS_H
+#endif // Engine_CreateNodeArgs_h

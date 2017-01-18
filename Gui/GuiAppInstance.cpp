@@ -44,6 +44,7 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/Plugin.h"
 #include "Engine/ProcessHandler.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Settings.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/KnobFile.h"
@@ -102,7 +103,6 @@ struct GuiAppInstancePrivate
     NodePtr lastTimelineViewer;
     LoadProjectSplashScreen* loadProjectSplash;
     std::string declareAppAndParamsString;
-    int overlayRedrawRequests;
     mutable QMutex rotoDataMutex;
 
     // When drawing a stroke, this is a pointer to the stroke being painted.
@@ -122,7 +122,6 @@ struct GuiAppInstancePrivate
         , lastTimelineViewer()
         , loadProjectSplash(0)
         , declareAppAndParamsString()
-        , overlayRedrawRequests(0)
         , rotoDataMutex()
         , strokeBeingPainted()
         , knobDnd()
@@ -759,18 +758,18 @@ GuiAppInstance::setViewersCurrentView(ViewIdx view)
 
 void
 GuiAppInstance::notifyRenderStarted(const QString & sequenceName,
-                                    int firstFrame,
-                                    int lastFrame,
-                                    int frameStep,
+                                    TimeValue firstFrame,
+                                    TimeValue lastFrame,
+                                    TimeValue frameStep,
                                     bool canPause,
-                                    const OutputEffectInstancePtr& writer,
+                                    const NodePtr& writer,
                                     const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderStarted(sequenceName, firstFrame, lastFrame, frameStep, canPause, writer, process);
 }
 
 void
-GuiAppInstance::notifyRenderRestarted( const OutputEffectInstancePtr& writer,
+GuiAppInstance::notifyRenderRestarted( const NodePtr& writer,
                                        const ProcessHandlerPtr & process)
 {
     _imp->_gui->onRenderRestarted(writer, process);
@@ -818,21 +817,6 @@ GuiAppInstance::onRenderQueuingChanged(bool queueingEnabled)
     _imp->_gui->getProgressPanel()->onRenderQueuingSettingChanged(queueingEnabled);
 }
 
-void
-GuiAppInstance::connectViewersToViewerCache()
-{
-    if (_imp->_gui) {
-        _imp->_gui->connectViewersToViewerCache();
-    }
-}
-
-void
-GuiAppInstance::disconnectViewersFromViewerCache()
-{
-    if (_imp->_gui) {
-        _imp->_gui->disconnectViewersFromViewerCache();
-    }
-}
 
 boost::shared_ptr<FileDialogPreviewProvider>
 GuiAppInstance::getPreviewProvider() const
@@ -844,7 +828,7 @@ void
 GuiAppInstance::projectFormatChanged(const Format& /*f*/)
 {
     if (_imp->_previewProvider && _imp->_previewProvider->viewerNode && _imp->_previewProvider->viewerUI) {
-        _imp->_previewProvider->viewerUI->getInternalNode()->renderCurrentFrame(true);
+        _imp->_previewProvider->viewerUI->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 }
 
@@ -854,15 +838,6 @@ GuiAppInstance::isGuiFrozen() const
     return _imp->_gui ? _imp->_gui->isGUIFrozen() : false;
 }
 
-void
-GuiAppInstance::clearViewersLastRenderedTexture()
-{
-    std::list<ViewerTab*> tabs = _imp->_gui->getViewersList_mt_safe();
-
-    for (std::list<ViewerTab*>::const_iterator it = tabs.begin(); it != tabs.end(); ++it) {
-        (*it)->getViewer()->clearLastRenderedTexture();
-    }
-}
 
 void
 GuiAppInstance::redrawAllViewers()
@@ -905,16 +880,16 @@ GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
     }
 }
 
-ViewerInstancePtr
+ViewerNodePtr
 GuiAppInstance::getLastViewerUsingTimeline() const
 {
     QMutexLocker k(&_imp->lastTimelineViewerMutex);
 
     if (!_imp->lastTimelineViewer) {
-        return ViewerInstancePtr();
+        return ViewerNodePtr();
     }
 
-    return _imp->lastTimelineViewer->isEffectViewerInstance();
+    return _imp->lastTimelineViewer->isEffectViewerNode();
 }
 
 void
@@ -983,9 +958,18 @@ GuiAppInstance::closeLoadPRojectSplashScreen()
 }
 
 void
-GuiAppInstance::renderAllViewers(bool canAbort)
+GuiAppInstance::getAllViewers(std::list<ViewerNodePtr>* viewers) const
 {
-    _imp->_gui->renderAllViewers(canAbort);
+    std::list<ViewerTab*> viewerTabs = _imp->_gui->getViewersList();
+    for (std::list<ViewerTab*>::const_iterator it = viewerTabs.begin(); it != viewerTabs.end(); ++it) {
+        viewers->push_back((*it)->getInternalNode());
+    }
+}
+
+void
+GuiAppInstance::renderAllViewers()
+{
+    _imp->_gui->renderAllViewers();
 }
 
 void
@@ -995,9 +979,9 @@ GuiAppInstance::refreshAllPreviews()
 }
 
 void
-GuiAppInstance::abortAllViewers()
+GuiAppInstance::abortAllViewers(bool autoRestartPlayback)
 {
-    _imp->_gui->abortAllViewers();
+    _imp->_gui->abortAllViewers(autoRestartPlayback);
 }
 
 void
@@ -1015,28 +999,6 @@ GuiAppInstance::reloadStylesheet()
     if (_imp->_gui) {
         _imp->_gui->reloadStylesheet();
     }
-}
-
-void
-GuiAppInstance::queueRedrawForAllViewers()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    ++_imp->overlayRedrawRequests;
-}
-
-int
-GuiAppInstance::getOverlayRedrawRequestsCount() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->overlayRedrawRequests;
-}
-
-void
-GuiAppInstance::clearOverlayRedrawRequests()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->overlayRedrawRequests = 0;
 }
 
 void
@@ -1174,7 +1136,7 @@ GuiAppInstance::goToPreviousKeyframe()
     }
     for (TimeLineKeysSet::const_reverse_iterator it = keys.rbegin(); it != keys.rend(); ++it) {
         if (it->frame < currentFrame) {
-            timeline->seekFrame(it->frame, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            timeline->seekFrame(it->frame, true, EffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
             break;
         }
     }
@@ -1193,7 +1155,7 @@ GuiAppInstance::goToNextKeyframe()
     }
     for (TimeLineKeysSet::const_iterator it = keys.begin(); it != keys.end(); ++it) {
         if (it->frame > currentFrame) {
-            timeline->seekFrame(it->frame, true, OutputEffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
+            timeline->seekFrame(it->frame, true, EffectInstancePtr(), eTimelineChangeReasonPlaybackSeek);
             break;
         }
     }
@@ -1229,7 +1191,7 @@ bool
 GuiAppInstance::checkAllReadersModificationDate(bool errorAndWarn)
 {
     NodesList allNodes;
-    SequenceTime time = getProject()->getCurrentTime();
+    TimeValue time = getProject()->getTimelineCurrentTime();
 
     getProject()->getNodes_recursive(allNodes, true);
     bool changed =  false;

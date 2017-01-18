@@ -80,7 +80,7 @@ Tracker::startTracking(const std::list<Track*>& marks,
         markers.push_back( (*it)->getInternalMarker() );
     }
 
-    tracker->trackMarkers(markers, start, end, forward, (OverlaySupport*)(NULL));
+    tracker->trackMarkers(markers, TimeValue(start), TimeValue(end), TimeValue(forward), ViewerNodePtr());
 }
 
 void

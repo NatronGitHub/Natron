@@ -323,7 +323,7 @@ public Q_SLOTS:
                                   Variant newValue,
                                   ViewSetSpec view,
                                   DimSpec dim,
-                                  double time,
+                                  TimeValue time,
                                   bool setKeyFrame);
 
     void onFrozenChanged(bool frozen);
