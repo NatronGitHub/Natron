@@ -272,7 +272,7 @@ public:
      * is invalid.
      **/
     template<typename T>
-    const T& getProperty(const std::string& name, int index = 0) const
+    T getProperty(const std::string& name, int index = 0) const
     {
         ensurePropertiesCreated();
 

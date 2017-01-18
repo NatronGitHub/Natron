@@ -339,7 +339,6 @@ unix {
 
      PKGCONFIG += freetype2 fontconfig
 
-     # GLFW will require a link to X11 on linux and OpenGL framework on OS X
      linux-* {
           LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
@@ -347,7 +346,7 @@ unix {
              PKGCONFIG += pixman-1
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
-         LIBS += -ldl
+         LIBS += -ldl -lrt
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
          LIBS += -framework OpenGL

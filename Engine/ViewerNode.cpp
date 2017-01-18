@@ -489,7 +489,7 @@ ViewerNode::loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* proje
             }
         }
         assert(internalViewerNode[0] && internalViewerNode[1]);
-        if (!internalViewerNode) {
+        if (!internalViewerNode[0] || !internalViewerNode[1]) {
             throw std::invalid_argument("Viewer: No internal viewer process!");
         }
         _imp->internalViewerProcessNode[0] = internalViewerNode[0];
