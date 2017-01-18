@@ -35,8 +35,11 @@
 #endif
 
 #include "Global/GlobalDefines.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/IPCCommon.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 // Common meta-datas definitions
 // Each meta-data is encoded as a property.
@@ -137,8 +140,6 @@
 // Without this property, the Reformat plug-in would be forced to have
 // a region of definition of 1K and render many un-needed pixels.
 #define kNatronMetadataOutputFormat "NatronMetadataOutputFormat"
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief These meta-data are represents what's flowing through a node.

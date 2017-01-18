@@ -1,6 +1,8 @@
 # -*- Mode: Tcl; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- vim:et:sw=4:ts=4:sts=4
 
 PortSystem      1.0
+
+PortGroup       compiler_blacklist_versions 1.0
 PortGroup       muniversal 1.0
 
 name            gnutls
@@ -108,6 +110,11 @@ post-destroot {
 
 platform darwin 8 {
     depends_build-append   port:texinfo
+}
+
+if { ${build_arch} eq "i386" || ${build_arch} eq "x86_64" } {
+    compiler.blacklist-append *gcc-4.2
+    compiler.blacklist-append {clang < 400}
 }
 
 livecheck.type  regex

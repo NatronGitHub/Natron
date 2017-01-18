@@ -123,24 +123,31 @@ DocumentationManager::handler(QHttpRequest *req,
     // override static docs
     // plugin pages are generated only if they don't exist
     QString staticPage, dynamicPage;
-    bool isPlugin = false;
     bool isStatic = false;
     if ( page.startsWith( QString::fromUtf8("/plugins/") ) ) {
-        isPlugin = true;
         isStatic = true;
         staticPage = page;
         dynamicPage = page;
         dynamicPage.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
     if ( page.startsWith( QString::fromUtf8("/_plugin.html?id=") ) ) {
-        isPlugin = true;
         isStatic = false;
         staticPage = page;
         staticPage.replace( QString::fromUtf8("/_plugin.html?id="), QString::fromUtf8("/plugins/") );
         staticPage += QString::fromUtf8(".html");
         dynamicPage = page;
     }
-    if (isPlugin) {
+    if ( page == QString::fromUtf8("/_prefs.html") ) {
+        isStatic = true;
+        staticPage = page;
+        dynamicPage = QString::fromUtf8("/_prefsLive.html");
+    }
+    if ( page == QString::fromUtf8("/_prefsLive.html") ) {
+        isStatic = false;
+        staticPage = QString::fromUtf8("/_prefs.html");
+        dynamicPage = page;
+    }
+    if ( !staticPage.isEmpty() ) {
         QFileInfo staticFileInfo = docDir + staticPage;
         if ( ( isStatic && !staticFileInfo.exists() ) ||
              ( !isStatic && staticFileInfo.exists() ) ) {
@@ -276,7 +283,7 @@ DocumentationManager::handler(QHttpRequest *req,
                                                  "</html>");
             body = parser(notFound, docDir).toUtf8();
         }
-    } else if ( page == QString::fromUtf8("_prefs.html") ) {
+    } else if ( page == QString::fromUtf8("_prefsLive.html") ) {
         SettingsPtr settings = appPTR->getCurrentSettings();
         QString html = settings->makeHTMLDocumentation(true);
         html = parser(html, docDir);
@@ -548,21 +555,22 @@ DocumentationManager::parser(QString html,
                                        "</form>"
                                        "</div>")
                      .arg( tr("Search docs") ) );
-    menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">"
-                                       "<ul>") );
+    menuHTML.append( QString::fromUtf8("<div id=\"mainMenu\">") );
     if ( indexFile.exists() ) {
         if ( indexFile.open(QIODevice::ReadOnly | QIODevice::Text) ) {
             QStringList menuResult;
             bool getMenu = false;
             while ( !indexFile.atEnd() ) {
                 QString line = QString::fromUtf8( indexFile.readLine() );
-                if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n") ) {
+                if ( line == QString::fromUtf8("<div class=\"toctree-wrapper compound\">\n"
+                                               "<ul>\n") ) {
                     getMenu = true;
                 }
                 if (getMenu) {
                     menuResult << line;
                 }
-                if ( line == QString::fromUtf8("</div>\n") ) {
+                if ( line == QString::fromUtf8("</ul>\n"
+                                               "</div>\n") ) {
                     getMenu = false;
                 }
             }
@@ -580,8 +588,7 @@ DocumentationManager::parser(QString html,
                                                "</div>") );
         }
     } else {
-        menuHTML.append( QString::fromUtf8("</ul>"
-                                           "</div>"
+        menuHTML.append( QString::fromUtf8("</div>"
                                            "</div>") );
     }
 

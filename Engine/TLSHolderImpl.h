@@ -25,12 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include "TLSHolder.h"
 
-
-#include "Global/Macros.h"
 #include "Engine/AppManager.h"
 #include "Engine/EffectInstanceTLSData.h"
+
 #include "Engine/EngineFwd.h"
 
 

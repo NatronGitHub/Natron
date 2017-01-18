@@ -397,10 +397,10 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 if (isDuringPainting && isStroke) {
                     nonRenderStroke->updateStrokeData(lastCenterOut, distToNextOut, isStroke->getRenderCloneCurrentStrokeEndPointIndex());
                 }
-            }
+            } else
 #endif
             // Otherwise render with OpenGL or OSMesa
-            else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+            if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
 
                 // Figure out the shape color
                 ColorRgbaD shapeColor;
@@ -499,9 +499,9 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             // Render with cairo if we need to render on CPU
             if (args.backendType == eRenderBackendTypeCPU) {
                 renderedDot = RotoShapeRenderCairo::renderSmear_cairo(args.time, args.view, args.renderScale, isStroke, args.roi, outputPlane.second, distNextIn, lastCenterIn, &distToNextOut, &lastCenterOut);
-            }
+            } else
 #endif
-            else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
+            if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
 
                 // Render with OpenGL
 

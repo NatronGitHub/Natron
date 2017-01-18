@@ -32,6 +32,7 @@
 #include "Global/GlobalDefines.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

@@ -29,13 +29,9 @@
 
 #include "Engine/GenericSchedulerThread.h"
 
-namespace mv
-{
-class AutoTrack;
-}
+#include "Engine/TimeValue.h"
 
 #include "Engine/EngineFwd.h"
-#include "Engine/TimeValue.h"
 
 NATRON_NAMESPACE_ENTER;
 

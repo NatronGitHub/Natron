@@ -25,6 +25,7 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
 
 #include <QtCore/QThread>
 #include <QCoreApplication>
@@ -53,6 +54,10 @@
 #include "Engine/ViewIdx.h"
 
 #include "Serialization/NodeSerialization.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kViewerNodeParamLayers "layer"
 #define kViewerNodeParamLayersLabel "Layer"
@@ -401,9 +406,6 @@ enum HoverStateEnum
     eHoverStateWipeMix,
     eHoverStateWipeRotateHandle
 };
-
-
-NATRON_NAMESPACE_ENTER;
 
 
 struct ViewerNodePrivate

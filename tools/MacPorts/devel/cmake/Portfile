@@ -28,9 +28,9 @@ if {${subport} eq ${name}} {
 
     # release
 
-    version         ${branch}.1
-    checksums       rmd160 6a1b7bfb15d882826ecafa5c74d5e4ae2f0530a4 \
-                    sha256 449a5bce64dbd4d5b9517ebd1a1248ed197add6ad27934478976fd5f1f9330e1
+    version         ${branch}.2
+    checksums       rmd160 6ac19517954e29b2ce37010b869528b83c27420b \
+                    sha256 dc1246c4e6d168ea4d6e042cfba577c1acd65feea27e56f5ff37df920c30cae0
 
     master_sites    http://www.cmake.org/files/v${branch}/
     conflicts       cmake-devel
@@ -53,12 +53,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170111
+    version         20170113
     set dist_branch 3.7
-    set dist_date   20170111
-    set dist_hash   g3dd06
-    checksums       rmd160 5c3e67bb3e8d9ad67ca4df13ed02dd05448dcfa9 \
-                    sha256 1dfed6930917ee276f2a8b8a9d8fc0e79a0ac85b001dd2069b6f950a43896cd8
+    set dist_date   20170113
+    set dist_hash   g26509
+    checksums       rmd160 27bac9045f97b86fe1f637bcbcb1543daa39f187 \
+                    sha256 5112d5d4cdb40d3c8ab77334249e4be07cda125e2c314d0de7c2ceea265336fe
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -175,8 +175,12 @@ post-patch {
 
     if {[variant_isset python27]} {
         set PYTHON_VERSION_WITH_DOT "2.7"
-    } else {
+    } elseif {[variant_isset python34]} {
         set PYTHON_VERSION_WITH_DOT "3.4"
+    } elseif {[variant_isset python35]} {
+        set PYTHON_VERSION_WITH_DOT "3.5"
+    } else {
+        set PYTHON_VERSION_WITH_DOT "3.6"
     }
     reinplace "s|__PYTHON_VERSION_WITH_DOT__|${PYTHON_VERSION_WITH_DOT}|g" ${worksrcpath}/macports.cmake
 }
@@ -276,25 +280,47 @@ variant docs description {Build documentation: HTML and manpages} {
         --sphinx-html
 }
 
-variant python27 conflicts python34 requires docs description {Build documentation using Sphinx from Python 2.7} {
+variant python27 conflicts python34 python35 python36 requires docs \
+    description {Build documentation using Sphinx from Python 2.7} {
     depends_build-append port:py27-sphinx
     configure.args-append \
         --sphinx-build=${prefix}/bin/sphinx-build-2.7
 }
 
-variant python34 conflicts python27 requires docs description {Build documentation using Sphinx from Python 3.4} {
+variant python34 conflicts python27 python35 python36 requires docs \
+    description {Build documentation using Sphinx from Python 3.4} {
     depends_build-append port:py34-sphinx
     configure.args-append \
         --sphinx-build=${prefix}/bin/sphinx-build-3.4
 }
 
+variant python35 conflicts python27 python34 python36 requires docs \
+    description {Build documentation using Sphinx from Python 3.5} {
+    depends_build-append port:py35-sphinx
+    configure.args-append \
+        --sphinx-build=${prefix}/bin/sphinx-build-3.5
+}
+
+variant python36 conflicts python27 python34 python35 requires docs \
+    description {Build documentation using Sphinx from Python 3.6} {
+    depends_build-append port:py36-sphinx
+    configure.args-append \
+        --sphinx-build=${prefix}/bin/sphinx-build-3.6
+}
+
 if {[variant_isset docs]} {
-    if {![variant_isset python27] && ![variant_isset python34]} {
+    if {![variant_isset python27] &&
+        ![variant_isset python34] &&
+        ![variant_isset python35] &&
+        ![variant_isset python36]} {
         default_variants +python27
     }
 
-    if {![variant_isset python27] && ![variant_isset python34]} {
-        ui_error "\n\nYou must select either the +python27 or +python34 variant when using variant +docs.\n"
+    if {![variant_isset python27] &&
+        ![variant_isset python34] &&
+        ![variant_isset python35] &&
+        ![variant_isset python36]} {
+        ui_error "\n\nYou must select either the +python27, +python34, +python35, or +python36 variant when using variant +docs.\n"
         return -code error "Invalid variant selection"
     }
 }

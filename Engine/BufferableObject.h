@@ -30,9 +30,11 @@
 #include <cstddef>
 #include <list>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
+
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
 
 /**
