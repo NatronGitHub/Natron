@@ -120,7 +120,7 @@ struct GuiBoundAction
     }
 
     QTreeWidgetItem* item;
-    BoundAction* action;
+    KeybindShortcut action;
 };
 
 struct GuiShortCutGroup
@@ -343,7 +343,7 @@ public:
 
     GuiAppShorcuts::iterator buildShortcutsGroupHierarchy(QString grouping);
 
-    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator, BoundAction* action);
+    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator, const KeybindShortcut& action);
 };
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
@@ -586,17 +586,6 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
                                             "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->shortcutsTree->setItemDelegate( new ShortcutDelegate(_imp->shortcutsTree) );
 
-    const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
-
-    for (AppShortcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
-        GuiAppShorcuts::iterator foundGuiGroup = _imp->buildShortcutsGroupHierarchy(it->first);
-        assert( foundGuiGroup != _imp->appShortcuts.end() );
-
-        for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
-        }
-    }
-
     _imp->shortcutsTree->resizeColumnToContents(0);
     QObject::connect( _imp->shortcutsTree, SIGNAL(itemSelectionChanged()), this, SLOT(onShortcutsSelectionChanged()) );
 
@@ -651,6 +640,8 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     tab.treeItem->setText( 0, tr("Shortcut Editor") );
     tab.page = page;
     _imp->tabs.push_back(tab);
+    
+    refreshShortcutsFromSettings();
 } // PreferencesPanel::createShortcutEditor
 
 Gui*
@@ -1184,6 +1175,19 @@ PreferencesPanel::closeDialog()
 void
 PreferencesPanel::refreshShortcutsFromSettings()
 {
+    _imp->appShortcuts.clear();
+    _imp->tree->clear();
+    const ApplicationShortcutsMap & appShortcuts = appPTR->getCurrentSettings()->getAllShortcuts();
+    
+    for (ApplicationShortcutsMap::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
+        QString grouping = QString::fromUtf8(it->first.c_str());
+        GuiAppShorcuts::iterator foundGuiGroup = _imp->buildShortcutsGroupHierarchy(grouping);
+        assert( foundGuiGroup != _imp->appShortcuts.end() );
+        
+        for (GroupShortcutsMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
+        }
+    }
 
 }
 
@@ -1285,31 +1289,16 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
 
 void
 PreferencesPanelPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,
-                                                  BoundAction* action)
+                                                  const KeybindShortcut& action)
 {
     GuiBoundAction guiAction;
 
     guiAction.action = action;
     guiAction.item = new QTreeWidgetItem(guiGroupIterator->item);
-    guiAction.item->setText(0, guiAction.action->description);
-    const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
-    const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
-    QString shortcutStr;
-    if (ka) {
-        if ( !ka->modifiers.empty() ) {
-            std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->modifiers.begin();
-            std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
-            shortcutStr = keybindToString(*mit, *sit);
-        }
-    } else if (ma) {
-        if ( !ma->modifiers.empty() ) {
-            std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->modifiers.begin();
-            shortcutStr = mouseShortcutToString(*mit, ma->button);
-        }
-    } else {
-        assert(false);
-    }
-    if (!action->editable) {
+    guiAction.item->setText(0, QString::fromUtf8(action.actionLabel.c_str()));
+    QString shortcutStr = keybindToString(action.modifiers, action.currentShortcut);
+    
+    if (!action.editable) {
         guiAction.item->setToolTip( 0, tr("This action is standard and its shortcut cannot be edited.") );
         guiAction.item->setToolTip( 1, tr("This action is standard and its shortcut cannot be edited.") );
         guiAction.item->setDisabled(true);
@@ -1407,16 +1396,6 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
     delete seq;
     QString txt = text()  + seqStr;
     setText(txt);
-}
-
-void
-PreferencesPanel::addShortcut(BoundAction* action)
-{
-    GuiAppShorcuts::iterator foundGuiGroup = _imp->buildShortcutsGroupHierarchy(action->grouping);
-
-    assert( foundGuiGroup != _imp->appShortcuts.end() );
-
-    _imp->makeGuiActionForShortcut(foundGuiGroup, action);
 }
 
 void
