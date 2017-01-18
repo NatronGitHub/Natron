@@ -6,8 +6,25 @@
 
 ## Version 3.0
 
-- Natron now uses a YAML-based format for most files (projects, pyplugs, presets), which makes it easier to read and write by humans or other programs
-- The cache system was completely rewritten, and is is more efficient in terms of cached data reuse and memory usage.
+- Natron now uses a YAML-based format for most files (projects, pyplugs, presets), which makes it easier to read and write by humans or other programs. This reduces file size roughly 10 times.
+- Settings in Natron are now also stored in a YAML-based format in a file named settings.txt and are located in the Natron user data directory.
+
+On Linux, the Natron user data directory is:
+
+    /home/<username>/NatronUserData
+
+On Windows, the Natron user data directory is:
+    
+    C:\Documents and Settings\<username>\NatronUserData
+
+On macOS, the Natron user data directory is:
+
+    /home/<username>/NatronUserData
+
+Note that this location is also looked-up by Natron [search paths](http://natron.readthedocs.io/en/master/devel/natronpath.html) for PyPlugs.
+
+- The cache system was completely rewritten, and is is more efficient in terms of cached data reuse and memory usage. It is now shared accross Natron processes on the same system: if running
+Natron multiple times on the same computer, the different processes will share the same Cache and avoid computing the same thing.
 - Links between parameters are now bi-directionnal: All parameters that are linked now share the same underlying animation curve/value. The notion of slave/master is gone.
 - Clone nodes are now merely just a copy of another node with all parameters sharing values. One may unlink some parameters, in which case a clone is no longer considered as a clone.
 - Python has callbacks to allow drawing and interacting in the viewer with custom drawings written in PyOpenGL. A PyPlug may use these callbacks to interact with parameters directly from the Viewer, much like the Transform node overlay handle.

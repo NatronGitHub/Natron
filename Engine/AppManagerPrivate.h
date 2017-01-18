@@ -191,6 +191,11 @@ public:
     std::list<OpenGLRendererInfo> openGLRenderers;
     boost::scoped_ptr<QCoreApplication> _qApp;
 
+
+    // User add custom menu entries that point to python commands
+    std::list<PythonUserCommand> pythonCommands;
+
+
 public:
     AppManagerPrivate();
 

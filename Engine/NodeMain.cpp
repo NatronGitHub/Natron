@@ -929,7 +929,9 @@ Node::getNodeSerializationFromPresetFile(const std::string& presetFile, SERIALIZ
         throw std::runtime_error(message);
     }
 
-    if (!SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile,serialization)) {
+    try {
+        SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile,serialization);
+    } catch (SERIALIZATION_NAMESPACE::InvalidSerializationFileException& e) {
         throw std::runtime_error(tr("Failed to open %1: this file does not appear to be a presets file").arg(QString::fromUtf8(presetFile.c_str())).toStdString());
     }
 }

@@ -79,6 +79,8 @@ public:
 
     void getTimelineBounds(int* first, int* last) const;
 
+    void getTimeLineCachedFrames(std::list<TimeValue>* cachedFrames) const;
+
     virtual void notifyGuiClosing() OVERRIDE FINAL;
     virtual void onPanelMadeCurrent() OVERRIDE FINAL;
     virtual QIcon getIcon() const OVERRIDE FINAL;

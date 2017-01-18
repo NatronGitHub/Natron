@@ -799,93 +799,93 @@ AnimationModuleViewPrivate::createMenu(bool isCurveWidget, const QPoint& globalP
     rightClickMenu.addAction( optionsMenu->menuAction() );
 
 
-    QAction* deleteKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleRemoveKeys,
-                                                            kShortcutDescActionAnimationModuleRemoveKeys, editMenu);
+    QAction* deleteKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleRemoveKeys,
+                                                            kShortcutActionAnimationModuleRemoveKeysHint, editMenu);
     deleteKeyFramesAction->setShortcut( QKeySequence(Qt::Key_Backspace) );
     QObject::connect( deleteKeyFramesAction, SIGNAL(triggered()), _publicInterface, SLOT(onRemoveSelectedKeyFramesActionTriggered()) );
     editMenu->addAction(deleteKeyFramesAction);
 
-    QAction* copyKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCopy,
-                                                          kShortcutDescActionAnimationModuleCopy, editMenu);
+    QAction* copyKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCopy,
+                                                          kShortcutActionAnimationModuleCopyHint, editMenu);
     copyKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_C) );
 
     QObject::connect( copyKeyFramesAction, SIGNAL(triggered()), _publicInterface, SLOT(onCopySelectedKeyFramesToClipBoardActionTriggered()) );
     editMenu->addAction(copyKeyFramesAction);
 
-    QAction* pasteKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframes,
-                                                           kShortcutDescActionAnimationModulePasteKeyframes, editMenu);
+    QAction* pasteKeyFramesAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframes,
+                                                           kShortcutActionAnimationModulePasteKeyframesHint, editMenu);
     pasteKeyFramesAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_V) );
     QObject::connect( pasteKeyFramesAction, SIGNAL(triggered()), _publicInterface, SLOT(onPasteClipBoardKeyFramesActionTriggered()) );
     editMenu->addAction(pasteKeyFramesAction);
 
-    QAction* selectAllAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSelectAll,
-                                                      kShortcutDescActionAnimationModuleSelectAll, editMenu);
+    QAction* selectAllAction = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSelectAll,
+                                                      kShortcutActionAnimationModuleSelectAllHint, editMenu);
     selectAllAction->setShortcut( QKeySequence(Qt::CTRL + Qt::Key_A) );
     QObject::connect( selectAllAction, SIGNAL(triggered()), _publicInterface, SLOT(onSelectAllKeyFramesActionTriggered()) );
     editMenu->addAction(selectAllAction);
 
 
-    QAction* constantInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleConstant,
-                                                     kShortcutDescActionAnimationModuleConstant, interpMenu);
+    QAction* constantInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleConstant,
+                                                     kShortcutActionAnimationModuleConstantHint, interpMenu);
     constantInterp->setShortcut( QKeySequence(Qt::Key_K) );
     constantInterp->setData((int)eKeyframeTypeConstant);
     QObject::connect( constantInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(constantInterp);
 
-    QAction* linearInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleLinear,
-                                                   kShortcutDescActionAnimationModuleLinear, interpMenu);
+    QAction* linearInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleLinear,
+                                                   kShortcutActionAnimationModuleLinearHint, interpMenu);
     linearInterp->setShortcut( QKeySequence(Qt::Key_L) );
     linearInterp->setData((int)eKeyframeTypeLinear);
     QObject::connect( linearInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(linearInterp);
 
 
-    QAction* smoothInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSmooth,
-                                                   kShortcutDescActionAnimationModuleSmooth, interpMenu);
+    QAction* smoothInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSmooth,
+                                                   kShortcutActionAnimationModuleSmoothHint, interpMenu);
     smoothInterp->setShortcut( QKeySequence(Qt::Key_Z) );
     smoothInterp->setData((int)eKeyframeTypeSmooth);
     QObject::connect( smoothInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(smoothInterp);
 
 
-    QAction* catmullRomInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCatmullrom,
-                                                       kShortcutDescActionAnimationModuleCatmullrom, interpMenu);
+    QAction* catmullRomInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCatmullrom,
+                                                       kShortcutActionAnimationModuleCatmullromHint, interpMenu);
     catmullRomInterp->setShortcut( QKeySequence(Qt::Key_R) );
     catmullRomInterp->setData((int)eKeyframeTypeCatmullRom);
     QObject::connect( catmullRomInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(catmullRomInterp);
 
 
-    QAction* cubicInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCubic,
-                                                  kShortcutDescActionAnimationModuleCubic, interpMenu);
+    QAction* cubicInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCubic,
+                                                  kShortcutActionAnimationModuleCubicHint, interpMenu);
     cubicInterp->setShortcut( QKeySequence(Qt::Key_C) );
     cubicInterp->setData((int)eKeyframeTypeCubic);
     QObject::connect( cubicInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(cubicInterp);
 
-    QAction* horizontalInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleHorizontal,
-                                                       kShortcutDescActionAnimationModuleHorizontal, interpMenu);
+    QAction* horizontalInterp = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleHorizontal,
+                                                       kShortcutActionAnimationModuleHorizontalHint, interpMenu);
     horizontalInterp->setShortcut( QKeySequence(Qt::Key_H) );
     horizontalInterp->setData((int)eKeyframeTypeHorizontal);
     QObject::connect( horizontalInterp, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(horizontalInterp);
 
 
-    QAction* breakDerivatives = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleBreak,
-                                                       kShortcutDescActionAnimationModuleBreak, interpMenu);
+    QAction* breakDerivatives = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleBreak,
+                                                       kShortcutActionAnimationModuleBreakHint, interpMenu);
     breakDerivatives->setShortcut( QKeySequence(Qt::Key_X) );
     breakDerivatives->setData((int)eKeyframeTypeBroken);
     QObject::connect( breakDerivatives, SIGNAL(triggered()), _publicInterface, SLOT(onSetInterpolationActionTriggered()) );
     interpMenu->addAction(breakDerivatives);
 
-    QAction* frameAll = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenterAll,
-                                               kShortcutDescActionAnimationModuleCenterAll, interpMenu);
+    QAction* frameAll = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenterAll,
+                                               kShortcutActionAnimationModuleCenterAllHint, interpMenu);
     frameAll->setShortcut( QKeySequence(Qt::Key_A) );
     QObject::connect( frameAll, SIGNAL(triggered()), _publicInterface, SLOT(onCenterAllCurvesActionTriggered()) );
     viewMenu->addAction(frameAll);
 
-    QAction* frameCurve = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenter,
-                                                 kShortcutDescActionAnimationModuleCenter, interpMenu);
+    QAction* frameCurve = new ActionWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenter,
+                                                 kShortcutActionAnimationModuleCenterHint, interpMenu);
     frameCurve->setShortcut( QKeySequence(Qt::Key_F) );
     QObject::connect( frameCurve, SIGNAL(triggered()), _publicInterface, SLOT(onCenterOnSelectedCurvesActionTriggered()) );
     viewMenu->addAction(frameCurve);

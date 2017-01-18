@@ -61,6 +61,7 @@ HEADERS += \
     RectDSerialization.h \
     RectISerialization.h \
     RotoStrokeItemSerialization.h \
+    SettingsSerialization.h \
     SerializationBase.h \
     SerializationFwd.h \
     SerializationIO.h \
@@ -81,4 +82,5 @@ SOURCES += \
     RectDSerialization.cpp \
     RectISerialization.cpp \
     RotoStrokeItemSerialization.cpp \
+    SettingsSerialization.cpp \
     WorkspaceSerialization.cpp

@@ -343,59 +343,59 @@ NATRON_NAMESPACE_ENTER;
 
 // Shortcuts
 
-#define kShortcutIDActionRotoDelete "delete"
-#define kShortcutDescActionRotoDelete "Delete Element"
+#define kShortcutActionRotoDelete "delete"
+#define kShortcutActionRotoDeleteLabel "Delete Element"
 
-#define kShortcutIDActionRotoCloseBezier "closeBezier"
-#define kShortcutDescActionRotoCloseBezier "Close Bezier"
+#define kShortcutActionRotoCloseBezier "closeBezier"
+#define kShortcutActionRotoCloseBezierLabel "Close Bezier"
 
-#define kShortcutIDActionRotoSelectAll "selectAll"
-#define kShortcutDescActionRotoSelectAll "Select All"
+#define kShortcutActionRotoSelectAll "selectAll"
+#define kShortcutActionRotoSelectAllLabel "Select All"
 
-#define kShortcutIDActionRotoSelectionTool "selectionTool"
-#define kShortcutDescActionRotoSelectionTool "Switch to Selection Mode"
+#define kShortcutActionRotoSelectionTool "selectionTool"
+#define kShortcutActionRotoSelectionToolLabel "Switch to Selection Mode"
 
-#define kShortcutIDActionRotoAddTool "addTool"
-#define kShortcutDescActionRotoAddTool "Switch to Add Mode"
+#define kShortcutActionRotoAddTool "addTool"
+#define kShortcutActionRotoAddToolLabel "Switch to Add Mode"
 
-#define kShortcutIDActionRotoEditTool "editTool"
-#define kShortcutDescActionRotoEditTool "Switch to Edition Mode"
+#define kShortcutActionRotoEditTool "editTool"
+#define kShortcutActionRotoEditToolLabel "Switch to Edition Mode"
 
-#define kShortcutIDActionRotoBrushTool "brushTool"
-#define kShortcutDescActionRotoBrushTool "Switch to Brush Mode"
+#define kShortcutActionRotoBrushTool "brushTool"
+#define kShortcutActionRotoBrushToolLabel "Switch to Brush Mode"
 
-#define kShortcutIDActionRotoCloneTool "cloneTool"
-#define kShortcutDescActionRotoCloneTool "Switch to Clone Mode"
+#define kShortcutActionRotoCloneTool "cloneTool"
+#define kShortcutActionRotoCloneToolLabel "Switch to Clone Mode"
 
-#define kShortcutIDActionRotoEffectTool "EffectTool"
-#define kShortcutDescActionRotoEffectTool "Switch to Effect Mode"
+#define kShortcutActionRotoEffectTool "EffectTool"
+#define kShortcutActionRotoEffectToolLabel "Switch to Effect Mode"
 
-#define kShortcutIDActionRotoColorTool "colorTool"
-#define kShortcutDescActionRotoColorTool "Switch to Color Mode"
+#define kShortcutActionRotoColorTool "colorTool"
+#define kShortcutActionRotoColorToolLabel "Switch to Color Mode"
 
-#define kShortcutIDActionRotoNudgeLeft "nudgeLeft"
-#define kShortcutDescActionRotoNudgeLeft "Move Bezier to the Left"
+#define kShortcutActionRotoNudgeLeft "nudgeLeft"
+#define kShortcutActionRotoNudgeLeftLabel "Move Bezier to the Left"
 
-#define kShortcutIDActionRotoNudgeRight "nudgeRight"
-#define kShortcutDescActionRotoNudgeRight "Move Bezier to the Right"
+#define kShortcutActionRotoNudgeRight "nudgeRight"
+#define kShortcutActionRotoNudgeRightLabel "Move Bezier to the Right"
 
-#define kShortcutIDActionRotoNudgeBottom "nudgeBottom"
-#define kShortcutDescActionRotoNudgeBottom "Move Bezier to the Bottom"
+#define kShortcutActionRotoNudgeBottom "nudgeBottom"
+#define kShortcutActionRotoNudgeBottomLabel "Move Bezier to the Bottom"
 
-#define kShortcutIDActionRotoNudgeTop "nudgeTop"
-#define kShortcutDescActionRotoNudgeTop "Move Bezier to the Top"
+#define kShortcutActionRotoNudgeTop "nudgeTop"
+#define kShortcutActionRotoNudgeTopLabel "Move Bezier to the Top"
 
-#define kShortcutIDActionRotoSmooth "smooth"
-#define kShortcutDescActionRotoSmooth "Smooth Bezier"
+#define kShortcutActionRotoSmooth "smooth"
+#define kShortcutActionRotoSmoothLabel "Smooth Bezier"
 
-#define kShortcutIDActionRotoCuspBezier "cusp"
-#define kShortcutDescActionRotoCuspBezier "Cusp Bezier"
+#define kShortcutActionRotoCuspBezier "cusp"
+#define kShortcutActionRotoCuspBezierLabel "Cusp Bezier"
 
-#define kShortcutIDActionRotoRemoveFeather "rmvFeather"
-#define kShortcutDescActionRotoRemoveFeather "Remove Feather"
+#define kShortcutActionRotoRemoveFeather "rmvFeather"
+#define kShortcutActionRotoRemoveFeatherLabel "Remove Feather"
 
-#define kShortcutIDActionRotoLockCurve "lock"
-#define kShortcutDescActionRotoLockCurve "Lock Shape"
+#define kShortcutActionRotoLockCurve "lock"
+#define kShortcutActionRotoLockCurveLabel "Lock Shape"
 
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or

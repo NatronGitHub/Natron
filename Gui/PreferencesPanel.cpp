@@ -44,6 +44,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
+#include "Engine/KeybindShortcut.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
@@ -54,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Label.h"
 #include "Gui/GuiApplicationManager.h"
@@ -136,10 +138,12 @@ struct GuiShortCutGroup
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 static QString
-keybindToString(const Qt::KeyboardModifiers & modifiers,
-                Qt::Key key)
+keybindToString(const KeyboardModifiers & modifiers,
+                Key key)
 {
-    return makeKeySequence(modifiers, key).toString(QKeySequence::NativeText);
+    Qt::Key qKey = QtEnumConvert::toQtKey(key);
+    Qt::KeyboardModifiers qMods = QtEnumConvert::toQtModifiers(modifiers);
+    return makeKeySequence(qMods, qKey).toString(QKeySequence::NativeText);
 }
 
 static QString
@@ -192,49 +196,22 @@ public:
 
 
 static void
-makeItemShortCutText(const BoundAction* action,
+makeItemShortCutText(const KeybindShortcut& action,
                      bool useDefault,
                      QString* shortcutStr)
 {
-    const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
-    const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
 
-    if (ka) {
-        if (useDefault) {
-            if ( !ka->defaultModifiers.empty() ) {
-                assert( ka->defaultModifiers.size() == ka->defaultShortcut.size() );
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->defaultModifiers.begin();
-                std::list<Qt::Key>::const_iterator sit = ka->defaultShortcut.begin();
-                *shortcutStr = keybindToString(*mit, *sit);
-            }
-        } else {
-            if ( !ka->modifiers.empty() ) {
-                assert( ka->modifiers.size() == ka->currentShortcut.size() );
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->modifiers.begin();
-                std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
-                *shortcutStr = keybindToString(*mit, *sit);
-            }
-        }
-    } else if (ma) {
-        if (useDefault) {
-            if ( !ma->defaultModifiers.empty() ) {
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->defaultModifiers.begin();
-                *shortcutStr = mouseShortcutToString(*mit, ma->button);
-            }
-        } else {
-            if ( !ma->modifiers.empty() ) {
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->modifiers.begin();
-                *shortcutStr = mouseShortcutToString(*mit, ma->button);
-            }
-        }
+    if (useDefault) {
+        *shortcutStr = keybindToString(action.defaultModifiers, action.defaultShortcut);
     } else {
-        assert(false);
+        *shortcutStr = keybindToString(action.modifiers, action.currentShortcut);
     }
+
 } // makeItemShortCutText
 
 static void
 setItemShortCutText(QTreeWidgetItem* item,
-                    const BoundAction* action,
+                    const KeybindShortcut& action,
                     bool useDefault)
 {
     QString sc;
@@ -277,13 +254,12 @@ public:
     Label* warningLabelIcon;
     Label* warningLabelDesc;
     DialogButtonBox* buttonBox;
-    Button* restoreDefaultsB;
+    Button* restorePageDefaultsButton;
+    Button* restoreAllDefaultsButton;
     Button* prefsHelp;
-    Button* cancelB;
-    Button* okB;
+    Button* closeButton;
     std::vector<KnobIPtr> changedKnobs;
     bool pluginSettingsChanged;
-    bool closeIsOK;
     Label* pluginFilterLabel;
     LineEdit* pluginFilterEdit;
     QTreeWidget* pluginsView;
@@ -317,13 +293,12 @@ public:
         , warningLabelIcon(0)
         , warningLabelDesc(0)
         , buttonBox(0)
-        , restoreDefaultsB(0)
+        , restorePageDefaultsButton(0)
+        , restoreAllDefaultsButton(0)
         , prefsHelp(0)
-        , cancelB(0)
-        , okB(0)
+        , closeButton(0)
         , changedKnobs(0)
         , pluginSettingsChanged(false)
-        , closeIsOK(false)
         , pluginFilterLabel(0)
         , pluginFilterEdit(0)
         , pluginsView(0)
@@ -756,29 +731,31 @@ PreferencesPanel::createGui()
     _imp->warningContainer->hide();
 
     _imp->buttonBox = new DialogButtonBox(Qt::Horizontal, this);
-    _imp->restoreDefaultsB = new Button( tr("Restore Defaults"), _imp->buttonBox );
-    _imp->restoreDefaultsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
+    _imp->restorePageDefaultsButton = new Button( tr("Restore Defaults"), _imp->buttonBox );
+    _imp->restorePageDefaultsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for the selected tab"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
+    _imp->restoreAllDefaultsButton = new Button( tr("Restore All Defaults"), _imp->buttonBox );
+    _imp->restoreAllDefaultsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     _imp->prefsHelp = new Button( tr("Help"), _imp->buttonBox );
-    _imp->prefsHelp->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Display help for preferences in an external browser."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->prefsHelp->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Display help for preferences in an external browser"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
-    _imp->cancelB = new Button( tr("Discard"), _imp->buttonBox );
-    _imp->cancelB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->okB = new Button( tr("Save"),_imp->buttonBox );
-    _imp->okB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Save changes on disk and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->buttonBox->addButton(_imp->restoreDefaultsB, QDialogButtonBox::ResetRole);
+    _imp->closeButton = new Button( tr("Close"), _imp->buttonBox );
+    _imp->closeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Closes the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->buttonBox->addButton(_imp->restorePageDefaultsButton, QDialogButtonBox::ResetRole);
+    _imp->buttonBox->addButton(_imp->restoreAllDefaultsButton, QDialogButtonBox::ResetRole);
     _imp->buttonBox->addButton(_imp->prefsHelp, QDialogButtonBox::HelpRole);
-    _imp->buttonBox->addButton(_imp->cancelB, QDialogButtonBox::RejectRole);
-    _imp->buttonBox->addButton(_imp->okB, QDialogButtonBox::AcceptRole);
+    _imp->buttonBox->addButton(_imp->closeButton, QDialogButtonBox::ApplyRole);
 
     _imp->mainLayout->addWidget(_imp->splitter);
     _imp->mainLayout->addWidget(_imp->warningContainer);
     _imp->mainLayout->addWidget(_imp->buttonBox);
 
-    QObject::connect( _imp->restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
+    QObject::connect( _imp->restoreAllDefaultsButton, SIGNAL(clicked()), this, SLOT(onRestoreAllDefaultsClicked()) );
+    QObject::connect( _imp->restorePageDefaultsButton, SIGNAL(clicked()), this, SLOT(onRestoreCurrentTabDefaultsClicked()) );
     QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
-    QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
-    QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
+    QObject::connect( _imp->closeButton, SIGNAL(clicked()), this, SLOT(closeDialog()) );
     QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobIPtr,ValueChangedReasonEnum)), this, SLOT(onSettingChanged(KnobIPtr,ValueChangedReasonEnum)) );
 
 
@@ -1156,45 +1133,58 @@ PreferencesPanel::openHelp()
 }
 
 void
-PreferencesPanel::restoreDefaults()
+PreferencesPanel::onRestoreCurrentTabDefaultsClicked()
 {
-    StandardButtonEnum reply = Dialogs::questionDialog( tr("Preferences").toStdString(),
-                                                        tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
+    KnobPageGuiPtr currentPage = getCurrentPage();
+    if (!currentPage) {
+        return;
+    }
 
-    if (reply == eStandardButtonYes) {
-        appPTR->getCurrentSettings()->restoreDefault();
+    appPTR->getCurrentSettings()->restorePageToDefaults(currentPage->pageKnob.lock());
 
-        for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
-            if (it->enabledCheckbox) {
-                it->enabledCheckbox->setChecked(true);
-            }
-            if (it->rsCheckbox) {
-                it->rsCheckbox->setChecked(true);
-            }
-            if (it->mtCheckbox) {
-                it->mtCheckbox->setChecked(true);
-            }
+    for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+        if (it->enabledCheckbox) {
+            it->enabledCheckbox->setChecked(true);
+        }
+        if (it->rsCheckbox) {
+            it->rsCheckbox->setChecked(true);
+        }
+        if (it->mtCheckbox) {
+            it->mtCheckbox->setChecked(true);
+        }
+        if (it->glCheckbox) {
+            it->glCheckbox->setChecked(true);
         }
     }
 }
 
 void
-PreferencesPanel::cancelChanges()
+PreferencesPanel::onRestoreAllDefaultsClicked()
 {
-    _imp->closeIsOK = false;
-    close();
+    StandardButtonEnum reply = Dialogs::questionDialog( tr("Preferences").toStdString(),
+                                                        tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
+    if (reply != eStandardButtonYes) {
+        return;
+    }
+    for (std::vector<PreferenceTab>::const_iterator it = _imp->tabs.begin(); it != _imp->tabs.end(); ++it) {
+        appPTR->getCurrentSettings()->restorePageToDefaults(it->page.lock()->pageKnob.lock());
+    }
 }
 
 void
-PreferencesPanel::saveChangesAndClose()
+PreferencesPanel::closeDialog()
 {
-    ///Steal focus from other widgets so that we are sure all LineEdits and Spinboxes get the focusOut event and their editingFinished
-    ///signal is emitted.
-    _imp->okB->setFocus();
-    appPTR->getCurrentSettings()->saveSettings(_imp->changedKnobs, _imp->pluginSettingsChanged);
-    appPTR->saveShortcuts();
-    _imp->closeIsOK = true;
+    if (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) {
+        appPTR->getCurrentSettings()->saveSettingsToFile();
+    }
     close();
+}
+
+
+void
+PreferencesPanel::refreshShortcutsFromSettings()
+{
+
 }
 
 void
@@ -1209,28 +1199,12 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
     _imp->pluginSettingsChanged = false;
 }
 
-void
-PreferencesPanel::closeEvent(QCloseEvent*)
-{
-    if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) ) {
-        SettingsPtr settings = appPTR->getCurrentSettings();
-        if ( !_imp->changedKnobs.empty() ) {
-            settings->beginChanges();
-            settings->restoreSettings(_imp->changedKnobs);
-            settings->endChanges();
-        }
-        if (_imp->pluginSettingsChanged) {
-            settings->restorePluginSettings();
-        }
-    }
-}
 
 void
 PreferencesPanel::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Escape) {
-        _imp->closeIsOK = false;
-        close();
+        closeDialog();
     } else {
         QWidget::keyPressEvent(e);
     }

@@ -325,21 +325,12 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
     SettingsPtr nSettings = appPTR->getCurrentSettings();
     QObject::connect( getProject().get(), SIGNAL(formatChanged(Format)), this, SLOT(projectFormatChanged(Format)) );
 
-    {
-        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-        if ( !settings.contains( QString::fromUtf8("checkForUpdates") ) ) {
-            StandardButtonEnum reply = Dialogs::questionDialog(tr("Updates").toStdString(),
-                                                               tr("Do you want %1 to check for updates "
-                                                                  "on launch of the application?").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(), false);
-            bool checkForUpdates = reply == eStandardButtonYes;
-            nSettings->setCheckUpdatesEnabled(checkForUpdates);
-        }
 
-        if ( nSettings->isCheckForUpdatesEnabled() ) {
-            appPTR->setLoadingStatus( tr("Checking if updates are available...") );
-            checkForNewVersion();
-        }
+    if ( nSettings->isCheckForUpdatesEnabled() ) {
+        appPTR->setLoadingStatus( tr("Checking if updates are available...") );
+        checkForNewVersion();
     }
+
 
     if ( nSettings->isDefaultAppearanceOutdated() ) {
         StandardButtonEnum reply = Dialogs::questionDialog(tr("Appearance").toStdString(),
@@ -362,20 +353,6 @@ GuiAppInstance::loadInternal(const CLArgs& cl,
         }
 
         appPTR->getCurrentSettings()->doOCIOStartupCheckIfNeeded();
-
-        if ( !appPTR->isShorcutVersionUpToDate() ) {
-            StandardButtonEnum reply = questionDialog(tr("Shortcuts").toStdString(),
-                                                      tr("Default shortcuts for %1 have changed, "
-                                                         "would you like to set them to their defaults?\n"
-                                                         "Clicking no will keep the old shortcuts hence if a new shortcut has been "
-                                                         "set to something else than an empty shortcut you will not benefit of it.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).toStdString(),
-                                                      false,
-                                                      StandardButtons(eStandardButtonYes | eStandardButtonNo),
-                                                      eStandardButtonNo);
-            if (reply == eStandardButtonYes) {
-                appPTR->restoreDefaultShortcuts();
-            }
-        }
     }
 
     if (makeEmptyInstance) {

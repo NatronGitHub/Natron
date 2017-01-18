@@ -632,13 +632,12 @@ SequenceFileDialog::saveState() const
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
 
-    QList<QUrl> urls;
+    KnobPathPtr favoriteKnob = appPTR->getCurrentSettings()->getFileDialogFavoritePathsKnob();
     std::vector<QUrl> stdUrls = _favoriteView->urls();
     for (unsigned int i = 0; i < stdUrls.size(); ++i) {
-        urls.push_back(stdUrls[i]);
+        favoriteKnob->appendPath(stdUrls[i].toLocalFile().toStdString());
     }
     stream << _centerSplitter->saveState();
-    stream << urls;
     stream << history();
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
@@ -662,13 +661,11 @@ SequenceFileDialog::restoreState(const QByteArray & state,
     }
     QByteArray splitterState;
     QByteArray headerData;
-    QList<QUrl> bookmarks;
     QStringList history;
     QString currentDirectory;
     QString relativeChoice;
     int sequenceMode_i;
     stream >> splitterState
-    >> bookmarks
     >> history
     >> currentDirectory
     >> headerData
@@ -714,8 +711,14 @@ SequenceFileDialog::restoreState(const QByteArray & state,
         }
     }
 
-    for (int i = 0; i < bookmarks.count(); ++i) {
-        QString urlPath = bookmarks[i].path();
+    std::list<std::vector<std::string> > bookmarks;
+    appPTR->getCurrentSettings()->getFileDialogFavoritePathsKnob()->getTable(&bookmarks);
+
+    for (std::list<std::vector<std::string> >::const_iterator it = bookmarks.begin(); it!=bookmarks.end(); ++it) {
+        if (it->size() != 2) {
+            continue;
+        }
+        QString urlPath = QString::fromUtf8((*it)[1].c_str());
 
         // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
@@ -749,7 +752,7 @@ SequenceFileDialog::restoreState(const QByteArray & state,
 
             QDir dir(urlPath);
             if ( !alreadyFound && dir.exists() ) {
-                stdBookMarks.push_back( bookmarks[i] );
+                stdBookMarks.push_back( QString::fromUtf8((*it)[1].c_str()) );
             }
         }
     }

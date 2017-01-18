@@ -126,21 +126,14 @@ public:
 
     void getVisibleRange(SequenceTime* left, SequenceTime* right) const;
 
-    void refreshCachedFramesLater();
-
-    void refreshCachedFramesNow();
-
 public Q_SLOTS:
 
-    void onRefreshCachedFramesLaterReceived();
 
     void recenterOnBounds();
 
     void centerOn(SequenceTime left, SequenceTime right, int margin = 5);
 
     void onFrameChanged(SequenceTime, int);
-
-    void onCacheStatusChanged();
 
     void onProjectFrameRangeChanged(int, int);
 
@@ -162,8 +155,6 @@ private:
     virtual QSize sizeHint() const OVERRIDE FINAL;
 
 Q_SIGNALS:
-
-    void refreshCachedFramesLaterReceived();
 
     
     void boundariesChanged(SequenceTime, SequenceTime);

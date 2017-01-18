@@ -105,9 +105,6 @@ public:
 #ifdef __NATRON_WIN32__
     ActionWithShortcut *actionShowWindowsConsole;
 #endif
-    ActionWithShortcut *actionClearDiskCache;
-    ActionWithShortcut *actionClearPlayBackCache;
-    ActionWithShortcut *actionClearNodeCache;
     ActionWithShortcut *actionClearPluginsLoadingCache;
     ActionWithShortcut *actionClearAllCaches;
     ActionWithShortcut *actionShowCacheReport;

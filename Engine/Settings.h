@@ -42,9 +42,9 @@
 
 #include "Engine/EngineFwd.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
-#define kQSettingsSoftwareMajorVersionSettingName "SoftwareVersionMajor"
 
 enum KnownHostNameEnum
 {
@@ -73,6 +73,10 @@ enum KnownHostNameEnum
     eKnownHostNameTuttleOfx,
     eKnownHostNameNone,
 };
+
+
+typedef std::map<std::string, KeybindShortcut> GroupShortcutsMap;
+typedef std::map<std::string, GroupShortcutsMap> ApplicationShortcutsMap;
 
 /*The current settings in the preferences menu.*/
 struct SettingsPrivate;
@@ -128,25 +132,32 @@ public:
 
     void setNumberOfThreads(int threadsNb);
 
-    void restorePluginSettings();
-
-    void populateSystemFonts(const QSettings& settings, const std::vector<std::string>& fonts);
-
-    void savePluginsSettings();
-
-    void saveAllSettings();
-
-    ///save the settings to the application's settings
-    void saveSettings(const KnobsVec& settings, bool pluginSettings);
-
-    void saveSetting(const KnobIPtr& knob);
-
+    void populateSystemFonts(const std::vector<std::string>& fonts);
+    
     bool doesKnobChangeRequiresRestart(const KnobIPtr& knob);
 
-    ///restores the settings from disk
-    void restoreAllSettings();
+    enum LoadSettingsType
+    {
+        eLoadSettingsTypeKnobs = 0x1,
+        eLoadSettingsTypePlugins = 0x2,
+        eLoadSettingsTypeShortcuts = 0x4
+    };
 
-    void restoreSettings(const KnobsVec& settings);
+    /**
+     * @brief Load the all the settings from the settings file.
+     * @param loadType An or of the LoadSettingsType enum indicating what to load from
+     * file.
+     **/
+    void loadSettingsFromFile(int loadType);
+
+    /**
+     * @brief Dump all settings to the settings file.
+     **/
+    void saveSettingsToFile();
+
+    std::string getApplicationFontFamily() const;
+
+    int getApplicationFontSize() const;
 
     bool isAutoPreviewOnForNewProjects() const;
 
@@ -160,7 +171,7 @@ public:
 
     void setRenderQueuingEnabled(bool enabled);
 
-    void restoreDefault();
+    void restorePageToDefaults(const KnobPagePtr& tab);
 
     int getMaximumUndoRedoNodeGraph() const;
 
@@ -249,10 +260,6 @@ public:
      **/
     void doOCIOStartupCheckIfNeeded();
 
-    /**
-     * @brief Returns true if the QSettings existed prior to loading the settings
-     **/
-    bool didSettingsExistOnStartup() const;
 
     bool notifyOnFileChange() const;
 
@@ -303,7 +310,6 @@ public:
     void getTimelineBoundsColor(double* r, double* g, double* b) const;
     void getTimelineBGColor(double* r, double* g, double* b) const;
     void getCachedFrameColor(double* r, double* g, double* b) const;
-    void getDiskCachedColor(double* r, double* g, double* b) const;
     void getAnimationModuleEditorBackgroundColor(double* r, double* g, double* b) const;
     void getAnimationModuleEditorRootRowBackgroundColor(double* r, double* g, double* b, double *a) const;
     void getAnimationModuleEditorKnobRowBackgroundColor(double* r, double* g, double* b, double *a) const;
@@ -357,7 +363,55 @@ public:
 
     bool getIsFullRecoverySaveModeEnabled() const;
 
+    KnobPathPtr getFileDialogFavoritePathsKnob() const;
+
+    void addKeybind(const std::string & grouping,
+                    const std::string & id,
+                    const std::string& label,
+                    const std::string & description,
+                    const KeyboardModifiers & modifiers,
+                    Key symbol,
+                    const KeyboardModifiers & modifiersMask = KeyboardModifiers(eKeyboardModifierNone));
+
+    void removeKeybind(const std::string& grouping, const std::string& id);
+
+    /**
+     * @brief Returns true if the given keyboard symbol and modifiers match the given action.
+     * The symbol parameter is to be casted to the Qt::Key enum
+     **/
+    bool matchesKeybind(const std::string & group,
+                        const std::string & actionID,
+                        const KeyboardModifiers & modifiers,
+                        Key symbol) const;
+
+    bool getShortcutKeybind(const std::string & group,
+                            const std::string & actionID,
+                            KeyboardModifiers* modifiers,
+                            Key* symbol) const;
+
+    void setShortcutKeybind(const std::string & group,
+                            const std::string & actionID,
+                            const KeyboardModifiers & modifiers,
+                            Key symbol);
+
+    void restoreDefaultShortcuts();
+
+
+    /**
+     * @brief Register an action to the shortcut manager indicating it is using a shortcut.
+     * This is used to update the action's shortcut when it gets modified by the user.
+     **/
+    void addShortcutAction(const std::string & grouping, const std::string & id, KeybindListenerI* action);
+    void removeShortcutAction(const std::string & grouping, const std::string & id, KeybindListenerI* action);
+
+    const ApplicationShortcutsMap& getAllShortcuts() const;
+
+    void populateShortcuts();
+
+
 Q_SIGNALS:
+
+    void shortcutsChanged();
 
     void settingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 

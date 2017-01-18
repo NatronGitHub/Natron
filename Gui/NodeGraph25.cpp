@@ -239,42 +239,42 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     bool accept = true;
 
-    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRemoveNodes, modifiers, key) ) {
         deleteSelection();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphForcePreview, modifiers, key) ) {
         forceRefreshAllPreviews();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphCopy, modifiers, key) ) {
         copySelectedNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphPaste, modifiers, key) ) {
         if ( !pasteClipboard() ) {
             accept = false;
         }
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphCut, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphCut, modifiers, key) ) {
         cutSelectedNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDuplicate, modifiers, key) ) {
         duplicateSelectedNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphClone, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphClone, modifiers, key) ) {
         cloneSelectedNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDeclone, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDeclone, modifiers, key) ) {
         decloneSelectedNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphFrameNodes, modifiers, key) ) {
         centerOnAllNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSwitchInputs, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSwitchInputs, modifiers, key) ) {
         ///No need to make an undo command for this, the user just have to do it a second time to reverse the effect
         switchInputs1and2ForSelectedNodes();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAll, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectAll, modifiers, key) ) {
         selectAllNodes(false);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectAllVisible, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectAllVisible, modifiers, key) ) {
         selectAllNodes(true);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphMakeGroup, modifiers, key) ) {
         createGroupFromSelection();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphExpandGroup, modifiers, key) ) {
         expandSelectedGroups();
     } else if ( (key == Qt::Key_Control) && (e->modifiers() == Qt::ControlModifier) ) {
         _imp->setNodesBendPointsVisible(true);
         accept = false;
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectUp, modifiers, key) ||
-                isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateUpstream, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectUp, modifiers, key) ||
+                isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphNavigateUpstream, modifiers, key) ) {
         ///We try to find if the last selected node has an input, if so move selection (or add to selection)
         ///the first valid input node
         if ( !_imp->_selection.empty() ) {
@@ -297,8 +297,8 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 }
             }
         }
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphSelectDown, modifiers, key) ||
-                isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphNavigateDownstream, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphSelectDown, modifiers, key) ||
+                isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphNavigateDownstream, modifiers, key) ) {
         ///We try to find if the last selected node has an output, if so move selection (or add to selection)
         ///the first valid output node
         if ( !_imp->_selection.empty() ) {
@@ -324,27 +324,27 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
                 } // firstOutput
             }
         }
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRearrangeNodes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRearrangeNodes, modifiers, key) ) {
         if ( !_imp->rearrangeSelectedNodes() ) {
             accept = false;
         }
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDisableNodes, modifiers, key) ) {
         toggleSelectedNodesEnabled();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphShowExpressions, modifiers, key) ) {
         toggleKnobLinksVisible();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphToggleAutoPreview, modifiers, key) ) {
         toggleAutoPreview();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoTurbo, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphToggleAutoTurbo, modifiers, key) ) {
         toggleAutoTurbo();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphAutoHideInputs, modifiers, key) ) {
         toggleAutoHideInputs(true);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphFindNode, modifiers, key) ) {
         popFindDialog( QCursor::pos() );
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRenameNode, modifiers, key) ) {
         renameNode();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphExtractNode, modifiers, key) ) {
         pushUndoCommand( new ExtractNodeUndoRedoCommand(this, _imp->_selection) );
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphTogglePreview, modifiers, key) ) {
         togglePreviewsForSelectedNodes();
     } else if ( key == Qt::Key_Plus) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
@@ -352,7 +352,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
     } else if ( key == Qt::Key_Minus ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), -120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
         wheelEvent(&e);
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphOpenNodePanel, modifiers, key) ) {
         if (_imp->_selection.size() == 1) {
             showNodePanel(modCASIsControl(e), modCASIsControl(e), _imp->_selection.front());
         } else {

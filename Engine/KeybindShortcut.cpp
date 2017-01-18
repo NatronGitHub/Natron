@@ -16,54 +16,43 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef PLUGINACTIONSHORTCUT_H
-#define PLUGINACTIONSHORTCUT_H
-
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
-#include "Global/GlobalDefines.h"
-#include "Global/KeySymbols.h"
-
-#include "Engine/EngineFwd.h"
+#include "KeybindShortcut.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct PluginActionShortcut
+KeybindShortcut::KeybindShortcut()
+: grouping()
+, actionID()
+, actionLabel()
+, description()
+, modifiers(eKeyboardModifierNone)
+, defaultModifiers(eKeyboardModifierNone)
+, ignoreMask(eKeyboardModifierNone)
+, currentShortcut()
+, defaultShortcut()
+, actions()
+, editable(true)
 {
-    std::string actionID;
-    std::string actionLabel;
-    std::string actionHint;
-    KeyboardModifiers modifiers;
-    Key key;
+}
 
-    PluginActionShortcut()
-        : actionID()
-        , actionLabel()
-        , actionHint()
-        , modifiers(eKeyboardModifierNone)
-        , key(Key_Unknown)
-    {
+KeybindShortcut::~KeybindShortcut()
+{
+    
+}
+
+void
+KeybindShortcut::updateActionsShortcut()
+{
+    for (std::list<KeybindListenerI*>::iterator it = actions.begin(); it != actions.end(); ++it) {
+        (*it)->onShortcutChanged(actionID, currentShortcut, modifiers);
     }
+}
 
-    PluginActionShortcut( const std::string& id,
-                         const std::string& label,
-                         const std::string& hint,
-                         Key symbol = Key_Unknown,
-                         const KeyboardModifiers& mods = KeyboardModifiers(eKeyboardModifierNone) )
-    : actionID(id)
-    , actionLabel(label)
-    , actionHint(hint)
-    , modifiers(mods)
-    , key(symbol)
-    {}
-};
 
 NATRON_NAMESPACE_EXIT;
-
-#endif // PLUGINACTIONSHORTCUT_H

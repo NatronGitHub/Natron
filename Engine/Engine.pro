@@ -124,6 +124,7 @@ SOURCES += \
     ImageStorage.cpp \
     Interpolation.cpp \
     JoinViewsNode.cpp \
+    KeybindShortcut.cpp \
     Knob.cpp \
     KnobAnimation.cpp \
     KnobExpression.cpp \
@@ -358,6 +359,7 @@ HEADERS += \
     IPCCommon.h \
     ImageStorage.h \
     JoinViewsNode.h \
+    KeybindShortcut.h \
     Knob.h \
     KnobPrivate.h \
     KnobGuiI.h \
