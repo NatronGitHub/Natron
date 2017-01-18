@@ -4595,7 +4595,7 @@ Node::makeDocumentation(bool genHTML) const
             // note that only % units are understood both by pandox and sphinx
             ms << "{ width=10% }";
         }
-        ms << "\\ \n\n";
+        ms << "&nbsp;\n\n"; // &nbsp; required so that there is no legend when converted to rst by pandoc
     }
     ms << tr("*This documentation is for version %2.%3 of %1.*").arg(pluginLabel).arg(majorVersion).arg(minorVersion) << "\n\n";
 
@@ -4658,25 +4658,64 @@ OUTPUT:
     if (genHTML) {
         // use hoedown to convert to HTML
 
-        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">";
-        ts << "<html><head>";
-        ts << "<title>" << pluginLabel << " - NATRON_DOCUMENTATION</title>";
-        ts << "<link rel=\"stylesheet\" href=\"_static/markdown.css\" type=\"text/css\" /><script type=\"text/javascript\" src=\"_static/jquery.js\"></script><script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>";
-        ts << "</head><body>";
-        ts << "<div class=\"related\"><h3>" << tr("Navigation") << "</h3><ul>";
-        ts << "<li><a href=\"/index.html\">NATRON_DOCUMENTATION</a> &raquo;</li>";
-        ts << "<li><a href=\"/_group.html\">" << tr("Reference Guide") << "</a> &raquo;</li>";
+        ts << ("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
+               "  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+               "\n"
+               "\n"
+               "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+               "  <head>\n"
+               "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n"
+               "    \n"
+               "    <title>") << tr("%1 node").arg(pluginLabel) << " &#8212; NATRON_DOCUMENTATION</title>\n";
+        ts << ("    \n"
+               "    <link rel=\"stylesheet\" href=\"_static/markdown.css\" type=\"text/css\" />\n"
+               "    \n"
+               "    <script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n"
+               "    <script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n"
+               "    <link rel=\"index\" title=\"Index\" href=\"genindex.html\" />\n"
+               "    <link rel=\"search\" title=\"Search\" href=\"search.html\" />\n"
+               "  </head>\n"
+               "  <body role=\"document\">\n"
+               "    <div class=\"related\" role=\"navigation\" aria-label=\"related navigation\">\n"
+               "      <h3>") << tr("Navigation") << "</h3>\n";
+        ts << ("      <ul>\n"
+               "        <li class=\"right\" style=\"margin-right: 10px\">\n"
+               "          <a href=\"genindex.html\" title=\"General Index\"\n"
+               "             accesskey=\"I\">") << tr("index") << "</a></li>\n";
+        ts << ("        <li class=\"right\" >\n"
+               "          <a href=\"py-modindex.html\" title=\"Python Module Index\"\n"
+               "             >") << tr("modules") << "</a> |</li>\n";
+        ts << ("        <li class=\"nav-item nav-item-0\"><a href=\"index.html\">NATRON_DOCUMENTATION</a> &#187;</li>\n"
+               "          <li class=\"nav-item nav-item-1\"><a href=\"_group.html\" >") << tr("Reference Guide") << "</a> &#187;</li>\n";
         if ( !pluginGroup.isEmpty() ) {
             QString group = pluginGroup.at(0);
             if (!group.isEmpty()) {
-                ts << "<li><a href=\"/_group.html?id=" << group << "\">" << group << "</a> &raquo;</li>";
+                ts << "          <li class=\"nav-item nav-item-2\"><a href=\"_group.html?id=" << group << "\">" << group << " nodes</a> &#187;</li>";
             }
         }
-        ts << "</ul></div>";
-        ts << "<div class=\"document\"><div class=\"documentwrapper\"><div class=\"body\"><div class=\"section\">";
+        ts << ("      </ul>\n"
+               "    </div>  \n"
+               "\n"
+               "    <div class=\"document\">\n"
+               "      <div class=\"documentwrapper\">\n"
+               "          <div class=\"body\" role=\"main\">\n"
+               "            \n"
+               "  <div class=\"section\">\n");
         QString html = Markdown::convert2html(markdown);
         ts << Markdown::fixNodeHTML(html);
-        ts << "</div></div></div><div class=\"clearer\"></div></div><div class=\"footer\"></div></body></html>";
+        ts << ("</div>\n"
+               "\n"
+               "\n"
+               "          </div>\n"
+               "      </div>\n"
+               "      <div class=\"clearer\"></div>\n"
+               "    </div>\n"
+               "\n"
+               "    <div class=\"footer\" role=\"contentinfo\">\n"
+               "        &#169; Copyright 2013-2017 The Natron documentation authors, licensed under CC BY-SA 4.0.\n"
+               "    </div>\n"
+               "  </body>\n"
+               "</html>");
     } else {
         // this markdown will be processed externally by pandoc
 
