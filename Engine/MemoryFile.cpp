@@ -345,7 +345,6 @@ MemoryFilePrivate::closeMapping()
     ::close(file_handle);
     file_handle = -1;
 #elif defined(__NATRON_WIN32__)
-    Q_UNUSED(drop_pages);
     ::UnmapViewOfFile(data) == 0);
     ::CloseHandle(file_mapping_handle);
     ::CloseHandle(file_handle);

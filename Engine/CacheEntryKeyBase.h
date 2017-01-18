@@ -37,10 +37,11 @@
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/EngineFwd.h"
 #include "Engine/IPCCommon.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

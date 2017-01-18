@@ -45,6 +45,7 @@
 #endif
 
 #include "Engine/CacheEntryBase.h"
+
 #include "Engine/EngineFwd.h"
 
 // Each 8 bit tile will have pow(2, tileSizePo2) pixels in each dimension.

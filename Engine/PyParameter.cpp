@@ -242,7 +242,7 @@ Param::getIsVisible() const
         PythonSetNullError();
         return false;
     }
-    return knob->getIsSecret();
+    return !knob->getIsSecret();
 }
 
 void

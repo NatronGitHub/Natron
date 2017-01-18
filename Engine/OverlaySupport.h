@@ -35,6 +35,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/RectD.h"
 #include "Global/GlobalDefines.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
