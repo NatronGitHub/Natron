@@ -345,7 +345,9 @@ MemoryFilePrivate::closeMapping()
     ::close(file_handle);
     file_handle = -1;
 #elif defined(__NATRON_WIN32__)
-    ::UnmapViewOfFile(data) == 0);
+    if (::UnmapViewOfFile(data) == 0) {
+        throw std::runtime_error("Failed to unmap the mapped file");
+    }
     ::CloseHandle(file_mapping_handle);
     ::CloseHandle(file_handle);
     file_handle = INVALID_HANDLE_VALUE;
