@@ -81,7 +81,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Global/GLIncludes.h"
 #include "Global/QtCompat.h"
 #include "Global/StrUtils.h"
-#include "Global/MemoryInfo.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"

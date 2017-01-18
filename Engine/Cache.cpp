@@ -53,7 +53,6 @@ GCC_DIAG_ON(unused-parameter)
 #include <SequenceParsing.h>
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
 #include "Global/StrUtils.h"
 #include "Global/QtCompat.h"
 
@@ -570,9 +569,6 @@ struct CachePrivate
     // location.
     std::string directoryContainingCachePath;
 
-    // Store the system physical total RAM in a member
-    std::size_t maxPhysicalRAMAttainable;
-
 
     CachePrivate(Cache* publicInterface)
     : _publicInterface(publicInterface)
@@ -584,12 +580,7 @@ struct CachePrivate
     , globalMemorySegment()
     , ipc(0)
     , directoryContainingCachePath()
-    , maxPhysicalRAMAttainable(0)
     {
-
-
-        // Make the system RAM appear as 90% of the RAM so we leave some room for other stuff
-        maxPhysicalRAMAttainable = getSystemTotalRAM() * 0.9;
 
 
     }
@@ -1518,9 +1509,6 @@ Cache::setMaximumCacheSize(StorageModeEnum storage, std::size_t size)
                 _imp->maximumInMemorySize = size;
                 break;
             case eStorageModeRAM: {
-                if (size == 0) {
-                    size = _imp->maxPhysicalRAMAttainable;
-                }
                 _imp->maximumGLTextureSize = size;
             }   break;
             case eStorageModeNone:
@@ -1855,12 +1843,6 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
 
     bool mustEvictEntries = curSize > maxSize;
 
-    // Ensure we do not hit the swap
-    // because Natron might not be alone running on the system.
-    if (!mustEvictEntries) {
-        std::size_t residentSetBytes = getCurrentRSS();
-        mustEvictEntries = residentSetBytes >= _imp->maxPhysicalRAMAttainable;
-    }
     while (mustEvictEntries) {
         
         bool foundBucketThatCanEvict = false;
@@ -1919,13 +1901,6 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
 
         // Update mustEvictEntries for next iteration
         mustEvictEntries = curSize > maxSize;
-
-        /// Ensure we do not hit the swap
-        // because Natron might not be alone running on the system.
-        if (!mustEvictEntries) {
-            std::size_t residentSetBytes = getCurrentRSS();
-            mustEvictEntries = residentSetBytes >= _imp->maxPhysicalRAMAttainable;
-        }
 
     } // curSize > maxSize
 

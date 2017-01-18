@@ -801,9 +801,9 @@ SettingsPrivate::initializeKnobsDocumentation()
     _documentationSource = AppManager::createKnob<KnobChoice>( thisShared, tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
-    _documentationSource->appendChoice("Local");
-    _documentationSource->appendChoice("Online");
-    _documentationSource->appendChoice("None");
+    _documentationSource->appendChoice(ChoiceOption("Local", "",""));
+    _documentationSource->appendChoice(ChoiceOption("Online", "",""));
+    _documentationSource->appendChoice(ChoiceOption("None", "",""));
     _documentationPage->addKnob(_documentationSource);
 #endif
 

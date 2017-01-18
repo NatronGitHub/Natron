@@ -84,7 +84,6 @@ SOURCES += \
     Cache.cpp \
     CacheEntryBase.cpp \
     CacheEntryKeyBase.cpp \
-    CacheEntrySerialization.cpp \
     CLArgs.cpp \
     CoonsRegularization.cpp \
     ColorParser.cpp \
@@ -316,7 +315,6 @@ HEADERS += \
     Cache.h \
     CacheEntryBase.h \
     CacheEntryKeyBase.h \
-    CacheEntrySerialization.h \
     CoonsRegularization.h \
     ChoiceOption.h \
     Color.h \

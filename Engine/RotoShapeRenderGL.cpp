@@ -1853,7 +1853,6 @@ renderSmearBegin_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                     const ColorRgbaD& shapeColor,
                     double opacity)
 {
-    Q_UNUSED(buildUp);
     Q_UNUSED(shapeColor);
     RenderSmearGLData* myData = (RenderSmearGLData*)userData;
 

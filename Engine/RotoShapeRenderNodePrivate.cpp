@@ -127,10 +127,10 @@ RotoShapeRenderNodePrivate::renderStroke_generic(RenderStrokeDataPtr userData,
         const double t = time;
         KnobColorPtr colorKnob = stroke->getColorKnob();
         for (int i = 0; i < 3; ++i) {
-            shapeColor.r = colorKnob->getValueAtTime(t, DimIdx(0), view);
-            shapeColor.g = colorKnob->getValueAtTime(t, DimIdx(1), view);
-            shapeColor.b = colorKnob->getValueAtTime(t, DimIdx(2), view);
-            shapeColor.a = colorKnob->getValueAtTime(t, DimIdx(3), view);
+            shapeColor.r = colorKnob->getValueAtTime(TimeValue(t), DimIdx(0), view);
+            shapeColor.g = colorKnob->getValueAtTime(TimeValue(t), DimIdx(1), view);
+            shapeColor.b = colorKnob->getValueAtTime(TimeValue(t), DimIdx(2), view);
+            shapeColor.a = colorKnob->getValueAtTime(TimeValue(t), DimIdx(3), view);
         }
     }
 

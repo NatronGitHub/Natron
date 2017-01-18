@@ -1039,10 +1039,10 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     TimeValue time(strokeBeingPaint->getApp()->getTimeLine()->currentFrame());
     strokeBeingPaintedTimelineFrame = time;
     if (colorKnob) {
-        colorKnob->setValue( shapeColor.r, ViewSetSpec::current(), DimIdx(0) );
-        colorKnob->setValue( shapeColor.g, ViewSetSpec::current(), DimIdx(1) );
-        colorKnob->setValue( shapeColor.b, ViewSetSpec::current(), DimIdx(2) );
-        colorKnob->setValue( shapeColor.a, ViewSetSpec::current(), DimIdx(3) );
+        colorKnob->setValue( shapeColor.r, ViewIdx(0), DimIdx(0) );
+        colorKnob->setValue( shapeColor.g, ViewIdx(0), DimIdx(1) );
+        colorKnob->setValue( shapeColor.b, ViewIdx(0), DimIdx(2) );
+        colorKnob->setValue( shapeColor.a, ViewIdx(0), DimIdx(3) );
     }
     operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp));
     if (opacityKnob) {

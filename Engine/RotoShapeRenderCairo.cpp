@@ -1810,7 +1810,6 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
     }
 #else // ifdef ROTO_USE_MESH_PATTERN_ONLY
     Q_UNUSED(shapeColor);
-    Q_UNUSED(opacity);
     cairo_set_source_rgba(cr, 1, 1, 1, 1);
 
     BezierCPs::const_iterator point = cps.begin();

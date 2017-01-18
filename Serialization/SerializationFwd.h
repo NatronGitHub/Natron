@@ -38,11 +38,9 @@
 SERIALIZATION_NAMESPACE_ENTER;
 
 class BezierSerialization;
-class CacheEntrySerializationBase;
 class CurveSerialization;
 struct DefaultValueSerialization;
 class ImageComponentsSerialization;
-class ImageTileSerialization;
 class KnobSerializationBase;
 class KnobSerialization;
 class KnobTableItemSerialization;
@@ -66,9 +64,7 @@ class WindowSerialization;
 class WorkspaceSerialization;
 
 typedef boost::shared_ptr<BezierSerialization> BezierSerializationPtr;
-typedef boost::shared_ptr<CacheEntrySerializationBase> CacheEntrySerializationBasePtr;
 typedef boost::shared_ptr<CurveSerialization> CurveSerializationPtr;
-typedef boost::shared_ptr<ImageTileSerialization> ImageTileSerializationPtr;
 typedef boost::shared_ptr<GroupKnobSerialization> GroupKnobSerializationPtr;
 typedef boost::shared_ptr<KnobSerialization> KnobSerializationPtr;
 typedef boost::shared_ptr<KnobSerializationBase> KnobSerializationBasePtr;

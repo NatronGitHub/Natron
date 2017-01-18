@@ -48,7 +48,6 @@
 
 #include <QtConcurrentRun>
 
-#include "Global/MemoryInfo.h"
 
 #include <SequenceParsing.h>
 
