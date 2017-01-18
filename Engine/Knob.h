@@ -2775,10 +2775,6 @@ public:
 
     void endChanges(bool discardEverything = false);
 
-    virtual bool getActionsRecursionLevel() const
-    {
-        return 0;
-    }
 
     /**
      * @brief The virtual portion of notifyProjectBeginValuesChanged(). This is called by the project

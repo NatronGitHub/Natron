@@ -1255,8 +1255,6 @@ public:
 
 public:
 
-    virtual bool getActionsRecursionLevel() const OVERRIDE FINAL;
-
 
     EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, int* channelForMask);
 

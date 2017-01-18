@@ -142,12 +142,6 @@ EffectInstanceTLSData::popArgs()
     _imp->actionsArgsStack.pop_back();
 }
 
-int
-EffectInstanceTLSData::getActionsRecursionLevel() const
-{
-    QMutexLocker k(&_imp->lock);
-    return (int)_imp->actionsArgsStack.size();
-}
 
 #ifdef DEBUG
 bool

@@ -185,10 +185,6 @@ public:
      **/
     void popArgs();
 
-    /**
-     * @brief Get the recursion level in plug-in actions. 1 indicates that we are currently in a single action.
-     **/
-    int getActionsRecursionLevel() const;
 
 #ifdef DEBUG
     /**
