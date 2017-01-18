@@ -33,6 +33,8 @@
 
 #include "Global/GlobalDefines.h"
 
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
 
 // Memory utility functions ( info about RAM etc...)

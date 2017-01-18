@@ -39,6 +39,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

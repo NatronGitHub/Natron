@@ -106,6 +106,13 @@ class Instance;
 }
 }
 
+// libmv
+namespace mv
+{
+class AutoTrack;
+}
+
+
 // SequenceParsing
 namespace SequenceParsing {
 class SequenceFromFiles;

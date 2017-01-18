@@ -28,9 +28,9 @@
 #include "Global/Macros.h"
 
 #include "Global/GlobalDefines.h"
+#include "Engine/RectI.h"
 
 #include "Engine/EngineFwd.h"
-#include "Engine/RectI.h"
 
 NATRON_NAMESPACE_ENTER;
 

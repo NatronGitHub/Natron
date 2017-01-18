@@ -36,6 +36,7 @@
 #include "Engine/ViewIdx.h"
 #include "Engine/Texture.h"
 #include "Engine/TimeValue.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
