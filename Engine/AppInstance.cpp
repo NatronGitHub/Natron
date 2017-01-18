@@ -1196,15 +1196,20 @@ AppInstance::exportDocs(const QString path)
                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
                     if (isReadNode) {
-                        node = isReadNode->getEmbeddedReader();
-
+                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                        if (subnode) {
+                            node = subnode;
+                        }
                     }
                 }
                 if ( effectInstance->isWriter() ) {
                     WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
 
                     if (isWriteNode) {
-                        node = isWriteNode->getEmbeddedWriter();
+                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                        if (subnode) {
+                            node = subnode;
+                        }
                     }
                 }
                 QDir mdDir(path);
@@ -1226,6 +1231,7 @@ AppInstance::exportDocs(const QString path)
                     }
                 }
 
+                assert(node);
                 QString md = node->makeDocumentation(false);
                 QFile mdFile( mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".md") );
                 if ( mdFile.open(QIODevice::Text | QIODevice::WriteOnly) ) {
@@ -1245,8 +1251,7 @@ AppInstance::exportDocs(const QString path)
         QString groupMD;
         groupMD.append( QString::fromUtf8(".. _reference-guide:\n\n") );
         groupMD.append( tr("Reference Guide") );
-        groupMD.append( QString::fromUtf8("\n") );
-        groupMD.append( QString::fromUtf8("=========\n\n") );
+        groupMD.append( QString::fromUtf8("\n============================================================\n\n") );
         groupMD.append( tr("The first section in this manual describes the various options available from the %1 preference settings. It is followed by one section for each node group in %1.")
                        .arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
         groupMD.append( QString::fromUtf8("\n\n") );
@@ -1260,7 +1265,7 @@ AppInstance::exportDocs(const QString path)
             QString plugMD;
 
             plugMD.append( tr("%1 nodes").arg( tr( group.toUtf8().constData() ) ) );
-            plugMD.append( QString::fromUtf8("\n==========\n\n") );
+            plugMD.append( QString::fromUtf8("\n============================================================\n\n") );
             plugMD.append( tr("The following sections contain documentation about every node in the  %1 group.").arg( tr( group.toUtf8().constData() ) ) + QLatin1Char(' ') + tr("Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.") /*+ QLatin1Char(' ') + tr("Please note that documentation is also generated automatically for third-party OpenFX plugins.")*/ );
             plugMD.append( QString::fromUtf8("\n\n") );
             //plugMD.append( QString::fromUtf8("Contents:\n\n") );

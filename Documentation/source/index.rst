@@ -14,10 +14,28 @@ The Natron documentation is organized as follows:
 - The :ref:`reference-guide` contains the documentation about the user settings in Natron, as well as the documentation
 - The :ref:`developers-guide` contains documentation about using the Python scripting language within Natron, and using the Natron command-line interface (a.k.a. NatronRenderer).
 
-Contents:
+This documentation is also
+`available online <http://natron.readthedocs.io/en/master/>`_
+and can be downloaded as a
+`PDF <https://readthedocs.org/projects/natron/downloads/pdf/master/>`_,
+`HTML zip <https://readthedocs.org/projects/natron/downloads/htmlzip/master/>`_
+or
+`ePub <https://readthedocs.org/projects/natron/downloads/epub/master/>`_
+file.
+
+This manual is maintained largely by volunteers.
+
+The `Creative Commons Attribution-ShareAlike 4.0 International License (CC-BY-SA 4.0) <https://creativecommons.org/licenses/by-sa/4.0/>`_ is used for this manual, which is a free and open license. Though there are certain restrictions that come with this license you may in general freely reproduce it and even make changes to it. However, rather than distribute your own version of this manual, we would much prefer if you would send any corrections or changes to the Natron project.
+
+The *Natron documentation authors* are:
+
+- Alexandre Gauthier-Foichat
+- Ole-André Rodlie
+- Omar Brown
+- Frédéric Devernay
 
 .. toctree::
-    :maxdepth: 2
+    :maxdepth: 3
 
     guide/index.rst
     _group.rst

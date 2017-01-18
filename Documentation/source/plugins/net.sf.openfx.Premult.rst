@@ -7,6 +7,9 @@ Premult node
 
 *This documentation is for version 2.0 of Premult.*
 
+Description
+-----------
+
 Multiply the selected channels by alpha (or another channel).
 
 If no channel is selected, or the premultChannel is set to None, the image data is left untouched, but its premultiplication state is set to PreMultiplied.

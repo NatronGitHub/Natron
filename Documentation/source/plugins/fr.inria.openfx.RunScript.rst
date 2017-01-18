@@ -7,6 +7,9 @@ RunScript node
 
 *This documentation is for version 1.0 of RunScript.*
 
+Description
+-----------
+
 Run a script with the given arguments.
 
 This is mostly useful to execute an external program on a set of input images files, which outputs image files.

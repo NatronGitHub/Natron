@@ -5,6 +5,9 @@ CopyRectangle node
 
 *This documentation is for version 2.0 of CopyRectangle.*
 
+Description
+-----------
+
 Copies a rectangle from the input A to the input B in output.
 
 It can be used to limit an effect to a rectangle of the original image by plugging the original image into the input B.

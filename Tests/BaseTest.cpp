@@ -24,9 +24,23 @@
 
 #include "Global/Macros.h"
 
+#include <cstdlib>
+
 #include "BaseTest.h"
 
 #include <QtCore/QFile>
+
+// ofxhPropertySuite.h:565:37: warning: 'this' pointer cannot be null in well-defined C++ code; comparison may be assumed to always evaluate to true [-Wtautological-undefined-compare]
+CLANG_DIAG_OFF(unknown-pragmas)
+CLANG_DIAG_OFF(tautological-undefined-compare) // appeared in clang 3.5
+#include <ofxhPluginCache.h>
+//#include <ofxhPluginAPICache.h>
+//#include <ofxhImageEffect.h>
+#include <ofxhImageEffectAPI.h>
+//#include <ofxOpenGLRender.h>
+//#include <ofxhHost.h>
+CLANG_DIAG_ON(tautological-undefined-compare)
+CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
@@ -85,6 +99,11 @@ BaseTest::registerTestPlugins()
 void
 BaseTest::SetUp()
 {
+    const char* path = std::getenv("OFX_PLUGIN_PATH");
+    if (path) {
+        std::cout << "Warning: Ignoring standard plugin path, OFX_PLUGIN_PATH=" << path << std::endl;
+        OFX::Host::PluginCache::useStdOFXPluginsLocation(false);
+    }
     if (!g_manager) {
         g_manager = new AppManager;
         int argc = 0;

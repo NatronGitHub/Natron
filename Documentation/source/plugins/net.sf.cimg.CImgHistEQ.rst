@@ -7,6 +7,9 @@ HistEQ node
 
 *This documentation is for version 2.0 of HistEQ.*
 
+Description
+-----------
+
 Equalize histogram of brightness values.
 
 Uses the 'equalize' function from the CImg library on the 'V' channel of the HSV decomposition of the image.
@@ -34,7 +37,7 @@ Controls
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
 | Parameter / script name        | Type      | Default   | Function                                                                                                                             |
 +================================+===========+===========+======================================================================================================================================+
-| NbLevels / ``nb\_levels``      | Integer   | 4096      | Number of histogram levels used for the equalization.                                                                                |
+| NbLevels / ``nb_levels``       | Integer   | 4096      | Number of histogram levels used for the equalization.                                                                                |
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
 | (Un)premult / ``premult``      | Boolean   | Off       | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+

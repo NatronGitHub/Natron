@@ -7,6 +7,9 @@ ErodeSmooth node
 
 *This documentation is for version 2.0 of ErodeSmooth.*
 
+Description
+-----------
+
 Erode or dilate input stream using a normalized power-weighted filter.
 
 This gives a smoother result than the Erode or Dilate node.

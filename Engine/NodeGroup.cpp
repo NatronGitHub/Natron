@@ -40,7 +40,6 @@
 #include "Engine/BezierCP.h"
 #include "Engine/Curve.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/FileSystemModel.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
 #include "Engine/Image.h"
@@ -1548,8 +1547,10 @@ NodeGroup::setupInitialSubGraphState()
         args->setProperty(kCreateNodeArgsPropAddUndoRedoCommand, false);
         args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
         output = getApp()->createNode(args);
-
         assert(output);
+        if (!output) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_OUTPUT) ).toStdString() );
+        }
     }
     {
         CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
@@ -1558,6 +1559,9 @@ NodeGroup::setupInitialSubGraphState()
         args->setProperty(kCreateNodeArgsPropSettingsOpened, false);
         input = getApp()->createNode(args);
         assert(input);
+        if (!input) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_INPUT) ).toStdString() );
+        }
     }
     if ( input && output && !output->getInput(0) ) {
         output->connectInput(input, 0);

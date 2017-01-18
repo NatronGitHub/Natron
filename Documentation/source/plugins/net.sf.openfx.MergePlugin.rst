@@ -7,6 +7,9 @@ Merge node
 
 *This documentation is for version 1.0 of Merge.*
 
+Description
+-----------
+
 Pixel-by-pixel merge operation between two or more inputs. Input A is first merged with B (or with a black and transparent background if B is not connected), then A2, if connected, is merged with the intermediary result, then A3, etc.
 
 A complete explanation of the Porter-Duff compositing operators can be found in "Compositing Digital Images", by T. Porter and T. Duff (Proc. SIGGRAPH 1984) http://keithp.com/~keithp/porterduff/p253-porter.pdf

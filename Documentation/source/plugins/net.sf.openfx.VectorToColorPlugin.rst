@@ -7,6 +7,9 @@ VectorToColor node
 
 *This documentation is for version 1.0 of VectorToColor.*
 
+Description
+-----------
+
 Convert x and y vector components to a color representation.
 
 H (hue) gives the direction, S (saturation) is set to the amplitude/norm, and V is 1.The role of S and V can be switched.Output can be RGB or HSV, with H in degrees.

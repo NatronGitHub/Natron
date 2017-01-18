@@ -30,8 +30,6 @@
 #include <cstring> // for std::memcpy
 #include <cfloat> // DBL_MAX
 
-
-
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/Image.h"

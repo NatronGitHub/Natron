@@ -5,6 +5,9 @@ xyYToXYZ node
 
 *This documentation is for version 1.0 of xyYToXYZ.*
 
+Description
+-----------
+
 Convert from CIE xyY color space to CIE XYZ color space.
 
 Inputs

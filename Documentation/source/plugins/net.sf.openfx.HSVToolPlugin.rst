@@ -7,6 +7,9 @@ HSVTool node
 
 *This documentation is for version 1.0 of HSVTool.*
 
+Description
+-----------
+
 Adjust hue, saturation and brightness, or perform color replacement.
 
 Color replacement:

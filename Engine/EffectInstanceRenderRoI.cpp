@@ -31,6 +31,7 @@
 #include <fstream>
 #include <cassert>
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
@@ -49,7 +50,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #endif
 
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 
 #include "Engine/AppInstance.h"

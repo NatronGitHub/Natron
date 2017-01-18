@@ -7,6 +7,9 @@ Bloom node
 
 *This documentation is for version 4.0 of Bloom.*
 
+Description
+-----------
+
 Apply a Bloom filter (Kawase 2004) that sums multiple blur filters of different radii,
 
 resulting in a larger but sharper glare than a simple blur.

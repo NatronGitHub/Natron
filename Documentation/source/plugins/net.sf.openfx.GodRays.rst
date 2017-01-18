@@ -7,6 +7,9 @@ GodRays node
 
 *This documentation is for version 1.0 of GodRays.*
 
+Description
+-----------
+
 Average an image over a range of transforms.
 
 This can be used to create crepuscular rays (also called God rays) by setting the scale and center parameters: scale governs the length of rays, and center should be set to the Sun or light position (which may be outside of the image).
@@ -73,7 +76,7 @@ Controls
 +----------------------------------------+-----------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+
 | Clamp / ``clamp``                      | Boolean   | Off                   | Clamp filter output within the original range - useful to avoid negative values in mattes                                                          |
 +----------------------------------------+-----------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+
-| Black outside / ``black\_outside``     | Boolean   | Off                   | Fill the area outside the source image with black                                                                                                  |
+| Black outside / ``black_outside``      | Boolean   | Off                   | Fill the area outside the source image with black                                                                                                  |
 +----------------------------------------+-----------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+
 | From Color / ``fromColor``             | Color     | r: 1 g: 1 b: 1 a: 1   | Color by which the initial image is multiplied.                                                                                                    |
 +----------------------------------------+-----------+-----------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+

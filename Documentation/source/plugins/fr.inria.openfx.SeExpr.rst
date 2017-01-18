@@ -7,6 +7,9 @@ SeExpr node
 
 *This documentation is for version 2.0 of SeExpr.*
 
+Description
+-----------
+
 Use the SeExpr expression language (by Walt Disney Animation Studios) to process images.
 
 What is SeExpr?
@@ -98,7 +101,8 @@ Add green channel to red, keep green, and apply a 50% gain on blue
 ::
 
     r*r2
-    g*g2    b*b2
+    g*g2
+    b*b2
     a+a2-a*a2
 
 *SeExpr:*

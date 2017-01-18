@@ -7,6 +7,9 @@ ReadOIIO node
 
 *This documentation is for version 2.0 of ReadOIIO.*
 
+Description
+-----------
+
 Read images using OpenImageIO.
 
 Ouput is always Premultiplied (alpha is associated).
@@ -59,7 +62,7 @@ TIFF (\*.tif \*.tiff \*.tx \*.env \*.sm \*.vsm)
 
 Zfile (\*.zfile)
 
-All supported formats and extensions: bmp: bmp; cineon: cin; dds: dds; dpx: dpx; fits: fits; gif: gif; hdr: hdr, rgbe; ico: ico; iff: iff, z; jpeg: jpg, jpe, jpeg, jif, jfif, jfi; openexr: exr, sxr, mxr; png: png; pnm: ppm, pgm, pbm, pnm, pfm; psd: psd, pdd, psb; raw: bay, bmq, cr2, crw, cs1, dc2, dcr, dng, erf, fff, k25, kdc, mdc, mos, mrw, nef, orf, pef, pxn, raf, raw, rdc, sr2, srf, x3f, arw, 3fr, cine, ia, kc2, mef, nrw, qtk, rw2, sti, rwl, srw, drf, dsc, ptx, cap, iiq, rwz; rla: rla; sgi: sgi, rgb, rgba, bw, int, inta; socket: socket; softimage: pic; tiff: tiff, tif, tx, env, sm, vsm; targa: tga, tpic; webp: webp; zfile: zfile;
+All supported formats and extensions: bmp: bmp; cineon: cin; dds: dds; dpx: dpx; fits: fits; gif: gif; hdr: hdr, rgbe; ico: ico; iff: iff, z; jpeg: jpg, jpe, jpeg, jif, jfif, jfi; jpeg2000: jp2, j2k, j2c; openexr: exr, sxr, mxr; png: png; pnm: ppm, pgm, pbm, pnm, pfm; psd: psd, pdd, psb; raw: bay, bmq, cr2, crw, cs1, dc2, dcr, dng, erf, fff, k25, kdc, mdc, mos, mrw, nef, orf, pef, pxn, raf, raw, rdc, sr2, srf, x3f, arw, 3fr, cine, ia, kc2, mef, nrw, qtk, rw2, sti, rwl, srw, drf, dsc, ptx, cap, iiq, rwz; rla: rla; sgi: sgi, rgb, rgba, bw, int, inta; socket: socket; softimage: pic; tiff: tiff, tif, tx, env, sm, vsm; targa: tga, tpic; webp: webp; zfile: zfile;
 
 OIIO versions:
 

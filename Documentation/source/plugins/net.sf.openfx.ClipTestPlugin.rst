@@ -7,6 +7,9 @@ ClipTest node
 
 *This documentation is for version 2.0 of ClipTest.*
 
+Description
+-----------
+
 Draw zebra stripes on all pixels outside of the specified range.
 
 See also: http://opticalenquiry.com/nuke/index.php?title=Evaluating\_Color#The\_ClipTest\_node

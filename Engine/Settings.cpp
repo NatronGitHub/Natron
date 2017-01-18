@@ -38,7 +38,6 @@
 #include <tchar.h>
 #endif
 
-#include "Global/MemoryInfo.h"
 #include "Global/StrUtils.h"
 
 #include "Engine/AppManager.h"
@@ -48,11 +47,12 @@
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
-#include "Engine/OutputSchedulerThread.h"
+#include "Engine/MemoryInfo.h" // getSystemTotalRAM, isApplication32Bits, printAsRAM
 #include "Engine/Node.h"
+#include "Engine/OSGLContext.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
-#include "Engine/OSGLContext.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"

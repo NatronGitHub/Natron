@@ -1807,9 +1807,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         return false;
     }
 
-    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
-        node->onFileNameParameterChanged(k);
-    }
+
 
     bool ret = false;
 
@@ -1831,6 +1829,10 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         }
     }
 
+    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
+        node->onFileNameParameterChanged(k);
+    }
+    
     if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
         ///Run the following only in the main-thread
         if ( hasOverlay() && node->shouldDrawOverlay(time, ViewIdx(0)) && !node->hasHostOverlayForParam(k) ) {
@@ -1843,6 +1845,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
             kh->redraw();
         }
     }
+    
 
     ret |= node->onEffectKnobValueChanged(k, reason);
 

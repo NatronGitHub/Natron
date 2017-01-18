@@ -7,6 +7,9 @@ Noise node
 
 *This documentation is for version 2.0 of Noise.*
 
+Description
+-----------
+
 Add random noise to input stream.
 
 Note that each render gives a different noise.

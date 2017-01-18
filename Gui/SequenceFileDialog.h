@@ -59,7 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Global/QtCompat.h"
 
-#include "Engine/FileSystemModel.h"
+#include "Engine/FileSystemModel.h" // SortableViewI
 #include "Gui/LineEdit.h"
 
 #include "Gui/GuiFwd.h"

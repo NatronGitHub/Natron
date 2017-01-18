@@ -5,6 +5,9 @@ ErodeBlur node
 
 *This documentation is for version 4.0 of ErodeBlur.*
 
+Description
+-----------
+
 Performs an operation that looks like an erosion or a dilation by smoothing the image and then remapping the values of the result.
 
 The image is first smoothed by a triangle filter of width 2\*abs(size).

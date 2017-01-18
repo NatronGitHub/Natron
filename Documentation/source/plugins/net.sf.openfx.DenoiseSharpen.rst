@@ -5,6 +5,9 @@ DenoiseSharpen node
 
 *This documentation is for version 1.0 of DenoiseSharpen.*
 
+Description
+-----------
+
 Denoise and/or sharpen images using wavelet-based algorithms.
 
 Description

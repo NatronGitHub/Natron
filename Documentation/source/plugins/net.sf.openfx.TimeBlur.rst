@@ -5,6 +5,9 @@ TimeBlur node
 
 *This documentation is for version 1.0 of TimeBlur.*
 
+Description
+-----------
+
 Blend frames of the input clip over the shutter range.
 
 Inputs

@@ -7,6 +7,9 @@ Grade node
 
 *This documentation is for version 2.0 of Grade.*
 
+Description
+-----------
+
 Modify the tonal spread of an image from the white and black points.
 
 This node can also be used to match colors of 2 images: The darkest and lightest points of the target image are converted to black and white using the blackpoint and whitepoint values. These 2 values are then moved to new values using the black(for dark point) and white(for white point). You can also apply multiply/offset/gamma for other color fixing you may need.

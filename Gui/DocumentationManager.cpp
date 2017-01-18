@@ -210,7 +210,6 @@ DocumentationManager::handler(QHttpRequest *req,
                         }
 
                         if (plugin) {
-        
                             CreateNodeArgsPtr args(CreateNodeArgs::create( pluginID.toStdString(), appPTR->getTopLevelInstance()->getProject() ));
                             args->setProperty<bool>(kCreateNodeArgsPropVolatile, true);
                             args->setProperty<bool>(kCreateNodeArgsPropNoNodeGUI, true);
@@ -225,16 +224,22 @@ DocumentationManager::handler(QHttpRequest *req,
                                         ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
                                         if (isReadNode) {
-                                            node = isReadNode->getEmbeddedReader();
-                                        }                                    }
+                                            NodePtr subnode = isReadNode->getEmbeddedReader();
+                                            if (subnode) {
+                                                node = subnode;
+                                            }
+                                        }
+                                    }
 
                                     if ( effectInstance->isWriter() ) {
                                         WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
                                         
                                         if (isWriteNode) {
-                                            node = isWriteNode->getEmbeddedWriter();
+                                            NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                                            if (subnode) {
+                                                node = subnode;
+                                            }
                                         }
-
                                     }
                                 }
                             }

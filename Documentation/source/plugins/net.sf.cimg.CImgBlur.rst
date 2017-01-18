@@ -7,6 +7,9 @@ Blur node
 
 *This documentation is for version 4.0 of Blur.*
 
+Description
+-----------
+
 Blur input stream or compute derivatives.
 
 The blur filter can be a quasi-Gaussian, a Gaussian, a box, a triangle or a quadratic filter.
@@ -31,7 +34,7 @@ Uses the 'vanvliet' and 'deriche' functions from the CImg library.
 
 CImg is a free, open-source library distributed under the CeCILL-C (close to the GNU LGPL) or CeCILL (compatible with the GNU GPL) licenses. It can be used in commercial applications (see http://cimg.eu).
 
-This plugin was compiled without debug, without assertions, with optimizations, with OpenMP 201107, using Clang version 3.9.1 (tags/RELEASE\_391/final).
+This plugin was compiled without debug, without assertions, with optimizations, with OpenMP 201307, using GNU C++ version 4.9.4.
 
 Inputs
 ------

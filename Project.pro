@@ -71,7 +71,6 @@ OTHER_FILES += \
     Global/GlobalDefines.h \
     Global/KeySymbols.h \
     Global/Macros.h \
-    Global/MemoryInfo.h \
     Global/ProcInfo.h \
     Global/QtCompat.h \
     global.pri \

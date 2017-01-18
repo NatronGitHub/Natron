@@ -139,6 +139,7 @@ SOURCES += \
     Markdown.cpp \
     MemoryFile.cpp \
     MultiThread.cpp \
+    MemoryInfo.cpp \
     Node.cpp \
     NodeChannelSelectors.cpp \
     NodeDocumentation.cpp \
@@ -318,6 +319,7 @@ HEADERS += \
     CacheEntrySerialization.h \
     CoonsRegularization.h \
     ChoiceOption.h \
+    Color.h \
     ColorParser.h \
     CreateNodeArgs.h \
     Curve.h \
@@ -376,6 +378,7 @@ HEADERS += \
     Lut.h \
     Markdown.h \
     MemoryFile.h \
+    MemoryInfo.h \
     MergingEnum.h \
     MultiThread.h \
     Node.h \
@@ -492,7 +495,6 @@ HEADERS += \
     ../Global/GlobalDefines.h \
     ../Global/KeySymbols.h \
     ../Global/Macros.h \
-    ../Global/MemoryInfo.h \
     ../Global/ProcInfo.h \
     ../Global/QtCompat.h \
     ../Global/StrUtils.h \

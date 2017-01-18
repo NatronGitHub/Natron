@@ -7,6 +7,9 @@ Despill node
 
 *This documentation is for version 1.0 of Despill.*
 
+Description
+-----------
+
 Remove the unwanted color contamination of the foreground (spill) caused by the reflected color of the bluescreen/greenscreen.
 
 While a despill operation often only removes green (for greenscreens) this despill also enables adding red and blue to the spill area. A lot of Keyers already have implemented their own despill methods. However, in a lot of cases it is useful to seperate the keying process in 2 tasks to get more control over the final result. Normally these tasks are the generation of the alpha mask and the spill correction. The generated alpha Mask (Key) is then used to merge the despilled forground over the new background.

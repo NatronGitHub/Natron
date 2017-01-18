@@ -28,6 +28,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
+#include "Engine/Color.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/Hash64.h"
@@ -402,15 +403,15 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             else if (args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) {
 
                 // Figure out the shape color
-                double shapeColor[3];
+                ColorRgbaD shapeColor;
                 {
+                    const double t = args.time;
                     KnobColorPtr colorKnob = rotoItem->getColorKnob();
-                    if (!colorKnob) {
-                        shapeColor[0] = shapeColor[1] = shapeColor[2] = 1.;
-                    } else {
-                        for (int i = 0; i < 3; ++i) {
-                            shapeColor[i] = colorKnob->getValueAtTime(args.time, DimIdx(i), args.view);
-                        }
+                    if (colorKnob) {
+                        shapeColor.r = colorKnob->getValueAtTime(TimeValue(t), DimIdx(0), args.view);
+                        shapeColor.g = colorKnob->getValueAtTime(TimeValue(t), DimIdx(1), args.view);
+                        shapeColor.b = colorKnob->getValueAtTime(TimeValue(t), DimIdx(2), args.view);
+                        shapeColor.a = colorKnob->getValueAtTime(TimeValue(t), DimIdx(3), args.view);
                     }
                 }
 

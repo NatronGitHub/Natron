@@ -7,6 +7,9 @@ LabToRGB709 node
 
 *This documentation is for version 1.0 of LabToRGB709.*
 
+Description
+-----------
+
 Convert from L\*a\*b color model to RGB (Rec.709 with D65 illuminant). L\*a\*b coordinates are divided by 100 for better visualization.
 
 Inputs

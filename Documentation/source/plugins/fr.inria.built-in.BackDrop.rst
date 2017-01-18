@@ -5,6 +5,9 @@ Backdrop node
 
 *This documentation is for version 1.0 of Backdrop.*
 
+Description
+-----------
+
 The Backdrop node is useful to group nodes and identify them in the node graph.
 
 You can also move all the nodes inside the backdrop.

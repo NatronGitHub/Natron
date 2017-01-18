@@ -65,6 +65,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include <ofxhXml.h> // OFX::XML::escape
 
 #include "Global/StrUtils.h"
+#include "Global/GitVersion.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
@@ -74,6 +75,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/FStreamsSupport.h"
 #include "Engine/Hash64.h"
 #include "Engine/KnobFile.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/Node.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProjectPrivate.h"
@@ -83,9 +85,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/StandardPaths.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewIdx.h"
-
-#include "Global/GitVersion.h"
-#include "Global/MemoryInfo.h"
 
 #include "Serialization/ProjectSerialization.h"
 #include "Serialization/SerializationIO.h"
@@ -237,7 +236,11 @@ Project::loadProject(const QString & path,
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            getApp()->createNode(args);
+            NodePtr viewerGroup = getApp()->createNode(args);
+            assert(viewerGroup);
+            if (!viewerGroup) {
+                throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+            }
         }
 
         return false;
@@ -248,7 +251,11 @@ Project::loadProject(const QString & path,
             args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
             args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
             args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-            getApp()->createNode(args);
+            NodePtr viewerGroup = getApp()->createNode(args);
+            assert(viewerGroup);
+            if (!viewerGroup) {
+                throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+            }
         }
 
         return false;
@@ -2583,7 +2590,11 @@ Project::createViewer()
     args->setProperty<bool>(kCreateNodeArgsPropAutoConnect, false);
     args->setProperty<bool>(kCreateNodeArgsPropSubGraphOpened, false);
     args->setProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand, false);
-    getApp()->createNode(args);
+    NodePtr viewerGroup = getApp()->createNode(args);
+    assert(viewerGroup);
+    if (!viewerGroup) {
+        throw std::runtime_error( tr("Cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_VIEWER_GROUP) ).toStdString() );
+    }
 }
 
 static bool

@@ -5,6 +5,9 @@ Write node
 
 *This documentation is for version 1.0 of Write.*
 
+Description
+-----------
+
 Node used to write images or videos on disk. The image/video is identified by its filename and its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.
 
 Inputs

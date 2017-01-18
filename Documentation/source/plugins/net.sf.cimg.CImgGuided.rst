@@ -7,6 +7,9 @@ SmoothGuided node
 
 *This documentation is for version 2.0 of SmoothGuided.*
 
+Description
+-----------
+
 Blur image, with the Guided Image filter.
 
 The algorithm is described in: He et al., "Guided Image Filtering," http://research.microsoft.com/en-us/um/people/kahe/publications/pami12guidedfilter.pdf

@@ -7,6 +7,9 @@ Position node
 
 *This documentation is for version 1.0 of Position.*
 
+Description
+-----------
+
 Translate an image by an integer number of pixels.
 
 This plugin does not concatenate transforms.

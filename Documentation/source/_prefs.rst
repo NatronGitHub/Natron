@@ -33,7 +33,7 @@ Threading
 
 **Number of render threads (0="guess")**
 
-Controls how many threads Natron should use to render. -1: Disable multithreading totally (useful for debugging) 0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 4.
+Controls how many threads Natron should use to render. -1: Disable multithreading totally (useful for debugging) 0: Guess the thread count from the number of cores.
 
 **Number of parallel renders (0="guess")**
 
@@ -115,6 +115,10 @@ This is only relevant for Windows: If checked, Natron will not convert a path st
 Documentation
 -------------
 
+**Documentation Source**
+
+Documentation source.
+
 **Documentation local port (0=auto)**
 
 The port onto which the documentation server will listen to. A value of 0 indicate that the documentation should automatically find a port by itself.
@@ -178,7 +182,7 @@ When checked, Natron will cache the output of all images rendered by all nodes, 
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 8.00 GB of RAM.
+This setting indicates the percentage of the total RAM which can be used by the memory caches.
 
 **System RAM to keep free (% of total RAM)**
 

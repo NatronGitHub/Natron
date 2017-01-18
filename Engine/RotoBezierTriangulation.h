@@ -25,8 +25,6 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Global/Macros.h"
-
 #include <vector>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
@@ -80,9 +78,6 @@ public:
 
         // Union of all discretized bezier segments
         std::vector<ParametricPoint> bezierPolygonJoined;
-
-        // indices (from 0 to n) of the points in bezierPoygonJoined
-        std::vector<unsigned int*> bezierPolygonIndices;
 
         // The computed mesh for the feather
         std::vector<RotoFeatherVertex> featherMesh;

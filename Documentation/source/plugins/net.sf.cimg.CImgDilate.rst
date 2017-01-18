@@ -7,6 +7,9 @@ Dilate node
 
 *This documentation is for version 2.1 of Dilate.*
 
+Description
+-----------
+
 Dilate (or erode) input stream by a rectangular structuring element of specified size and Neumann boundary conditions (pixels out of the image get the value of the nearest pixel).
 
 A negative size will perform an erosion instead of a dilation.

@@ -7,6 +7,9 @@ ChromaKeyer node
 
 *This documentation is for version 1.1 of ChromaKeyer.*
 
+Description
+-----------
+
 Simple chroma Keyer.
 
 Algorithm description:

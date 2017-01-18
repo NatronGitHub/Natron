@@ -7,6 +7,9 @@ DirBlur node
 
 *This documentation is for version 1.0 of DirBlur.*
 
+Description
+-----------
+
 Apply directional blur to an image.
 
 This plugin concatenates transforms upstream.
@@ -69,7 +72,7 @@ Controls
 +----------------------------------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Clamp / ``clamp``                      | Boolean   | Off             | Clamp filter output within the original range - useful to avoid negative values in mattes                                                            |
 +----------------------------------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Black outside / ``black\_outside``     | Boolean   | Off             | Fill the area outside the source image with black                                                                                                    |
+| Black outside / ``black_outside``      | Boolean   | Off             | Fill the area outside the source image with black                                                                                                    |
 +----------------------------------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Motion Blur / ``motionBlur``           | Double    | 1               | Quality of motion blur rendering. 0 disables motion blur, 1 is a good value. Increasing this slows down rendering.                                   |
 +----------------------------------------+-----------+-----------------+------------------------------------------------------------------------------------------------------------------------------------------------------+

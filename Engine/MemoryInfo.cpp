@@ -16,10 +16,13 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef NATRON_GLOBAL_MEMORYINFO_H
-#define NATRON_GLOBAL_MEMORYINFO_H
+// ***** BEGIN PYTHON BLOCK *****
+// from <https://docs.python.org/3/c-api/intro.html#include-files>:
+// "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
+#include <Python.h>
+// ***** END PYTHON BLOCK *****
 
-// Memory utility functions ( info about RAM etc...)
+#include "Engine/MemoryInfo.h"
 
 /*
  * Author:  David Robert Nadeau
@@ -32,6 +35,7 @@
 #include <cmath>
 #include <algorithm> // min, max
 #include <stdexcept>
+#include <sstream> // stringstream
 
 #if defined(_WIN32)
 #  include <windows.h>
@@ -65,29 +69,67 @@
 #  error "Cannot define getPeakRSS( ) or getCurrentRSS( ) for an unknown OS."
 #endif
 
-#include "Global/Macros.h"
 #include <QtCore/QString>
 #include <QtCore/QLocale>
 #include <QtCore/QCoreApplication>
+#include <QtCore/QDebug>
 
 #include "Global/GlobalDefines.h"
 
-inline uint64_t
+NATRON_NAMESPACE_ENTER;
+
+U64
 getSystemTotalRAM()
 {
-#if defined(__APPLE__)
-    int mib [] = {
-        CTL_HW, HW_MEMSIZE
-    };
-    uint64_t value = 0;
-    size_t length = sizeof(value);
+#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+    // see http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/kernel32/heap.c
+    uint64_t total;
+#ifdef __APPLE__
+    unsigned int val;
+#else
+    unsigned long val;
+#endif
+    int mib[2];
+    size_t size_sys;
+#ifdef HW_MEMSIZE
+    uint64_t val64 = 0;
+#endif
+    total = 0;
 
-    if ( -1 == sysctl(mib, 2, &value, &length, NULL, 0) ) {
-        //error;
+    mib[0] = CTL_HW;
+#ifdef HW_MEMSIZE
+    mib[1] = HW_MEMSIZE;
+    size_sys = sizeof(val64);
+    if (!sysctl(mib, 2, &val64, &size_sys, NULL, 0) && size_sys == sizeof(val64) && val64) {
+        total = val64;
     }
+#endif
 
-    return value;
+#if defined(__MACH__)
+    if (!total) {
+        host_name_port_t host = mach_host_self();
+        mach_msg_type_number_t count;
 
+        host_basic_info_data_t info;
+        count = HOST_BASIC_INFO_COUNT;
+        if (host_info(host, HOST_BASIC_INFO, (host_info_t)&info, &count) == KERN_SUCCESS) {
+            total = info.max_mem;
+        }
+
+        mach_port_deallocate(mach_task_self(), host);
+    }
+#endif
+
+    if (!total) {
+        mib[1] = HW_PHYSMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val) {
+            total = val;
+        }
+    }
+    
+    return total;
+    
 #elif defined(_WIN32)
     ///On Windows, but not Cygwin, the new GlobalMemoryStatusEx( ) function fills a 64-bit
     ///safe MEMORYSTATUSEX struct with information about physical and virtual memory. Structure fields include:
@@ -108,24 +150,18 @@ getSystemTotalRAM()
 #endif
 }
 
-inline bool
-isApplication32Bits()
-{
-    return sizeof(void*) == 4;
-}
-
-inline uint64_t
+U64
 getSystemTotalRAM_conditionnally()
 {
     if ( isApplication32Bits() ) {
-        return std::min( (uint64_t)0x100000000ULL, getSystemTotalRAM() );
+        return std::min( (U64)0x100000000ULL, getSystemTotalRAM() );
     } else {
         return getSystemTotalRAM();
     }
 }
 
 // prints RAM value as KB, MB or GB
-inline QString
+QString
 printAsRAM(U64 bytes)
 {
     // According to the Si standard KB is 1000 bytes, KiB is 1024
@@ -136,27 +172,29 @@ printAsRAM(U64 bytes)
     const U64 tb = 1024 * gb;
 
     if (bytes >= tb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 TB").arg( QLocale().toString(qreal(bytes) / tb, 'f', 3) );
+        return QCoreApplication::translate("MemoryInfo", "%1 TiB").arg( QLocale().toString(qreal(bytes) / tb, 'f', 3) );
     }
     if (bytes >= gb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 GB").arg( QLocale().toString(qreal(bytes) / gb, 'f', 2) );
+        return QCoreApplication::translate("MemoryInfo", "%1 GiB").arg( QLocale().toString(qreal(bytes) / gb, 'f', 2) );
     }
     if (bytes >= mb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 MB").arg( QLocale().toString(qreal(bytes) / mb, 'f', 1) );
+        return QCoreApplication::translate("MemoryInfo", "%1 MiB").arg( QLocale().toString(qreal(bytes) / mb, 'f', 1) );
     }
     if (bytes >= kb) {
-        return QCoreApplication::translate("MemoryInfo", "%1 KB").arg( QLocale().toString( (uint)(bytes / kb) ) );
+        return QCoreApplication::translate("MemoryInfo", "%1 KiB").arg( QLocale().toString( (uint)(bytes / kb) ) );
     }
 
     return QCoreApplication::translate("MemoryInfo", "%1 byte(s)").arg( QLocale().toString( (uint)bytes ) );
 }
 
+
+#if 0 // not used for now
 /**
  * Returns the peak (maximum so far) resident set size (physical
  * memory use) measured in bytes, or zero if the value cannot be
  * determined on this OS.
  */
-inline size_t
+std::size_t
 getPeakRSS( )
 {
 #if defined(_WIN32)
@@ -200,12 +238,14 @@ getPeakRSS( )
     return (size_t)0L;          /* Unsupported. */
 #endif
 }
+#endif // 0
 
+#if 0 // not used for now
 /**
  * Returns the current resident set size (physical memory use) measured
  * in bytes, or zero if the value cannot be determined on this OS.
  */
-inline size_t
+std::size_t
 getCurrentRSS( )
 {
 #if defined(_WIN32)
@@ -257,8 +297,10 @@ getCurrentRSS( )
     return (size_t)0L;          /* Unsupported. */
 #endif
 } // getCurrentRSS
+#endif // 0
 
-inline size_t
+
+std::size_t
 getAmountFreePhysicalRAM()
 {
 #if defined(_WIN32)
@@ -276,38 +318,106 @@ getAmountFreePhysicalRAM()
     totalAvailableRAM *= memInfo.mem_unit;
 
     return totalAvailableRAM;
-#elif defined(__FreeBSD__)
-    unsigned long pagesize = getpagesize();
-    u_int value;
-    size_t value_size = sizeof(value);
-    unsigned long long totalAvailableRAM;
-    if (sysctlbyname("vm.stats.vm.v_free_count", &value, &value_size, NULL, 0) < 0) {
-        throw std::runtime_error("Unable to get amount of free physical RAM");
-    }
-    totalAvailableRAM = value * (unsigned long long)pagesize;
+#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__DragonFly__) || defined(__APPLE__)
+    // and http://source.winehq.org/git/wine.git/blob/HEAD:/dlls/kernel32/heap.c
+    unsigned long long ullAvailPhys;
+    unsigned long long ullTotalPhys;
+    uint64_t total;
+#ifdef __APPLE__
+    unsigned int val;
+#else
+    unsigned long val;
+#endif
+    int mib[2];
+    size_t size_sys;
+#ifdef HW_MEMSIZE
+    uint64_t val64 = 0;
+#endif
+#if 0
+#ifdef VM_SWAPUSAGE
+    struct xsw_usage swap;
+#endif
+#endif
 
-    return totalAvailableRAM;
-#elif defined(__APPLE__) && defined(__MACH__)
-    mach_msg_type_number_t count = HOST_VM_INFO_COUNT;
-    vm_statistics_data_t vmstat;
-    host_name_port_t hostName = mach_host_self();
-    kern_return_t kr;
-    kr = host_statistics(hostName, HOST_VM_INFO, (host_info_t)&vmstat, &count);
-    if (kr != KERN_SUCCESS) {
-        throw std::runtime_error(std::string("Unable to get amount of free physical RAM") + " host_statistics returned " + mach_error_string(kr));
+    total = 0;
+    ullAvailPhys = 0;
+
+    mib[0] = CTL_HW;
+#ifdef HW_MEMSIZE
+    mib[1] = HW_MEMSIZE;
+    size_sys = sizeof(val64);
+    if (!sysctl(mib, 2, &val64, &size_sys, NULL, 0) && size_sys == sizeof(val64) && val64)
+        total = val64;
+#endif
+
+#if defined(__MACH__)
+    // see http://opensource.apple.com/source/system_cmds/system_cmds-498.2/vm_stat.tproj/vm_stat.c
+    {
+        host_name_port_t host = mach_host_self();
+        mach_msg_type_number_t count;
+
+#ifdef HOST_VM_INFO64_COUNT
+        vm_size_t page_size;
+        vm_statistics64_data_t vm_stat;
+
+        count = HOST_VM_INFO64_COUNT;
+        if (host_statistics64(host, HOST_VM_INFO64, (host_info64_t)&vm_stat, &count) == KERN_SUCCESS &&
+            host_page_size(host, &page_size) == KERN_SUCCESS) {
+            ullAvailPhys = (vm_stat.free_count + vm_stat.inactive_count) * (unsigned long long)page_size;
+        }
+#endif
+        if (!total) {
+            host_basic_info_data_t info;
+            count = HOST_BASIC_INFO_COUNT;
+            if (host_info(host, HOST_BASIC_INFO, (host_info_t)&info, &count) == KERN_SUCCESS) {
+                total = info.max_mem;
+            }
+        }
+
+        mach_port_deallocate(mach_task_self(), host);
     }
-    vm_size_t pageSize;
-    kr = host_page_size(hostName, &pageSize);
-    if (kr != KERN_SUCCESS) {
-        throw std::runtime_error(std::string("Unable to get amount of free physical RAM") + " host_page_size returned " + mach_error_string(kr));
+#endif
+
+    if (!total) {
+        mib[1] = HW_PHYSMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val)
+            total = val;
     }
 
-    /**
-     * Returning only the free_count is not useful because it seems munmap implementations tend to not increase the free_count
-     * but the inactive_count instead
-     **/
-    return (vmstat.free_count + vmstat.inactive_count) * pageSize;
+    if (total) {
+        ullTotalPhys = total;
+    }
+
+    if (!ullAvailPhys) {
+        mib[1] = HW_USERMEM;
+        size_sys = sizeof(val);
+        if (!sysctl(mib, 2, &val, &size_sys, NULL, 0) && size_sys == sizeof(val) && val)
+            ullAvailPhys = val;
+    }
+
+    if (!ullAvailPhys) {
+        ullAvailPhys = ullTotalPhys;
+    }
+
+#if 0
+    ullTotalPageFile = ullAvailPhys;
+    ullAvailPageFile = ullAvailPhys;
+
+#ifdef VM_SWAPUSAGE
+    mib[0] = CTL_VM;
+    mib[1] = VM_SWAPUSAGE;
+    size_sys = sizeof(swap);
+    if (!sysctl(mib, 2, &swap, &size_sys, NULL, 0) && size_sys == sizeof(swap))
+    {
+        lpmemex->ullTotalPageFile = swap.xsu_total;
+        lpmemex->ullAvailPageFile = swap.xsu_avail;
+    }
+#endif
+#endif
+
+    return ullAvailPhys;
 #endif
 }
 
-#endif // ifndef NATRON_GLOBAL_MEMORYINFO_H
+NATRON_NAMESPACE_EXIT;

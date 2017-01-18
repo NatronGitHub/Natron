@@ -7,6 +7,9 @@ Crop node
 
 *This documentation is for version 1.0 of Crop.*
 
+Description
+-----------
+
 Removes everything outside the defined rectangle and optionally adds black edges so everything outside is black.
 
 If the 'Extent' parameter is set to 'Format', and 'Reformat' is checked, the output pixel aspect ratio is also set to this of the format.

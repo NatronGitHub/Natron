@@ -44,7 +44,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
-#include "Engine/FileSystemModel.h"
 
 #include "Gui/ActionShortcuts.h"
 #include "Gui/Gui.h"

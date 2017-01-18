@@ -407,12 +407,12 @@ RotoPaint::initGeneralPageKnobs()
         }
 
         {
-            KnobColorPtr param = AppManager::createKnob<KnobColor>(effect, tr(kRotoColorParamLabel), 3);
+            KnobColorPtr param = AppManager::createKnob<KnobColor>(effect, tr(kRotoColorParamLabel), 4);
             param->setHintToolTip( tr(kRotoColorHint) );
             param->setName(kRotoColorParam);
-            std::vector<double> def(3);
-            def[0] = def[1] = def[2] = 1.;
+            std::vector<double> def(4, 1.);
             param->setDefaultValues(def, DimIdx(0));
+            param->setDisplayRange(0., 1.);
             _imp->knobsTable->addPerItemKnobMaster(param);
             generalPage->addKnob(param);
         }
@@ -1259,6 +1259,10 @@ RotoPaint::setupInitialSubGraphState()
 
             premultNode = getApp()->createNode(args);
             _imp->premultNode = premultNode;
+            assert(premultNode);
+            if (!premultNode) {
+                throw std::runtime_error( tr("Rotopaint requires the plug-in %1 in order to work").arg( QLatin1String(PLUGINID_OFX_PREMULT) ).toStdString() );
+            }
 
             if (_imp->premultKnob.lock()) {
                 KnobBoolPtr disablePremultKnob = premultNode->getDisabledKnob();
@@ -1445,13 +1449,14 @@ RotoPaint::initViewerUIKnobs(const KnobPagePtr& generalPage)
     generalPage->addKnob(multiStroke);
     _imp->ui->multiStrokeEnabled = multiStroke;
 
-    KnobColorPtr colorWheel = AppManager::createKnob<KnobColor>(thisShared, tr(kRotoUIParamColorWheelLabel), 3);
+    KnobColorPtr colorWheel = AppManager::createKnob<KnobColor>(thisShared, tr(kRotoUIParamColorWheelLabel), 4);
     colorWheel->setName(kRotoUIParamColorWheel);
     colorWheel->setHintToolTip( tr(kRotoUIParamColorWheelHint) );
     colorWheel->setEvaluateOnChange(false);
     colorWheel->setDefaultValue(1., DimIdx(0));
     colorWheel->setDefaultValue(1., DimIdx(1));
     colorWheel->setDefaultValue(1., DimIdx(2));
+    colorWheel->setDefaultValue(1., DimIdx(3));
     colorWheel->setSecret(true);
     generalPage->addKnob(colorWheel);
     _imp->ui->colorWheelButton = colorWheel;

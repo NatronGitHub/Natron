@@ -88,18 +88,18 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include <ofxhParametricParam.h> //our version of parametric param suite support
 
 #include "Global/GlobalDefines.h"
-#include "Global/MemoryInfo.h"
 #include "Global/QtCompat.h"
 #include "Global/KeySymbols.h"
 
 #include "Engine/AppInstance.h"
 #include "Engine/AppManager.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/FStreamsSupport.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/MultiThread.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
-#include "Engine/FStreamsSupport.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -795,7 +795,10 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
     SettingsPtr settings = appPTR->getCurrentSettings();
     assert(settings);
     bool useStdOFXPluginsLocation = settings->getUseStdOFXPluginsLocation();
-    OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    if (!useStdOFXPluginsLocation) {
+        // only set if false, else use the previous value (which is set for example in BaseTest::SetUp())
+        OFX::Host::PluginCache::useStdOFXPluginsLocation(useStdOFXPluginsLocation);
+    }
     OFX::Host::PluginCache* pluginCache = OFX::Host::PluginCache::getPluginCache();
     assert(pluginCache);
     /// set the version label in the global cache

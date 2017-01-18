@@ -7,6 +7,9 @@ ColorLookup node
 
 *This documentation is for version 1.0 of ColorLookup.*
 
+Description
+-----------
+
 Apply a parametric lookup curve to each channel separately.
 
 The master curve is combined with the red, green and blue curves, but not with the alpha curve.

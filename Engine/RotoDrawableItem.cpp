@@ -42,8 +42,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/math/special_functions/fpclassify.hpp>
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
-#include "Global/MemoryInfo.h"
-
 #include "Engine/AppInstance.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"

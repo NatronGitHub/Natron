@@ -7,6 +7,9 @@ Equalize node
 
 *This documentation is for version 2.0 of Equalize.*
 
+Description
+-----------
+
 Equalize histogram of pixel values.
 
 To equalize image brightness only, use the HistEQCImg plugin.
@@ -36,11 +39,11 @@ Controls
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
 | Parameter / script name        | Type      | Default   | Function                                                                                                                             |
 +================================+===========+===========+======================================================================================================================================+
-| NbLevels / ``nb\_levels``      | Integer   | 4096      | Number of histogram levels used for the equalization.                                                                                |
+| NbLevels / ``nb_levels``       | Integer   | 4096      | Number of histogram levels used for the equalization.                                                                                |
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Min Value / ``min\_value``     | Double    | 0         | Minimum pixel value considered for the histogram computation. All pixel values lower than min\_value will not be counted.            |
+| Min Value / ``min_value``      | Double    | 0         | Minimum pixel value considered for the histogram computation. All pixel values lower than min\_value will not be counted.            |
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
-| Max Value / ``max\_value``     | Double    | 1         | Maximum pixel value considered for the histogram computation. All pixel values higher than max\_value will not be counted.           |
+| Max Value / ``max_value``      | Double    | 1         | Maximum pixel value considered for the histogram computation. All pixel values higher than max\_value will not be counted.           |
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+
 | (Un)premult / ``premult``      | Boolean   | Off       | Divide the image by the alpha channel before processing, and re-multiply it afterwards. Use if the input images are premultiplied.   |
 +--------------------------------+-----------+-----------+--------------------------------------------------------------------------------------------------------------------------------------+

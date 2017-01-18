@@ -5,6 +5,9 @@ EdgeDetect node
 
 *This documentation is for version 4.0 of EdgeDetect.*
 
+Description
+-----------
+
 Perform edge detection by computing the image gradient magnitude. Optionally, edge detection can be preceded by blurring, and followed by erosion and thresholding. In most cases, EdgeDetect is followed a Grade node to extract the proper edges and generate a mask from these.
 
 For color or multi-channel images, several edge detection algorithms are proposed to combine the gradients computed in each channel:

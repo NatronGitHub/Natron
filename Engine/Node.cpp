@@ -23,6 +23,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Node.h"
+#include "Engine/NodePrivate.h"
 
 #include <limits>
 #include <locale>
@@ -47,7 +48,6 @@
 
 #include <SequenceParsing.h>
 
-#include "Global/MemoryInfo.h"
 
 #include "Engine/NodePrivate.h"
 #include "Engine/AppInstance.h"
@@ -71,15 +71,16 @@
 #include "Engine/Knob.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
-#include "Engine/OneViewNode.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
 #include "Engine/Lut.h"
+#include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGraphI.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"
+#include "Engine/OneViewNode.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Plugin.h"

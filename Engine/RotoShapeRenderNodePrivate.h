@@ -31,6 +31,7 @@
 #include <list>
 
 #include "Global/GlobalDefines.h"
+#include "Engine/Color.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/TimeValue.h"
 
@@ -73,7 +74,7 @@ public:
     bool pressureAffectsHardness,
     bool pressureAffectsSize,
     bool buildUp,
-    double shapeColor[3],
+    const ColorRgbaD& shapeColor,
     double opacity);
 
     /**

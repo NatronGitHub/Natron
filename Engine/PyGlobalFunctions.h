@@ -28,8 +28,9 @@
 #include "Global/Macros.h"
 
 #include "Engine/AppManager.h"
+#include "Engine/MemoryInfo.h" // isApplication32Bits
 #include "Engine/PyAppInstance.h"
-#include "Global/MemoryInfo.h"
+
 
 #include "Engine/EngineFwd.h"
 

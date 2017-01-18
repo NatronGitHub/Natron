@@ -7,6 +7,9 @@ OCIOLogConvert node
 
 *This documentation is for version 1.0 of OCIOLogConvert.*
 
+Description
+-----------
+
 Use OpenColorIO to convert from SCENE\_LINEAR to COMPOSITING\_LOG (or back).
 
 Inputs

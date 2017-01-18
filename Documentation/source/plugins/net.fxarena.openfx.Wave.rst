@@ -7,6 +7,9 @@ Wave node
 
 *This documentation is for version 2.9 of Wave.*
 
+Description
+-----------
+
 Wave effect using ImageMagick.
 
 Inputs

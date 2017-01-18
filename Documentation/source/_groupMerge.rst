@@ -1,5 +1,5 @@
 Merge nodes
-==========
+============================================================
 
 The following sections contain documentation about every node in the  Merge group. Node groups are available by clicking on buttons in the left toolbar, or by right-clicking the mouse in the Node Graph area.
 
@@ -19,6 +19,7 @@ The following sections contain documentation about every node in the  Merge grou
     plugins/net.sf.openfx.MergeOut.rst
     plugins/net.sf.openfx.MergePlus.rst
     plugins/net.sf.openfx.Premult.rst
+    plugins/net.sf.openfx.MergeRoto.rst
     plugins/net.sf.openfx.MergeScreen.rst
     plugins/fr.inria.openfx.SeExpr.rst
     plugins/fr.inria.openfx.SeExprSimple.rst

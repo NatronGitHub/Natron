@@ -7,6 +7,9 @@ PIK node
 
 *This documentation is for version 1.0 of PIK.*
 
+Description
+-----------
+
 A keyer that works by generating a clean plate from the green/blue screen sequences. Inspired by Nuke's IBK by Paul Lambert and Fusion's KAK by Pieter Van Houte.
 
 There are 2 options to pull a key with PIK. One is to use PIKColor to automatically extract a clean plate from the foreground image and use it as the the C input, and the other is to pick a color which best represents the area you are trying to key.

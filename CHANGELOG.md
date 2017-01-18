@@ -21,6 +21,7 @@
 - Natron can now be launched in 32-bits mode on macOS
 - Documentation is now licensed under CC BY-SA 4.0, and external contributions are welcome
 - Organize nodes documentation
+- New project formats: HD_720, UHD_4K, 2K_DCP, 4K_DCP
 
 ### Plugins
 
@@ -49,7 +50,8 @@
 - Grade: fix a bug where negative values were clamped even when gamma=1 #1533
 - STMap, IDistort, LensDistortion, Transform, CornerPin: reduce supersampling to avoid artifacts
 - LensDistortion: add STMap output mode, add undistort output, add PFBarrel and 3DEqualizer distortions model, add proper region of definition support.
-
+- RotoMerge: a merge plugin that takes an external mask as the alpha for the A input.
+- WriteFFmpeg: DNxHD codec now supports DNxHR HQ, DNxHR SQ and DNxHR LB profiles.
 
 ## Version 2.1.9
 

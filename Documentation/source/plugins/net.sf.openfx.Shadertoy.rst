@@ -5,6 +5,9 @@ Shadertoy node
 
 *This documentation is for version 1.0 of Shadertoy.*
 
+Description
+-----------
+
 Apply a `Shadertoy <http://www.shadertoy.com>`__ fragment shader.
 
 This plugin implements `Shadertoy 0.8.7 <https://www.shadertoy.com/changelog>`__, but multipass shaders and sound are not supported.

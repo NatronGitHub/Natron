@@ -92,14 +92,15 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
 #include "Engine/ExistenceCheckThread.h"
+#include "Engine/FileSystemModel.h" // FileSystemModel::initDriveLettersToNetworkShareNamesMapping
 #include "Engine/FStreamsSupport.h"
 #include "Engine/GroupInput.h"
 #include "Engine/GroupOutput.h"
+#include "Engine/JoinViewsNode.h"
 #include "Engine/LibraryBinary.h"
 #include "Engine/Log.h"
+#include "Engine/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Engine/Node.h"
-#include "Engine/FileSystemModel.h"
-#include "Engine/JoinViewsNode.h"
 #include "Engine/OfxImageEffectInstance.h"
 #include "Engine/OfxEffectInstance.h"
 #include "Engine/OfxHost.h"

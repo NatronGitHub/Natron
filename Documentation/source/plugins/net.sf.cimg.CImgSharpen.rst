@@ -5,6 +5,9 @@ Sharpen node
 
 *This documentation is for version 4.0 of Sharpen.*
 
+Description
+-----------
+
 Sharpen the input stream by enhancing its Laplacian.
 
 The effects adds the Laplacian (as computed by the Laplacian plugin) times the 'Amount' parameter to the input stream.

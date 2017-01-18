@@ -7,6 +7,9 @@ Roll node
 
 *This documentation is for version 2.9 of Roll.*
 
+Description
+-----------
+
 Roll effect using ImageMagick.
 
 Inputs

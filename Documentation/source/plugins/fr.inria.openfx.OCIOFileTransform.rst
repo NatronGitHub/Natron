@@ -7,6 +7,9 @@ OCIOFileTransform node
 
 *This documentation is for version 1.0 of OCIOFileTransform.*
 
+Description
+-----------
+
 Use OpenColorIO to apply a transform loaded from the given file.
 
 This is usually a 1D or 3D LUT file, but can be other file-based transform, for example an ASC ColorCorrection XML file.
