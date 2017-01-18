@@ -121,18 +121,14 @@ DocumentationManager::handler(QHttpRequest *req,
     // override static docs
     // plugin pages are generated only if they don't exist
     QString staticPage, dynamicPage;
-    bool isPlugin = false;
-    bool isPrefs = false;
     bool isStatic = false;
     if ( page.startsWith( QString::fromUtf8("/plugins/") ) ) {
-        isPlugin = true;
         isStatic = true;
         staticPage = page;
         dynamicPage = page;
         dynamicPage.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
     if ( page.startsWith( QString::fromUtf8("/_plugin.html?id=") ) ) {
-        isPlugin = true;
         isStatic = false;
         staticPage = page;
         staticPage.replace( QString::fromUtf8("/_plugin.html?id="), QString::fromUtf8("/plugins/") );
@@ -140,13 +136,11 @@ DocumentationManager::handler(QHttpRequest *req,
         dynamicPage = page;
     }
     if ( page == QString::fromUtf8("/_prefs.html") ) {
-        isPrefs = true;
         isStatic = true;
         staticPage = page;
         dynamicPage = QString::fromUtf8("/_prefsLive.html");
     }
     if ( page == QString::fromUtf8("/_prefsLive.html") ) {
-        isPrefs = true;
         isStatic = false;
         staticPage = QString::fromUtf8("/_prefs.html");
         dynamicPage = page;
