@@ -1105,14 +1105,6 @@ TimeLineGui::toWidgetCoordinates(double x,
     return QPoint( toWidget(x), ( (y - top) / (bottom - top) ) * h );
 }
 
-bool
-TimeLineGui::isFrameRangeEdited() const
-{
-    QMutexLocker k(&_imp->frameRangeEditedMutex);
-
-    return _imp->isFrameRangeEdited;
-}
-
 void
 TimeLineGui::onProjectFrameRangeChanged(int left,
                                         int right)
@@ -1127,6 +1119,22 @@ TimeLineGui::onProjectFrameRangeChanged(int left,
         centerOn(left, right);
     }
     update();
+}
+
+bool
+TimeLineGui::isFrameRangeEdited() const
+{
+    QMutexLocker k(&_imp->frameRangeEditedMutex);
+
+    return _imp->isFrameRangeEdited;
+}
+
+void
+TimeLineGui::setFrameRangeEdited(bool edited)
+{
+    QMutexLocker k(&_imp->frameRangeEditedMutex);
+
+    _imp->isFrameRangeEdited = edited;
 }
 
 NATRON_NAMESPACE_EXIT;
