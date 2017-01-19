@@ -387,8 +387,6 @@ public:
 
     bool isGUIFrozen() const;
 
-    void addShortcut(BoundAction* action);
-
     const QString& getLastLoadProjectDirectory() const;
     const QString& getLastSaveProjectDirectory() const;
     const QString& getLastPluginDirectory() const;

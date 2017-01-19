@@ -33,12 +33,12 @@ without importing anything.
 	FileParam
 	Group
 	GroupParam
-	ImageLayer
 	Int2DParam
 	Int2DTuple
 	Int3DParam
 	Int3DTuple
 	IntParam
+	ImageLayer
 	ItemBase
 	ItemsTable
 	Natron
@@ -54,8 +54,8 @@ without importing anything.
 	StringParamBase
 	StrokeItem
 	StrokePoint
-    Track
-    Tracker
+	Track
+	Tracker
 	UserParamHolder
  
 

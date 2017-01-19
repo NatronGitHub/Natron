@@ -115,7 +115,7 @@ struct GuiBoundAction
 {
     GuiBoundAction()
         : item(NULL)
-        , action(NULL)
+        , action()
     {
     }
 
@@ -130,7 +130,7 @@ struct GuiShortCutGroup
         , item(NULL)
     {
     }
-
+    QString grouping;
     std::list<GuiBoundAction> actions;
     QTreeWidgetItem* item;
 };
@@ -325,11 +325,11 @@ public:
     void setVisiblePage(int index);
 
     PluginTreeNodeList::iterator buildPluginGroupHierarchy(const QStringList& grouping);
-    BoundAction* getActionForTreeItem(QTreeWidgetItem* item) const
+    KeybindShortcut getActionForTreeItem(QTreeWidgetItem* item) const
     {
         for (GuiAppShorcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
             if (it->item == item) {
-                return NULL;
+                return KeybindShortcut();
             }
             for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
                 if (it2->item == item) {
@@ -338,7 +338,23 @@ public:
             }
         }
 
-        return (BoundAction*)NULL;
+        return KeybindShortcut();
+    }
+
+    QTreeWidgetItem* getItemForAction(const KeybindShortcut& action) const
+    {
+        for (GuiAppShorcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
+            if (it->grouping.toStdString() == action.grouping) {
+                for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
+                    if (it2->action.actionID == action.actionID) {
+                        return it2->item;
+                    }
+                }
+                break;
+            }
+        }
+
+        return NULL;
     }
 
     GuiAppShorcuts::iterator buildShortcutsGroupHierarchy(QString grouping);
@@ -642,6 +658,8 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     _imp->tabs.push_back(tab);
     
     refreshShortcutsFromSettings();
+
+    connect(appPTR->getCurrentSettings().get(), SIGNAL(shortcutsChanged()), this, SLOT(refreshShortcutsFromSettings()));
 } // PreferencesPanel::createShortcutEditor
 
 Gui*
@@ -1176,7 +1194,15 @@ void
 PreferencesPanel::refreshShortcutsFromSettings()
 {
     _imp->appShortcuts.clear();
+
+    KeybindShortcut currentSelection;
+    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    if (!selectedItems.empty()) {
+        currentSelection = _imp->getActionForTreeItem(selectedItems.front());
+    }
+
     _imp->tree->clear();
+
     const ApplicationShortcutsMap & appShortcuts = appPTR->getCurrentSettings()->getAllShortcuts();
     
     for (ApplicationShortcutsMap::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
@@ -1187,6 +1213,12 @@ PreferencesPanel::refreshShortcutsFromSettings()
         for (GroupShortcutsMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
         }
+    }
+
+    // Restore selection
+    if (!currentSelection.actionID.empty()) {
+        QTreeWidgetItem* item = _imp->getItemForAction(currentSelection);
+        item->setSelected(true);
     }
 
 }
@@ -1236,17 +1268,17 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
         }
     }
 
-    QTreeWidgetItem* groupParent;
+    QTreeWidgetItem* groupItem;
     if ( foundGuiGroup != appShortcuts.end() ) {
-        groupParent = foundGuiGroup->item;
+        groupItem = foundGuiGroup->item;
     } else {
-        groupParent = 0;
+        groupItem = 0;
         for (int i = 0; i < groupingSplit.size(); ++i) {
             QTreeWidgetItem* groupingItem;
             bool existAlready = false;
-            if (groupParent) {
-                for (int j = 0; j < groupParent->childCount(); ++j) {
-                    QTreeWidgetItem* child = groupParent->child(j);
+            if (groupItem) {
+                for (int j = 0; j < groupItem->childCount(); ++j) {
+                    QTreeWidgetItem* child = groupItem->child(j);
                     if (child->text(0) == groupingSplit[i]) {
                         groupingItem = child;
                         existAlready = true;
@@ -1254,8 +1286,8 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
                     }
                 }
                 if (!existAlready) {
-                    groupingItem = new QTreeWidgetItem(groupParent);
-                    groupParent->addChild(groupingItem);
+                    groupingItem = new QTreeWidgetItem(groupItem);
+                    groupItem->addChild(groupingItem);
                 }
             } else {
                 for (int j = 0; j < shortcutsTree->topLevelItemCount(); ++j) {
@@ -1277,11 +1309,12 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
                 groupingItem->setFlags(Qt::ItemIsEnabled);
                 groupingItem->setText(0, groupingSplit[i]);
             }
-            groupParent = groupingItem;
+            groupItem = groupingItem;
         }
     }
     GuiShortCutGroup group;
-    group.item = groupParent;
+    group.item = groupItem;
+    group.grouping = lastGroupName;
     foundGuiGroup = appShortcuts.insert(appShortcuts.end(), group);
 
     return foundGuiGroup;
@@ -1425,11 +1458,12 @@ PreferencesPanel::onShortcutsSelectionChanged()
         _imp->resetShortcutButton->setEnabled(false);
     }
 
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-    assert(action);
-    QString sc;
-    makeItemShortCutText(action, false, &sc);
-    _imp->shortcutEditor->setText(sc);
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+    if (!action.actionID.empty()) {
+        QString sc;
+        makeItemShortCutText(action, false, &sc);
+        _imp->shortcutEditor->setText(sc);
+    }
 }
 
 void
@@ -1444,7 +1478,8 @@ PreferencesPanel::onValidateShortcutButtonClicked()
 
     QTreeWidgetItem* selection = items.front();
     QKeySequence seq(text, QKeySequence::NativeText);
-    BoundAction* action = _imp->getActionForTreeItem(selection);
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+
     QTreeWidgetItem* parent = selection->parent();
     while (parent) {
         QTreeWidgetItem* parentUp = parent->parent();
@@ -1455,46 +1490,35 @@ PreferencesPanel::onValidateShortcutButtonClicked()
     }
     assert(parent);
 
-    //only keybinds can be edited...
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    assert(ka);
-    if (!ka) {
-        return;
-    }
-    Qt::KeyboardModifiers modifiers;
-    Qt::Key symbol;
-    extractKeySequence(seq, modifiers, symbol);
+    Qt::KeyboardModifiers qmodifiers;
+    Qt::Key qsymbol;
+    extractKeySequence(seq, qmodifiers, qsymbol);
 
+    KeyboardModifiers mods = QtEnumConvert::fromQtModifiers(qmodifiers);
+    Key sym = QtEnumConvert::fromQtKey(qsymbol);
+
+    // Check for conflicts: 2 shorcuts within the same group cannot have the same keybind
     for (GuiAppShorcuts::iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
         for (std::list<GuiBoundAction>::iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
-            if ( (it2->action != action) && ( it->item->text(0) == parent->text(0) ) ) {
-                KeyBoundAction* keyAction = dynamic_cast<KeyBoundAction*>(it2->action);
-                if (keyAction) {
-                    assert( keyAction->modifiers.size() == keyAction->currentShortcut.size() );
-                    std::list<Qt::KeyboardModifiers>::const_iterator mit = keyAction->modifiers.begin();
-                    for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3, ++mit) {
-                        if ( (*mit == modifiers) && (*it3 == symbol) ) {
-                            QString err = QString::fromUtf8("Cannot bind this shortcut because the following action is already using it: %1")
-                                          .arg( it2->item->text(0) );
-                            _imp->shortcutEditor->clear();
-                            Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+            if ( (it2->action.actionID != action.actionID) && ( it->item->text(0) == parent->text(0) ) ) {
 
-                            return;
-                        }
-                    }
+                if ( (it2->action.modifiers == mods) && (it2->action.currentShortcut == sym) ) {
+                    QString err = tr("Cannot bind this shortcut because the following action is already using it: %1")
+                    .arg( it2->item->text(0) );
+                    _imp->shortcutEditor->clear();
+                    Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+
+                    return;
                 }
+
+                
             }
         }
     }
 
-    selection->setText(1, text);
-    action->modifiers.clear();
-    if ( !text.isEmpty() ) {
-        action->modifiers.push_back(modifiers);
-        ka->currentShortcut.push_back(symbol);
-    }
+    // Refresh keybinds
+    appPTR->getCurrentSettings()->setShortcutKeybind(action.grouping, action.actionID, mods, sym);
 
-    appPTR->notifyShortcutChanged(ka);
 } // PreferencesPanel::onValidateShortcutButtonClicked
 
 void
@@ -1514,20 +1538,16 @@ PreferencesPanel::onClearShortcutButtonClicked()
     }
 
     QTreeWidgetItem* selection = items.front();
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-    assert(action);
-    action->modifiers.clear();
-    MouseAction* ma = dynamic_cast<MouseAction*>(action);
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    if (ma) {
-        ma->button = Qt::NoButton;
-    } else if (ka) {
-        ka->currentShortcut.clear();
-    }
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+
+    appPTR->getCurrentSettings()->setShortcutKeybind(action.grouping, action.actionID, eKeyboardModifierNone, (Key)0);
 
     selection->setText( 1, QString() );
+
     _imp->shortcutEditor->setText( QString() );
     _imp->shortcutEditor->setFocus();
+
+
 }
 
 void
@@ -1547,19 +1567,8 @@ PreferencesPanel::onResetShortcutButtonClicked()
     }
 
     QTreeWidgetItem* selection = items.front();
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-    assert(action);
-    action->modifiers = action->defaultModifiers;
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    if (ka) {
-        ka->currentShortcut = ka->defaultShortcut;
-        appPTR->notifyShortcutChanged(ka);
-    }
-    setItemShortCutText(selection, action, true);
-
-    QString sc;
-    makeItemShortCutText(action, true, &sc);
-    _imp->shortcutEditor->setText(sc);
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+    appPTR->getCurrentSettings()->setShortcutKeybind(action.grouping, action.actionID, action.defaultModifiers, action.defaultShortcut);
 }
 
 void
@@ -1570,7 +1579,7 @@ PreferencesPanel::onRestoreDefaultShortcutsButtonClicked()
                                                                                                  "are you sure you want to do this?").toStdString(), false );
 
     if (reply == eStandardButtonYes) {
-        appPTR->restoreDefaultShortcuts();
+        appPTR->getCurrentSettings()->restoreDefaultShortcuts();
         for (GuiAppShorcuts::const_iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
             for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
                 setItemShortCutText(it2->item, it2->action, true);

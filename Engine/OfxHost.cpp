@@ -787,9 +787,9 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         if (hasMeta) {
             eMods |= eKeyboardModifierMeta;
         }
-        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), eSymbol, eMods));
+        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), foundParamDesc->second->getHint(), eSymbol, eMods));
     }
-}
+} // getPluginShortcuts
 
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,

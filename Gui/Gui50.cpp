@@ -779,14 +779,6 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     }
 }
 
-void
-Gui::addShortcut(BoundAction* action)
-{
-    if (_imp->_settingsGui) {
-        _imp->_settingsGui->addShortcut(action);
-    }
-}
-
 
 void
 Gui::redrawAllViewers()

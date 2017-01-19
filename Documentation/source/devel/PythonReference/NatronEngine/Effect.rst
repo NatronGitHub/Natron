@@ -49,6 +49,7 @@ Functions
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
+*    def :meth:`isNodeActivated<NatronEngine.Effect.isNodeActivated>` ()
 *    def :meth:`isUserSelected<NatronEngine.Effect.isUserSelected>` ()
 *    def :meth:`isReaderNode<NatronEngine.Effect.isReaderNode>` ()
 *    def :meth:`isWriterNode<NatronEngine.Effect.isWriterNode>` ()
@@ -449,6 +450,18 @@ should not be used.
 
 
 Convenience function to return the user page parameter if this Effect has one.
+
+.. method:: NatronEngine.Effect.isNodeActivated()
+
+
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+
+	Returns whether the node is activated or not.
+    When deactivated, the user cannot interact with the node.
+ 	A node is in a deactivated state after the user removed it from the node-graph:
+    it still lives a little longer so that an undo operation can insert it again in the nodegraph.
+    This state has nothing to do with the "Disabled" parameter in the "Node" tab of the settings panel.
 
 
 .. method:: NatronEngine.Effect.isUserSelected()

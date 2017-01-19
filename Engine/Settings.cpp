@@ -2287,25 +2287,8 @@ Settings::saveSettingsToFile()
             key.grouping = it->first;
             key.actionID = it2->first;
 
-            const KeyboardModifiers& modifs = it2->second.modifiers;
-            if (modifs & eKeyboardModifierAlt) {
-                shortcut.modifiers.push_back("Alt");
-            }
-            if (modifs & eKeyboardModifierShift) {
-                shortcut.modifiers.push_back("Shift");
-            }
-            if (modifs & eKeyboardModifierControl) {
-                shortcut.modifiers.push_back("Control");
-            }
-            if (modifs & eKeyboardModifierMeta) {
-                shortcut.modifiers.push_back("Meta");
-            }
-
-            // Maybe we should map each symbol to a nice string but it's too damn annoying to do.
-
-            std::stringstream ss;
-            ss << (int)it2->second.currentShortcut;
-            shortcut.symbol = ss.str();
+            shortcut.modifiers = KeybindShortcut::modifiersToStringList(it2->second.modifiers);
+            shortcut.symbol = KeybindShortcut::keySymbolToString(it2->second.currentShortcut);
 
         }
     }
@@ -2360,20 +2343,8 @@ SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::Set
 
     if (loadType & Settings::eLoadSettingsTypeShortcuts) {
          for (SERIALIZATION_NAMESPACE::SettingsSerialization::KeybindsShortcutMap::const_iterator it = serialization.shortcuts.begin(); it != serialization.shortcuts.end(); ++it) {
-             KeyboardModifiers modifiers;
-             Key symbol;
-             for (std::list<std::string>::const_iterator it2 = it->second.modifiers.begin(); it2 != it->second.modifiers.end(); ++it2) {
-                 if (*it2 == "Alt") {
-                     modifiers |= eKeyboardModifierAlt;
-                 } else if (*it2 == "Shift") {
-                     modifiers |= eKeyboardModifierShift;
-                 } else if (*it2 == "Control") {
-                     modifiers |= eKeyboardModifierControl;
-                 } else if (*it2 == "Meta") {
-                     modifiers |= eKeyboardModifierMeta;
-                 }
-             }
-             symbol = (Key)QString::fromUtf8(it->second.symbol.c_str()).toInt();
+             KeyboardModifiers modifiers = KeybindShortcut::modifiersFromStringList(it->second.modifiers);
+             Key symbol = KeybindShortcut::keySymbolFromString(it->second.symbol);
              _publicInterface->setShortcutKeybind(it->first.grouping, it->first.actionID, modifiers, symbol);
          }
     }
@@ -3000,6 +2971,21 @@ bool
 Settings::getUseStdOFXPluginsLocation() const
 {
     return _imp->_useStdOFXPluginsLocation->getValue();
+}
+
+void
+Settings::restoreAllSettingsToDefaults()
+{
+    restoreDefaultAppearance();
+    restoreDefaultShortcuts();
+    const KnobsVec& knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr isPage = toKnobPage(*it);
+        if (!isPage) {
+            continue;
+        }
+        restorePageToDefaults(isPage);
+    }
 }
 
 void
@@ -3874,18 +3860,7 @@ Settings::isDefaultAppearanceOutdated() const
 void
 Settings::restoreDefaultAppearance()
 {
-    std::vector< KnobIPtr > children = _imp->_appearanceTab->getChildren();
-
-    for (std::size_t i = 0; i < children.size(); ++i) {
-        KnobColorPtr isColorKnob = toKnobColor(children[i]);
-        if ( isColorKnob && isColorKnob->isSimplified() ) {
-            isColorKnob->blockValueChanges();
-            isColorKnob->resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
-            isColorKnob->unblockValueChanges();
-        }
-    }
-    _imp->_defaultAppearanceOutdated = false;
-    appPTR->reloadStylesheets();
+    restorePageToDefaults(_imp->_appearanceTab);
 }
 
 std::string

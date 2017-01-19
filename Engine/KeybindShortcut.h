@@ -26,6 +26,7 @@
 // ***** END PYTHON BLOCK *****
 
 #include <list>
+#include <string>
 
 #include "Global/KeySymbols.h"
 
@@ -508,6 +509,15 @@ public:
     ~KeybindShortcut();
 
     void updateActionsShortcut();
+
+    static std::string keySymbolToString(Key key);
+    static Key keySymbolFromString(const std::string& key);
+
+    static std::string modifierToString(const KeyboardModifierEnum& key);
+    static KeyboardModifierEnum modifierFromString(const std::string& key);
+
+    static std::list<std::string> modifiersToStringList(const KeyboardModifiers& mods);
+    static KeyboardModifiers modifiersFromStringList(const std::list<std::string>& mods);
 };
 
 

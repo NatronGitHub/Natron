@@ -796,6 +796,18 @@ Effect::isNodeSelected() const
     return n->isUserSelected();
 }
 
+bool
+Effect::isNodeActivated() const
+{
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return false;
+    }
+    return n->isNodeActivated();
+}
+
 void
 Effect::beginChanges()
 {

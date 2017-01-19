@@ -832,11 +832,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         }
         {
             // If the plug-in has a shortcut get it
-
-            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(internalPlugin->getPluginID().c_str()));
-            if (!keybinds.empty()) {
-                defaultNodeShortcut = keybinds.front();
-            }
+            defaultNodeShortcut = getKeybind(shortcutGroup, QString::fromUtf8(internalPlugin->getPluginID().c_str()));
         }
 
         QAction* defaultPresetAction = new QAction(this);
@@ -873,10 +869,8 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
                     shortcutKey += "_preset_";
                     shortcutKey += it->presetLabel.toStdString();
 
-                    std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
-                    if (!keybinds.empty()) {
-                        presetShortcut = keybinds.front();
-                    }
+                    presetShortcut = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
+
                 }
 
                 QString presetLabel = QString::fromUtf8(pluginLabel.c_str());

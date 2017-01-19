@@ -171,6 +171,8 @@ public:
 
     void setRenderQueuingEnabled(bool enabled);
 
+    void restoreAllSettingsToDefaults();
+
     void restorePageToDefaults(const KnobPagePtr& tab);
 
     int getMaximumUndoRedoNodeGraph() const;
