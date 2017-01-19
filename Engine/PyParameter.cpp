@@ -135,7 +135,7 @@ Param::getIsVisible() const
     if (!knob) {
         return false;
     }
-    return knob->getIsSecret();
+    return !knob->getIsSecret();
 }
 
 void

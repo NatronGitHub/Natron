@@ -125,6 +125,8 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
     // .    dot
     // !    exclamation mark
 
+    // We must also escape angle brackets < and > , so that they don't become HTML tags
+
     // we do a hack for multiline elements, because the markdown->rst conversion by pandoc doesn't use the line block syntax.
     // what we do here is put a supplementary dot at the beginning of each line, which is then converted to a pipe '|' in the
     // genStaticDocs.sh script by a simple sed command after converting to RsT
@@ -150,8 +152,13 @@ convertFromPlainTextToMarkdown(const QString &plain_, bool genHTML, bool isTable
             plain[i] == QLatin1Char('.') ||
             plain[i] == QLatin1Char('!')) {
             escaped += QLatin1Char('\\');
-        }
-        if (isTableElement) {
+        } else if ( plain[i] == QLatin1Char('<') ) {
+            escaped += QString::fromUtf8("&lt;");
+            outputChar = false;
+        } else if ( plain[i] == QLatin1Char('>') ) {
+            escaped += QString::fromUtf8("&gt;");
+            outputChar = false;
+        } else if (isTableElement) {
             if (plain[i] == QLatin1Char('|')) {
                 escaped += QString::fromUtf8("&#124;");
                 outputChar = false;

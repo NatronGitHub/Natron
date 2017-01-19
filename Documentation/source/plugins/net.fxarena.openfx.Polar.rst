@@ -12,7 +12,7 @@ Description
 
 Polar Distort transform node.
 
-Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2016-11-28 http://www.imagemagick.org
+Powered by ImageMagick 6.9.7-4 Q32 x86\_64 2017-01-17 http://www.imagemagick.org
 
 ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
 

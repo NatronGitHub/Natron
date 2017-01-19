@@ -53,6 +53,7 @@
 #include "Engine/Plugin.h"
 #include "Engine/Project.h"
 #include "Engine/StandardPaths.h"
+#include "Engine/Utils.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
@@ -2537,8 +2538,8 @@ Settings::makeHTMLDocumentation(bool genHTML) const
             continue;
         }
         //QString knobScriptName = QString::fromUtf8( (*it)->getName().c_str() );
-        QString knobLabel = QString::fromUtf8( (*it)->getLabel().c_str() );
-        QString knobHint = QString::fromUtf8( (*it)->getHintToolTip().c_str() );
+        QString knobLabel = convertFromPlainTextToMarkdown( QString::fromStdString( (*it)->getLabel() ), genHTML, false );
+        QString knobHint = convertFromPlainTextToMarkdown( QString::fromStdString( (*it)->getHintToolTip() ), genHTML, false );
         KnobPage* isPage = dynamic_cast<KnobPage*>( it->get() );
         KnobSeparator* isSep = dynamic_cast<KnobSeparator*>( it->get() );
         if (isPage) {
@@ -2558,22 +2559,58 @@ Settings::makeHTMLDocumentation(bool genHTML) const
     }
 
     if (genHTML) {
-        ts << "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\" \"http://www.w3.org/TR/html4/loose.dtd\">\n";
-        ts << "<html>\n<head>\n";
-        ts << "<title>" << tr("Natron Preferences") << "</title>\n";
-        ts << "<link rel=\"stylesheet\" href=\"_static/makdown.css\" type=\"text/css\" />\n<script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n<script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n";
-        ts << "</head>\n<body>\n";
-        ts << "<div class=\"related\">\n<h3>" << tr("Navigation") << "</h3>\n<ul>\n";
-        ts << "<li><a href=\"/index.html\">" << tr("%1 %2 documentation").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ).arg( QString::fromUtf8(NATRON_VERSION_STRING) ) << "</a> &raquo;</li>\n";
-        ts << "<li><a href=\"/_group.html\">";
-        ts << tr("Reference Guide");
-        ts << "</a> &raquo;</li>";
-        ts << "</ul>\n</div>\n";
-        ts << "<div class=\"document\">\n<div class=\"documentwrapper\">\n<div class=\"body\">\n";
-        ts << "<div class=\"section\">\n";
+        ts << ("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\"\n"
+               "  \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">\n"
+               "\n"
+               "\n"
+               "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n"
+               "  <head>\n"
+               "    <meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n"
+               "    \n"
+               "    <title>") << tr("Preferences") << " &#8212; NATRON_DOCUMENTATION</title>\n";
+        ts << ("    \n"
+               "    <link rel=\"stylesheet\" href=\"_static/markdown.css\" type=\"text/css\" />\n"
+               "    \n"
+               "    <script type=\"text/javascript\" src=\"_static/jquery.js\"></script>\n"
+               "    <script type=\"text/javascript\" src=\"_static/dropdown.js\"></script>\n"
+               "    <link rel=\"index\" title=\"Index\" href=\"genindex.html\" />\n"
+               "    <link rel=\"search\" title=\"Search\" href=\"search.html\" />\n"
+               "  </head>\n"
+               "  <body role=\"document\">\n"
+               "    <div class=\"related\" role=\"navigation\" aria-label=\"related navigation\">\n"
+               "      <h3>") << tr("Navigation") << "</h3>\n";
+        ts << ("      <ul>\n"
+               "        <li class=\"right\" style=\"margin-right: 10px\">\n"
+               "          <a href=\"genindex.html\" title=\"General Index\"\n"
+               "             accesskey=\"I\">") << tr("index") << "</a></li>\n";
+        ts << ("        <li class=\"right\" >\n"
+               "          <a href=\"py-modindex.html\" title=\"Python Module Index\"\n"
+               "             >") << tr("modules") << "</a> |</li>\n";
+        ts << ("        <li class=\"nav-item nav-item-0\"><a href=\"index.html\">NATRON_DOCUMENTATION</a> &#187;</li>\n"
+               "          <li class=\"nav-item nav-item-1\"><a href=\"_group.html\" >") << tr("Reference Guide") << "</a> &#187;</li>\n";
+        ts << ("      </ul>\n"
+               "    </div>  \n"
+               "\n"
+               "    <div class=\"document\">\n"
+               "      <div class=\"documentwrapper\">\n"
+               "          <div class=\"body\" role=\"main\">\n"
+               "            \n"
+               "  <div class=\"section\">\n");
         QString html = Markdown::convert2html(markdown);
         ts << Markdown::fixSettingsHTML(html);
-        ts << "</div>\n</div>\n</div>\n<div class=\"clearer\"></div>\n</div>\n<div class=\"footer\"></div>\n</body>\n</html>\n";
+        ts << ("</div>\n"
+               "\n"
+               "\n"
+               "          </div>\n"
+               "      </div>\n"
+               "      <div class=\"clearer\"></div>\n"
+               "    </div>\n"
+               "\n"
+               "    <div class=\"footer\" role=\"contentinfo\">\n"
+               "        &#169; Copyright 2013-2017 The Natron documentation authors, licensed under CC BY-SA 4.0.\n"
+               "    </div>\n"
+               "  </body>\n"
+               "</html>");
     } else {
         ts << markdown;
     }
