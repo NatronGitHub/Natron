@@ -76,19 +76,19 @@ public:
      * This is thread-safe and this function is only called by the cache.
      * Derived class should call the base class version AFTER their implementation.
      * Each member should have a unique name in the segment, prefixed with the hash string.
-     * The function writeMMObject can be used to simplify the serialization of objects to the
+     * The function writeSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const;
 
     /**
      * @brief Reads this key from shared process memory segment.
      * Object names in the segment are the ones written to in toMemorySegment
      * Derived class should call the base class version AFTER their implementation.
-     * The function readMMObject can be used to simplify the serialization of objects from the
+     * The function readSharedObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment);
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix);
 
     /**
      * @brief This should return exactly the size in bytes of memory taken in the
@@ -195,9 +195,9 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix,  ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE FINAL;
 
     virtual int getUniqueID() const OVERRIDE FINAL;
 

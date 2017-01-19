@@ -309,9 +309,9 @@ public:
 
     virtual bool isStorageTiled() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 

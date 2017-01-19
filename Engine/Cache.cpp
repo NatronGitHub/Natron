@@ -93,6 +93,7 @@ NATRON_NAMESPACE_ENTER;
 typedef bip::allocator<std::size_t, ExternalSegmentType::segment_manager> Size_t_Allocator_ExternalSegment;
 
 
+
 // The unordered set of free tiles indices in a bucket
 typedef boost::unordered_set<std::size_t, boost::hash<std::size_t>, std::equal_to<std::size_t>, Size_t_Allocator_ExternalSegment> unordered_set_size_t_ExternalSegment;
 
@@ -153,15 +154,15 @@ void insertLinkedListNode(const bip::offset_ptr<LRUListNode>& node, const bip::o
     node->next = next;
 }
 
+
+
 /**
- * @brief This struct represents one memory segment associated to a hash in the main cache memory segment.
- * This object lives in shared memory
+ * @brief This struct represents the minimum required data for a cache entry in the global bucket memory segment.
+ * It is associated to a hash in the LRU linked list.
+ * This struct lives in memory
  **/
-struct MemorySegmentEntry
+struct MemorySegmentEntryHeader
 {
-    // Pointer to the start of the memory segment allocated for this entry.
-    // The memory itself is handled with an external memory manager.
-    ExternalSegmentType::handle_t memorySegmentPortion;
 
     // If this entry has data in the tile aligned memory mapped file, this is the
     // index of the tile allocated. If not allocated, this is  -1.
@@ -198,13 +199,20 @@ struct MemorySegmentEntry
     // The status of the entry, protected by the bucket bucketLock
     EntryStatusEnum status;
 
-    MemorySegmentEntry()
-    : memorySegmentPortion(0)
-    , tileCacheIndex(-1)
+    // The ID of the plug-in holding this entry
+    String_ExternalSegment pluginID;
+
+    // List of pointers to entry data allocated in the bucket memory segment
+    ExternalSegmentTypeHandleList entryDataPointerList;
+
+    MemorySegmentEntryHeader(const void_allocator& allocator)
+    : tileCacheIndex(-1)
     , size(0)
     , lruIterator(0)
     , lock()
     , status(eEntryStatusNull)
+    , pluginID(allocator)
+    , entryDataPointerList(allocator)
     {
 
     }
@@ -292,14 +300,14 @@ struct CacheBucket
      * This function assumes that tocData.segmentMutex must be taken in write mode
      * This function may take the tileData.segmentMutex in write mode.
      **/
-    void deallocateCacheEntryImpl(MemorySegmentEntry* entry, bool releaseLock);
+    void deallocateCacheEntryImpl(MemorySegmentEntryHeader* entry, bool releaseLock);
 
     /**
      * @brief Lookup the cache for a MemorySegmentEntry matching the hash key.
      * If found, the cacheEntry member will be set.
      * This function assumes that the tocData.segmentMutex is taken at least in read mode.
      **/
-    MemorySegmentEntry* tryCacheLookupImpl(const std::string& hashStr);
+    MemorySegmentEntryHeader* tryCacheLookupImpl(const std::string& hashStr);
 
     /**
      * @brief Reads the cacheEntry into the processLocalEntry.
@@ -308,8 +316,9 @@ struct CacheBucket
      * @returns True if ok, false if the MemorySegmentEntry cannot be read properly.
      * it should be deallocated from the segment.
      **/
-    bool readFromSharedMemoryEntryImpl(MemorySegmentEntry* entry,
+    bool readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* entry,
                                        const CacheEntryBasePtr& processLocalEntry,
+                                       const std::string &hashStr,
                                        CacheEntryLocker::CacheEntryStatusEnum* status);
 
     /**
@@ -847,17 +856,18 @@ CacheBucket::growTileFile(WriteLock& lock, std::size_t bytesToAdd)
 
 } // growTileFile
 
-MemorySegmentEntry*
+MemorySegmentEntryHeader*
 CacheBucket::tryCacheLookupImpl(const std::string& hashStr)
 {
     // Private - the tocData.segmentMutex is assumed to be taken at least in read lock mode
-    std::pair<MemorySegmentEntry*, ExternalSegmentType::size_type> found = tocFileManager->find<MemorySegmentEntry>(hashStr.c_str());
+    std::pair<MemorySegmentEntryHeader*, ExternalSegmentType::size_type> found = tocFileManager->find<MemorySegmentEntryHeader>(hashStr.c_str());
     return found.first;
 } // tryCacheLookupImpl
 
 bool
-CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntry* cacheEntry,
+CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
                                            const CacheEntryBasePtr& processLocalEntry,
+                                           const std::string &hashStr,
                                            CacheEntryLocker::CacheEntryStatusEnum* status)
 {
     // Private - the tocData.segmentMutex is assumed to be taken at least in read lock mode
@@ -868,38 +878,38 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntry* cacheEntry,
     // By default we are in mustComputeMode
     *status = CacheEntryLocker::eCacheEntryStatusMustCompute;
 
-    if (cacheEntry->status == MemorySegmentEntry::eEntryStatusNull) {
+    if (cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusNull) {
         // We should never be in this situation:
         // The thread that created this cacheEntry should have marked the eEntryStatusPending
         // and if it failed to compute it should have removed it from memory.
         assert(false);
         return false;
-    } else if (cacheEntry->status == MemorySegmentEntry::eEntryStatusPending) {
+    } else if (cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusPending) {
         *status = CacheEntryLocker::eCacheEntryStatusComputationPending;
         return true;
     }
 
 
-    assert(cacheEntry->status == MemorySegmentEntry::eEntryStatusReady);
+    assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusReady);
 
-    // The shared pointer should always exist as long as the entry is still in the memory segment.
-    assert(cacheEntry->memorySegmentPortion);
 
     bool mustRemoveEntry = false;
-    if (!cacheEntry->memorySegmentPortion) {
-        mustRemoveEntry = true;
-    }
 
-    void* bufPtr = 0;
-    if (!mustRemoveEntry) {
-        // Wrap the memory segment portion with a managed external buffer object.
-        // This may throw an exception if the buffer is not large enough.
-        bufPtr = tocFileManager->get_address_from_handle(cacheEntry->memorySegmentPortion);
+    // Wrap the memory segment portion with a managed external buffer object.
+    // This may throw an exception if the buffer is not large enough.
+    std::string objectName;
+    {
+        std::stringstream ss;
+        ss << hashStr << "EntryObjects";
+        objectName = ss.str();
+
+    }
+    ExternalSegmentTypeHandleList* entryObjectPointers = tocFileManager->find<ExternalSegmentTypeHandleList>(objectName.c_str()).first;
+    if (!entryObjectPointers) {
+        mustRemoveEntry = true;
+    } else {
         try {
 
-            ExternalSegmentType managedMemoryPortion(bip::open_only,
-                                                     bufPtr,
-                                                     cacheEntry->size);
 
             // If the entry is tiled, read from the tile buffer
 
@@ -932,7 +942,7 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntry* cacheEntry,
 
 
             // Deserialize the entry. This may throw an exception if it cannot be deserialized properly
-            processLocalEntry->fromMemorySegment(&managedMemoryPortion, tileDataPtr);
+            processLocalEntry->fromMemorySegment(tocFileManager.get(), hashStr + "Data", tileDataPtr);
 
             // Deserialization went ok, set the status
             *status = CacheEntryLocker::eCacheEntryStatusCached;
@@ -953,28 +963,29 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntry* cacheEntry,
                     ipc->lruListBack = cacheEntry->lruIterator;
                 }
             } // lruWriteLock
-
+            
         } catch (...) {
             mustRemoveEntry = true;
         }
-    } // !mustRemoveEntry
+    } // entryObjectPointers
     
     return !mustRemoveEntry;
-
+    
 } // readFromSharedMemoryEntryImpl
 
 void
-CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntry* cacheEntry, bool releaseLock)
+CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry, bool releaseLock)
 {
     // The tocData.segmentMutex must be taken in write mode
 
     // Does not throw any exception
-    if (cacheEntry->memorySegmentPortion) {
-        void* bufPtr = tocFileManager->get_address_from_handle(cacheEntry->memorySegmentPortion);
+    for (ExternalSegmentTypeHandleList::const_iterator it = cacheEntry->entryDataPointerList.begin(); it != cacheEntry->entryDataPointerList.end(); ++it) {
+        void* bufPtr = tocFileManager->get_address_from_handle(*it);
         if (bufPtr) {
             tocFileManager->deallocate(bufPtr);
         }
     }
+    cacheEntry->entryDataPointerList.clear();
 
     if (cacheEntry->tileCacheIndex != -1) {
         // Free the tile
@@ -1055,7 +1066,7 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
         }
 
         // Look-up the cache
-        MemorySegmentEntry* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
+        MemorySegmentEntryHeader* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
 
         // Flag set to true if readFromSharedMemoryEntry failed
         bool deserializeFailed = false;
@@ -1066,7 +1077,7 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
             }
 
             // Deserialize the entry and update the status
-            deserializeFailed = !_imp->bucket->readFromSharedMemoryEntryImpl(cacheEntry, _imp->processLocalEntry, &_imp->status);
+            deserializeFailed = !_imp->bucket->readFromSharedMemoryEntryImpl(cacheEntry, _imp->processLocalEntry, _imp->hashStr, &_imp->status);
         }
 
         if (_imp->status == eCacheEntryStatusCached) {
@@ -1102,14 +1113,14 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
 
 
         // Look-up again: a thread could have placed the entry in the cache in-between the two locks
-        MemorySegmentEntry* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
+        MemorySegmentEntryHeader* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
 
 
         // Flag set to true if readFromSharedMemoryEntry failed
         bool deserializeFailed = false;
 
         if (cacheEntry) {
-            deserializeFailed = !_imp->bucket->readFromSharedMemoryEntryImpl(cacheEntry, _imp->processLocalEntry, &_imp->status);
+            deserializeFailed = !_imp->bucket->readFromSharedMemoryEntryImpl(cacheEntry, _imp->processLocalEntry, _imp->hashStr, &_imp->status);
         }
 
         if (_imp->status == eCacheEntryStatusCached) {
@@ -1150,19 +1161,20 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
 
 
             // Create the MemorySegmentEntry if it does not exist
-            cacheEntry = _imp->bucket->tocFileManager->construct<MemorySegmentEntry>(_imp->hashStr.c_str())();
-
+            void_allocator allocator(_imp->bucket->tocFileManager->get_segment_manager());
+            cacheEntry = _imp->bucket->tocFileManager->construct<MemorySegmentEntryHeader>(_imp->hashStr.c_str())(allocator);
+            cacheEntry->pluginID.append(_imp->processLocalEntry->getKey()->getHolderPluginID().c_str());
 
             // Lock the statusMutex: this will lock-out other threads interested in this entry.
             // This mutex is unlocked in the destructor or in insertInCache()
             cacheEntry->lock.lock();
 
 
-            assert(cacheEntry->status == MemorySegmentEntry::eEntryStatusNull);
+            assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusNull);
 
             // Set the status of the entry to pending because we (this thread) are going to compute it.
             // Other fields of the entry will be set once it is done computed in insertInCache()
-            cacheEntry->status = MemorySegmentEntry::eEntryStatusPending;
+            cacheEntry->status = MemorySegmentEntryHeader::eEntryStatusPending;
 
             
         } // writeLock
@@ -1196,14 +1208,13 @@ CacheEntryLocker::insertInCache()
 
         // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
         // plus some metadatas required management algorithm store its own memory housekeeping data.
-        std::size_t pageSize = bip::mapped_region::get_page_size();
-        const std::size_t entrySize = std::max((std::size_t)1 , (std::size_t)(std::ceil(_imp->processLocalEntry->getMetadataSize() / (double)pageSize) + 1)) * pageSize;
+        const std::size_t entrySize = _imp->processLocalEntry->getMetadataSize();
 
         _imp->bucket->ensureToCFileMappingValid(writeLock, entrySize);
-
+        
 
         // Fetch the entry. It must be here!
-        MemorySegmentEntry* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
+        MemorySegmentEntryHeader* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
         assert(cacheEntry);
         if (!cacheEntry) {
             throw std::logic_error("CacheEntryLocker::insertInCache");
@@ -1211,7 +1222,7 @@ CacheEntryLocker::insertInCache()
 
         // The status of the memory segment entry should be pending because we are the thread computing it.
         // All other threads are waiting.
-        assert(cacheEntry->status == MemorySegmentEntry::eEntryStatusPending);
+        assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusPending);
 
         // The cache entry mutex should have been taken in the lookupAndSetStatus function.
         assert(!cacheEntry->lock.try_lock());
@@ -1219,14 +1230,11 @@ CacheEntryLocker::insertInCache()
         // The cacheEntry fields should be uninitialized
         // This may throw an exception if out of memory or if the getMetadataSize function does not return
         // enough memory to encode all the data.
-        void* bufPtr = 0;
         try {
 
             // Allocate memory for the entry metadatas
             cacheEntry->size = entrySize;
 
-            bufPtr = _imp->bucket->tocFileManager->allocate(cacheEntry->size);
-            cacheEntry->memorySegmentPortion = _imp->bucket->tocFileManager->get_handle_from_address(bufPtr);
 
             // Serialize the meta-datas in the memory segment
             // If the entry also requires tile aligned data storage, allocate a tile now
@@ -1267,10 +1275,10 @@ CacheEntryLocker::insertInCache()
                     // Set the tile index on the entry so we can free it afterwards.
                     cacheEntry->tileCacheIndex = freeTileIndex;
                 } // tileWriteLock
-                {
-                    ExternalSegmentType externalManager(bip::create_only, bufPtr, cacheEntry->size);
-                    _imp->processLocalEntry->toMemorySegment(&externalManager, tileDataPtr);
-                }
+
+
+                _imp->processLocalEntry->toMemorySegment(_imp->bucket->tocFileManager.get(), _imp->hashStr + "Data", &cacheEntry->entryDataPointerList, tileDataPtr);
+
 
             }
 
@@ -1296,7 +1304,7 @@ CacheEntryLocker::insertInCache()
                     
                 }
             } // lruWriteLock
-            cacheEntry->status = MemorySegmentEntry::eEntryStatusReady;
+            cacheEntry->status = MemorySegmentEntryHeader::eEntryStatusReady;
 
             _imp->status = eCacheEntryStatusCached;
 
@@ -1367,12 +1375,12 @@ CacheEntryLocker::~CacheEntryLocker()
     _imp->bucket->ensureToCFileMappingValid(writeLock, 0);
 
 
-    MemorySegmentEntry* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
+    MemorySegmentEntryHeader* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);
     assert(cacheEntry);
     if (!cacheEntry) {
         throw std::logic_error("CacheEntryLocker::~CacheEntryLocker");
     }
-    assert(cacheEntry->status == MemorySegmentEntry::eEntryStatusPending);
+    assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusPending);
 
     // If we are pending, this thread did not call waitForPendingEntry() thus did not
     // take the cacheEntry lock.
@@ -1755,7 +1763,7 @@ Cache::hasCacheEntryForHash(U64 hash) const
         bucket.ensureToCFileMappingValid(*writeLock, 0);
     }
 
-    std::pair<MemorySegmentEntry*, ExternalSegmentType::size_type> found = bucket.tocFileManager->find<MemorySegmentEntry>(hashStr.c_str());
+    std::pair<MemorySegmentEntryHeader*, ExternalSegmentType::size_type> found = bucket.tocFileManager->find<MemorySegmentEntryHeader>(hashStr.c_str());
     return found.second != 0;
 
 } // hasCacheEntryForHash
@@ -1804,7 +1812,7 @@ Cache::removeEntry(const CacheEntryBasePtr& entry)
 
         // Deallocate the memory taken by the cache entry in the ToC
         {
-            MemorySegmentEntry* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
+            MemorySegmentEntryHeader* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
             if (cacheEntry) {
                 bucket.deallocateCacheEntryImpl(cacheEntry, false /*releaseLock*/);
             }
@@ -1894,7 +1902,7 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
                 // Deallocate the memory taken by the cache entry in the ToC
                 {
                     std::string hashStr = CacheEntryKeyBase::hashToString(entryHash);
-                    MemorySegmentEntry* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
+                    MemorySegmentEntryHeader* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
                     if (cacheEntry) {
                         // We evicted one, decrease the size
                         curSize -= cacheEntry->size;
@@ -1948,16 +1956,11 @@ Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
             bip::offset_ptr<LRUListNode> it = bucket.ipc->lruListFront;
             while (it) {
                 std::string hashStr = CacheEntryKeyBase::hashToString(it->hash);
-                MemorySegmentEntry* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
+                MemorySegmentEntryHeader* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
                 assert(cacheEntry);
-                if (cacheEntry && cacheEntry->memorySegmentPortion) {
-                    void* buf = bucket.tocFileManager->get_address_from_handle(cacheEntry->memorySegmentPortion);
-                    ExternalSegmentType managedMemoryPortion(bip::open_only,
-                                                             buf,
-                                                             cacheEntry->size);
-                    std::string pluginID;
-                    readMMObject("pluginID", &managedMemoryPortion, &pluginID);
+                if (cacheEntry && !cacheEntry->pluginID.empty()) {
 
+                    std::string pluginID(cacheEntry->pluginID.c_str());
                     CacheReportInfo& entryData = (*infos)[pluginID];
                     ++entryData.nEntries;
                     entryData.nBytes += cacheEntry->size;
@@ -1969,7 +1972,7 @@ Cache::getMemoryStats(std::map<std::string, CacheReportInfo>* infos) const
                 it = it->next;
             }
         } catch (...) {
-            // Exceptions can be thrown from the ExternalSegmentType ctor or readMMObject()
+            // Exceptions can be thrown from the ExternalSegmentType ctor or readNamedSharedObject()
         }
     } // for each bucket
 } // getMemoryStats

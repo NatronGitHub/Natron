@@ -367,15 +367,37 @@ class KnobExpressionKey : public CacheEntryKeyBase
 {
 public:
 
+    struct ShmData
+    {
+        U64 nodeTimeInvariantHash;
+        int dimension;
+        TimeValue time;
+        ViewIdx view;
+
+        ShmData()
+        {
+
+        }
+
+        ShmData(U64 nodeTimeInvariantHash,
+                int dimension,
+                TimeValue time,
+                ViewIdx view)
+        : nodeTimeInvariantHash(nodeTimeInvariantHash)
+        , dimension(dimension)
+        , time(time)
+        , view(view)
+        {
+
+        }
+    };
+
     KnobExpressionKey(U64 nodeTimeInvariantHash,
                       int dimension,
                       TimeValue time,
                       ViewIdx view,
                       const std::string& knobScriptName)
-    : _nodeTimeInvariantHash(nodeTimeInvariantHash)
-    , _dimension(dimension)
-    , _time(time)
-    , _view(view)
+    : _data(nodeTimeInvariantHash, dimension, time, view)
     , _knobScriptName(knobScriptName)
     {
 
@@ -392,24 +414,18 @@ public:
         return kCacheKeyUniqueIDExpressionResult;
     }
 
-    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE FINAL
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE FINAL
     {
-        writeMMObject(_nodeTimeInvariantHash, "hash", segment);
-        writeMMObject(_time, "time", segment);
-        writeMMObject(_view, "view", segment);
-        writeMMObject(_dimension, "dim", segment);
-        writeMMObject(_knobScriptName, "knob", segment);
-        CacheEntryKeyBase::toMemorySegment(segment);
+        objectPointers->push_back(writeNamedSharedObject(_data, objectNamesPrefix + "KeyData", segment));
+        objectPointers->push_back(writeNamedSharedObject(_knobScriptName, objectNamesPrefix + "knob", segment));
+        CacheEntryKeyBase::toMemorySegment(segment, objectNamesPrefix, objectPointers);
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE FINAL
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE FINAL
     {
-        readMMObject("hash", segment, &_nodeTimeInvariantHash);
-        readMMObject("time", segment, &_time);
-        readMMObject("view", segment, &_view);
-        readMMObject("dim", segment, &_dimension);
-        readMMObject("knob", segment, &_knobScriptName);
-        CacheEntryKeyBase::fromMemorySegment(segment);
+        readNamedSharedObject(objectNamesPrefix + "KeyData", segment, &_data);
+        readNamedSharedObject(objectNamesPrefix + "knob", segment, &_knobScriptName);
+        CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
     }
 
 private:
@@ -418,17 +434,14 @@ private:
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL
     {
-        hash->append(_nodeTimeInvariantHash);
-        hash->append(_dimension);
-        hash->append((double)_time);
-        hash->append((int)_view);
+        hash->append(_data.nodeTimeInvariantHash);
+        hash->append(_data.dimension);
+        hash->append((double)_data.time);
+        hash->append((int)_data.view);
         Hash64::appendQString(QString::fromUtf8(_knobScriptName.c_str()), hash);
     }
 
-    U64 _nodeTimeInvariantHash;
-    int _dimension;
-    TimeValue _time;
-    ViewIdx _view;
+    ShmData _data;
     std::string _knobScriptName;
 };
 
@@ -488,33 +501,33 @@ public:
         return 128;
     }
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL
     {
         if (!_stringResult.empty()) {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypeString;
-            writeMMObject((int)type, "type", segment);
-            writeMMObject(_stringResult, "value", segment);
+            objectPointers->push_back(writeNamedSharedObject((int)type, objectNamesPrefix + "type", segment));
+            objectPointers->push_back(writeNamedSharedObject(_stringResult, objectNamesPrefix + "value", segment));
         } else {
             KnobExpressionResultTypeEnum type = eKnobExpressionResultTypePod;
-            writeMMObject((int)type, "type", segment);
-            writeMMObject(_valueResult, "value", segment);
+            objectPointers->push_back(writeNamedSharedObject((int)type, objectNamesPrefix + "type", segment));
+            objectPointers->push_back(writeNamedSharedObject(_valueResult, objectNamesPrefix + "value", segment));
         }
-        CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+        CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
     }
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL
     {
         int type_i;
-        readMMObject("type", segment, &type_i);
+        readNamedSharedObject(objectNamesPrefix + "type", segment, &type_i);
         switch ((KnobExpressionResultTypeEnum)type_i) {
             case eKnobExpressionResultTypePod: {
-                readMMObject("value", segment, &_valueResult);
+                readNamedSharedObject(objectNamesPrefix + "value", segment, &_valueResult);
             }   break;
             case eKnobExpressionResultTypeString: {
-                readMMObject("value", segment, &_stringResult);
+                readNamedSharedObject(objectNamesPrefix + "value", segment, &_stringResult);
             }   break;
         }
-        CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+        CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
     }
 
 private:

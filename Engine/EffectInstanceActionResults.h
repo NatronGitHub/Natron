@@ -63,17 +63,17 @@ public:
 
     virtual TimeValue getTime() const OVERRIDE FINAL
     {
-        return _time;
+        return _data.time;
     }
 
     virtual ViewIdx getView() const OVERRIDE FINAL
     {
-        return _view;
+        return _data.view;
     }
 
-    virtual void toMemorySegment(ExternalSegmentType* segment) const OVERRIDE;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment) OVERRIDE;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix) OVERRIDE;
 
     virtual std::size_t getMetadataSize() const OVERRIDE;
 
@@ -81,10 +81,15 @@ private:
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL;
 
-    U64 _nodeTimeInvariantHash;
-    TimeValue _time;
-    ViewIdx _view;
-    RenderScale _scale;
+    struct KeyShmData
+    {
+        U64 nodeTimeInvariantHash;
+        TimeValue time;
+        ViewIdx view;
+        RenderScale scale;
+    };
+
+    KeyShmData _data;
 };
 
 class GetRegionOfDefinitionKey : public EffectInstanceActionKeyBase
@@ -139,9 +144,9 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
 
 
 private:
@@ -210,15 +215,19 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
-    int _identityInputNb;
-    TimeValue _identityTime;
-    ViewIdx _identityView;
+    struct ShmData
+    {
+        int identityInputNb;
+        TimeValue identityTime;
+        ViewIdx identityView;
+    };
+    ShmData _data;
 
 };
 
@@ -283,9 +292,9 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -346,9 +355,9 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -409,9 +418,9 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
 
 private:
 
@@ -491,21 +500,26 @@ public:
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const OVERRIDE FINAL;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const OVERRIDE FINAL;
 
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr) OVERRIDE FINAL;
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr) OVERRIDE FINAL;
     
 private:
 
     std::map<int, std::list<ImageComponents> > _neededInputLayers;
     std::list<ImageComponents> _producedLayers;
     std::list<ImageComponents> _passThroughPlanes;
-    int _passThroughInputNb;
-    TimeValue _passThroughTime;
-    ViewIdx _passThroughView;
-    std::bitset<4> _processChannels;
-    bool _processAllLayers;
 
+    struct ShmData
+    {
+        int passThroughInputNb;
+        TimeValue passThroughTime;
+        ViewIdx passThroughView;
+        bool doR, doG, doB, doA;
+        bool processAllLayers;
+    };
+
+    ShmData _data;
 
 };
 

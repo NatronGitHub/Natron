@@ -133,22 +133,25 @@ public:
 
     /**
      * @brief Write this key to the process shared memory segment.
+     * Each object written to the memory segment must have its handle appended 
+     * to the objectPointers list.
      * This is thread-safe and this function is only called by the cache.
      * Derived class should call the base class version AFTER its implementation.
-     * Each member should have a unique name in the segment, prefixed with the hash string.
-     * The function writeMMObject can be used to simplify the serialization of objects to the
+     * The function writeNamedSharedObject can be used to simplify the serialization of objects to the
      * memory segment.
      **/
-    virtual void toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const;
+    virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const;
 
     /**
      * @brief Reads this key from shared process memory segment.
-     * Object names in the segment are the ones written to in toMemorySegment
+     * Objects can be retrieved from their process local handle. This handle points
+     * to the object copy in shared memory, in the same order that was inserted in the 
+     * objectPointers list out of toMemorySegment.
      * Derived class should call the base class version AFTER its implementation.
-     * The function readMMObject can be used to simplify the serialization of objects from the
+     * The function readNamedSharedObject can be used to simplify the serialization of objects from the
      * memory segment.
      **/
-    virtual void fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr);
+    virtual void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr);
 
 private:
 

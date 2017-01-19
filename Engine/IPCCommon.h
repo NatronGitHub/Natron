@@ -55,8 +55,11 @@ NATRON_NAMESPACE_ENTER;
 
 typedef boost::interprocess::managed_external_buffer ExternalSegmentType;
 
+typedef boost::interprocess::allocator<void, ExternalSegmentType::segment_manager> void_allocator;
 typedef boost::interprocess::allocator<char, ExternalSegmentType::segment_manager> CharAllocator_ExternalSegment;
 typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllocator_ExternalSegment> String_ExternalSegment;
+typedef boost::interprocess::allocator<ExternalSegmentType::handle_t, ExternalSegmentType::segment_manager> ExternalSegmentTypeHandleAllocator;
+typedef boost::interprocess::list<ExternalSegmentType::handle_t, ExternalSegmentTypeHandleAllocator> ExternalSegmentTypeHandleList;
 
 /**
  * @brief Function to serialize to the given memory segment the given object.
@@ -64,7 +67,7 @@ typedef boost::interprocess::basic_string<char, std::char_traits<char>, CharAllo
  * The only supported container is std::string
  **/
 template <class T>
-inline void writeMMObject(const T& object, const std::string& objectName,  ExternalSegmentType* segment)
+inline ExternalSegmentType::handle_t writeNamedSharedObject(const T& object, const std::string& objectName,  ExternalSegmentType* segment)
 {
     T* sharedMemObject = segment->construct<T>(objectName.c_str())();
     if (sharedMemObject) {
@@ -72,13 +75,14 @@ inline void writeMMObject(const T& object, const std::string& objectName,  Exter
     } else {
         throw std::bad_alloc();
     }
+    return segment->get_handle_from_address(sharedMemObject);
 }
 
 /**
  * @brief Template specialization for std::string
  **/
 template <>
-inline void writeMMObject(const std::string& object, const std::string& objectName,  ExternalSegmentType* segment)
+inline ExternalSegmentType::handle_t writeNamedSharedObject(const std::string& object, const std::string& objectName,  ExternalSegmentType* segment)
 {
 
     // Allocate a char array containing the string
@@ -89,26 +93,28 @@ inline void writeMMObject(const std::string& object, const std::string& objectNa
     } else {
         throw std::bad_alloc();
     }
+    return segment->get_handle_from_address(sharedMemObject);
 }
 
 /**
- * @brief Same as writeMMObject but for arrays
+ * @brief Same as writeNamedSharedObject but for arrays
  **/
 template <class T>
-inline void writeMMObjectN(T *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
+inline ExternalSegmentType::handle_t writeNamedSharedObjectN(T *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
 {
     T* sharedMemObject = segment->construct<T>(objectName.c_str())[count]();
     if (!sharedMemObject) {
         throw std::bad_alloc();
     }
     memcpy(sharedMemObject, array, count * sizeof(T));
+    return segment->get_handle_from_address(sharedMemObject);
 }
 
 /**
  * @brief Template specialization for std::string
  **/
 template <class T>
-inline void writeMMObjectN(std::string *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
+inline ExternalSegmentType::handle_t writeNamedSharedObjectN(std::string *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
 {
     // Allocate a char array containing the string
     CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
@@ -120,6 +126,72 @@ inline void writeMMObjectN(std::string *array, int count, const std::string& obj
     for (int i = 0; i < count; ++i) {
         sharedMemObject[i].append(array[i].c_str());
     }
+    return segment->get_handle_from_address(sharedMemObject);
+}
+
+
+/**
+ * @brief Function to serialize to the given memory segment the given object.
+ * The object will be anonymous and its handle in the memory segment will be returned.
+ * The object must not be a container (so it should be a pod or a struct encapsulating only pod's).
+ * The only supported container is std::string
+ **/
+template <class T>
+inline ExternalSegmentType::handle_t writeSharedObject(const T& object, ExternalSegmentType* segment)
+{
+    T* sharedMemObject = (T*)segment->allocate(sizeof(T));
+    if (sharedMemObject) {
+        *sharedMemObject = object;
+        return segment->get_handle_from_address(sharedMemObject);
+    } else {
+        throw std::bad_alloc();
+    }
+}
+
+template <>
+inline ExternalSegmentType::handle_t writeSharedObject(const std::string& object, ExternalSegmentType* segment)
+{
+    // Allocate a char array containing the string
+    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
+
+    String_ExternalSegment* sharedMemObject = (String_ExternalSegment*)segment->allocate(sizeof(String_ExternalSegment));
+    if (sharedMemObject) {
+        sharedMemObject->append(object.c_str());
+    } else {
+        throw std::bad_alloc();
+    }
+    return segment->get_handle_from_address(sharedMemObject);
+}
+
+template <class T>
+inline ExternalSegmentType::handle_t writeSharedObjectN(T *array, int count, ExternalSegmentType* segment)
+{
+    T* sharedMemObject = (T*)segment->allocate(sizeof(T) * count);
+    if (sharedMemObject) {
+        for (int i = 0; i < count; ++i) {
+            sharedMemObject[i] = array[i];
+        }
+        return segment->get_handle_from_address(sharedMemObject);
+    } else {
+        throw std::bad_alloc();
+    }
+}
+
+template <>
+inline ExternalSegmentType::handle_t writeSharedObjectN(std::string *array, int count, ExternalSegmentType* segment)
+{
+    // Allocate a char array containing the string
+    CharAllocator_ExternalSegment allocator(segment->get_segment_manager());
+
+    String_ExternalSegment* sharedMemObject = (String_ExternalSegment*)segment->allocate(sizeof(String_ExternalSegment) * count);
+    if (sharedMemObject) {
+        for (int i = 0; i < count; ++i) {
+            sharedMemObject[i].append(array[i].c_str());
+        }
+        return segment->get_handle_from_address(sharedMemObject);
+    } else {
+        throw std::bad_alloc();
+    }
 }
 
 
@@ -129,7 +201,7 @@ inline void writeMMObjectN(std::string *array, int count, const std::string& obj
  * The only supported container is std::string
  **/
 template <class T>
-inline void readMMObject(const std::string& objectName, ExternalSegmentType* segment, T* object)
+inline void readNamedSharedObject(const std::string& objectName, ExternalSegmentType* segment, T* object)
 {
     std::pair<T*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
     if (found.first) {
@@ -144,7 +216,7 @@ inline void readMMObject(const std::string& objectName, ExternalSegmentType* seg
  * @brief Template specialization for std::string
  **/
 template <>
-inline void readMMObject(const std::string& objectName, ExternalSegmentType* segment, std::string* object)
+inline void readNamedSharedObject(const std::string& objectName, ExternalSegmentType* segment, std::string* object)
 {
     std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<String_ExternalSegment>(objectName.c_str());
     if (found.first) {
@@ -155,10 +227,10 @@ inline void readMMObject(const std::string& objectName, ExternalSegmentType* seg
 }
 
 /**
- * @brief Same as readMMObject but for arrays
+ * @brief Same as readNamedSharedObject but for arrays
  **/
 template <class T>
-inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, T* array)
+inline void readNamedSharedObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, T* array)
 {
     std::pair<T*, ExternalSegmentType::size_type> found = segment->find<T>(objectName.c_str());
     if (!found.first) {
@@ -174,7 +246,7 @@ inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* se
  * @brief Template specialization for std::string
  **/
 template <>
-inline void readMMObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, std::string* array)
+inline void readNamedSharedObjectN(const std::string& objectName, ExternalSegmentType* segment, int count, std::string* array)
 {
     std::pair<String_ExternalSegment*, ExternalSegmentType::size_type> found = segment->find<String_ExternalSegment>(objectName.c_str());
     if (!found.first) {

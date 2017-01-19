@@ -53,9 +53,9 @@ public:
 
     virtual void initializeProperties() const OVERRIDE FINAL;
 
-    void toMemorySegment(ExternalSegmentType* segment) const;
+    void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const;
 
-    void fromMemorySegment(ExternalSegmentType* segment);
+    void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix);
 
     virtual ~Implementation()
     {
@@ -224,15 +224,15 @@ NodeMetadata::getMetadataDimension(const std::string& name) const
 }
 
 void
-NodeMetadata::toMemorySegment(ExternalSegmentType* segment) const
+NodeMetadata::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
 {
-    _imp->toMemorySegment(segment);
+    _imp->toMemorySegment(segment, objectNamesPrefix, objectPointers);
 }
 
 void
-NodeMetadata::fromMemorySegment(ExternalSegmentType* segment)
+NodeMetadata::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
 {
-    _imp->fromMemorySegment(segment);
+    _imp->fromMemorySegment(segment, objectNamesPrefix);
 }
 
 enum NodeMetadataDataTypeEnum
@@ -243,13 +243,13 @@ enum NodeMetadataDataTypeEnum
 };
 
 void
-NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment) const
+NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const
 {
     // Add a prefix to the meta-data name in the memory segment to ensure that the meta-data name is not the same as
     // another item we serialized to the segment.
-    static const std::string prefix = "NodeMetadata";
+    const std::string prefix = objectNamesPrefix + "NodeMetadata";
     int nElements = _properties.size();
-    writeMMObject(nElements, prefix + "NElements", segment);
+    objectPointers->push_back(writeNamedSharedObject(nElements, prefix + "NElements", segment));
 
     int i = 0;
     for (std::map<std::string, boost::shared_ptr<PropertiesHolder::PropertyBase> >::const_iterator it = _properties.begin(); it != _properties.end(); ++it, ++i) {
@@ -259,11 +259,11 @@ NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment) cons
 
         {
             std::string metadataName = metadataPrefix + "Name";
-            writeMMObject(it->first, metadataName, segment);
+            objectPointers->push_back(writeNamedSharedObject(it->first, metadataName, segment));
         }
 
         int nDims = it->second->getNDimensions();
-        writeMMObject(nDims, metadataPrefix + "NDims", segment);
+        objectPointers->push_back(writeNamedSharedObject(nDims, metadataPrefix + "NDims", segment));
 
         PropertiesHolder::Property<int>* isInt = dynamic_cast<PropertiesHolder::Property<int>*>(it->second.get());
         PropertiesHolder::Property<double>* isDouble = dynamic_cast<PropertiesHolder::Property<double>*>(it->second.get());
@@ -274,27 +274,27 @@ NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment) cons
         assert(isInt || isDouble || isString);
         if (isInt) {
             NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeInt;
-            writeMMObject((int)type, metadataType, segment);
-            writeMMObjectN(isInt->value.data(), nDims, metadataData, segment);
+            objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
+            objectPointers->push_back(writeNamedSharedObjectN(isInt->value.data(), nDims, metadataData, segment));
         } else if (isDouble) {
             NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeDouble;
-            writeMMObject((int)type, metadataType, segment);
-            writeMMObjectN(isDouble->value.data(), nDims, metadataData, segment);
+            objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
+            objectPointers->push_back(writeNamedSharedObjectN(isDouble->value.data(), nDims, metadataData, segment));
         } else if (isString) {
             NodeMetadataDataTypeEnum type = eNodeMetadataDataTypeString;
-            writeMMObject((int)type, metadataType, segment);
-            writeMMObjectN(isString->value.data(), nDims, metadataData, segment);
+            objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
+            objectPointers->push_back(writeNamedSharedObjectN(isString->value.data(), nDims, metadataData, segment));
         }
         
     }
 } // toMemorySegment
 
 void
-NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment)
+NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix)
 {
-    static const std::string prefix = "NodeMetadata";
+    const std::string prefix = objectNamesPrefix + "NodeMetadata";
     int nElements;
-    readMMObject(prefix + "NElements", segment, &nElements);
+    readNamedSharedObject(prefix + "NElements", segment, &nElements);
 
     for (int i = 0; i < nElements; ++i) {
         std::stringstream ss;
@@ -302,30 +302,30 @@ NodeMetadata::Implementation::fromMemorySegment(ExternalSegmentType* segment)
         std::string metadataPrefix = ss.str();
 
         std::string metadataName;
-        readMMObject(metadataPrefix + "Name", segment, &metadataName);
+        readNamedSharedObject(metadataPrefix + "Name", segment, &metadataName);
 
         int nDims;
-        readMMObject(metadataPrefix + "NDims", segment, &nDims);
+        readNamedSharedObject(metadataPrefix + "NDims", segment, &nDims);
         int type_i;
-        readMMObject(metadataPrefix + "Type", segment, &type_i);
+        readNamedSharedObject(metadataPrefix + "Type", segment, &type_i);
 
         std::string metadataData = metadataPrefix + "Data";
         switch ((NodeMetadataDataTypeEnum)type_i) {
             case eNodeMetadataDataTypeInt: {
                 boost::shared_ptr<Property<int> > prop = createPropertyInternal<int>(metadataName);
                 prop->value.resize(nDims);
-                readMMObjectN<int>(metadataData, segment, nDims, prop->value.data());
+                readNamedSharedObjectN<int>(metadataData, segment, nDims, prop->value.data());
             }   break;
             case eNodeMetadataDataTypeDouble: {
                 boost::shared_ptr<Property<double> > prop = createPropertyInternal<double>(metadataName);
                 prop->value.resize(nDims);
-                readMMObjectN<double>(metadataData, segment, nDims, prop->value.data());
+                readNamedSharedObjectN<double>(metadataData, segment, nDims, prop->value.data());
             }   break;
 
             case eNodeMetadataDataTypeString: {
                 boost::shared_ptr<Property<std::string> > prop = createPropertyInternal<std::string>(metadataName);
                 prop->value.resize(nDims);
-                readMMObjectN<std::string>(metadataData, segment, nDims, prop->value.data());
+                readNamedSharedObjectN<std::string>(metadataData, segment, nDims, prop->value.data());
             }   break;
         }
 

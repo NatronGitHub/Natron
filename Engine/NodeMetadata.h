@@ -200,12 +200,12 @@ public:
     /**
      * @brief Serializes the meta-data to a memory segment
      **/
-    void toMemorySegment(ExternalSegmentType* segment) const;
+    void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const;
 
     /**
      * @brief Serializes the meta-data from a memory segment
      **/
-    void fromMemorySegment(ExternalSegmentType* segment);
+    void fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix);
 
     // Helper function for built-in meta-datas
 

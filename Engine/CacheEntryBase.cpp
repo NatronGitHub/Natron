@@ -112,15 +112,15 @@ CacheEntryBase::getMetadataSize() const
 }
 
 void
-CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, void* /*tileDataPtr*/) const
+CacheEntryBase::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* /*tileDataPtr*/) const
 {
-    _imp->key->toMemorySegment(segment);
+    _imp->key->toMemorySegment(segment, objectNamesPrefix, objectPointers);
 }
 
 void
-CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment, const void* /*tileDataPtr*/)
+CacheEntryBase::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* /*tileDataPtr*/)
 {
-    _imp->key->fromMemorySegment(segment);
+    _imp->key->fromMemorySegment(segment, objectNamesPrefix);
 }
 
 

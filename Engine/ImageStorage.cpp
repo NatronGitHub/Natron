@@ -446,17 +446,17 @@ CacheImageTileStorage::~CacheImageTileStorage()
 }
 
 void
-CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, void* tileDataPtr) const
+CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
     assert(tileDataPtr && _imp->localBuffer);
     memcpy(tileDataPtr, _imp->localBuffer->getData(), NATRON_TILE_SIZE_BYTES);
-    CacheEntryBase::toMemorySegment(segment, tileDataPtr);
+    CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
 }
 
 void
-CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment, const void* tileDataPtr)
+CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
 {
-    CacheEntryBase::fromMemorySegment(segment, tileDataPtr);
+    CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
     assert(tileDataPtr && _imp->localBuffer);
     memcpy(_imp->localBuffer->getData(), tileDataPtr, NATRON_TILE_SIZE_BYTES);
 }
