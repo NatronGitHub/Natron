@@ -2078,7 +2078,6 @@ SettingsPrivate::initializeKnobsCaching()
 
     _cachingTab->addKnob(_diskCachePath);
 
-    _viewersTab->addKnob(_cachingTab);
 
 } // Settings::initializeKnobsCaching
 
@@ -2213,6 +2212,13 @@ SettingsPrivate::getSettingsAbsoluteFilepath(const std::string& userDataDirector
     std::stringstream ss;
     ss << userDataDirectoryPath << NATRON_SETTINGS_FILENAME;
     return ss.str();
+}
+
+std::string
+Settings::getSettingsAbsoluteFilePath() const
+{
+    std::string userDataDirPath = _imp->ensureUserDataDirectory();
+    return _imp->getSettingsAbsoluteFilepath(userDataDirPath);
 }
 
 void

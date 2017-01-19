@@ -247,7 +247,7 @@ NATRON_NAMESPACE_ENTER;
 
 #define kRotoUIParamRippleEdit "rippleEditButton"
 #define kRotoUIParamRippleEditLabel "Enable Ripple Edit"
-#define kRotoUIParamRippleEditLabelHint "Ripple-edit: When activated, moving a control point" \
+#define kRotoUIParamRippleEditHint "Ripple-edit: When activated, moving a control point" \
     " will move it by the same amount for all the keyframes " \
     "it has"
 

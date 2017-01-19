@@ -805,7 +805,7 @@ Effect::isNodeActivated() const
         PythonSetNullError();
         return false;
     }
-    return n->isNodeActivated();
+    return n->isActivated();
 }
 
 void

@@ -61,6 +61,24 @@ static void serializeInputsMap(const std::map<std::string, std::string>& inputs,
 } // serializeInputsMap
 
 void
+ImageComponentsSerialization::encode(YAML::Emitter& em) const
+{
+    em << YAML::Flow << YAML::BeginSeq << layerName << globalCompsName << YAML::Flow << channelNames << YAML::EndSeq;
+}
+
+void
+ImageComponentsSerialization::decode(const YAML::Node& node)
+{
+    if (!node.IsSequence() || node.size() != 3) {
+        throw YAML::InvalidNode();
+    }
+    layerName = node[0].as<std::string>();
+    globalCompsName = node[1].as<std::string>();
+    channelNames = node[2].as<std::vector<std::string> >();
+}
+
+
+void
 NodeSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;

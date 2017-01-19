@@ -1681,16 +1681,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     QStringList templatesSearchPath;
 
     //add ~/.Natron
-    QString dataLocation = QDir::homePath();
-    QString mainPath = dataLocation + QString::fromUtf8("/.") + QString::fromUtf8(NATRON_APPLICATION_NAME);
-    QDir mainPathDir(mainPath);
 
-    if ( !mainPathDir.exists() ) {
-        QDir dataDir(dataLocation);
-        if ( dataDir.exists() ) {
-            dataDir.mkdir( QChar::fromLatin1('.') + QString( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-        }
-    }
+    QString mainPath = QString::fromUtf8(getCurrentSettings()->getSettingsAbsoluteFilePath().c_str());
+
 
     QString envvar( QString::fromUtf8( qgetenv(NATRON_PATH_ENV_VAR) ) );
 #ifdef __NATRON_WIN32__

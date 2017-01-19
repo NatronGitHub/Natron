@@ -155,6 +155,8 @@ public:
      **/
     void saveSettingsToFile();
 
+    std::string getSettingsAbsoluteFilePath() const;
+
     std::string getApplicationFontFamily() const;
 
     int getApplicationFontSize() const;
