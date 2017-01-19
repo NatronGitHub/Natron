@@ -4,6 +4,17 @@
 
 # History
 
+## Version 2.2.1
+
+This is a bug-fix release.
+
+- fix a bug with the file dialog when network drives are detached
+- the "Open Recent" menu now shows the directory name if there are several files with the same name.
+
+### Plugins
+
+- STMap was broken in 2.2, fix it.
+
 ## Version 2.2
 
 - OpenGL rendering is enabled by default for interactive editing in plugins that support it (but still disabled for background rendering)
