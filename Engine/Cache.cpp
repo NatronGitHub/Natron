@@ -95,7 +95,7 @@ typedef bip::allocator<std::size_t, ExternalSegmentType::segment_manager> Size_t
 
 
 // The unordered set of free tiles indices in a bucket
-typedef boost::unordered_set<std::size_t, boost::hash<std::size_t>, std::equal_to<std::size_t>, Size_t_Allocator_ExternalSegment> unordered_set_size_t_ExternalSegment;
+typedef bip::set<std::size_t, std::equal_to<std::size_t>, Size_t_Allocator_ExternalSegment> set_size_t_ExternalSegment;
 
 typedef bip::sharable_lock<bip::interprocess_upgradable_mutex> ReadLock;
 typedef bip::upgradable_lock<bip::interprocess_upgradable_mutex> UpgradableLock;
@@ -235,7 +235,7 @@ struct CacheBucket
     {
 
         // Indices of the chunks of memory available in the tileAligned memory-mapped file.
-        unordered_set_size_t_ExternalSegment freeTiles;
+        set_size_t_ExternalSegment freeTiles;
 
         // Protects the LRU list. This is separate to the bucketLock because even if we just access
         // the cache in read mode (in the get() function) we still need to update the LRU list, thus
@@ -713,7 +713,7 @@ CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 
 } // ensureToCFileMappingValid
 
-static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const unordered_set_size_t_ExternalSegment& freeTiles)
+static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const set_size_t_ExternalSegment& freeTiles)
 {
 
     // Save only allocated tiles portion
@@ -723,7 +723,7 @@ static void flushTileMapping(const MemoryFilePtr& tileAlignedFile, const unorder
     std::vector<bool> allocatedTiles(nTiles, true);
 
     // Mark all free tiles as not allocated
-    for (unordered_set_size_t_ExternalSegment::const_iterator it = freeTiles.begin(); it != freeTiles.end(); ++it) {
+    for (set_size_t_ExternalSegment::const_iterator it = freeTiles.begin(); it != freeTiles.end(); ++it) {
         allocatedTiles[*it] = false;
     }
 
@@ -1003,7 +1003,7 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry, bool
         
 
         // Make this tile free again
-        std::pair<unordered_set_size_t_ExternalSegment::iterator, bool>  insertOk = ipc->freeTiles.insert(cacheEntry->tileCacheIndex);
+        std::pair<set_size_t_ExternalSegment::iterator, bool>  insertOk = ipc->freeTiles.insert(cacheEntry->tileCacheIndex);
         assert(insertOk.second);
         (void)insertOk;
         cacheEntry->tileCacheIndex = -1;
@@ -1266,7 +1266,7 @@ CacheEntryLocker::insertInCache()
                     assert(_imp->bucket->ipc->freeTiles.size() > 0);
                     int freeTileIndex;
                     {
-                        unordered_set_size_t_ExternalSegment::iterator freeTileIt = _imp->bucket->ipc->freeTiles.begin();
+                        set_size_t_ExternalSegment::iterator freeTileIt = _imp->bucket->ipc->freeTiles.begin();
                         freeTileIndex = *freeTileIt;
                         _imp->bucket->ipc->freeTiles.erase(freeTileIt);
                     }
