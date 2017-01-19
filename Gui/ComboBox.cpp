@@ -289,16 +289,12 @@ ComboBox::paintEvent(QPaintEvent* /*e*/)
         ///Now draw the frame
 
         QColor fillColor;
-        bool useDefaultBackground = false;
 
-        if (_clicked || multipleSelection) {
-            useDefaultBackground = true;
-        } else {
+        if (!_clicked && !multipleSelection) {
             double r, g, b;
             switch ((AnimationLevelEnum)animation) {
                 case eAnimationLevelNone:
                 default: {
-                    useDefaultBackground = true;
                     appPTR->getCurrentSettings()->getRaisedColor(&r, &g, &b);
                     break;
                 }

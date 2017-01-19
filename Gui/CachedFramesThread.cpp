@@ -39,7 +39,7 @@
 
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
-#include "Gui/TimelineGui.h"
+#include "Gui/TimeLineGui.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
 
