@@ -64,8 +64,6 @@ public:
         return true;
     }
 
-    void addShortcut(BoundAction* action);
-
     virtual std::string getHolderFullyQualifiedScriptName() const OVERRIDE FINAL
     {
         return std::string();
@@ -73,11 +71,13 @@ public:
 
 public Q_SLOTS:
 
-    void restoreDefaults();
+    void onRestoreAllDefaultsClicked();
 
-    void cancelChanges();
+    void onRestoreCurrentTabDefaultsClicked();
 
-    void saveChangesAndClose();
+    void closeDialog();
+
+    void refreshShortcutsFromSettings();
 
     void onSettingChanged(const KnobIPtr& knob, ValueChangedReasonEnum reason);
 
@@ -110,7 +110,6 @@ private:
     void createShortcutEditor(QTreeWidgetItem* uiPageTreeItem);
 
     virtual void showEvent(QShowEvent* e) OVERRIDE;
-    virtual void closeEvent(QCloseEvent* e) OVERRIDE;
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
     virtual void onPageActivated(const KnobPageGuiPtr& page) OVERRIDE FINAL;
     virtual void refreshCurrentPage() OVERRIDE FINAL;

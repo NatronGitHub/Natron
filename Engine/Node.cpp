@@ -204,7 +204,7 @@ RenderSafetyEnum
 Node::getCurrentRenderThreadSafety() const
 {
     if ( !isMultiThreadingSupportEnabledForPlugin() ) {
-        return eRenderSafetyInstanceSafe;
+        return eRenderSafetyUnsafe;
     }
     QMutexLocker k(&_imp->pluginsPropMutex);
 

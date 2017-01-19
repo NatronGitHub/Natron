@@ -318,6 +318,9 @@ OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMasking, 1);
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 
+    // Natron distorsion suite
+    _properties.setIntProperty(kOfxImageEffectPropCanDistort, 1);
+
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);
 
     _properties.setStringProperty(kNatronOfxImageEffectPropDefaultCursors, kNatronOfxArrowCursor, 0);
@@ -784,9 +787,9 @@ getPluginShortcuts(const OFX::Host::ImageEffect::Descriptor& desc, std::list<Plu
         if (hasMeta) {
             eMods |= eKeyboardModifierMeta;
         }
-        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), eSymbol, eMods));
+        shortcuts->push_back(PluginActionShortcut(paramName, foundParamDesc->second->getLabel(), foundParamDesc->second->getHint(), eSymbol, eMods));
     }
-}
+} // getPluginShortcuts
 
 void
 OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,

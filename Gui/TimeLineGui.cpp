@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
+#include "Gui/CachedFramesThread.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
@@ -90,29 +91,6 @@ struct TimeLineZoomContext
     double zoomFactor; /// the zoom factor applied to the current image
 };
 
-struct CachedFrame
-{
-    SequenceTime time;
-    StorageModeEnum mode;
-
-    CachedFrame(SequenceTime t,
-                StorageModeEnum m)
-        : time(t)
-        , mode(m)
-    {
-    }
-};
-
-struct CachedFrame_compare_time
-{
-    bool operator() (const CachedFrame & lhs,
-                     const CachedFrame & rhs) const
-    {
-        return lhs.time < rhs.time;
-    }
-};
-
-typedef std::set<CachedFrame, CachedFrame_compare_time> CachedFrames;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -135,14 +113,11 @@ struct TimelineGuiPrivate
     TextRenderer textRenderer;
     QFont font;
     bool firstPaint;
-    CachedFrames cachedFrames;
     mutable QMutex boundariesMutex;
     SequenceTime leftBoundary, rightBoundary;
     mutable QMutex frameRangeEditedMutex;
     bool isFrameRangeEdited;
     bool seekingTimeline;
-
-    int nRefreshCacheFrameRequests;
 
     TimelineGuiPrivate(TimeLineGui *qq,
                        const ViewerNodePtr& viewer,
@@ -162,14 +137,12 @@ struct TimelineGuiPrivate
         , textRenderer()
         , font(appFont, appFontSize)
         , firstPaint(true)
-        , cachedFrames()
         , boundariesMutex()
         , leftBoundary(0)
         , rightBoundary(0)
         , frameRangeEditedMutex()
         , isFrameRangeEdited(false)
         , seekingTimeline(false)
-        , nRefreshCacheFrameRequests(0)
     {
     }
 
@@ -205,9 +178,6 @@ TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
     setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
-
-    connect(this, SIGNAL(refreshCachedFramesLaterReceived()), this, SLOT(onRefreshCachedFramesLaterReceived()));
-
 }
 
 TimeLineGui::~TimeLineGui()
@@ -408,10 +378,6 @@ TimeLineGui::paintGL()
 
         double cachedR, cachedG, cachedB;
         settings->getCachedFrameColor(&cachedR, &cachedG, &cachedB);
-
-        double dcR, dcG, dcB;
-        settings->getDiskCachedColor(&dcR, &dcG, &dcB);
-
 
         GL_GPU::Color4f(txtR / 2., txtG / 2., txtB / 2., 1.);
         GL_GPU::Begin(GL_LINES);
@@ -647,15 +613,15 @@ TimeLineGui::paintGL()
         GL_GPU::LineWidth(2);
         glCheckError(GL_GPU);
         GL_GPU::Begin(GL_LINES);
-        for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
-            if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
-                if (i->mode == eStorageModeRAM) {
-                    GL_GPU::Color4f(cachedR, cachedG, cachedB, 1.);
-                } else if (i->mode == eStorageModeDisk) {
-                    GL_GPU::Color4f(dcR, dcG, dcB, 1.);
-                }
-                GL_GPU::Vertex2f(i->time, cachedLineYPos);
-                GL_GPU::Vertex2f(i->time + 1, cachedLineYPos);
+
+        std::list<TimeValue> cachedFrames;
+        _imp->viewerTab->getTimeLineCachedFrames(&cachedFrames);
+        for (std::list<TimeValue>::const_iterator i = cachedFrames.begin(); i != cachedFrames.end(); ++i) {
+            if ( ( *i >= btmLeft.x() ) && ( *i <= topRight.x() ) ) {
+                GL_GPU::Color4f(cachedR, cachedG, cachedB, 1.);
+
+                GL_GPU::Vertex2f((int)*i, cachedLineYPos);
+                GL_GPU::Vertex2f((int)*i + 1, cachedLineYPos);
             }
         }
         GL_GPU::End();
@@ -1146,47 +1112,6 @@ TimeLineGui::isFrameRangeEdited() const
 
     return _imp->isFrameRangeEdited;
 }
-
-void
-TimeLineGui::setFrameRangeEdited(bool edited)
-{
-    QMutexLocker k(&_imp->frameRangeEditedMutex);
-
-    _imp->isFrameRangeEdited = edited;
-}
-
-void
-TimeLineGui::refreshCachedFramesNow()
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-#pragma message WARN("Todo")
-    update();
-
-} // refreshCachedFramesNow
-
-void
-TimeLineGui::onRefreshCachedFramesLaterReceived()
-{
-    if (!_imp->nRefreshCacheFrameRequests) {
-        return;
-    }
-    _imp->nRefreshCacheFrameRequests = 0;
-    refreshCachedFramesNow();
-}
-
-void
-TimeLineGui::refreshCachedFramesLater()
-{
-    ++_imp->nRefreshCacheFrameRequests;
-    Q_EMIT refreshCachedFramesLaterReceived();
-}
-
-void
-TimeLineGui::onCacheStatusChanged()
-{
-    refreshCachedFramesLater();
-} // onCacheStatusChanged
 
 void
 TimeLineGui::onProjectFrameRangeChanged(int left,

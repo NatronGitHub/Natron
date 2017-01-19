@@ -156,9 +156,6 @@ GuiPrivate::GuiPrivate(const GuiAppInstancePtr& app,
 #ifdef __NATRON_WIN32__
     , actionShowWindowsConsole(0)
 #endif
-    , actionClearDiskCache(0)
-    , actionClearPlayBackCache(0)
-    , actionClearNodeCache(0)
     , actionClearPluginsLoadingCache(0)
     , actionClearAllCaches(0)
     , actionShowCacheReport(0)

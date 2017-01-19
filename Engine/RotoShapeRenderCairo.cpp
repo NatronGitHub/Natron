@@ -912,7 +912,7 @@ renderSmearBegin_cairo(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userData,
                        bool pressureAffectsHardness,
                        bool pressureAffectsSize,
                        bool /*buildUp*/,
-                       const ColorRgbaD& shapeColor,
+                       const ColorRgbaD& /*shapeColor*/,
                        double opacity)
 {
     RenderSmearCairoData* myData = (RenderSmearCairoData*)userData;

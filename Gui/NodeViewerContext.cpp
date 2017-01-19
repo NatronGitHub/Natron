@@ -412,10 +412,10 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         toolTip += QString::fromUtf8( hintToolTip.c_str() );
         toolTip.append( QString::fromUtf8("</p>") );
         if ( !roleShortcutID.empty() ) {
-            std::list<QKeySequence> keybinds = getKeybind( shortcutGroup, QString::fromUtf8( toolID.c_str() ) );
-            if (keybinds.size() >= 1) {
+            QKeySequence keybinds = getKeybind( shortcutGroup, QString::fromUtf8( toolID.c_str() ) );
+            if (!keybinds.isEmpty()) {
                 toolTip += QString::fromUtf8("<p><b>");
-                toolTip += tr("Keyboard shortcut: %1").arg( keybinds.front().toString(QKeySequence::NativeText) );
+                toolTip += tr("Keyboard shortcut: %1").arg( keybinds.toString(QKeySequence::NativeText) );
                 toolTip += QString::fromUtf8("</b></p>");
             }
         }

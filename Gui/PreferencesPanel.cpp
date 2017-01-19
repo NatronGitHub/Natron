@@ -44,6 +44,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/KnobTypes.h"
+#include "Engine/KeybindShortcut.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
@@ -54,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Gui/Button.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/Gui.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/LineEdit.h"
 #include "Gui/Label.h"
 #include "Gui/GuiApplicationManager.h"
@@ -113,12 +115,12 @@ struct GuiBoundAction
 {
     GuiBoundAction()
         : item(NULL)
-        , action(NULL)
+        , action()
     {
     }
 
     QTreeWidgetItem* item;
-    BoundAction* action;
+    KeybindShortcut action;
 };
 
 struct GuiShortCutGroup
@@ -128,7 +130,7 @@ struct GuiShortCutGroup
         , item(NULL)
     {
     }
-
+    QString grouping;
     std::list<GuiBoundAction> actions;
     QTreeWidgetItem* item;
 };
@@ -136,10 +138,12 @@ struct GuiShortCutGroup
 NATRON_NAMESPACE_ANONYMOUS_EXIT;
 
 static QString
-keybindToString(const Qt::KeyboardModifiers & modifiers,
-                Qt::Key key)
+keybindToString(const KeyboardModifiers & modifiers,
+                Key key)
 {
-    return makeKeySequence(modifiers, key).toString(QKeySequence::NativeText);
+    Qt::Key qKey = QtEnumConvert::toQtKey(key);
+    Qt::KeyboardModifiers qMods = QtEnumConvert::toQtModifiers(modifiers);
+    return makeKeySequence(qMods, qKey).toString(QKeySequence::NativeText);
 }
 
 static QString
@@ -192,49 +196,22 @@ public:
 
 
 static void
-makeItemShortCutText(const BoundAction* action,
+makeItemShortCutText(const KeybindShortcut& action,
                      bool useDefault,
                      QString* shortcutStr)
 {
-    const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
-    const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
 
-    if (ka) {
-        if (useDefault) {
-            if ( !ka->defaultModifiers.empty() ) {
-                assert( ka->defaultModifiers.size() == ka->defaultShortcut.size() );
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->defaultModifiers.begin();
-                std::list<Qt::Key>::const_iterator sit = ka->defaultShortcut.begin();
-                *shortcutStr = keybindToString(*mit, *sit);
-            }
-        } else {
-            if ( !ka->modifiers.empty() ) {
-                assert( ka->modifiers.size() == ka->currentShortcut.size() );
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->modifiers.begin();
-                std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
-                *shortcutStr = keybindToString(*mit, *sit);
-            }
-        }
-    } else if (ma) {
-        if (useDefault) {
-            if ( !ma->defaultModifiers.empty() ) {
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->defaultModifiers.begin();
-                *shortcutStr = mouseShortcutToString(*mit, ma->button);
-            }
-        } else {
-            if ( !ma->modifiers.empty() ) {
-                std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->modifiers.begin();
-                *shortcutStr = mouseShortcutToString(*mit, ma->button);
-            }
-        }
+    if (useDefault) {
+        *shortcutStr = keybindToString(action.defaultModifiers, action.defaultShortcut);
     } else {
-        assert(false);
+        *shortcutStr = keybindToString(action.modifiers, action.currentShortcut);
     }
+
 } // makeItemShortCutText
 
 static void
 setItemShortCutText(QTreeWidgetItem* item,
-                    const BoundAction* action,
+                    const KeybindShortcut& action,
                     bool useDefault)
 {
     QString sc;
@@ -277,13 +254,12 @@ public:
     Label* warningLabelIcon;
     Label* warningLabelDesc;
     DialogButtonBox* buttonBox;
-    Button* restoreDefaultsB;
+    Button* restorePageDefaultsButton;
+    Button* restoreAllDefaultsButton;
     Button* prefsHelp;
-    Button* cancelB;
-    Button* okB;
+    Button* closeButton;
     std::vector<KnobIPtr> changedKnobs;
     bool pluginSettingsChanged;
-    bool closeIsOK;
     Label* pluginFilterLabel;
     LineEdit* pluginFilterEdit;
     QTreeWidget* pluginsView;
@@ -317,13 +293,12 @@ public:
         , warningLabelIcon(0)
         , warningLabelDesc(0)
         , buttonBox(0)
-        , restoreDefaultsB(0)
+        , restorePageDefaultsButton(0)
+        , restoreAllDefaultsButton(0)
         , prefsHelp(0)
-        , cancelB(0)
-        , okB(0)
+        , closeButton(0)
         , changedKnobs(0)
         , pluginSettingsChanged(false)
-        , closeIsOK(false)
         , pluginFilterLabel(0)
         , pluginFilterEdit(0)
         , pluginsView(0)
@@ -350,11 +325,11 @@ public:
     void setVisiblePage(int index);
 
     PluginTreeNodeList::iterator buildPluginGroupHierarchy(const QStringList& grouping);
-    BoundAction* getActionForTreeItem(QTreeWidgetItem* item) const
+    KeybindShortcut getActionForTreeItem(QTreeWidgetItem* item) const
     {
         for (GuiAppShorcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
             if (it->item == item) {
-                return NULL;
+                return KeybindShortcut();
             }
             for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
                 if (it2->item == item) {
@@ -363,12 +338,28 @@ public:
             }
         }
 
-        return (BoundAction*)NULL;
+        return KeybindShortcut();
+    }
+
+    QTreeWidgetItem* getItemForAction(const KeybindShortcut& action) const
+    {
+        for (GuiAppShorcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
+            if (it->grouping.toStdString() == action.grouping) {
+                for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
+                    if (it2->action.actionID == action.actionID) {
+                        return it2->item;
+                    }
+                }
+                break;
+            }
+        }
+
+        return NULL;
     }
 
     GuiAppShorcuts::iterator buildShortcutsGroupHierarchy(QString grouping);
 
-    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator, BoundAction* action);
+    void makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator, const KeybindShortcut& action);
 };
 
 PreferencesPanel::PreferencesPanel(Gui *parent)
@@ -611,17 +602,6 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
                                             "---> Right mouse button is emulated by holding down Command (cmd) coupled with a left click.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _imp->shortcutsTree->setItemDelegate( new ShortcutDelegate(_imp->shortcutsTree) );
 
-    const AppShortcuts & appShortcuts = appPTR->getAllShortcuts();
-
-    for (AppShortcuts::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
-        GuiAppShorcuts::iterator foundGuiGroup = _imp->buildShortcutsGroupHierarchy(it->first);
-        assert( foundGuiGroup != _imp->appShortcuts.end() );
-
-        for (GroupShortcuts::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
-        }
-    }
-
     _imp->shortcutsTree->resizeColumnToContents(0);
     QObject::connect( _imp->shortcutsTree, SIGNAL(itemSelectionChanged()), this, SLOT(onShortcutsSelectionChanged()) );
 
@@ -676,6 +656,10 @@ PreferencesPanel::createShortcutEditor(QTreeWidgetItem* uiPageTreeItem)
     tab.treeItem->setText( 0, tr("Shortcut Editor") );
     tab.page = page;
     _imp->tabs.push_back(tab);
+    
+    refreshShortcutsFromSettings();
+
+    connect(appPTR->getCurrentSettings().get(), SIGNAL(shortcutsChanged()), this, SLOT(refreshShortcutsFromSettings()));
 } // PreferencesPanel::createShortcutEditor
 
 Gui*
@@ -756,29 +740,31 @@ PreferencesPanel::createGui()
     _imp->warningContainer->hide();
 
     _imp->buttonBox = new DialogButtonBox(Qt::Horizontal, this);
-    _imp->restoreDefaultsB = new Button( tr("Restore Defaults"), _imp->buttonBox );
-    _imp->restoreDefaultsB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
+    _imp->restorePageDefaultsButton = new Button( tr("Restore Defaults"), _imp->buttonBox );
+    _imp->restorePageDefaultsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for the selected tab"), NATRON_NAMESPACE::WhiteSpaceNormal) );
+
+    _imp->restoreAllDefaultsButton = new Button( tr("Restore All Defaults"), _imp->buttonBox );
+    _imp->restoreAllDefaultsButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Restore default values for all preferences"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
     _imp->prefsHelp = new Button( tr("Help"), _imp->buttonBox );
-    _imp->prefsHelp->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Display help for preferences in an external browser."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->prefsHelp->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Display help for preferences in an external browser"), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
-    _imp->cancelB = new Button( tr("Discard"), _imp->buttonBox );
-    _imp->cancelB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Cancel changes that were not saved and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->okB = new Button( tr("Save"),_imp->buttonBox );
-    _imp->okB->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Save changes on disk and close the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
-    _imp->buttonBox->addButton(_imp->restoreDefaultsB, QDialogButtonBox::ResetRole);
+    _imp->closeButton = new Button( tr("Close"), _imp->buttonBox );
+    _imp->closeButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Closes the window."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _imp->buttonBox->addButton(_imp->restorePageDefaultsButton, QDialogButtonBox::ResetRole);
+    _imp->buttonBox->addButton(_imp->restoreAllDefaultsButton, QDialogButtonBox::ResetRole);
     _imp->buttonBox->addButton(_imp->prefsHelp, QDialogButtonBox::HelpRole);
-    _imp->buttonBox->addButton(_imp->cancelB, QDialogButtonBox::RejectRole);
-    _imp->buttonBox->addButton(_imp->okB, QDialogButtonBox::AcceptRole);
+    _imp->buttonBox->addButton(_imp->closeButton, QDialogButtonBox::ApplyRole);
 
     _imp->mainLayout->addWidget(_imp->splitter);
     _imp->mainLayout->addWidget(_imp->warningContainer);
     _imp->mainLayout->addWidget(_imp->buttonBox);
 
-    QObject::connect( _imp->restoreDefaultsB, SIGNAL(clicked()), this, SLOT(restoreDefaults()) );
+    QObject::connect( _imp->restoreAllDefaultsButton, SIGNAL(clicked()), this, SLOT(onRestoreAllDefaultsClicked()) );
+    QObject::connect( _imp->restorePageDefaultsButton, SIGNAL(clicked()), this, SLOT(onRestoreCurrentTabDefaultsClicked()) );
     QObject::connect( _imp->prefsHelp, SIGNAL(clicked()), this, SLOT(openHelp()) );
-    QObject::connect( _imp->buttonBox, SIGNAL(rejected()), this, SLOT(cancelChanges()) );
-    QObject::connect( _imp->buttonBox, SIGNAL(accepted()), this, SLOT(saveChangesAndClose()) );
+    QObject::connect( _imp->closeButton, SIGNAL(clicked()), this, SLOT(closeDialog()) );
     QObject::connect( appPTR->getCurrentSettings().get(), SIGNAL(settingChanged(KnobIPtr,ValueChangedReasonEnum)), this, SLOT(onSettingChanged(KnobIPtr,ValueChangedReasonEnum)) );
 
 
@@ -1156,45 +1142,85 @@ PreferencesPanel::openHelp()
 }
 
 void
-PreferencesPanel::restoreDefaults()
+PreferencesPanel::onRestoreCurrentTabDefaultsClicked()
 {
-    StandardButtonEnum reply = Dialogs::questionDialog( tr("Preferences").toStdString(),
-                                                        tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
+    KnobPageGuiPtr currentPage = getCurrentPage();
+    if (!currentPage) {
+        return;
+    }
 
-    if (reply == eStandardButtonYes) {
-        appPTR->getCurrentSettings()->restoreDefault();
+    appPTR->getCurrentSettings()->restorePageToDefaults(currentPage->pageKnob.lock());
 
-        for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
-            if (it->enabledCheckbox) {
-                it->enabledCheckbox->setChecked(true);
-            }
-            if (it->rsCheckbox) {
-                it->rsCheckbox->setChecked(true);
-            }
-            if (it->mtCheckbox) {
-                it->mtCheckbox->setChecked(true);
-            }
+    for (PluginTreeNodeList::const_iterator it = _imp->pluginsList.begin(); it != _imp->pluginsList.end(); ++it) {
+        if (it->enabledCheckbox) {
+            it->enabledCheckbox->setChecked(true);
+        }
+        if (it->rsCheckbox) {
+            it->rsCheckbox->setChecked(true);
+        }
+        if (it->mtCheckbox) {
+            it->mtCheckbox->setChecked(true);
+        }
+        if (it->glCheckbox) {
+            it->glCheckbox->setChecked(true);
         }
     }
 }
 
 void
-PreferencesPanel::cancelChanges()
+PreferencesPanel::onRestoreAllDefaultsClicked()
 {
-    _imp->closeIsOK = false;
-    close();
+    StandardButtonEnum reply = Dialogs::questionDialog( tr("Preferences").toStdString(),
+                                                        tr("Restoring the settings will delete any custom configuration, are you sure you want to do this?").toStdString(), false );
+    if (reply != eStandardButtonYes) {
+        return;
+    }
+    for (std::vector<PreferenceTab>::const_iterator it = _imp->tabs.begin(); it != _imp->tabs.end(); ++it) {
+        appPTR->getCurrentSettings()->restorePageToDefaults(it->page.lock()->pageKnob.lock());
+    }
 }
 
 void
-PreferencesPanel::saveChangesAndClose()
+PreferencesPanel::closeDialog()
 {
-    ///Steal focus from other widgets so that we are sure all LineEdits and Spinboxes get the focusOut event and their editingFinished
-    ///signal is emitted.
-    _imp->okB->setFocus();
-    appPTR->getCurrentSettings()->saveSettings(_imp->changedKnobs, _imp->pluginSettingsChanged);
-    appPTR->saveShortcuts();
-    _imp->closeIsOK = true;
+    if (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) {
+        appPTR->getCurrentSettings()->saveSettingsToFile();
+    }
     close();
+}
+
+
+void
+PreferencesPanel::refreshShortcutsFromSettings()
+{
+    _imp->appShortcuts.clear();
+
+    KeybindShortcut currentSelection;
+    QList<QTreeWidgetItem*> selectedItems = _imp->tree->selectedItems();
+    if (!selectedItems.empty()) {
+        currentSelection = _imp->getActionForTreeItem(selectedItems.front());
+    }
+
+    _imp->tree->clear();
+
+    const ApplicationShortcutsMap & appShortcuts = appPTR->getCurrentSettings()->getAllShortcuts();
+    
+    for (ApplicationShortcutsMap::const_iterator it = appShortcuts.begin(); it != appShortcuts.end(); ++it) {
+        QString grouping = QString::fromUtf8(it->first.c_str());
+        GuiAppShorcuts::iterator foundGuiGroup = _imp->buildShortcutsGroupHierarchy(grouping);
+        assert( foundGuiGroup != _imp->appShortcuts.end() );
+        
+        for (GroupShortcutsMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
+            _imp->makeGuiActionForShortcut(foundGuiGroup, it2->second);
+        }
+    }
+
+    // Restore selection
+    if (!currentSelection.actionID.empty()) {
+        QTreeWidgetItem* item = _imp->getItemForAction(currentSelection);
+        item->setSelected(true);
+    }
+
 }
 
 void
@@ -1209,28 +1235,12 @@ PreferencesPanel::showEvent(QShowEvent* /*e*/)
     _imp->pluginSettingsChanged = false;
 }
 
-void
-PreferencesPanel::closeEvent(QCloseEvent*)
-{
-    if ( !_imp->closeIsOK && (!_imp->changedKnobs.empty() || _imp->pluginSettingsChanged) ) {
-        SettingsPtr settings = appPTR->getCurrentSettings();
-        if ( !_imp->changedKnobs.empty() ) {
-            settings->beginChanges();
-            settings->restoreSettings(_imp->changedKnobs);
-            settings->endChanges();
-        }
-        if (_imp->pluginSettingsChanged) {
-            settings->restorePluginSettings();
-        }
-    }
-}
 
 void
 PreferencesPanel::keyPressEvent(QKeyEvent* e)
 {
     if (e->key() == Qt::Key_Escape) {
-        _imp->closeIsOK = false;
-        close();
+        closeDialog();
     } else {
         QWidget::keyPressEvent(e);
     }
@@ -1258,17 +1268,17 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
         }
     }
 
-    QTreeWidgetItem* groupParent;
+    QTreeWidgetItem* groupItem;
     if ( foundGuiGroup != appShortcuts.end() ) {
-        groupParent = foundGuiGroup->item;
+        groupItem = foundGuiGroup->item;
     } else {
-        groupParent = 0;
+        groupItem = 0;
         for (int i = 0; i < groupingSplit.size(); ++i) {
             QTreeWidgetItem* groupingItem;
             bool existAlready = false;
-            if (groupParent) {
-                for (int j = 0; j < groupParent->childCount(); ++j) {
-                    QTreeWidgetItem* child = groupParent->child(j);
+            if (groupItem) {
+                for (int j = 0; j < groupItem->childCount(); ++j) {
+                    QTreeWidgetItem* child = groupItem->child(j);
                     if (child->text(0) == groupingSplit[i]) {
                         groupingItem = child;
                         existAlready = true;
@@ -1276,8 +1286,8 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
                     }
                 }
                 if (!existAlready) {
-                    groupingItem = new QTreeWidgetItem(groupParent);
-                    groupParent->addChild(groupingItem);
+                    groupingItem = new QTreeWidgetItem(groupItem);
+                    groupItem->addChild(groupingItem);
                 }
             } else {
                 for (int j = 0; j < shortcutsTree->topLevelItemCount(); ++j) {
@@ -1299,11 +1309,12 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
                 groupingItem->setFlags(Qt::ItemIsEnabled);
                 groupingItem->setText(0, groupingSplit[i]);
             }
-            groupParent = groupingItem;
+            groupItem = groupingItem;
         }
     }
     GuiShortCutGroup group;
-    group.item = groupParent;
+    group.item = groupItem;
+    group.grouping = lastGroupName;
     foundGuiGroup = appShortcuts.insert(appShortcuts.end(), group);
 
     return foundGuiGroup;
@@ -1311,31 +1322,16 @@ PreferencesPanelPrivate::buildShortcutsGroupHierarchy(QString grouping)
 
 void
 PreferencesPanelPrivate::makeGuiActionForShortcut(GuiAppShorcuts::iterator guiGroupIterator,
-                                                  BoundAction* action)
+                                                  const KeybindShortcut& action)
 {
     GuiBoundAction guiAction;
 
     guiAction.action = action;
     guiAction.item = new QTreeWidgetItem(guiGroupIterator->item);
-    guiAction.item->setText(0, guiAction.action->description);
-    const KeyBoundAction* ka = dynamic_cast<const KeyBoundAction*>(action);
-    const MouseAction* ma = dynamic_cast<const MouseAction*>(action);
-    QString shortcutStr;
-    if (ka) {
-        if ( !ka->modifiers.empty() ) {
-            std::list<Qt::KeyboardModifiers>::const_iterator mit = ka->modifiers.begin();
-            std::list<Qt::Key>::const_iterator sit = ka->currentShortcut.begin();
-            shortcutStr = keybindToString(*mit, *sit);
-        }
-    } else if (ma) {
-        if ( !ma->modifiers.empty() ) {
-            std::list<Qt::KeyboardModifiers>::const_iterator mit = ma->modifiers.begin();
-            shortcutStr = mouseShortcutToString(*mit, ma->button);
-        }
-    } else {
-        assert(false);
-    }
-    if (!action->editable) {
+    guiAction.item->setText(0, QString::fromUtf8(action.actionLabel.c_str()));
+    QString shortcutStr = keybindToString(action.modifiers, action.currentShortcut);
+    
+    if (!action.editable) {
         guiAction.item->setToolTip( 0, tr("This action is standard and its shortcut cannot be edited.") );
         guiAction.item->setToolTip( 1, tr("This action is standard and its shortcut cannot be edited.") );
         guiAction.item->setDisabled(true);
@@ -1436,16 +1432,6 @@ KeybindRecorder::keyPressEvent(QKeyEvent* e)
 }
 
 void
-PreferencesPanel::addShortcut(BoundAction* action)
-{
-    GuiAppShorcuts::iterator foundGuiGroup = _imp->buildShortcutsGroupHierarchy(action->grouping);
-
-    assert( foundGuiGroup != _imp->appShortcuts.end() );
-
-    _imp->makeGuiActionForShortcut(foundGuiGroup, action);
-}
-
-void
 PreferencesPanel::onShortcutsSelectionChanged()
 {
     QList<QTreeWidgetItem*> items = _imp->shortcutsTree->selectedItems();
@@ -1472,11 +1458,12 @@ PreferencesPanel::onShortcutsSelectionChanged()
         _imp->resetShortcutButton->setEnabled(false);
     }
 
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-    assert(action);
-    QString sc;
-    makeItemShortCutText(action, false, &sc);
-    _imp->shortcutEditor->setText(sc);
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+    if (!action.actionID.empty()) {
+        QString sc;
+        makeItemShortCutText(action, false, &sc);
+        _imp->shortcutEditor->setText(sc);
+    }
 }
 
 void
@@ -1491,7 +1478,8 @@ PreferencesPanel::onValidateShortcutButtonClicked()
 
     QTreeWidgetItem* selection = items.front();
     QKeySequence seq(text, QKeySequence::NativeText);
-    BoundAction* action = _imp->getActionForTreeItem(selection);
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+
     QTreeWidgetItem* parent = selection->parent();
     while (parent) {
         QTreeWidgetItem* parentUp = parent->parent();
@@ -1502,46 +1490,35 @@ PreferencesPanel::onValidateShortcutButtonClicked()
     }
     assert(parent);
 
-    //only keybinds can be edited...
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    assert(ka);
-    if (!ka) {
-        return;
-    }
-    Qt::KeyboardModifiers modifiers;
-    Qt::Key symbol;
-    extractKeySequence(seq, modifiers, symbol);
+    Qt::KeyboardModifiers qmodifiers;
+    Qt::Key qsymbol;
+    extractKeySequence(seq, qmodifiers, qsymbol);
 
+    KeyboardModifiers mods = QtEnumConvert::fromQtModifiers(qmodifiers);
+    Key sym = QtEnumConvert::fromQtKey(qsymbol);
+
+    // Check for conflicts: 2 shorcuts within the same group cannot have the same keybind
     for (GuiAppShorcuts::iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
         for (std::list<GuiBoundAction>::iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
-            if ( (it2->action != action) && ( it->item->text(0) == parent->text(0) ) ) {
-                KeyBoundAction* keyAction = dynamic_cast<KeyBoundAction*>(it2->action);
-                if (keyAction) {
-                    assert( keyAction->modifiers.size() == keyAction->currentShortcut.size() );
-                    std::list<Qt::KeyboardModifiers>::const_iterator mit = keyAction->modifiers.begin();
-                    for (std::list<Qt::Key>::const_iterator it3 = keyAction->currentShortcut.begin(); it3 != keyAction->currentShortcut.end(); ++it3, ++mit) {
-                        if ( (*mit == modifiers) && (*it3 == symbol) ) {
-                            QString err = QString::fromUtf8("Cannot bind this shortcut because the following action is already using it: %1")
-                                          .arg( it2->item->text(0) );
-                            _imp->shortcutEditor->clear();
-                            Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+            if ( (it2->action.actionID != action.actionID) && ( it->item->text(0) == parent->text(0) ) ) {
 
-                            return;
-                        }
-                    }
+                if ( (it2->action.modifiers == mods) && (it2->action.currentShortcut == sym) ) {
+                    QString err = tr("Cannot bind this shortcut because the following action is already using it: %1")
+                    .arg( it2->item->text(0) );
+                    _imp->shortcutEditor->clear();
+                    Dialogs::errorDialog( tr("Shortcuts Editor").toStdString(), tr( err.toStdString().c_str() ).toStdString() );
+
+                    return;
                 }
+
+                
             }
         }
     }
 
-    selection->setText(1, text);
-    action->modifiers.clear();
-    if ( !text.isEmpty() ) {
-        action->modifiers.push_back(modifiers);
-        ka->currentShortcut.push_back(symbol);
-    }
+    // Refresh keybinds
+    appPTR->getCurrentSettings()->setShortcutKeybind(action.grouping, action.actionID, mods, sym);
 
-    appPTR->notifyShortcutChanged(ka);
 } // PreferencesPanel::onValidateShortcutButtonClicked
 
 void
@@ -1561,20 +1538,16 @@ PreferencesPanel::onClearShortcutButtonClicked()
     }
 
     QTreeWidgetItem* selection = items.front();
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-    assert(action);
-    action->modifiers.clear();
-    MouseAction* ma = dynamic_cast<MouseAction*>(action);
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    if (ma) {
-        ma->button = Qt::NoButton;
-    } else if (ka) {
-        ka->currentShortcut.clear();
-    }
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+
+    appPTR->getCurrentSettings()->setShortcutKeybind(action.grouping, action.actionID, eKeyboardModifierNone, (Key)0);
 
     selection->setText( 1, QString() );
+
     _imp->shortcutEditor->setText( QString() );
     _imp->shortcutEditor->setFocus();
+
+
 }
 
 void
@@ -1594,19 +1567,8 @@ PreferencesPanel::onResetShortcutButtonClicked()
     }
 
     QTreeWidgetItem* selection = items.front();
-    BoundAction* action = _imp->getActionForTreeItem(selection);
-    assert(action);
-    action->modifiers = action->defaultModifiers;
-    KeyBoundAction* ka = dynamic_cast<KeyBoundAction*>(action);
-    if (ka) {
-        ka->currentShortcut = ka->defaultShortcut;
-        appPTR->notifyShortcutChanged(ka);
-    }
-    setItemShortCutText(selection, action, true);
-
-    QString sc;
-    makeItemShortCutText(action, true, &sc);
-    _imp->shortcutEditor->setText(sc);
+    KeybindShortcut action = _imp->getActionForTreeItem(selection);
+    appPTR->getCurrentSettings()->setShortcutKeybind(action.grouping, action.actionID, action.defaultModifiers, action.defaultShortcut);
 }
 
 void
@@ -1617,7 +1579,7 @@ PreferencesPanel::onRestoreDefaultShortcutsButtonClicked()
                                                                                                  "are you sure you want to do this?").toStdString(), false );
 
     if (reply == eStandardButtonYes) {
-        appPTR->restoreDefaultShortcuts();
+        appPTR->getCurrentSettings()->restoreDefaultShortcuts();
         for (GuiAppShorcuts::const_iterator it = _imp->appShortcuts.begin(); it != _imp->appShortcuts.end(); ++it) {
             for (std::list<GuiBoundAction>::const_iterator it2 = it->actions.begin(); it2 != it->actions.end(); ++it2) {
                 setItemShortCutText(it2->item, it2->action, true);

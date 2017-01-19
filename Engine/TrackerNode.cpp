@@ -87,31 +87,31 @@ TrackerNode::createPlugin()
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath,  "Images/trackerNodeIcon.png");
 
     // Viewer buttons
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, Key_Z) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackPrevious, kTrackerUIParamTrackPreviousLabel, Key_X) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackNext, kTrackerUIParamTrackNextLabel, Key_C) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamStopTracking, kTrackerUIParamStopTrackingLabel, Key_Escape) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackFW, kTrackerUIParamTrackFWLabel, Key_V) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackRange, kTrackerUIParamTrackRangeLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackAllKeyframes, kTrackerUIParamTrackAllKeyframesLabel, Key_V, eKeyboardModifierControl) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackCurrentKeyframe, kTrackerUIParamTrackCurrentKeyframeLabel, Key_C, eKeyboardModifierControl) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAllAnimation, kTrackerUIParamClearAllAnimationLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAnimationBw, kTrackerUIParamClearAnimationBwLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAnimationFw, kTrackerUIParamClearAnimationFwLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRefreshViewer, kTrackerUIParamRefreshViewerLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamCenterViewer, kTrackerUIParamCenterViewerLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamCreateKeyOnMove, kTrackerUIParamCreateKeyOnMoveLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamShowError, kTrackerUIParamShowErrorLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamSetPatternKeyFrame, kTrackerUIParamSetPatternKeyFrameLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRemovePatternKeyFrame, kTrackerUIParamRemovePatternKeyFrameLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamResetOffset, kTrackerUIParamResetOffsetLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamResetTrack, kTrackerUIParamResetTrackLabel) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionSelectAllTracks, kTrackerUIParamRightClickMenuActionSelectAllTracksLabel, Key_A, eKeyboardModifierControl) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionRemoveTracks, kTrackerUIParamRightClickMenuActionRemoveTracksLabel, Key_BackSpace) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeBottom, kTrackerUIParamRightClickMenuActionNudgeBottomLabel, Key_Down, eKeyboardModifierShift) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeTop, kTrackerUIParamRightClickMenuActionNudgeTopLabel, Key_Up, eKeyboardModifierShift) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeRight, kTrackerUIParamRightClickMenuActionNudgeRightLabel, Key_Right, eKeyboardModifierShift) );
-    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeLeft, kTrackerUIParamRightClickMenuActionNudgeLeftLabel, Key_Left, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackBW, kTrackerUIParamTrackBWLabel, kTrackerUIParamTrackBWHint, Key_Z) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackPrevious, kTrackerUIParamTrackPreviousLabel, kTrackerUIParamTrackPreviousHint, Key_X) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackNext, kTrackerUIParamTrackNextLabel, kTrackerUIParamTrackNextHint, Key_C) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamStopTracking, kTrackerUIParamStopTrackingLabel, kTrackerUIParamStopTrackingHint, Key_Escape) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackFW, kTrackerUIParamTrackFWLabel, kTrackerUIParamTrackFWHint, Key_V) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackRange, kTrackerUIParamTrackRangeLabel, kTrackerUIParamTrackRangeHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackAllKeyframes, kTrackerUIParamTrackAllKeyframesLabel, kTrackerUIParamTrackAllKeyframesHint, Key_V, eKeyboardModifierControl) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamTrackCurrentKeyframe, kTrackerUIParamTrackCurrentKeyframeLabel, kTrackerUIParamTrackCurrentKeyframeHint, Key_C, eKeyboardModifierControl) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAllAnimation, kTrackerUIParamClearAllAnimationLabel, kTrackerUIParamClearAllAnimationHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAnimationBw, kTrackerUIParamClearAnimationBwLabel, kTrackerUIParamClearAnimationBwHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamClearAnimationFw, kTrackerUIParamClearAnimationFwLabel, kTrackerUIParamClearAnimationFwHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRefreshViewer, kTrackerUIParamRefreshViewerLabel, kTrackerUIParamRefreshViewerHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamCenterViewer, kTrackerUIParamCenterViewerLabel, kTrackerUIParamCenterViewerHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamCreateKeyOnMove, kTrackerUIParamCreateKeyOnMoveLabel, kTrackerUIParamCreateKeyOnMoveHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamShowError, kTrackerUIParamShowErrorLabel, kTrackerUIParamShowErrorHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamSetPatternKeyFrame, kTrackerUIParamSetPatternKeyFrameLabel, kTrackerUIParamSetPatternKeyFrameHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRemovePatternKeyFrame, kTrackerUIParamRemovePatternKeyFrameLabel, kTrackerUIParamRemovePatternKeyFrameHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamResetOffset, kTrackerUIParamResetOffsetLabel, kTrackerUIParamResetOffsetHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamResetTrack, kTrackerUIParamResetTrackLabel, kTrackerUIParamResetTrackHint) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionSelectAllTracks, kTrackerUIParamRightClickMenuActionSelectAllTracksLabel, "", Key_A, eKeyboardModifierControl) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionRemoveTracks, kTrackerUIParamRightClickMenuActionRemoveTracksLabel, "", Key_BackSpace) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeBottom, kTrackerUIParamRightClickMenuActionNudgeBottomLabel, "", Key_Down, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeTop, kTrackerUIParamRightClickMenuActionNudgeTopLabel, "", Key_Up, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeRight, kTrackerUIParamRightClickMenuActionNudgeRightLabel, "", Key_Right, eKeyboardModifierShift) );
+    ret->addActionShortcut( PluginActionShortcut(kTrackerUIParamRightClickMenuActionNudgeLeft, kTrackerUIParamRightClickMenuActionNudgeLeftLabel, "", Key_Left, eKeyboardModifierShift) );
 
 
     return ret;

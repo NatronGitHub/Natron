@@ -97,6 +97,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/GroupOutput.h"
 #include "Engine/JoinViewsNode.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/KeybindShortcut.h"
 #include "Engine/Log.h"
 #include "Engine/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Engine/Node.h"
@@ -402,7 +403,9 @@ AppManager::releaseNatronGIL()
 void
 AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
 {
-    if (!SERIALIZATION_NAMESPACE::read(NATRON_PROJECT_FILE_HEADER,  ifile, obj)) {
+    try {
+        SERIALIZATION_NAMESPACE::read(NATRON_PROJECT_FILE_HEADER,  ifile, obj);
+    } catch (SERIALIZATION_NAMESPACE::InvalidSerializationFileException& e) {
         throw std::runtime_error(tr("Failed to open %1: This file does not appear to be a %2 project file").arg(QString::fromUtf8(filename.c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).toStdString());
     }
 
@@ -865,7 +868,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
     if (!cl.isLoadedUsingDefaultSettings()) {
         ///Call restore after initializing knobs
-        _imp->_settings->restoreAllSettings();
+        _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
     }
 
     // Create cache once we loaded the cache directory path wanted by the user
@@ -1392,7 +1395,7 @@ AppManager::loadAllPlugins()
     // Load presets after all plug-ins are loaded
     loadNodesPresets();
 
-    _imp->_settings->restorePluginSettings();
+    _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypePlugins);
 
 
     onAllPluginsLoaded();
@@ -1497,9 +1500,67 @@ AppManager::onAllPluginsLoaded()
                 onPluginLoaded(*itver);
             }
         }
-    }
+    } // for all plugins
+
+    // Now that we know all plug-ins, restore shortcuts.
+    getCurrentSettings()->loadSettingsFromFile(Settings::eLoadSettingsTypeShortcuts);
+
 } // AppManager::onAllPluginsLoaded
 
+void
+AppManager::onPluginLoaded(const PluginPtr& plugin)
+{
+    std::string shortcutGrouping(kShortcutGroupNodes);
+    std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::string pluginID = plugin->getPluginID();
+    std::string pluginLabel = plugin->getLabelWithoutSuffix();
+
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+        shortcutGrouping.append("/");
+        shortcutGrouping.append(groups[i]);
+    }
+
+    KeyboardModifiers modifiers(eKeyboardModifierNone);
+    Key symbol = (Key)0;
+    {
+        int symbol_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 0);
+        int mods_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 1);
+        if (symbol_i != 0) {
+            symbol = (Key)symbol_i;
+        }
+        if (mods_i != 0) {
+            modifiers = (KeyboardModifiers)mods_i;
+        }
+    }
+
+    if ( plugin->getIsUserCreatable() ) {
+        std::string hint = tr("Create an instance of %1").arg(QString::fromUtf8(pluginID.c_str())).toStdString();
+        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol);
+    }
+
+    // If this plug-in has presets, add shortcuts as well
+    plugin->sortPresetsByLabel();
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+        std::string shortcutKey = pluginID;
+        shortcutKey += "_preset_";
+        shortcutKey += it->presetLabel.toStdString();
+
+        std::string shortcutLabel = pluginLabel;
+        shortcutLabel += " (";
+        shortcutLabel += it->presetLabel.toStdString();
+        shortcutLabel += ")";
+
+        std::string hint = tr("Create an instance of %1 with %2 preset").arg(QString::fromUtf8(pluginID.c_str())).arg(it->presetLabel).toStdString();
+        getCurrentSettings()->addKeybind(shortcutGrouping, shortcutKey, shortcutLabel, hint, it->modifiers, it->symbol);
+    }
+
+    const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
+    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup();
+    for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
+        getCurrentSettings()->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, it->actionHint, it->modifiers, it->key );
+    }
+} // onPluginLoaded
 
 void
 AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
@@ -1620,16 +1681,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     QStringList templatesSearchPath;
 
     //add ~/.Natron
-    QString dataLocation = QDir::homePath();
-    QString mainPath = dataLocation + QString::fromUtf8("/.") + QString::fromUtf8(NATRON_APPLICATION_NAME);
-    QDir mainPathDir(mainPath);
 
-    if ( !mainPathDir.exists() ) {
-        QDir dataDir(dataLocation);
-        if ( dataDir.exists() ) {
-            dataDir.mkdir( QChar::fromLatin1('.') + QString( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-        }
-    }
+    QString mainPath = QString::fromUtf8(getCurrentSettings()->getSettingsAbsoluteFilePath().c_str());
+
 
     QString envvar( QString::fromUtf8( qgetenv(NATRON_PATH_ENV_VAR) ) );
 #ifdef __NATRON_WIN32__
@@ -1821,9 +1875,7 @@ AppManager::loadNodesPresets()
         }
         SERIALIZATION_NAMESPACE::NodeSerialization obj;
         try {
-            if (!SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile, &obj)) {
-                continue;
-            }
+            SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile, &obj);
         } catch (...) {
             continue;
         }
@@ -2700,6 +2752,38 @@ AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
 {
     _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
 }
+
+void
+AppManager::addMenuCommand(const std::string& grouping,
+                    const std::string& pythonFunction,
+                    const KeyboardModifiers& modifiers,
+                    Key key)
+{
+    QStringList split = QString::fromUtf8(grouping.c_str()).split( QLatin1Char('/') );
+
+    if ( grouping.empty() || split.isEmpty() ) {
+        return;
+    }
+    PythonUserCommand c;
+    c.grouping = QString::fromUtf8(grouping.c_str());
+    c.pythonFunction = pythonFunction;
+    c.key = key;
+    c.modifiers = modifiers;
+    _imp->pythonCommands.push_back(c);
+
+
+    std::string actionID = split[split.size() - 1].toStdString();
+    getCurrentSettings()->addKeybind(kShortcutGroupGlobal, actionID, actionID, "", modifiers, key);
+
+}
+
+
+const std::list<PythonUserCommand>&
+AppManager::getUserPythonCommands() const
+{
+    return _imp->pythonCommands;
+}
+
 
 void
 AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,

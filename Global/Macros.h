@@ -107,6 +107,8 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_PRESETS_FILE_HEADER "# Natron Presets File"
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_CLIPBOARD_HEADER "# Natron Clipboard Content"
+#define NATRON_SETTINGS_FILE_HEADER "# Natron Settings File"
+#define NATRON_SETTINGS_FILE_EXT "txt"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 

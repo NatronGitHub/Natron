@@ -1319,6 +1319,32 @@ static PyObject* Sbk_EffectFunc_insertParamInViewerUI(PyObject* self, PyObject* 
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_isNodeActivated(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isNodeActivated()const
+            bool cppResult = const_cast<const ::Effect*>(cppSelf)->isNodeActivated();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_isNodeSelected(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1825,6 +1851,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getSize", (PyCFunction)Sbk_EffectFunc_getSize, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"insertParamInViewerUI", (PyCFunction)Sbk_EffectFunc_insertParamInViewerUI, METH_VARARGS|METH_KEYWORDS},
+    {"isNodeActivated", (PyCFunction)Sbk_EffectFunc_isNodeActivated, METH_NOARGS},
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"isReaderNode", (PyCFunction)Sbk_EffectFunc_isReaderNode, METH_NOARGS},
     {"isWriterNode", (PyCFunction)Sbk_EffectFunc_isWriterNode, METH_NOARGS},

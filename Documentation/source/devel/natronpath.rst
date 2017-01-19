@@ -15,11 +15,15 @@ the following search paths in order:
 	
 			On Windows that would be::
 			
-				C:\Users\<username>\.Natron
+				C:\Documents and Settings\<username>\NatronUserData
 				
 			On OS X & Linux that would be::
 			
-				~/.Natron
+				/home/<username>/NatronUserData
+				
+			.. warning::
+			
+				Note that the old ~/.Natron directory is no longer looked up by Natron.
 	
 	* The standard system location for non OpenFX plug-ins (i.e PyPlugs):
 	

@@ -38,6 +38,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/PyGlobalFunctions.h"
 
 #include "Gui/PyGuiApp.h"
+#include "Gui/QtEnumConvert.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiFwd.h"
 
@@ -88,7 +89,7 @@ public:
     void addMenuCommand(const QString& grouping,
                         const QString& pythonFunctionName)
     {
-        appPTR->addCommand(grouping, pythonFunctionName.toStdString(), (Qt::Key)0, Qt::NoModifier);
+        appPTR->addMenuCommand(grouping.toStdString(),  pythonFunctionName.toStdString(), eKeyboardModifierNone, (Key)0);
     }
 
     void addMenuCommand(const QString& grouping,
@@ -96,7 +97,7 @@ public:
                         Qt::Key key,
                         const Qt::KeyboardModifiers& modifiers)
     {
-        appPTR->addCommand(grouping, pythonFunctionName.toStdString(), key, modifiers);
+        appPTR->addMenuCommand(grouping.toStdString(), pythonFunctionName.toStdString(), QtEnumConvert::fromQtModifiers(modifiers),  QtEnumConvert::fromQtKey(key));
     }
 };
 

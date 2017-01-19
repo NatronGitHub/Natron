@@ -192,6 +192,8 @@ class ImageComponents;
 class IsIdentityKey;
 class IsIdentityResults;
 class JoinViewsNode;
+class KeybindListenerI;
+class KeybindShortcut;
 class KeyFrame;
 class KnobDimViewBase;
 class KnobBool;

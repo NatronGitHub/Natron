@@ -370,13 +370,13 @@ AppSettings::getParams() const
 void
 AppSettings::saveSettings()
 {
-    _settings->saveAllSettings();
+    _settings->saveSettingsToFile();
 }
 
 void
 AppSettings::restoreDefaultSettings()
 {
-    _settings->restoreDefault();
+    _settings->restoreAllSettingsToDefaults();
 }
 
 void

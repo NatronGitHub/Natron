@@ -31,6 +31,7 @@
 #include <string>
 
 #include "Global/GlobalDefines.h"
+#include "Global/KeySymbols.h"
 
 CLANG_DIAG_OFF(deprecated)
 // /usr/include/qt5/QtCore/qgenericatomic.h:177:13: warning: 'register' storage class specifier is deprecated [-Wdeprecated]
@@ -70,20 +71,15 @@ enum AppInstanceStatusEnum
     eAppInstanceStatusActive     //< the app is active and can be used
 };
 
-class GlobalOFXTLS
+
+struct PythonUserCommand
 {
-public:
-    OfxImageEffectInstance* lastEffectCallingMainEntry;
-
-    ///Stored as int, because we need -1; list because we need it recursive for the multiThread func
-    std::list<int> threadIndexes;
-
-    GlobalOFXTLS()
-        : lastEffectCallingMainEntry(0)
-        , threadIndexes()
-    {
-    }
+    QString grouping;
+    Key key;
+    KeyboardModifiers modifiers;
+    std::string pythonFunction;
 };
+
 
 typedef std::vector<AppInstancePtr> AppInstanceVec;
 
@@ -411,10 +407,13 @@ public:
      **/
     void appendToNatronPath(const std::string& path);
 
-    virtual void addCommand(const QString& /*grouping*/,
-                            const std::string& /*pythonFunction*/,
-                            Qt::Key /*key*/,
-                            const Qt::KeyboardModifiers& /*modifiers*/) {}
+    void addMenuCommand(const std::string& grouping,
+                        const std::string& pythonFunction,
+                        const KeyboardModifiers& modifiers,
+                        Key key);
+
+    const std::list<PythonUserCommand>& getUserPythonCommands() const;
+
 
 
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
@@ -540,11 +539,7 @@ protected:
     {
     }
 
-    virtual void ignorePlugin(const PluginPtr& /*plugin*/)
-    {
-    }
-
-    virtual void onPluginLoaded(const PluginPtr& /*plugin*/) {}
+    virtual void onPluginLoaded(const PluginPtr& plugin);
 
     virtual void onAllPluginsLoaded();
 

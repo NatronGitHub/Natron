@@ -264,6 +264,12 @@ ViewerTab::~ViewerTab()
     _imp->nodesContext.clear();
 }
 
+void
+ViewerTab::getTimeLineCachedFrames(std::list<TimeValue>* cachedFrames) const
+{
+    _imp->cachedFramesThread->getCachedFrames(cachedFrames);
+}
+
 
 QVBoxLayout*
 ViewerTab::getMainLayout() const

@@ -258,7 +258,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         _imp->displayViewChoice->setFixedSize(medSize);
         _imp->displayViewChoice->setIconSize(medIconSize);
         _imp->displayViewChoice->setFocusPolicy(Qt::NoFocus);
-        setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, "<p>" + tr("Switch between Dope Sheet + CurveEditor and Curve Editor only").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->displayViewChoice);
+        setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleStackView, "<p>" + tr("Switch between Dope Sheet + CurveEditor and Curve Editor only").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->displayViewChoice);
         connect(_imp->displayViewChoice, SIGNAL(clicked(bool)), this, SLOT(onDisplayViewClicked(bool)));
         _imp->buttonsLayout->addWidget(_imp->displayViewChoice);
     }
@@ -274,7 +274,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         _imp->showOnlyAnimatedButton->setFixedSize(medSize);
         _imp->showOnlyAnimatedButton->setIconSize(medIconSize);
         _imp->showOnlyAnimatedButton->setFocusPolicy(Qt::NoFocus);
-        setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleShowOnlyAnimated, "<p>" + tr("When checked, only animated items will appear in the animation module").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->showOnlyAnimatedButton);
+        setToolTipWithShortcut(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleShowOnlyAnimated, "<p>" + tr("When checked, only animated items will appear in the animation module").toStdString() + "</p>" + "<p><b>" + tr("Keyboard shortcut: %1").toStdString() + "</b></p>", _imp->showOnlyAnimatedButton);
         connect(_imp->showOnlyAnimatedButton, SIGNAL(clicked(bool)), this, SLOT(onShowOnlyAnimatedButtonClicked(bool)));
         _imp->buttonsLayout->addWidget(_imp->showOnlyAnimatedButton);
     }
@@ -357,56 +357,56 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
 
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleConstant,
-                                                                kShortcutDescActionAnimationModuleConstant,
+                                                                kShortcutActionAnimationModuleConstant,
+                                                                kShortcutActionAnimationModuleConstantHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixConstant));
             _imp->keyframeInterpolationChoice->addAction(action);
         }
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleLinear,
-                                                                kShortcutDescActionAnimationModuleLinear,
+                                                                kShortcutActionAnimationModuleLinear,
+                                                                kShortcutActionAnimationModuleLinearHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixLinear));
             _imp->keyframeInterpolationChoice->addAction(action);
         }
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleSmooth,
-                                                                kShortcutDescActionAnimationModuleSmooth,
+                                                                kShortcutActionAnimationModuleSmooth,
+                                                                kShortcutActionAnimationModuleSmoothHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixSmooth));
             _imp->keyframeInterpolationChoice->addAction(action);
         }
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleHorizontal,
-                                                                kShortcutDescActionAnimationModuleHorizontal,
+                                                                kShortcutActionAnimationModuleHorizontal,
+                                                                kShortcutActionAnimationModuleHorizontalHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixHorizontal));
             _imp->keyframeInterpolationChoice->addAction(action);
         }
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleCubic,
-                                                                kShortcutDescActionAnimationModuleCubic,
+                                                                kShortcutActionAnimationModuleCubic,
+                                                                kShortcutActionAnimationModuleCubicHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixCubic));
             _imp->keyframeInterpolationChoice->addAction(action);
         }
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleCatmullrom,
-                                                                kShortcutDescActionAnimationModuleCatmullrom,
+                                                                kShortcutActionAnimationModuleCatmullrom,
+                                                                kShortcutActionAnimationModuleCatmullromHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixCatmullRom));
             _imp->keyframeInterpolationChoice->addAction(action);
         }
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
-                                                                kShortcutIDActionAnimationModuleBreak,
-                                                                kShortcutDescActionAnimationModuleBreak,
+                                                                kShortcutActionAnimationModuleBreak,
+                                                                kShortcutActionAnimationModuleBreakHint,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixBroken));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -591,39 +591,39 @@ AnimationModuleEditor::keyPressEvent(QKeyEvent* e)
     Qt::KeyboardModifiers modifiers = e->modifiers();
     bool accept = true;
 
-    if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphRenameNode, modifiers, key) ) {
         _imp->model->renameSelectedNode();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleStackView, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleStackView, modifiers, key) ) {
         bool checked = _imp->displayViewChoice->isChecked();
         _imp->displayViewChoice->setChecked(!checked);
         onDisplayViewClicked(!checked);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleRemoveKeys, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleRemoveKeys, modifiers, key) ) {
         onRemoveSelectedKeyFramesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleConstant, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleConstant, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeConstant);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleLinear, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleLinear, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeLinear);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSmooth, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSmooth, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeSmooth);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCatmullrom, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCatmullrom, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeCatmullRom);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCubic, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCubic, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeCubic);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleHorizontal, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleHorizontal, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeHorizontal);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleBreak, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleBreak, modifiers, key) ) {
         _imp->model->setSelectedKeysInterpolation(eKeyframeTypeBroken);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenterAll, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenterAll, modifiers, key) ) {
         onCenterAllCurvesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenter, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenter, modifiers, key) ) {
         onCenterOnSelectedCurvesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSelectAll, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSelectAll, modifiers, key) ) {
         onSelectAllKeyFramesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCopy, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCopy, modifiers, key) ) {
         onCopySelectedKeyFramesToClipBoardActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframes, modifiers, key) ) {
         onPasteClipBoardKeyFramesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframesAbsolute, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframesAbsolute, modifiers, key) ) {
         onPasteClipBoardKeyFramesAbsoluteActionTriggered();
     } else if ( key == Qt::Key_Plus ) { // zoom in/out doesn't care about modifiers
         // one wheel click = +-120 delta

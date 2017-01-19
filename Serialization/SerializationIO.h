@@ -59,15 +59,35 @@ void write(std::ostream& stream, const T& obj, const std::string& header)
     stream << em.c_str();
 }
 
+class InvalidSerializationFileException : public std::exception
+{
+    std::string _what;
+
+public:
+
+    InvalidSerializationFileException()
+    : _what()
+    {
+    }
+
+    virtual ~InvalidSerializationFileException() throw()
+    {
+    }
+
+    virtual const char * what () const throw ()
+    {
+        return _what.c_str();
+    }
+};
 
 /**
  * @brief Read any serialization object from a YAML encoded file. Upon failure an exception is thrown.
  * @param header The first line of the file is matched against the given header string.
- * If it does not match, this function return false, otherwise it returns true.
+ * If it does not match, this function throws a InvalidSerializationFileException exception
  * If header is empty, it does not check against the header.
  **/
 template <typename T>
-bool read(const std::string& header, std::istream& stream, T* obj)
+void read(const std::string& header, std::istream& stream, T* obj)
 {
     if (!obj) {
         throw std::invalid_argument("Invalid serialization object");
@@ -77,7 +97,7 @@ bool read(const std::string& header, std::istream& stream, T* obj)
         std::getline(stream, firstLine);
         if (!header.empty()) {
             if (firstLine != header) {
-                return false;
+                throw InvalidSerializationFileException();
             }
         } else {
             // Check if the first-line contains a #, because it may contain a header which we should skip
@@ -101,7 +121,6 @@ bool read(const std::string& header, std::istream& stream, T* obj)
     }
     YAML::Node node = YAML::Load(stream);
     obj->decode(node);
-    return true;
 }
 
 SERIALIZATION_NAMESPACE_EXIT
