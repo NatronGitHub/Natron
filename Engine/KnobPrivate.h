@@ -435,7 +435,10 @@ private:
 
 class KnobExpressionResult : public CacheEntryBase
 {
-    KnobExpressionResult();
+    KnobExpressionResult()
+    {
+        
+    }
 
 public:
 
