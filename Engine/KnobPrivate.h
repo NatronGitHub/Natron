@@ -436,8 +436,9 @@ private:
 class KnobExpressionResult : public CacheEntryBase
 {
     KnobExpressionResult()
+    : CacheEntryBase(appPTR->getCache())
     {
-        
+
     }
 
 public:

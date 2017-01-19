@@ -502,7 +502,7 @@ struct CachePrivate
 
             SharedMemorySegmentData()
             : segmentMutex()
-            , mappingValid(false)
+            , mappingValid(true)
             , nProcessWithMappingValid(0)
             , mappingInvalidCond()
             , mappedProcessesNotEmpty()
@@ -659,7 +659,12 @@ static void ensureMappingValidInternal(WriteLock& lock,
 static void reOpenToCData(CacheBucket* bucket)
 {
     // Re-create the manager on the new mapped buffer
-    bucket->tocFileManager.reset(new ExternalSegmentType(bip::open_only, bucket->tocFile->data(), bucket->tocFile->size()));
+    try {
+        bucket->tocFileManager.reset(new ExternalSegmentType(bip::open_only, bucket->tocFile->data(), bucket->tocFile->size()));
+    } catch (...) {
+        assert(false);
+        throw std::runtime_error("Not enough space to allocate bucket table of content!");
+    }
 
     // The ipc data pointer must be re-fetched
     Size_t_Allocator_ExternalSegment freeTilesAllocator(bucket->tocFileManager->get_segment_manager());
@@ -672,12 +677,11 @@ CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
     // Private - the tocData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
 
-    if (c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid) {
-        return;
-    }
+    if (!c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid) {
+        // Save the entire file
+        tocFile->flush(MemoryFile::eFlushTypeSync, NULL, 0);
 
-    // Save the entire file
-    tocFile->flush(MemoryFile::eFlushTypeSync, NULL, 0);
+    }
 
     ensureMappingValidInternal(lock,
                                tocFile,
@@ -729,14 +733,14 @@ CacheBucket::ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 {
     // Private - the tileData.segmentMutex is assumed to be taken for write lock
     CachePtr c = cache.lock();
-    if (c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid) {
-        return;
+    if (!c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid) {
+        // The number of memory free requested must be a multiple of the tile size.
+        assert(minFreeSize == 0 || minFreeSize % NATRON_TILE_SIZE_BYTES == 0);
+
+        flushTileMapping(tileAlignedFile, ipc->freeTiles);
     }
 
-    // The number of memory free requested must be a multiple of the tile size.
-    assert(minFreeSize == 0 || minFreeSize % NATRON_TILE_SIZE_BYTES == 0);
 
-    flushTileMapping(tileAlignedFile, ipc->freeTiles);
     
     ensureMappingValidInternal(lock, tileAlignedFile, &c->_imp->ipc->bucketsData[bucketIndex].tileData);
 
@@ -776,7 +780,7 @@ CacheBucket::growToCFile(WriteLock& lock, std::size_t bytesToAdd)
 
     std::size_t newSize = tocFile->size() + bytesToAdd;
     // Round to the nearest next multiple of NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
-    newSize = std::ceil(newSize / (double) NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES) * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES;
+    newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES)) * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES;
     tocFile->resize(newSize, false /*preserve*/);
 
     reOpenToCData(this);
@@ -820,7 +824,7 @@ CacheBucket::growTileFile(WriteLock& lock, std::size_t bytesToAdd)
 
             std::size_t newSize = curSize + bytesToAdd;
             // Round to the nearest next multiple of minTilesToAllocSize
-            newSize = std::ceil(newSize / (double) minTilesToAllocSize) * minTilesToAllocSize;
+            newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) minTilesToAllocSize)) * minTilesToAllocSize;
             tileAlignedFile->resize(newSize, false /*preserve*/);
 
             int nTilesSoFar = curSize / NATRON_TILE_SIZE_BYTES;
@@ -1193,7 +1197,7 @@ CacheEntryLocker::insertInCache()
         // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
         // plus some metadatas required management algorithm store its own memory housekeeping data.
         std::size_t pageSize = bip::mapped_region::get_page_size();
-        const std::size_t entrySize = (std::ceil(_imp->processLocalEntry->getMetadataSize() / (double)pageSize) + 1) * pageSize;
+        const std::size_t entrySize = std::max((std::size_t)1 , (std::size_t)(std::ceil(_imp->processLocalEntry->getMetadataSize() / (double)pageSize) + 1)) * pageSize;
 
         _imp->bucket->ensureToCFileMappingValid(writeLock, entrySize);
 
@@ -1407,10 +1411,23 @@ Cache::create()
         std::size_t pageSize = bip::mapped_region::get_page_size();
         std::size_t desiredSize = 500 * 1024;
         desiredSize = std::ceil(desiredSize / (double)pageSize) * pageSize;
-        std::stringstream ss;
-        ss << NATRON_CACHE_DIRECTORY_NAME  << "_GlobalData";
-        ret->_imp->globalMemorySegment.reset(new bip::managed_shared_memory(bip::open_or_create, ss.str().c_str(), desiredSize));
-        ret->_imp->ipc = ret->_imp->globalMemorySegment->find_or_construct<CachePrivate::IPCData>("CacheData")();
+
+        std::string sharedMemoryName;
+        {
+            std::stringstream ss;
+            ss << NATRON_CACHE_DIRECTORY_NAME  << "_GlobalData";
+            sharedMemoryName = ss.str();
+        }
+        try {
+
+            bip::shared_memory_object::remove(sharedMemoryName.c_str());
+            ret->_imp->globalMemorySegment.reset(new bip::managed_shared_memory(bip::open_or_create, sharedMemoryName.c_str(), desiredSize));
+            ret->_imp->ipc = ret->_imp->globalMemorySegment->find_or_construct<CachePrivate::IPCData>("CacheData")();
+        } catch (...) {
+            assert(false);
+            bip::shared_memory_object::remove(sharedMemoryName.c_str());
+            throw std::runtime_error("Failed to initialize managed shared memory, exiting.");
+        }
 
     }
     
