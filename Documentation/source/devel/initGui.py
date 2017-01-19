@@ -197,3 +197,14 @@ def onProjectCreatedCallback(app):
 
 #Add a custom menu entry with a shortcut to create our icon viewer
 natron.addMenuCommand("Inria/Scripts/IconViewer","createIconViewer",QtCore.Qt.Key.Key_L,QtCore.Qt.KeyboardModifier.ShiftModifier)
+
+def reloadSelectedReaders():
+
+    selectedNodes = app.getSelectedNodes()
+    for n in selectedNodes:
+        if n.isReaderNode():
+            n.filename.reloadFile()
+
+#Add a command to reload the file of the selected reader
+natron.addMenuCommand("Custom/ReloadReaders","",QtCore.Qt.Key.Key_R,QtCore.Qt.KeyboardModifier.ShiftModifier)
+
