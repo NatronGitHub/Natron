@@ -118,7 +118,7 @@ public:
                                  TimeValue time,
                                  ViewIdx view,
                                  const std::map<ImageComponents, ImagePtr>& planes,
-                                 const Distorsion2DStackPtr& distorsionStack);
+                                 const Distortion2DStackPtr& distortionStack);
 
 
     /**
@@ -131,7 +131,7 @@ public:
                               const std::list<ImageComponents>& layers,
                               std::map<ImageComponents, ImagePtr>* planes,
                               std::list<ImageComponents>* planesLeftToRendered,
-                              Distorsion2DStackPtr* distorsionStack) const;
+                              Distortion2DStackPtr* distortionStack) const;
 
     /**
      * @brief Clear any data held by a call to appendPreRenderedInputs.
@@ -226,14 +226,14 @@ public:
     void setComponentsNeededResults(const GetComponentsResultsPtr& comps);
 
     /**
-     * @brief Returns the distorsion action results for this frame/view
+     * @brief Returns the distortion action results for this frame/view
      **/
-    DistorsionFunction2DPtr getDistorsionResults() const;
+    DistortionFunction2DPtr getDistortionResults() const;
 
     /**
-     * @brief Set the distorsion action results for this frame/view
+     * @brief Set the distortion action results for this frame/view
      **/
-    void setDistorsionResults(const DistorsionFunction2DPtr& results);
+    void setDistortionResults(const DistortionFunction2DPtr& results);
 
 private:
 
@@ -333,7 +333,7 @@ public:
     bool getCurrentRenderScaleSupport() const;
 
     /**
-     * @brief Returns the node distorsion support for this render
+     * @brief Returns the node distortion support for this render
      **/
     bool getCurrentDistortSupport() const;
 

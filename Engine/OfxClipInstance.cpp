@@ -854,11 +854,11 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distorsionStack, componentsStr, nComps, par);
+        OfxImage* ofxImage = new OfxImage(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distorsionStack, componentsStr, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -995,11 +995,11 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distorsion2DStackPtr(), componentsStr, nComps, par);
+        OfxImage* ofxImage = new OfxImage(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distortion2DStackPtr(), componentsStr, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distorsion2DStackPtr(), componentsStr, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distortion2DStackPtr(), componentsStr, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -1310,10 +1310,10 @@ OfxImageCommon::getComponentsString() const
     return _imp->components;
 }
 
-static void ofxaApplyDistorsionStack(double distortedX, double distortedY, const void* stack, double* undistortedX, double* undistortedY)
+static void ofxaApplyDistortionStack(double distortedX, double distortedY, const void* stack, double* undistortedX, double* undistortedY)
 {
-    const Distorsion2DStack* dstack = (const Distorsion2DStack*)stack;
-    Distorsion2DStack::applyDistorsionStack(distortedX, distortedY, *dstack, undistortedX, undistortedY);
+    const Distortion2DStack* dstack = (const Distortion2DStack*)stack;
+    Distortion2DStack::applyDistortionStack(distortedX, distortedY, *dstack, undistortedX, undistortedY);
 }
 
 OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
@@ -1325,7 +1325,7 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
                                ImageFieldingOrderEnum fielding,
                                U64 nodeFrameViewHash,
                                const RectI& renderWindow,
-                               const Distorsion2DStackPtr& distorsion,
+                               const Distortion2DStackPtr& distortion,
                                const std::string& components,
                                int nComps,
                                double par)
@@ -1421,19 +1421,19 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
     ofxImageBase->setDoubleProperty( kOfxImagePropPixelAspectRatio, par );
 
     // Attach the transform matrix if any
-    if (distorsion) {
+    if (distortion) {
 
         bool supportsDeprecatedTransforms = outputClipEffect->getInputCanReceiveTransform(inputNb);
-        bool supportsDistorsion = outputClipEffect->getInputCanReceiveDistorsion(inputNb);
+        bool supportsDistortion = outputClipEffect->getInputCanReceiveDistortion(inputNb);
 
-        assert((supportsDeprecatedTransforms && !supportsDistorsion) || (!supportsDeprecatedTransforms && supportsDistorsion));
+        assert((supportsDeprecatedTransforms && !supportsDistortion) || (!supportsDeprecatedTransforms && supportsDistortion));
 
-        const std::list<DistorsionFunction2DPtr>& stack = distorsion->getStack();
+        const std::list<DistortionFunction2DPtr>& stack = distortion->getStack();
 
         if (supportsDeprecatedTransforms) {
             boost::shared_ptr<Transform::Matrix3x3> mat;
             if (stack.size() == 1) {
-                const DistorsionFunction2DPtr& func = stack.front();
+                const DistortionFunction2DPtr& func = stack.front();
                 if (func->transformMatrix) {
                     mat = func->transformMatrix;
                 }
@@ -1455,9 +1455,9 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
                     ofxImageBase->setDoubleProperty(kFnOfxPropMatrix2D, 0., i);
                 }
             }
-        } else if (supportsDistorsion) {
-            ofxImageBase->setPointerProperty(kOfxPropDistorsionFunction, (void*)&ofxaApplyDistorsionStack);
-            ofxImageBase->setPointerProperty(kOfxPropDistorsionFunctionData, (void*)distorsion.get());
+        } else if (supportsDistortion) {
+            ofxImageBase->setPointerProperty(kOfxPropDistortionFunction, (void*)&ofxaApplyDistortionStack);
+            ofxImageBase->setPointerProperty(kOfxPropDistortionFunctionData, (void*)distortion.get());
         }
 
 

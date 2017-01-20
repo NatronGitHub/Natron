@@ -241,9 +241,9 @@ public:
         // In this case it should return the pass-through input's image and the transformation matrix.
         bool canReturnDeprecatedTransform3x3;
 
-        // True if this render is allowed to return a distorsion function instead of rendering.
-        // In this case it should return the pass-through input's image and the distorsion function.
-        bool canReturnDistorsionFunc;
+        // True if this render is allowed to return a distortion function instead of rendering.
+        // In this case it should return the pass-through input's image and the distortion function.
+        bool canReturnDistortionFunc;
 
         RenderRoIArgs()
         : time(0)
@@ -255,7 +255,7 @@ public:
         , renderArgs()
         , allowGPURendering(true)
         , canReturnDeprecatedTransform3x3(false)
-        , canReturnDistorsionFunc(false)
+        , canReturnDistortionFunc(false)
         {
         }
 
@@ -275,7 +275,7 @@ public:
         , renderArgs(renderArgs)
         , allowGPURendering(true)
         , canReturnDeprecatedTransform3x3(false)
-        , canReturnDistorsionFunc(false)
+        , canReturnDistortionFunc(false)
         {
         }
     };
@@ -385,8 +385,8 @@ public:
         // The roi of the input effect effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
         RectI roiPixel;
 
-        // Whether we have a distorsion stack to apply
-        Distorsion2DStackPtr distorsionStack;
+        // Whether we have a distortion stack to apply
+        Distortion2DStackPtr distortionStack;
     };
 
     /** @brief This is the main-entry point to pull images from up-stream of this node.
@@ -396,7 +396,7 @@ public:
      * In this case the image in input has probably already been pre-computed and cached away using the
      * getFramesNeeded and getRegionsOfInterest actions to drive the algorithm.
      *
-     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistorsion or drawOverlay action:
+     * 2) We are not currently rendering: for example we may be in the knobChanged or inputChanged or getDistortion or drawOverlay action:
      * This image will pull images from upstream that have not yet be pre-computed.
      * Internally it will call TreeRender::launchRender.
      * In this case the inArgs have an extra
@@ -407,7 +407,7 @@ public:
      * that keeps image longer in memory and it may risk to render twice an effect.
      *
      * @returns This function returns true if the image set in the outArgs is valid.
-     * Note that in the outArgs is returned the distorsion stack to apply if this effect was marked
+     * Note that in the outArgs is returned the distortion stack to apply if this effect was marked
      * as getCanDistort().
      *
      **/
@@ -679,16 +679,16 @@ protected:
 public:
 
     /**
-     * @brief For effects that can return a distorsion function (e.g an affine Transform), then they 
+     * @brief For effects that can return a distortion function (e.g an affine Transform), then they 
      * may flag so with the getCanDistort() function. In this case this function will be called prior to
-     * calling render. If possible, Natron will concatenate distorsion effects and only the effect at
+     * calling render. If possible, Natron will concatenate distortion effects and only the effect at
      * the bottom will do the final rendering.
      **/
-    ActionRetCodeEnum getDistorsion_public(TimeValue time,
+    ActionRetCodeEnum getDistortion_public(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                     const TreeRenderNodeArgsPtr& render,
-                                    DistorsionFunction2DPtr* distorsion) WARN_UNUSED_RETURN;
+                                    DistortionFunction2DPtr* distortion) WARN_UNUSED_RETURN;
 
 
 
@@ -696,11 +696,11 @@ protected:
 
 
 
-    virtual ActionRetCodeEnum getDistorsion(TimeValue time,
+    virtual ActionRetCodeEnum getDistortion(TimeValue time,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
                                      const TreeRenderNodeArgsPtr& render,
-                                     DistorsionFunction2D* distorsion) WARN_UNUSED_RETURN;
+                                     DistortionFunction2D* distortion) WARN_UNUSED_RETURN;
     
 public:
 
@@ -1160,8 +1160,8 @@ public:
         // For each component requested, the image plane rendered
         std::map<ImageComponents, ImagePtr> outputPlanes;
 
-        // If this effect can apply distorsion, this is the stack of distorsions upstream to apply
-        Distorsion2DStackPtr distorsionStack;
+        // If this effect can apply distortion, this is the stack of distortions upstream to apply
+        Distortion2DStackPtr distortionStack;
     };
 
     /**
@@ -1308,8 +1308,8 @@ public:
 
 
     /**
-     * @brief Return true if this effect can return a distorsion 2D. In this case
-     * you have to implement getDistorsion.
+     * @brief Return true if this effect can return a distortion 2D. In this case
+     * you have to implement getDistortion.
      **/
     virtual bool getCanDistort() const
     {
@@ -1318,7 +1318,7 @@ public:
 
     /**
      * @brief Return true if this effect can return a transform as a matrix 3x3. In this case
-     * you have to implement getDistorsion function.
+     * you have to implement getDistortion function.
      * Note that this is deprecated, you should use getCanDistort instead.
      **/
     virtual bool getCanTransform() const
@@ -1329,7 +1329,7 @@ public:
 
     /**
      * @brief Deprecated: Returns whether the given input can have 3x3 tranformation matrices attached when calling getImagePlanes
-     * getInputCanReceiveDistorsion() should be preferred
+     * getInputCanReceiveDistortion() should be preferred
      **/
     virtual bool getInputCanReceiveTransform(int /*inputNb*/) const
     {
@@ -1337,10 +1337,10 @@ public:
     }
 
     /**
-     * @brief Return true if the given input should also attempt to return a distorsion function
+     * @brief Return true if the given input should also attempt to return a distortion function
      * along with the image when possible
      **/
-    virtual bool getInputCanReceiveDistorsion(int /*inputNb*/) const
+    virtual bool getInputCanReceiveDistortion(int /*inputNb*/) const
     {
         return false;
     }

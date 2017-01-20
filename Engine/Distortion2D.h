@@ -37,11 +37,11 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct DistorsionFunction2D
+struct DistortionFunction2D
 {
-    DistorsionFunction2D();
+    DistortionFunction2D();
     
-    DistorsionFunction2D(const DistorsionFunction2D& other);
+    DistortionFunction2D(const DistortionFunction2D& other);
 
     // Index of the input to distort
     int inputNbToDistort;
@@ -49,48 +49,48 @@ struct DistorsionFunction2D
     // This is set if the transformation can be represented as a 3x3 matrix (in canonical coordinates)
     boost::shared_ptr<Transform::Matrix3x3> transformMatrix;
 
-    // These below are set if the distorsion cannot be represented as a 3x3 matrix
+    // These below are set if the distortion cannot be represented as a 3x3 matrix
 
-    // A pointer to the distorsion function of the plug-in
-    OfxDistorsionFunctionV1 func;
+    // A pointer to the distortion function of the plug-in
+    OfxDistortionFunctionV1 func;
 
-    // A pointer to plug-in data that should be passed back to the distorsion function
+    // A pointer to plug-in data that should be passed back to the distortion function
     void* customData;
 
     // A size in bytes estimated of the data held in customData to hint the cache about the size.
     int customDataSizeHintInBytes;
 
     // A pointer to a function to free the customData
-    OfxDistorsionFreeDataFunctionV1 customDataFreeFunc;
+    OfxDistortionFreeDataFunctionV1 customDataFreeFunc;
 };
 
 /**
- * @brief Represents a chain of distorsion to apply to distorted positions to retrieve the undistorted position.
+ * @brief Represents a chain of distortion to apply to distorted positions to retrieve the undistorted position.
  **/
-struct Distorsion2DStackPrivate;
-class Distorsion2DStack
+struct Distortion2DStackPrivate;
+class Distortion2DStack
 {
 public:
 
-    Distorsion2DStack();
+    Distortion2DStack();
 
-    ~Distorsion2DStack();
-
-    /**
-     * @brief Appends a new distorsion function to apply.
-     **/
-    void pushDistorsion(const DistorsionFunction2DPtr& distorsion);
-
-    const std::list<DistorsionFunction2DPtr>& getStack() const;
+    ~Distortion2DStack();
 
     /**
-     * @brief Applies a distorsion stack onto a 2D position in canonical coordinates.
+     * @brief Appends a new distortion function to apply.
      **/
-    static void applyDistorsionStack(double distortedX, double distortedY, const Distorsion2DStack& stack, double* undistortedX, double* undistortedY);
+    void pushDistortion(const DistortionFunction2DPtr& distortion);
+
+    const std::list<DistortionFunction2DPtr>& getStack() const;
+
+    /**
+     * @brief Applies a distortion stack onto a 2D position in canonical coordinates.
+     **/
+    static void applyDistortionStack(double distortedX, double distortedY, const Distortion2DStack& stack, double* undistortedX, double* undistortedY);
 
 private:
 
-    boost::scoped_ptr<Distorsion2DStackPrivate> _imp;
+    boost::scoped_ptr<Distortion2DStackPrivate> _imp;
 };
 
 NATRON_NAMESPACE_EXIT;

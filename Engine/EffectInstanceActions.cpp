@@ -704,21 +704,21 @@ EffectInstance::endSequenceRender_public(double first,
 } // endSequenceRender_public
 
 ActionRetCodeEnum
-EffectInstance::getDistorsion(TimeValue /*time*/,
+EffectInstance::getDistortion(TimeValue /*time*/,
                                  const RenderScale & /*renderScale*/,
                                  ViewIdx /*view*/,
                                  const TreeRenderNodeArgsPtr& /*render*/,
-                                 DistorsionFunction2D* /*distorsion*/)
+                                 DistortionFunction2D* /*distortion*/)
 {
     return eActionStatusReplyDefault;
 }
 
 ActionRetCodeEnum
-EffectInstance::getDistorsion_public(TimeValue inArgsTime,
+EffectInstance::getDistortion_public(TimeValue inArgsTime,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
                                      const TreeRenderNodeArgsPtr& render,
-                                     DistorsionFunction2DPtr* outDisto) {
+                                     DistortionFunction2DPtr* outDisto) {
     assert(outDisto);
 
     TimeValue time = inArgsTime;
@@ -754,17 +754,17 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
 
 
     if (fvRequest) {
-        DistorsionFunction2DPtr cachedDisto = fvRequest->getDistorsionResults();
+        DistortionFunction2DPtr cachedDisto = fvRequest->getDistortionResults();
         if (cachedDisto) {
             *outDisto = cachedDisto;
             return eActionStatusOK;
         }
     }
 
-    // If the effect is identity, do not call the getDistorsion action, instead just return an identity
+    // If the effect is identity, do not call the getDistortion action, instead just return an identity
     // identity time and view.
 
-    outDisto->reset(new DistorsionFunction2D);
+    outDisto->reset(new DistortionFunction2D);
     bool isIdentity;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
@@ -789,15 +789,15 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
                                                   );
 
         // Call the action
-        ActionRetCodeEnum stat = getDistorsion(time, mappedScale, view, render, (*outDisto).get());
+        ActionRetCodeEnum stat = getDistortion(time, mappedScale, view, render, (*outDisto).get());
         if (isFailureRetCode(stat)) {
             return stat;
         }
 
-        // Either the matrix or the distorsion functor should be set
+        // Either the matrix or the distortion functor should be set
         assert((*outDisto)->transformMatrix || (*outDisto)->func);
 
-        // In the deprecated getTransform action, the returned transform is in pixel coordinates, whereas in the getDistorsion
+        // In the deprecated getTransform action, the returned transform is in pixel coordinates, whereas in the getDistortion
         // action, we return a matrix in canonical coordinates.
         if (isDeprecatedTransformSupportEnabled) {
             assert((*outDisto)->transformMatrix);
@@ -810,12 +810,12 @@ EffectInstance::getDistorsion_public(TimeValue inArgsTime,
     }
 
     if (fvRequest) {
-        fvRequest->setDistorsionResults(*outDisto);
+        fvRequest->setDistortionResults(*outDisto);
     }
     
     return eActionStatusOK;
 
-} // getDistorsion_public
+} // getDistortion_public
 
 ActionRetCodeEnum
 EffectInstance::isIdentity(TimeValue /*time*/,

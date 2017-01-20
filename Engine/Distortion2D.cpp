@@ -22,14 +22,14 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include "Distorsion2D.h"
+#include "Distortion2D.h"
 
 
 #include <list>
 #include "Engine/Transform.h"
 NATRON_NAMESPACE_ENTER;
 
-DistorsionFunction2D::DistorsionFunction2D()
+DistortionFunction2D::DistortionFunction2D()
 : inputNbToDistort(-1)
 , transformMatrix()
 , func(0)
@@ -40,7 +40,7 @@ DistorsionFunction2D::DistorsionFunction2D()
 
 }
 
-DistorsionFunction2D::DistorsionFunction2D(const DistorsionFunction2D& other)
+DistortionFunction2D::DistortionFunction2D(const DistortionFunction2D& other)
 : inputNbToDistort(other.inputNbToDistort)
 , transformMatrix()
 , func(other.func)
@@ -53,57 +53,57 @@ DistorsionFunction2D::DistorsionFunction2D(const DistorsionFunction2D& other)
     }
 }
 
-struct Distorsion2DStackPrivate
+struct Distortion2DStackPrivate
 {
-    std::list<DistorsionFunction2DPtr> stack;
+    std::list<DistortionFunction2DPtr> stack;
 };
 
 
-Distorsion2DStack::Distorsion2DStack()
-: _imp(new Distorsion2DStackPrivate)
+Distortion2DStack::Distortion2DStack()
+: _imp(new Distortion2DStackPrivate)
 {
 
 }
 
-Distorsion2DStack::~Distorsion2DStack()
+Distortion2DStack::~Distortion2DStack()
 {
 
 }
 
 void
-Distorsion2DStack::pushDistorsion(const DistorsionFunction2DPtr& distorsion)
+Distortion2DStack::pushDistortion(const DistortionFunction2DPtr& distortion)
 {
-    // The distorsion is either a function or a transformation matrix.
-    assert((distorsion->transformMatrix && !distorsion->func) || (!distorsion->transformMatrix && distorsion->func));
+    // The distortion is either a function or a transformation matrix.
+    assert((distortion->transformMatrix && !distortion->func) || (!distortion->transformMatrix && distortion->func));
 
     if (_imp->stack.empty()) {
-        _imp->stack.push_back(distorsion);
+        _imp->stack.push_back(distortion);
     } else {
-        // If the last pushed distorsion is a matrix and this distorsion is also a matrix, concatenate
-        DistorsionFunction2DPtr lastDistort = _imp->stack.back();
-        if (lastDistort->transformMatrix && distorsion->transformMatrix) {
-            *lastDistort->transformMatrix = Transform::matMul(*lastDistort->transformMatrix, *distorsion->transformMatrix);
+        // If the last pushed distortion is a matrix and this distortion is also a matrix, concatenate
+        DistortionFunction2DPtr lastDistort = _imp->stack.back();
+        if (lastDistort->transformMatrix && distortion->transformMatrix) {
+            *lastDistort->transformMatrix = Transform::matMul(*lastDistort->transformMatrix, *distortion->transformMatrix);
         } else {
             // Cannot concatenate, append
-            _imp->stack.push_back(distorsion);
+            _imp->stack.push_back(distortion);
         }
 
     }
 }
 
-const std::list<DistorsionFunction2DPtr>&
-Distorsion2DStack::getStack() const
+const std::list<DistortionFunction2DPtr>&
+Distortion2DStack::getStack() const
 {
     return _imp->stack;
 }
 
 
 void
-Distorsion2DStack::applyDistorsionStack(double distortedX, double distortedY, const Distorsion2DStack& stack, double* undistortedX, double* undistortedY)
+Distortion2DStack::applyDistortionStack(double distortedX, double distortedY, const Distortion2DStack& stack, double* undistortedX, double* undistortedY)
 {
     Transform::Point3D p(distortedX, distortedY, 1.);
-    for (std::list<DistorsionFunction2DPtr>::const_iterator it = stack._imp->stack.begin(); it != stack._imp->stack.end(); ++it) {
-        // If there's a matrix, apply, otherwise call the distorsion function
+    for (std::list<DistortionFunction2DPtr>::const_iterator it = stack._imp->stack.begin(); it != stack._imp->stack.end(); ++it) {
+        // If there's a matrix, apply, otherwise call the distortion function
         if ((*it)->transformMatrix) {
             p = Transform::matApply(*(*it)->transformMatrix, p);
             p.x /= p.z;

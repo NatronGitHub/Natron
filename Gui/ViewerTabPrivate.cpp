@@ -89,7 +89,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     RenderScale s(1.);
     EffectInstancePtr input;
     ActionRetCodeEnum stat = eActionStatusReplyDefault;
-    DistorsionFunction2DPtr disto;
+    DistortionFunction2DPtr disto;
 
     // call getTransform even of effects that claim not to support it, because it may still return
     // a transform to apply to the overlays (eg for Reformat).
@@ -100,7 +100,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     // Internally this will return an identity matrix if the node is identity
 
     {
-        stat = currentNode->getDistorsion_public(time, s, view, TreeRenderNodeArgsPtr(), &disto);
+        stat = currentNode->getDistortion_public(time, s, view, TreeRenderNodeArgsPtr(), &disto);
         if (isFailureRetCode(stat)) {
             return false;
         } 

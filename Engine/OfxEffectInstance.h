@@ -249,12 +249,12 @@ public:
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual bool getInputCanReceiveTransform(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputCanReceiveDistorsion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual ActionRetCodeEnum getDistorsion(TimeValue time,
+    virtual bool getInputCanReceiveDistortion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getDistortion(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
                                      const TreeRenderNodeArgsPtr& renderArgs,
-                                    DistorsionFunction2D* distorsion) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                    DistortionFunction2D* distortion) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;

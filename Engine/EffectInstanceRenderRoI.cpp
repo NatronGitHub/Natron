@@ -57,7 +57,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/DiskCacheNode.h"
 #include "Engine/EffectInstanceTLSData.h"
 #include "Engine/EffectOpenGLContextData.h"
-#include "Engine/Distorsion2D.h"
+#include "Engine/Distortion2D.h"
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
@@ -243,7 +243,7 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
 
     // Planes are not available on this node and will not be rendered hence we have to render them upstream
     // We cannot concatenate.
-    inArgs->canReturnDistorsionFunc = false;
+    inArgs->canReturnDistortionFunc = false;
     inArgs->canReturnDeprecatedTransform3x3 = false;
 
     inArgs->components = componentsToFetchUpstream;
@@ -352,7 +352,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     std::map<ImageComponents, ImagePtr> existingPassThroughPlanes = results->outputPlanes;
     results->outputPlanes.clear();
 
-    // Since we are identity, it may return a distorsion
+    // Since we are identity, it may return a distortion
     ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
     if (ret == eActionStatusOK) {
         if (!mustCopyPixels) {
@@ -406,14 +406,14 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         return eActionStatusOK;
     }
 
-    // If the caller can apply a distorsion, then check if this effect has a distorsion
-    if (!args.canReturnDeprecatedTransform3x3 && !args.canReturnDistorsionFunc) {
+    // If the caller can apply a distortion, then check if this effect has a distortion
+    if (!args.canReturnDeprecatedTransform3x3 && !args.canReturnDistortionFunc) {
         return eActionStatusOK;
     }
-    assert((args.canReturnDeprecatedTransform3x3 && !args.canReturnDistorsionFunc) || (!args.canReturnDeprecatedTransform3x3 && args.canReturnDistorsionFunc));
+    assert((args.canReturnDeprecatedTransform3x3 && !args.canReturnDistortionFunc) || (!args.canReturnDeprecatedTransform3x3 && args.canReturnDistortionFunc));
 
-    DistorsionFunction2DPtr disto;
-    ActionRetCodeEnum stat = _publicInterface->getDistorsion_public(args.time, renderScale, args.view, args.renderArgs, &disto);
+    DistortionFunction2DPtr disto;
+    ActionRetCodeEnum stat = _publicInterface->getDistortion_public(args.time, renderScale, args.view, args.renderArgs, &disto);
     if (isFailureRetCode(stat)) {
         return stat;
     }
@@ -421,18 +421,18 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         return eActionStatusOK;
     }
     {
-        // Copy the original distorsion held in the results in case we convert the transformation matrix from canonical to pixels.
-        DistorsionFunction2DPtr copy(new DistorsionFunction2D(*disto));
+        // Copy the original distortion held in the results in case we convert the transformation matrix from canonical to pixels.
+        DistortionFunction2DPtr copy(new DistortionFunction2D(*disto));
         disto = copy;
     }
 
 
     // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
-    if (disto->func && !args.canReturnDistorsionFunc) {
+    if (disto->func && !args.canReturnDistortionFunc) {
         return eActionStatusOK;
     }
 
-    assert((disto->func && args.canReturnDistorsionFunc) || disto->transformMatrix);
+    assert((disto->func && args.canReturnDistortionFunc) || disto->transformMatrix);
 
     if (disto->transformMatrix) {
 
@@ -451,7 +451,7 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
 
     boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
     argsCpy->canReturnDeprecatedTransform3x3 = canTransform;
-    argsCpy->canReturnDistorsionFunc = canDistort;
+    argsCpy->canReturnDistortionFunc = canDistort;
 
     ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
     if (isFailureRetCode(ret)) {
@@ -459,12 +459,12 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
     }
 
     // Create the stack if it was not already
-    if (!results->distorsionStack) {
-        results->distorsionStack.reset(new Distorsion2DStack);
+    if (!results->distortionStack) {
+        results->distortionStack.reset(new Distortion2DStack);
     }
 
-    // And then push our distorsion to the stack...
-    results->distorsionStack->pushDistorsion(disto);
+    // And then push our distortion to the stack...
+    results->distortionStack->pushDistortion(disto);
 
     *concatenated = true;
 

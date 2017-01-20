@@ -112,7 +112,7 @@ struct PreRenderedDataKey_Compare
 struct PreRenderedDataStuff
 {
     std::map<ImageComponents, ImagePtr> planes;
-    Distorsion2DStackPtr distorsion;
+    Distortion2DStackPtr distortion;
 };
 
 typedef std::map<PreRenderedDataKey, PreRenderedDataStuff, PreRenderedDataKey_Compare> PreRenderedDataMap;
@@ -146,8 +146,8 @@ struct FrameViewRequestPrivate
     // The needed components at this frame/view
     GetComponentsResultsPtr neededComps;
 
-    // The distorsion at this frame/view
-    DistorsionFunction2DPtr distorsion;
+    // The distortion at this frame/view
+    DistortionFunction2DPtr distortion;
 
     // True if cache write is allowed but not cache read
     bool byPassCache;
@@ -166,7 +166,7 @@ struct FrameViewRequestPrivate
     , rod()
     , identityData()
     , neededComps()
-    , distorsion()
+    , distortion()
     , byPassCache()
     , hashValid(false)
     {
@@ -194,7 +194,7 @@ FrameViewRequest::appendPreRenderedInputs(int inputNb,
                                           TimeValue time,
                                           ViewIdx view,
                                           const std::map<ImageComponents, ImagePtr>& planes,
-                                          const Distorsion2DStackPtr& distorsionStack)
+                                          const Distortion2DStackPtr& distortionStack)
 {
     QMutexLocker k(&_imp->lock);
 
@@ -204,7 +204,7 @@ FrameViewRequest::appendPreRenderedInputs(int inputNb,
     key.inputNb = inputNb;
 
     PreRenderedDataStuff& data = _imp->inputImages[key];
-    data.distorsion = distorsionStack;
+    data.distortion = distortionStack;
 
     for (std::map<ImageComponents, ImagePtr>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
         bool isColorPlane = it->first.isColorPlane();
@@ -241,7 +241,7 @@ FrameViewRequest::getPreRenderedInputs(int inputNb,
                                        const std::list<ImageComponents>& layers,
                                        std::map<ImageComponents, ImagePtr>* planes,
                                        std::list<ImageComponents>* planesLeftToRendered,
-                                       Distorsion2DStackPtr* distorsionStack) const
+                                       Distortion2DStackPtr* distortionStack) const
 {
     QMutexLocker k(&_imp->lock);
     PreRenderedDataKey key;
@@ -277,8 +277,8 @@ FrameViewRequest::getPreRenderedInputs(int inputNb,
         }
     }
 
-    if (foundData->second.distorsion) {
-        *distorsionStack = foundData->second.distorsion;
+    if (foundData->second.distortion) {
+        *distortionStack = foundData->second.distortion;
     }
 
 } // getPreRenderedInputs
@@ -422,18 +422,18 @@ FrameViewRequest::setComponentsNeededResults(const GetComponentsResultsPtr& comp
     _imp->neededComps = comps;
 }
 
-DistorsionFunction2DPtr
-FrameViewRequest::getDistorsionResults() const
+DistortionFunction2DPtr
+FrameViewRequest::getDistortionResults() const
 {
     QMutexLocker k(&_imp->lock);
-    return _imp->distorsion;
+    return _imp->distortion;
 }
 
 void
-FrameViewRequest::setDistorsionResults(const DistorsionFunction2DPtr& results)
+FrameViewRequest::setDistortionResults(const DistortionFunction2DPtr& results)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->distorsion = results;
+    _imp->distortion = results;
 }
 
 EffectInstancePtr
@@ -1248,7 +1248,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
                                                       it->renderArgs->time,
                                                       it->renderArgs->view,
                                                       it->results.outputPlanes,
-                                                      it->results.distorsionStack);
+                                                      it->results.distortionStack);
 
     }
 

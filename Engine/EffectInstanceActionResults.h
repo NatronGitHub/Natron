@@ -35,7 +35,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/CacheEntryBase.h"
-#include "Engine/Distorsion2D.h"
+#include "Engine/Distortion2D.h"
 #include "Engine/ImageComponents.h"
 #include "Engine/RectD.h"
 #include "Engine/TimeValue.h"

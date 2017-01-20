@@ -313,7 +313,7 @@ public:
                             ImageFieldingOrderEnum fielding,
                             U64 nodeFrameViewHash,
                             const RectI& renderWindow,
-                            const Distorsion2DStackPtr& distorsion,
+                            const Distortion2DStackPtr& distortion,
                             const std::string& components,
                             int nComps,
                             double par);
@@ -341,12 +341,12 @@ public:
                       ImageFieldingOrderEnum fielding,
                       U64 nodeFrameViewHash,
                       const RectI& renderWindow,
-                      const Distorsion2DStackPtr& distorsion,
+                      const Distortion2DStackPtr& distortion,
                       const std::string& components,
                       int nComps,
                       double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod,  premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
+        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod,  premult, fielding, nodeFrameViewHash, renderWindow, distortion, components, nComps, par)
     {
     }
 };
@@ -364,12 +364,12 @@ public:
                         ImageFieldingOrderEnum fielding,
                         U64 nodeFrameViewHash,
                         const RectI& renderWindow,
-                        const Distorsion2DStackPtr& distorsion,
+                        const Distortion2DStackPtr& distortion,
                         const std::string& components,
                         int nComps,
                         double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod, premult, fielding, nodeFrameViewHash, renderWindow, distorsion, components, nComps, par)
+        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod, premult, fielding, nodeFrameViewHash, renderWindow, distortion, components, nComps, par)
     {
     }
 };

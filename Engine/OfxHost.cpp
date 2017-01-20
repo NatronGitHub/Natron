@@ -318,7 +318,7 @@ OfxHost::setProperties()
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMasking, 1);
     _properties.setIntProperty(kNatronOfxImageEffectPropHostMixing, 1);
 
-    // Natron distorsion suite
+    // Natron distortion suite
     _properties.setIntProperty(kOfxImageEffectPropCanDistort, 1);
 
     _properties.setIntProperty(kNatronOfxPropDescriptionIsMarkdown, 1);

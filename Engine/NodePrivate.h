@@ -396,7 +396,7 @@ public:
     SequentialPreferenceEnum currentSupportSequentialRender;
 
 
-    // Does this node can return a distorsion function ?
+    // Does this node can return a distortion function ?
     bool currentCanDistort;
     bool currentDeprecatedTransformSupport;
 

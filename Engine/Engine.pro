@@ -90,7 +90,7 @@ SOURCES += \
     CreateNodeArgs.cpp \
     Curve.cpp \
     DiskCacheNode.cpp \
-    Distorsion2D.cpp \
+    Distortion2D.cpp \
     Dot.cpp \
     EffectInstance.cpp \
     EffectInstanceTLSData.cpp \
@@ -324,7 +324,7 @@ HEADERS += \
     Curve.h \
     CurvePrivate.h \
     DimensionIdx.h \
-    Distorsion2D.h \
+    Distortion2D.h \
     DockablePanelI.h \
     Dot.h \
     DiskCacheNode.h \

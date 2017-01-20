@@ -709,7 +709,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
     assert(inputRenderArgs);
 
     // Ok now we are during a render. The effect may be in any action called on a render thread:
-    // getDistorsion, render, getRegionOfDefinition...
+    // getDistortion, render, getRegionOfDefinition...
     //
     // Determine if the frame is "known" (i.e: it was requested from getFramesNeeded) or not.
     //
@@ -788,7 +788,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
     // renderRoI may find stuff in the cache and not render anyway
     {
         std::list<ImageComponents> planesLeftToRender;
-        thisFrameViewRequest->getPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, pixelRoI, componentsToRender, &inputRenderedPlanes, &planesLeftToRender, &outArgs->distorsionStack);
+        thisFrameViewRequest->getPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, pixelRoI, componentsToRender, &inputRenderedPlanes, &planesLeftToRender, &outArgs->distortionStack);
         componentsToRender = planesLeftToRender;
     }
     
@@ -808,7 +808,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
             rargs->allowGPURendering = false;
         }
         rargs->canReturnDeprecatedTransform3x3 = inArgs.renderArgs->getCurrentTransformationSupport_deprecated();
-        rargs->canReturnDistorsionFunc = inArgs.renderArgs->getCurrentDistortSupport();
+        rargs->canReturnDistortionFunc = inArgs.renderArgs->getCurrentDistortSupport();
 
         ActionRetCodeEnum retCode = inputEffect->renderRoI(*rargs, &inputRenderResults);
 
@@ -817,7 +817,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         }
 
         inputRenderedPlanes.insert(inputRenderResults.outputPlanes.begin(), inputRenderResults.outputPlanes.end());
-        outArgs->distorsionStack = inputRenderResults.distorsionStack;
+        outArgs->distortionStack = inputRenderResults.distortionStack;
 
     }
 
@@ -923,7 +923,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
     // Hold a pointer to the rendered results until this effect render is finished: subsequent calls to getImagePlanes for this frame/view
     // should return these pointers immediately.
     // This will overwrite previous pointers if there was any since we converted the images.
-    thisFrameViewRequest->appendPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, outArgs->imagePlanes, outArgs->distorsionStack);
+    thisFrameViewRequest->appendPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, outArgs->imagePlanes, outArgs->distortionStack);
     
     assert(!outArgs->imagePlanes.empty());
     return true;

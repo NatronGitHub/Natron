@@ -55,7 +55,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobFile.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/CreateNodeArgs.h"
-#include "Engine/Distorsion2D.h"
+#include "Engine/Distortion2D.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
@@ -100,7 +100,7 @@ struct OfxEffectInstancePrivate
         , label()
         , hint()
         , visible(true)
-        , canReceiveDistorsion(false)
+        , canReceiveDistortion(false)
         , canReceiveDeprecatedTransform3x3(false)
         {
         }
@@ -111,7 +111,7 @@ struct OfxEffectInstancePrivate
         std::string label;
         std::string hint;
         bool visible;
-        bool canReceiveDistorsion;
+        bool canReceiveDistortion;
         bool canReceiveDeprecatedTransform3x3;
     };
 
@@ -291,11 +291,11 @@ OfxEffectInstance::describePlugin()
         _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
         _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
         _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
-        _imp->clipsInfos[i].canReceiveDistorsion = clips[i]->canDistort();
+        _imp->clipsInfos[i].canReceiveDistortion = clips[i]->canDistort();
         _imp->clipsInfos[i].canReceiveDeprecatedTransform3x3 = clips[i]->canTransform();
 
-        // An effect that supports the distorsion suite should not supports also the old transformation suite: this is obsolete.
-        assert(!_imp->clipsInfos[i].canReceiveDistorsion || !_imp->clipsInfos[i].canReceiveDeprecatedTransform3x3);
+        // An effect that supports the distortion suite should not supports also the old transformation suite: this is obsolete.
+        assert(!_imp->clipsInfos[i].canReceiveDistortion || !_imp->clipsInfos[i].canReceiveDeprecatedTransform3x3);
         assert(_imp->clipsInfos[i].clip);
     }
 
@@ -2278,27 +2278,27 @@ OfxEffectInstance::getInputCanReceiveTransform(int inputNb) const
         assert(false);
         return false;
     }
-    return _imp->clipsInfos[inputNb].canReceiveDistorsion;
+    return _imp->clipsInfos[inputNb].canReceiveDistortion;
 
 }
 
 bool
-OfxEffectInstance::getInputCanReceiveDistorsion(int inputNb) const
+OfxEffectInstance::getInputCanReceiveDistortion(int inputNb) const
 {
     if (inputNb < 0 || inputNb >= (int)_imp->clipsInfos.size()) {
         assert(false);
         return false;
     }
-    return _imp->clipsInfos[inputNb].canReceiveDistorsion;
+    return _imp->clipsInfos[inputNb].canReceiveDistortion;
 }
 
 
 ActionRetCodeEnum
-OfxEffectInstance::getDistorsion(TimeValue time,
+OfxEffectInstance::getDistortion(TimeValue time,
                                  const RenderScale & renderScale, //< the plug-in accepted scale
                                  ViewIdx view,
                                  const TreeRenderNodeArgsPtr& /*render*/,
-                                 DistorsionFunction2D* distorsion)
+                                 DistortionFunction2D* distortion)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string clipName;
@@ -2307,7 +2307,7 @@ OfxEffectInstance::getDistorsion(TimeValue time,
     {
         try {
             if (effectInstance()->canDistort()) {
-                stat = effectInstance()->getDistorsionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distorsion->func, &distorsion->customData, &distorsion->customDataSizeHintInBytes, &distorsion->customDataFreeFunc );
+                stat = effectInstance()->getDistortionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
             } else {
                 stat = effectInstance()->getTransformAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform);
             }
@@ -2325,9 +2325,9 @@ OfxEffectInstance::getDistorsion(TimeValue time,
 
     assert(stat == kOfxStatOK);
 
-    distorsion->transformMatrix->a = tmpTransform[0]; distorsion->transformMatrix->b = tmpTransform[1]; distorsion->transformMatrix->c = tmpTransform[2];
-    distorsion->transformMatrix->d = tmpTransform[3]; distorsion->transformMatrix->e = tmpTransform[4]; distorsion->transformMatrix->f = tmpTransform[5];
-    distorsion->transformMatrix->g = tmpTransform[6]; distorsion->transformMatrix->h = tmpTransform[7]; distorsion->transformMatrix->i = tmpTransform[8];
+    distortion->transformMatrix->a = tmpTransform[0]; distortion->transformMatrix->b = tmpTransform[1]; distortion->transformMatrix->c = tmpTransform[2];
+    distortion->transformMatrix->d = tmpTransform[3]; distortion->transformMatrix->e = tmpTransform[4]; distortion->transformMatrix->f = tmpTransform[5];
+    distortion->transformMatrix->g = tmpTransform[6]; distortion->transformMatrix->h = tmpTransform[7]; distortion->transformMatrix->i = tmpTransform[8];
 
 
     OFX::Host::ImageEffect::ClipInstance* clip = effectInstance()->getClip(clipName);
@@ -2336,7 +2336,7 @@ OfxEffectInstance::getDistorsion(TimeValue time,
     if (!natronClip) {
         return eActionStatusFailed;
     }
-    distorsion->inputNbToDistort = natronClip->getInputNb();
+    distortion->inputNbToDistort = natronClip->getInputNb();
    
     return eActionStatusOK;
 }

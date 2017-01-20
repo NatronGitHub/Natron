@@ -118,7 +118,7 @@ public:
                                           bool *isIdentity);
 
     /**
-     * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distorsion etc...)
+     * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distortion etc...)
      **/
     ActionRetCodeEnum handleConcatenation(const EffectInstance::RenderRoIArgs& args,
                                          const RenderScale& renderScale,
