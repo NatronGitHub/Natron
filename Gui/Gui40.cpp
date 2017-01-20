@@ -170,6 +170,7 @@ Gui::updateRecentFileActions()
         fileNames.push_back(fi.fileName());
         dirNames.push_back(fi.dir().dirName());
     }
+    // TODO: the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
     for (int i = 0; i < numRecentFiles; ++i) {
         QString text;
         if (fileNames.count(fileNames[i]) > 1) {
