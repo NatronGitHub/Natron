@@ -8,12 +8,13 @@
 
 This is a bug-fix release.
 
-- fix a bug with the file dialog when network drives are detached
+- fix a bug with the file dialog when network drives are detached on Windows
 - the "Open Recent" menu now shows the directory name if there are several files with the same name.
 
 ### Plugins
 
-- STMap was broken in 2.2, fix it.
+- STMap: was broken in 2.2, fix it.
+- WritePNG: fix writing 16 bit PNG
 
 ## Version 2.2
 
