@@ -567,7 +567,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         setWindowTitle( tr("Select Directory") );
     }
-
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     bool hasRestoredDir;
     restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
@@ -582,9 +581,9 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         //qDebug() << "dir=" << dir;
         while (!dir.isEmpty() && !hasRestoredDir) {
             dir = QDir::cleanPath(dir + QString::fromUtf8("/.."));
-            //qDebug() << "dir=" << dir;
             if ( QDir(dir).exists() ) {
                 hasRestoredDir = setDirectory(dir);
+                break;
             }
         }
     }
@@ -993,6 +992,7 @@ SequenceFileDialog::setDirectory(const QString &directory)
 {
     QString newDirectory = directory;
 
+
    #ifdef __NATRON_WIN32__
     newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
@@ -1002,7 +1002,6 @@ SequenceFileDialog::setDirectory(const QString &directory)
     if ( !newDirectory.isEmpty() && !dir.exists() ) {
         return false;
     }
-
 
     _view->selectionModel()->clear();
     _view->verticalScrollBar()->setValue(0);
@@ -1015,13 +1014,17 @@ SequenceFileDialog::setDirectory(const QString &directory)
         return false;
     }
 
+
 #ifdef __NATRON_WIN32__
     newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
 
+
     if ( !newDirectory.isEmpty() && !FileSystemModel::startsWithDriveName(newDirectory) ) {
         return false;
     }
+
+
 
     _requestedDir = newDirectory;
     if ( !_model->setRootPath(newDirectory) ) {
@@ -1749,7 +1752,6 @@ SequenceFileDialog::onLookingComboboxChanged(const QString & /*path*/)
         urlPath.remove(0, 1);
     }
 #endif
-
     setDirectory(urlPath);
 }
 

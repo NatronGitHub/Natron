@@ -161,8 +161,21 @@ Gui::updateRecentFileActions()
     QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
     int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
 
+    // if there are two files with the same filename, give the dirname too
+    QStringList fileNames;
+    QStringList dirNames;
     for (int i = 0; i < numRecentFiles; ++i) {
-        QString text = tr("&%1 %2").arg(i + 1).arg( QFileInfo(files[i]).fileName() );
+        QFileInfo fi(files[i]);
+        fileNames.push_back(fi.fileName());
+        dirNames.push_back(fi.dir().dirName());
+    }
+    for (int i = 0; i < numRecentFiles; ++i) {
+        QString text;
+        if (fileNames.count(fileNames[i]) > 1) {
+            text = QString::fromUtf8("%1 - %2").arg(fileNames[i]).arg(dirNames[i]);
+        } else {
+            text = dirNames[i];
+        }
         _imp->actionsOpenRecentFile[i]->setText(text);
         _imp->actionsOpenRecentFile[i]->setData(files[i]);
         _imp->actionsOpenRecentFile[i]->setVisible(true);
