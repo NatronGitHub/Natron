@@ -31,8 +31,10 @@
 #include <utility>
 #include <stdexcept>
 
-#include <QtCore/QSettings>
+#include <QtCore/QDebug>
+#include <QtCore/QDir>
 #include <QtCore/QFileInfo>
+#include <QtCore/QSettings>
 
 #if QT_VERSION >= 0x050000
 #include <QtGui/QScreen>
@@ -156,8 +158,22 @@ Gui::updateRecentFileActions()
     QStringList files = settings.value( QString::fromUtf8("recentFileList") ).toStringList();
     int numRecentFiles = std::min(files.size(), (int)NATRON_MAX_RECENT_FILES);
 
+    // if there are two files with the same filename, give the dirname too
+    QStringList fileNames;
+    QStringList dirNames;
     for (int i = 0; i < numRecentFiles; ++i) {
-        QString text = tr("&%1 %2").arg(i + 1).arg( QFileInfo(files[i]).fileName() );
+        QFileInfo fi(files[i]);
+        fileNames.push_back(fi.fileName());
+        dirNames.push_back(fi.dir().dirName());
+    }
+    // TODO: the dirname can be the same too. for each fileName with count > 1, collect the indices of the identical filenames. if dirname and directory up-level is the same for at least two files, raise the directory level up until the two dirnames are different
+    for (int i = 0; i < numRecentFiles; ++i) {
+        QString text;
+        if (fileNames.count(fileNames[i]) > 1) {
+            text = QString::fromUtf8("%1 - %2").arg(fileNames[i]).arg(dirNames[i]);
+        } else {
+            text = dirNames[i];
+        }
         _imp->actionsOpenRecentFile[i]->setText(text);
         _imp->actionsOpenRecentFile[i]->setData(files[i]);
         _imp->actionsOpenRecentFile[i]->setVisible(true);
