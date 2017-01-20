@@ -31,14 +31,15 @@
 #include <utility>
 #include <stdexcept>
 
-#include <QtCore/QSettings>
+#include <QtCore/QDebug>
+#include <QtCore/QDir>
 #include <QtCore/QFileInfo>
+#include <QtCore/QSettings>
 
 #if QT_VERSION >= 0x050000
 #include <QtGui/QScreen>
 #endif
 
-#include <QDebug>
 #include <QAction>
 #include <QApplication> // qApp
 
