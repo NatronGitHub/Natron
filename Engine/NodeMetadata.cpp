@@ -28,6 +28,7 @@
 #include <vector>
 #include <sstream>
 
+#include "Engine/ImageComponents.h"
 #include "Engine/PropertiesHolder.h"
 
 
@@ -471,6 +472,26 @@ NodeMetadata::getColorPlaneNComps(int inputNb) const
         return ret;
     }
     return 4;
+}
+
+void
+NodeMetadata::setComponentsType(int inputNb, const std::string& componentsType)
+{
+    std::stringstream ss;
+    ss << kNatronMetadataComponentsType << inputNb;
+    setStringMetadata(ss.str(), componentsType, 0, true);
+}
+
+std::string
+NodeMetadata::getComponentsType(int inputNb) const
+{
+    std::stringstream ss;
+    ss << kNatronMetadataComponentsType << inputNb;
+    std::string ret;
+    if (getStringMetadata(ss.str(), 0, &ret)) {
+        return ret;
+    }
+    return kNatronColorPlaneName;
 }
 
 void

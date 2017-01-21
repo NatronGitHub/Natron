@@ -429,25 +429,27 @@ public:
     /**
      * @brief Wrapper around getComponentsNeededAndProduced, see getComponentsNeededAndProduced.
      **/
-    ActionRetCodeEnum getComponents_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
+    ActionRetCodeEnum getLayersProducedAndNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
 
     /**
      * @brief Returns the layer availables for the given inputNb. If inputNb is -1, this returns the layers available in output.
      * The layers available are the layers produced by the corresponding node, plus the pass-through layers plus the default project
      * layers plus the user created layers at this node.
+     * This function calls getLayersProducedAndNeeded_public() internally.
      **/
     ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render, std::list<ImageComponents>* availableLayers) ;
 
 protected:
 
     /**
-     * @brief Called by getComponents_public, to be overriden.
+     * @brief Called by getLayersProducedAndNeeded_public.
+     * Must be implemented for an effect that returns true to isMultiPlanar().
+     * Non multi-planar effects have a default implementation in the getLayersProducedAndNeeded_default() function.
      * Must return the layers needed for each input and the layers produced in output of the effect.
-     * If this effect allows some layers to pass-through the effect (i.e: does this effect inherits layers from upstream?)
-     * then it must specify the pass-through inputNb and the time and view at which to fetch the pass-through plane.
-     * Default implementation returns the components returned by getTimeInvariantMetadatas on the color plane.
+     * If this effect allows some layers to be inherited from an upstram effect, it must indicate the time view 
+     * and from which input to fetch them.
      **/
-    virtual ActionRetCodeEnum getComponentsAction(TimeValue time,
+    virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& render,
                                                   std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
@@ -458,11 +460,16 @@ protected:
 
 private:
 
-    void getDefaultComponentsNeededAndProduced(TimeValue time,
+    /**
+     * @brief The default implementation of getLayersProducedAndNeeded for non multi-planar effects.
+     * Default implementation uses the desired number of components of the images set in getTimeInvariantMetadatas.
+     **/
+    ActionRetCodeEnum getLayersProducedAndNeeded_default(TimeValue time,
                                                ViewIdx view,
                                                const TreeRenderNodeArgsPtr& render,
                                                std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
                                                std::list<ImageComponents>* layersProduced,
+                                                std::list<ImageComponents>* passThroughPlanes,
                                                TimeValue* passThroughTime,
                                                ViewIdx* passThroughView,
                                                int* passThroughInputNb,
@@ -470,11 +477,16 @@ private:
                                                std::bitset<4>* processChannels);
 
 
+    /**
+     * @brief Wrapper around getLayersProducedAndNeeded_default and getLayersProducedAndNeeded, called internally by
+     * getLayersProducedAndNeeded_public
+     **/
     ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& render,
                                                   std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
                                                   std::list<ImageComponents>* layersProduced,
+                                                  std::list<ImageComponents>* passThroughPlanes,
                                                   TimeValue* passThroughTime,
                                                   ViewIdx* passThroughView,
                                                   int* passThroughInputNb,
@@ -1302,7 +1314,7 @@ public:
      * If inputNb is -1, it returns the expected components for the color plane in output.
      * For multi-planar effects, they must support all kind of components.
      **/
-    ImageComponents getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int inputNb);
+    ImageComponents getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb);
 
     ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb);
 

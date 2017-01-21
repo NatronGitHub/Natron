@@ -1129,7 +1129,8 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         outArgs.createProperty(specComp);
 
         int nComps = metadata.getColorPlaneNComps(inputNb);
-        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(ImageComponents::getColorPlaneComponents(nComps));
+        std::string componentsType = metadata.getComponentsType(inputNb);
+        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(ImageComponents::mapNCompsToLayer(componentsType, nComps));
         outArgs.setStringProperty( componentParamName.c_str(), clipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
 
@@ -1211,7 +1212,17 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 #       endif
 
             defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
-            defaultPrefs.setColorPlaneNComps( inputNb, OfxClipInstance::ofxComponentsToNatronComponents( outArgs.getStringProperty(componentParamName) ).getNumComponents() );
+
+            ImageComponents componentsType = OfxClipInstance::ofxComponentsToNatronComponents( outArgs.getStringProperty(componentParamName) );
+            defaultPrefs.setColorPlaneNComps( inputNb, componentsType.getNumComponents() );
+            if (componentParamName == kFnOfxImageComponentMotionVectors) {
+                defaultPrefs.setComponentsType( inputNb, kNatronMotionComponentsName);
+            } else if (componentParamName == kFnOfxImageComponentStereoDisparity) {
+                defaultPrefs.setComponentsType( inputNb, kNatronDisparityComponentsName);
+            } else {
+                defaultPrefs.setComponentsType( inputNb, kNatronColorPlaneName);
+            }
+
             defaultPrefs.setPixelAspectRatio( inputNb, outArgs.getDoubleProperty(parParamName) );
         }
 

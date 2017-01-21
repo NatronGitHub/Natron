@@ -477,7 +477,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps) const;
+    int getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLayers, ImageComponents* comps) const;
 
     int isMaskChannelKnob(const KnobIConstPtr& knob) const;
 
@@ -1330,7 +1330,11 @@ public:
 
     KnobBoolPtr getProcessAllLayersKnob() const;
 
-    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, ImageComponents *layer) const;
+    bool getSelectedLayer(int inputNb,
+                          const std::list<ImageComponents>& availableLayers,
+                          std::bitset<4> *processChannels,
+                          bool* isAll,
+                          ImageComponents *layer) const;
 
     bool addUserComponents(const ImageComponents& comps);
 

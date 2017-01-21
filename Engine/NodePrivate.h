@@ -152,7 +152,9 @@ public:
 
     void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
 
-    ImageComponents getSelectedLayerInternal(int inputNb, const ChannelSelector& selector) const;
+    ImageComponents getSelectedLayerInternal(int inputNb,
+                                             const std::list<ImageComponents>& availableLayers,
+                                             const ChannelSelector& selector) const;
 
     void refreshDefaultPagesOrder();
 

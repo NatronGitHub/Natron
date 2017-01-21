@@ -184,7 +184,7 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
     {
 
         GetComponentsResultsPtr results;
-        ActionRetCodeEnum stat = _publicInterface->getComponents_public(args.time, args.view, args.renderArgs, &results);
+        ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(args.time, args.view, args.renderArgs, &results);
         if (isFailureRetCode(stat)) {
             return stat;
         }

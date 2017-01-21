@@ -452,7 +452,16 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb,
         }
 
         ImageComponents maskComps;
-        int channelForAlphaInput = getNode()->getMaskChannel(inputNb, &maskComps);
+
+        std::list<ImageComponents> upstreamAvailableLayers;
+
+        TreeRenderNodeArgsPtr currentRender = getCurrentRender_TLS();
+        ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), getCurrentView_TLS(), inputNb, currentRender, &upstreamAvailableLayers);
+        if (isFailureRetCode(stat)) {
+            return EffectInstancePtr();
+        }
+        int channelForAlphaInput = getNode()->getMaskChannel(inputNb, upstreamAvailableLayers, &maskComps);
+
 
         if (channelForMask) {
             *channelForMask = channelForAlphaInput;

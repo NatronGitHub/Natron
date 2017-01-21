@@ -133,23 +133,28 @@ void disconnectLinkedListNode(const bip::offset_ptr<LRUListNode>& node)
     if (node->prev) {
         node->prev->next = node->next;
     }
+    node->prev = 0;
+
     // Make the next item predecessor point to this item predecessor
     if (node->next) {
         node->next->prev = node->prev;
     }
+    node->next = 0;
 }
 
 inline
 void insertLinkedListNode(const bip::offset_ptr<LRUListNode>& node, const bip::offset_ptr<LRUListNode>& prev, const bip::offset_ptr<LRUListNode>& next)
 {
-
+    assert(node);
     if (prev) {
         prev->next = node;
+        assert(prev->next);
     }
     node->prev = prev;
 
     if (next) {
         next->prev = node;
+        assert(next->prev);
     }
     node->next = next;
 }
@@ -300,7 +305,7 @@ struct CacheBucket
      * This function assumes that tocData.segmentMutex must be taken in write mode
      * This function may take the tileData.segmentMutex in write mode.
      **/
-    void deallocateCacheEntryImpl(MemorySegmentEntryHeader* entry, bool releaseLock);
+    void deallocateCacheEntryImpl(MemorySegmentEntryHeader* entry, const std::string& hashStr, bool releaseLock);
 
     /**
      * @brief Lookup the cache for a MemorySegmentEntry matching the hash key.
@@ -900,86 +905,72 @@ CacheBucket::readFromSharedMemoryEntryImpl(MemorySegmentEntryHeader* cacheEntry,
 
     bool mustRemoveEntry = false;
 
-    // Wrap the memory segment portion with a managed external buffer object.
-    // This may throw an exception if the buffer is not large enough.
-    std::string objectName;
-    {
-        std::stringstream ss;
-        ss << hashStr << "EntryObjects";
-        objectName = ss.str();
-
-    }
-    ExternalSegmentTypeHandleList* entryObjectPointers = tocFileManager->find<ExternalSegmentTypeHandleList>(objectName.c_str()).first;
-    if (!entryObjectPointers) {
-        mustRemoveEntry = true;
-    } else {
-        try {
+    try {
 
 
-            // If the entry is tiled, read from the tile buffer
+        // If the entry is tiled, read from the tile buffer
 
-            boost::scoped_ptr<ReadLock> tileReadLock;
-            boost::scoped_ptr<WriteLock> tileWriteLock;
-            char* tileDataPtr = 0;
-            if (cacheEntry->tileCacheIndex != -1) {
-                CachePtr c = cache.lock();
+        boost::scoped_ptr<ReadLock> tileReadLock;
+        boost::scoped_ptr<WriteLock> tileWriteLock;
+        char* tileDataPtr = 0;
+        if (cacheEntry->tileCacheIndex != -1) {
+            CachePtr c = cache.lock();
 
-                // First try to check if the tile aligned mapping is valid with a readlock
-                bool tileMappingValid;
+            // First try to check if the tile aligned mapping is valid with a readlock
+            bool tileMappingValid;
 
-                {
-                    tileReadLock.reset(new ReadLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
-                    tileMappingValid = isTileFileMappingValid();
-                }
+            {
+                tileReadLock.reset(new ReadLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+                tileMappingValid = isTileFileMappingValid();
+            }
 
-                // mapping invalid, remap
-                if (!tileMappingValid) {
-                    // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
-                    tileReadLock.reset();
-                    tileWriteLock.reset(new WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
+            // mapping invalid, remap
+            if (!tileMappingValid) {
+                // If the tile mapping is invalid, take a write lock on the tile mapping and ensure it is valid
+                tileReadLock.reset();
+                tileWriteLock.reset(new WriteLock(c->_imp->ipc->bucketsData[bucketIndex].tileData.segmentMutex));
 
-                    ensureTileMappingValid(*tileWriteLock, 0);
-                }
-
-
-                tileDataPtr = tileAlignedFile->data() + cacheEntry->tileCacheIndex * NATRON_TILE_SIZE_BYTES;
+                ensureTileMappingValid(*tileWriteLock, 0);
             }
 
 
-            // Deserialize the entry. This may throw an exception if it cannot be deserialized properly
-            processLocalEntry->fromMemorySegment(tocFileManager.get(), hashStr + "Data", tileDataPtr);
-
-            // Deserialization went ok, set the status
-            *status = CacheEntryLocker::eCacheEntryStatusCached;
-
-            // Update LRU record if this item is not already at the tail of the list
-            //
-            // Take the LRU list mutex
-            {
-                bip::scoped_lock<bip::interprocess_mutex> lruWriteLock(ipc->lruListMutex);
-
-                assert(ipc->lruListBack && !ipc->lruListBack->next);
-                if (ipc->lruListBack != cacheEntry->lruIterator) {
-
-                    disconnectLinkedListNode(cacheEntry->lruIterator);
-
-                    // And push_back to the tail of the list...
-                    insertLinkedListNode(cacheEntry->lruIterator, ipc->lruListBack, bip::offset_ptr<LRUListNode>(0));
-                    ipc->lruListBack = cacheEntry->lruIterator;
-                }
-            } // lruWriteLock
-            
-        } catch (...) {
-            mustRemoveEntry = true;
+            tileDataPtr = tileAlignedFile->data() + cacheEntry->tileCacheIndex * NATRON_TILE_SIZE_BYTES;
         }
-    } // entryObjectPointers
-    
+
+
+        // Deserialize the entry. This may throw an exception if it cannot be deserialized properly
+        processLocalEntry->fromMemorySegment(tocFileManager.get(), hashStr + "Data", tileDataPtr);
+
+        // Deserialization went ok, set the status
+        *status = CacheEntryLocker::eCacheEntryStatusCached;
+
+        // Update LRU record if this item is not already at the tail of the list
+        //
+        // Take the LRU list mutex
+        {
+            bip::scoped_lock<bip::interprocess_mutex> lruWriteLock(ipc->lruListMutex);
+
+            assert(ipc->lruListBack && !ipc->lruListBack->next);
+            if (ipc->lruListBack != cacheEntry->lruIterator) {
+
+                disconnectLinkedListNode(cacheEntry->lruIterator);
+
+                // And push_back to the tail of the list...
+                insertLinkedListNode(cacheEntry->lruIterator, ipc->lruListBack, bip::offset_ptr<LRUListNode>(0));
+                ipc->lruListBack = cacheEntry->lruIterator;
+            }
+        } // lruWriteLock
+
+    } catch (...) {
+        mustRemoveEntry = true;
+    }
+
     return !mustRemoveEntry;
-    
+
 } // readFromSharedMemoryEntryImpl
 
 void
-CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry, bool releaseLock)
+CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry, const std::string& hashStr, bool releaseLock)
 {
     // The tocData.segmentMutex must be taken in write mode
 
@@ -1031,6 +1022,8 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry, bool
 
             // Remove this entry's node from the list
             disconnectLinkedListNode(cacheEntry->lruIterator);
+
+            tocFileManager->deallocate(cacheEntry->lruIterator.get());
         }
         cacheEntry->lruIterator = 0;
     }
@@ -1040,7 +1033,7 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry, bool
     }
 
     // deallocate the entry
-    tocFileManager->deallocate(cacheEntry);
+    tocFileManager->destroy<MemorySegmentEntryHeader>(hashStr.c_str());
 } // deallocateCacheEntryImpl
 
 
@@ -1157,7 +1150,7 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
 
             // If the deserialization failed, deallocate the memory taken by the entry
             if (deserializeFailed) {
-                _imp->bucket->deallocateCacheEntryImpl(cacheEntry, takeEntryLock /*releaseLock*/);
+                _imp->bucket->deallocateCacheEntryImpl(cacheEntry, _imp->hashStr, takeEntryLock /*releaseLock*/);
                 cacheEntry = 0;
             }
 
@@ -1247,7 +1240,7 @@ CacheEntryLocker::insertInCache()
                 boost::scoped_ptr<ReadLock> tileReadLock;
                 boost::scoped_ptr<WriteLock> tileWriteLock;
                 char* tileDataPtr = 0;
-                {
+                if (_imp->processLocalEntry->isStorageTiled()) {
                     // First try to check if the tile aligned mapping is valid with a readlock
                     bool tileMappingValid;
 
@@ -1293,15 +1286,20 @@ CacheEntryLocker::insertInCache()
             {
                 bip::scoped_lock<bip::interprocess_mutex> lruWriteLock(_imp->bucket->ipc->lruListMutex);
                 cacheEntry->lruIterator = static_cast<LRUListNode*>(_imp->bucket->tocFileManager->allocate(sizeof(LRUListNode)));
+                cacheEntry->lruIterator->prev = 0;
+                cacheEntry->lruIterator->next = 0;
                 cacheEntry->lruIterator->hash = _imp->processLocalEntry->getHashKey();
 
                 if (!_imp->bucket->ipc->lruListBack) {
                     assert(!_imp->bucket->ipc->lruListFront);
                     // The list is empty, initialize to this node
-                    _imp->bucket->ipc->lruListFront = _imp->bucket->ipc->lruListBack = cacheEntry->lruIterator;
+                    _imp->bucket->ipc->lruListFront = cacheEntry->lruIterator;
+                    _imp->bucket->ipc->lruListBack = cacheEntry->lruIterator;
+                    assert(!_imp->bucket->ipc->lruListFront->prev && !_imp->bucket->ipc->lruListFront->next);
+                    assert(!_imp->bucket->ipc->lruListBack->prev && !_imp->bucket->ipc->lruListBack->next);
                 } else {
                     // Append to the tail of the list
-                    assert(_imp->bucket->ipc->lruListFront);
+                    assert(_imp->bucket->ipc->lruListFront && _imp->bucket->ipc->lruListBack);
 
                     insertLinkedListNode(cacheEntry->lruIterator, _imp->bucket->ipc->lruListBack, bip::offset_ptr<LRUListNode>(0));
                     // Update back node
@@ -1318,7 +1316,7 @@ CacheEntryLocker::insertInCache()
 
         } catch (...) {
 
-            _imp->bucket->deallocateCacheEntryImpl(cacheEntry, true /*releaseLock*/);
+            _imp->bucket->deallocateCacheEntryImpl(cacheEntry, _imp->hashStr, true /*releaseLock*/);
 
         }
 
@@ -1391,7 +1389,7 @@ CacheEntryLocker::~CacheEntryLocker()
     // take the cacheEntry lock.
     // If we are eCacheEntryStatusMustCompute, the thread did not call insertInCache()
     // thus still have the lock. We have to unlock it.
-    _imp->bucket->deallocateCacheEntryImpl(cacheEntry, _imp->status == eCacheEntryStatusMustCompute);
+    _imp->bucket->deallocateCacheEntryImpl(cacheEntry, _imp->hashStr, _imp->status == eCacheEntryStatusMustCompute);
 }
 
 
@@ -1825,7 +1823,7 @@ Cache::removeEntry(const CacheEntryBasePtr& entry)
         {
             MemorySegmentEntryHeader* cacheEntry = bucket.tryCacheLookupImpl(hashStr);
             if (cacheEntry) {
-                bucket.deallocateCacheEntryImpl(cacheEntry, false /*releaseLock*/);
+                bucket.deallocateCacheEntryImpl(cacheEntry, hashStr, false /*releaseLock*/);
             }
         }
     }
@@ -1922,7 +1920,7 @@ Cache::evictLRUEntries(std::size_t nBytesToFree)
                         if (cacheEntry->tileCacheIndex != -1) {
                             curSize -= NATRON_TILE_SIZE_BYTES;
                         }
-                        bucket.deallocateCacheEntryImpl(cacheEntry, false /*releaseLock*/);
+                        bucket.deallocateCacheEntryImpl(cacheEntry, hashStr, false /*releaseLock*/);
                     }
                 }
 

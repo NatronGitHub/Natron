@@ -118,7 +118,7 @@ private:
                              TimeValue time) OVERRIDE FINAL;
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
-    virtual ActionRetCodeEnum getComponentsAction(TimeValue time,
+    virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                                 ViewIdx view,
                                                 const TreeRenderNodeArgsPtr& render,
                                                 std::map<int, std::list<ImageComponents> >* inputLayersNeeded,

@@ -2592,7 +2592,11 @@ NodeGui::onOutputLayerChanged()
     ImageComponents outputLayer;
     {
         bool isAll;
-        internalNode->getSelectedLayer(-1, 0, &isAll, &outputLayer);
+        std::list<ImageComponents> availableLayers;
+        ActionRetCodeEnum stat = internalNode->getEffectInstance()->getAvailableLayers(internalNode->getEffectInstance()->getTimelineCurrentTime(), ViewIdx(0), -1, TreeRenderNodeArgsPtr(), &availableLayers);
+        (void)stat;
+
+        internalNode->getSelectedLayer(-1, availableLayers, 0, &isAll, &outputLayer);
     }
     if (!processAll && outputLayer.getNumComponents() > 0) {
         if (!outputLayer.isColorPlane()) {

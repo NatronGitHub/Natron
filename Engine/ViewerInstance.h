@@ -143,7 +143,7 @@ private:
                                          ViewIdx* inputView,
                                          int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    ActionRetCodeEnum getComponentsAction(TimeValue time,
+    ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                           ViewIdx view,
                                           const TreeRenderNodeArgsPtr& render,
                                           std::map<int, std::list<ImageComponents> >* inputLayersNeeded,

@@ -126,6 +126,21 @@ NATRON_NAMESPACE_ENTER;
 // name.
 #define kNatronMetadataColorPlaneNComps "NatronMetadataColorPlaneNComps_"
 
+// std::string x1 property
+// Valid values:
+// - kNatronColorPlaneName indicating the number of components specified with kNatronMetadataColorPlaneNComps should be mapped to the color-plane
+//  Special 2-channel images are mapped to XY images to enable non-multiplanar effects to support 2-channel images.
+// - kNatronDisparityComponentsName indicating that the plug-in expects to receive 2-channel images and 2 planes (Disparity Left/Right)
+// - kNatronMotionComponentsName indicating that the plug-in expects to receive 2-channel images and 2 planes (Motion Backward/Forward)
+// Default value: kNatronColorPlaneName
+//
+// The effect desired components type for images coming from an input or in output
+// of the effect.
+// For multi-planar effects, this is completly disregarded
+// The index of the input (or -1 for the output) must be appended to the property
+// name.
+#define kNatronMetadataComponentsType "NatronMetadataComponentsType_"
+
 // int x4 property
 // Valid values: Any
 //
@@ -240,6 +255,10 @@ public:
     void setColorPlaneNComps(int inputNb, int nComps);
 
     int getColorPlaneNComps(int inputNb) const;
+
+    void setComponentsType(int inputNb, const std::string& componentsType);
+
+    std::string getComponentsType(int inputNb) const;
 
     void setOutputFormat(const RectI& format);
     

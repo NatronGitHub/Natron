@@ -1008,7 +1008,8 @@ ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata)
     }
 
     _imp->displayTextures[inputNb].premult = metadata.getOutputPremult();
-    getViewerTab()->setImageFormat(inputNb, ImageComponents::getColorPlaneComponents(metadata.getColorPlaneNComps(0)), metadata.getBitDepth(0));
+    ImageComponents upstreamLayer = ImageComponents::mapNCompsToLayer(metadata.getComponentsType(0),metadata.getColorPlaneNComps(0));
+    getViewerTab()->setImageFormat(inputNb, upstreamLayer, metadata.getBitDepth(0));
 }
 
 void
@@ -1085,7 +1086,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
 
 
     // Insert the hash in the frame/hash map so we can update the timeline's cache bar
-    if (!isPartialRect && textureIndex == 0) {
+    if (!isPartialRect && textureIndex == 0 && viewerProcessNodeTileKey) {
         QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
         _imp->uploadedTexturesViewerHash[time] = viewerProcessNodeTileKey;
     }

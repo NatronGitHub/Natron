@@ -264,7 +264,11 @@ ViewerNode::onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNod
             break;
         }
     }
-    assert(viewerProcess_i != -1);
+    if (viewerProcess_i != -1) {
+        // The _imp->internalViewerProcessNode may not be yet set if we are still in the createNode() call in the
+        // ViewerNode::createViewerProcessNode() call.
+        return;
+    }
 
     refreshFps();
     refreshViewsKnobVisibility();

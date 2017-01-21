@@ -410,20 +410,32 @@ ImageComponents::getLayerOption() const
 }
 
 const ImageComponents&
-ImageComponents::getColorPlaneComponents(int nComps)
+ImageComponents::mapNCompsToLayer(const std::string& componentsType, int nComps)
 {
-    switch (nComps) {
-        case 1:
-            return ImageComponents::getAlphaComponents();
-        case 2:
-            return ImageComponents::getXYComponents();
-        case 3:
-            return ImageComponents::getRGBComponents();
-        case 4:
-            return ImageComponents::getRGBAComponents();
-        default:
-            return ImageComponents::getNoneComponents();
+    if (componentsType == kNatronColorPlaneName) {
+        switch (nComps) {
+            case 1:
+                return ImageComponents::getAlphaComponents();
+            case 2:
+                return ImageComponents::getXYComponents();
+            case 3:
+                return ImageComponents::getRGBComponents();
+            case 4:
+                return ImageComponents::getRGBAComponents();
+            default:
+                return ImageComponents::getNoneComponents();
+        }
+    } else if (componentsType == kNatronMotionComponentsName) {
+        assert(nComps == 2);
+        return ImageComponents::getPairedMotionVectors();
+    } else if (componentsType == kNatronDisparityComponentsName) {
+        assert(nComps == 2);
+        return ImageComponents::getPairedStereoDisparity();
+    } else {
+        assert(false);
+        return ImageComponents::getNoneComponents();
     }
+
 }
 
 NATRON_NAMESPACE_EXIT;

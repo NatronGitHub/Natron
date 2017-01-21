@@ -410,6 +410,7 @@ GetTimeInvariantMetaDatasResults::getMetadataSize() const
 void
 GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
+    assert(_metadatas);
     _metadatas->toMemorySegment(segment, objectNamesPrefix, objectPointers);
     CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
 } // toMemorySegment
@@ -417,6 +418,7 @@ GetTimeInvariantMetaDatasResults::toMemorySegment(ExternalSegmentType* segment, 
 void
 GetTimeInvariantMetaDatasResults::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
 {
+    assert(_metadatas);
     _metadatas->fromMemorySegment(segment, objectNamesPrefix);
     CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
 } // fromMemorySegment

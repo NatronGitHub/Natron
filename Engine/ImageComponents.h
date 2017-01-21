@@ -148,7 +148,14 @@ public:
     ChoiceOption getLayerOption() const;
     ChoiceOption getChannelOption(int channelIndex) const;
 
-    static const ImageComponents& getColorPlaneComponents(int nComps);
+    /**
+     * @brief Maps the given nComps to a layer of the desired componentsType.
+     * componentsType must be either kNatronColorPlaneName, kNatronDisparityComponentsName or
+     * kNatronMotionComponentsName. 
+     * If kNatronMotionComponentsName or kNatronDisparityComponentsName, nComps is expected to be 2.
+     **/
+    static const ImageComponents& mapNCompsToLayer(const std::string& componentsType,
+                                                   int nComps);
 
     /**
      * @brief Find a layer equivalent to this layer in the other layers container.

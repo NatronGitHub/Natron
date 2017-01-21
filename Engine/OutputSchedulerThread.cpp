@@ -3394,8 +3394,9 @@ ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inA
         return state;
     }
 
-
-    requestExecutionOnMainThread(mtArgs);
+    if (mtArgs->frames) {
+        requestExecutionOnMainThread(mtArgs);
+    }
 
 #ifdef TRACE_CURRENT_FRAME_SCHEDULER
     qDebug() << getThreadName().c_str() << "Frame processed" << args->age;
@@ -3432,7 +3433,9 @@ void
 ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFrameContainerPtr& frames)
 {
     assert( QThread::currentThread() == qApp->thread() );
-
+    if (!frames) {
+        return;
+    }
     ViewerRenderBufferedFrameContainer* isViewerFrameContainer = dynamic_cast<ViewerRenderBufferedFrameContainer*>(frames.get());
     assert(isViewerFrameContainer);
     

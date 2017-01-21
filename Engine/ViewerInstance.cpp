@@ -257,6 +257,7 @@ ViewerInstance::initializeKnobs()
             displayChannelEntries.push_back(ChoiceOption("Matte", "", ""));
             param->populateChoices(displayChannelEntries);
         }
+        _imp->displayChannels = param;
     }
     {
         KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerInstanceNodeParamGainLabel), 1 );
@@ -436,7 +437,7 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 } // getTimeInvariantMetadatas
 
 ActionRetCodeEnum
-ViewerInstance::getComponentsAction(TimeValue time,
+ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
                                     ViewIdx view,
                                     const TreeRenderNodeArgsPtr& render,
                                     std::map<int, std::list<ImageComponents> >* inputLayersNeeded,

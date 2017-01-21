@@ -110,6 +110,7 @@ Node::refreshChannelSelectors()
 
 bool
 Node::getSelectedLayer(int inputNb,
+                       const std::list<ImageComponents>& availableLayers,
                        std::bitset<4> *processChannels,
                        bool* isAll,
                        ImageComponents* layer) const
@@ -117,7 +118,7 @@ Node::getSelectedLayer(int inputNb,
 
 
     // If there's a mask channel selector, fetch the mask layer
-    int chanIndex = getMaskChannel(inputNb, layer);
+    int chanIndex = getMaskChannel(inputNb, availableLayers, layer);
     if (chanIndex != -1) {
         *isAll = false;
         Q_UNUSED(chanIndex);
@@ -148,7 +149,7 @@ Node::getSelectedLayer(int inputNb,
     }
 
     if (!*isAll && foundSelector != _imp->channelsSelectors.end()) {
-        *layer = _imp->getSelectedLayerInternal(inputNb, foundSelector->second);
+        *layer = _imp->getSelectedLayerInternal(inputNb, availableLayers, foundSelector->second);
     }
 
     if (processChannels) {
@@ -168,7 +169,9 @@ Node::getSelectedLayer(int inputNb,
 } // getSelectedLayer
 
 ImageComponents
-NodePrivate::getSelectedLayerInternal(int inputNb, const ChannelSelector& selector) const
+NodePrivate::getSelectedLayerInternal(int inputNb,
+                                      const std::list<ImageComponents>& availableLayers,
+                                      const ChannelSelector& selector) const
 {
     NodePtr node;
 
@@ -188,14 +191,7 @@ NodePrivate::getSelectedLayerInternal(int inputNb, const ChannelSelector& select
     }
     std::string layerID = layerKnob->getActiveEntryID();
 
-    // Get the mask input components
-    std::list<ImageComponents> availableComponents;
-    {
-        ActionRetCodeEnum stat = effect->getAvailableLayers(effect->getCurrentTime_TLS(), ViewIdx(0), inputNb, effect->getCurrentRender_TLS(), &availableComponents);
-        (void)stat;
-    }
-
-    for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
+    for (std::list<ImageComponents>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
         const std::string& layerName = it2->getLayerName();
         if (layerID == layerName) {
@@ -206,7 +202,7 @@ NodePrivate::getSelectedLayerInternal(int inputNb, const ChannelSelector& select
 } // getSelectedLayerInternal
 
 int
-Node::getMaskChannel(int inputNb, ImageComponents* comps) const
+Node::getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLayers, ImageComponents* comps) const
 {
     *comps = ImageComponents::getNoneComponents();
     
@@ -217,14 +213,7 @@ Node::getMaskChannel(int inputNb, ImageComponents* comps) const
     }
     std::string maskChannelID =  it->second.channel.lock()->getActiveEntryID();
 
-    // Get the mask input components
-    std::list<ImageComponents> availableComponents;
-    {
-        ActionRetCodeEnum stat = _imp->effect->getAvailableLayers(getEffectInstance()->getCurrentTime_TLS(), ViewIdx(0), inputNb, getEffectInstance()->getCurrentRender_TLS(), &availableComponents);
-        (void)stat;
-    }
-
-    for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
+    for (std::list<ImageComponents>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
         std::size_t nChans = (std::size_t)it2->getNumComponents();
         for (std::size_t c = 0; c < nChans; ++c) {
@@ -317,6 +306,15 @@ Node::refreshLayersSelectorsVisibility()
     int mainInputIndex = getPreferredInput();
 
     for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
+
+        // Get the mask input components
+        std::list<ImageComponents> availableComponents;
+        {
+            ActionRetCodeEnum stat = _imp->effect->getAvailableLayers(_imp->effect->getCurrentTime_TLS(), ViewIdx(0), it->first, _imp->effect->getCurrentRender_TLS(), &availableComponents);
+            (void)stat;
+        }
+
+
         if (it->first >= 0) {
             NodePtr inp = getInput(it->first);
             bool mustBeSecret = !inp.get() || outputIsAll;
@@ -325,12 +323,12 @@ Node::refreshLayersSelectorsVisibility()
 
             if (mainInputIndex != -1 && mainInputIndex == it->first) {
                 // This is the main-input
-                mainInputComps = _imp->getSelectedLayerInternal(it->first, it->second);
+                mainInputComps = _imp->getSelectedLayerInternal(it->first, availableComponents, it->second);
             }
 
         } else {
             it->second.layer.lock()->setSecret(outputIsAll);
-            outputComps = _imp->getSelectedLayerInternal(it->first, it->second);
+            outputComps = _imp->getSelectedLayerInternal(it->first, availableComponents, it->second);
         }
     }
 
@@ -546,7 +544,7 @@ Node::findClosestSupportedNumberOfComponents(int inputNb,
     int foundSupportedNComps = -1;
     for (int i = nComps; i < 4; ++i) {
         if (supported[i]) {
-            foundSupportedNComps = i;
+            foundSupportedNComps = i + 1;
             break;
         }
     }
@@ -556,7 +554,7 @@ Node::findClosestSupportedNumberOfComponents(int inputNb,
         // Find a small number of components
         for (int i = nComps - 1; i >= 0; --i) {
             if (supported[i]) {
-                foundSupportedNComps = i;
+                foundSupportedNComps = i + 1;
                 break;
             }
         }

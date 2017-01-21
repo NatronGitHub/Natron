@@ -1168,7 +1168,7 @@ ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
 }
 
 ActionRetCodeEnum
-ReadNode::getComponentsAction(TimeValue time,
+ReadNode::getLayersProducedAndNeeded(TimeValue time,
                                          ViewIdx view,
                                          const TreeRenderNodeArgsPtr& render,
                                          std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
@@ -1179,7 +1179,7 @@ ReadNode::getComponentsAction(TimeValue time,
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
-        return p->getEffectInstance()->getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+        return p->getEffectInstance()->getLayersProducedAndNeeded(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     }
     return eActionStatusFailed;
 }

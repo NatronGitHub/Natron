@@ -650,7 +650,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         componentsToRender = *inArgs.layers;
     } else {
         GetComponentsResultsPtr results;
-        ActionRetCodeEnum stat = getComponents_public(inArgs.currentTime, inArgs.currentView, inArgs.renderArgs, &results);
+        ActionRetCodeEnum stat = getLayersProducedAndNeeded_public(inArgs.currentTime, inArgs.currentView, inArgs.renderArgs, &results);
         if (isFailureRetCode(stat)) {
 #ifdef DEBUG
             qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the get components action failed";
@@ -872,7 +872,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         // If this node does not support multi-plane or the image is the color plane,
         // map it to this node preferred color plane
         if (it->second->getLayer().isColorPlane() || !supportsMultiPlane) {
-            ImageComponents thisLayer = getColorPlaneComponents(inArgs.renderArgs, inArgs.inputNb);
+            ImageComponents thisLayer = getMetadataComponents(inArgs.renderArgs, inArgs.inputNb);
             if (it->second->getLayer() != thisLayer) {
                 mustConvertImage = true;
                 preferredLayer = thisLayer;
@@ -1461,7 +1461,7 @@ EffectInstance::getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb)
 }
 
 ImageComponents
-EffectInstance::getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int inputNb)
+EffectInstance::getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
     ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
@@ -1470,7 +1470,8 @@ EffectInstance::getColorPlaneComponents(const TreeRenderNodeArgsPtr& render, int
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
         int nComps = metadatas->getColorPlaneNComps(inputNb);
-        return ImageComponents::getColorPlaneComponents(nComps);
+        std::string componentsType = metadatas->getComponentsType(inputNb);
+        return ImageComponents::mapNCompsToLayer(componentsType, nComps);
     }
 }
 

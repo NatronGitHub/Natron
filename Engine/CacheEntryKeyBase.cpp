@@ -73,7 +73,6 @@ CacheEntryKeyBase::getHash() const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->hashComputed) {
-        _imp->hashComputed = true;
         return _imp->hash;
     }
 
@@ -82,6 +81,7 @@ CacheEntryKeyBase::getHash() const
     appendToHash(&hash);
     hash.computeHash();
     _imp->hash = hash.value();
+    _imp->hashComputed = true;
     return _imp->hash;
     
 }

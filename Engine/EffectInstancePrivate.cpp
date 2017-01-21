@@ -552,7 +552,12 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             // Fetch the mask image
 
             ImageComponents maskLayer;
-            _publicInterface->getNode()->getMaskChannel(maskInputNb, &maskLayer);
+            {
+                std::list<ImageComponents> upstreamAvailableLayers;
+                ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(args->time, args->view, maskInputNb, args->renderArgs, &upstreamAvailableLayers);
+                (void)stat;
+                _publicInterface->getNode()->getMaskChannel(maskInputNb, upstreamAvailableLayers, &maskLayer);
+            }
 
             GetImageInArgs inArgs;
             std::list<ImageComponents> layersToFetch;

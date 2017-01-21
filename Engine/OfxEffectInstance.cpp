@@ -2143,7 +2143,7 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 }
 
 ActionRetCodeEnum
-OfxEffectInstance::getComponentsAction(TimeValue time,
+OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
                                        ViewIdx view,
                                        const TreeRenderNodeArgsPtr& /*renderArgs*/,
                                        std::map<int, std::list<ImageComponents> >* inputLayersNeeded,

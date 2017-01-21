@@ -829,7 +829,7 @@ TrackMarkerPM::trackMarker(bool forward,
                 double areaPixels = (topRight.x - btmLeft.x) * (topRight.y - btmLeft.y);
                 NodePtr trackerInput = trackerNode->getInput(0);
                 if (trackerInput) {
-                    ImageComponents comps = trackerInput->getEffectInstance()->getColorPlaneComponents(TreeRenderNodeArgsPtr(), -1);
+                    ImageComponents comps = trackerInput->getEffectInstance()->getMetadataComponents(TreeRenderNodeArgsPtr(), -1);
                     areaPixels *= comps.getNumComponents();
                 }
 

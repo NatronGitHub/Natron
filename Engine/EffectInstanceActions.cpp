@@ -44,177 +44,12 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
-
-ActionRetCodeEnum
-EffectInstance::getComponentsAction(TimeValue time,
-                                               ViewIdx view,
-                                               const TreeRenderNodeArgsPtr& render,
-                                               std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                               std::list<ImageComponents>* layersProduced,
-                                               TimeValue* passThroughTime,
-                                               ViewIdx* passThroughView,
-                                               int* passThroughInputNb)
-{
-    bool processAllRequested;
-    std::bitset<4> processChannels;
-    getDefaultComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
-    return eActionStatusReplyDefault;
-} // getComponentsNeededAndProduced
-
-void
-EffectInstance::getDefaultComponentsNeededAndProduced(TimeValue time,
-                                                      ViewIdx view,
-                                                      const TreeRenderNodeArgsPtr& render,
-                                                      std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                      std::list<ImageComponents>* layersProduced,
-                                                      TimeValue* passThroughTime,
-                                                      ViewIdx* passThroughView,
-                                                      int* passThroughInputNb,
-                                                      bool* processAllRequested,
-                                                      std::bitset<4>* processChannels)
-{
-    *passThroughTime = time;
-    *passThroughView = view;
-    *passThroughInputNb = getNode()->getPreferredInput();
-    *processAllRequested = false;
-
-
-    // Get the output needed components
-    {
-        // Check if the node has a OutputLayer choice
-        ImageComponents layer;
-
-        bool ok = getNode()->getSelectedLayer(-1, processChannels, processAllRequested, &layer);
-
-        // If the user did not select any components or the layer is the color-plane, fallback on
-        // meta-data color plane
-        if (layer.getNumComponents() == 0 || layer.isColorPlane()) {
-            ok = false;
-        }
-
-        std::vector<ImageComponents> clipPrefsAllComps;
-        ImageComponents clipPrefsComps = getColorPlaneComponents(render, -1);
-        {
-            if ( clipPrefsComps.isPairedComponents() ) {
-                ImageComponents first, second;
-                clipPrefsComps.getPlanesPair(&first, &second);
-                clipPrefsAllComps.push_back(first);
-                clipPrefsAllComps.push_back(second);
-            } else {
-                clipPrefsAllComps.push_back(clipPrefsComps);
-            }
-        }
-
-        if (ok) {
-            layersProduced->push_back(layer);
-
-            if ( !clipPrefsComps.isColorPlane() ) {
-                layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-            }
-        } else {
-            layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-        }
-
-    }
-
-    // For each input get their needed components
-    int maxInput = getMaxInputCount();
-    for (int i = 0; i < maxInput; ++i) {
-
-        EffectInstancePtr input = getInput(i);
-        if (!input) {
-            continue;
-        }
-
-        std::list<ImageComponents> &componentsSet = (*inputLayersNeeded)[i];
-
-        // Get the selected layer from the source channels menu
-        std::bitset<4> inputProcChannels;
-        ImageComponents layer;
-        bool isAll;
-        bool ok = getNode()->getSelectedLayer(i, &inputProcChannels, &isAll, &layer);
-
-        // When color plane or all choice then request the default metadata components
-        if (isAll || layer.isColorPlane()) {
-            ok = false;
-        }
-
-        // For a mask get its selected channel
-        ImageComponents maskComp;
-        int channelMask = getNode()->getMaskChannel(i, &maskComp);
-
-
-        std::vector<ImageComponents> clipPrefsAllComps;
-        {
-            ImageComponents clipPrefsComps = getColorPlaneComponents(render, i);
-            if ( clipPrefsComps.isPairedComponents() ) {
-                ImageComponents first, second;
-                clipPrefsComps.getPlanesPair(&first, &second);
-                clipPrefsAllComps.push_back(first);
-                clipPrefsAllComps.push_back(second);
-            } else {
-                clipPrefsAllComps.push_back(clipPrefsComps);
-            }
-        }
-
-        if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
-
-            // If this is a mask, ask for the selected mask layer
-            componentsSet.push_back(maskComp);
-
-        } else if (ok) {
-            componentsSet.push_back(layer);
-        } else {
-            //Use regular clip preferences
-            componentsSet.insert( componentsSet.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-        }
-
-    } // for each input
-} // getDefaultComponentsNeededAndProduced
-
-ActionRetCodeEnum
-EffectInstance::getComponentsNeededInternal(TimeValue time,
-                                            ViewIdx view,
-                                            const TreeRenderNodeArgsPtr& render,
-                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                            std::list<ImageComponents>* layersProduced,
-                                            TimeValue* passThroughTime,
-                                            ViewIdx* passThroughView,
-                                            int* passThroughInputNb,
-                                            bool* processAllRequested,
-                                            std::bitset<4>* processChannels)
-{
-
-    if ( !isMultiPlanar() ) {
-        getDefaultComponentsNeededAndProduced(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
-    } else {
-
-        // call the getClipComponents action
-
-        ActionRetCodeEnum stat = getComponentsAction(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
-
-        for (int i = 0; i < 4; ++i) {
-            (*processChannels)[i] = getNode()->getProcessChannel(i);
-        }
-
-        *processAllRequested = false;
-    }
-    return eActionStatusOK;
-
-}
-
-
-
 /**
  * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
  * For the color plane, if it already existed in toList it is replaced by the value in inputList
  **/
 static void mergeLayersList(const std::list<ImageComponents>& inputList,
-                                std::list<ImageComponents>* toList)
+                            std::list<ImageComponents>* toList)
 {
     for (std::list<ImageComponents>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
 
@@ -245,6 +80,260 @@ static void removeFromLayersList(const std::list<ImageComponents>& toRemove,
 } // removeFromLayersList
 
 ActionRetCodeEnum
+EffectInstance::getLayersProducedAndNeeded(TimeValue time,
+                                               ViewIdx view,
+                                               const TreeRenderNodeArgsPtr& render,
+                                               std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                               std::list<ImageComponents>* layersProduced,
+                                               TimeValue* passThroughTime,
+                                               ViewIdx* passThroughView,
+                                               int* passThroughInputNb)
+{
+    bool processAllRequested;
+    std::bitset<4> processChannels;
+    std::list<ImageComponents> passThroughPlanes;
+    getLayersProducedAndNeeded_default(time, view, render, inputLayersNeeded, layersProduced, &passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
+    return eActionStatusReplyDefault;
+} // getComponentsNeededAndProduced
+
+ActionRetCodeEnum
+EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
+                                                   ViewIdx view,
+                                                   const TreeRenderNodeArgsPtr& render,
+                                                   std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                                   std::list<ImageComponents>* layersProduced,
+                                                   std::list<ImageComponents>* passThroughPlanes,
+                                                   TimeValue* passThroughTime,
+                                                   ViewIdx* passThroughView,
+                                                   int* passThroughInputNb,
+                                                   bool* processAllRequested,
+                                                   std::bitset<4>* processChannels)
+{
+    *passThroughTime = time;
+    *passThroughView = view;
+    *passThroughInputNb = getNode()->getPreferredInput();
+    *processAllRequested = false;
+
+    {
+        std::list<ImageComponents> upstreamAvailableLayers;
+        ActionRetCodeEnum stat;
+        if (*passThroughInputNb != -1) {
+            stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
+        } else {
+            stat = eActionStatusInputDisconnected;
+        }
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+        // upstreamAvailableLayers now contain all available planes in input of this node
+        // Remove from this list all layers produced from this node to get the pass-through planes list
+        removeFromLayersList(*layersProduced, &upstreamAvailableLayers);
+
+        *passThroughPlanes = upstreamAvailableLayers;
+
+    }
+
+    // Get the output needed components
+    {
+
+        std::vector<ImageComponents> clipPrefsAllComps;
+
+        // The clipPrefsComps is the number of components desired by the plug-in in the
+        // getTimeInvariantMetadatas action (getClipPreferences for OpenFX) mapped to the
+        // color-plane.
+        //
+        // There's a special case for a plug-in that requests a 2 component image:
+        // OpenFX does not support 2-component images by default. 2 types of plug-in
+        // may request such images:
+        // - non multi-planar effect that supports 2 component images, added with the Natron OpenFX extensions
+        // - multi-planar effect that supports The Foundry Furnace plug-in suite: the value returned is either
+        // disparity components or a motion vector components.
+        //
+        ImageComponents clipPrefsComps = getMetadataComponents(render, -1);
+        {
+            // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
+            // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
+            if ( clipPrefsComps.isPairedComponents() ) {
+                ImageComponents first, second;
+                clipPrefsComps.getPlanesPair(&first, &second);
+                clipPrefsAllComps.push_back(first);
+                clipPrefsAllComps.push_back(second);
+            } else {
+                clipPrefsAllComps.push_back(clipPrefsComps);
+            }
+        }
+
+        // Natron adds for all non multi-planar effects a default layer selector to emulate
+        // multi-plane even if the plug-in is not aware of it. When calling getImagePlanes(), the
+        // plug-in will receive this user-selected plane, mapped to the number of components indicated
+        // by the plug-in in getTimeInvariantMetadatas
+        ImageComponents layer;
+        bool gotUserSelectedPlane;
+        {
+            // In output, the available layers are those pass-through the input + project layers +
+            // layers produced by this node
+            std::list<ImageComponents> availableLayersInOutput = *passThroughPlanes;
+            availableLayersInOutput.insert(availableLayersInOutput.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end());
+
+            {
+                std::list<ImageComponents> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+                mergeLayersList(projectLayers, &availableLayersInOutput);
+            }
+
+            {
+                std::list<ImageComponents> userCreatedLayers;
+                getNode()->getUserCreatedComponents(&userCreatedLayers);
+                mergeLayersList(userCreatedLayers, &availableLayersInOutput);
+            }
+
+            gotUserSelectedPlane = getNode()->getSelectedLayer(-1, availableLayersInOutput, processChannels, processAllRequested, &layer);
+        }
+
+        // If the user did not select any components or the layer is the color-plane, fallback on
+        // meta-data color plane
+        if (layer.getNumComponents() == 0 || layer.isColorPlane()) {
+            gotUserSelectedPlane = false;
+        }
+
+
+        if (gotUserSelectedPlane) {
+            layersProduced->push_back(layer);
+
+            if ( !clipPrefsComps.isColorPlane() ) {
+                layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+            }
+        } else {
+            layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+        }
+
+    }
+
+    // For each input get their needed components
+    int maxInput = getMaxInputCount();
+    for (int i = 0; i < maxInput; ++i) {
+
+        EffectInstancePtr input = getInput(i);
+        if (!input) {
+            continue;
+        }
+
+
+        std::list<ImageComponents> upstreamAvailableLayers;
+        ActionRetCodeEnum stat = getAvailableLayers(time, view, i, render, &upstreamAvailableLayers);
+        (void)stat;
+
+
+
+        std::list<ImageComponents> &componentsSet = (*inputLayersNeeded)[i];
+
+        // Get the selected layer from the source channels menu
+        std::bitset<4> inputProcChannels;
+        ImageComponents layer;
+        bool isAll;
+        bool ok = getNode()->getSelectedLayer(i, upstreamAvailableLayers, &inputProcChannels, &isAll, &layer);
+
+        // When color plane or all choice then request the default metadata components
+        if (isAll || layer.isColorPlane()) {
+            ok = false;
+        }
+
+        // For a mask get its selected channel
+        ImageComponents maskComp;
+        int channelMask = getNode()->getMaskChannel(i, upstreamAvailableLayers, &maskComp);
+
+
+        std::vector<ImageComponents> clipPrefsAllComps;
+        {
+            ImageComponents clipPrefsComps = getMetadataComponents(render, i);
+            if ( clipPrefsComps.isPairedComponents() ) {
+                ImageComponents first, second;
+                clipPrefsComps.getPlanesPair(&first, &second);
+                clipPrefsAllComps.push_back(first);
+                clipPrefsAllComps.push_back(second);
+            } else {
+                clipPrefsAllComps.push_back(clipPrefsComps);
+            }
+        }
+
+        if ( (channelMask != -1) && (maskComp.getNumComponents() > 0) ) {
+
+            // If this is a mask, ask for the selected mask layer
+            componentsSet.push_back(maskComp);
+
+        } else if (ok) {
+            componentsSet.push_back(layer);
+        } else {
+            //Use regular clip preferences
+            componentsSet.insert( componentsSet.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
+        }
+
+    } // for each input
+    return eActionStatusOK;
+} // getLayersProducedAndNeeded_default
+
+ActionRetCodeEnum
+EffectInstance::getComponentsNeededInternal(TimeValue time,
+                                            ViewIdx view,
+                                            const TreeRenderNodeArgsPtr& render,
+                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
+                                            std::list<ImageComponents>* layersProduced,
+                                            std::list<ImageComponents>* passThroughPlanes,
+                                            TimeValue* passThroughTime,
+                                            ViewIdx* passThroughView,
+                                            int* passThroughInputNb,
+                                            bool* processAllRequested,
+                                            std::bitset<4>* processChannels)
+{
+
+    if ( !isMultiPlanar() ) {
+        return getLayersProducedAndNeeded_default(time, view, render, inputLayersNeeded, layersProduced, passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
+    }
+
+
+    // call the getClipComponents action
+
+    ActionRetCodeEnum stat = getLayersProducedAndNeeded(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
+
+
+    // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
+    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
+        ( passThrough == ePassThroughRenderAllRequestedPlanes) ) {
+
+        assert(*passThroughInputNb != -1);
+
+
+        std::list<ImageComponents> upstreamAvailableLayers;
+        ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+
+        // upstreamAvailableLayers now contain all available planes in input of this node
+        // Remove from this list all layers produced from this node to get the pass-through planes list
+        removeFromLayersList(*layersProduced, &upstreamAvailableLayers);
+
+        *passThroughPlanes = upstreamAvailableLayers;
+
+    } // if pass-through for planes
+
+
+
+    for (int i = 0; i < 4; ++i) {
+        (*processChannels)[i] = getNode()->getProcessChannel(i);
+    }
+
+    *processAllRequested = false;
+
+    return eActionStatusOK;
+
+} // getComponentsNeededInternal
+
+
+ActionRetCodeEnum
 EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render,  std::list<ImageComponents>* availableLayers)
 {
 
@@ -267,7 +356,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
     std::list<ImageComponents> passThroughLayers;
     {
         GetComponentsResultsPtr actionResults;
-        ActionRetCodeEnum stat = effect->getComponents_public(time, view, effectRenderArgs, &actionResults);
+        ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(time, view, effectRenderArgs, &actionResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -316,7 +405,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
 } // getAvailableInputLayers
 
 ActionRetCodeEnum
-EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
+EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
 
 {
     // Round time for non continuous effects
@@ -416,34 +505,11 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
 #endif
                                                   );
 
-        ActionRetCodeEnum stat = getComponentsNeededInternal(time, view, render, &inputLayersNeeded, &outputLayersProduced, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
+        ActionRetCodeEnum stat = getComponentsNeededInternal(time, view, render, &inputLayersNeeded, &outputLayersProduced, &passThroughPlanes, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
         if (isFailureRetCode(stat)) {
             return stat;
         }
     }
-
-
-    // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
-    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
-        ( passThrough == ePassThroughRenderAllRequestedPlanes) ) {
-
-        assert(passThroughInputNb != -1);
-
-
-        std::list<ImageComponents> upstreamAvailableLayers;
-        ActionRetCodeEnum stat = getAvailableLayers(time, view, passThroughInputNb, render, &upstreamAvailableLayers);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
-
-        // upstreamAvailableLayers now contain all available planes in input of this node
-        // Remove from this list all layers produced from this node to get the pass-through planes list
-        removeFromLayersList(outputLayersProduced, &upstreamAvailableLayers);
-
-        passThroughPlanes = upstreamAvailableLayers;
-
-    } // if pass-through for planes
 
 
     (*results)->setResults(inputLayersNeeded, outputLayersProduced, passThroughPlanes, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
@@ -455,7 +521,7 @@ EffectInstance::getComponents_public(TimeValue inArgsTime, ViewIdx view, const T
 
     return eActionStatusOK;
     
-} // getComponents_public
+} // getLayersProducedAndNeeded_public
 
 
 ActionRetCodeEnum
@@ -1919,6 +1985,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
     GetTimeInvariantMetaDatasKeyPtr cacheKey(new GetTimeInvariantMetaDatasKey(hash, getNode()->getPluginID()));
     *results = GetTimeInvariantMetaDatasResults::create(cacheKey);
+    NodeMetadataPtr metadata(new NodeMetadata);
+    (*results)->setMetadatasResults(metadata);
 
 
     CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(*results);
@@ -1959,8 +2027,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         }
     }
 
-    NodeMetadata metadata;
-    ActionRetCodeEnum stat = getDefaultMetadata(render, metadata);
+    ActionRetCodeEnum stat = getDefaultMetadata(render, *metadata);
 
     if (isFailureRetCode(stat)) {
         return stat;
@@ -1980,23 +2047,25 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
         // If the node is disabled, don't call getClipPreferences on the plug-in:
         // we don't want it to change output Format or other metadatas
-        ActionRetCodeEnum stat = getTimeInvariantMetaDatas(metadata);
+        ActionRetCodeEnum stat = getTimeInvariantMetaDatas(*metadata);
         if (isFailureRetCode(stat)) {
             return stat;
         }
-        _imp->checkMetadata(metadata);
+        _imp->checkMetadata(*metadata);
     }
 
 
     // For a Reader, try to add the output format to the project formats.
     if (isReader()) {
         Format format;
-        format.set(metadata.getOutputFormat());
-        format.setPixelAspectRatio(metadata.getPixelAspectRatio(-1));
+        format.set(metadata->getOutputFormat());
+        format.setPixelAspectRatio(metadata->getPixelAspectRatio(-1));
         getApp()->getProject()->setOrAddProjectFormat(format, true);
     }
 
-    getNode()->onNodeMetadatasRefreshedOnMainThread(metadata);
+    if (QThread::currentThread() == qApp->thread()) {
+        getNode()->onNodeMetadatasRefreshedOnMainThread(*metadata);
+    }
 
     cacheAccess->insertInCache();
     return eActionStatusOK;

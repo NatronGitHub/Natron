@@ -153,7 +153,7 @@ struct TreeRenderPrivate
     , threadsMutex()
     , threadsForThisRender()
     , timerMutex()
-    , abortTimeoutTimer(0)
+    , abortTimeoutTimer(new QTimer)
     , ownerThread(QThread::currentThread())
     , timerStarted(false)
     , isPlayback(false)
@@ -649,7 +649,7 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     if (layers.empty()) {
         
         GetComponentsResultsPtr results;
-        ActionRetCodeEnum stat = effectToRender->getComponents_public(time, view, rootNodeArgs, &results);
+        ActionRetCodeEnum stat = effectToRender->getLayersProducedAndNeeded_public(time, view, rootNodeArgs, &results);
         if (isFailureRetCode(stat)) {
             state = stat;
             return;
