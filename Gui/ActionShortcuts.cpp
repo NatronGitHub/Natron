@@ -164,7 +164,7 @@ ActionWithShortcut::ActionWithShortcut(const std::string & group,
         }
         appPTR->getCurrentSettings()->addShortcutAction(_group.toStdString(), actionIDStr.toStdString(), this);
     }
-    assert ( !_group.isEmpty() && !actionIDs.empty() );
+    assert ( !_group.isEmpty() );
     if (setShortcutOnAction) {
         setShortcut(seq0);
     }

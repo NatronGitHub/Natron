@@ -397,7 +397,7 @@ Gui::addNewViewerTab(const NodeGuiPtr& node,
     ViewerTab* tab = new ViewerTab(nodeName, nodeViewerUi, activeNodeViewerUi, this, node, where);
     tab->setLabel(label);
 
-    QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
+    QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int)), this, SLOT(onViewerImageChanged(int)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
@@ -412,8 +412,7 @@ Gui::addNewViewerTab(const NodeGuiPtr& node,
 } // Gui::addNewViewerTab
 
 void
-Gui::onViewerImageChanged(int texIndex,
-                          bool hasImageBackend)
+Gui::onViewerImageChanged(int texIndex)
 {
     ///notify all histograms a viewer image changed
     ViewerGL* viewer = qobject_cast<ViewerGL*>( sender() );
@@ -421,7 +420,7 @@ Gui::onViewerImageChanged(int texIndex,
     if (viewer) {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
-            (*it)->onViewerImageChanged(viewer, texIndex, hasImageBackend);
+            (*it)->onViewerImageChanged(viewer, texIndex);
         }
     }
 }

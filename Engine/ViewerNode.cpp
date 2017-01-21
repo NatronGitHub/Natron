@@ -338,13 +338,13 @@ ViewerNode::createViewerProcessNode()
         viewerProcessDisplayChanelsChoice->linkTo(_imp->displayChannelsKnob[i].lock());
 
         KnobIPtr viewerProcessGammaKnob = internalViewerNode->getKnobByName(kViewerInstanceParamGamma);
-        viewerProcessAlphaChannelChoice->linkTo(_imp->gammaSliderKnob.lock());
+        viewerProcessGammaKnob->linkTo(_imp->gammaSliderKnob.lock());
 
         KnobIPtr viewerProcessGainKnob = internalViewerNode->getKnobByName(kViewerInstanceNodeParamGain);
-        viewerProcessAlphaChannelChoice->linkTo(_imp->gainSliderKnob.lock());
+        viewerProcessGainKnob->linkTo(_imp->gainSliderKnob.lock());
 
         KnobIPtr viewerProcessAutoContrastKnob = internalViewerNode->getKnobByName(kViewerInstanceParamEnableAutoContrast);
-        viewerProcessAlphaChannelChoice->linkTo(_imp->enableAutoContrastButtonKnob.lock());
+        viewerProcessAutoContrastKnob->linkTo(_imp->enableAutoContrastButtonKnob.lock());
 
         KnobIPtr viewerProcessAutoColorspaceKnob = internalViewerNode->getKnobByName(kViewerInstanceParamColorspace);
         viewerProcessAutoColorspaceKnob->linkTo(_imp->colorspaceKnob.lock());

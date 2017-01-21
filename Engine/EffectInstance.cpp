@@ -142,8 +142,6 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     NodePtr node = getNode();
 
-    assert(hash->isEmpty());
-
     // Append the plug-in ID in case for there is a coincidence of all parameter values (and ordering!) between 2 plug-ins
     Hash64::appendQString(QString::fromUtf8(node->getPluginID().c_str()), hash);
 
@@ -164,14 +162,14 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         for (int i = 0; i < nInputs; ++i) {
             EffectInstancePtr input = getInput(i);
             if (!input) {
+                hash->append(0);
+            } else {
                 ComputeHashArgs inputArgs = args;
                 if (args.render) {
                     inputArgs.render = args.render->getInputRenderArgs(i);
                 }
                 U64 inputHash = input->computeHash(inputArgs);
                 hash->append(inputHash);
-            } else {
-                hash->append(0);
             }
         }
     } else {
@@ -980,7 +978,6 @@ EffectInstance::getRenderValuesCache_TLS(TimeValue* currentTime, ViewIdx* curren
     }
 
     const TreeRenderNodeArgsPtr& render = tls->getRenderArgs();
-    assert(render);
     if (!render) {
         return RenderValuesCachePtr();
     }

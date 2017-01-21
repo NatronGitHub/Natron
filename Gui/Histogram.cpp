@@ -445,13 +445,12 @@ Histogram::onCurrentViewerChanged(QAction*)
 
 void
 Histogram::onViewerImageChanged(ViewerGL* viewer,
-                                int texIndex,
-                                bool hasImageBackend)
+                                int texIndex)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
 
-    if (viewer && hasImageBackend) {
+    if (viewer) {
         QString viewerName = QString::fromUtf8( viewer->getInternalNode()->getScriptName_mt_safe().c_str() );
         ViewerTab* lastSelectedViewer = getGui()->getNodeGraph()->getLastSelectedViewer();
         QString currentViewerName;

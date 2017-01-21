@@ -665,11 +665,15 @@ static void ensureMappingValidInternal(WriteLock& lock,
     ++segment->nProcessWithMappingValid;
 } // ensureMappingValidInternal
 
-static void reOpenToCData(CacheBucket* bucket)
+static void reOpenToCData(CacheBucket* bucket, bool create)
 {
     // Re-create the manager on the new mapped buffer
     try {
-        bucket->tocFileManager.reset(new ExternalSegmentType(bip::open_only, bucket->tocFile->data(), bucket->tocFile->size()));
+        if (create) {
+            bucket->tocFileManager.reset(new ExternalSegmentType(bip::create_only, bucket->tocFile->data(), bucket->tocFile->size()));
+        } else {
+            bucket->tocFileManager.reset(new ExternalSegmentType(bip::open_only, bucket->tocFile->data(), bucket->tocFile->size()));
+        }
     } catch (...) {
         assert(false);
         throw std::runtime_error("Not enough space to allocate bucket table of content!");
@@ -700,7 +704,7 @@ CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
     if (tocFile->size() == 0) {
         growToCFile(lock, minFreeSize);
     } else {
-        reOpenToCData(this);
+        reOpenToCData(this, false /*create*/);
 
         // Check that there's enough memory, if not grow the file
         ExternalSegmentType::size_type freeMem = tocFileManager->get_free_memory();
@@ -787,12 +791,13 @@ CacheBucket::growToCFile(WriteLock& lock, std::size_t bytesToAdd)
     // Save the entire file
     tocFile->flush(MemoryFile::eFlushTypeSync, NULL, 0);
 
-    std::size_t newSize = tocFile->size() + bytesToAdd;
+    std::size_t oldSize = tocFile->size();
+    std::size_t newSize = oldSize + bytesToAdd;
     // Round to the nearest next multiple of NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
     newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES)) * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES;
     tocFile->resize(newSize, false /*preserve*/);
 
-    reOpenToCData(this);
+    reOpenToCData(this, oldSize == 0 /*create*/);
 
     ++c->_imp->ipc->bucketsData[bucketIndex].tocData.nProcessWithMappingValid;
 
@@ -1423,7 +1428,7 @@ Cache::create()
         std::string sharedMemoryName;
         {
             std::stringstream ss;
-            ss << NATRON_CACHE_DIRECTORY_NAME  << "_GlobalData";
+            ss << NATRON_CACHE_DIRECTORY_NAME  << "Lock";
             sharedMemoryName = ss.str();
         }
         try {
@@ -1676,6 +1681,12 @@ void
 CachePrivate::ensureCacheDirectoryExists()
 {
     QString userDirectoryCache = QString::fromUtf8(directoryContainingCachePath.c_str());
+
+    {
+        QDir d = QDir::root();
+        d.mkpath(userDirectoryCache);
+    }
+
     QDir d(userDirectoryCache);
     if (d.exists()) {
         QString cacheDirName = QString::fromUtf8(NATRON_CACHE_DIRECTORY_NAME);

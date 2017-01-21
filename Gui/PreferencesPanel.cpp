@@ -146,28 +146,6 @@ keybindToString(const KeyboardModifiers & modifiers,
     return makeKeySequence(qMods, qKey).toString(QKeySequence::NativeText);
 }
 
-static QString
-mouseShortcutToString(const Qt::KeyboardModifiers & modifiers,
-                      Qt::MouseButton button)
-{
-    QString ret = makeKeySequence(modifiers, (Qt::Key)0).toString(QKeySequence::NativeText);
-
-    switch (button) {
-    case Qt::LeftButton:
-        ret.append( QCoreApplication::translate("ShortCutEditor", "LeftButton") );
-        break;
-    case Qt::MiddleButton:
-        ret.append( QCoreApplication::translate("ShortCutEditor", "MiddleButton") );
-        break;
-    case Qt::RightButton:
-        ret.append( QCoreApplication::translate("ShortCutEditor", "RightButton") );
-        break;
-    default:
-        break;
-    }
-
-    return ret;
-}
 
 typedef std::list<GuiShortCutGroup> GuiAppShorcuts;
 

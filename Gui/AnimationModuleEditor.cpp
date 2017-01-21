@@ -515,7 +515,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
     QObject::connect( timeline.get(), SIGNAL(frameChanged(SequenceTime,int)), this, SLOT(onTimelineTimeChanged(SequenceTime,int)) );
 
 
-    QObject::connect( timeline.get(), SIGNAL(mustRefreshExpressionResultsLater()), this, SLOT(onMustRefreshExpressionResultsLaterReceived()), Qt::QueuedConnection );
+    QObject::connect( this, SIGNAL(mustRefreshExpressionResultsLater()), this, SLOT(onMustRefreshExpressionResultsLaterReceived()), Qt::QueuedConnection );
 }
 
 AnimationModuleEditor::~AnimationModuleEditor()

@@ -727,7 +727,7 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
             QString pluginShortcutGroup = QString::fromUtf8(isEffect->getNode()->getOriginalPlugin()->getPluginShortcutGroup().c_str());
             keybinds = getKeybind( pluginShortcutGroup, thisActionID );
 
-            if (!keybinds.isEmpty()) {
+            {
                 if (!isMarkdown) {
                     additionalKeyboardShortcutString += QLatin1String("<br/>");
                 } else {
@@ -737,10 +737,11 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
                 // add a fake %1 because additional shortcuts start at %2
                 additionalKeyboardShortcutString.push_back(QString::fromUtf8("%1"));
 
+
+                tt += additionalKeyboardShortcutString;
+                additionalShortcuts.push_front(thisActionID.toStdString());
             }
 
-            tt += additionalKeyboardShortcutString;
-            additionalShortcuts.push_front(thisActionID.toStdString());
 
             if (w) {
                 QList<QAction*> actions = w->actions();

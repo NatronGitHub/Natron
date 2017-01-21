@@ -1492,9 +1492,9 @@ Q_SIGNALS:
 
     void refreshEdgesGUI();
 
-    void previewImageChanged(double);
+    void previewImageChanged(TimeValue);
 
-    void previewRefreshRequested(double);
+    void previewRefreshRequested(TimeValue);
 
     void inputNIsRendering(int inputNb);
 

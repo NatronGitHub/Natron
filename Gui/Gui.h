@@ -626,7 +626,7 @@ public Q_SLOTS:
 
     void onNodeNameChanged(const QString& oldLabel, const QString & newLabel);
 
-    void onViewerImageChanged(int texIndex, bool hasImageBackend);
+    void onViewerImageChanged(int texIndex);
 
     NodePtr createReader();
     NodePtr createWriter();
