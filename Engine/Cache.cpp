@@ -62,6 +62,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/StorageDeleterThread.h"
 #include "Engine/FStreamsSupport.h"
 #include "Engine/MemoryFile.h"
+#include "Engine/MemoryInfo.h"
 #include "Engine/Settings.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/RamBuffer.h"
@@ -83,6 +84,11 @@ GCC_DIAG_ON(unused-parameter)
 
 // Used to prevent loading older caches when we change the serialization scheme
 #define NATRON_CACHE_SERIALIZATION_VERSION 5
+
+#define CACHE_TRACE_ENTRY_LOCK
+#define CACHE_TRACE_ENTRY_ACCESS
+#define CACHE_TRACE_TIMEOUTS
+#define CACHE_TRACE_FILE_MAPPING
 
 namespace bip = boost::interprocess;
 
@@ -742,15 +748,18 @@ void createLock(CachePrivate* imp, boost::scoped_ptr<LOCK>& lock, typename LOCK:
     // shared memory segment and retry the lock.
     // Another process could have taken the lock and crashed, leaving the shared memory in a bad state.
     static const std::size_t lockTimeOutMS = 300;
-    boost::posix_time::ptime abs_time = boost::posix_time::microsec_clock::universal_time() +  boost::posix_time::milliseconds(lockTimeOutMS);
     for (;;) {
+        boost::posix_time::ptime abs_time = boost::posix_time::microsec_clock::universal_time() +  boost::posix_time::milliseconds(lockTimeOutMS);
         lock.reset(new LOCK(*mutex, abs_time));
         if (!lock->owns()) {
+#ifdef CACHE_TRACE_TIMEOUTS
+            qDebug() << "Lock timeout, checking cache integrity";
+#endif
             imp->ensureSharedMemoryIntegrity();
         } else {
             break;
         }
-    };
+    }
 }
 
 CacheEntryLocker::CacheEntryLocker(const CachePtr& cache, const CacheEntryBasePtr& entry)
@@ -841,6 +850,10 @@ CacheBucket::ensureToCFileMappingValid(WriteLock& lock, std::size_t minFreeSize)
 
     }
 
+#ifdef CACHE_TRACE_FILE_MAPPING
+    qDebug() << "Checking ToC mapping:" << c->_imp->ipc->bucketsData[bucketIndex].tocData.mappingValid;
+#endif
+
     ensureMappingValidInternal(lock,
                                tocFile,
                                &c->_imp->ipc->bucketsData[bucketIndex].tocData);
@@ -898,8 +911,10 @@ CacheBucket::ensureTileMappingValid(WriteLock& lock, std::size_t minFreeSize)
         flushTileMapping(tileAlignedFile, ipc->freeTiles);
     }
 
+#ifdef CACHE_TRACE_FILE_MAPPING
+    qDebug() << "Checking ToC mapping:" << c->_imp->ipc->bucketsData[bucketIndex].tileData.mappingValid;
+#endif
 
-    
     ensureMappingValidInternal(lock, tileAlignedFile, &c->_imp->ipc->bucketsData[bucketIndex].tileData);
 
     // Ensure the size of the ToC file is reasonable
@@ -941,6 +956,11 @@ CacheBucket::growToCFile(WriteLock& lock, std::size_t bytesToAdd)
     // Round to the nearest next multiple of NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES
     newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES)) * NATRON_CACHE_BUCKET_TOC_FILE_GROW_N_BYTES;
     tocFile->resize(newSize, false /*preserve*/);
+
+#ifdef CACHE_TRACE_FILE_MAPPING
+    qDebug() << "Growing ToC file to " << printAsRAM(newSize);
+#endif
+
 
     reOpenToCData(this, oldSize == 0 /*create*/);
 
@@ -986,6 +1006,11 @@ CacheBucket::growTileFile(WriteLock& lock, std::size_t bytesToAdd)
             newSize = std::max((std::size_t)1, (std::size_t)std::ceil(newSize / (double) minTilesToAllocSize)) * minTilesToAllocSize;
             tileAlignedFile->resize(newSize, false /*preserve*/);
 
+#ifdef CACHE_TRACE_FILE_MAPPING
+            qDebug() << "Growing tile file to " << printAsRAM(newSize);
+#endif
+
+
             int nTilesSoFar = curSize / NATRON_TILE_SIZE_BYTES;
             int newNTiles = newSize / NATRON_TILE_SIZE_BYTES;
 
@@ -1011,6 +1036,13 @@ CacheBucket::tryCacheLookupImpl(const std::string& hashStr)
 {
     // Private - the tocData.segmentMutex is assumed to be taken at least in read lock mode
     std::pair<MemorySegmentEntryHeader*, ExternalSegmentType::size_type> found = tocFileManager->find<MemorySegmentEntryHeader>(hashStr.c_str());
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+    if (found.first) {
+        qDebug() << hashStr.c_str() << "look-up: entry found";
+    } else {
+        qDebug() << hashStr.c_str() << "look-up: entry not found";
+    }
+#endif
     return found.first;
 } // tryCacheLookupImpl
 
@@ -1177,14 +1209,19 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry,
         cacheEntry->lruIterator = 0;
     }
 
-    assert(!releaseLock || locker);
     if (releaseLock && locker) {
         assert(locker->cacheEntryLock);
         // This will wake up threads waiting in lookupAndSetStatus
+#ifdef CACHE_TRACE_ENTRY_LOCK
+        qDebug() << hashStr.c_str() << ": Releasing entry lock after deallocation from cache";
+#endif
         locker->cacheEntryLock.reset();
     }
 
     // deallocate the entry
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+    qDebug() << hashStr.c_str() << ": destroy entry";
+#endif
     tocFileManager->destroy<MemorySegmentEntryHeader>(hashStr.c_str());
 } // deallocateCacheEntryImpl
 
@@ -1231,6 +1268,9 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
                 // To do so, we take the lock on the cache entry, which is taken by the thread that is originally
                 // computing this entry. If we get the lock, that means the entry is either available (cached) or
                 // that the original thread failed to compute it (i.e: aborted) thus we have to compute it ourselves.
+#ifdef CACHE_TRACE_ENTRY_LOCK
+                qDebug() << _imp->hashStr.c_str() << ": Taking entry lock because of a call to waitForPendingEntry()";
+#endif
                 assert(!_imp->cacheEntryLock);
                 createLock<bip::scoped_lock<bip::interprocess_mutex> >(_imp->cache->_imp.get(), _imp->cacheEntryLock, &cacheEntry->lock);
             }
@@ -1239,6 +1279,9 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
             deserializeFailed = !_imp->bucket->readFromSharedMemoryEntryImpl(cacheEntry, _imp->processLocalEntry, _imp->hashStr, &_imp->status);
 
             if (takeEntryLock) {
+#ifdef CACHE_TRACE_ENTRY_LOCK
+                qDebug() << _imp->hashStr.c_str() << ": Releasing entry lock after a call to waitForPendingEntry()";
+#endif
                 _imp->cacheEntryLock.reset();
             }
         }
@@ -1246,6 +1289,9 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
         if (_imp->status == eCacheEntryStatusCached) {
             assert(!deserializeFailed);
             // We found in cache, nothing to do
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+            qDebug() << _imp->hashStr.c_str() << ": entry cached";
+#endif
             return;
         }
     }
@@ -1293,12 +1339,18 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
                 // computing this entry. If we get the lock, that means the entry is either available (cached) or
                 // that the original thread failed to compute it (i.e: aborted) thus we have to compute it ourselves.
                 assert(!_imp->cacheEntryLock);
+#ifdef CACHE_TRACE_ENTRY_LOCK
+                qDebug() << _imp->hashStr.c_str() << ": Taking entry lock after a call to waitForPendingEntry()";
+#endif
                 createLock<bip::scoped_lock<bip::interprocess_mutex> >(_imp->cache->_imp.get(), _imp->cacheEntryLock, &cacheEntry->lock);
             }
 
             deserializeFailed = !_imp->bucket->readFromSharedMemoryEntryImpl(cacheEntry, _imp->processLocalEntry, _imp->hashStr, &_imp->status);
 
             if (takeEntryLock) {
+#ifdef CACHE_TRACE_ENTRY_LOCK
+                qDebug() << _imp->hashStr.c_str() << ": Releasing entry lock after a call to waitForPendingEntry()";
+#endif
                 _imp->cacheEntryLock.reset();
             }
         }
@@ -1306,6 +1358,9 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
         if (_imp->status == eCacheEntryStatusCached) {
             assert(!deserializeFailed);
             // We found in cache, nothing to do: it was probably cached in between the 2 locks.
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+            qDebug() << _imp->hashStr.c_str() << ": entry cached";
+#endif
             return;
         }
 
@@ -1317,10 +1372,13 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
         // This allows this thread to launch extra computation before waiting.
         if (_imp->status == eCacheEntryStatusComputationPending) {
             assert(!deserializeFailed);
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+            qDebug() << _imp->hashStr.c_str() << ": entry pending";
+#endif
             return;
         }
 
-
+        assert(_imp->status == eCacheEntryStatusMustCompute);
         {
             // We need to upgrade the lock to a write lock. This will wait until all other threads have released their
             // read lock.
@@ -1342,6 +1400,9 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
 
             // Create the MemorySegmentEntry if it does not exist
             void_allocator allocator(_imp->bucket->tocFileManager->get_segment_manager());
+#ifdef CACHE_TRACE_ENTRY_ACCESS
+            qDebug() << _imp->hashStr.c_str() << ": construct entry";
+#endif
             cacheEntry = _imp->bucket->tocFileManager->construct<MemorySegmentEntryHeader>(_imp->hashStr.c_str())(allocator);
             cacheEntry->pluginID.append(_imp->processLocalEntry->getKey()->getHolderPluginID().c_str());
 
@@ -1349,6 +1410,9 @@ CacheEntryLocker::lookupAndSetStatus(bool takeEntryLock)
             // This mutex is unlocked in deallocateCacheEntryImpl() or in insertInCache()
             // We must get the lock since we are the first thread to create it and we own the write lock on the segmentMutex
             assert(!_imp->cacheEntryLock);
+#ifdef CACHE_TRACE_ENTRY_LOCK
+            qDebug() << _imp->hashStr.c_str() << ": Taking entry lock because the entry did not exist yet";
+#endif
             createLock<bip::scoped_lock<bip::interprocess_mutex> >(_imp->cache->_imp.get(), _imp->cacheEntryLock, &cacheEntry->lock);
 
             assert(cacheEntry->status == MemorySegmentEntryHeader::eEntryStatusNull);
@@ -1391,8 +1455,9 @@ CacheEntryLocker::insertInCache()
         // Ensure the memory mapping is ok. We grow the file so it contains at least the size needed by the entry
         // plus some metadatas required management algorithm store its own memory housekeeping data.
         const std::size_t entrySize = _imp->processLocalEntry->getMetadataSize();
-
-        _imp->bucket->ensureToCFileMappingValid(*writeLock, entrySize);
+        if (!_imp->bucket->isToCFileMappingValid()) {
+            _imp->bucket->ensureToCFileMappingValid(*writeLock, entrySize);
+        }
         
 
         // Fetch the entry. It must be here!
@@ -1503,12 +1568,15 @@ CacheEntryLocker::insertInCache()
             // Notify other threads we are done with this entry by releasing the lock.
             // This will wake up threads waiting in lookupAndSetStatus
             assert(_imp->cacheEntryLock);
+#ifdef CACHE_TRACE_ENTRY_LOCK
+            qDebug() << _imp->hashStr.c_str() << ": Releasing entry lock after a call to insertInCache";
+#endif
             _imp->cacheEntryLock.reset();
 
         } catch (...) {
 
-            _imp->bucket->deallocateCacheEntryImpl(cacheEntry, _imp.get(), _imp->hashStr, true /*releaseLock*/);
-
+            // Set the status to eCacheEntryStatusMustCompute so that the destructor deallocates the entry.
+            _imp->status = eCacheEntryStatusMustCompute;
         }
 
 
@@ -1567,7 +1635,9 @@ CacheEntryLocker::~CacheEntryLocker()
     createLock<WriteLock>(_imp->cache->_imp.get(), writeLock, &_imp->cache->_imp->ipc->bucketsData[_imp->bucket->bucketIndex].tocData.segmentMutex);
 
     // Every time we take the lock, we must ensure the memory mapping is ok
-    _imp->bucket->ensureToCFileMappingValid(*writeLock, 0);
+    if (!_imp->bucket->isToCFileMappingValid()) {
+        _imp->bucket->ensureToCFileMappingValid(*writeLock, 0);
+    }
 
 
     MemorySegmentEntryHeader* cacheEntry = _imp->bucket->tryCacheLookupImpl(_imp->hashStr);

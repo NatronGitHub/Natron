@@ -704,6 +704,7 @@ TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
 {
 
     if (isFailureRetCode(_imp->state)) {
+        appPTR->getAppTLS()->cleanupTLSForThread();
         return _imp->state;
     }
     

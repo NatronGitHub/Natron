@@ -42,6 +42,7 @@
 #include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ThreadPool.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 /**
@@ -2063,11 +2064,12 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         getApp()->getProject()->setOrAddProjectFormat(format, true);
     }
 
+    cacheAccess->insertInCache();
+    
     if (QThread::currentThread() == qApp->thread()) {
         getNode()->onNodeMetadatasRefreshedOnMainThread(*metadata);
     }
 
-    cacheAccess->insertInCache();
     return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public
 
