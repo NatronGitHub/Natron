@@ -113,7 +113,7 @@ inline ExternalSegmentType::handle_t writeNamedSharedObjectN(T *array, int count
 /**
  * @brief Template specialization for std::string
  **/
-template <class T>
+template <>
 inline ExternalSegmentType::handle_t writeNamedSharedObjectN(std::string *array, int count, const std::string& objectName,  ExternalSegmentType* segment)
 {
     // Allocate a char array containing the string
