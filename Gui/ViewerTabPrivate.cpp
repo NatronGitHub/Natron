@@ -91,7 +91,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     ActionRetCodeEnum stat = eActionStatusReplyDefault;
     DistortionFunction2DPtr disto;
 
-    // call getTransform even of effects that claim not to support it, because it may still return
+    // call getTransform even if the effect claims not to support it: it may still return
     // a transform to apply to the overlays (eg for Reformat).
     // If transform is not implemented, it should return eStatusReplyDefault:
     // http://openfx.sourceforge.net/Documentation/1.4/ofxProgrammingReference.html#mainEntryPoint
@@ -103,7 +103,13 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
         stat = currentNode->getDistortion_public(time, s, view, TreeRenderNodeArgsPtr(), &disto);
         if (isFailureRetCode(stat)) {
             return false;
-        } 
+        }
+        if (disto->inputNbToDistort != -1) {
+            input = currentNode->getInput(disto->inputNbToDistort);
+        }
+        if (!input) {
+            return false;
+        }
     }
 
 

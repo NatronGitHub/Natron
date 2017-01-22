@@ -873,6 +873,7 @@ AppManager::loadInternal(const CLArgs& cl)
 
     // Create cache once we loaded the cache directory path wanted by the user
     _imp->cache = Cache::create();
+    _imp->storageDeleteThread.reset(new StorageDeleterThread);
 
     _imp->declareSettingsToPython();
 

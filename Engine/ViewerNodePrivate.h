@@ -93,15 +93,10 @@ NATRON_NAMESPACE_ENTER;
 #define kViewerNodeParamUserRoIBottomLeft "userRoIBtmLeft"
 #define kViewerNodeParamUserRoISize "userRoISize"
 
-#define kViewerNodeParamEnableProxyMode "proxyMode"
-#define kViewerNodeParamEnableProxyModeLabel "Proxy Mode"
-#define kViewerNodeParamEnableProxyModeHint "Activates the downscaling by the amount indicated by the value on the right. " \
-"The rendered images are degraded and as a result of this the whole rendering pipeline is much faster"
-
-#define kViewerNodeParamProxyLevel "proxyLevel"
-#define kViewerNodeParamProxyLevelLabel "Proxy Level"
-#define kViewerNodeParamProxyLevelHint "When proxy mode is activated, it scales down the rendered image by this factor " \
-"to accelerate the rendering"
+#define kViewerNodeParamProxyLevel "downscaleLevel"
+#define kViewerNodeParamProxyLevelLabel "Downscale Level"
+#define kViewerNodeParamProxyLevelHint "The image will be downscaled by the indicated factor in both dimensions to speed up rendering. " \
+"When set to Auto, the image is downscaled according to the current zoom factor in the viewport." \
 
 #define kViewerNodeParamRefreshViewport "refreshViewport"
 #define kViewerNodeParamRefreshViewportLabel "Refresh Viewport"
@@ -428,7 +423,6 @@ struct ViewerNodePrivate
     boost::weak_ptr<KnobButton> toggleUserRoIButtonKnob;
     boost::weak_ptr<KnobDouble> userRoIBtmLeftKnob;
     boost::weak_ptr<KnobDouble> userRoISizeKnob;
-    boost::weak_ptr<KnobButton> toggleProxyModeButtonKnob;
     boost::weak_ptr<KnobChoice> downscaleChoiceKnob;
     boost::weak_ptr<KnobButton> refreshButtonKnob;
     boost::weak_ptr<KnobButton> pauseButtonKnob[2];

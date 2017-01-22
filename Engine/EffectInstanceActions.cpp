@@ -801,12 +801,14 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
 
     bool isDeprecatedTransformSupportEnabled;
+    bool distortSupported;
     // Get the render local args
     FrameViewRequestPtr fvRequest;
     if (render) {
 
         isDeprecatedTransformSupportEnabled = render->getCurrentTransformationSupport_deprecated();
-        assert(render->getCurrentDistortSupport() || isDeprecatedTransformSupportEnabled);
+        distortSupported = render->getCurrentDistortSupport();
+        assert(distortSupported || isDeprecatedTransformSupportEnabled);
 
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
@@ -816,7 +818,7 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         (void)created;
     } else {
         isDeprecatedTransformSupportEnabled = getNode()->getCurrentCanTransform();
-        assert(getNode()->getCurrentCanDistort() || isDeprecatedTransformSupportEnabled);
+        distortSupported = getNode()->getCurrentCanDistort();
     }
 
 
@@ -833,7 +835,10 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
     outDisto->reset(new DistortionFunction2D);
     bool isIdentity;
-    {
+
+    if (!distortSupported && !isDeprecatedTransformSupportEnabled) {
+        isIdentity = true;
+    } else {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
         RectI format = getOutputFormat(render);
         RenderScale scale(1.);

@@ -257,18 +257,7 @@ ViewerNode::initializeKnobs()
         page->addKnob(param);
         _imp->userRoISizeKnob = param;
     }
-    {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableProxyModeLabel) );
-        param->setName(kViewerNodeParamEnableProxyMode);
-        param->setHintToolTip(tr(kViewerNodeParamEnableProxyModeHint));
-        param->setSecret(true);
-        param->setInViewerContextCanHaveShortcut(true);
-        param->setCheckable(true);
-        param->setIconLabel(NATRON_IMAGES_PATH "renderScale_checked.png", true);
-        param->setIconLabel(NATRON_IMAGES_PATH "renderScale.png", false);
-        page->addKnob(param);
-        _imp->toggleProxyModeButtonKnob = param;
-    }
+
 
     {
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamProxyLevelLabel) );
@@ -286,11 +275,11 @@ ViewerNode::initializeKnobs()
         }
         {
             std::map<int, std::string> shortcuts;
-            shortcuts[0] = kViewerNodeParamActionProxy2;
-            shortcuts[1] = kViewerNodeParamActionProxy4;
-            shortcuts[2] = kViewerNodeParamActionProxy8;
-            shortcuts[3] = kViewerNodeParamActionProxy16;
-            shortcuts[4] = kViewerNodeParamActionProxy32;
+            shortcuts[1] = kViewerNodeParamActionProxy2;
+            shortcuts[2] = kViewerNodeParamActionProxy4;
+            shortcuts[3] = kViewerNodeParamActionProxy8;
+            shortcuts[4] = kViewerNodeParamActionProxy16;
+            shortcuts[5] = kViewerNodeParamActionProxy32;
             param->setShortcuts(shortcuts);
         }
         page->addKnob(param);
@@ -812,8 +801,6 @@ ViewerNode::initializeKnobs()
 
     addKnobToViewerUI(_imp->clipToFormatButtonKnob.lock());
     _imp->clipToFormatButtonKnob.lock()->setInViewerContextItemSpacing(0);
-    addKnobToViewerUI(_imp->toggleProxyModeButtonKnob.lock());
-    _imp->toggleProxyModeButtonKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->downscaleChoiceKnob.lock());
     _imp->downscaleChoiceKnob.lock()->setInViewerContextItemSpacing(0);
     addKnobToViewerUI(_imp->fullFrameButtonKnob.lock());

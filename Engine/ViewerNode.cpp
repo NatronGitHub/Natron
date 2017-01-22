@@ -49,7 +49,6 @@ ViewerNode::createPlugin()
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamClipToFormat, kViewerNodeParamClipToFormatLabel, kViewerNodeParamClipToFormatHint, Key_C, eKeyboardModifierShift) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamFullFrame, kViewerNodeParamFullFrameLabel, kViewerNodeParamFullFrameHint) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableUserRoI, kViewerNodeParamEnableUserRoILabel, kViewerNodeParamEnableUserRoIHint, Key_W, eKeyboardModifierShift) );
-    ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableProxyMode, kViewerNodeParamEnableProxyModeLabel, kViewerNodeParamEnableProxyModeHint, Key_P, eKeyboardModifierControl) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamPauseRender, kViewerNodeParamPauseRenderLabel, kViewerNodeParamPauseRenderHint, Key_P) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableGain, kViewerNodeParamEnableGainLabel, kViewerNodeParamEnableGainHint) );
     ret->addActionShortcut( PluginActionShortcut(kViewerNodeParamEnableAutoContrast, kViewerNodeParamEnableAutoContrastLabel, kViewerNodeParamEnableAutoContrastHint) );

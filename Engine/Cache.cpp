@@ -753,7 +753,7 @@ void createLock(CachePrivate* imp, boost::scoped_ptr<LOCK>& lock, typename LOCK:
         lock.reset(new LOCK(*mutex, abs_time));
         if (!lock->owns()) {
 #ifdef CACHE_TRACE_TIMEOUTS
-            qDebug() << "Lock timeout, checking cache integrity";
+            qDebug() << QThread::currentThread() << "Lock timeout, checking cache integrity";
 #endif
             imp->ensureSharedMemoryIntegrity();
         } else {
