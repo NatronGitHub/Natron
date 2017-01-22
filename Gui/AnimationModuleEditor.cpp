@@ -358,7 +358,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleConstant,
-                                                                kShortcutActionAnimationModuleConstantHint,
+                                                                kShortcutActionAnimationModuleConstantLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixConstant));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -366,7 +366,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleLinear,
-                                                                kShortcutActionAnimationModuleLinearHint,
+                                                                kShortcutActionAnimationModuleLinearLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixLinear));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -374,7 +374,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleSmooth,
-                                                                kShortcutActionAnimationModuleSmoothHint,
+                                                                kShortcutActionAnimationModuleSmoothLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixSmooth));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -382,7 +382,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleHorizontal,
-                                                                kShortcutActionAnimationModuleHorizontalHint,
+                                                                kShortcutActionAnimationModuleHorizontalLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixHorizontal));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -390,7 +390,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleCubic,
-                                                                kShortcutActionAnimationModuleCubicHint,
+                                                                kShortcutActionAnimationModuleCubicLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixCubic));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -398,7 +398,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleCatmullrom,
-                                                                kShortcutActionAnimationModuleCatmullromHint,
+                                                                kShortcutActionAnimationModuleCatmullromLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixCatmullRom));
             _imp->keyframeInterpolationChoice->addAction(action);
@@ -406,7 +406,7 @@ AnimationModuleEditor::AnimationModuleEditor(const std::string& scriptName,
         {
             ActionWithShortcut* action = new ActionWithShortcut(kShortcutGroupAnimationModule,
                                                                 kShortcutActionAnimationModuleBreak,
-                                                                kShortcutActionAnimationModuleBreakHint,
+                                                                kShortcutActionAnimationModuleBreakLabel,
                                                                 _imp->keyframeInterpolationChoice);
             action->setIcon(QIcon(pixBroken));
             _imp->keyframeInterpolationChoice->addAction(action);

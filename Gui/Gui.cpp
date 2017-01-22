@@ -408,87 +408,87 @@ Gui::createMenuActions()
     _imp->menuHelp = new Menu(tr("Help"), _imp->menubar);
 
 
-    _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionNewProject, kShortcutActionNewProjectHint, this);
+    _imp->actionNew_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionNewProject, kShortcutActionNewProjectLabel, this);
     _imp->actionNew_project->setIcon( get_icon("document-new") );
     QObject::connect( _imp->actionNew_project, SIGNAL(triggered()), this, SLOT(newProject()) );
 
-    _imp->actionOpen_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionOpenProject, kShortcutActionOpenProjectHint, this);
+    _imp->actionOpen_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionOpenProject, kShortcutActionOpenProjectLabel, this);
     _imp->actionOpen_project->setIcon( get_icon("document-open") );
     QObject::connect( _imp->actionOpen_project, SIGNAL(triggered()), this, SLOT(openProject()) );
 
-    _imp->actionClose_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionCloseProject, kShortcutActionCloseProjectHint, this);
+    _imp->actionClose_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionCloseProject, kShortcutActionCloseProjectLabel, this);
     _imp->actionClose_project->setIcon( get_icon("document-close") );
     QObject::connect( _imp->actionClose_project, SIGNAL(triggered()), this, SLOT(closeProject()) );
 
-    _imp->actionReload_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionReloadProject, kShortcutActionReloadProjectHint, this);
+    _imp->actionReload_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionReloadProject, kShortcutActionReloadProjectLabel, this);
     _imp->actionReload_project->setIcon( get_icon("document-open") );
     QObject::connect( _imp->actionReload_project, SIGNAL(triggered()), this, SLOT(reloadProject()) );
 
-    _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionSaveProject, kShortcutActionSaveProjectHint, this);
+    _imp->actionSave_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionSaveProject, kShortcutActionSaveProjectLabel, this);
     _imp->actionSave_project->setIcon( get_icon("document-save") );
     QObject::connect( _imp->actionSave_project, SIGNAL(triggered()), this, SLOT(saveProject()) );
 
-    _imp->actionSaveAs_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionSaveAsProject, kShortcutActionSaveAsProjectHint, this);
+    _imp->actionSaveAs_project = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionSaveAsProject, kShortcutActionSaveAsProjectLabel, this);
     _imp->actionSaveAs_project->setIcon( get_icon("document-save-as") );
     QObject::connect( _imp->actionSaveAs_project, SIGNAL(triggered()), this, SLOT(saveProjectAs()) );
 
 
-    _imp->actionSaveAndIncrementVersion = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionSaveAndIncrVersion, kShortcutActionSaveAndIncrVersionHint, this);
+    _imp->actionSaveAndIncrementVersion = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionSaveAndIncrVersion, kShortcutActionSaveAndIncrVersionLabel, this);
     QObject::connect( _imp->actionSaveAndIncrementVersion, SIGNAL(triggered()), this, SLOT(saveAndIncrVersion()) );
 
-    _imp->actionPreferences = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionPreferences, kShortcutActionPreferencesHint, this);
+    _imp->actionPreferences = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionPreferences, kShortcutActionPreferencesLabel, this);
     _imp->actionPreferences->setMenuRole(QAction::PreferencesRole);
     QObject::connect( _imp->actionPreferences, SIGNAL(triggered()), this, SLOT(showSettings()) );
 
-    _imp->actionExit = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionQuit, kShortcutActionQuitHint, this);
+    _imp->actionExit = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionQuit, kShortcutActionQuitLabel, this);
     _imp->actionExit->setMenuRole(QAction::QuitRole);
     _imp->actionExit->setIcon( get_icon("application-exit") );
     QObject::connect( _imp->actionExit, SIGNAL(triggered()), appPTR, SLOT(exitAppWithSaveWarning()) );
 
-    _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionProjectSettings, kShortcutActionProjectSettingsHint, this);
+    _imp->actionProject_settings = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionProjectSettings, kShortcutActionProjectSettingsLabel, this);
     _imp->actionProject_settings->setIcon( get_icon("document-properties") );
     _imp->actionProject_settings->setShortcutContext(Qt::WidgetShortcut);
     QObject::connect( _imp->actionProject_settings, SIGNAL(triggered()), this, SLOT(setVisibleProjectSettingsPanel()) );
 
-    _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowErrorLog, kShortcutActionShowErrorLogHint, this);
+    _imp->actionShowErrorLog = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowErrorLog, kShortcutActionShowErrorLogLabel, this);
     QObject::connect( _imp->actionShowErrorLog, SIGNAL(triggered()), this, SLOT(showErrorLog()) );
 
-    _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionNewViewer, kShortcutActionNewViewerHint, this);
+    _imp->actionNewViewer = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionNewViewer, kShortcutActionNewViewerLabel, this);
     QObject::connect( _imp->actionNewViewer, SIGNAL(triggered()), this, SLOT(createNewViewer()) );
 
 
 #ifdef __NATRON_WIN32__
-    _imp->actionShowWindowsConsole = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowWindowsConsole, kShortcutActionShowWindowsConsoleHint, this);
+    _imp->actionShowWindowsConsole = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowWindowsConsole, kShortcutActionShowWindowsConsoleLabel, this);
     _imp->actionShowWindowsConsole->setShortcutContext(Qt::ApplicationShortcut);
     QObject::connect( _imp->actionShowWindowsConsole, SIGNAL(triggered()), this, SLOT(onShowApplicationConsoleActionTriggered()) );
 #endif
 
-    _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionFullscreen, kShortcutActionFullscreenHint, this);
+    _imp->actionFullScreen = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionFullscreen, kShortcutActionFullscreenLabel, this);
     _imp->actionFullScreen->setIcon( get_icon("view-fullscreen") );
     _imp->actionFullScreen->setShortcutContext(Qt::ApplicationShortcut);
     QObject::connect( _imp->actionFullScreen, SIGNAL(triggered()), this, SLOT(toggleFullScreen()) );
 
-    _imp->actionClearPluginsLoadingCache = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionClearPluginsLoadCache, kShortcutActionClearPluginsLoadCacheHint, this);
+    _imp->actionClearPluginsLoadingCache = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionClearPluginsLoadCache, kShortcutActionClearPluginsLoadCacheLabel, this);
     QObject::connect( _imp->actionClearPluginsLoadingCache, SIGNAL(triggered()), appPTR, SLOT(clearPluginsLoadedCache()) );
 
-    _imp->actionClearAllCaches = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionClearCache, kShortcutActionClearCacheHint, this);
+    _imp->actionClearAllCaches = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionClearCache, kShortcutActionClearCacheLabel, this);
     QObject::connect( _imp->actionClearAllCaches, SIGNAL(triggered()), appPTR, SLOT(clearAllCaches()) );
 
-    _imp->actionShowCacheReport = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowCacheReport, kShortcutActionShowCacheReportHint, this);
+    _imp->actionShowCacheReport = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowCacheReport, kShortcutActionShowCacheReportLabel, this);
     QObject::connect( _imp->actionShowCacheReport, SIGNAL(triggered()), appPTR, SLOT(printCacheMemoryStats()) );
 
 
-    _imp->actionShowAboutWindow = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowAbout, kShortcutActionShowAboutHint, this);
+    _imp->actionShowAboutWindow = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionShowAbout, kShortcutActionShowAboutLabel, this);
     _imp->actionShowAboutWindow->setMenuRole(QAction::AboutRole);
     QObject::connect( _imp->actionShowAboutWindow, SIGNAL(triggered()), this, SLOT(showAbout()) );
 
-    _imp->renderAllWriters = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionRenderAll, kShortcutActionRenderAllHint, this);
+    _imp->renderAllWriters = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionRenderAll, kShortcutActionRenderAllLabel, this);
     QObject::connect( _imp->renderAllWriters, SIGNAL(triggered()), this, SLOT(renderAllWriters()) );
 
-    _imp->renderSelectedNode = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionRenderSelected, kShortcutActionRenderSelectedHint, this);
+    _imp->renderSelectedNode = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionRenderSelected, kShortcutActionRenderSelectedLabel, this);
     QObject::connect( _imp->renderSelectedNode, SIGNAL(triggered()), this, SLOT(renderSelectedNode()) );
 
-    _imp->enableRenderStats = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionEnableRenderStats, kShortcutActionEnableRenderStatsHint, this);
+    _imp->enableRenderStats = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionEnableRenderStats, kShortcutActionEnableRenderStatsLabel, this);
     _imp->enableRenderStats->setCheckable(true);
     _imp->enableRenderStats->setChecked(false);
     QObject::connect( _imp->enableRenderStats, SIGNAL(triggered()), this, SLOT(onEnableRenderStatsActionTriggered()) );
@@ -500,25 +500,25 @@ Gui::createMenuActions()
     }
 
     const char* descs[NATRON_CONNECT_INPUT_NB] = {
-        kShortcutActionConnectViewerToInput1Hint,
-        kShortcutActionConnectViewerToInput2Hint,
-        kShortcutActionConnectViewerToInput3Hint,
-        kShortcutActionConnectViewerToInput4Hint,
-        kShortcutActionConnectViewerToInput5Hint,
-        kShortcutActionConnectViewerToInput6Hint,
-        kShortcutActionConnectViewerToInput7Hint,
-        kShortcutActionConnectViewerToInput8Hint,
-        kShortcutActionConnectViewerToInput9Hint,
-        kShortcutActionConnectViewerToInput10Hint,
-        kShortcutActionConnectViewerBToInput1Hint,
-        kShortcutActionConnectViewerBToInput2Hint,
-        kShortcutActionConnectViewerBToInput3Hint,
-        kShortcutActionConnectViewerBToInput4Hint,
-        kShortcutActionConnectViewerBToInput5Hint,
-        kShortcutActionConnectViewerBToInput6Hint,
-        kShortcutActionConnectViewerBToInput7Hint,
-        kShortcutActionConnectViewerBToInput8Hint,
-        kShortcutActionConnectViewerBToInput9Hint,
+        kShortcutActionConnectViewerToInput1Label,
+        kShortcutActionConnectViewerToInput2Label,
+        kShortcutActionConnectViewerToInput3Label,
+        kShortcutActionConnectViewerToInput4Label,
+        kShortcutActionConnectViewerToInput5Label,
+        kShortcutActionConnectViewerToInput6Label,
+        kShortcutActionConnectViewerToInput7Label,
+        kShortcutActionConnectViewerToInput8Label,
+        kShortcutActionConnectViewerToInput9Label,
+        kShortcutActionConnectViewerToInput10Label,
+        kShortcutActionConnectViewerBToInput1Label,
+        kShortcutActionConnectViewerBToInput2Label,
+        kShortcutActionConnectViewerBToInput3Label,
+        kShortcutActionConnectViewerBToInput4Label,
+        kShortcutActionConnectViewerBToInput5Label,
+        kShortcutActionConnectViewerBToInput6Label,
+        kShortcutActionConnectViewerBToInput7Label,
+        kShortcutActionConnectViewerBToInput8Label,
+        kShortcutActionConnectViewerBToInput9Label,
         kShortcutActionConnectViewerBToInput10
     };
     const char* ids[NATRON_CONNECT_INPUT_NB] = {
@@ -556,20 +556,20 @@ Gui::createMenuActions()
         }
     }
 
-    _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionImportLayout, kShortcutActionImportLayoutHint, this);
+    _imp->actionImportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionImportLayout, kShortcutActionImportLayoutLabel, this);
     QObject::connect( _imp->actionImportLayout, SIGNAL(triggered()), this, SLOT(importLayout()) );
 
-    _imp->actionExportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionExportLayout, kShortcutActionExportLayoutHint, this);
+    _imp->actionExportLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionExportLayout, kShortcutActionExportLayoutLabel, this);
     QObject::connect( _imp->actionExportLayout, SIGNAL(triggered()), this, SLOT(exportLayout()) );
 
-    _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionDefaultLayout, kShortcutActionDefaultLayoutHint, this);
+    _imp->actionRestoreDefaultLayout = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionDefaultLayout, kShortcutActionDefaultLayoutLabel, this);
     QObject::connect( _imp->actionRestoreDefaultLayout, SIGNAL(triggered()), this, SLOT(restoreDefaultLayout()) );
 
-    _imp->actionPrevTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionPrevTab, kShortcutActionPrevTabHint, this);
+    _imp->actionPrevTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionPrevTab, kShortcutActionPrevTabLabel, this);
     QObject::connect( _imp->actionPrevTab, SIGNAL(triggered()), this, SLOT(onPrevTabTriggered()) );
-    _imp->actionNextTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionNextTab, kShortcutActionNextTabHint, this);
+    _imp->actionNextTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionNextTab, kShortcutActionNextTabLabel, this);
     QObject::connect( _imp->actionNextTab, SIGNAL(triggered()), this, SLOT(onNextTabTriggered()) );
-    _imp->actionCloseTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionCloseTab, kShortcutActionCloseTabHint, this);
+    _imp->actionCloseTab = new ActionWithShortcut(kShortcutGroupGlobal, kShortcutActionCloseTab, kShortcutActionCloseTabLabel, this);
     QObject::connect( _imp->actionCloseTab, SIGNAL(triggered()), this, SLOT(onCloseTabTriggered()) );
 
     _imp->menubar->addAction( _imp->menuFile->menuAction() );

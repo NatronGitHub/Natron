@@ -538,7 +538,10 @@ OutputSchedulerThread::startTasks(TimeValue startingFrame)
     PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
     if (args->firstFrame == args->lastFrame) {
         RenderThreadTask* task = createRunnable(startingFrame, args->enableRenderStats, args->viewsToRender);
-        _imp->startRunnable(task);
+        {
+            QMutexLocker k(&_imp->renderThreadsMutex);
+            _imp->startRunnable(task);
+        }
         QMutexLocker k(&_imp->lastFrameRequestedMutex);
         _imp->lastFrameRequested = startingFrame;
     } else {
@@ -552,8 +555,11 @@ OutputSchedulerThread::startTasks(TimeValue startingFrame)
         for (int i = 0; i < nConcurrentFrames; ++i) {
 
             RenderThreadTask* task = createRunnable(frame, args->enableRenderStats, args->viewsToRender);
-            _imp->startRunnable(task);
-
+            {
+                QMutexLocker k(&_imp->renderThreadsMutex);
+                _imp->startRunnable(task);
+            }
+            
             {
                 QMutexLocker k(&_imp->lastFrameRequestedMutex);
                 _imp->lastFrameRequested = frame;
