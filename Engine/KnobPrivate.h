@@ -268,7 +268,7 @@ struct KnobHelperPrivate
     int autoKeyingDisabled;
 
     // If true, when this knob change, it is required to refresh the meta-data on a Node
-    bool isClipPreferenceSlave;
+    bool isMetadataSlave;
 
     // When enabled the keyframes can be displayed on the timeline if the knob is visible
     // protected by stateMutex
@@ -329,7 +329,7 @@ struct KnobHelperPrivate
     , valueChangedBlockedMutex()
     , valueChangedBlocked(0)
     , autoKeyingDisabled(0)
-    , isClipPreferenceSlave(false)
+    , isMetadataSlave(false)
     , keyframeTrackingEnabled(true)
     {
         {

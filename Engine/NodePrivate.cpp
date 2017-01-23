@@ -127,6 +127,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , refreshIdentityStateRequestsCount(0)
 , streamWarnings()
 , requiresGLFinishBeforeRender(false)
+, lastTimeInvariantMetadataHashRefreshed(0)
 , nodePositionCoords()
 , nodeSize()
 , nodeColor()

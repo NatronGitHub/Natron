@@ -431,10 +431,17 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     if (_imp->layerAndAlphaChoiceRefreshEnabled) {
         _imp->refreshLayerAndAlphaChannelComboBox();
     }
-    getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode(), metadata);
 
     return eActionStatusOK;
 } // getTimeInvariantMetadatas
+
+
+void
+ViewerInstance::onMetadataChanged(const NodeMetadata& metadata)
+{
+    getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode(), metadata);
+
+}
 
 ActionRetCodeEnum
 ViewerInstance::getLayersProducedAndNeeded(TimeValue time,

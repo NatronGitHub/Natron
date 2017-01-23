@@ -1015,7 +1015,11 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 }
 
 
-
+void
+OfxEffectInstance::onMetadataChanged(const NodeMetadata& metadata)
+{
+#pragma message WARN("TODO")
+}
 
 ActionRetCodeEnum
 OfxEffectInstance::getRegionOfDefinition(TimeValue time,

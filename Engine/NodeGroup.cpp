@@ -1063,8 +1063,7 @@ NodeCollection::refreshTimeInvariantMetadatasOnAllNodes_recursive()
         if (isGroup) {
             isGroup->refreshTimeInvariantMetadatasOnAllNodes_recursive();
         } else {
-            GetTimeInvariantMetaDatasResultsPtr results;
-            (*it)->getEffectInstance()->getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
+            (*it)->getEffectInstance()->onMetadataChanged_public();
         }
 
     }

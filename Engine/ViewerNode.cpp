@@ -298,9 +298,8 @@ ViewerNode::onInputNameChanged(int,QString)
 void
 ViewerNode::createViewerProcessNode()
 {
-    NodePtr internalViewerNode;
+    NodePtr internalViewerNode[2];
 
-    Point position = {INT_MIN, INT_MIN};
     for (int i = 0; i < 2; ++ i) {
         ViewerNodePtr thisShared = shared_from_this();
 
@@ -312,51 +311,53 @@ ViewerNode::createViewerProcessNode()
         args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
         args->setProperty<bool>(kCreateNodeArgsPropSettingsOpened, false);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, nodeName.toStdString());
-        if (position.x != INT_MIN && position.y != INT_MIN) {
-            args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position.x, 0);
-            args->setProperty<double>(kCreateNodeArgsPropNodeInitialPosition, position.y, 1);
-        }
-        internalViewerNode = getApp()->createNode(args);
+        internalViewerNode[i] = getApp()->createNode(args);
         assert(internalViewerNode);
         if (!internalViewerNode) {
             throw std::invalid_argument("ViewerNode::setupGraph: No internal viewer process!");
         }
-        internalViewerNode->getPosition(&position.x, &position.y);
-        double w,h;
-        internalViewerNode->getSize(&w, &h);
-        position.x += w / 2.;
 
-        internalViewerNode->setPosition(position.x - w /2., position.y);
 
-        _imp->internalViewerProcessNode[i] = internalViewerNode;
+        if (i == 1) {
+            Point position;
+            internalViewerNode[0]->getPosition(&position.x, &position.y);
+            double w,h;
+            internalViewerNode[0]->getSize(&w, &h);
+            internalViewerNode[0]->setPosition(position.x - w /2. - w/2, position.y);
+
+            internalViewerNode[1]->setPosition(position.x + w /2., position.y);
+
+        }
+
+        _imp->internalViewerProcessNode[i] = internalViewerNode[i];
 
         // Link output layer and alpha channel to the viewer process choices
-        KnobIPtr viewerProcessOutputLayerChoice = internalViewerNode->getKnobByName(kViewerInstanceParamOutputLayer);
+        KnobIPtr viewerProcessOutputLayerChoice = internalViewerNode[i]->getKnobByName(kViewerInstanceParamOutputLayer);
         viewerProcessOutputLayerChoice->linkTo(_imp->layersKnob.lock());
 
-        KnobIPtr viewerProcessAlphaChannelChoice = internalViewerNode->getKnobByName(kViewerInstanceParamAlphaChannel);
+        KnobIPtr viewerProcessAlphaChannelChoice = internalViewerNode[i]->getKnobByName(kViewerInstanceParamAlphaChannel);
         viewerProcessAlphaChannelChoice->linkTo(_imp->alphaChannelKnob.lock());
 
-        KnobIPtr viewerProcessDisplayChanelsChoice = internalViewerNode->getKnobByName(kViewerInstanceParamDisplayChannels);
+        KnobIPtr viewerProcessDisplayChanelsChoice = internalViewerNode[i]->getKnobByName(kViewerInstanceParamDisplayChannels);
         viewerProcessDisplayChanelsChoice->linkTo(_imp->displayChannelsKnob[i].lock());
 
-        KnobIPtr viewerProcessGammaKnob = internalViewerNode->getKnobByName(kViewerInstanceParamGamma);
+        KnobIPtr viewerProcessGammaKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamGamma);
         viewerProcessGammaKnob->linkTo(_imp->gammaSliderKnob.lock());
 
-        KnobIPtr viewerProcessGainKnob = internalViewerNode->getKnobByName(kViewerInstanceNodeParamGain);
+        KnobIPtr viewerProcessGainKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceNodeParamGain);
         viewerProcessGainKnob->linkTo(_imp->gainSliderKnob.lock());
 
-        KnobIPtr viewerProcessAutoContrastKnob = internalViewerNode->getKnobByName(kViewerInstanceParamEnableAutoContrast);
+        KnobIPtr viewerProcessAutoContrastKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamEnableAutoContrast);
         viewerProcessAutoContrastKnob->linkTo(_imp->enableAutoContrastButtonKnob.lock());
 
-        KnobIPtr viewerProcessAutoColorspaceKnob = internalViewerNode->getKnobByName(kViewerInstanceParamColorspace);
+        KnobIPtr viewerProcessAutoColorspaceKnob = internalViewerNode[i]->getKnobByName(kViewerInstanceParamColorspace);
         viewerProcessAutoColorspaceKnob->linkTo(_imp->colorspaceKnob.lock());
 
 
         // A ViewerNode is composed of 2 ViewerProcess nodes but it only has 1 layer and 1 alpha channel choices.
         // We thus disable the refreshing of the menu from the 2nd ViewerProcess node.
         if (i == 1) {
-            ViewerInstancePtr instance = internalViewerNode->isEffectViewerInstance();
+            ViewerInstancePtr instance = internalViewerNode[i]->isEffectViewerInstance();
             instance->setRefreshLayerAndAlphaChoiceEnabled(false);
         }
     }
@@ -387,6 +388,9 @@ ViewerNode::setupGraph(bool createViewerProcess)
     double inputX = 0, inputY = 0;
     if (internalViewerNode0) {
         internalViewerNode0->getPosition(&inputX, &inputY);
+
+        // Offset so that we start in the middle inbetween the 2 viewer process nodes
+        inputX += inputWidth + inputWidth / 2;
     }
 
     double startOffset = - (VIEWER_INITIAL_N_INPUTS / 2) * inputWidth - inputWidth / 2. - (VIEWER_INITIAL_N_INPUTS / 2 - 1) * inputWidth / 2;
@@ -720,13 +724,11 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
         if (groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0) {
 
             if (nodeToConnect == _imp->internalViewerProcessNode[0].lock()) {
-                nodeToConnect->disconnectInput(internalInputIdx);
-                nodeToConnect->connectInput(groupInputNodes[groupInputIndex], internalInputIdx);
+                nodeToConnect->swapInput(groupInputNodes[groupInputIndex], internalInputIdx);
             } else {
                 int prefInput = nodeToConnect->getPreferredInputForConnection();
                 if (prefInput != -1) {
-                    nodeToConnect->disconnectInput(prefInput);
-                    nodeToConnect->connectInput(groupInputNodes[groupInputIndex], prefInput);
+                    nodeToConnect->swapInput(groupInputNodes[groupInputIndex], prefInput);
                 }
             }
         }

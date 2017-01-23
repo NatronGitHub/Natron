@@ -1961,6 +1961,7 @@ Node::updateEffectSubLabelKnob(const QString & name)
 void
 Node::onNodeMetadatasRefreshedOnMainThread(const NodeMetadata& meta)
 {
+    assert(QThread::currentThread() == qApp->thread());
 
     // Refresh warnings
     _imp->refreshMetadaWarnings(meta);
@@ -1978,7 +1979,19 @@ Node::onNodeMetadatasRefreshedOnMainThread(const NodeMetadata& meta)
     refreshLayersSelectorsVisibility();
 }
 
+U64
+Node::getLastTimeInvariantMetadataHash() const
+{
+    assert(QThread::currentThread() == qApp->thread());
+    return _imp->lastTimeInvariantMetadataHashRefreshed;
+}
 
+void
+Node::setLastTimeInvariantMetadataHash(U64 lastTimeInvariantMetadataHashRefreshed)
+{
+    assert(QThread::currentThread() == qApp->thread());
+    _imp->lastTimeInvariantMetadataHashRefreshed = lastTimeInvariantMetadataHashRefreshed;
+}
 
 void
 Node::setPosition(double x,

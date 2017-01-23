@@ -439,6 +439,9 @@ public:
     // as a result if we don't call glFinish() before calling the render action, the plug-in context might use textures that were not finished yet.
     bool requiresGLFinishBeforeRender;
 
+    // Used in the implementation of EffectInstance::onMetadataChanged_recursive so we know if the metadata changed or not.
+    U64 lastTimeInvariantMetadataHashRefreshed;
+
     // UI
     mutable QMutex nodeUIDataMutex;
     double nodePositionCoords[2]; // x,y  X=Y=INT_MIN if there is no position info

@@ -507,15 +507,15 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
     ValueKnobDimView<int>::setValueAndCheckIfChanged(v);
 
     QMutexLocker k(&valueMutex);
-    std::string newChoice;
+    ChoiceOption newChoice;
     if (v >= 0 && v < (int)menuOptions.size()) {
-        newChoice = menuOptions[v].id;
+        newChoice = menuOptions[v];
     } else {
         // No current value, assume they are different
         return true;
     }
-    if (activeEntry.id != newChoice) {
-        activeEntry.id = newChoice;
+    if (activeEntry.id != newChoice.id) {
+        activeEntry = newChoice;
         return true;
     }
     return false;

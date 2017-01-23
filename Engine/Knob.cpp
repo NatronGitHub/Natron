@@ -1527,13 +1527,13 @@ KnobHelper::getCanUndo() const
 void
 KnobHelper::setIsMetadataSlave(bool slave)
 {
-    _imp->isClipPreferenceSlave = slave;
+    _imp->isMetadataSlave = slave;
 }
 
 bool
 KnobHelper::getIsMetadataSlave() const
 {
-    return _imp->isClipPreferenceSlave;
+    return _imp->isMetadataSlave;
 }
 
 bool
@@ -5092,7 +5092,7 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
             beginKnobsValuesChanged_public(reason);
         }
 
-        if (!valueChangesBlocked &&  knob->getIsMetadataSlave() ) {
+        if (knob->getIsMetadataSlave()) {
             ++_imp->nbChangesRequiringMetadataRefresh;
         }
 

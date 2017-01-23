@@ -1283,11 +1283,8 @@ Node::endInputEdition(bool triggerRender)
         if (hasChanged) {
 
             // Force a refresh of the meta-datas
-            GetTimeInvariantMetaDatasResultsPtr results;
-            ActionRetCodeEnum stat = _imp->effect->getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
-            if (QThread::currentThread() == qApp->thread() && !isFailureRetCode(stat)) {
-                onNodeMetadatasRefreshedOnMainThread(*results->getMetadatasResults());
-            }
+
+            _imp->effect->onMetadataChanged_public();
 
             refreshDynamicProperties();
         }

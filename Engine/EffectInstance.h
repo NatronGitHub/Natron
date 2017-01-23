@@ -899,7 +899,19 @@ public:
 
     void onInputChanged_public(int inputNo);
 
+    void onMetadataChanged_public();
+
 protected:
+
+    // Called by onMetadataChanged_public() to recursively
+    // update downstream effects.
+    void onMetadataChanged_recursive(std::set<NodePtr>* markedNodes);
+
+    /**
+     * @brief Called when metadata have been changed
+     * Implementation must call base class version
+     **/
+    virtual void onMetadataChanged(const NodeMetadata& metadata);
 
 
     /**

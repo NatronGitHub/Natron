@@ -611,6 +611,13 @@ public:
 
     void setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA);
 
+    /**
+     * @brief Used in the implementation of EffectInstance::onMetadataChanged_recursive so we know if the metadata changed or not.
+     * Can only be called on the main thread.
+     **/
+    U64 getLastTimeInvariantMetadataHash() const;
+    void setLastTimeInvariantMetadataHash(U64 lastTimeInvariantMetadataHashRefreshed);
+
 private:
 
     int getPreferredInputInternal(bool connected) const;

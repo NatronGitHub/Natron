@@ -1079,11 +1079,7 @@ EffectInstance::evaluate(bool isSignificant,
     if ( refreshMetadatas && node && node->isNodeCreated() ) {
         
         // Force a re-compute of the meta-data if needed
-        GetTimeInvariantMetaDatasResultsPtr results;
-        ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
-        if (QThread::currentThread() == qApp->thread() && !isFailureRetCode(stat)) {
-            getNode()->onNodeMetadatasRefreshedOnMainThread(*results->getMetadatasResults());
-        }
+        onMetadataChanged_public();
     }
 
     if (isSignificant) {

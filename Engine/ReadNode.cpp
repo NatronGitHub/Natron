@@ -947,6 +947,14 @@ ReadNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     return p ? p->getEffectInstance()->getTimeInvariantMetaDatas(metadata) : EffectInstance::getTimeInvariantMetaDatas(metadata);
 }
 
+void
+ReadNode::onMetadataChanged(const NodeMetadata& metadata)
+{
+    NodePtr p = getEmbeddedReader();
+    if (p) {
+        p->getEffectInstance()->onMetadataChanged(metadata);
+    }
+}
 
 void
 ReadNode::initializeKnobs()

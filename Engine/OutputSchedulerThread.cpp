@@ -2358,9 +2358,16 @@ private:
                 }
             }
 
+            // If the input is the same as the input A, then do not render the tree B
+            bool canRenderTreeB;
+            {
+                NodePtr bInput = _viewer->getCurrentBInput();
+                canRenderTreeB = bInput == _viewer->getCurrentAInput();
+            }
+
             // Launch the 2nd viewer process in a separate thread
             QFuture<void> processBFuture;
-            if (processArgs[1]) {
+            if (canRenderTreeB && processArgs[1]) {
                 processBFuture = QtConcurrent::run(&launchRenderFunctor, processArgs[1]);
             }
 
@@ -2370,7 +2377,11 @@ private:
             }
 
             // Wait for the 2nd viewer process
-            processBFuture.waitForFinished();
+            if (canRenderTreeB) {
+                processBFuture.waitForFinished();
+            } else {
+                processArgs[1] = processArgs[0];
+            }
 
             // Check for failures
             for (int i = 0; i < 2; ++i) {
@@ -3201,17 +3212,26 @@ public:
                 _args->scheduler->currentRenders.insert(curRender);
             }
 
+            // If the input is the same as the input A, then do not render the tree B
+            bool canRenderTreeB;
+            {
+                NodePtr bInput = viewer->getCurrentBInput();
+                canRenderTreeB = bInput == viewer->getCurrentAInput();
+            }
             // Render 1 tree in a separate thread and the other one in this thread
             QFuture<void> processBFuture;
-            if (processArgs[1]->renderObject) {
+            if (canRenderTreeB && processArgs[1]->renderObject) {
                 processBFuture = QtConcurrent::run(&ViewerRenderFrameRunnable::launchRenderFunctor, processArgs[1]);
             }
             if (processArgs[0]) {
                 ViewerRenderFrameRunnable::launchRenderFunctor(processArgs[0]);
             }
 
-            if (processArgs[1]->renderObject) {
+            if (canRenderTreeB && processArgs[1]->renderObject) {
                 processBFuture.waitForFinished();
+            }
+            if (!canRenderTreeB) {
+                processArgs[1] = processArgs[0];
             }
 
 

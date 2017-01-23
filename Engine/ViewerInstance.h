@@ -153,6 +153,8 @@ private:
                                           int* passThroughInputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
 
+    virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
+
     virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;

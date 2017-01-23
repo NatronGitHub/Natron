@@ -1942,6 +1942,67 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     return ret;
 } // onKnobValueChanged_public
 
+void
+EffectInstance::onMetadataChanged(const NodeMetadata& metadata)
+{
+    getNode()->onNodeMetadatasRefreshedOnMainThread(metadata);
+}
+
+void
+EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
+{
+    // Can only be called on the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
+    // Check if we already recursed on this node
+    NodePtr node = getNode();
+    if (markedNodes->find(node) != markedNodes->end()) {
+        return;
+    }
+
+
+    // mark this node
+    markedNodes->insert(node);
+
+    // Call the onMetadataChanged action
+
+    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    GetTimeInvariantMetaDatasResultsPtr results;
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
+    if (!isFailureRetCode(stat)) {
+        NodeMetadataPtr metadata = results->getMetadatasResults();
+        assert(metadata);
+        U64 currentHash = results->getHashKey();
+        if (currentHash == node->getLastTimeInvariantMetadataHash()) {
+            return;
+        }
+        node->setLastTimeInvariantMetadataHash(currentHash);
+        onMetadataChanged(*metadata);
+
+    }
+
+    // Recurse downstream
+    NodesList outputs;
+    node->getOutputsWithGroupRedirection(outputs);
+    for (NodesList::const_iterator it = outputs.begin(); it!=outputs.end(); ++it) {
+        (*it)->getEffectInstance()->onMetadataChanged_recursive(markedNodes);
+    }
+} // onMetadataChanged_recursive
+
+void
+EffectInstance::onMetadataChanged_public()
+{
+    std::set<NodePtr> markedNodes;
+    onMetadataChanged_recursive(&markedNodes);
+
+}
 
 void
 EffectInstance::onInputChanged(int /*inputNo*/)

@@ -116,14 +116,17 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
         entries.push_back(ChoiceOption(optionID, inputNode->getLabel(), ""));
     }
 
+    ChoiceOption currentAChoice = aInputKnob->getActiveEntry();
+    ChoiceOption currentBChoice = bInputKnob->getActiveEntry();
+
     aInputKnob->populateChoices(entries);
     bInputKnob->populateChoices(entries);
 
     if (resetChoiceIfNotFound) {
-        if (!aInputKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
+        if (currentAChoice.id == "-" || !aInputKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
             aInputKnob->setValue(entries.size() > 1 ? 1 : 0);
         }
-        if (!bInputKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
+        if (currentBChoice.id == "-" || !bInputKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
             bInputKnob->setValue(entries.size() > 1 ? 1 : 0);
         }
     }
