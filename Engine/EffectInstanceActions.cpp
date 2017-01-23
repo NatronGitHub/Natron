@@ -117,11 +117,9 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
 
     {
         std::list<ImageComponents> upstreamAvailableLayers;
-        ActionRetCodeEnum stat;
+        ActionRetCodeEnum stat = eActionStatusOK;
         if (*passThroughInputNb != -1) {
             stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
-        } else {
-            stat = eActionStatusInputDisconnected;
         }
         if (isFailureRetCode(stat)) {
             return stat;
@@ -349,7 +347,9 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
     }
     TreeRenderNodeArgsPtr effectRenderArgs;
     if (inputNb >= 0) {
-        effectRenderArgs = render->getInputRenderArgs(inputNb);
+        if (render) {
+            effectRenderArgs = render->getInputRenderArgs(inputNb);
+        }
     } else {
         effectRenderArgs = render;
     }

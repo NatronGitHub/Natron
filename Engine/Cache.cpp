@@ -1664,8 +1664,7 @@ Cache::Cache()
 
 Cache::~Cache()
 {
-    // Ensure the cache is synced on disk when exiting.
-    flushCacheOnDisk(false /*async*/);
+
 }
 
 std::string

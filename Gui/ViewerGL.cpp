@@ -1052,7 +1052,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
+    makeCurrent();
 
     glCheckError(GL_GPU);
 

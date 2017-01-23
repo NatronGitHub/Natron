@@ -85,6 +85,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
+#include "Engine/Cache.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/StorageDeleterThread.h"
 #include "Engine/DiskCacheNode.h"
@@ -610,6 +611,9 @@ AppManager::~AppManager()
     }
 
     _imp->_backgroundIPC.reset();
+
+    // Ensure the cache is synced on disk when exiting.
+    _imp->cache->flushCacheOnDisk(false /*async*/);
 
     _imp->storageDeleteThread->quitThread();
 

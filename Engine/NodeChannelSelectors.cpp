@@ -523,7 +523,7 @@ ImageComponents
 Node::findClosestSupportedNumberOfComponents(int inputNb,
                                              int nComps) const
 {
-    if (nComps < 0 || nComps >= 4) {
+    if (nComps < 0 || nComps > 4) {
         // Natron assumes that a layer must have between 1 and 4 channels.
         return ImageComponents::getNoneComponents();
     }
