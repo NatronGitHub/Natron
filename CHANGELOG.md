@@ -4,6 +4,12 @@
 
 # History
 
+## Version 2.2.2
+
+This is a bug-fix release
+
+- fix hue display in the viewer
+
 ## Version 2.2.1
 
 This is a bug-fix release.
