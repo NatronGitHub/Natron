@@ -667,7 +667,7 @@ Node::getLinkedNodes(std::list<std::pair<NodePtr, bool> >* nodes) const
     } // for all knobs
 
     for (std::map<NodePtr, int>::const_iterator it = masterNodes.begin(); it!=masterNodes.end(); ++it) {
-        bool isCloneLink = it->second >= nVisitedKnobDimensionView;
+        bool isCloneLink = it->second >= nVisitedKnobDimensionView && it->first->getPluginID() == getPluginID();
         nodes->push_back(std::make_pair(it->first, isCloneLink));
 
     }

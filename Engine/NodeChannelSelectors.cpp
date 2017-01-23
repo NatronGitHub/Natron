@@ -519,13 +519,13 @@ Node::isSupportedComponent(int inputNb,
 }
 
 
-ImageComponents
+int
 Node::findClosestSupportedNumberOfComponents(int inputNb,
                                              int nComps) const
 {
     if (nComps < 0 || nComps > 4) {
         // Natron assumes that a layer must have between 1 and 4 channels.
-        return ImageComponents::getNoneComponents();
+        return 0;
     }
     std::bitset<4> supported;
     {
@@ -561,22 +561,10 @@ Node::findClosestSupportedNumberOfComponents(int inputNb,
     }
 
     if (foundSupportedNComps == -1) {
-        return ImageComponents::getNoneComponents();
+        return 0;
     }
-    switch (foundSupportedNComps) {
-        case 1:
-            return ImageComponents::getAlphaComponents();
-        case 2:
-            return ImageComponents::getXYComponents();
-        case 3:
-            return ImageComponents::getRGBComponents();
-        case 4:
-            return ImageComponents::getRGBAComponents();
-        default:
-            assert(false);
-            break;
-    }
-    return ImageComponents::getNoneComponents();
+    return foundSupportedNComps;
+
 } // findClosestSupportedNumberOfComponents
 
 int

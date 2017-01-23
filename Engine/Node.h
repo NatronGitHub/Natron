@@ -463,7 +463,7 @@ public:
      * @brief Returns the most appropriate number of components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    ImageComponents findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
+    int findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
 
     ImageBitDepthEnum getBestSupportedBitDepth() const;
     bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
