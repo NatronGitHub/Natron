@@ -1018,7 +1018,17 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 void
 OfxEffectInstance::onMetadataChanged(const NodeMetadata& metadata)
 {
-#pragma message WARN("TODO")
+    assert(_imp->context != eContextNone);
+    TimeValue time(getApp()->getTimeLine()->currentFrame());
+    RenderScale s(1.);
+    
+    assert(_imp->effect);
+    _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _imp->effect->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, s);
+    _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
+
+    
+    EffectInstance::onMetadataChanged(metadata);
 }
 
 ActionRetCodeEnum

@@ -440,6 +440,7 @@ void
 ViewerInstance::onMetadataChanged(const NodeMetadata& metadata)
 {
     getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode(), metadata);
+    EffectInstance::onMetadataChanged(metadata);
 
 }
 

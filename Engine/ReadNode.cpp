@@ -954,6 +954,7 @@ ReadNode::onMetadataChanged(const NodeMetadata& metadata)
     if (p) {
         p->getEffectInstance()->onMetadataChanged(metadata);
     }
+    EffectInstance::onMetadataChanged(metadata);
 }
 
 void
