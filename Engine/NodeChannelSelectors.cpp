@@ -189,12 +189,12 @@ NodePrivate::getSelectedLayerInternal(int inputNb,
     if (!layerKnob) {
         return ImageComponents();
     }
-    std::string layerID = layerKnob->getActiveEntryID();
+    ChoiceOption layerID = layerKnob->getActiveEntry();
 
     for (std::list<ImageComponents>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
         const std::string& layerName = it2->getLayerName();
-        if (layerID == layerName) {
+        if (layerID.id == layerName) {
             return *it2;
         }
     }
@@ -211,14 +211,14 @@ Node::getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLay
     if ( it == _imp->maskSelectors.end() ) {
         return -1;
     }
-    std::string maskChannelID =  it->second.channel.lock()->getActiveEntryID();
+    ChoiceOption maskChannelID =  it->second.channel.lock()->getActiveEntry();
 
     for (std::list<ImageComponents>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
         std::size_t nChans = (std::size_t)it2->getNumComponents();
         for (std::size_t c = 0; c < nChans; ++c) {
             ChoiceOption channelOption = it2->getChannelOption(c);
-            if (channelOption.id == maskChannelID) {
+            if (channelOption.id == maskChannelID.id) {
                 *comps = *it2;
                 return c;
             }
@@ -262,7 +262,7 @@ Node::addUserComponents(const ImageComponents& comps)
         ///Set the selector to the new channel
         KnobChoicePtr layerChoice = toKnobChoice(outputLayerKnob);
         if (layerChoice) {
-            layerChoice->setValueFromLabel(comps.getLayerName());
+            layerChoice->setValueFromID(comps.getLayerName());
         }
     }
 
@@ -542,7 +542,7 @@ Node::findClosestSupportedNumberOfComponents(int inputNb,
 
     // Find a greater or equal number of components
     int foundSupportedNComps = -1;
-    for (int i = nComps; i < 4; ++i) {
+    for (int i = nComps - 1; i < 4; ++i) {
         if (supported[i]) {
             foundSupportedNComps = i + 1;
             break;
@@ -552,7 +552,7 @@ Node::findClosestSupportedNumberOfComponents(int inputNb,
 
     if (foundSupportedNComps == -1) {
         // Find a small number of components
-        for (int i = nComps - 1; i >= 0; --i) {
+        for (int i = nComps - 2; i >= 0; --i) {
             if (supported[i]) {
                 foundSupportedNComps = i + 1;
                 break;

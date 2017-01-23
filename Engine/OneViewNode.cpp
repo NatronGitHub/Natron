@@ -160,7 +160,7 @@ OneViewNode::onProjectViewsChanged()
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
 
-    std::string currentView = viewKnob->getActiveEntryID();
+    ChoiceOption currentView = viewKnob->getActiveEntry();
 
     std::vector<ChoiceOption> options(views.size());
     for (std::size_t i = 0; i < views.size(); ++i) {
@@ -170,7 +170,7 @@ OneViewNode::onProjectViewsChanged()
 
     bool foundView = false;
     for (std::size_t i = 0; i < views.size(); ++i) {
-        if (views[i] == currentView) {
+        if (views[i] == currentView.id) {
             foundView = true;
             break;
         }

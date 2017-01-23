@@ -2505,7 +2505,7 @@ SettingsPrivate::tryLoadOpenColorIOConfig()
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryID().c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2618,7 +2618,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         }
 
     } else if ( k == _imp->_ocioConfigKnob ) {
-        if (_imp->_ocioConfigKnob->getActiveEntryID() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+        if (_imp->_ocioConfigKnob->getActiveEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);
         } else {
             _imp->_customOcioConfigFile->setEnabled(false);
@@ -2643,8 +2643,8 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _imp->_autoProxyWhenScrubbingTimeline ) {
         _imp->_autoProxyLevel->setSecret( !_imp->_autoProxyWhenScrubbingTimeline->getValue() );
     }  else if ( k == _imp->_hostName ) {
-        std::string hostName = _imp->_hostName->getActiveEntryID();
-        bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
+        ChoiceOption hostName = _imp->_hostName->getActiveEntry();
+        bool isCustom = hostName.id == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _imp->_customHostName->setSecret(!isCustom);
     } else if ( ( k == _imp->_testCrashReportButton ) && (reason == eValueChangedReasonUserEdited) ) {
         StandardButtonEnum reply = Dialogs::questionDialog( tr("Crash Test").toStdString(),
@@ -3814,13 +3814,13 @@ Settings::getSEFontSize() const
 std::string
 Settings::getSEFontFamily() const
 {
-    return _imp->_scriptEditorFontChoice->getActiveEntryID();
+    return _imp->_scriptEditorFontChoice->getActiveEntry().id;
 }
 
 std::string
 Settings::getApplicationFontFamily() const
 {
-    return _imp->_systemFontChoice->getActiveEntryID();
+    return _imp->_systemFontChoice->getActiveEntry().id;
 }
 
 int

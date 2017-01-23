@@ -493,7 +493,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             op = eMergeCopy;
         }
 
-        compOp->setDefaultValueFromLabel(Merge::getOperatorString(op));
+        compOp->setDefaultValueFromID(Merge::getOperatorString(op));
 
         // Make sure it is not serialized
         compOp->setCurrentDefaultValueAsInitialValue();
@@ -791,23 +791,9 @@ RotoDrawableItem::refreshNodesConnections()
         if (mergeAInputChoice_i == 0) {
             mergeInputAUpstreamNode = upstreamNode;
         } else {
-            std::string inputAName = mergeAKnob->getActiveEntryID();
-            // For reveal & clone, the user can select a RotoPaint node's input.
-            // Find an input of the RotoPaint node with the given input label
-            int maxInputs = rotoPaintNode->getMaxInputCount();
-            for (int i = 0; i < maxInputs; ++i) {
-                EffectInstancePtr input = rotoPaintNode->getInput(i);
-                if (!input) {
-                    continue;
-                }
-                NodePtr inputNode = input->getNode();
-                if (inputNode->getLabel() == inputAName) {
-
-                    mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(i);
-                    assert(mergeInputAUpstreamNode);
-                    break;
-                }
-            }
+            ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+            int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+            mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(inputNb);
         }
 
         mergeInputB = upstreamNode;
@@ -884,23 +870,13 @@ RotoDrawableItem::refreshNodesConnections()
             if (reveal_i == 0) {
                 mergeAUpstreamInput = upstreamNode;
             } else {
-                std::string inputAName = mergeAKnob->getActiveEntryID();
                 // For reveal & clone, the user can select a RotoPaint node's input.
                 // Find an input of the RotoPaint node with the given input label
-                int maxInputs = rotoPaintNode->getMaxInputCount();
-                for (int i = 0; i < maxInputs; ++i) {
-                    EffectInstancePtr input = rotoPaintNode->getInput(i);
-                    if (!input) {
-                        continue;
-                    }
-                    NodePtr inputNode = input->getNode();
-                    if (inputNode->getLabel() == inputAName) {
 
-                        mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(i);;
-                        assert(mergeAUpstreamInput);
-                        break;
-                    }
-                }
+                ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
+
             }
         }
 
@@ -975,24 +951,10 @@ RotoDrawableItem::refreshNodesConnections()
         int maskInput_i = knob->getValue();
         NodePtr maskInputNode;
         if (maskInput_i > 0) {
-            std::string maskInputName;
-            maskInputName = knob->getActiveEntryID();
 
-            // Find an input of the RotoPaint node with the given input label
-            int maxInputs = rotoPaintNode->getMaxInputCount();
-            for (int i = LAYERED_COMP_FIRST_MASK_INPUT_INDEX; i < maxInputs; ++i) {
-                EffectInstancePtr input = rotoPaintNode->getInput(i);
-                if (!input) {
-                    continue;
-                }
-                NodePtr inputNode = input->getNode();
-                if (inputNode->getLabel() == maskInputName) {
-
-                    maskInputNode = rotoPaintNode->getInternalInputNode(i);;
-                    assert(maskInputNode);
-                    break;
-                }
-            }
+            ChoiceOption maskInputName = knob->getActiveEntry();
+            int inputNb = QString::fromUtf8(maskInputName.id.c_str()).toInt();
+            maskInputNode = rotoPaintNode->getInternalInputNode(inputNb);
         }
         //Connect the merge node mask to the mask node
         _imp->mergeNode->swapInput(maskInputNode, 2);
@@ -1581,7 +1543,7 @@ RotoDrawableItem::initializeKnobs()
         std::vector<ChoiceOption> operators;
         Merge::getOperatorStrings(&operators);
         param->populateChoices(operators);
-        param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeOver) );
+        param->setDefaultValueFromID( Merge::getOperatorString(eMergeOver) );
         _imp->compOperator = param;
     }
 

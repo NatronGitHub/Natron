@@ -545,6 +545,15 @@ static void imageComponentsListToSharedMemoryComponentsList(const void_allocator
 {
     for (std::list<ImageComponents>::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
         MM_ImageComponents comps(allocator);
+
+        const std::vector<std::string>& channels = it->getComponentsNames();
+        for (std::size_t i = 0; i < channels.size(); ++i) {
+            String_ExternalSegment chan(allocator);
+            chan.append(channels[i].c_str());
+            comps.channels.push_back(chan);
+        }
+        comps.componentsName.append(it->getComponentsGlobalName().c_str());
+        comps.layerName.append(it->getLayerName().c_str());
         outComps->push_back(comps);
     }
 }

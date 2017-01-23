@@ -1072,16 +1072,16 @@ ReadNode::knobChanged(const KnobIPtr& k,
     
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryID();
-        if ( entry == pluginIDKnob->getValue() ) {
+        ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();
+        if ( entry.id == pluginIDKnob->getValue() ) {
             return false;
         }
 
-        if (entry == "Default") {
-            entry.clear();
+        if (entry.id == "Default") {
+            entry.id.clear();
         }
 
-        pluginIDKnob->setValue(entry);
+        pluginIDKnob->setValue(entry.id);
 
         KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
         assert(fileKnob);
@@ -1092,7 +1092,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-        _imp->refreshFileInfoVisibility(entry);
+        _imp->refreshFileInfoVisibility(entry.id);
     } else if ( k == _imp->fileInfosKnob.lock() ) {
         NodePtr p = getEmbeddedReader();
         if (!p) {

@@ -15,9 +15,10 @@ See :ref:`detailed description<choice.details>` below.
 Functions
 ^^^^^^^^^
 
-*    def :meth:`addOption<NatronEngine.ChoiceParam.addOption>` (option, help)
+*    def :meth:`addOption<NatronEngine.ChoiceParam.addOption>` (optionID, optionLabel, optionHelp)
 *    def :meth:`get<NatronEngine.ChoiceParam.get>` ([view="Main"])
 *    def :meth:`get<NatronEngine.ChoiceParam.get>` (frame[,view="Main"])
+*    def :meth:`getActiveOption<NatronEngine.ChoiceParam.getActiveOption>` ([view="Main"])
 *    def :meth:`getDefaultValue<NatronEngine.ChoiceParam.getDefaultValue>` ()
 *    def :meth:`getOption<NatronEngine.ChoiceParam.getOption>` (index)
 *    def :meth:`getNumOptions<NatronEngine.ChoiceParam.getNumOptions>` ()
@@ -53,13 +54,18 @@ Member functions description
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
-.. method:: NatronEngine.ChoiceParam.addOption(option, help)
+.. method:: NatronEngine.ChoiceParam.addOption(optionID, optionLabel, optionHelp)
 
 
-    :param option: :class:`str<NatronEngine.std::string>`
-    :param help: :class:`str<NatronEngine.std::string>`
+    :param optionID: :class:`str<PySide.QtCore.QString>`
+    :param optionLabel: :class:`str<PySide.QtCore.QString>`
+    :param optionHelp: :class:`str<PySide.QtCore.QString>`
 
-Adds a new *option* to the menu. If *help* is not empty, it will be displayed when the user
+Adds a new option to the menu.
+The *optionID* is a unique identifier for the option and is not displayed to the user.
+The *optionLabel* is the label visible in the drop-down menu for the user.
+If empty, the *optionLabel* will be automatically set to be the same as the *optionID*
+If *optionHelp* is not empty, it will be displayed when the user
 hovers the entry with the mouse.
 
 
@@ -94,15 +100,35 @@ Get the value of the parameter at the current timeline's time for the given *vie
 Get the default value for this parameter.
 
 
+.. method:: NatronEngine.ChoiceParam.getActiveOption([view="Main"])
+
+
+    :param view: :class:`str<PySide.QtCore.QString>`
+    :rtype: :class:`PyTuple`
+
+Get the active menu entry for the given *view*.
+Note that the active entry may not be present in the options returned by the
+getOptions() function if the menu was changed. In this case the option will 
+be displayed in italic in the user interface. 
+The tuple is composed of 3 strings: the optionID, optionLabel and optionHint.
+The optionID is what uniquely identifies the entry in the drop-down menu.
+The optionLabel is what is visible in the user interface.
+The optionHint is the help for the entry visible in the tooltip.
+
+
 
 
 .. method:: NatronEngine.ChoiceParam.getOption(index)
 
 
     :param index: :class:`int<PySide.QtCore.int>`
-    :rtype: :class:`str<NatronEngine.std::string>`
+    :rtype: :class:`PyTuple`
 
 Get the menu entry at the given *index*.
+The tuple is composed of 3 strings: the optionID, optionLabel and optionHint.
+The optionID is what uniquely identifies the entry in the drop-down menu.
+The optionLabel is what is visible in the user interface.
+The optionHint is the help for the entry visible in the tooltip.
 
 
 
@@ -116,7 +142,11 @@ Returns the number of menu entries.
 
 	:rtype: :class:`sequence`
 
-Returns a sequence of string with all menu entries from top to bottom.
+Returns a sequence of tuple with all menu entries from top to bottom.
+Each tuple is composed of 3 strings: the optionID, optionLabel and optionHint.
+The optionID is what uniquely identifies the entry in the drop-down menu.
+The optionLabel is what is visible in the user interface.
+The optionHint is the help for the entry visible in the tooltip.
 
 .. method:: NatronEngine.ChoiceParam.getValue()
 
@@ -193,13 +223,13 @@ Strings will be compared without case sensitivity. If not found, nothing happens
 
 Set the default *value* for this parameter.
 
-.. method:: NatronEngine.ChoiceParam.setDefaultValue(label)
+.. method:: NatronEngine.ChoiceParam.setDefaultValue(ID)
 
 
-    :param label: :class:`str<Natron.std::string>`
+    :param label: :class:`str<PySide.QtCore.QString>`
 
 
-Set the default value from the *label* for this parameter. The *label* must match an existing option.
+Set the default value from the *ID* for this parameter. The *ID* must match an existing optionID.
 Strings will be compared without case sensitivity. If not found, nothing happens.
 
 
@@ -211,6 +241,11 @@ Strings will be compared without case sensitivity. If not found, nothing happens
 
 Clears all existing entries in the menu and add all entries contained in *options*
 to the menu.
+The options is a list of tuples.
+Each tuple is composed of 3 strings: the optionID, optionLabel and optionHint.
+The optionID is what uniquely identifies the entry in the drop-down menu.
+The optionLabel is what is visible in the user interface.
+The optionHint is the help for the entry visible in the tooltip.
 
 
 

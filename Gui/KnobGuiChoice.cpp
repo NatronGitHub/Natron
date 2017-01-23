@@ -493,21 +493,27 @@ KnobGuiChoice::updateGUI()
     if (!knob) {
         return;
     }
-    std::string activeEntry = knob->getActiveEntryID();
+    ChoiceOption activeEntry = knob->getActiveEntry();
 
-    if ( !activeEntry.empty() ) {
+    QString activeEntryLabel;
+    if (!activeEntry.label.empty()) {
+        activeEntryLabel = QString::fromUtf8(activeEntry.label.c_str());
+    } else {
+        activeEntryLabel = QString::fromUtf8(activeEntry.id.c_str());
+    }
+    if ( !activeEntry.id.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
+            QString error = tr("The value %1 no longer exist in the menu.").arg(activeEntryLabel);
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
-    if ( _comboBox->isCascading() || activeEntry.empty() ) {
+    if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
         _comboBox->setCurrentIndex_no_emit( knob->getValue() );
     } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
+        _comboBox->setCurrentText_no_emit( activeEntryLabel );
     }
 }
 

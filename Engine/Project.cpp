@@ -1084,9 +1084,9 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    std::string formatSpec = _imp->formatKnob->getActiveEntryID();
-    if ( !formatSpec.empty() ) {
-        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), f);
+    ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
+    if ( !formatSpec.id.empty() ) {
+        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.id.c_str() ), f);
     } else {
         _imp->findFormat(_imp->formatKnob->getValue(), f);
     }

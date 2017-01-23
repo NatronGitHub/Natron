@@ -597,10 +597,10 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 ImageComponents
 ViewerInstancePrivate::getSelectedLayer(const std::list<ImageComponents>& availableLayers) const
 {
-    std::string activeIndexID = layerChoiceKnob.lock()->getActiveEntryID(ViewIdx(0));
+    ChoiceOption activeIndexID = layerChoiceKnob.lock()->getActiveEntry(ViewIdx(0));
     for (std::list<ImageComponents>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
         ChoiceOption opt = it->getLayerOption();
-        if (opt.id == activeIndexID) {
+        if (opt.id == activeIndexID.id) {
             return *it;
         }
     }
@@ -611,12 +611,12 @@ ViewerInstancePrivate::getSelectedLayer(const std::list<ImageComponents>& availa
 ImageComponents
 ViewerInstancePrivate::getSelectedAlphaChannel(const std::list<ImageComponents>& availableLayers, int *channelIndex) const
 {
-    std::string activeIndexID = alphaChannelChoiceKnob.lock()->getActiveEntryID(ViewIdx(0));
+    ChoiceOption activeIndexID = alphaChannelChoiceKnob.lock()->getActiveEntry(ViewIdx(0));
     for (std::list<ImageComponents>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
         std::size_t nChans = (std::size_t)it->getNumComponents();
         for (std::size_t c = 0; c < nChans; ++c) {
             ChoiceOption chanOption = it->getChannelOption(c);
-            if (chanOption.id == activeIndexID) {
+            if (chanOption.id == activeIndexID.id) {
                 *channelIndex = (int)c;
                 return *it;
             }

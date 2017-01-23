@@ -2027,7 +2027,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
                     return stat;
                 }
                 *results = inputResults;
-                getNode()->onNodeMetadatasRefreshedOnMainThread(*inputResults->getMetadatasResults());
+
                 return eActionStatusOK;
             }
         }
@@ -2070,10 +2070,6 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     }
 
     cacheAccess->insertInCache();
-    
-    if (QThread::currentThread() == qApp->thread()) {
-        getNode()->onNodeMetadatasRefreshedOnMainThread(*metadata);
-    }
 
     return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public

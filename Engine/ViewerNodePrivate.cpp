@@ -129,7 +129,7 @@ ViewerNodePrivate::refreshInputChoices(bool resetChoiceIfNotFound)
     }
 
     if (uiContext) {
-        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled()  || bInputKnob->getActiveEntryID().empty() ) {
+        if ( (operation == eViewerCompositingOperatorNone) || !bInputKnob->isEnabled()  || bInputKnob->getActiveEntry().id.empty() ) {
             uiContext->setInfoBarVisible(1, false);
         } else if (operation != eViewerCompositingOperatorNone) {
             uiContext->setInfoBarVisible(1, true);
@@ -276,13 +276,13 @@ ViewerNodePrivate::swapViewerProcessInputs()
     try {
         KnobChoicePtr aChoice = aInputNodeChoiceKnob.lock();
         KnobChoicePtr bChoice = bInputNodeChoiceKnob.lock();
-        std::string aCurChoice = aChoice->getActiveEntryID();
-        std::string bCurChoice = bChoice->getActiveEntryID();
+        ChoiceOption aCurChoice = aChoice->getActiveEntry();
+        ChoiceOption bCurChoice = bChoice->getActiveEntry();
         aChoice->blockValueChanges();
-        aChoice->setValueFromLabel(bCurChoice);
+        aChoice->setValueFromID(bCurChoice.id);
         aChoice->unblockValueChanges();
         bChoice->blockValueChanges();
-        bChoice->setValueFromLabel(aCurChoice);
+        bChoice->setValueFromID(aCurChoice.id);
         bChoice->unblockValueChanges();
     } catch (...) {
 

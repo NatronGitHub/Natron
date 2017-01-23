@@ -1374,15 +1374,15 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->uiContext->setInfoBarVisible(1, op != eViewerCompositingOperatorNone);
         _imp->bInputNodeChoiceKnob.lock()->setEnabled(op != eViewerCompositingOperatorNone);
     } else if (k == _imp->zoomChoiceKnob.lock()) {
-        std::string zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntryID();
-        if (zoomChoice == "Fit") {
+        ChoiceOption zoomChoice = _imp->zoomChoiceKnob.lock()->getActiveEntry();
+        if (zoomChoice.id == "Fit") {
             _imp->uiContext->fitImageToFormat();
-        } else if (zoomChoice == "+") {
+        } else if (zoomChoice.id == "+") {
             _imp->scaleZoomFactor(1.1);
-        } else if (zoomChoice == "-") {
+        } else if (zoomChoice.id == "-") {
             _imp->scaleZoomFactor(0.9);
         } else {
-            QString str = QString::fromUtf8(zoomChoice.c_str());
+            QString str = QString::fromUtf8(zoomChoice.id.c_str());
             str = str.trimmed();
             str = str.mid(0, str.size() - 1);
             int zoomInteger = str.toInt();

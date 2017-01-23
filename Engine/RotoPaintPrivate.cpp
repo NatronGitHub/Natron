@@ -1044,7 +1044,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
         colorKnob->setValue( shapeColor.b, ViewIdx(0), DimIdx(2) );
         colorKnob->setValue( shapeColor.a, ViewIdx(0), DimIdx(3) );
     }
-    operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp));
+    operatorKnob->setValueFromID(Merge::getOperatorString(compOp));
     if (opacityKnob) {
         opacityKnob->setValue(opacity);
     }

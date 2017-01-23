@@ -477,16 +477,16 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryID();
+    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntry();
 
-    if (userChoiceNodeName == "None") {
+    if (userChoiceNodeName.id == "None") {
         return NodePtr();
     }
-    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName);
+    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName.id);
     if (!writeNode) {
         std::stringstream ss;
         ss << tr("Could not find a node named %1 in the pre-comp project")
-            .arg( QString::fromUtf8( userChoiceNodeName.c_str() ) ).toStdString();
+            .arg( QString::fromUtf8( userChoiceNodeName.id.c_str() ) ).toStdString();
         Dialogs::errorDialog( tr("Pre-Comp").toStdString(), ss.str() );
 
         return NodePtr();

@@ -1451,6 +1451,103 @@
     <object-type name="BooleanParam">
     </object-type>
     <object-type name="ChoiceParam">
+        <modify-function signature="setOptions(std::list&lt;QString&gt;,std::list&lt;QString&gt;,std::list&lt;QString&gt;)">
+            <modify-argument index="1">
+                <replace-type modified-type="PySequence"/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+
+                if (!PyList_Check(%1)) {
+                    PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                    return 0;
+                }
+
+                int listSize = PyList_Size(%1);
+                if (listSize == 0) {
+                    PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                    return 0;
+                }
+
+                std::list&lt;QString&gt; optionIDs, optionLabels, optionHelps;
+                for (int i = 0; i &lt; listSize; ++i) {
+                    PyObject* obj = PyList_GetItem(%1, i);
+                    if (!PyTuple_Check(obj)) {
+                        PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                        return 0;
+                    }
+                    int tupleSize = PyTuple_Size(obj);
+                    if (tupleSize != 3) {
+                        PyErr_SetString(PyExc_ValueError, "Each option must be a tuple of 3 strings");
+                        return 0;
+                    }
+                    PyObject* pyOptionId = PyTuple_GetItem(obj, 0);
+                    PyObject* pyOptionLabel = PyTuple_GetItem(obj, 1);
+                    PyObject* pyOptionHnt = PyTuple_GetItem(obj, 2);
+                    QString optionId = %CONVERTTOCPP[QString](pyOptionId);
+                    QString optionLabel = %CONVERTTOCPP[QString](pyOptionLabel);
+                    QString optionHint = %CONVERTTOCPP[QString](pyOptionHnt);
+                    optionIDs.push_back(optionId);
+                    optionLabels.push_back(optionLabel);
+                    optionHelps.push_back(optionHint);
+                }
+
+                %CPPSELF.%FUNCTION_NAME(optionIDs, optionLabels, optionHelps);
+
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getOption(int,QString*,QString*,QString*)const">
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="4">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                QString optionID, optionLabel, optionHint;
+                bool ok = %CPPSELF.%FUNCTION_NAME(%1, &amp;optionID,&amp;optionLabel, &amp;optionHint);
+                %PYARG_0 = PyTuple_New(4);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[bool](ok));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[QString](optionID));
+                PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[QString](optionLabel));
+                PyTuple_SET_ITEM(%PYARG_0, 3, %CONVERTTOPYTHON[QString](optionHint));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
+        <modify-function signature="getActiveOption(QString*,QString*,QString*,QString)const">
+            <modify-argument index="1">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="2">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="3">
+                <remove-argument/>
+            </modify-argument>
+            <modify-argument index="return">
+                <replace-type modified-type="PyTuple"/>
+            </modify-argument>
+            <inject-code class="target" position="beginning">
+                QString optionID, optionLabel, optionHint;
+                %CPPSELF.%FUNCTION_NAME(&amp;optionID,&amp;optionLabel, &amp;optionHint, %4);
+                %PYARG_0 = PyTuple_New(3);
+                PyTuple_SET_ITEM(%PYARG_0, 0, %CONVERTTOPYTHON[QString](optionID));
+                PyTuple_SET_ITEM(%PYARG_0, 1, %CONVERTTOPYTHON[QString](optionLabel));
+                PyTuple_SET_ITEM(%PYARG_0, 2, %CONVERTTOPYTHON[QString](optionHint));
+                return %PYARG_0;
+            </inject-code>
+        </modify-function>
     </object-type>
     <object-type name="ButtonParam"/>
     <object-type name="SeparatorParam"/>

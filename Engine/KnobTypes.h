@@ -569,7 +569,7 @@ public:
 
     // For choice parameters the value is held by a string because if the option disappears from the menu
     // we still need to remember the user choice
-    std::string activeEntry;
+    ChoiceOption activeEntry;
 
     //  Each item in the list will add a separator after the index specified by the integer.
     std::vector<int> separators;
@@ -735,13 +735,13 @@ public:
     /**
      * @brief Get the active entry text
      **/
-    std::string getActiveEntryID(ViewIdx view = ViewIdx(0));
+    ChoiceOption getActiveEntry(ViewIdx view = ViewIdx(0));
 
     /**
      * @brief Set the active entry text. If the view does not exist in the knob an invalid
      * argument exception is thrown
      **/
-    void setActiveEntryID(const std::string& entry, ViewSetSpec view = ViewSetSpec::all());
+    void setActiveEntry(const ChoiceOption& entry, ViewSetSpec view = ViewSetSpec::all());
 
     int getNumEntries(ViewIdx view = ViewIdx(0)) const;
 
@@ -756,7 +756,7 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    static int choiceMatch(const std::string& choice, const std::vector<ChoiceOption>& entries, std::string* matchedEntry);
+    static int choiceMatch(const std::string& choiceID, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
     
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
@@ -770,11 +770,11 @@ public:
     bool isCascading() const;
 
     /// set the KnobChoice value from the label
-    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value, ViewSetSpec view = ViewSetSpec::all());
+    ValueChangedReturnCodeEnum setValueFromID(const std::string & value, ViewSetSpec view = ViewSetSpec::all());
 
     /// set the KnobChoice default value from the label
-    void setDefaultValueFromLabel(const std::string & value);
-    void setDefaultValueFromLabelWithoutApplying(const std::string & value);
+    void setDefaultValueFromID(const std::string & value);
+    void setDefaultValueFromIDWithoutApplying(const std::string & value);
 
     void setMissingEntryWarningEnabled(bool enabled);
     bool isMissingEntryWarningEnabled() const;

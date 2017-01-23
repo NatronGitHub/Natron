@@ -2933,7 +2933,7 @@ ChoiceParam::set(const QString& label, const QString& view)
         return;
     }
     try {
-        ValueChangedReturnCodeEnum s = knob->setValueFromLabel(label.toStdString(), thisViewSpec);
+        ValueChangedReturnCodeEnum s = knob->setValueFromID(label.toStdString(), thisViewSpec);
         Q_UNUSED(s);
     } catch (const std::exception& e) {
         KnobHolderPtr holder = knob->getHolder();
@@ -3000,7 +3000,7 @@ ChoiceParam::setDefaultValue(const QString& value)
         return;
     }
     try {
-        knob->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
+        knob->setDefaultValueFromIDWithoutApplying( value.toStdString() );
     } catch (const std::exception& e) {
         KnobHolderPtr holder = knob->getHolder();
         AppInstancePtr app;
@@ -3048,8 +3048,9 @@ ChoiceParam::restoreDefaultValue(const QString& view)
 }
 
 void
-ChoiceParam::addOption(const QString& option,
-                       const QString& help)
+ChoiceParam::addOption(const QString& optionID,
+                       const QString& optionLabel,
+                       const QString& optionHelper)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
@@ -3060,12 +3061,18 @@ ChoiceParam::addOption(const QString& option,
         PythonSetNonUserKnobError();
         return;
     }
-    ChoiceOption c(option.toStdString(), "", help.toStdString());
+    if (optionID.isEmpty()) {
+        PyErr_SetString(PyExc_ValueError, tr("Cannot add an empty option").toStdString().c_str());
+        return;
+    }
+    ChoiceOption c(optionID.toStdString(), optionLabel.toStdString(), optionHelper.toStdString());
     knob->appendChoice(c);
 }
 
 void
-ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
+ChoiceParam::setOptions(const std::list<QString>& optionIDs,
+                        const std::list<QString>& optionLabels,
+                        const std::list<QString>& optionHelps)
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
@@ -3076,48 +3083,62 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
         PythonSetNonUserKnobError();
         return;
     }
-    std::vector<ChoiceOption> entries(options.size());
+    if (optionIDs.empty() ||
+        optionIDs.size() != optionLabels.size() ||
+        optionIDs.size() != optionHelps.size()) {
+        return;
+    }
+    std::vector<ChoiceOption> entries(optionIDs.size());
     int i = 0;
-    for (std::list<std::pair<QString, QString> >::const_iterator it = options.begin(); it != options.end(); ++it, ++i) {
+    std::list<QString>::const_iterator itID = optionIDs.begin();
+    std::list<QString>::const_iterator itLabel = optionLabels.begin();
+    std::list<QString>::const_iterator itHelp = optionHelps.begin();
+    for (; itID != optionIDs.end(); ++itID, ++itLabel, ++itHelp, ++i) {
         ChoiceOption& option = entries[i];
-        option.id = it->first.toStdString();
-        option.tooltip = it->second.toStdString();
+        option.id = itID->toStdString();
+        option.label = itLabel->toStdString();
+        option.tooltip = itHelp->toStdString();
     }
     knob->populateChoices(entries);
 }
 
-QString
-ChoiceParam::getOption(int index) const
+bool
+ChoiceParam::getOption(int index, QString* optionID, QString* optionLabel, QString* optionHelp) const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
+    if (!knob || !optionID || !optionLabel || !optionHelp) {
         PythonSetNullError();
-        return QString();
+        return false;
     }
     std::vector<ChoiceOption> entries =  knob->getEntries();
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
         PyErr_SetString(PyExc_IndexError, tr("Option index out of range").toStdString().c_str());
-        return QString();
+        return false;
     }
-
-    return QString::fromUtf8( entries[index].id.c_str() );
+    *optionID = QString::fromUtf8(entries[index].id.c_str());
+    *optionLabel = QString::fromUtf8(entries[index].label.c_str());
+    *optionHelp = QString::fromUtf8(entries[index].tooltip.c_str());
+    return true;
 }
 
-QString
-ChoiceParam::getActiveOption(const QString& view) const
+void
+ChoiceParam::getActiveOption(QString* optionID, QString* optionLabel, QString* optionHelp, const QString& view) const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
     if (!knob) {
         PythonSetNullError();
-        return QString();
+        return;
     }
     ViewIdx thisViewSpec;
     if (!getViewIdxFromViewName(view, &thisViewSpec)) {
         PythonSetInvalidViewName(view);
-        return QString();
+        return;
     }
-    return QString::fromUtf8(knob->getActiveEntryID(thisViewSpec).c_str());
+    ChoiceOption opt = knob->getActiveEntry(thisViewSpec);
+    *optionID = QString::fromUtf8(opt.id.c_str());
+    *optionLabel = QString::fromUtf8(opt.label.c_str());
+    *optionHelp = QString::fromUtf8(opt.tooltip.c_str());
 }
 
 int
@@ -3131,22 +3152,23 @@ ChoiceParam::getNumOptions() const
     return knob->getNumEntries();
 }
 
-QStringList
-ChoiceParam::getOptions() const
+void
+ChoiceParam::getOptions(std::list<QString>* optionIDs,
+                        std::list<QString>* optionLabels,
+                        std::list<QString>* optionHelps) const
 {
     KnobChoicePtr knob = _choiceKnob.lock();
-    if (!knob) {
+    if (!knob || !optionIDs || !optionLabels || !optionHelps) {
         PythonSetNullError();
-        return QStringList();
+        return;
     }
-    QStringList ret;
-    std::vector<ChoiceOption> entries = knob->getEntries();
-
-    for (std::size_t i = 0; i < entries.size(); ++i) {
-        ret.push_back( QString::fromUtf8( entries[i].id.c_str() ) );
+    std::vector<ChoiceOption> options =  knob->getEntries();
+    for (std::size_t i = 0; i < options.size(); ++i) {
+        optionIDs->push_back(QString::fromUtf8(options[i].id.c_str()));
+        optionLabels->push_back(QString::fromUtf8(options[i].label.c_str()));
+        optionHelps->push_back(QString::fromUtf8(options[i].tooltip.c_str()));
     }
 
-    return ret;
 }
 
 int

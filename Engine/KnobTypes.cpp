@@ -514,8 +514,8 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
         // No current value, assume they are different
         return true;
     }
-    if (activeEntry != newChoice) {
-        activeEntry = newChoice;
+    if (activeEntry.id != newChoice) {
+        activeEntry.id = newChoice;
         return true;
     }
     return false;
@@ -542,7 +542,7 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     showMissingEntryWarning = otherType->showMissingEntryWarning;
     menuColors = otherType->menuColors;
 
-    if (activeEntry != otherType->activeEntry) {
+    if (activeEntry.id != otherType->activeEntry.id) {
         activeEntry = otherType->activeEntry;
         hasChanged = true;
     }
@@ -746,7 +746,7 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
         defaultVal = choiceData->menuOptions[def_i].id;
     }
 
-    if (choiceData->activeEntry != defaultVal) {
+    if (choiceData->activeEntry.id != defaultVal) {
         return true;
     }
 
@@ -774,10 +774,10 @@ KnobChoice::findAndSetOldChoice()
         {
             QMutexLocker k(&data->valueMutex);
 
-            if ( !data->activeEntry.empty() ) {
+            if ( !data->activeEntry.id.empty() ) {
 
                 for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                    if ( data->menuOptions[i].id == data->activeEntry ) {
+                    if ( data->menuOptions[i].id == data->activeEntry.id ) {
                         found = i;
                         break;
                     }
@@ -1021,7 +1021,7 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
         }
         QMutexLocker k(&data->valueMutex);
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if (data->menuOptions[i].id == data->activeEntry) {
+            if (data->menuOptions[i].id == data->activeEntry.id) {
                 return true;
             }
         }
@@ -1064,7 +1064,7 @@ KnobChoice::getNumEntries(ViewIdx view) const
 
 
 void
-KnobChoice::setActiveEntryID(const std::string& entry, ViewSetSpec view)
+KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
 {
 
     std::list<ViewIdx> views = getViewsList();
@@ -1099,18 +1099,18 @@ KnobChoice::setActiveEntryID(const std::string& entry, ViewSetSpec view)
     }
 }
 
-std::string
-KnobChoice::getActiveEntryID(ViewIdx view)
+ChoiceOption
+KnobChoice::getActiveEntry(ViewIdx view)
 {
     ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
-            return false;
+            return ChoiceOption();
         }
         {
             QMutexLocker k(&data->valueMutex);
-            if (!data->activeEntry.empty()) {
+            if (!data->activeEntry.id.empty()) {
                 return data->activeEntry;
             }
         }
@@ -1120,15 +1120,16 @@ KnobChoice::getActiveEntryID(ViewIdx view)
         {
             QMutexLocker k(&data->valueMutex);
             if ( activeIndex >= 0 && activeIndex < (int)data->menuOptions.size() ) {
-                data->activeEntry = data->menuOptions[activeIndex].id;
+                data->activeEntry = data->menuOptions[activeIndex];
                 return data->activeEntry;
             }
 
         }
     }
 
-    return std::string();
+    return ChoiceOption();
 }
+
 
 
 std::string
@@ -1139,11 +1140,14 @@ KnobChoice::getHintToolTipFull() const
     QMutexLocker k(&data->valueMutex);
 
     int gothelp = 0;
-
+    int gotIdDifferentThanLabel = 0;
     if ( !data->menuOptions.empty() ) {
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
             if ( !data->menuOptions[i].tooltip.empty() ) {
                 ++gothelp;
+            }
+            if (data->menuOptions[i].id != data->menuOptions[i].label) {
+                ++gotIdDifferentThanLabel;
             }
         }
     }
@@ -1155,26 +1159,28 @@ KnobChoice::getHintToolTipFull() const
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
         ss << boost::trim_copy( getHintToolTip() );
-        if (gothelp) {
+        if (gothelp || gotIdDifferentThanLabel) {
             // if there are per-option help strings, separate them from main hint
             ss << "\n\n";
         }
     }
     // param may have no hint but still have per-option help
-    if (gothelp) {
+    if (gothelp || gotIdDifferentThanLabel) {
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if ( !data->menuOptions[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = boost::trim_copy(data->menuOptions[i].label);
-                std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
+            if ( !data->menuOptions[i].tooltip.empty() || data->menuOptions[i].id != data->menuOptions[i].label ) { // no help line is needed if help is unavailable for this option
+                std::string entryID = boost::trim_copy(data->menuOptions[i].id);
+                std::replace_if(entryID.begin(), entryID.end(), ::isspace, ' ');
                 std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
-                    ss << "* **" << entry << "**";
+                    ss << "* **" << entryID << "**";
                 } else {
-                    ss << entry;
+                    ss << entryID;
                 }
-                ss << ": ";
-                ss << help;
+                if (!data->menuOptions[i].tooltip.empty()) {
+                    ss << ": ";
+                    ss << help;
+                }
                 if (i < data->menuOptions.size() - 1) {
                     ss << '\n';
                 }
@@ -1186,7 +1192,7 @@ KnobChoice::getHintToolTipFull() const
 } // KnobChoice::getHintToolTipFull
 
 ValueChangedReturnCodeEnum
-KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
+KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
 {
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1225,23 +1231,23 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
 // 4- case-insensistive string match, other index
 // returns index if choice was matched, -1 if not matched
 int
-KnobChoice::choiceMatch(const std::string& choice,
+KnobChoice::choiceMatch(const std::string& choiceID,
                         const std::vector<ChoiceOption>& entries,
-                        std::string* matchedEntry)
+                        ChoiceOption* matchedEntry)
 {
     // first, try exact match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i].id == choice) {
+        if (entries[i].id == choiceID) {
             if (matchedEntry) {
-                *matchedEntry = entries[i].id;
+                *matchedEntry = entries[i];
             }
             return i;
         }
     }
 
     // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
-    std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
-    std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
+    std::size_t choicetab = choiceID.find('\t'); // returns string::npos if no tab was found
+    std::string choicemain = choiceID.substr(0, choicetab); // gives the entire string if no tabs were found
     for (std::size_t i = 0; i < entries.size(); ++i) {
         const std::string& entry(entries[i].id);
         std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
@@ -1249,7 +1255,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 
         if (entrymain == choicemain) {
             if (matchedEntry) {
-                *matchedEntry = entries[i].id;
+                *matchedEntry = entries[i];
             }
             return i;
         }
@@ -1257,9 +1263,9 @@ KnobChoice::choiceMatch(const std::string& choice,
 
     // third, case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if ( boost::iequals(entries[i].id, choice) ) {
+        if ( boost::iequals(entries[i].id, choiceID) ) {
             if (matchedEntry) {
-                *matchedEntry = entries[i].id;
+                *matchedEntry = entries[i];
             }
             return i;
         }
@@ -1270,7 +1276,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 }
 
 void
-KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
+KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value)
 {
     int index = -1;
     {
@@ -1286,7 +1292,7 @@ KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
 }
 
 void
-KnobChoice::setDefaultValueFromLabel(const std::string & value)
+KnobChoice::setDefaultValueFromID(const std::string & value)
 {
     int index = -1;
     {

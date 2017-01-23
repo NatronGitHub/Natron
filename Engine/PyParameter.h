@@ -907,22 +907,24 @@ public:
     /**
      * @brief Add a new option to the drop-down menu
      **/
-    void addOption(const QString& option, const QString& help);
+    void addOption(const QString& optionID, const QString& optionLabel, const QString& optionHelp);
 
     /**
      * @brief Set all options at once
      **/
-    void setOptions(const std::list<std::pair<QString, QString> >& options);
+    void setOptions(const std::list<QString>& optionIDs,
+                    const std::list<QString>& optionLabels,
+                    const std::list<QString>& optionHelps);
 
     /**
      * @brief Returns the option at the given index
      **/
-    QString getOption(int index) const;
+    bool getOption(int index, QString* optionID, QString* optionLabel, QString* optionHelp) const;
 
     /**
      * @brief Returns the current option
      **/
-    QString getActiveOption(const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
+    void getActiveOption(QString* optionID, QString* optionLabel, QString* optionHelp, const QString& view = QLatin1String(kPyParamViewIdxMain)) const;
 
     /**
      * @brief Returns the count of options
@@ -932,7 +934,9 @@ public:
     /**
      * @brief Returns all options
      **/
-    QStringList getOptions() const;
+    void getOptions(std::list<QString>* optionIDs,
+                    std::list<QString>* optionLabels,
+                    std::list<QString>* optionHelps) const;
 
     /**
      * @brief Adds this Param as a dependency of the given Param. This is used mainly by the GUI to notify the user

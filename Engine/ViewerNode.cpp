@@ -571,7 +571,8 @@ ViewerNode::connectInputToIndex(int groupInputIndex, int internalInputIndex)
 void
 ViewerNode::setZoomComboBoxText(const std::string& text)
 {
-    _imp->zoomChoiceKnob.lock()->setActiveEntryID(text, ViewSetSpec(0));
+    ChoiceOption opt(text, "", "");
+    _imp->zoomChoiceKnob.lock()->setActiveEntry(opt, ViewSetSpec(0));
 }
 
 bool
@@ -669,22 +670,22 @@ ViewerNode::invalidateUiContext()
 NodePtr
 ViewerNode::getCurrentAInput() const
 {
-    std::string curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntryID();
-    if (curLabel == "-") {
+    ChoiceOption curLabel = _imp->aInputNodeChoiceKnob.lock()->getActiveEntry();
+    if (curLabel.id == "-") {
         return NodePtr();
     }
-    int inputIndex = QString::fromUtf8(curLabel.c_str()).toInt();
+    int inputIndex = QString::fromUtf8(curLabel.id.c_str()).toInt();
     return getNode()->getInput(inputIndex);
 }
 
 NodePtr
 ViewerNode::getCurrentBInput() const
 {
-    std::string curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntryID();
-    if (curLabel == "-") {
+    ChoiceOption curLabel = _imp->bInputNodeChoiceKnob.lock()->getActiveEntry();
+    if (curLabel.id == "-") {
         return NodePtr();
     }
-    int inputIndex = QString::fromUtf8(curLabel.c_str()).toInt();
+    int inputIndex = QString::fromUtf8(curLabel.id.c_str()).toInt();
     return getNode()->getInput(inputIndex);
 
 }
@@ -700,10 +701,10 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
     KnobChoicePtr knob = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock() : _imp->bInputNodeChoiceKnob.lock();
 
 
-    std::string curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntryID() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntryID();
+    ChoiceOption curLabel = internalInputIdx == 0 ? _imp->aInputNodeChoiceKnob.lock()->getActiveEntry() : _imp->bInputNodeChoiceKnob.lock()->getActiveEntry();
 
     NodePtr nodeToConnect = _imp->getInputRecursive(internalInputIdx);
-    if (curLabel == "-") {
+    if (curLabel.id == "-") {
         if (nodeToConnect->getEffectInstance().get() == this) {
             nodeToConnect->disconnectInput(internalInputIdx);
         } else {
@@ -715,7 +716,7 @@ ViewerNode::refreshInputFromChoiceMenu(int internalInputIdx)
 
     } else {
 
-        int groupInputIndex = QString::fromUtf8(curLabel.c_str()).toInt();
+        int groupInputIndex = QString::fromUtf8(curLabel.id.c_str()).toInt();
         if (groupInputIndex < (int)groupInputNodes.size() && groupInputIndex >= 0) {
 
             if (nodeToConnect == _imp->internalViewerProcessNode[0].lock()) {

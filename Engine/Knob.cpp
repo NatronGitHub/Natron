@@ -3164,7 +3164,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
 
         } else if (isChoice) {
-            serialization->_value.isString = isChoice->getActiveEntryID(view);
+            serialization->_value.isString = isChoice->getActiveEntry(view).id;
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
         }
     }
@@ -3276,14 +3276,15 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
     } else if (isChoice) {
-        std::string matchedEntry;
+        ChoiceOption matchedEntry;
         int foundValue = KnobChoice::choiceMatch(obj._value.isString, isChoice->getEntries(), &matchedEntry);
 
         if (foundValue == -1) {
             // Just remember the active entry if not found
-            isChoice->setActiveEntryID(obj._value.isString, view);
+            ChoiceOption activeEntry(obj._value.isString, "", "");
+            isChoice->setActiveEntry(activeEntry, view);
         } else {
-            isChoice->setActiveEntryID(matchedEntry, view);
+            isChoice->setActiveEntry(matchedEntry, view);
             isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
         }
 
@@ -5081,6 +5082,8 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
     }
     bool ret = false;
 
+    bool valueChangesBlocked = knob->isValueChangesBlocked();
+
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
@@ -5089,11 +5092,11 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
             beginKnobsValuesChanged_public(reason);
         }
 
-        if (  knob->getIsMetadataSlave() ) {
+        if (!valueChangesBlocked &&  knob->getIsMetadataSlave() ) {
             ++_imp->nbChangesRequiringMetadataRefresh;
         }
 
-        if ( knob->getEvaluateOnChange() ) {
+        if ( !valueChangesBlocked && knob->getEvaluateOnChange() ) {
             ++_imp->nbSignificantChangesDuringEvaluationBlock;
         }
         if (_imp->nbChangesDuringEvaluationBlock == 0) {
@@ -5104,7 +5107,7 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
     }
 
     // Call the knobChanged action
-    if (!knob->isValueChangesBlocked()) {
+    if (!valueChangesBlocked) {
         ret |= onKnobValueChanged_public(knob, reason, time, view);
     }
 
