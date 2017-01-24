@@ -3715,7 +3715,7 @@ StatusEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
     NON_RECURSIVE_ACTION();
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionRender, getNode() );
 
     return render(args);
 }
@@ -4003,7 +4003,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     NON_RECURSIVE_ACTION();
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionBeginSequenceRender, getNode() );
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     ++tls->beginEndRenderCount;
@@ -4026,7 +4026,7 @@ EffectInstance::endSequenceRender_public(double first,
                                          const EffectInstance::OpenGLContextEffectDataPtr& glContextData)
 {
     NON_RECURSIVE_ACTION();
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionEndSequenceRender, getNode() );
     EffectDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
     assert(tls);
     --tls->beginEndRenderCount;
@@ -4764,8 +4764,14 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return false;
     }
 
+    // for image readers, image writers, and video writers, frame range must be updated before kOfxActionInstanceChanged is called on kOfxImageEffectFileParamName
+    bool mustCallOnFileNameParameterChanged = false;
     if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
-        node->onFileNameParameterChanged(k);
+        if ( isVideoReader() ) {
+            mustCallOnFileNameParameterChanged = true;
+        } else {
+            node->onFileNameParameterChanged(k);
+        }
     }
 
     bool ret = false;
@@ -4802,13 +4808,18 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         }
         {
             RECURSIVE_ACTION();
-            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
+            REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, getNode() );
             // Map to a plug-in known reason
             if (reason == eValueChangedReasonNatronGuiEdited) {
                 reason = eValueChangedReasonUserEdited;
             } 
             ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
+    }
+
+    // for video readers, frame range must be updated after kOfxActionInstanceChanged is called on kOfxImageEffectFileParamName
+    if (mustCallOnFileNameParameterChanged) {
+        node->onFileNameParameterChanged(k);
     }
 
     if ( kh && ( QThread::currentThread() == qApp->thread() ) &&
