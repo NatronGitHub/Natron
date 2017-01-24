@@ -4764,6 +4764,10 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
         return false;
     }
 
+    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
+        node->onFileNameParameterChanged(k);
+    }
+
     bool ret = false;
 
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
@@ -4805,12 +4809,6 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
             } 
             ret |= knobChanged(k, reason, view, time, originatedFromMainThread);
         }
-    }
-
-
-
-    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
-        node->onFileNameParameterChanged(k);
     }
 
     if ( kh && ( QThread::currentThread() == qApp->thread() ) &&
