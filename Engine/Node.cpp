@@ -900,15 +900,6 @@ Node::load(const CreateNodeArgs& args)
         assert(_imp->effect);
     }
 
-
-    // For readers, set their original frame range when creating them
-    if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
-        KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
-        if (filenameKnob) {
-            onFileNameParameterChanged( filenameKnob.get() );
-        }
-    }
-
     _imp->effect->initializeOverlayInteract();
 
 
@@ -8058,8 +8049,6 @@ void
 Node::onFileNameParameterChanged(KnobI* fileKnob)
 {
     if ( _imp->effect->isReader() ) {
-        computeFrameRangeForReader(fileKnob);
-
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         //computePreviewImage( getApp()->getTimeLine()->currentFrame() );
@@ -8123,7 +8112,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
                                      int* firstFrame,
                                      int* lastFrame)
 {
-    if (pluginID == PLUGINID_OFX_READFFMPEG) {
+    if ( ReadNode::isVideoReader(pluginID) ) {
         ///If the plug-in is a video, only ffmpeg may know how many frames there are
         *firstFrame = INT_MIN;
         *lastFrame = INT_MAX;
@@ -8174,7 +8163,7 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
                 throw std::logic_error("Node::computeFrameRangeForReader");
             }
 
-            if (pluginID == PLUGINID_OFX_READFFMPEG) {
+            if ( ReadNode::isVideoReader(pluginID) ) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
                 originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {

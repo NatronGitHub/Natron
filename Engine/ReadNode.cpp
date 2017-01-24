@@ -185,30 +185,30 @@ ReadNode::isBundledReader(const std::string& pluginID,
 {
     if (wasProjectCreatedWithLowerCaseIDs) {
         // Natron 1.x has plugin ids stored in lowercase
-        return boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
-               boost::iequals(pluginID, PLUGINID_OFX_READPDF);
+        return ( boost::iequals(pluginID, PLUGINID_OFX_READOIIO) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READFFMPEG) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READPFM) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READPSD) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READKRITA) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READSVG) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READMISC) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READORA) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READCDR) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READPNG) ||
+                 boost::iequals(pluginID, PLUGINID_OFX_READPDF) );
     }
 
-    return pluginID == PLUGINID_OFX_READOIIO ||
-           pluginID == PLUGINID_OFX_READFFMPEG ||
-           pluginID == PLUGINID_OFX_READPFM ||
-           pluginID == PLUGINID_OFX_READPSD ||
-           pluginID == PLUGINID_OFX_READKRITA ||
-           pluginID == PLUGINID_OFX_READSVG ||
-           pluginID == PLUGINID_OFX_READMISC ||
-           pluginID == PLUGINID_OFX_READORA ||
-           pluginID == PLUGINID_OFX_READCDR ||
-           pluginID == PLUGINID_OFX_READPNG ||
-           pluginID == PLUGINID_OFX_READPDF;
+    return (pluginID == PLUGINID_OFX_READOIIO ||
+            pluginID == PLUGINID_OFX_READFFMPEG ||
+            pluginID == PLUGINID_OFX_READPFM ||
+            pluginID == PLUGINID_OFX_READPSD ||
+            pluginID == PLUGINID_OFX_READKRITA ||
+            pluginID == PLUGINID_OFX_READSVG ||
+            pluginID == PLUGINID_OFX_READMISC ||
+            pluginID == PLUGINID_OFX_READORA ||
+            pluginID == PLUGINID_OFX_READCDR ||
+            pluginID == PLUGINID_OFX_READPNG ||
+            pluginID == PLUGINID_OFX_READPDF);
 }
 
 bool
@@ -785,7 +785,7 @@ ReadNodePrivate::refreshFileInfoVisibility(const std::string& pluginID)
     }
 
 
-    if ( hasMetaDatasKnob || ( (pluginID == PLUGINID_OFX_READFFMPEG) && hasFfprobe ) ) {
+    if ( hasMetaDatasKnob || ( ReadNode::isVideoReader(pluginID) && hasFfprobe ) ) {
         fileInfos->setSecret(false);
     } else {
         fileInfos->setSecret(true);
@@ -848,6 +848,21 @@ bool
 ReadNode::isReader() const
 {
     return true;
+}
+
+// static
+bool
+ReadNode::isVideoReader(const std::string& pluginID)
+{
+    return (pluginID == PLUGINID_OFX_READFFMPEG);
+}
+
+bool
+ReadNode::isVideoReader() const
+{
+    NodePtr p = getEmbeddedReader();
+
+    return p ? isVideoReader( p->getPluginID() ) : false;
 }
 
 bool
@@ -1232,7 +1247,7 @@ ReadNode::knobChanged(KnobI* k,
             }
         } else {
             QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
-            if ( (p->getPluginID() == PLUGINID_OFX_READFFMPEG) && QFile::exists(ffprobePath) ) {
+            if ( ReadNode::isVideoReader( p->getPluginID() ) && QFile::exists(ffprobePath) ) {
                 QProcess proc;
                 QStringList ffprobeArgs;
                 ffprobeArgs << QString::fromUtf8("-show_streams");

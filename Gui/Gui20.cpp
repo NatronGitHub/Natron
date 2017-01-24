@@ -260,7 +260,11 @@ Gui::loadStyleSheet()
     if ( qss.open(QIODevice::ReadOnly
                   | QIODevice::Text) ) {
         QTextStream in(&qss);
-        QString content = QString::fromUtf8("QWidget { font-family: \"%1\"; font-size: %2pt; }\n").arg(appPTR->getAppFont()).arg(appPTR->getAppFontSize());
+        QString content = QString::fromUtf8("QWidget { font-family: \"%1\"; font-size: %2pt; }\n"
+                                            "QListView { font-family: \"%1\"; font-size: %2pt; }\n" // .. or the items in the QListView get the wrong font
+                                            "QComboBox::drop-down { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the drop-down doesn't get the right font
+                                            "QInputDialog { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the label doesn't get the right font
+                                            ).arg(appFont).arg(appFontSize);
         content += in.readAll();
         qApp->setStyleSheet( content
                              .arg( qcolor_to_qstring(selCol) ) // %1: selection-color

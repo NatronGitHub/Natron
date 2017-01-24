@@ -38,6 +38,70 @@ def createInstance(app,group):
 
     # Create the user parameters
     lastNode.controlsPage = lastNode.createPageParam("controlsPage", "Controls")
+    param = lastNode.createBooleanParam("Blur1NatronOfxParamProcessR", "R")
+    param.setDefaultValue(True)
+    param.restoreDefaultValue()
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setAddNewLine(True)
+    param.setAnimationEnabled(False)
+    lastNode.Blur1NatronOfxParamProcessR = param
+    del param
+
+    param = lastNode.createBooleanParam("Blur1NatronOfxParamProcessG", "G")
+    param.setDefaultValue(True)
+    param.restoreDefaultValue()
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setAddNewLine(False)
+    param.setAnimationEnabled(False)
+    lastNode.Blur1NatronOfxParamProcessG = param
+    del param
+
+    param = lastNode.createBooleanParam("Blur1NatronOfxParamProcessB", "B")
+    param.setDefaultValue(True)
+    param.restoreDefaultValue()
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setAddNewLine(False)
+    param.setAnimationEnabled(False)
+    lastNode.Blur1NatronOfxParamProcessB = param
+    del param
+
+    param = lastNode.createBooleanParam("Blur1NatronOfxParamProcessA", "A")
+    param.setDefaultValue(True)
+    param.restoreDefaultValue()
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setAddNewLine(False)
+    param.setAnimationEnabled(False)
+    lastNode.Blur1NatronOfxParamProcessA = param
+    del param
+
+    param = lastNode.createBooleanParam("externalMatte", "External Matte")
+
+    # Add the param to the page
+    lastNode.controlsPage.addParam(param)
+
+    # Set param properties
+    param.setHelp("Use the edges from the Matte input instead of the alpha channel of the source image.")
+    param.setAddNewLine(True)
+    param.setAnimationEnabled(True)
+    lastNode.externalMatte = param
+    del param
+
     param = lastNode.createDoubleParam("size", "Size")
     param.setMinimum(0, 0)
     param.setDisplayMinimum(0, 0)
@@ -240,7 +304,7 @@ def createInstance(app,group):
     lastNode = app.createNode("net.sf.openfx.ShufflePlugin", 2, group)
     lastNode.setScriptName("Shuffle1")
     lastNode.setLabel("Shuffle1")
-    lastNode.setPosition(896, 104)
+    lastNode.setPosition(768, 104)
     lastNode.setSize(104, 34)
     lastNode.setColor(0.6, 0.24, 0.39)
     groupShuffle1 = lastNode
@@ -340,7 +404,7 @@ def createInstance(app,group):
     lastNode.setScriptName("Merge1")
     lastNode.setLabel("Merge1")
     lastNode.setPosition(895, 341)
-    lastNode.setSize(104, 51)
+    lastNode.setSize(104, 56)
     lastNode.setColor(0.3, 0.37, 0.776)
     groupMerge1 = lastNode
 
@@ -367,8 +431,47 @@ def createInstance(app,group):
     del lastNode
     # End of node "Merge1"
 
+    # Start of node "Switch1"
+    lastNode = app.createNode("net.sf.openfx.switchPlugin", 1, group)
+    lastNode.setScriptName("Switch1")
+    lastNode.setLabel("Switch1")
+    lastNode.setPosition(896, 104)
+    lastNode.setSize(104, 34)
+    lastNode.setColor(0.3, 0.37, 0.776)
+    groupSwitch1 = lastNode
+
+    param = lastNode.getParam("which")
+    if param is not None:
+        param.setValue(0, 0)
+        del param
+
+    del lastNode
+    # End of node "Switch1"
+
+    # Start of node "Matte"
+    lastNode = app.createNode("fr.inria.built-in.Input", 1, group)
+    lastNode.setScriptName("Matte")
+    lastNode.setLabel("Matte")
+    lastNode.setPosition(896, 51)
+    lastNode.setSize(104, 34)
+    lastNode.setColor(0.3, 0.5, 0.2)
+    groupMatte = lastNode
+
+    param = lastNode.getParam("optional")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    param = lastNode.getParam("isMask")
+    if param is not None:
+        param.setValue(True)
+        del param
+
+    del lastNode
+    # End of node "Matte"
+
     # Now that all nodes are created we can connect them together, restore expressions
-    groupEdgeDetect1.connectInput(0, groupShuffle1)
+    groupEdgeDetect1.connectInput(0, groupSwitch1)
     groupGamma1.connectInput(0, groupEdgeDetect1)
     groupBlur1.connectInput(0, groupDot1)
     groupBlur1.connectInput(1, groupMerge1)
@@ -377,6 +480,8 @@ def createInstance(app,group):
     groupOutput1.connectInput(0, groupBlur1)
     groupMerge1.connectInput(1, groupGamma1)
     groupMerge1.connectInput(2, groupMask)
+    groupSwitch1.connectInput(0, groupShuffle1)
+    groupSwitch1.connectInput(1, groupMatte)
 
     param = groupEdgeDetect1.getParam("filter")
     group.getParam("filter").setAsAlias(param)
@@ -390,6 +495,18 @@ def createInstance(app,group):
     param.setExpression("thisGroup.edgeMult.get()", False, 2)
     param.setExpression("thisGroup.edgeMult.get()", False, 3)
     del param
+    param = groupBlur1.getParam("NatronOfxParamProcessR")
+    group.getParam("Blur1NatronOfxParamProcessR").setAsAlias(param)
+    del param
+    param = groupBlur1.getParam("NatronOfxParamProcessG")
+    group.getParam("Blur1NatronOfxParamProcessG").setAsAlias(param)
+    del param
+    param = groupBlur1.getParam("NatronOfxParamProcessB")
+    group.getParam("Blur1NatronOfxParamProcessB").setAsAlias(param)
+    del param
+    param = groupBlur1.getParam("NatronOfxParamProcessA")
+    group.getParam("Blur1NatronOfxParamProcessA").setAsAlias(param)
+    del param
     param = groupBlur1.getParam("size")
     param.slaveTo(groupEdgeDetect1.getParam("blurSize"), 0, 0)
     param.slaveTo(groupEdgeDetect1.getParam("blurSize"), 1, 0)
@@ -402,6 +519,9 @@ def createInstance(app,group):
     del param
     param = groupMerge1.getParam("maskInvert")
     group.getParam("Merge1maskInvert").setAsAlias(param)
+    del param
+    param = groupSwitch1.getParam("which")
+    param.setExpression("thisGroup.externalMatte.get()", False, 0)
     del param
 
     try:

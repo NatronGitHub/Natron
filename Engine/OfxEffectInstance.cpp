@@ -67,9 +67,10 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/UndoCommand.h"
+#include "Engine/WriteNode.h"
 #ifdef DEBUG
 #include "Engine/TLSHolder.h"
 #endif
@@ -835,9 +836,16 @@ OfxEffectInstance::isReader() const
 }
 
 bool
+OfxEffectInstance::isVideoReader() const
+{
+    return isReader() && ReadNode::isVideoReader( getPluginID() );
+}
+
+
+bool
 OfxEffectInstance::isVideoWriter() const
 {
-    return isWriter() && getPluginID() == PLUGINID_OFX_WRITEFFMPEG;
+    return isWriter() && WriteNode::isVideoWriter( getPluginID() );
 }
 
 bool
@@ -1212,7 +1220,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
     {
         RECURSIVE_ACTION();
-        REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
+        REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, getNode() );
         SET_CAN_SET_VALUE(true);
         ClipsThreadStorageSetter clipSetter(effectInstance(),
                                             ViewIdx(0),
