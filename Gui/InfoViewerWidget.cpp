@@ -343,7 +343,8 @@ InfoViewerWidget::setColor(float r,
     l = 0.2125 * r + 0.7154 * g + 0.0721 * b; // L according to Rec.709
 
     QString lS = _colorValid ? QString::number(l, 'f', 5) : QString::fromUtf8("?");
-    QString hS = _colorValid ? QString::number(h, 'f', 0) : QString::fromUtf8("?");
+    assert(NATRON_COLOR_HUE_CIRCLE == 1.);
+    QString hS = _colorValid ? QString::number((int)(h * 360 + 0.5)) : QString::fromUtf8("?");
     QString sS = _colorValid ? QString::number(s, 'f', 2) : QString::fromUtf8("?");
     QString vS = _colorValid ? QString::number(v, 'f', 2) : QString::fromUtf8("?");
     QString hsvlValues;

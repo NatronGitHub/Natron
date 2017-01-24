@@ -565,6 +565,7 @@ private:
     Button* _openButton;
     Button* _cancelButton;
     Button* _addFavoriteButton;
+    Button* _editFavoriteButton;
     Button* _removeFavoriteButton;
     FileDialogLineEdit* _selectionLineEdit;
     Label* _relativeLabel;

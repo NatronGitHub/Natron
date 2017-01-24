@@ -1128,7 +1128,7 @@ SequenceDialogView::SequenceDialogView(Gui* /*gui*/, SequenceFileDialog* fd)
     setContextMenuPolicy(Qt::CustomContextMenu);
     setDragEnabled(true);
     setDragDropMode(QAbstractItemView::DragOnly);
-    setAttribute(Qt::WA_MacShowFocusRect,0);
+    setAttribute(Qt::WA_MacShowFocusRect, 0);
     setAcceptDrops(true);
 
 }
@@ -2386,7 +2386,7 @@ FavoriteView::setModelAndUrls(QFileSystemModel *model,
     //setContextMenuPolicy(Qt::CustomContextMenu);
     //connect( this, SIGNAL(customContextMenuRequested(QPoint)),
     //         this, SLOT(showMenu(QPoint)) );
-    
+
     urlModel->setUrls(newUrls);
     setCurrentIndex( this->model()->index(0, 0) );
     connect( selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
@@ -2490,7 +2490,7 @@ FavoriteView::rename(const QModelIndex & index,
 {
     model()->setData(index, name, Qt::EditRole);
 }
- */
+*/
 
 // we don't need an editor: just romove favorite and add a new one
 /*
