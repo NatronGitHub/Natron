@@ -77,8 +77,10 @@ public:
     NodePtr getEmbeddedReader() const;
 
     void setEmbeddedReader(const NodePtr& node);
+    static bool isVideoReader(const std::string& pluginID);
 
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isVideoReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;

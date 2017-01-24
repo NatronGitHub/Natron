@@ -8123,7 +8123,7 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
                                      int* firstFrame,
                                      int* lastFrame)
 {
-    if (pluginID == PLUGINID_OFX_READFFMPEG) {
+    if ( ReadNode::isVideoReader(pluginID) ) {
         ///If the plug-in is a video, only ffmpeg may know how many frames there are
         *firstFrame = INT_MIN;
         *lastFrame = INT_MAX;
@@ -8174,7 +8174,7 @@ Node::computeFrameRangeForReader(KnobI* fileKnob)
                 throw std::logic_error("Node::computeFrameRangeForReader");
             }
 
-            if (pluginID == PLUGINID_OFX_READFFMPEG) {
+            if ( ReadNode::isVideoReader(pluginID) ) {
                 ///If the plug-in is a video, only ffmpeg may know how many frames there are
                 originalFrameRange->setValues(INT_MIN, INT_MAX, ViewSpec::all(), eValueChangedReasonNatronInternalEdited);
             } else {

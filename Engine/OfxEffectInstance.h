@@ -138,6 +138,7 @@ public:
     virtual int getMinorVersion() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isVideoReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
