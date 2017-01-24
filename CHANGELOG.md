@@ -8,8 +8,9 @@
 
 This is a bug-fix release
 
-- fix hue display in the viewer
-- EdgeBlur now has an optional Matte input used to compute the edges
+- fix hue display in the viewer #1554
+- EdgeBlur now has an optional Matte input used to compute the edges #1553
+- fix reading image sequences that do not have frame number 1 in them #1556
 
 ## Version 2.2.1
 
