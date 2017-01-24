@@ -9,6 +9,7 @@
 This is a bug-fix release
 
 - fix hue display in the viewer
+- EdgeBlur now has an optional Matte input used to compute the edges
 
 ## Version 2.2.1
 
