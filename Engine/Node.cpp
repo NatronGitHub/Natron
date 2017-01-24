@@ -900,15 +900,6 @@ Node::load(const CreateNodeArgs& args)
         assert(_imp->effect);
     }
 
-
-    // For readers, set their original frame range when creating them
-    if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
-        KnobPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
-        if (filenameKnob) {
-            onFileNameParameterChanged( filenameKnob.get() );
-        }
-    }
-
     _imp->effect->initializeOverlayInteract();
 
 
@@ -8058,8 +8049,6 @@ void
 Node::onFileNameParameterChanged(KnobI* fileKnob)
 {
     if ( _imp->effect->isReader() ) {
-        computeFrameRangeForReader(fileKnob);
-
         ///Refresh the preview automatically if the filename changed
         incrementKnobsAge(); //< since evaluate() is called after knobChanged we have to do this  by hand
         //computePreviewImage( getApp()->getTimeLine()->currentFrame() );

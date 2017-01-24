@@ -4767,11 +4767,8 @@ EffectInstance::onKnobValueChanged_public(KnobI* k,
     // for image readers, image writers, and video writers, frame range must be updated before kOfxActionInstanceChanged is called on kOfxImageEffectFileParamName
     bool mustCallOnFileNameParameterChanged = false;
     if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
-        if ( isVideoReader() ) {
-            mustCallOnFileNameParameterChanged = true;
-        } else {
-            node->onFileNameParameterChanged(k);
-        }
+        node->computeFrameRangeForReader(k);
+        mustCallOnFileNameParameterChanged = true;
     }
 
     bool ret = false;
