@@ -127,18 +127,22 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 
 // The currently maintained Natron versions
+// RB-3: 3.0.0
 #define NATRON_VERSION_MAJOR_30 3
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
+// RB-2: 2.3.0
 #define NATRON_VERSION_MAJOR_23 2
 #define NATRON_VERSION_MINOR_23 3
 #define NATRON_VERSION_REVISION_23 0
 
+// RB-2.2: 2.2.2
 #define NATRON_VERSION_MAJOR_22 2
 #define NATRON_VERSION_MINOR_22 2
-#define NATRON_VERSION_REVISION_22 1
+#define NATRON_VERSION_REVISION_22 2
 
+// RB-2.1: 2.1.10
 #define NATRON_VERSION_MAJOR_21 2
 #define NATRON_VERSION_MINOR_21 1
 #define NATRON_VERSION_REVISION_21 10
