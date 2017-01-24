@@ -188,10 +188,12 @@ public:
 
 public Q_SLOTS:
     void clicked(const QModelIndex &index);
-    void showMenu(const QPoint &position);
+    //void showMenu(const QPoint &position);
     void removeEntry();
-    void rename();
-    void editUrl();
+
+    // we don't need a favorite editor: just remove and add a new one
+    //void rename();
+    //void editUrl();
 
 private:
     virtual void keyPressEvent(QKeyEvent* e) OVERRIDE FINAL;
@@ -620,39 +622,6 @@ private:
     virtual QSize sizeHint(const QStyleOptionViewItem & option, const QModelIndex & index) const;
 };
 
-
-class AddFavoriteDialog
-    : public QDialog
-{
-    Q_OBJECT
-
-    QVBoxLayout* _mainLayout;
-    Label* _descriptionLabel;
-    QWidget* _secondLine;
-    QHBoxLayout* _secondLineLayout;
-    LineEdit* _pathLineEdit;
-    Button* _openDirButton;
-    SequenceFileDialog* _fd;
-    DialogButtonBox* _buttonBox;
-
-public:
-
-    AddFavoriteDialog(SequenceFileDialog* fd,
-                      QWidget* parent = 0);
-
-
-    void setLabelText(const QString & text);
-
-    QString textValue() const;
-
-    virtual ~AddFavoriteDialog()
-    {
-    }
-
-public Q_SLOTS:
-
-    void openDir();
-};
 
 NATRON_NAMESPACE_EXIT;
 

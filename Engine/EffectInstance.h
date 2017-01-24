@@ -1064,6 +1064,14 @@ public:
     }
 
     /**
+     * @brief Basically returns true for PLUGINID_OFX_READFFMPEG
+     **/
+    virtual bool isVideoReader() const WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    /**
      * @brief Is the node a writer ?
      **/
     virtual bool isWriter() const WARN_UNUSED_RETURN
@@ -1072,7 +1080,7 @@ public:
     }
 
     /**
-     * @brief Basically returns true for WRITE_FFMPEG
+     * @brief Basically returns true for PLUGINID_OFX_WRITEFFMPEG
      **/
     virtual bool isVideoWriter() const WARN_UNUSED_RETURN
     {

@@ -701,7 +701,7 @@ ActionRetCodeEnum
 EffectInstance::render_public(const RenderActionArgs & args)
 {
 
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionRender", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionRender, getNode() );
     return render(args);
 
 } // render_public
@@ -722,7 +722,7 @@ EffectInstance::beginSequenceRender_public(double first,
                                            const TreeRenderNodeArgsPtr& render)
 {
 
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionBeginSequenceRender", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionBeginSequenceRender, getNode() );
 
 
 
@@ -755,7 +755,7 @@ EffectInstance::endSequenceRender_public(double first,
 {
 
 
-    REPORT_CURRENT_THREAD_ACTION( "kOfxImageEffectActionEndSequenceRender", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionEndSequenceRender, getNode() );
 
     EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
@@ -1879,7 +1879,15 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         return false;
     }
 
-
+    // for image readers, image writers, and video writers, frame range must be updated before kOfxActionInstanceChanged is called on kOfxImageEffectFileParamName
+    bool mustCallOnFileNameParameterChanged = false;
+    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
+        if ( isVideoReader() ) {
+            mustCallOnFileNameParameterChanged = true;
+        } else {
+            node->onFileNameParameterChanged(k);
+        }
+    }
 
     bool ret = false;
 
@@ -1892,7 +1900,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         {
 
 
-            REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
+            REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, getNode() );
             // Map to a plug-in known reason
             if (reason == eValueChangedReasonUserEdited) {
                 reason = eValueChangedReasonUserEdited;
@@ -1901,10 +1909,11 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         }
     }
 
-    if ( (reason != eValueChangedReasonTimeChanged) && ( isReader() || isWriter() ) && (k->getName() == kOfxImageEffectFileParamName) ) {
+    // for video readers, frame range must be updated after kOfxActionInstanceChanged is called on kOfxImageEffectFileParamName
+    if (mustCallOnFileNameParameterChanged) {
         node->onFileNameParameterChanged(k);
     }
-    
+
     if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
         ///Run the following only in the main-thread
         if ( hasOverlay() && node->shouldDrawOverlay(time, ViewIdx(0)) && !node->hasHostOverlayForParam(k) ) {
@@ -2013,7 +2022,7 @@ void
 EffectInstance::onInputChanged_public(int inputNo)
 {
 
-    REPORT_CURRENT_THREAD_ACTION( "kOfxActionInstanceChanged", getNode() );
+    REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, getNode() );
 
 
     EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();

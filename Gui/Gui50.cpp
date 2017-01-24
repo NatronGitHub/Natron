@@ -59,7 +59,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QLineEdit>
 #include <QCursor>
 #include <QCheckBox>
-#include <QComboBox>
 #include <QTreeView>
 
 #include "Global/QtCompat.h"

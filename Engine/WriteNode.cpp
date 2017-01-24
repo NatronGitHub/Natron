@@ -159,10 +159,10 @@ isGenericKnob(const std::string& knobName,
 bool
 WriteNode::isBundledWriter(const std::string& pluginID)
 {
-    return boost::iequals(pluginID, PLUGINID_OFX_WRITEOIIO) ||
-    boost::iequals(pluginID, PLUGINID_OFX_WRITEFFMPEG) ||
-    boost::iequals(pluginID, PLUGINID_OFX_WRITEPFM) ||
-    boost::iequals(pluginID, PLUGINID_OFX_WRITEPNG);
+    return (pluginID == PLUGINID_OFX_WRITEOIIO ||
+            pluginID == PLUGINID_OFX_WRITEFFMPEG ||
+            pluginID == PLUGINID_OFX_WRITEPFM ||
+            pluginID == PLUGINID_OFX_WRITEPNG);
 }
 
 PluginPtr
@@ -887,12 +887,19 @@ WriteNode::isWriter() const
     return true;
 }
 
+// static
+bool
+WriteNode::isVideoWriter(const std::string& pluginID)
+{
+    return (pluginID == PLUGINID_OFX_WRITEFFMPEG);
+}
+
 bool
 WriteNode::isVideoWriter() const
 {
     NodePtr p = _imp->embeddedPlugin.lock();
 
-    return p ? p->getPluginID() == PLUGINID_OFX_WRITEFFMPEG : false;
+    return p ? isVideoWriter( p->getPluginID() ) : false;
 }
 
 bool

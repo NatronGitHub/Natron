@@ -92,6 +92,8 @@ public:
 
     void setEmbeddedWriter(const NodePtr& node);
 
+    static bool isVideoWriter(const std::string& pluginID);
+
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;

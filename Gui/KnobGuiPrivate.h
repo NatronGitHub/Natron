@@ -52,7 +52,6 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QGroupBox>
 #include <QtGui/QVector4D>
 #include <QStyleFactory>
-#include <QComboBox>
 #include <QDialogButtonBox>
 #include <QCompleter>
 

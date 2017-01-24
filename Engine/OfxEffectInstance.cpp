@@ -70,9 +70,10 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
 #include "Engine/TreeRender.h"
+#include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
-#include "Engine/UndoCommand.h"
+#include "Engine/WriteNode.h"
 
 #include "Serialization/NodeSerialization.h"
 
@@ -583,9 +584,16 @@ OfxEffectInstance::isReader() const
 }
 
 bool
+OfxEffectInstance::isVideoReader() const
+{
+    return isReader() && ReadNode::isVideoReader( getNode()->getPluginID() );
+}
+
+
+bool
 OfxEffectInstance::isVideoWriter() const
 {
-    return isWriter() && getNode()->getPluginID() == PLUGINID_OFX_WRITEFFMPEG;
+    return isWriter() && WriteNode::isVideoWriter( getNode()->getPluginID() );
 }
 
 bool
