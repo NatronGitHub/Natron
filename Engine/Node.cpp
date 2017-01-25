@@ -8954,6 +8954,12 @@ Node::onEffectKnobValueChanged(KnobI* what,
             }
         }
         _imp->effect->onEnableOpenGLKnobValueChanged(enabled);
+    } else if (what == _imp->processAllLayersKnob.lock().get() ) {
+        
+        std::map<int, ChannelSelector>::iterator foundOutput = _imp->channelsSelectors.find(-1);
+        if (foundOutput != _imp->channelsSelectors.end()) {
+            _imp->onLayerChanged(foundOutput->first, foundOutput->second);
+        }
     } else {
         ret = false;
     }
@@ -9095,11 +9101,14 @@ Node::Implementation::onLayerChanged(int inputNb,
 
         ///Disable all input selectors as it doesn't make sense to edit them whilst output is All
         for (std::map<int, ChannelSelector>::iterator it = channelsSelectors.begin(); it != channelsSelectors.end(); ++it) {
+            
+            NodePtr inp;
             if (it->first >= 0) {
-                NodePtr inp = _publicInterface->getInput(it->first);
-                bool mustBeSecret = !inp.get() || outputIsAll;
-                it->second.layer.lock()->setSecret(mustBeSecret);
+                inp = _publicInterface->getInput(it->first);
             }
+            bool mustBeSecret = !inp.get() || outputIsAll;
+            it->second.layer.lock()->setSecret(mustBeSecret);
+            
         }
     }
     if (!isRefreshingInputRelatedData) {

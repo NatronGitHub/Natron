@@ -4449,11 +4449,8 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
 
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
     PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
-    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
-        ( passThrough == ePassThroughRenderAllRequestedPlanes) ) {
-
-        assert(*passThroughInputNb != -1);
-
+    if (*passThroughInputNb != -1 && ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
+        ( passThrough == ePassThroughRenderAllRequestedPlanes)) ) {
 
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
         getAvailableLayers(time, view, *passThroughInputNb, &upstreamAvailableLayers);
@@ -5358,7 +5355,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
 
     if (!hasSetCompsAndDepth) {
-        mostComponents = ImagePlaneDesc::getRGBAComponents();
+        mostComponents = 4;
         deepestBitDepth = eImageBitDepthFloat;
     }
 
@@ -5427,6 +5424,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             int remappedComps = mostComponents;
             remappedComps = findClosestSupportedComponents(i, ImagePlaneDesc::mapNCompsToColorPlane(remappedComps)).getNumComponents();
             metadata.setNComps(i, remappedComps);
+            metadata.setComponentsType(i, kNatronColorPlaneID);
             if ( (i == -1) && !premultSet &&
                 ( ( remappedComps == ImagePlaneDesc::getRGBAComponents() ) || ( remappedComps == ImagePlaneDesc::getAlphaComponents() ) ) ) {
                 premult = eImagePremultiplicationPremultiplied;
@@ -5444,6 +5442,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setBitDepth(i, depth);
 
             metadata.setNComps(i, rawComps);
+            metadata.setComponentsType(i, kNatronColorPlaneID);
         }
     }
     

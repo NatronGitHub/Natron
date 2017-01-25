@@ -874,7 +874,12 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
             }
         }
     } else {
-        comp = ImagePlaneDesc::mapOFXPlaneStringToPlane(*ofxPlane);
+        if (*ofxPlane == kFnOfxImagePlaneColour) {
+            ImagePlaneDesc pairedComp;
+            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes( thisClipComponents, &comp, &pairedComp );
+        } else {
+            comp = ImagePlaneDesc::mapOFXPlaneStringToPlane(*ofxPlane);
+        }
     }
 
     if (comp.getNumComponents() == 0) {
@@ -1071,7 +1076,12 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
         }
         assert(natronPlane.getNumComponents() > 0);
     } else {
-        natronPlane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*ofxPlane);
+        if (*ofxPlane == kFnOfxImagePlaneColour) {
+            ImagePlaneDesc pairedComp;
+            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes( getComponents(), &natronPlane, &pairedComp );
+        } else {
+            natronPlane = ImagePlaneDesc::mapOFXPlaneStringToPlane(*ofxPlane);
+        }
     }
 
     if (natronPlane.getNumComponents() == 0) {
