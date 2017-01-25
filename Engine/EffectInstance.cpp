@@ -4310,7 +4310,10 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
         if (metadataPairedPlane.getNumComponents() > 0) {
             clipPrefsAllComps.push_back(metadataPairedPlane);
         }
-
+        if (clipPrefsAllComps.empty()) {
+            // If metada are not set yet, at least append RGBA
+            clipPrefsAllComps.push_back(ImagePlaneDesc::getRGBAComponents());
+        }
 
         // Natron adds for all non multi-planar effects a default layer selector to emulate
         // multi-plane even if the plug-in is not aware of it. When calling getImagePlanes(), the
@@ -4398,6 +4401,10 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
             }
             if (metadataPairedPlane.getNumComponents() > 0) {
                 clipPrefsAllComps.push_back(metadataPairedPlane);
+            }
+            if (clipPrefsAllComps.empty()) {
+                // If metada are not set yet, at least append RGBA
+                clipPrefsAllComps.push_back(ImagePlaneDesc::getRGBAComponents());
             }
         }
 
@@ -4491,7 +4498,6 @@ EffectInstance::getAvailableLayers(double time, ViewIdx view, int inputNb, std::
 
 
         EffectInstance::ComponentsNeededMap comps;
-        std::list<ImagePlaneDesc> passThroughLayers;
         double passThroughTime;
         int passThroughView;
         int passThroughInputNb;
@@ -5491,8 +5497,6 @@ EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImageP
         *pairedPlane = ImagePlaneDesc::getForwardMotionComponents();
     } else {
         *plane = ImagePlaneDesc::getNoneComponents();
-        assert(false);
-        throw std::logic_error("");
     }
 }
 

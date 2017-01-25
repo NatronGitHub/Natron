@@ -1250,6 +1250,7 @@ Project::getProjectDefaultLayers() const
 
         const std::string& planeLabel = (*it)[0];
         std::string planeID = planeLabel;
+        std::string componentsLabel;
 
         // The layers knob only propose the user to display the label of the plane desc,
         // but we need to recover the ID for the built-in planes to ensure compatibility
@@ -1258,12 +1259,16 @@ Project::getProjectDefaultLayers() const
             planeID = kNatronColorPlaneID;
         } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
             planeID = kNatronBackwardMotionVectorsPlaneID;
+            componentsLabel = kNatronMotionComponentsLabel;
         } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
             planeID = kNatronForwardMotionVectorsPlaneLabel;
+            componentsLabel = kNatronMotionComponentsLabel;
         } else if (planeID == kNatronDisparityLeftPlaneLabel) {
             planeID = kNatronDisparityLeftPlaneID;
+            componentsLabel = kNatronDisparityComponentsLabel;
         } else if (planeID == kNatronDisparityRightPlaneLabel) {
             planeID = kNatronDisparityRightPlaneID;
+            componentsLabel = kNatronDisparityComponentsLabel;
         }
 
         bool found = false;
@@ -1281,7 +1286,7 @@ Project::getProjectDefaultLayers() const
             for (int i = 0; i < channels.size(); ++i) {
                 componentsName[i] = channels[i].toStdString();
             }
-            ImagePlaneDesc c( planeID, planeLabel, std::string(), componentsName );
+            ImagePlaneDesc c( planeID, planeLabel, componentsLabel, componentsName );
             ret.push_back(c);
         }
     }
