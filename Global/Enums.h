@@ -400,7 +400,7 @@ enum AnimationLevelEnum
     eAnimationLevelOnKeyframe = 2
 };
 
-enum ImageComponentsEnum
+enum ImagePlaneDescEnum
 {
     eImageComponentNone = 0,
     eImageComponentAlpha,

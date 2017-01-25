@@ -277,10 +277,10 @@ struct ValueSerialization
         } else if (isChoice) {
             int v = isChoice->getValue(_dimension);
             int defV = isChoice->getDefaultValue(_dimension);
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
             std::string label;
             if ( ( v < (int)entries.size() ) && (v >= 0) ) {
-                label = entries[v];
+                label = entries[v].id;
             }
             ar & ::boost::serialization::make_nvp("Value", v);
             ar & ::boost::serialization::make_nvp("Default", defV);
@@ -792,8 +792,13 @@ public:
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( _knob.get() );
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
-            extraData->_entries = isChoice->getEntries_mt_safe();
-            extraData->_helpStrings = isChoice->getEntriesHelp_mt_safe();
+            std::vector<ChoiceOption> options = isChoice->getEntries_mt_safe();
+            extraData->_entries.resize(options.size());
+            extraData->_helpStrings.resize(options.size());
+            for (std::size_t i = 0; i < options.size(); ++i) {
+                extraData->_entries[i] = options[i].id;
+                extraData->_helpStrings[i] = options[i].tooltip;
+            }
             int idx = isChoice->getValue();
             if ( (idx >= 0) && ( idx < (int)extraData->_entries.size() ) ) {
                 extraData->_choiceString = extraData->_entries[idx];

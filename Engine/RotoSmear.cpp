@@ -71,12 +71,12 @@ RotoSmear::~RotoSmear()
 
 void
 RotoSmear::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<ImageComponents>* comps)
+                                 std::list<ImagePlaneDesc>* comps)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getXYComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBComponents() );
+    comps->push_back( ImagePlaneDesc::getXYComponents() );
+    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
 }
 
 void
@@ -237,12 +237,13 @@ RotoSmear::render(const RenderActionArgs& args)
 
 
     EffectInstance::ComponentsNeededMap neededComps;
+    std::list<ImagePlaneDesc> ptPlanes;
     bool processAll;
     std::bitset<4> processChannels;
-    SequenceTime ptTime;
+    double ptTime;
     int ptView;
-    NodePtr ptInput;
-    getComponentsNeededAndProduced_public(true, true, args.time, args.view, &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+    int ptInput;
+    getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &ptPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
 
 
     EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);
@@ -310,7 +311,7 @@ RotoSmear::render(const RenderActionArgs& args)
         }
 
 
-        for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             assert(plane->second->getMipMapLevel() == mipmapLevel);
 
@@ -414,7 +415,7 @@ RotoSmear::render(const RenderActionArgs& args)
                 cur = renderPoint;
                 distToNext = 0;
             } // while (it!=visiblePortion.end()) {
-        } // for (std::list<std::pair<ImageComponents,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        } // for (std::list<std::pair<ImagePlaneDesc,boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
 
         if (duringPainting && didPaint) {
             QMutexLocker k(&_imp->smearDataMutex);

@@ -40,7 +40,7 @@
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/ImageLocker.h"
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
@@ -127,10 +127,8 @@ GCC_DIAG_SUGGEST_OVERRIDE_OFF
 GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
-    typedef std::map<ImageComponents, NodeWPtr > ComponentsAvailableMap;
-    typedef std::list<std::pair<ImageComponents, NodeWPtr > > ComponentsAvailableList;
     typedef std::map<int, std::list< boost::shared_ptr<Image> > > InputImagesMap;
-    typedef std::map<int, std::vector<ImageComponents> > ComponentsNeededMap;
+    typedef std::map<int, std::list<ImagePlaneDesc> > ComponentsNeededMap;
 
     struct RenderRoIArgs
     {
@@ -143,7 +141,7 @@ public:
         ViewIdx view; //< the view to render
         RectI roi; //< the renderWindow (in pixel coordinates) , watch out OpenFX action getRegionsOfInterest expects canonical coords!
         RectD preComputedRoD; //<  pre-computed region of definition in canonical coordinates for this effect to speed-up the call to renderRoi
-        std::list<ImageComponents> components; //< the requested image components (per plane)
+        std::list<ImagePlaneDesc> components; //< the requested image components (per plane)
 
         ///When called from getImage() the calling node  will have already computed input images, hence the image of this node
         ///might already be in this list
@@ -188,7 +186,7 @@ public:
                        bool byPassCache_,
                        const RectI & roi_,
                        const RectD & preComputedRoD_,
-                       const std::list<ImageComponents> & components_,
+                       const std::list<ImagePlaneDesc> & components_,
                        ImageBitDepthEnum bitdepth_,
                        bool calledFromGetImage,
                        const EffectInstance* caller,
@@ -454,7 +452,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
+    int getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const;
 
     /**
      * @brief Returns whether masking is enabled or not
@@ -467,7 +465,7 @@ public:
      * This function is also called to specify what image components this effect can output.
      * In that case inputNb equals -1.
      **/
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) = 0;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImagePlaneDesc>* comps) = 0;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const = 0;
 
     /**
@@ -484,13 +482,13 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb, const ImageComponents & comp) const;
+    bool isSupportedComponent(int inputNb, const ImagePlaneDesc & comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    ImageComponents findClosestSupportedComponents(int inputNb, const ImageComponents & comp) const WARN_UNUSED_RETURN;
+    ImagePlaneDesc findClosestSupportedComponents(int inputNb, const ImagePlaneDesc & comp) const WARN_UNUSED_RETURN;
 
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
@@ -570,7 +568,7 @@ public:
      * and return 0 plane if the RoI does not intersect the RoD of the effect.
      **/
     RenderRoIRetCode renderRoI(const RenderRoIArgs & args,
-                               std::map<ImageComponents, boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
+                               std::map<ImagePlaneDesc, boost::shared_ptr<Image> >* outputPlanes) WARN_UNUSED_RETURN;
 
 
     void getImageFromCacheAndConvertIfNeeded(bool useCache,
@@ -582,7 +580,7 @@ public:
                                              const RectD* rodParam,
                                              const RectI& roi,
                                              ImageBitDepthEnum bitdepth,
-                                             const ImageComponents & components,
+                                             const ImagePlaneDesc & components,
                                              const EffectInstance::InputImagesMap & inputImages,
                                              const boost::shared_ptr<RenderStats> & stats,
                                              const boost::shared_ptr<OSGLContextAttacher>& glContextAttacher,
@@ -608,7 +606,7 @@ public:
      * by the render action. We allocate those extra planes and cache them so they were not rendered for nothing.
      * Note that the plug-ins may call this only while in the render action, and there must be other planes to render.
      **/
-    boost::shared_ptr<Image> allocateImagePlaneAndSetInThreadLocalStorage(const ImageComponents & plane);
+    boost::shared_ptr<Image> allocateImagePlaneAndSetInThreadLocalStorage(const ImagePlaneDesc & plane);
 
 
     class NotifyRenderingStarted_RAII
@@ -834,7 +832,9 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     double getAspectRatio(int inputNb) const;
-    ImageComponents getComponents(int inputNb) const;
+    void getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane) const;
+    int getMetadataNComps(int inputNb) const;
+
     ImageBitDepthEnum getBitDepth(int inputNb) const;
 
 
@@ -945,7 +945,7 @@ public:
         RenderScale originalScale;
         RenderScale mappedScale;
         RectI roi;
-        std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > > outputPlanes;
+        std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > > outputPlanes;
         EffectInstance::InputImagesMap inputImages;
         ViewIdx view;
         bool isSequentialRender;
@@ -1053,7 +1053,7 @@ public:
                                       const RenderScale & scale,
                                       const ViewIdx view,
                                       const RectD *optionalBounds, //!< optional region in canonical coordinates
-                                      const ImageComponents* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
+                                      const ImagePlaneDesc* layer, //< if set, fetch this specific layer, otherwise use what's in the clip pref
                                       const bool mapToClipPrefs,
                                       const bool dontUpscale,
                                       const StorageModeEnum returnStorage,
@@ -1412,7 +1412,7 @@ public:
     struct ImagePlanesToRender
     {
         std::list<RectToRender> rectsToRender;
-        std::map<ImageComponents, PlaneToRender> planes;
+        std::map<ImagePlaneDesc, PlaneToRender> planes;
         std::map<int, ImagePremultiplicationEnum> inputPremult;
         ImagePremultiplicationEnum outputPremult;
         bool isBeingRenderedElsewhere;
@@ -1440,8 +1440,8 @@ public:
      *
      * WARNING: This call isexpensive and this function should not be called many times.
      **/
-    bool getThreadLocalRenderedPlanes(std::map<ImageComponents, EffectInstance::PlaneToRender >*  planes,
-                                      ImageComponents* planeBeingRendered,
+    bool getThreadLocalRenderedPlanes(std::map<ImagePlaneDesc, EffectInstance::PlaneToRender >*  planes,
+                                      ImagePlaneDesc* planeBeingRendered,
                                       RectI* renderWindow) const;
 
     bool getThreadLocalNeededComponents(boost::shared_ptr<ComponentsNeededMap>* neededComps) const;
@@ -1659,12 +1659,6 @@ public:
 
 
     /**
-     * @brief Returns the components available on each input for this effect at the given time.
-     **/
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps);
-    void getComponentsAvailable(bool useLayerChoice, bool useThisNodeComponentsNeeded, double time, ComponentsAvailableMap* comps, std::list<EffectInstance*>* markedNodes);
-
-    /**
      * @brief Reimplement to control how the host adds the RGBA checkboxes.
      * @returns True if you want the host to add the RGBA checkboxes, false otherwise.
      **/
@@ -1792,26 +1786,32 @@ private:
 
 
 
-    void getComponentsAvailableRecursive(bool useLayerChoice,
-                                         bool useThisNodeComponentsNeeded,
-                                         double time,
-                                         ViewIdx view,
-                                         ComponentsAvailableMap* comps,
-                                         std::list<EffectInstance*>* markedNodes);
-
 public:
 
-    void getComponentsNeededAndProduced_public(bool useLayerChoice,
-                                               bool useThisNodeComponentsNeeded,
-                                               double time, ViewIdx view,
+    void getComponentsNeededAndProduced_public(double time, ViewIdx view,
                                                EffectInstance::ComponentsNeededMap* comps,
+                                               std::list<ImagePlaneDesc>* passThroughPlanes,
                                                bool* processAllRequested,
-                                               SequenceTime* passThroughTime,
+                                               double* passThroughTime,
                                                int* passThroughView,
                                                std::bitset<4> *processChannels,
-                                               NodePtr* passThroughInput);
+                                               int* passThroughInput);
 
-    void setComponentsAvailableDirty(bool dirty);
+
+    void getAvailableLayers(double time, ViewIdx view, int inputNb, std::list<ImagePlaneDesc>* availableLayers) ;
+
+private:
+
+    void getComponentsNeededDefault(double time, ViewIdx view,
+                                    EffectInstance::ComponentsNeededMap* comps,
+                                    std::list<ImagePlaneDesc>* passThroughPlanes,
+                                    bool* processAllRequested,
+                                    double* passThroughTime,
+                                    int* passThroughView,
+                                    std::bitset<4> *processChannels,
+                                    int* passThroughInput);
+
+public:
 
 
     /**
@@ -1841,10 +1841,10 @@ public:
         double identityTime;
         EffectInstPtr identityInput;
         EffectInstance::InputImagesMap inputImages;
-        std::map<ImageComponents, PlaneToRender> outputPlanes;
+        std::map<ImagePlaneDesc, PlaneToRender> outputPlanes;
 
         //This is set only when the plug-in has set ePassThroughRenderAllRequestedPlanes
-        ImageComponents outputPlaneBeingRendered;
+        ImagePlaneDesc outputPlaneBeingRendered;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
         double firstFrame, lastFrame;
         boost::shared_ptr<InputMatrixMap> transformRedirections;
@@ -1967,9 +1967,9 @@ protected:
      **/
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
                                                 EffectInstance::ComponentsNeededMap* comps,
-                                                SequenceTime* passThroughTime,
+                                                double* passThroughTime,
                                                 int* passThroughView,
-                                                NodePtr* passThroughInput);
+                                                int* passThroughInput);
 
 
     virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
@@ -2136,7 +2136,7 @@ private:
                                                  bool renderFullScaleThenDownscale,
                                                  bool byPassCache,
                                                  ImageBitDepthEnum outputClipPrefDepth,
-                                                 const ImageComponents& outputClipPrefsComps,
+                                                 const ImagePlaneDesc& outputClipPrefsComps,
                                                  const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                  std::bitset<4> processChannels);
 
@@ -2162,7 +2162,7 @@ private:
     static boost::shared_ptr<Image> convertPlanesFormatsIfNeeded(const AppInstPtr& app,
                                                                  const boost::shared_ptr<Image>& inputImage,
                                                                  const RectI& roi,
-                                                                 const ImageComponents& targetComponents,
+                                                                 const ImagePlaneDesc& targetComponents,
                                                                  ImageBitDepthEnum targetDepth,
                                                                  bool useAlpha0ForRGBToRGBAConversion,
                                                                  ImagePremultiplicationEnum outputPremult,
@@ -2192,7 +2192,7 @@ private:
                             const RectI & downscaleImageBounds,
                             const RectI & fullScaleImageBounds,
                             bool isProjectFormat,
-                            const ImageComponents & components,
+                            const ImagePlaneDesc & components,
                             ImageBitDepthEnum depth,
                             ImagePremultiplicationEnum premult,
                             ImageFieldingOrderEnum fielding,

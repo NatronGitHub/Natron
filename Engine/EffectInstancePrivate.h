@@ -197,9 +197,6 @@ public:
 #endif
 
     ///A cache for components available
-    mutable QMutex componentsAvailableMutex;
-    bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
-    EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     std::list< boost::weak_ptr<KnobI> > overlaySlaves;
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
@@ -311,7 +308,7 @@ public:
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        ImageComponents outputClipPrefsComps;
+        ImagePlaneDesc outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
         boost::shared_ptr<ImagePlanesToRender> planes;
@@ -334,7 +331,7 @@ public:
                                                   const double par,
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const ImageComponents & outputClipPrefsComps,
+                                                  const ImagePlaneDesc & outputClipPrefsComps,
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
@@ -371,7 +368,7 @@ public:
                                           const bool byPassCache,
                                           const bool bitmapMarkedForRendering,
                                           const ImageBitDepthEnum outputClipPrefDepth,
-                                          const ImageComponents & outputClipPrefsComps,
+                                          const ImagePlaneDesc & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
                                           const boost::shared_ptr<Image> & originalInputImage,
                                           const boost::shared_ptr<Image> & maskImage,

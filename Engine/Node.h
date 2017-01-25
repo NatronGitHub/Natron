@@ -45,7 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #endif
 #include "Engine/AppManager.h"
 #include "Global/KeySymbols.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/CacheEntryHolder.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
@@ -65,6 +65,11 @@ CLANG_DIAG_ON(deprecated)
 #define kInputChannelKnobName "inputChannel"
 #define kEnablePreviewKnobName "enablePreview"
 #define kOutputChannelsKnobName "channels"
+
+#define kNodeParamProcessAllLayers "processAllPlanes"
+#define kNodeParamProcessAllLayersLabel "All Planes"
+#define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
+
 
 #define kOfxMaskInvertParamName "maskInvert"
 #define kOfxMixParamName "mix"
@@ -318,15 +323,15 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb, const ImageComponents& comp) const;
+    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
 
     /**
      * @brief Returns the most appropriate components that can be supported by the inputNb.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    ImageComponents findClosestSupportedComponents(int inputNb, const ImageComponents& comp) const;
-    static ImageComponents findClosestInList(const ImageComponents& comp,
-                                             const std::list<ImageComponents> &components,
+    ImagePlaneDesc findClosestSupportedComponents(int inputNb, const ImagePlaneDesc& comp) const;
+    static ImagePlaneDesc findClosestInList(const ImagePlaneDesc& comp,
+                                             const std::list<ImagePlaneDesc> &components,
                                              bool multiPlanar);
 
     ImageBitDepthEnum getBestSupportedBitDepth() const;
@@ -341,7 +346,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, ImageComponents* comps, NodePtr* maskInput) const;
+    int getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const;
 
     int isMaskChannelKnob(const KnobI* knob) const;
 
@@ -487,7 +492,7 @@ public:
                                   int* strokeIndex) const;
     boost::shared_ptr<Image> getOrRenderLastStrokeImage(unsigned int mipMapLevel,
                                                         double par,
-                                                        const ImageComponents& components,
+                                                        const ImagePlaneDesc& components,
                                                         ImageBitDepthEnum depth) const;
 
     void setWhileCreatingPaintStroke(bool creating);
@@ -1255,11 +1260,13 @@ public:
 
     boost::shared_ptr<KnobChoice> getChannelSelectorKnob(int inputNb) const;
 
-    bool getSelectedLayer(int inputNb, std::bitset<4> *processChannels, bool* isAll, ImageComponents *layer) const;
+    boost::shared_ptr<KnobBool> getProcessAllLayersKnob() const;
 
-    bool addUserComponents(const ImageComponents& comps);
+    bool getSelectedLayer(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, std::bitset<4> *processChannels, bool* isAll, ImagePlaneDesc *layer) const;
 
-    void getUserCreatedComponents(std::list<ImageComponents>* comps);
+    bool addUserComponents(const ImagePlaneDesc& comps);
+
+    void getUserCreatedComponents(std::list<ImagePlaneDesc>* comps);
 
     bool hasAtLeastOneChannelToProcess() const;
 
@@ -1290,7 +1297,7 @@ public:
 
     int getFrameStepKnobValue() const;
 
-    void refreshFormatParamChoice(const std::vector<std::string>& entries, int defValue, bool loadingProject);
+    void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
 
     bool handleFormatKnob(KnobI* knob);
 
@@ -1316,7 +1323,7 @@ public:
     void clearStreamWarning(StreamWarningEnum warning);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
-    void refreshEnabledKnobsLabel(const ImageComponents& layer);
+    void refreshEnabledKnobsLabel(const ImagePlaneDesc& layer);
 
 private:
 

@@ -1129,11 +1129,11 @@ NodeGroup::getPluginDescription() const
 
 void
 NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<ImageComponents>* comps)
+                                 std::list<ImagePlaneDesc>* comps)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBComponents() );
+    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
 }
 
 void
@@ -1826,7 +1826,7 @@ exportKnobValues(int indentLevel,
                     double v = isDouble->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + NUM_VALUE(v) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
                 } else if (isChoice) {
-                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.set(") + ESC( isChoice->getActiveEntryText_mt_safe() ) + QString::fromUtf8(")") );
+                    WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.set(") + ESC( isChoice->getActiveEntry().id ) + QString::fromUtf8(")") );
                 } else if (isInt) {
                     int v = isInt->getValue(i, ViewIdx(0), true);
                     WRITE_INDENT(innerIdent); WRITE_STRING( QString::fromUtf8("param.setValue(") + NUM_INT(v) + QString::fromUtf8(", ") + NUM_INT(i) + QString::fromUtf8(")") );
@@ -2067,18 +2067,14 @@ exportUserKnob(int indentLevel,
         KnobChoice* aliasedIsChoice = dynamic_cast<KnobChoice*>( aliasedParam.get() );
 
         if (!aliasedIsChoice) {
-            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-            std::vector<std::string> helps = isChoice->getEntriesHelp_mt_safe();
+            std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
+
             if (entries.size() > 0) {
-                if ( helps.empty() ) {
-                    for (U32 i = 0; i < entries.size(); ++i) {
-                        helps.push_back("");
-                    }
-                }
-                WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0]) << ", " << ESC(helps[0]) << "),\n";
+
+                WRITE_INDENT(indentLevel); ts << "entries = [ (" << ESC(entries[0].id) << ", " << ESC(entries[0].tooltip) << "),\n";
                 for (U32 i = 1; i < entries.size(); ++i) {
                     QString endToken = (i == entries.size() - 1) ? QString::fromUtf8(")]") : QString::fromUtf8("),");
-                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("(") + ESC(entries[i]) + QString::fromUtf8(", ") + ESC(helps[i]) + endToken);
+                    WRITE_INDENT(indentLevel); WRITE_STRING(QString::fromUtf8("(") + ESC(entries[i].id) + QString::fromUtf8(", ") + ESC(entries[i].tooltip) + endToken);
                 }
                 WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("param.setOptions(entries)");
                 WRITE_INDENT(indentLevel); WRITE_STATIC_LINE("del entries");
@@ -2086,7 +2082,7 @@ exportUserKnob(int indentLevel,
             std::vector<int> defaultValues = isChoice->getDefaultValues_mt_safe();
             assert( (int)defaultValues.size() == isChoice->getDimension() );
             if (defaultValues[0] != 0) {
-                std::string entryStr = isChoice->getEntry(defaultValues[0]);
+                std::string entryStr = isChoice->getEntry(defaultValues[0]).id;
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.setDefaultValue(") + ESC(entryStr) + QString::fromUtf8(")") );
                 WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("param.restoreDefaultValue()") );
             }
@@ -2687,10 +2683,10 @@ exportGroupInternal(int indentLevel,
         // a precision of 3 digits is enough for the node coloe
         WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.setColor(") + NUM_COLOR(r) + QString::fromUtf8(", ") + NUM_COLOR(g) + QString::fromUtf8(", ") + NUM_COLOR(b) +  QString::fromUtf8(")") );
 
-        std::list<ImageComponents> userComps;
+        std::list<ImagePlaneDesc> userComps;
         (*it)->getUserCreatedComponents(&userComps);
-        for (std::list<ImageComponents>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
-            const std::vector<std::string>& channels = it2->getComponentsNames();
+        for (std::list<ImagePlaneDesc>::iterator it2 = userComps.begin(); it2 != userComps.end(); ++it2) {
+            const std::vector<std::string>& channels = it2->getChannels();
             QString compStr = QString::fromUtf8("[");
             for (std::size_t i = 0; i < channels.size(); ++i) {
                 compStr.append( ESC(channels[i]) );
@@ -2699,7 +2695,7 @@ exportGroupInternal(int indentLevel,
                 }
             }
             compStr.push_back( QLatin1Char(']') );
-            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.addUserPlane(") + ESC( it2->getLayerName() ) + QString::fromUtf8(", ") + compStr +  QString::fromUtf8(")") );
+            WRITE_INDENT(indentLevel); WRITE_STRING( QString::fromUtf8("lastNode.addUserPlane(") + ESC( it2->getPlaneLabel() ) + QString::fromUtf8(", ") + compStr +  QString::fromUtf8(")") );
         }
 
         QString nodeNameInScript = groupName + QString::fromUtf8( (*it)->getScriptName_mt_safe().c_str() );

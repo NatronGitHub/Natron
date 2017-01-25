@@ -55,6 +55,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobTypes.h"
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -209,7 +210,7 @@ KnobGuiChoice::KnobGuiChoice(KnobPtr knob,
 {
     boost::shared_ptr<KnobChoice> k = boost::dynamic_pointer_cast<KnobChoice>(knob);
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
-    QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
+    QObject::connect( k.get(), SIGNAL(entryAppended()), this, SLOT(onEntryAppended()) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
 
     _knob = k;
@@ -248,36 +249,25 @@ KnobGuiChoice::onCurrentIndexChanged(int i)
 }
 
 void
-KnobGuiChoice::onEntryAppended(const QString& entry,
-                               const QString& help)
+KnobGuiChoice::onEntryAppended()
 {
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
     if (!knob) {
         return;
     }
-    std::string activeEntry = knob->getActiveEntryText_mt_safe();
 
-    if ( knob->getHostCanAddOptions() &&
-         ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
-        _comboBox->insertItem(_comboBox->count() - 1, entry, QIcon(), QKeySequence(), help);
-    } else {
-        _comboBox->addItem(entry, QIcon(), QKeySequence(), help);
-    }
-    int activeIndex = knob->getValue();
-    if (activeIndex >= 0) {
-        _comboBox->setCurrentIndex_no_emit(activeIndex);
-    } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( knob->getActiveEntryText_mt_safe().c_str() ) );
-    }
-    if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
-        if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
+    std::vector<ChoiceOption> options = knob->getEntries_mt_safe();
+
+    for (int i = _comboBox->count(); i < (int)options.size(); ++i) {
+        if ( knob->getHostCanAddOptions()) {
+            _comboBox->insertItem(_comboBox->count() - 1, QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
         } else {
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+            _comboBox->addItem(QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
         }
+
     }
+
+    updateGUI(0);
 }
 
 void
@@ -286,30 +276,6 @@ KnobGuiChoice::onEntriesReset()
     onEntriesPopulated();
 }
 
-void
-KnobGuiChoice::addRightClickMenuEntries(QMenu* menu)
-{
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
-
-    if (!knob) {
-        return;
-    }
-
-    QAction* refreshMenuAction = new QAction(tr("Refresh Menu"), menu);
-    QObject::connect( refreshMenuAction, SIGNAL(triggered()), this, SLOT(onRefreshMenuActionTriggered()) );
-    refreshMenuAction->setToolTip( tr("Synchronize the menu with the actual state of the parameter") );
-    menu->addAction(refreshMenuAction);
-}
-
-void
-KnobGuiChoice::onRefreshMenuActionTriggered()
-{
-    boost::shared_ptr<KnobChoice> knob = _knob.lock();
-
-    if (knob) {
-        knob->refreshMenu();
-    }
-}
 
 void
 KnobGuiChoice::onEntriesPopulated()
@@ -317,51 +283,30 @@ KnobGuiChoice::onEntriesPopulated()
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
 
     _comboBox->clear();
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
-    const std::vector<std::string> help =  knob->getEntriesHelp_mt_safe();
-    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
+
+
 
     for (U32 i = 0; i < entries.size(); ++i) {
-        std::string helpStr;
-        if ( !help.empty() && !help[i].empty() ) {
-            helpStr = help[i];
-        }
+        _comboBox->addItem( QString::fromUtf8( entries[i].label.c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( entries[i].tooltip.c_str() ) );
+    } // for all entries
 
-        _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
-    }
     // the "New" menu is only added to known parameters (e.g. the choice of output channels)
-    if ( knob->getHostCanAddOptions() &&
-         ( ( knob->getName() == kNatronOfxParamOutputChannels) || ( knob->getName() == kOutputChannelsKnobName) ) ) {
+    if (knob->getHostCanAddOptions()) {
         _comboBox->addItemNew();
     }
-    ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
-    ///we don't want that to happen because the index actually didn't change.
-    if ( _comboBox->isCascading() || activeEntry.empty() ) {
-        _comboBox->setCurrentIndex_no_emit( knob->getValue() );
-    } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
-    }
-
-
-    if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
-        if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
-        } else {
-            setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-        }
-    }
+    
+    updateGUI(0);
 }
 
 void
 KnobGuiChoice::onItemNewSelected()
 {
-    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getGui() );
+    NewLayerDialog dialog( ImagePlaneDesc::getNoneComponents(), getGui() );
 
     if ( dialog.exec() ) {
-        ImageComponents comps = dialog.getComponents();
-        if ( comps == ImageComponents::getNoneComponents() ) {
+        ImagePlaneDesc comps = dialog.getComponents();
+        if ( comps == ImagePlaneDesc::getNoneComponents() ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
                                                                 "Python compliant.").toStdString() );
 
@@ -405,21 +350,27 @@ KnobGuiChoice::updateGUI(int /*dimension*/)
     ///The slot connected to onCurrentIndexChanged is reserved to catch user interaction with the combobox.
     ///This function is called in response to an internal change.
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
-    std::string activeEntry = knob->getActiveEntryText_mt_safe();
+    ChoiceOption activeEntry = knob->getActiveEntry();
 
-    if ( !activeEntry.empty() ) {
+    QString activeEntryLabel;
+    if (!activeEntry.label.empty()) {
+        activeEntryLabel = QString::fromUtf8(activeEntry.label.c_str());
+    } else {
+        activeEntryLabel = QString::fromUtf8(activeEntry.id.c_str());
+    }
+    if ( !activeEntry.id.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries();
         if (!activeIndexPresent) {
-            QString error = tr("The value set to this parameter no longer exist in the menu. Right click and press Refresh Menu to update the menu and then pick a new value.");
+            QString error = tr("The value %1 no longer exist in the menu.").arg(activeEntryLabel);
             setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
-    if ( _comboBox->isCascading() || activeEntry.empty() ) {
+    if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
         _comboBox->setCurrentIndex_no_emit( knob->getValue() );
     } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
+        _comboBox->setCurrentText_no_emit( activeEntryLabel );
     }
 }
 

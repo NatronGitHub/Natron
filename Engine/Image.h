@@ -40,7 +40,7 @@ CLANG_DIAG_ON(deprecated)
 #include <QtCore/QReadWriteLock>
 
 #include "Engine/ImageKey.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/ImageParams.h"
 #include "Engine/CacheEntry.h"
 #include "Engine/OutputSchedulerThread.h"
@@ -180,7 +180,7 @@ public:
     /*This constructor can be used to allocate a local Image. The deallocation should
        then be handled by the user. Note that no view number is passed in parameter
        as it is not needed.*/
-    Image(const ImageComponents& components,
+    Image(const ImagePlaneDesc& components,
           const RectD & regionOfDefinition,    //!< rod in canonical coordinates
           const RectI & bounds,    //!< bounds in pixel coordinates
           unsigned int mipMapLevel,
@@ -218,7 +218,7 @@ public:
                                                      const double par,
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
-                                                     const ImageComponents& components,
+                                                     const ImagePlaneDesc& components,
                                                      ImageBitDepthEnum bitdepth,
                                                      ImagePremultiplicationEnum premult,
                                                      ImageFieldingOrderEnum fielding,
@@ -229,7 +229,7 @@ public:
                                                      const double par,
                                                      unsigned int mipMapLevel,
                                                      bool isRoDProjectFormat,
-                                                     const ImageComponents& components,
+                                                     const ImagePlaneDesc& components,
                                                      ImageBitDepthEnum bitdepth,
                                                      ImagePremultiplicationEnum premult,
                                                      ImageFieldingOrderEnum fielding,
@@ -322,7 +322,7 @@ public:
     }
 
     unsigned int getComponentsCount() const;
-    const ImageComponents& getComponents() const
+    const ImagePlaneDesc& getComponents() const
     {
         return this->_params->getComponents();
     }
@@ -334,8 +334,8 @@ public:
      * convert to the 'to' components.
      * e.g: RGBA to RGB would return true , the opposite would return false.
      **/
-    static bool hasEnoughDataToConvert(ImageComponentsEnum from, ImageComponentsEnum to);
-    static std::string getFormatString(const ImageComponents& comps, ImageBitDepthEnum depth);
+    static bool hasEnoughDataToConvert(ImagePlaneDescEnum from, ImagePlaneDescEnum to);
+    static std::string getFormatString(const ImagePlaneDesc& comps, ImageBitDepthEnum depth);
     static std::string getDepthString(ImageBitDepthEnum depth);
     static bool isBitDepthConversionLossy(ImageBitDepthEnum from, ImageBitDepthEnum to);
     ImageBitDepthEnum getBitDepth() const
