@@ -2285,7 +2285,7 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
 
 
     if (!hasSetCompsAndDepth) {
-        mostComponents = ImageComponents::getRGBAComponents();
+        mostComponents = 4;
         deepestBitDepth = eImageBitDepthFloat;
     }
 
