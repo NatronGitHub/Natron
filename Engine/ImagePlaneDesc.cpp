@@ -471,7 +471,7 @@ natronCustomCompToOfxComp(const ImagePlaneDesc &comp)
         ss << kNatronOfxImageComponentsPlaneLabel << planeLabel;
     }
     if (!channelsLabel.empty()) {
-        ss << kNatronOfxImageComponentsPlaneChannel << channelsLabel;
+        ss << kNatronOfxImageComponentsPlaneChannelsLabel << channelsLabel;
     }
     for (std::size_t i = 0; i < channels.size(); ++i) {
         ss << kNatronOfxImageComponentsPlaneChannel << channels[i];
