@@ -31,15 +31,14 @@ master_sites            http://downloads.webmproject.org/releases/webp/
 checksums               rmd160  c5fa8789459d80102c8cdbf2f216eab3a9db5a3a \
                         sha256  b75310c810b3eda222c77f6d6c26b061240e3d9060095de44b2c1bae291ecdef
 
-depends_lib             port:freeglut \
-                        port:giflib \
+depends_lib             port:giflib \
                         path:lib/libjpeg.dylib:jpeg \
                         port:libpng \
-                        port:mesa \
-                        port:tiff \
-                        port:zlib
+                        port:tiff
 
 distname                libwebp-${version}
+
+patchfiles              configure.patch
 
 configure.args-append       \
     --enable-libwebpmux     \
