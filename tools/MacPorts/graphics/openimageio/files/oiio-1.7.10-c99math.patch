@@ -1,0 +1,45 @@
+--- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/fmath.h	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/src/include/OpenImageIO/fmath.h	2017-01-26 11:19:24.000000000 +0100
+@@ -50,6 +50,42 @@
+ 
+ #pragma once
+ 
++// GCC doesn't import C99 math func into the std namespace, because
++// a few declarations are missing.
++// fix from https://github.com/jeremyhu/libcxx/commit/720feba4874d4ca3131753dc31af127e3c509c36
++#ifdef __APPLE__
++#ifndef __APPLE_BAD_MATH_H
++# if __has_include(<Availability.h>)
++#  include <Availability.h>
++#  if __MAC_OS_X_VERSION_MAX_ALLOWED < 1070
++#    define __APPLE_BAD_MATH_H 1
++#  else
++#    define __APPLE_BAD_MATH_H 0
++#  endif
++# else
++#  define __APPLE_BAD_MATH_H 1
++# endif
++#endif
++
++# if __APPLE_BAD_MATH_H
++/* These prototypes are incorrectly omitted from <math.h> on Snow Leopard despite being available */
++extern "C" {
++    extern long long int llrintl(long double);
++    extern long long int llrint(double);
++    extern long long int llrintf(float);
++
++    extern long long int llroundl(long double);
++    extern long long int llround(double);
++    extern long long int llroundf(float);
++}
++# endif
++#endif // __APPLE__
++
++#if OIIO_CPLUSPLUS_VERSION >= 11
++// import C99 math into std:: in libstdc++ (it won't harm libc++)
++#define _GLIBCXX_USE_C99_MATH_TR1 1
++#endif
++
+ #include <cmath>
+ #include <limits>
+ #include <typeinfo>
