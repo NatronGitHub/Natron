@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Variant.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/CurveSerialization.h"
 #include "Engine/StringAnimationManager.h"
 #include "Engine/ViewIdx.h"
@@ -71,7 +72,8 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #define KNOB_SERIALIZATION_INTRODUCES_ALIAS 11
 #define KNOB_SERIALIZATION_REMOVE_SLAVED_TRACKS 12
 #define KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES 13
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_REMOVE_DEFAULT_VALUES
+#define KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION 14
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -646,6 +648,37 @@ class KnobSerialization
                 assert(cData);
                 if (cData) {
                     ar & ::boost::serialization::make_nvp("ChoiceLabel", cData->_choiceString);
+                    if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                        // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
+                        // but planeID + "." + channels
+                        // Hard-code the mapping
+                        if (cData->_choiceString == "Color.RGBA") {
+                            cData->_choiceString = kNatronColorPlaneID ".RGBA";
+                        } else if (cData->_choiceString == "Color.RGB") {
+                            cData->_choiceString = kNatronColorPlaneID ".RGB";
+                        } else if (cData->_choiceString == "Color.Alpha") {
+                            cData->_choiceString = kNatronColorPlaneID ".A";
+                        } else if (cData->_choiceString == "Backward.Motion") {
+                            cData->_choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+                        } else if (cData->_choiceString == "Forward.Motion") {
+                            cData->_choiceString = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+                        } else if (cData->_choiceString == "DisparityLeft.Disparity") {
+                            cData->_choiceString = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+                        } else if (cData->_choiceString == "DisparityRight.Disparity") {
+                            cData->_choiceString = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+                        }
+
+                        // Map also channels
+                        if (cData->_choiceString == "RGBA.R") {
+                            cData->_choiceString = kNatronColorPlaneID ".R";
+                        } else if (cData->_choiceString == "RGBA.G") {
+                            cData->_choiceString = kNatronColorPlaneID ".B";
+                        } else if (cData->_choiceString == "RGBA.B") {
+                            cData->_choiceString = kNatronColorPlaneID ".A";
+                        } else if (cData->_choiceString == "RGBA.A") {
+                            cData->_choiceString = kNatronColorPlaneID ".A";
+                        }
+                    }
                     //_extraData = cData;
                 }
             }

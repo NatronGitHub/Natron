@@ -4284,6 +4284,7 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
 
     }
 
+ 
     // Get the output needed components
     {
 
@@ -4361,12 +4362,6 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
     int maxInput = getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
 
-        EffectInstPtr input = getInput(i);
-        if (!input) {
-            continue;
-        }
-
-
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
         getAvailableLayers(time, view, i, &upstreamAvailableLayers);
 
@@ -4413,7 +4408,7 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
             // If this is a mask, ask for the selected mask layer
             componentsSet.push_back(maskComp);
 
-        } else if (ok) {
+        } else if (ok && layer.getNumComponents() > 0) {
             componentsSet.push_back(layer);
         } else {
             //Use regular clip preferences
