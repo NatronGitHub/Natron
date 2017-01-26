@@ -14,12 +14,13 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.7.10 tags/Release-
+github.setup     OpenImageIO oiio 1.6.18 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
-#revision         1
+#version          1.4.5.91
+revision         2
 categories       graphics
 platforms           darwin
 license          BSD
@@ -91,9 +92,8 @@ patchfiles \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
     oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
-    oiio-1.7.10-noexifdebug.patch \
-    oiio-1.7.10-c99math.patch \
-    oiio-1.7.10-nothreads.patch
+    oiio-1.6.18-fix-safe_tiffgetfield.patch \
+    oiio-nothreads.patch
 
 cmake.out_of_source yes
 
@@ -123,8 +123,6 @@ variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype descr
     if {${configure.cxx_stdlib} eq "libstdc++"} {
         # configure with GCC 4.9 for proper GCC intrinsics support
         configure.compiler macports-gcc-4.9
-        # but disable C++11 if not required (OIIO 1.8 requires C++11)
-        configure.args-append -DUSE_CPP11:BOOL=FALSE
     }
 }
 
