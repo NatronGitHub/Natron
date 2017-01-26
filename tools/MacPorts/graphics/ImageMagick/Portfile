@@ -160,8 +160,8 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --enable-shared --disable-shared
     configure.args-replace  --with-modules --without-modules
     pre-extract {
-        if {${version} != "6.9.7-4"} {
-            ui_msg "Natron variant requires ImageMagick version 6.9.7-4 (this is ${version}), please modify the Portfile."
+        if {${version} != "6.9.7-5"} {
+            ui_msg "Natron variant requires ImageMagick version 6.9.7-5 (this is ${version}), please modify the Portfile."
             return -code error "incompatible ImageMagick version"
         }
     }
