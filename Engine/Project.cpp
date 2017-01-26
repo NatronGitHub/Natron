@@ -1261,7 +1261,7 @@ Project::getProjectDefaultLayers() const
             planeID = kNatronBackwardMotionVectorsPlaneID;
             componentsLabel = kNatronMotionComponentsLabel;
         } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
-            planeID = kNatronForwardMotionVectorsPlaneLabel;
+            planeID = kNatronForwardMotionVectorsPlaneID;
             componentsLabel = kNatronMotionComponentsLabel;
         } else if (planeID == kNatronDisparityLeftPlaneLabel) {
             planeID = kNatronDisparityLeftPlaneID;

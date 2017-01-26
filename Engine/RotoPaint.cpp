@@ -1334,7 +1334,8 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
 StatusEnum
 RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    metadata.setImagePlaneDesc( -1, ImagePlaneDesc::getRGBAComponents() );
+    metadata.setNComps( -1, 4 );
+    metadata.setComponentsType(-1, kNatronColorPlaneID);
     /*boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
        assert(premultKnob);
        bool premultiply = premultKnob->getValue();

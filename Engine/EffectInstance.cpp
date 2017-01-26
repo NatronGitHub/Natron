@@ -4447,6 +4447,25 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
     getComponentsNeededAndProduced(time, view, comps, passThroughTime, passThroughView, passThroughInputNb);
 
 
+    // upstreamAvailableLayers now contain all available planes in input of this node
+    // Remove from this list all layers produced from this node to get the pass-through planes list
+    std::list<ImagePlaneDesc>& outputLayers = (*comps)[-1];
+
+    // Ensure the plug-in made the metadata plane available.
+    {
+        std::list<ImagePlaneDesc> metadataPlanes;
+        ImagePlaneDesc metadataPlane, metadataPairedPlane;
+        getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
+        if (metadataPairedPlane.getNumComponents() > 0) {
+            metadataPlanes.push_back(metadataPairedPlane);
+        }
+        if (metadataPlane.getNumComponents() > 0) {
+            metadataPlanes.push_back(metadataPlane);
+        }
+        mergeLayersList(metadataPlanes, &outputLayers);
+    }
+
+
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
     PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
     if (*passThroughInputNb != -1 && ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
@@ -4455,9 +4474,7 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
         getAvailableLayers(time, view, *passThroughInputNb, &upstreamAvailableLayers);
 
-        // upstreamAvailableLayers now contain all available planes in input of this node
-        // Remove from this list all layers produced from this node to get the pass-through planes list
-        std::list<ImagePlaneDesc>& outputLayers = (*comps)[-1];
+
         removeFromLayersList(outputLayers, &upstreamAvailableLayers);
 
         *passThroughPlanes = upstreamAvailableLayers;
@@ -5289,7 +5306,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     // most components
     bool hasSetCompsAndDepth = false;
     ImageBitDepthEnum deepestBitDepth = eImageBitDepthNone;
-    int mostComponents;
+    int mostComponents = 0;
 
     //Default to the project frame rate
     double frameRate = getApp()->getProjectFrameRate();
@@ -5426,7 +5443,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             metadata.setNComps(i, remappedComps);
             metadata.setComponentsType(i, kNatronColorPlaneID);
             if ( (i == -1) && !premultSet &&
-                ( ( remappedComps == ImagePlaneDesc::getRGBAComponents() ) || ( remappedComps == ImagePlaneDesc::getAlphaComponents() ) ) ) {
+                ( ( remappedComps == 4 ) || ( remappedComps == 1 ) ) ) {
                 premult = eImagePremultiplicationPremultiplied;
                 premultSet = true;
             }

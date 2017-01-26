@@ -91,8 +91,6 @@ public:
 
     ImageBitDepthEnum getBitDepth(int inputNb) const;
 
-    void setImagePlaneDesc(int inputNb, const ImagePlaneDesc& components);
-
     void setNComps(int inputNb, int nComps);
 
     int getNComps(int inputNb) const;

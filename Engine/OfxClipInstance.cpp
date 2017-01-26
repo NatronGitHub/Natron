@@ -295,7 +295,7 @@ OfxClipInstancePrivate::getComponentsPresentInternal(const OfxClipInstance::Clip
     effect->getAvailableLayers(time, view, inputNb, &availableLayers);
  
     for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
-        std::string ofxPlane = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(*it);
+        std::string ofxPlane = ImagePlaneDesc::mapPlaneToOFXPlaneString(*it);
         tls->componentsPresent.push_back(ofxPlane);
     }
 
