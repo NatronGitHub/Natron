@@ -1,36 +1,20 @@
-diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/fmath.h oiio-Release-1.7.10/src/include/OpenImageIO/fmath.h
---- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/fmath.h	2017-01-01 22:55:38.000000000 +0100
-+++ oiio-Release-1.7.10/src/include/OpenImageIO/fmath.h	2017-01-26 11:28:37.000000000 +0100
-@@ -50,6 +50,8 @@
+diff -ur oiio-Release-1.7.10-noc99math/CMakeLists.txt oiio-Release-1.7.10/CMakeLists.txt
+--- oiio-Release-1.7.10-noc99math/CMakeLists.txt	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/CMakeLists.txt	2017-01-26 11:47:51.000000000 +0100
+@@ -168,6 +168,11 @@
+     endif ()
+ endif ()
  
- #pragma once
++if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
++    # C99 math function declarations are missing from macOS <= 10.6
++    # just make sure <cmath> gets included with the right defines
++    add_definitions(-include OpenImageIO/missing_math.h)
++endif()
  
-+#include "missing_math.h"
-+
- #include <cmath>
- #include <limits>
- #include <typeinfo>
-@@ -60,7 +62,6 @@
- #include "oiioversion.h"   /* Just for the OIIO_NAMESPACE stuff */
- #include "platform.h"
- #include "dassert.h"
--#include "missing_math.h"
- #include "simd.h"
- 
- 
+ set (VERBOSE OFF CACHE BOOL "Print lots of messages while compiling")
+ set (EMBEDPLUGINS ON CACHE BOOL "Embed format plugins in libOpenImageIO")
+Only in oiio-Release-1.7.10: CMakeLists.txt~
 Only in oiio-Release-1.7.10/src/include/OpenImageIO: fmath.h~
-diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/imageio.h oiio-Release-1.7.10/src/include/OpenImageIO/imageio.h
---- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/imageio.h	2017-01-01 22:55:38.000000000 +0100
-+++ oiio-Release-1.7.10/src/include/OpenImageIO/imageio.h	2017-01-26 11:28:37.000000000 +0100
-@@ -49,6 +49,8 @@
- #  pragma warning (disable : 4251)
- #endif
- 
-+#include "missing_math.h"
-+
- #include <vector>
- #include <string>
- #include <limits>
 Only in oiio-Release-1.7.10/src/include/OpenImageIO: imageio.h~
 diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h oiio-Release-1.7.10/src/include/OpenImageIO/missing_math.h
 --- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h	2017-01-01 22:55:38.000000000 +0100
@@ -78,16 +62,4 @@ diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h oi
  
  #include "oiioversion.h"   /* Just for the OIIO_NAMESPACE stuff */
 Only in oiio-Release-1.7.10/src/include/OpenImageIO: missing_math.h~
-diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/typedesc.h oiio-Release-1.7.10/src/include/OpenImageIO/typedesc.h
---- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/typedesc.h	2017-01-01 22:55:38.000000000 +0100
-+++ oiio-Release-1.7.10/src/include/OpenImageIO/typedesc.h	2017-01-26 11:27:12.000000000 +0100
-@@ -47,6 +47,8 @@
- #define NULL 0
- #endif
- 
-+#include "missing_math.h"
-+
- #include <limits>
- #include <cmath>
- #include <cstddef>
 Only in oiio-Release-1.7.10/src/include/OpenImageIO: typedesc.h~
