@@ -1788,7 +1788,8 @@ private:
 
 public:
 
-    void getComponentsNeededAndProduced_public(double time, ViewIdx view,
+    void getComponentsNeededAndProduced_public(U64 hash,
+                                               double time, ViewIdx view,
                                                EffectInstance::ComponentsNeededMap* comps,
                                                std::list<ImagePlaneDesc>* passThroughPlanes,
                                                bool* processAllRequested,

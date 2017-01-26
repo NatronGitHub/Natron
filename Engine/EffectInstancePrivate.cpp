@@ -156,6 +156,63 @@ ActionsCache::setIdentityResult(U64 hash,
 }
 
 bool
+ActionsCache::getComponentsNeededResults(U64 hash, double time, ViewIdx view, EffectInstance::ComponentsNeededMap* neededComps, std::bitset<4> *processChannels, bool *processAll,
+                                         std::list<ImagePlaneDesc> *passThroughPlanes, int* passThroughInputNb, ViewIdx *passThroughView, double* passThroughTime)
+{
+    QMutexLocker l(&_cacheMutex);
+
+    for (std::list<ActionsCacheInstance>::iterator it = _instances.begin(); it != _instances.end(); ++it) {
+        if (it->_hash == hash) {
+            ActionKey key;
+            key.time = time;
+            key.view = view;
+            key.mipMapLevel = 0;
+
+            ComponentsNeededCacheMap::const_iterator found = it->_componentsNeededCache.find(key);
+            if ( found != it->_componentsNeededCache.end() ) {
+                *passThroughInputNb = found->second.passThroughInputNb;
+                *passThroughTime = found->second.passThroughTime;
+                *passThroughView = found->second.passThroughView;
+                *neededComps = found->second.neededComps;
+                *processChannels = found->second.processChannels;
+                *processAll = found->second.processAll;
+                *passThroughPlanes = found->second.passThroughPlanes;
+                return true;
+            }
+
+            return false;
+        }
+    }
+    
+    return false;
+}
+
+void
+ActionsCache::setComponentsNeededResults(U64 hash, double time, ViewIdx view, const EffectInstance::ComponentsNeededMap& neededComps,
+                                         std::bitset<4> processChannels,
+                                         bool processAll,
+                                         const std::list<ImagePlaneDesc>& passThroughPlanes, int passThroughInputNb, ViewIdx passThroughView, double passThroughTime)
+{
+    QMutexLocker l(&_cacheMutex);
+    ActionsCacheInstance & cache = getOrCreateActionCache(hash);
+    ActionKey key;
+
+    key.time = time;
+    key.view = view;
+    key.mipMapLevel = 0;
+
+    ComponentsNeededResults & v = cache._componentsNeededCache[key];
+    v.neededComps = neededComps;
+    v.passThroughTime = passThroughTime;
+    v.passThroughView = passThroughView;
+    v.passThroughInputNb = passThroughInputNb;
+    v.processChannels = processChannels;
+    v.processAll = processAll;
+    v.passThroughPlanes = passThroughPlanes;
+
+}
+
+bool
 ActionsCache::getRoDResult(U64 hash,
                            double time,
                            ViewIdx view,

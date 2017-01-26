@@ -368,7 +368,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args,
 
         {
 
-            getComponentsNeededAndProduced_public(args.time, args.view, neededComps.get(), &passThroughPlanes, &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInputNb);
+            getComponentsNeededAndProduced_public(nodeHash, args.time, args.view, neededComps.get(), &passThroughPlanes, &processAllComponentsRequested, &ptTime, &ptView, &processChannels, &ptInputNb);
 
 
             foundOutputNeededComps = neededComps->find(-1);

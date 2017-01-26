@@ -2283,7 +2283,7 @@ private:
                 int ptView;
                 std::bitset<4> processChannels;
                 int ptInput;
-                activeInputToRender->getComponentsNeededAndProduced_public(time, viewsToRender[view], &neededComps, &passThroughPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+                activeInputToRender->getComponentsNeededAndProduced_public(activeInputToRenderHash,time, viewsToRender[view], &neededComps, &passThroughPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
 
 
                 //Retrieve bitdepth only

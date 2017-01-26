@@ -62,6 +62,17 @@ struct IdentityResults
     ViewIdx inputView;
 };
 
+struct ComponentsNeededResults
+{
+    EffectInstance::ComponentsNeededMap neededComps;
+    std::bitset<4> processChannels;
+    bool processAll;
+    std::list<ImagePlaneDesc> passThroughPlanes;
+    int passThroughInputNb;
+    double passThroughTime;
+    ViewIdx passThroughView;
+};
+
 struct CompareActionsCacheKeys
 {
     bool operator() (const ActionKey & lhs,
@@ -90,6 +101,7 @@ struct CompareActionsCacheKeys
 typedef std::map<ActionKey, IdentityResults, CompareActionsCacheKeys> IdentityCacheMap;
 typedef std::map<ActionKey, RectD, CompareActionsCacheKeys> RoDCacheMap;
 typedef std::map<ActionKey, FramesNeededMap, CompareActionsCacheKeys> FramesNeededCacheMap;
+typedef std::map<ActionKey, ComponentsNeededResults, CompareActionsCacheKeys> ComponentsNeededCacheMap;
 
 /**
  * @brief This class stores all results of the following actions:
@@ -113,6 +125,12 @@ public:
 
     void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, ViewIdx inputView, double identityTime);
 
+    bool getComponentsNeededResults(U64 hash, double time, ViewIdx view, EffectInstance::ComponentsNeededMap* neededComps, std::bitset<4> *processChannels, bool *processAll,
+                                    std::list<ImagePlaneDesc> *passThroughPlanes, int* passThroughInputNb, ViewIdx *passThroughView, double* passThroughTime);
+
+    void setComponentsNeededResults(U64 hash, double time, ViewIdx view, const EffectInstance::ComponentsNeededMap& neededComps, std::bitset<4> processChannels,  bool processAll,
+                                    const std::list<ImagePlaneDesc>& passThroughPlanes,int passThroughInputNb, ViewIdx passThroughView, double passThroughTime);
+
     bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
 
     void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
@@ -135,6 +153,7 @@ private:
         IdentityCacheMap _identityCache;
         RoDCacheMap _rodCache;
         FramesNeededCacheMap _framesNeededCache;
+        ComponentsNeededCacheMap _componentsNeededCache;
 
         ActionsCacheInstance();
     };

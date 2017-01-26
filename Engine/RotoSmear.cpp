@@ -243,7 +243,7 @@ RotoSmear::render(const RenderActionArgs& args)
     double ptTime;
     int ptView;
     int ptInput;
-    getComponentsNeededAndProduced_public(args.time, args.view, &neededComps, &ptPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+    getComponentsNeededAndProduced_public(getRenderHash(), args.time, args.view, &neededComps, &ptPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
 
 
     EffectInstance::ComponentsNeededMap::iterator foundBg = neededComps.find(0);

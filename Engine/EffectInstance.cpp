@@ -4424,7 +4424,8 @@ EffectInstance::getComponentsNeededDefault(double time, ViewIdx view,
 }
 
 void
-EffectInstance::getComponentsNeededAndProduced_public(double time,
+EffectInstance::getComponentsNeededAndProduced_public(U64 hash,
+                                                      double time,
                                                       ViewIdx view,
                                                       EffectInstance::ComponentsNeededMap* comps,
                                                       std::list<ImagePlaneDesc>* passThroughPlanes,
@@ -4437,8 +4438,20 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
 {
     RECURSIVE_ACTION();
 
+    {
+        ViewIdx ptView;
+        bool foundInCache = _imp->actionsCache->getComponentsNeededResults(hash, time, view, comps, processChannels, processAllRequested, passThroughPlanes, passThroughInputNb, &ptView, passThroughTime);
+        if (foundInCache) {
+            *passThroughView = ptView;
+            return;
+        }
+    }
+    
+
     if ( !isMultiPlanar() ) {
-        return getComponentsNeededDefault(time, view, comps, passThroughPlanes, processAllRequested, passThroughTime, passThroughView, processChannels, passThroughInputNb);
+        getComponentsNeededDefault(time, view, comps, passThroughPlanes, processAllRequested, passThroughTime, passThroughView, processChannels, passThroughInputNb);
+        _imp->actionsCache->setComponentsNeededResults(hash, time, view, *comps, *processChannels, *processAllRequested, *passThroughPlanes, *passThroughInputNb, ViewIdx(*passThroughView), *passThroughTime);
+        return;
     }
 
 
@@ -4488,7 +4501,9 @@ EffectInstance::getComponentsNeededAndProduced_public(double time,
     }
     
     *processAllRequested = false;
-    
+
+    _imp->actionsCache->setComponentsNeededResults(hash, time, view, *comps, *processChannels, *processAllRequested, *passThroughPlanes, *passThroughInputNb, ViewIdx(*passThroughView), *passThroughTime);
+
 } // EffectInstance::getComponentsNeededAndProduced_public
 
 
@@ -4517,7 +4532,7 @@ EffectInstance::getAvailableLayers(double time, ViewIdx view, int inputNb, std::
         int passThroughInputNb;
         std::bitset<4> processChannels;
         bool processAll;
-        effect->getComponentsNeededAndProduced_public(time, view, &comps, &passThroughLayers, &processAll, &passThroughTime, &passThroughView, &processChannels, &passThroughInputNb);
+        effect->getComponentsNeededAndProduced_public(getRenderHash(), time, view, &comps, &passThroughLayers, &processAll, &passThroughTime, &passThroughView, &processChannels, &passThroughInputNb);
 
         // Merge pass-through planes produced + pass-through available planes and make it as the pass-through planes for this node
         // if they are not produced by this node
