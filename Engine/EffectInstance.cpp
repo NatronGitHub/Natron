@@ -1628,7 +1628,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 continue;
             }*/
 
-            bool convertible = (imgComps.isColorPlane() && components.isColorPlane()) || (imgComps.getNumComponents() == components.getNumComponents());
+            bool convertible = (imgComps.isColorPlane() && components.isColorPlane()) || (imgComps == components);
             if ( (imgMMlevel == mipMapLevel) && convertible &&
                  ( getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth) ) /* && imgComps == components && imgDepth == bitdepth*/ ) {
                 ///We found  a matching image
