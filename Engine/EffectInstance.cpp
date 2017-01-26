@@ -1628,7 +1628,7 @@ EffectInstance::getImageFromCacheAndConvertIfNeeded(bool /*useCache*/,
                 continue;
             }*/
 
-            bool convertible = imgComps.isColorPlane() && components.isColorPlane();
+            bool convertible = (imgComps.isColorPlane() && components.isColorPlane()) || (imgComps.getNumComponents() == components.getNumComponents());
             if ( (imgMMlevel == mipMapLevel) && convertible &&
                  ( getSizeOfForBitDepth(imgDepth) >= getSizeOfForBitDepth(bitdepth) ) /* && imgComps == components && imgDepth == bitdepth*/ ) {
                 ///We found  a matching image
@@ -5293,7 +5293,7 @@ getUnmappedComponentsForInput(EffectInstance* self,
         }
     }
     if (!rawComps) {
-        rawComps = ImagePlaneDesc::getRGBAComponents(); // default to RGBA
+        rawComps = 4; // default to RGBA
     }
 
     return rawComps;
@@ -5324,7 +5324,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 
     // Find the components of the first non optional connected input
     // They will be used for disconnected input
-    int firstNonOptionalConnectedInputComps;
+    int firstNonOptionalConnectedInputComps = 0;
     for (std::size_t i = 0; i < inputs.size(); ++i) {
         inputs[i] = getInput(i);
         if ( !firstNonOptionalConnectedInputComps && inputs[i] && !isInputOptional(i) ) {

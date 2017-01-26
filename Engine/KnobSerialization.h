@@ -652,12 +652,8 @@ class KnobSerialization
                         // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
                         // but planeID + "." + channels
                         // Hard-code the mapping
-                        if (cData->_choiceString == "Color.RGBA") {
-                            cData->_choiceString = kNatronColorPlaneID ".RGBA";
-                        } else if (cData->_choiceString == "Color.RGB") {
-                            cData->_choiceString = kNatronColorPlaneID ".RGB";
-                        } else if (cData->_choiceString == "Color.Alpha") {
-                            cData->_choiceString = kNatronColorPlaneID ".A";
+                        if (cData->_choiceString == "Color.RGBA" || cData->_choiceString == "Color.RGB" || cData->_choiceString == "Color.Alpha") {
+                            cData->_choiceString = kNatronColorPlaneID;
                         } else if (cData->_choiceString == "Backward.Motion") {
                             cData->_choiceString = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
                         } else if (cData->_choiceString == "Forward.Motion") {

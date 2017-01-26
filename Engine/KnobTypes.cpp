@@ -665,6 +665,8 @@ KnobChoice::findAndSetOldChoice()
 
             for (std::size_t i = 0; i < _entries.size(); ++i) {
                 if ( _entries[i].id == _currentEntry.id ) {
+                    // Refresh label and hint, even if ID is the same
+                    _currentEntry = _entries[i];
                     found = i;
                     break;
                 }
