@@ -84,6 +84,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/OneViewNode.h"
 #include "Engine/OpenGLViewerI.h"
 #include "Engine/Plugin.h"
+#include "Engine/ProjectSerialization.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
@@ -1847,6 +1848,29 @@ Node::loadKnob(const KnobPtr & knob,
     ///try to find a serialized value for this knob
     bool found = false;
 
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+    if (isChoice) {
+
+        const ProjectBeingLoadedInfo projectInfos = getApp()->getProjectBeingLoadedInfo();
+        if (projectInfos.vMajor == 2 && projectInfos.vMinor < 3) {
+            // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
+            // The string parameter had the same name as the choice parameter plus "Choice" appended.
+            // If we found such a parameter, retrieve the string from it.
+            std::string stringParamName = isChoice->getName() + "Choice";
+            for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
+                if ( (*it)->getName() == stringParamName ) {
+                    boost::shared_ptr<KnobString> stringKnob = boost::dynamic_pointer_cast<KnobString>((*it)->getKnob());
+                    if (stringKnob) {
+                        std::string serializedString = stringKnob->getValue();
+                        isChoice->setActiveEntry(ChoiceOption(serializedString));
+                    }
+                    break;
+                }
+            }
+
+        }
+    }
+
     for (NodeSerialization::KnobValues::const_iterator it = knobsValues.begin(); it != knobsValues.end(); ++it) {
         if ( (*it)->getName() == knob->getName() ) {
             found = true;
@@ -1860,13 +1884,8 @@ Node::loadKnob(const KnobPtr & knob,
                 continue;
             }
 
-            if (knob->getName() == "filename") {
-                assert(true);
-            }
-
             knob->cloneDefaultValues( serializedKnob.get() );
 
-            KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
             if (isChoice) {
                 const TypeExtraData* extraData = (*it)->getExtraData();
                 const ChoiceExtraData* choiceData = dynamic_cast<const ChoiceExtraData*>(extraData);

@@ -507,6 +507,7 @@ public:
     std::vector<ChoiceOption> getEntries_mt_safe() const;
     ChoiceOption getEntry(int v) const;
     ChoiceOption getActiveEntry();
+    void setActiveEntry(const ChoiceOption& opt);
 
     int getNumEntries() const;
 

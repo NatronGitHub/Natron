@@ -798,6 +798,13 @@ KnobChoice::getNumEntries() const
     return (int)_entries.size();
 }
 
+void
+KnobChoice::setActiveEntry(const ChoiceOption& opt)
+{
+    QMutexLocker l(&_entriesMutex);
+    _currentEntry = opt;
+}
+
 
 ChoiceOption
 KnobChoice::getActiveEntry()
