@@ -1,11 +1,11 @@
---- Portfile.orig	2016-11-23 15:17:34.000000000 +0100
-+++ Portfile	2016-11-23 15:18:06.000000000 +0100
-@@ -34,7 +34,7 @@
+--- Portfile.orig	2017-01-26 09:43:32.000000000 +0100
++++ Portfile	2017-01-26 09:46:27.000000000 +0100
+@@ -33,7 +33,7 @@
  
- depends_lib             port:zlib \
-                         port:libpng \
+ depends_lib             port:freeglut \
+                         port:giflib \
 -                        port:jpeg \
 +                        path:lib/libjpeg.dylib:jpeg \
-                         port:giflib \
-                         port:tiff
- 
+                         port:libpng \
+                         port:mesa \
+                         port:tiff \

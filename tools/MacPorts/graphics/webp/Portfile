@@ -4,6 +4,7 @@ PortSystem              1.0
 
 name                    webp
 version                 0.5.2
+revision                1
 categories              graphics science devel
 platforms               darwin
 maintainers             ryandesign openmaintainer
@@ -30,11 +31,13 @@ master_sites            http://downloads.webmproject.org/releases/webp/
 checksums               rmd160  c5fa8789459d80102c8cdbf2f216eab3a9db5a3a \
                         sha256  b75310c810b3eda222c77f6d6c26b061240e3d9060095de44b2c1bae291ecdef
 
-depends_lib             port:zlib \
-                        port:libpng \
-                        path:lib/libjpeg.dylib:jpeg \
+depends_lib             port:freeglut \
                         port:giflib \
-                        port:tiff
+                        path:lib/libjpeg.dylib:jpeg \
+                        port:libpng \
+                        port:mesa \
+                        port:tiff \
+                        port:zlib
 
 distname                libwebp-${version}
 
@@ -42,7 +45,8 @@ configure.args-append       \
     --enable-libwebpmux     \
     --enable-libwebpdemux   \
     --enable-libwebpdecoder \
-    --enable-libwebpextras
+    --enable-libwebpextras \
+    --disable-silent-rules
 
 post-destroot {
     set docdir ${destroot}${prefix}/share/doc/${name}
