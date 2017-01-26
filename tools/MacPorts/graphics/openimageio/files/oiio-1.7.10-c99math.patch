@@ -1,6 +1,41 @@
+diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/fmath.h oiio-Release-1.7.10/src/include/OpenImageIO/fmath.h
 --- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/fmath.h	2017-01-01 22:55:38.000000000 +0100
-+++ oiio-Release-1.7.10/src/include/OpenImageIO/fmath.h	2017-01-26 11:19:24.000000000 +0100
-@@ -50,6 +50,42 @@
++++ oiio-Release-1.7.10/src/include/OpenImageIO/fmath.h	2017-01-26 11:28:37.000000000 +0100
+@@ -50,6 +50,8 @@
+ 
+ #pragma once
+ 
++#include "missing_math.h"
++
+ #include <cmath>
+ #include <limits>
+ #include <typeinfo>
+@@ -60,7 +62,6 @@
+ #include "oiioversion.h"   /* Just for the OIIO_NAMESPACE stuff */
+ #include "platform.h"
+ #include "dassert.h"
+-#include "missing_math.h"
+ #include "simd.h"
+ 
+ 
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: fmath.h~
+diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/imageio.h oiio-Release-1.7.10/src/include/OpenImageIO/imageio.h
+--- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/imageio.h	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/src/include/OpenImageIO/imageio.h	2017-01-26 11:28:37.000000000 +0100
+@@ -49,6 +49,8 @@
+ #  pragma warning (disable : 4251)
+ #endif
+ 
++#include "missing_math.h"
++
+ #include <vector>
+ #include <string>
+ #include <limits>
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: imageio.h~
+diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h oiio-Release-1.7.10/src/include/OpenImageIO/missing_math.h
+--- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/missing_math.h	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/src/include/OpenImageIO/missing_math.h	2017-01-26 11:26:08.000000000 +0100
+@@ -38,6 +38,41 @@
  
  #pragma once
  
@@ -33,13 +68,26 @@
 +    extern long long int llroundf(float);
 +}
 +# endif
-+#endif // __APPLE__
-+
 +#if OIIO_CPLUSPLUS_VERSION >= 11
 +// import C99 math into std:: in libstdc++ (it won't harm libc++)
 +#define _GLIBCXX_USE_C99_MATH_TR1 1
 +#endif
++#endif // __APPLE__
 +
  #include <cmath>
+ 
+ #include "oiioversion.h"   /* Just for the OIIO_NAMESPACE stuff */
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: missing_math.h~
+diff -ur oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/typedesc.h oiio-Release-1.7.10/src/include/OpenImageIO/typedesc.h
+--- oiio-Release-1.7.10-noc99math/src/include/OpenImageIO/typedesc.h	2017-01-01 22:55:38.000000000 +0100
++++ oiio-Release-1.7.10/src/include/OpenImageIO/typedesc.h	2017-01-26 11:27:12.000000000 +0100
+@@ -47,6 +47,8 @@
+ #define NULL 0
+ #endif
+ 
++#include "missing_math.h"
++
  #include <limits>
- #include <typeinfo>
+ #include <cmath>
+ #include <cstddef>
+Only in oiio-Release-1.7.10/src/include/OpenImageIO: typedesc.h~
