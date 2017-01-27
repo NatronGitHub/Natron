@@ -1276,7 +1276,6 @@ NodeGroup::isInputMask(int inputNb) const
     }
     GroupInput* input = dynamic_cast<GroupInput*>( n->getEffectInstance().get() );
 
-    assert(input);
     if (!input) {
         return false;
     }
