@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/KnobGuiWidgets.h"

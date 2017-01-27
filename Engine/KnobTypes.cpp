@@ -778,6 +778,8 @@ KnobChoice::findAndSetOldChoice()
 
                 for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
                     if ( data->menuOptions[i].id == data->activeEntry.id ) {
+                        // Refresh label and hint, even if ID is the same
+                        data->activeEntry = data->menuOptions[i];
                         found = i;
                         break;
                     }

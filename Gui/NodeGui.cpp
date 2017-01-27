@@ -2589,10 +2589,10 @@ NodeGui::onOutputLayerChanged()
         }
     }
     KnobChoicePtr layerKnob = internalNode->getLayerChoiceKnob(-1);
-    ImageComponents outputLayer;
+    ImagePlaneDesc outputLayer;
     {
         bool isAll;
-        std::list<ImageComponents> availableLayers;
+        std::list<ImagePlaneDesc> availableLayers;
         ActionRetCodeEnum stat = internalNode->getEffectInstance()->getAvailableLayers(internalNode->getEffectInstance()->getTimelineCurrentTime(), ViewIdx(0), -1, TreeRenderNodeArgsPtr(), &availableLayers);
         (void)stat;
 
@@ -2604,7 +2604,7 @@ NodeGui::onOutputLayerChanged()
                 extraLayerStr.append( QString::fromUtf8("<br>") );
             }
             extraLayerStr.push_back( QLatin1Char('(') );
-            extraLayerStr.append( QString::fromUtf8( outputLayer.getLayerName().c_str() ) );
+            extraLayerStr.append( QString::fromUtf8( outputLayer.getPlaneLabel().c_str() ) );
             extraLayerStr.push_back( QLatin1Char(')') );
         }
     }
@@ -4034,11 +4034,11 @@ bool
 NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
 {
 
-    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getDagGui()->getGui() );
+    NewLayerDialog dialog( ImagePlaneDesc::getNoneComponents(), getDagGui()->getGui() );
 
     if ( dialog.exec() ) {
-        ImageComponents comps = dialog.getComponents();
-        if ( comps == ImageComponents::getNoneComponents() ) {
+        ImagePlaneDesc comps = dialog.getComponents();
+        if ( comps == ImagePlaneDesc::getNoneComponents() ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
                                                                 "Python compliant.").toStdString() );
 

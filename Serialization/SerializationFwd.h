@@ -40,7 +40,7 @@ SERIALIZATION_NAMESPACE_ENTER;
 class BezierSerialization;
 class CurveSerialization;
 struct DefaultValueSerialization;
-class ImageComponentsSerialization;
+class ImagePlaneDescSerialization;
 class KnobSerializationBase;
 class KnobSerialization;
 class KnobTableItemSerialization;

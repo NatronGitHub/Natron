@@ -111,7 +111,7 @@ struct PreRenderedDataKey_Compare
 
 struct PreRenderedDataStuff
 {
-    std::map<ImageComponents, ImagePtr> planes;
+    std::map<ImagePlaneDesc, ImagePtr> planes;
     Distortion2DStackPtr distortion;
 };
 
@@ -193,7 +193,7 @@ void
 FrameViewRequest::appendPreRenderedInputs(int inputNb,
                                           TimeValue time,
                                           ViewIdx view,
-                                          const std::map<ImageComponents, ImagePtr>& planes,
+                                          const std::map<ImagePlaneDesc, ImagePtr>& planes,
                                           const Distortion2DStackPtr& distortionStack)
 {
     QMutexLocker k(&_imp->lock);
@@ -206,11 +206,11 @@ FrameViewRequest::appendPreRenderedInputs(int inputNb,
     PreRenderedDataStuff& data = _imp->inputImages[key];
     data.distortion = distortionStack;
 
-    for (std::map<ImageComponents, ImagePtr>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
         bool isColorPlane = it->first.isColorPlane();
 
-        std::map<ImageComponents, ImagePtr>::iterator foundImage = data.planes.end();
-        for (std::map<ImageComponents, ImagePtr>::iterator it2 = data.planes.begin(); it2 != data.planes.end(); ++it2) {
+        std::map<ImagePlaneDesc, ImagePtr>::iterator foundImage = data.planes.end();
+        for (std::map<ImagePlaneDesc, ImagePtr>::iterator it2 = data.planes.begin(); it2 != data.planes.end(); ++it2) {
             if (it2->first.isColorPlane() && isColorPlane) {
                 foundImage = it2;
                 break;
@@ -238,9 +238,9 @@ FrameViewRequest::getPreRenderedInputs(int inputNb,
                                        TimeValue time,
                                        ViewIdx view,
                                        const RectI& roi,
-                                       const std::list<ImageComponents>& layers,
-                                       std::map<ImageComponents, ImagePtr>* planes,
-                                       std::list<ImageComponents>* planesLeftToRendered,
+                                       const std::list<ImagePlaneDesc>& layers,
+                                       std::map<ImagePlaneDesc, ImagePtr>* planes,
+                                       std::list<ImagePlaneDesc>* planesLeftToRendered,
                                        Distortion2DStackPtr* distortionStack) const
 {
     QMutexLocker k(&_imp->lock);
@@ -254,12 +254,12 @@ FrameViewRequest::getPreRenderedInputs(int inputNb,
         return;
     }
 
-    for (std::list<ImageComponents>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
 
         bool isColorPlane = it->isColorPlane();
 
-        std::map<ImageComponents, ImagePtr>::const_iterator foundImage = foundData->second.planes.end();
-        for (std::map<ImageComponents, ImagePtr>::const_iterator it2 = foundData->second.planes.begin(); it2 != foundData->second.planes.end(); ++it2) {
+        std::map<ImagePlaneDesc, ImagePtr>::const_iterator foundImage = foundData->second.planes.end();
+        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it2 = foundData->second.planes.begin(); it2 != foundData->second.planes.end(); ++it2) {
             if (it2->first.isColorPlane() && isColorPlane) {
                 foundImage = it2;
                 break;
@@ -451,9 +451,9 @@ EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb,
             return EffectInstancePtr();
         }
 
-        ImageComponents maskComps;
+        ImagePlaneDesc maskComps;
 
-        std::list<ImageComponents> upstreamAvailableLayers;
+        std::list<ImagePlaneDesc> upstreamAvailableLayers;
 
         TreeRenderNodeArgsPtr currentRender = getCurrentRender_TLS();
         ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), getCurrentView_TLS(), inputNb, currentRender, &upstreamAvailableLayers);
@@ -1077,7 +1077,7 @@ preRenderFrameFunctor(const PreRenderFrame& args)
 ActionRetCodeEnum
 TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
                                          ViewIdx view,
-                                         const std::map<int, std::list<ImageComponents> >& neededInputLayers)
+                                         const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
 {
     // For all frames/views needed, recurse on inputs with the appropriate RoI
 
@@ -1118,7 +1118,7 @@ TreeRenderNodeArgs::preRenderInputImages(TimeValue time,
         TreeRenderNodeArgsPtr inputRenderArgs = getInputRenderArgs(inputNb);
 
         ///There cannot be frames needed without components needed.
-        std::map<int, std::list<ImageComponents> >::const_iterator foundCompsNeeded = neededInputLayers.find(inputNb);
+        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundCompsNeeded = neededInputLayers.find(inputNb);
         if ( foundCompsNeeded == neededInputLayers.end() ) {
             continue;
         }

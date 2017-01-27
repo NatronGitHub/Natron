@@ -63,10 +63,7 @@ JoinViewsNode::JoinViewsNode(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new JoinViewsNodePrivate() )
 {
-    if (node) {
-        ProjectPtr project = node->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
-    }
+
 }
 
 JoinViewsNode::~JoinViewsNode()
@@ -109,7 +106,6 @@ JoinViewsNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 JoinViewsNode::initializeKnobs()
 {
-    onProjectViewsChanged();
 }
 
 bool
@@ -139,7 +135,7 @@ JoinViewsNode::isIdentity(TimeValue time,
 }
 
 void
-JoinViewsNode::onProjectViewsChanged()
+JoinViewsNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
 {
     std::size_t nInputs, oldNInputs;
     {
@@ -181,6 +177,3 @@ JoinViewsNode::onProjectViewsChanged()
 }
 
 NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
-#include "moc_JoinViewsNode.cpp"

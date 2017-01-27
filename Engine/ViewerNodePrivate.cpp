@@ -242,7 +242,7 @@ void
 ViewerNodePrivate::setAlphaChannelFromLayerIfRGBA()
 {
 
-    ImageComponents selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
+    ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
     ViewerInstancePtr internalViewer = internalViewerProcessNode[0].lock()->isEffectViewerInstance();
     internalViewer->getChannelOptions(TreeRenderNodeArgsPtr(), _publicInterface->getTimelineCurrentTime(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);

@@ -118,7 +118,7 @@ Image::InitStorageArgs::InitStorageArgs()
 : bounds()
 , storage(eStorageModeRAM)
 , bitdepth(eImageBitDepthFloat)
-, layer(ImageComponents::getRGBAComponents())
+, layer(ImagePlaneDesc::getRGBAComponents())
 , components()
 , cachePolicy(eCacheAccessModeNone)
 , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
@@ -286,7 +286,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
 
         Image::Tile& tile = _imp->tiles[tile_i];
 
-        const std::string& layerName = args.layer.getLayerName();
+        const std::string& planeID = args.layer.getPlaneID();
 
         // How many buffer should we make for a tile
         // A mono channel image should have one per channel
@@ -335,13 +335,13 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
             std::string channelName;
             switch (args.bufferFormat) {
                 case eImageBufferLayoutMonoChannelTiled: {
-                    const std::vector<std::string>& compNames = args.layer.getComponentsNames();
+                    const std::vector<std::string>& compNames = args.layer.getChannels();
                     assert(thisChannelTile.channelIndex >= 0 && thisChannelTile.channelIndex < (int)compNames.size());
-                    channelName = layerName + "." + compNames[thisChannelTile.channelIndex];
+                    channelName = planeID + "." + compNames[thisChannelTile.channelIndex];
                 }   break;
                 case eImageBufferLayoutRGBACoplanarFullRect:
                 case eImageBufferLayoutRGBAPackedFullRect:
-                    channelName = layerName;
+                    channelName = planeID;
                     break;
             }
 
@@ -493,7 +493,7 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
                                     tmpArgs.bounds = tile.tileBounds;
                                     tmpArgs.renderArgs = _imp->renderArgs;
                                     tmpArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
-                                    tmpArgs.layer = channelIndices.size() > 1 ? ImageComponents::getAlphaComponents() : _imp->layer;
+                                    tmpArgs.layer = channelIndices.size() > 1 ? ImagePlaneDesc::getAlphaComponents() : _imp->layer;
                                     tmpArgs.bitdepth = args.bitdepth;
                                     tmpArgs.proxyScale = args.proxyScale;
                                     tmpArgs.mipMapLevel = args.mipMapLevel;
@@ -700,7 +700,7 @@ Image::getComponentsCount() const
 }
 
 
-const ImageComponents&
+const ImagePlaneDesc&
 Image::getLayer() const
 {
     return _imp->layer;
@@ -1080,10 +1080,10 @@ Image::pixelAtStatic(int x,
 
 
 std::string
-Image::getFormatString(const ImageComponents& comps,
+Image::getFormatString(const ImagePlaneDesc& comps,
                        ImageBitDepthEnum depth)
 {
-    std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
+    std::string s = comps.getPlaneLabel() + '.' + comps.getChannelsLabel();
 
     s.append( getDepthString(depth) );
 

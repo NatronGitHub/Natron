@@ -1063,7 +1063,7 @@ NodeCollection::refreshTimeInvariantMetadatasOnAllNodes_recursive()
         if (isGroup) {
             isGroup->refreshTimeInvariantMetadatasOnAllNodes_recursive();
         } else {
-            (*it)->getEffectInstance()->onMetadataChanged_public();
+            (*it)->getEffectInstance()->onMetadataChanged_nonRecursive_public();
         }
 
     }

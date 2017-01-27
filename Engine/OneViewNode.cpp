@@ -60,10 +60,7 @@ OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
 {
-    if (n) {
-        ProjectPtr project = n->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
-    }
+
 }
 
 OneViewNode::~OneViewNode()
@@ -155,7 +152,7 @@ OneViewNode::getFramesNeeded(TimeValue time,
 }
 
 void
-OneViewNode::onProjectViewsChanged()
+OneViewNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
@@ -178,10 +175,7 @@ OneViewNode::onProjectViewsChanged()
     if (!foundView) {
         viewKnob->setValue(0);
     }
-}
+} // onMetadataChanged
+
 
 NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
-
-#include "moc_OneViewNode.cpp"

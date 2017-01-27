@@ -90,7 +90,7 @@ struct TreeRenderPrivate
     RectD canonicalRoI;
     
     // The list of layers to ender
-    std::list<ImageComponents> layers;
+    std::list<ImagePlaneDesc> layers;
     
     // The scale to apply to all parameters to obtain the final render
     RenderScale proxyScale;
@@ -656,8 +656,8 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
         }
         assert(results);
         
-        std::map<int, std::list<ImageComponents> > neededInputLayers;
-        std::list<ImageComponents> producedLayers, availableLayers;
+        std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
+        std::list<ImagePlaneDesc> producedLayers, availableLayers;
         int passThroughInputNb;
         TimeValue passThroughTime;
         ViewIdx passThroughView;
@@ -700,7 +700,7 @@ TreeRender::create(const CtorArgsPtr& inArgs)
 }
 
 ActionRetCodeEnum
-TreeRender::launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes)
+TreeRender::launchRender(std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
 
     if (isFailureRetCode(_imp->state)) {

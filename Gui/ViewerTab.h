@@ -207,7 +207,7 @@ public:
     TimeLineGui* getTimeLineGui() const;
     
     ///Called by ViewerGL when the image changes to refresh the info bar
-    void setImageFormat(int textureIndex, const ImageComponents& components, ImageBitDepthEnum depth);
+    void setImageFormat(int textureIndex, const ImagePlaneDesc& components, ImageBitDepthEnum depth);
 
     void redrawGLWidgets();
 

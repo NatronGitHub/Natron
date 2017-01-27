@@ -124,7 +124,7 @@ struct NewLayerDialogPrivate
     }
 };
 
-NewLayerDialog::NewLayerDialog(const ImageComponents& original,
+NewLayerDialog::NewLayerDialog(const ImagePlaneDesc& original,
                                QWidget* parent)
     : QDialog(parent)
     , _imp( new NewLayerDialogPrivate() )
@@ -189,12 +189,12 @@ NewLayerDialog::NewLayerDialog(const ImageComponents& original,
     _imp->mainLayout->addWidget(_imp->buttons, 8, 0, 1, 2);
 
     if (original.getNumComponents() != 0) {
-        _imp->layerEdit->setText( QString::fromUtf8( original.getLayerName().c_str() ) );
+        _imp->layerEdit->setText( QString::fromUtf8( original.getPlaneLabel().c_str() ) );
 
-        _imp->componentsTypeNameEdit->setText(QString::fromUtf8( original.getComponentsGlobalName().c_str() ) );
+        _imp->componentsTypeNameEdit->setText(QString::fromUtf8( original.getChannelsLabel().c_str() ) );
         LineEdit* edits[4] = {_imp->rEdit, _imp->gEdit, _imp->bEdit, _imp->aEdit};
         Label* labels[4] = {_imp->rLabel, _imp->gLabel, _imp->bLabel, _imp->aLabel};
-        const std::vector<std::string>& channels = original.getComponentsNames();
+        const std::vector<std::string>& channels = original.getChannels();
         for (int i = 0; i < 4; ++i) {
             if ( i >= (int)channels.size() ) {
                 edits[i]->setVisible(false);
@@ -253,7 +253,7 @@ NewLayerDialog::onNumCompsChanged(double value)
     }
 }
 
-ImageComponents
+ImagePlaneDesc
 NewLayerDialog::getComponents() const
 {
     QString layer = _imp->layerEdit->text();
@@ -269,41 +269,41 @@ NewLayerDialog::getComponents() const
     std::string aFixed = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots( a.toStdString() );
 
     if ( layerFixed.empty() ) {
-        return ImageComponents::getNoneComponents();
+        return ImagePlaneDesc::getNoneComponents();
     }
 
     std::string globalComponentsName = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendlyWithDots(_imp->componentsTypeNameEdit->text().toStdString());
 
     if (nComps == 1) {
         if ( a.isEmpty() ) {
-            return ImageComponents::getNoneComponents();
+            return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
         comps.push_back(aFixed);
 
-        return ImageComponents(layerFixed, globalComponentsName, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
     } else if (nComps == 2) {
         if ( rFixed.empty() || gFixed.empty() ) {
-            return ImageComponents::getNoneComponents();
+            return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
         comps.push_back(rFixed);
         comps.push_back(gFixed);
 
-        return ImageComponents(layerFixed, globalComponentsName, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
     } else if (nComps == 3) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() ) {
-            return ImageComponents::getNoneComponents();
+            return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
         comps.push_back(rFixed);
         comps.push_back(gFixed);
         comps.push_back(bFixed);
 
-        return ImageComponents(layerFixed, globalComponentsName, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
     } else if (nComps == 4) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() || aFixed.empty() ) {
-            return ImageComponents::getNoneComponents();
+            return ImagePlaneDesc::getNoneComponents();
         }
         std::vector<std::string> comps;
         comps.push_back(rFixed);
@@ -311,10 +311,10 @@ NewLayerDialog::getComponents() const
         comps.push_back(bFixed);
         comps.push_back(aFixed);
 
-        return ImageComponents(layerFixed, globalComponentsName, comps);
+        return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
     }
 
-    return ImageComponents::getNoneComponents();
+    return ImagePlaneDesc::getNoneComponents();
 } // NewLayerDialog::getComponents
 
 void

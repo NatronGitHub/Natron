@@ -47,7 +47,7 @@ NATRON_NAMESPACE_ENTER;
 InfoViewerWidget::InfoViewerWidget(const QString & description,
                                    QWidget* parent)
     : QWidget(parent)
-    , _comp( ImageComponents::getNoneComponents() )
+    , _comp( ImagePlaneDesc::getNoneComponents() )
     , _colorValid(false)
     , _colorApprox(false)
 {
@@ -425,7 +425,7 @@ InfoViewerWidget::setDataWindow(const RectI & r)
 }
 
 void
-InfoViewerWidget::setImageFormat(const ImageComponents& comp,
+InfoViewerWidget::setImageFormat(const ImagePlaneDesc& comp,
                                  ImageBitDepthEnum depth)
 {
     const QFont& font = imageFormat->font();

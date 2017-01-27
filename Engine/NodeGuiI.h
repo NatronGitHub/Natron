@@ -150,7 +150,7 @@ public:
     virtual void showGroupKnobAsDialog(const KnobGroupPtr& group) = 0;
 
     /**
-     * @brief Show a dialog and ask the user to add a new ImageComponents to the effect
+     * @brief Show a dialog and ask the user to add a new ImagePlaneDesc to the effect
      **/
     virtual bool addComponentsWithDialog(const KnobChoicePtr& knob) = 0;
 };

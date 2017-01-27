@@ -466,16 +466,16 @@ Node::makeInfoForInput(int inputNumber) const
     { // image format
         ss << "<b>" << tr("Image planes:").toStdString() << "</b> <font color=#c8c8c8>";
 
-        std::list<ImageComponents> availableLayers;
+        std::list<ImagePlaneDesc> availableLayers;
         _imp->effect->getAvailableLayers(time, ViewIdx(0), inputNumber, TreeRenderNodeArgsPtr(), &availableLayers);
 
-        std::list<ImageComponents>::iterator next = availableLayers.begin();
+        std::list<ImagePlaneDesc>::iterator next = availableLayers.begin();
         if ( next != availableLayers.end() ) {
             ++next;
         }
-        for (std::list<ImageComponents>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
+        for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
 
-            ss << " "  << it->getLayerName();
+            ss << " "  << it->getPlaneID();
             if ( next != availableLayers.end() ) {
                 ss << ", ";
                 ++next;

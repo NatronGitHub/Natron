@@ -451,9 +451,9 @@ GetComponentsResults::create(const GetComponentsKeyPtr& key)
 
 
 void
-GetComponentsResults::getResults(std::map<int, std::list<ImageComponents> >* neededInputLayers,
-                                 std::list<ImageComponents>* producedLayers,
-                                 std::list<ImageComponents>* passThroughPlanes,
+GetComponentsResults::getResults(std::map<int, std::list<ImagePlaneDesc> >* neededInputLayers,
+                                 std::list<ImagePlaneDesc>* producedLayers,
+                                 std::list<ImagePlaneDesc>* passThroughPlanes,
                                  int *passThroughInputNb,
                                  TimeValue *passThroughTime,
                                  ViewIdx *passThroughView,
@@ -474,9 +474,9 @@ GetComponentsResults::getResults(std::map<int, std::list<ImageComponents> >* nee
 }
 
 void
-GetComponentsResults::setResults(const std::map<int, std::list<ImageComponents> >& neededInputLayers,
-                                 const std::list<ImageComponents>& producedLayers,
-                                 const std::list<ImageComponents>& passThroughPlanes,
+GetComponentsResults::setResults(const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
+                                 const std::list<ImagePlaneDesc>& producedLayers,
+                                 const std::list<ImagePlaneDesc>& passThroughPlanes,
                                  int passThroughInputNb,
                                  TimeValue passThroughTime,
                                  ViewIdx passThroughView,
@@ -508,68 +508,72 @@ GetComponentsResults::getMetadataSize() const
 typedef bip::allocator<String_ExternalSegment, ExternalSegmentType::segment_manager> String_ExternalSegment_allocator;
 typedef bip::vector<String_ExternalSegment, String_ExternalSegment_allocator> StringVector_ExternalSegment;
 
-// A simplified version of ImageComponents class that can go in shared memory
-class MM_ImageComponents
+// A simplified version of ImagePlaneDesc class that can go in shared memory
+class MM_ImagePlaneDesc
 {
 
 public:
 
-    String_ExternalSegment layerName, componentsName;
+    String_ExternalSegment planeID, planeLabel, channelsLabel;
     StringVector_ExternalSegment channels;
 
-    MM_ImageComponents(const void_allocator& allocator)
-    : layerName(allocator)
-    , componentsName(allocator)
+    MM_ImagePlaneDesc(const void_allocator& allocator)
+    : planeID(allocator)
+    , planeLabel(allocator)
+    , channelsLabel(allocator)
     , channels(allocator)
     {
 
     }
 
-    void operator=(const MM_ImageComponents& other)
+    void operator=(const MM_ImagePlaneDesc& other)
     {
-        layerName = other.layerName;
-        componentsName = other.componentsName;
+        planeID = other.planeID;
+        planeLabel = other.planeLabel;
+        channelsLabel = other.channelsLabel;
         channels = other.channels;
     }
 };
 
-typedef bip::allocator<MM_ImageComponents, ExternalSegmentType::segment_manager> ImageComponents_ExternalSegment_allocator;
-typedef bip::vector<MM_ImageComponents, ImageComponents_ExternalSegment_allocator> ImageComponentsVector_ExternalSegment;
+typedef bip::allocator<MM_ImagePlaneDesc, ExternalSegmentType::segment_manager> ImagePlaneDesc_ExternalSegment_allocator;
+typedef bip::vector<MM_ImagePlaneDesc, ImagePlaneDesc_ExternalSegment_allocator> ImagePlaneDescVector_ExternalSegment;
 
-typedef std::pair<const int, ImageComponentsVector_ExternalSegment> NeededInputLayersValueType;
+typedef std::pair<const int, ImagePlaneDescVector_ExternalSegment> NeededInputLayersValueType;
 typedef bip::allocator<NeededInputLayersValueType, ExternalSegmentType::segment_manager> NeededInputLayersValueType_allocator;
 
-typedef bip::map<int, ImageComponentsVector_ExternalSegment, std::less<int>, NeededInputLayersValueType_allocator> NeededInputLayersMap_ExternalSegment;
+typedef bip::map<int, ImagePlaneDescVector_ExternalSegment, std::less<int>, NeededInputLayersValueType_allocator> NeededInputLayersMap_ExternalSegment;
 
-static void imageComponentsListToSharedMemoryComponentsList(const void_allocator& allocator, const std::list<ImageComponents>& inComps, ImageComponentsVector_ExternalSegment* outComps)
+static void imageComponentsListToSharedMemoryComponentsList(const void_allocator& allocator, const std::list<ImagePlaneDesc>& inComps, ImagePlaneDescVector_ExternalSegment* outComps)
 {
-    for (std::list<ImageComponents>::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
-        MM_ImageComponents comps(allocator);
+    for (std::list<ImagePlaneDesc>::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
+        MM_ImagePlaneDesc comps(allocator);
 
-        const std::vector<std::string>& channels = it->getComponentsNames();
+        const std::vector<std::string>& channels = it->getChannels();
         for (std::size_t i = 0; i < channels.size(); ++i) {
             String_ExternalSegment chan(allocator);
             chan.append(channels[i].c_str());
             comps.channels.push_back(chan);
         }
-        comps.componentsName.append(it->getComponentsGlobalName().c_str());
-        comps.layerName.append(it->getLayerName().c_str());
+        comps.channelsLabel.append(it->getChannelsLabel().c_str());
+        comps.planeID.append(it->getPlaneID().c_str());
+        comps.planeLabel.append(it->getPlaneLabel().c_str());
         outComps->push_back(comps);
     }
 }
 
-static void imageComponentsListFromSharedMemoryComponentsList(const ImageComponentsVector_ExternalSegment& inComps, std::list<ImageComponents>* outComps)
+static void imageComponentsListFromSharedMemoryComponentsList(const ImagePlaneDescVector_ExternalSegment& inComps, std::list<ImagePlaneDesc>* outComps)
 {
-    for (ImageComponentsVector_ExternalSegment::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
-        std::string layerName(it->layerName.c_str());
-        std::string compsName(it->componentsName.c_str());
+    for (ImagePlaneDescVector_ExternalSegment::const_iterator it = inComps.begin() ; it != inComps.end(); ++it) {
+        std::string planeID(it->planeID.c_str());
+        std::string planeLabel(it->planeLabel.c_str());
+        std::string channelsLabel(it->channelsLabel.c_str());
         std::vector<std::string> channels(it->channels.size());
 
         int i = 0;
         for (StringVector_ExternalSegment::const_iterator it2 = it->channels.begin(); it2 != it->channels.end(); ++it2, ++i) {
             channels[i] = std::string(it2->c_str());
         }
-        ImageComponents c(layerName, compsName, channels);
+        ImagePlaneDesc c(planeID, planeLabel, channelsLabel, channels);
         outComps->push_back(c);
     }
 }
@@ -586,8 +590,8 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::s
             throw std::bad_alloc();
         }
 
-        for (std::map<int, std::list<ImageComponents> >::const_iterator it = _neededInputLayers.begin(); it != _neededInputLayers.end(); ++it) {
-            ImageComponentsVector_ExternalSegment vec(alloc_inst);
+        for (std::map<int, std::list<ImagePlaneDesc> >::const_iterator it = _neededInputLayers.begin(); it != _neededInputLayers.end(); ++it) {
+            ImagePlaneDescVector_ExternalSegment vec(alloc_inst);
             imageComponentsListToSharedMemoryComponentsList(alloc_inst, it->second, &vec);
 
             NeededInputLayersValueType v = std::make_pair(it->first, vec);
@@ -596,7 +600,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::s
         objectPointers->push_back(segment->get_handle_from_address(neededLayers));
     }
     {
-        ImageComponentsVector_ExternalSegment *producedLayers = segment->construct<ImageComponentsVector_ExternalSegment>(std::string(objectNamesPrefix + "producedLayers").c_str())(alloc_inst);
+        ImagePlaneDescVector_ExternalSegment *producedLayers = segment->construct<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "producedLayers").c_str())(alloc_inst);
         if (!producedLayers) {
             throw std::bad_alloc();
         }
@@ -604,7 +608,7 @@ GetComponentsResults::toMemorySegment(ExternalSegmentType* segment, const std::s
         objectPointers->push_back(segment->get_handle_from_address(producedLayers));
     }
     {
-        ImageComponentsVector_ExternalSegment *ptPlanes = segment->construct<ImageComponentsVector_ExternalSegment>(std::string(objectNamesPrefix + "passThroughLayers").c_str())(alloc_inst);
+        ImagePlaneDescVector_ExternalSegment *ptPlanes = segment->construct<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "passThroughLayers").c_str())(alloc_inst);
         if (!ptPlanes) {
             throw std::bad_alloc();
         }
@@ -626,19 +630,19 @@ GetComponentsResults::fromMemorySegment(ExternalSegmentType* segment, const std:
             throw std::bad_alloc();
         }
         for (NeededInputLayersMap_ExternalSegment::const_iterator it = neededLayers->begin(); it != neededLayers->end(); ++it) {
-            std::list<ImageComponents>& comps = _neededInputLayers[it->first];
+            std::list<ImagePlaneDesc>& comps = _neededInputLayers[it->first];
             imageComponentsListFromSharedMemoryComponentsList(it->second, &comps);
         }
     }
     {
-        ImageComponentsVector_ExternalSegment* producedLayers = segment->find<ImageComponentsVector_ExternalSegment>(std::string(objectNamesPrefix + "producedLayers").c_str()).first;
+        ImagePlaneDescVector_ExternalSegment* producedLayers = segment->find<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "producedLayers").c_str()).first;
         if (!producedLayers) {
             throw std::bad_alloc();
         }
         imageComponentsListFromSharedMemoryComponentsList(*producedLayers, &_producedLayers);
     }
     {
-        ImageComponentsVector_ExternalSegment* ptLayers = segment->find<ImageComponentsVector_ExternalSegment>(std::string(objectNamesPrefix + "passThroughLayers").c_str()).first;
+        ImagePlaneDescVector_ExternalSegment* ptLayers = segment->find<ImagePlaneDescVector_ExternalSegment>(std::string(objectNamesPrefix + "passThroughLayers").c_str()).first;
         if (!ptLayers) {
             throw std::bad_alloc();
         }

@@ -40,7 +40,7 @@
 #include "Global/GlobalDefines.h"
 #include "Global/KeySymbols.h"
 
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/Knob.h" // for KnobHolder
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
@@ -167,7 +167,7 @@ public:
         RectI roi;
 
         // The list of output planes: these are the images to write to in output
-        std::list<std::pair<ImageComponents, ImagePtr > > outputPlanes;
+        std::list<std::pair<ImagePlaneDesc, ImagePtr > > outputPlanes;
 
         // The render args for this node.
         TreeRenderNodeArgsPtr renderArgs;
@@ -230,7 +230,7 @@ public:
         unsigned int mipMapLevel;
 
         // The image planes to render
-        std::list<ImageComponents> components;
+        std::list<ImagePlaneDesc> components;
         TreeRenderNodeArgsPtr renderArgs;
 
         // Set to false if you don't want the node to render using the GPU at all
@@ -264,7 +264,7 @@ public:
                       const RectI & roi_,
                       const RenderScale& proxyScale_,
                       unsigned int mipMapLevel_,
-                      const std::list<ImageComponents> & components_,
+                      const std::list<ImagePlaneDesc> & components_,
                       const TreeRenderNodeArgsPtr& renderArgs )
         : time(time_)
         , view(view_)
@@ -357,7 +357,7 @@ public:
         // the getClipComponents action
         //
         // Default - NULL
-        const std::list<ImageComponents>* layers;
+        const std::list<ImagePlaneDesc>* layers;
 
         // The backend that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
         // the image may not support OpenGL. In this case setting storage to eRenderBackendTypeCPU would convert the OpenGL texture to
@@ -380,7 +380,7 @@ public:
     struct GetImageOutArgs
     {
         // For each plane requested the associated image.
-        std::map<ImageComponents, ImagePtr> imagePlanes;
+        std::map<ImagePlaneDesc, ImagePtr> imagePlanes;
 
         // The roi of the input effect effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
         RectI roiPixel;
@@ -437,7 +437,7 @@ public:
      * layers plus the user created layers at this node.
      * This function calls getLayersProducedAndNeeded_public() internally.
      **/
-    ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render, std::list<ImageComponents>* availableLayers) ;
+    ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render, std::list<ImagePlaneDesc>* availableLayers) ;
 
 protected:
 
@@ -452,8 +452,8 @@ protected:
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& render,
-                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                  std::list<ImageComponents>* layersProduced,
+                                                  std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                  std::list<ImagePlaneDesc>* layersProduced,
                                                   TimeValue* passThroughTime,
                                                   ViewIdx* passThroughView,
                                                   int* passThroughInputNb);
@@ -467,9 +467,9 @@ private:
     ActionRetCodeEnum getLayersProducedAndNeeded_default(TimeValue time,
                                                ViewIdx view,
                                                const TreeRenderNodeArgsPtr& render,
-                                               std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                               std::list<ImageComponents>* layersProduced,
-                                                std::list<ImageComponents>* passThroughPlanes,
+                                               std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                               std::list<ImagePlaneDesc>* layersProduced,
+                                                std::list<ImagePlaneDesc>* passThroughPlanes,
                                                TimeValue* passThroughTime,
                                                ViewIdx* passThroughView,
                                                int* passThroughInputNb,
@@ -484,9 +484,9 @@ private:
     ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
                                                   ViewIdx view,
                                                   const TreeRenderNodeArgsPtr& render,
-                                                  std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                  std::list<ImageComponents>* layersProduced,
-                                                  std::list<ImageComponents>* passThroughPlanes,
+                                                  std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                  std::list<ImagePlaneDesc>* layersProduced,
+                                                  std::list<ImagePlaneDesc>* passThroughPlanes,
                                                   TimeValue* passThroughTime,
                                                   ViewIdx* passThroughView,
                                                   int* passThroughInputNb,
@@ -899,13 +899,18 @@ public:
 
     void onInputChanged_public(int inputNo);
 
-    void onMetadataChanged_public();
+    void onMetadataChanged_recursive_public();
+
+    void onMetadataChanged_nonRecursive_public();
 
 protected:
 
-    // Called by onMetadataChanged_public() to recursively
+    // Called by onMetadataChanged_recursive_public() to recursively
     // update downstream effects.
     void onMetadataChanged_recursive(std::set<NodePtr>* markedNodes);
+
+    // Calls onMetadataChanged, returns true if something changed, false otherwise
+    bool onMetadataChanged_nonRecursive();
 
     /**
      * @brief Called when metadata have been changed
@@ -1190,7 +1195,7 @@ public:
     struct RenderRoIResults
     {
         // For each component requested, the image plane rendered
-        std::map<ImageComponents, ImagePtr> outputPlanes;
+        std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
 
         // If this effect can apply distortion, this is the stack of distortions upstream to apply
         Distortion2DStackPtr distortionStack;
@@ -1222,7 +1227,7 @@ public:
         std::list<RectToRender> rectsToRender;
 
         // The planes to render. Fully cached planes are not in this list
-        std::map<ImageComponents, PlaneToRender> planes;
+        std::map<ImagePlaneDesc, PlaneToRender> planes;
 
         // The render device (CPU, OpenGL...)
         RenderBackendTypeEnum backendType;
@@ -1334,7 +1339,7 @@ public:
      * If inputNb is -1, it returns the expected components for the color plane in output.
      * For multi-planar effects, they must support all kind of components.
      **/
-    ImageComponents getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb);
+    void getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane);
 
     ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb);
 
@@ -1804,7 +1809,7 @@ private:
                                      const RenderScale& renderMappedScale,
                                      const ImagePlanesToRenderPtr & planes,
                                      const std::bitset<4> processChannels,
-                                     const std::map<int, std::list<ImageComponents> >& neededInputLayers);
+                                     const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
 
 
 

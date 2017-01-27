@@ -101,15 +101,15 @@ struct ViewerInstancePrivate
 
     void refreshLayerAndAlphaChannelComboBox();
 
-    ImageComponents getSelectedLayer(const std::list<ImageComponents>& availableLayers) const;
+    ImagePlaneDesc getSelectedLayer(const std::list<ImagePlaneDesc>& availableLayers) const;
 
-    ImageComponents getSelectedAlphaChannel(const std::list<ImageComponents>& availableLayers, int *channelIndex) const;
+    ImagePlaneDesc getSelectedAlphaChannel(const std::list<ImagePlaneDesc>& availableLayers, int *channelIndex) const;
 
-    ImageComponents getComponentsFromDisplayChannels(const ImageComponents& alphaLayer) const;
+    ImagePlaneDesc getComponentsFromDisplayChannels(const ImagePlaneDesc& alphaLayer) const;
 
-    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const;
+    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
 
-    void setDisplayChannelsFromLayer(const std::list<ImageComponents>& availableLayers);
+    void setDisplayChannelsFromLayer(const std::list<ImagePlaneDesc>& availableLayers);
     
 };
 
@@ -365,7 +365,7 @@ ViewerInstance::isIdentity(TimeValue time,
                            ViewIdx* inputView,
                            int* inputNb)
 {
-    ImageComponents selectedLayer, selectedAlphaLayer;
+    ImagePlaneDesc selectedLayer, selectedAlphaLayer;
     int alphaChannelIndex;
     _imp->getChannelOptions(render, time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, 0);
     DisplayChannelsEnum displayChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
@@ -414,7 +414,7 @@ ActionRetCodeEnum
 ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
 
-   // ImageComponents selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
+   // ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
    // int alphaChannelIndex;
    // _imp->getChannelOptions(TreeRenderNodeArgsPtr(), getCurrentTime_TLS(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
@@ -448,8 +448,8 @@ ActionRetCodeEnum
 ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
                                     ViewIdx view,
                                     const TreeRenderNodeArgsPtr& render,
-                                    std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                    std::list<ImageComponents>* layersProduced,
+                                    std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                    std::list<ImagePlaneDesc>* layersProduced,
                                     TimeValue* passThroughTime,
                                     ViewIdx* passThroughView,
                                     int* passThroughInputNb)
@@ -459,13 +459,13 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
     *passThroughView = view;
 
 
-    ImageComponents selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
+    ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
     _imp->getChannelOptions(render, time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
     layersProduced->push_back(selectedDisplayLayer);
 
-    std::list<ImageComponents>& neededLayers = (*inputLayersNeeded)[0];
+    std::list<ImagePlaneDesc>& neededLayers = (*inputLayersNeeded)[0];
     if (selectedLayer.getNumComponents() > 0) {
         neededLayers.push_back(selectedLayer);
     }
@@ -483,15 +483,15 @@ ViewerInstance::setRefreshLayerAndAlphaChoiceEnabled(bool enabled)
 }
 
 void
-ViewerInstance::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const
+ViewerInstance::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
 {
     _imp->getChannelOptions(render, time, rgbLayer, alphaLayer, alphaChannelIndex, displayChannels);
 }
 
 void
-ViewerInstancePrivate::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const
+ViewerInstancePrivate::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
 {
-    std::list<ImageComponents> upstreamAvailableLayers;
+    std::list<ImagePlaneDesc> upstreamAvailableLayers;
     {
         const int passThroughPlanesInputNb = 0;
         ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(time, ViewIdx(0), passThroughPlanesInputNb, render, &upstreamAvailableLayers);
@@ -509,8 +509,8 @@ ViewerInstancePrivate::getChannelOptions(const TreeRenderNodeArgsPtr& render, Ti
 
 } // getChannelOptions
 
-ImageComponents
-ViewerInstancePrivate::getComponentsFromDisplayChannels(const ImageComponents& alphaLayer) const
+ImagePlaneDesc
+ViewerInstancePrivate::getComponentsFromDisplayChannels(const ImagePlaneDesc& alphaLayer) const
 {
     DisplayChannelsEnum outputChannels = (DisplayChannelsEnum)displayChannels.lock()->getValue();
     switch (outputChannels) {
@@ -519,18 +519,18 @@ ViewerInstancePrivate::getComponentsFromDisplayChannels(const ImageComponents& a
         case eDisplayChannelsG:
         case eDisplayChannelsB:
         case eDisplayChannelsY:
-            return ImageComponents::getAlphaComponents();
+            return ImagePlaneDesc::getAlphaComponents();
             break;
         case eDisplayChannelsRGB: {
             if (alphaLayer.getNumComponents() == 0) {
-                return ImageComponents::getRGBComponents();
+                return ImagePlaneDesc::getRGBComponents();
             } else {
-                return ImageComponents::getRGBAComponents();
+                return ImagePlaneDesc::getRGBAComponents();
             }
 
         }   break;
         case eDisplayChannelsMatte:
-            return ImageComponents::getRGBAComponents();
+            return ImagePlaneDesc::getRGBAComponents();
             break;
     }
 
@@ -545,7 +545,7 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
     KnobChoicePtr alphaChannelKnob = alphaChannelChoiceKnob.lock();
 
 
-    std::list<ImageComponents> upstreamAvailableLayers;
+    std::list<ImagePlaneDesc> upstreamAvailableLayers;
 
     {
         const int passThroughPlanesInputNb = 0;
@@ -562,13 +562,13 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 
     int foundColorPlaneIndex = -1;
 
-    for (std::list<ImageComponents>::iterator it2 = upstreamAvailableLayers.begin(); it2 != upstreamAvailableLayers.end(); ++it2) {
+    for (std::list<ImagePlaneDesc>::iterator it2 = upstreamAvailableLayers.begin(); it2 != upstreamAvailableLayers.end(); ++it2) {
 
         if (foundColorPlaneIndex == -1 && it2->isColorPlane()) {
             foundColorPlaneIndex = (int)layerOptions.size();
         }
 
-        ChoiceOption layerOption = it2->getLayerOption();
+        ChoiceOption layerOption = it2->getPlaneOption();
         layerOptions.push_back(layerOption);
 
         std::size_t nChans = (std::size_t)it2->getNumComponents();
@@ -602,25 +602,25 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 } // refreshLayerAndAlphaChannelComboBox
 
 
-ImageComponents
-ViewerInstancePrivate::getSelectedLayer(const std::list<ImageComponents>& availableLayers) const
+ImagePlaneDesc
+ViewerInstancePrivate::getSelectedLayer(const std::list<ImagePlaneDesc>& availableLayers) const
 {
     ChoiceOption activeIndexID = layerChoiceKnob.lock()->getActiveEntry(ViewIdx(0));
-    for (std::list<ImageComponents>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
-        ChoiceOption opt = it->getLayerOption();
+    for (std::list<ImagePlaneDesc>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
+        ChoiceOption opt = it->getPlaneOption();
         if (opt.id == activeIndexID.id) {
             return *it;
         }
     }
-    return ImageComponents::getNoneComponents();
+    return ImagePlaneDesc::getNoneComponents();
 
 } // getSelectedLayer
 
-ImageComponents
-ViewerInstancePrivate::getSelectedAlphaChannel(const std::list<ImageComponents>& availableLayers, int *channelIndex) const
+ImagePlaneDesc
+ViewerInstancePrivate::getSelectedAlphaChannel(const std::list<ImagePlaneDesc>& availableLayers, int *channelIndex) const
 {
     ChoiceOption activeIndexID = alphaChannelChoiceKnob.lock()->getActiveEntry(ViewIdx(0));
-    for (std::list<ImageComponents>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::const_iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
         std::size_t nChans = (std::size_t)it->getNumComponents();
         for (std::size_t c = 0; c < nChans; ++c) {
             ChoiceOption chanOption = it->getChannelOption(c);
@@ -631,13 +631,13 @@ ViewerInstancePrivate::getSelectedAlphaChannel(const std::list<ImageComponents>&
         }
     }
     *channelIndex = -1;
-    return ImageComponents::getNoneComponents();
+    return ImagePlaneDesc::getNoneComponents();
 } // getSelectedAlphaChannel
 
 void
-ViewerInstancePrivate::setDisplayChannelsFromLayer(const std::list<ImageComponents>& availableLayers)
+ViewerInstancePrivate::setDisplayChannelsFromLayer(const std::list<ImagePlaneDesc>& availableLayers)
 {
-    ImageComponents layer = getSelectedLayer(availableLayers);
+    ImagePlaneDesc layer = getSelectedLayer(availableLayers);
     if (layer.getNumComponents() == 1) {
 
         // Switch auto to alpha if there's only this to view
@@ -1335,7 +1335,7 @@ ActionRetCodeEnum
 ViewerInstance::render(const RenderActionArgs& args)
 {
 
-    ImageComponents selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
+    ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
     _imp->getChannelOptions(args.renderArgs, args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
@@ -1350,7 +1350,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     DisplayChannelsEnum displayChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 
-    std::list<ImageComponents> layersToFetch;
+    std::list<ImagePlaneDesc> layersToFetch;
     if (selectedLayer.getNumComponents() > 0) {
         layersToFetch.push_back(selectedLayer);
     }
@@ -1370,13 +1370,13 @@ ViewerInstance::render(const RenderActionArgs& args)
             return eActionStatusFailed;
         }
         {
-            std::map<ImageComponents, ImagePtr>::iterator foundLayer = outArgs.imagePlanes.find(selectedLayer);
+            std::map<ImagePlaneDesc, ImagePtr>::iterator foundLayer = outArgs.imagePlanes.find(selectedLayer);
             if (foundLayer != outArgs.imagePlanes.end()) {
                 colorImage = foundLayer->second;
             }
         }
         {
-            std::map<ImageComponents, ImagePtr>::iterator foundAlphaLayer = outArgs.imagePlanes.find(selectedAlphaLayer);
+            std::map<ImagePlaneDesc, ImagePtr>::iterator foundAlphaLayer = outArgs.imagePlanes.find(selectedAlphaLayer);
             if (foundAlphaLayer != outArgs.imagePlanes.end()) {
                 alphaImage = foundAlphaLayer->second;
             }

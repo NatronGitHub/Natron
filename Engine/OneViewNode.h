@@ -37,9 +37,6 @@ struct OneViewNodePrivate;
 class OneViewNode
     : public EffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -104,11 +101,10 @@ public:
         return eViewInvarianceAllViewsVariant;
     }
 
-public Q_SLOTS:
-
-    void onProjectViewsChanged();
 
 private:
+
+    virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;

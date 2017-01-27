@@ -49,12 +49,12 @@ NATRON_NAMESPACE_ENTER;
  * @brief Add the layers from the inputList to the toList if they do not already exist in the list.
  * For the color plane, if it already existed in toList it is replaced by the value in inputList
  **/
-static void mergeLayersList(const std::list<ImageComponents>& inputList,
-                            std::list<ImageComponents>* toList)
+static void mergeLayersList(const std::list<ImagePlaneDesc>& inputList,
+                            std::list<ImagePlaneDesc>* toList)
 {
-    for (std::list<ImageComponents>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::const_iterator it = inputList.begin(); it != inputList.end(); ++it) {
 
-        std::list<ImageComponents>::iterator foundMatch = ImageComponents::findEquivalentLayer(*it, toList->begin(), toList->end());
+        std::list<ImagePlaneDesc>::iterator foundMatch = ImagePlaneDesc::findEquivalentLayer(*it, toList->begin(), toList->end());
 
         // If we found the color plane, replace it by this color plane which may have changed (e.g: input was Color.RGB but this node Color.RGBA)
         if (foundMatch != toList->end()) {
@@ -68,11 +68,11 @@ static void mergeLayersList(const std::list<ImageComponents>& inputList,
 /**
  * @brief Remove any layer from the toRemove list from toList.
  **/
-static void removeFromLayersList(const std::list<ImageComponents>& toRemove,
-                                 std::list<ImageComponents>* toList)
+static void removeFromLayersList(const std::list<ImagePlaneDesc>& toRemove,
+                                 std::list<ImagePlaneDesc>* toList)
 {
-    for (std::list<ImageComponents>::const_iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
-        std::list<ImageComponents>::iterator foundMatch = ImageComponents::findEquivalentLayer<std::list<ImageComponents>::iterator>(*it, toList->begin(), toList->end());
+    for (std::list<ImagePlaneDesc>::const_iterator it = toRemove.begin(); it != toRemove.end(); ++it) {
+        std::list<ImagePlaneDesc>::iterator foundMatch = ImagePlaneDesc::findEquivalentLayer<std::list<ImagePlaneDesc>::iterator>(*it, toList->begin(), toList->end());
         if (foundMatch != toList->end()) {
             toList->erase(foundMatch);
         }
@@ -84,15 +84,15 @@ ActionRetCodeEnum
 EffectInstance::getLayersProducedAndNeeded(TimeValue time,
                                                ViewIdx view,
                                                const TreeRenderNodeArgsPtr& render,
-                                               std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                               std::list<ImageComponents>* layersProduced,
+                                               std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                               std::list<ImagePlaneDesc>* layersProduced,
                                                TimeValue* passThroughTime,
                                                ViewIdx* passThroughView,
                                                int* passThroughInputNb)
 {
     bool processAllRequested;
     std::bitset<4> processChannels;
-    std::list<ImageComponents> passThroughPlanes;
+    std::list<ImagePlaneDesc> passThroughPlanes;
     getLayersProducedAndNeeded_default(time, view, render, inputLayersNeeded, layersProduced, &passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
     return eActionStatusReplyDefault;
 } // getComponentsNeededAndProduced
@@ -101,9 +101,9 @@ ActionRetCodeEnum
 EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
                                                    ViewIdx view,
                                                    const TreeRenderNodeArgsPtr& render,
-                                                   std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                   std::list<ImageComponents>* layersProduced,
-                                                   std::list<ImageComponents>* passThroughPlanes,
+                                                   std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                   std::list<ImagePlaneDesc>* layersProduced,
+                                                   std::list<ImagePlaneDesc>* passThroughPlanes,
                                                    TimeValue* passThroughTime,
                                                    ViewIdx* passThroughView,
                                                    int* passThroughInputNb,
@@ -116,7 +116,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
     *processAllRequested = false;
 
     {
-        std::list<ImageComponents> upstreamAvailableLayers;
+        std::list<ImagePlaneDesc> upstreamAvailableLayers;
         ActionRetCodeEnum stat = eActionStatusOK;
         if (*passThroughInputNb != -1) {
             stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
@@ -135,7 +135,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
     // Get the output needed components
     {
 
-        std::vector<ImageComponents> clipPrefsAllComps;
+        std::vector<ImagePlaneDesc> clipPrefsAllComps;
 
         // The clipPrefsComps is the number of components desired by the plug-in in the
         // getTimeInvariantMetadatas action (getClipPreferences for OpenFX) mapped to the
@@ -148,39 +148,40 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         // - multi-planar effect that supports The Foundry Furnace plug-in suite: the value returned is either
         // disparity components or a motion vector components.
         //
-        ImageComponents clipPrefsComps = getMetadataComponents(render, -1);
-        {
-            // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
-            // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
-            if ( clipPrefsComps.isPairedComponents() ) {
-                ImageComponents first, second;
-                clipPrefsComps.getPlanesPair(&first, &second);
-                clipPrefsAllComps.push_back(first);
-                clipPrefsAllComps.push_back(second);
-            } else {
-                clipPrefsAllComps.push_back(clipPrefsComps);
-            }
+        ImagePlaneDesc metadataPlane, metadataPairedPlane;
+        getMetadataComponents(render, -1, &metadataPlane, &metadataPairedPlane);
+        // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
+        // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
+        if (metadataPlane.getNumComponents() > 0) {
+            clipPrefsAllComps.push_back(metadataPlane);
+        }
+        if (metadataPairedPlane.getNumComponents() > 0) {
+            clipPrefsAllComps.push_back(metadataPairedPlane);
+        }
+        if (clipPrefsAllComps.empty()) {
+            // If metada are not set yet, at least append RGBA
+            clipPrefsAllComps.push_back(ImagePlaneDesc::getRGBAComponents());
         }
 
         // Natron adds for all non multi-planar effects a default layer selector to emulate
         // multi-plane even if the plug-in is not aware of it. When calling getImagePlanes(), the
         // plug-in will receive this user-selected plane, mapped to the number of components indicated
         // by the plug-in in getTimeInvariantMetadatas
-        ImageComponents layer;
+        ImagePlaneDesc layer;
         bool gotUserSelectedPlane;
         {
             // In output, the available layers are those pass-through the input + project layers +
             // layers produced by this node
-            std::list<ImageComponents> availableLayersInOutput = *passThroughPlanes;
+            std::list<ImagePlaneDesc> availableLayersInOutput = *passThroughPlanes;
             availableLayersInOutput.insert(availableLayersInOutput.end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end());
 
             {
-                std::list<ImageComponents> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+                std::list<ImagePlaneDesc> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
                 mergeLayersList(projectLayers, &availableLayersInOutput);
             }
 
             {
-                std::list<ImageComponents> userCreatedLayers;
+                std::list<ImagePlaneDesc> userCreatedLayers;
                 getNode()->getUserCreatedComponents(&userCreatedLayers);
                 mergeLayersList(userCreatedLayers, &availableLayersInOutput);
             }
@@ -197,10 +198,6 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
 
         if (gotUserSelectedPlane) {
             layersProduced->push_back(layer);
-
-            if ( !clipPrefsComps.isColorPlane() ) {
-                layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
-            }
         } else {
             layersProduced->insert( layersProduced->end(), clipPrefsAllComps.begin(), clipPrefsAllComps.end() );
         }
@@ -211,23 +208,18 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
     int maxInput = getMaxInputCount();
     for (int i = 0; i < maxInput; ++i) {
 
-        EffectInstancePtr input = getInput(i);
-        if (!input) {
-            continue;
-        }
-
-
-        std::list<ImageComponents> upstreamAvailableLayers;
+  
+        std::list<ImagePlaneDesc> upstreamAvailableLayers;
         ActionRetCodeEnum stat = getAvailableLayers(time, view, i, render, &upstreamAvailableLayers);
         (void)stat;
 
 
 
-        std::list<ImageComponents> &componentsSet = (*inputLayersNeeded)[i];
+        std::list<ImagePlaneDesc> &componentsSet = (*inputLayersNeeded)[i];
 
         // Get the selected layer from the source channels menu
         std::bitset<4> inputProcChannels;
-        ImageComponents layer;
+        ImagePlaneDesc layer;
         bool isAll;
         bool ok = getNode()->getSelectedLayer(i, upstreamAvailableLayers, &inputProcChannels, &isAll, &layer);
 
@@ -237,20 +229,26 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         }
 
         // For a mask get its selected channel
-        ImageComponents maskComp;
+        ImagePlaneDesc maskComp;
         int channelMask = getNode()->getMaskChannel(i, upstreamAvailableLayers, &maskComp);
 
 
-        std::vector<ImageComponents> clipPrefsAllComps;
+        std::vector<ImagePlaneDesc> clipPrefsAllComps;
         {
-            ImageComponents clipPrefsComps = getMetadataComponents(render, i);
-            if ( clipPrefsComps.isPairedComponents() ) {
-                ImageComponents first, second;
-                clipPrefsComps.getPlanesPair(&first, &second);
-                clipPrefsAllComps.push_back(first);
-                clipPrefsAllComps.push_back(second);
-            } else {
-                clipPrefsAllComps.push_back(clipPrefsComps);
+            ImagePlaneDesc metadataPlane, metadataPairedPlane;
+            getMetadataComponents(render, i, &metadataPlane, &metadataPairedPlane);
+
+            // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
+            // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
+            if (metadataPlane.getNumComponents() > 0) {
+                clipPrefsAllComps.push_back(metadataPlane);
+            }
+            if (metadataPairedPlane.getNumComponents() > 0) {
+                clipPrefsAllComps.push_back(metadataPairedPlane);
+            }
+            if (clipPrefsAllComps.empty()) {
+                // If metada are not set yet, at least append RGBA
+                clipPrefsAllComps.push_back(ImagePlaneDesc::getRGBAComponents());
             }
         }
 
@@ -259,7 +257,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
             // If this is a mask, ask for the selected mask layer
             componentsSet.push_back(maskComp);
 
-        } else if (ok) {
+        } else if (ok && layer.getNumComponents() > 0) {
             componentsSet.push_back(layer);
         } else {
             //Use regular clip preferences
@@ -274,9 +272,9 @@ ActionRetCodeEnum
 EffectInstance::getComponentsNeededInternal(TimeValue time,
                                             ViewIdx view,
                                             const TreeRenderNodeArgsPtr& render,
-                                            std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                            std::list<ImageComponents>* layersProduced,
-                                            std::list<ImageComponents>* passThroughPlanes,
+                                            std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                            std::list<ImagePlaneDesc>* layersProduced,
+                                            std::list<ImagePlaneDesc>* passThroughPlanes,
                                             TimeValue* passThroughTime,
                                             ViewIdx* passThroughView,
                                             int* passThroughInputNb,
@@ -296,6 +294,19 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         return stat;
     }
 
+    // Ensure the plug-in made the metadata plane available.
+    {
+        std::list<ImagePlaneDesc> metadataPlanes;
+        ImagePlaneDesc metadataPlane, metadataPairedPlane;
+        getMetadataComponents(render, -1, &metadataPlane, &metadataPairedPlane);
+        if (metadataPairedPlane.getNumComponents() > 0) {
+            metadataPlanes.push_back(metadataPairedPlane);
+        }
+        if (metadataPlane.getNumComponents() > 0) {
+            metadataPlanes.push_back(metadataPlane);
+        }
+        mergeLayersList(metadataPlanes, layersProduced);
+    }
 
     // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
     PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
@@ -305,11 +316,12 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         assert(*passThroughInputNb != -1);
 
 
-        std::list<ImageComponents> upstreamAvailableLayers;
+        std::list<ImagePlaneDesc> upstreamAvailableLayers;
         ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
         if (isFailureRetCode(stat)) {
             return stat;
         }
+
 
         // upstreamAvailableLayers now contain all available planes in input of this node
         // Remove from this list all layers produced from this node to get the pass-through planes list
@@ -333,7 +345,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
 
 ActionRetCodeEnum
-EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render,  std::list<ImageComponents>* availableLayers)
+EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render,  std::list<ImagePlaneDesc>* availableLayers)
 {
 
     EffectInstancePtr effect;
@@ -354,7 +366,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
         effectRenderArgs = render;
     }
 
-    std::list<ImageComponents> passThroughLayers;
+    std::list<ImagePlaneDesc> passThroughLayers;
     {
         GetComponentsResultsPtr actionResults;
         ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(time, view, effectRenderArgs, &actionResults);
@@ -362,8 +374,8 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
             return stat;
         }
 
-        std::map<int, std::list<ImageComponents> > inputLayersNeeded;
-        std::list<ImageComponents> layersProduced;
+        std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
+        std::list<ImagePlaneDesc> layersProduced;
         TimeValue passThroughTime;
         ViewIdx passThroughView;
         int passThroughInputNb;
@@ -377,7 +389,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
     }
 
     // Ensure the color layer is always the first one available in the list
-    for (std::list<ImageComponents>::iterator it = passThroughLayers.begin(); it != passThroughLayers.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::iterator it = passThroughLayers.begin(); it != passThroughLayers.end(); ++it) {
         if (it->isColorPlane()) {
             availableLayers->push_front(*it);
             passThroughLayers.erase(it);
@@ -388,14 +400,14 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
     // In output, also make available the default project layers and the user created components
     if (inputNb == -1) {
 
-        std::list<ImageComponents> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
+        std::list<ImagePlaneDesc> projectLayers = getApp()->getProject()->getProjectDefaultLayers();
         mergeLayersList(projectLayers, availableLayers);
     }
 
     mergeLayersList(passThroughLayers, availableLayers);
 
     if (inputNb == -1) {
-        std::list<ImageComponents> userCreatedLayers;
+        std::list<ImagePlaneDesc> userCreatedLayers;
         getNode()->getUserCreatedComponents(&userCreatedLayers);
         mergeLayersList(userCreatedLayers, availableLayers);
     }
@@ -403,7 +415,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
 
 
     return eActionStatusOK;
-} // getAvailableInputLayers
+} // getAvailableLayers
 
 ActionRetCodeEnum
 EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
@@ -483,13 +495,13 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
 
 
     // For each input index what layers are required
-    std::map<int, std::list<ImageComponents> > inputLayersNeeded;
+    std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
 
     // The layers that are produced by this effect
-    std::list<ImageComponents> outputLayersProduced;
+    std::list<ImagePlaneDesc> outputLayersProduced;
 
     // The layers that this effect can fetch from the pass-through input but does not produce itself
-    std::list<ImageComponents> passThroughPlanes;
+    std::list<ImagePlaneDesc> passThroughPlanes;
 
     int passThroughInputNb = -1;
     TimeValue passThroughTime(0);
@@ -1957,23 +1969,11 @@ EffectInstance::onMetadataChanged(const NodeMetadata& metadata)
     getNode()->onNodeMetadatasRefreshedOnMainThread(metadata);
 }
 
-void
-EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
+bool
+EffectInstance::onMetadataChanged_nonRecursive()
 {
-    // Can only be called on the main thread
-    assert(QThread::currentThread() == qApp->thread());
-
-    // Check if we already recursed on this node
-    NodePtr node = getNode();
-    if (markedNodes->find(node) != markedNodes->end()) {
-        return;
-    }
-
-
-    // mark this node
-    markedNodes->insert(node);
-
     // Call the onMetadataChanged action
+    NodePtr node = getNode();
 
     EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
     EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
@@ -1990,11 +1990,33 @@ EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
         assert(metadata);
         U64 currentHash = results->getHashKey();
         if (currentHash == node->getLastTimeInvariantMetadataHash()) {
-            return;
+            return false;
         }
         node->setLastTimeInvariantMetadataHash(currentHash);
         onMetadataChanged(*metadata);
+        return true;
+    }
+    return false;
+} // onMetadataChanged_nonRecursive
 
+void
+EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
+{
+    // Can only be called on the main thread
+    assert(QThread::currentThread() == qApp->thread());
+
+    // Check if we already recursed on this node
+    NodePtr node = getNode();
+    if (markedNodes->find(node) != markedNodes->end()) {
+        return;
+    }
+
+
+    // mark this node
+    markedNodes->insert(node);
+
+    if (!onMetadataChanged_nonRecursive()) {
+        return;
     }
 
     // Recurse downstream
@@ -2006,11 +2028,17 @@ EffectInstance::onMetadataChanged_recursive(std::set<NodePtr>* markedNodes)
 } // onMetadataChanged_recursive
 
 void
-EffectInstance::onMetadataChanged_public()
+EffectInstance::onMetadataChanged_recursive_public()
 {
     std::set<NodePtr> markedNodes;
     onMetadataChanged_recursive(&markedNodes);
 
+}
+
+void
+EffectInstance::onMetadataChanged_nonRecursive_public()
+{
+    onMetadataChanged_nonRecursive();
 }
 
 void
@@ -2169,11 +2197,11 @@ getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
         }
     }
     if (!rawComps) {
-        rawComps = ImageComponents::getRGBAComponents(); // default to RGBA
+        rawComps = 4; // default to RGBA
     }
 
     return rawComps;
-} // getUnmappedComponentsForInput
+} // getUnmappedNumberOfCompsForColorPlane
 
 ActionRetCodeEnum
 EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata &metadata)
@@ -2359,7 +2387,7 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
             int remappedComps = node->findClosestSupportedNumberOfComponents(i, mostComponents);
             metadata.setColorPlaneNComps(i, remappedComps);
             if ( (i == -1) && !premultSet &&
-                ( ( remappedComps == ImageComponents::getRGBAComponents() ) || ( remappedComps == ImageComponents::getAlphaComponents() ) ) ) {
+                ( ( remappedComps == 4 ) || ( remappedComps == 1 ) ) ) {
                 premult = eImagePremultiplicationPremultiplied;
                 premultSet = true;
             }

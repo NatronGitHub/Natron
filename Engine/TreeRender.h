@@ -34,7 +34,7 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/RectD.h"
@@ -85,7 +85,7 @@ public:
         const RectD* canonicalRoI;
 
         // The layers to render
-        const std::list<ImageComponents>* layers;
+        const std::list<ImagePlaneDesc>* layers;
 
         // Proxy scale is the scale to apply to the parameters (that are expressed in the full format)
         // to obtain their value in the proxy format.
@@ -134,7 +134,7 @@ public:
      * Note that the output planes are mapped to the last node render preferences and you may want to copy
      * the image with Image::copyPixels to a more suitable format.
      **/
-    ActionRetCodeEnum launchRender(std::map<ImageComponents, ImagePtr>* outputPlanes);
+    ActionRetCodeEnum launchRender(std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
 
     virtual ~TreeRender();

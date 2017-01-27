@@ -55,7 +55,7 @@ struct ImagePrivate
     std::vector<Image::Tile> tiles;
 
     // The layer represented by this image
-    ImageComponents layer;
+    ImagePlaneDesc layer;
 
     // The proxy scale of the image
     RenderScale proxyScale;

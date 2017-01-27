@@ -179,9 +179,9 @@ public:
     bool isGPURenderingEnabledInProject() const;
 
     std::vector<std::string> getProjectDefaultLayerNames() const;
-    std::list<ImageComponents> getProjectDefaultLayers() const;
+    std::list<ImagePlaneDesc> getProjectDefaultLayers() const;
 
-    void addProjectDefaultLayer(const ImageComponents& comps);
+    void addProjectDefaultLayer(const ImagePlaneDesc& comps);
 
     void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false);
 

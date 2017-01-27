@@ -39,7 +39,7 @@
 
 #include "Global/GLIncludes.h"
 #include "Engine/Cache.h" // CacheEntryLockerPtr - put it in EngineFwd.h?
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/RectI.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -136,7 +136,7 @@ public:
         // The layer represented by this image.
         //
         // Default - Color.RGBA layer
-        ImageComponents layer;
+        ImagePlaneDesc layer;
 
         // Components represented by the image.
         // This is only used for a mono channel buffered layout
@@ -281,7 +281,7 @@ public:
     /**
      * @brief Returns the layer that was passed to the create() function
      **/
-    const ImageComponents& getLayer() const;
+    const ImagePlaneDesc& getLayer() const;
 
     /**
      * @brief Returns the bitdepth of the image as passed to the create() function
@@ -418,7 +418,7 @@ public:
     /**
      * @brief Helper function to get string from a layer and bitdepth
      **/
-    static std::string getFormatString(const ImageComponents& comps, ImageBitDepthEnum depth);
+    static std::string getFormatString(const ImagePlaneDesc& comps, ImageBitDepthEnum depth);
 
     /**
      * @brief Helper function to get string from  bitdepth

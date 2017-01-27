@@ -51,7 +51,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
@@ -217,24 +217,12 @@ public:
 
     EffectInstancePtr getAssociatedNode() const WARN_UNUSED_RETURN;
 
-private:
-    /**
-     * @brief Used to convert plane argument as passed to the clipGetImage() function to Natron plane.
-     **/
-    ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
 public:
 
 
     /**
-     * @brief Used to convert Natron planes given to the render() function to OpenFX layer name.
-     **/
-    static void natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes);
-
-    /**
      * @brief Converts Natron components to OpenFX components.
      **/
-    static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
-    static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
     static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth, bool throwOnFailure = true);
     static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
     static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);

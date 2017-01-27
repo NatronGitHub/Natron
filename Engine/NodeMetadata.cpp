@@ -28,7 +28,7 @@
 #include <vector>
 #include <sstream>
 
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/PropertiesHolder.h"
 
 
@@ -491,7 +491,7 @@ NodeMetadata::getComponentsType(int inputNb) const
     if (getStringMetadata(ss.str(), 0, &ret)) {
         return ret;
     }
-    return kNatronColorPlaneName;
+    return kNatronColorPlaneID;
 }
 
 void

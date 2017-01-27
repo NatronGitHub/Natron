@@ -413,7 +413,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         args->byPassCache = false;
     }
 
-    std::map<ImageComponents, ImagePtr> planes;
+    std::map<ImagePlaneDesc, ImagePtr> planes;
     TreeRenderPtr render = TreeRender::create(args);
     ActionRetCodeEnum stat = render->launchRender(&planes);
     if (isFailureRetCode(stat)) {

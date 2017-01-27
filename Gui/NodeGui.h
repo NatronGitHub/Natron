@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGuiI.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/TimeLineKeys.h"
 
 #include "Gui/GuiFwd.h"

@@ -861,20 +861,19 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setEvaluateOnChange(false);
     std::list<std::vector<std::string> > defaultLayers;
     {
-        std::vector<ImageComponents> defaultComponents;
-        defaultComponents.push_back(ImageComponents::getDisparityLeftComponents());
-        defaultComponents.push_back(ImageComponents::getDisparityRightComponents());
-        defaultComponents.push_back(ImageComponents::getBackwardMotionComponents());
-        defaultComponents.push_back(ImageComponents::getForwardMotionComponents());
+        std::vector<ImagePlaneDesc> defaultComponents;
+        defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
+        defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
+        defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
+        defaultComponents.push_back(ImagePlaneDesc::getForwardMotionComponents());
 
 
-        //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
         for (std::size_t i = 0; i < defaultComponents.size(); ++i) {
-            const ImageComponents& comps = defaultComponents[i];
+            const ImagePlaneDesc& comps = defaultComponents[i];
             std::vector<std::string> row(3);
-            row[0] = comps.getLayerName();
+            row[0] = comps.getPlaneLabel();
             std::string channelsStr;
-            const std::vector<std::string>& channels = comps.getComponentsNames();
+            const std::vector<std::string>& channels = comps.getChannels();
             for (std::size_t c = 0; c < channels.size(); ++c) {
                 if (c > 0) {
                     channelsStr += ' ';
@@ -882,7 +881,7 @@ Project::initializeKnobs()
                 channelsStr += channels[c];
             }
             row[1] = channelsStr;
-            row[2] = comps.getComponentsGlobalName();
+            row[2] = comps.getChannelsLabel();
             defaultLayers.push_back(row);
         }
     }
@@ -1253,18 +1252,37 @@ Project::isGPURenderingEnabledInProject() const
     return false;
 }
 
-std::list<ImageComponents>
+std::list<ImagePlaneDesc>
 Project::getProjectDefaultLayers() const
 {
-    std::list<ImageComponents> ret;
-    std::list<std::vector<std::string> > pairs;
+    std::list<ImagePlaneDesc> ret;
+    std::list<std::vector<std::string> > table;
 
-    _imp->defaultLayersList->getTable(&pairs);
-    for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
-         it != pairs.end(); ++it) {
+    _imp->defaultLayersList->getTable(&table);
+    for (std::list<std::vector<std::string> >::iterator it = table.begin();
+         it != table.end(); ++it) {
+
+        const std::string& planeLabel = (*it)[0];
+        std::string planeID = planeLabel;
+
+        // The layers knob only propose the user to display the label of the plane desc,
+        // but we need to recover the ID for the built-in planes to ensure compatibility
+        // with the old Nuke multi-plane suite.
+        if (planeID == kNatronColorPlaneLabel) {
+            planeID = kNatronColorPlaneID;
+        } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
+            planeID = kNatronBackwardMotionVectorsPlaneID;
+        } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
+            planeID = kNatronForwardMotionVectorsPlaneLabel;
+        } else if (planeID == kNatronDisparityLeftPlaneLabel) {
+            planeID = kNatronDisparityLeftPlaneID;
+        } else if (planeID == kNatronDisparityRightPlaneLabel) {
+            planeID = kNatronDisparityRightPlaneID;
+        }
+
         bool found = false;
-        for (std::list<ImageComponents>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-            if (it2->getLayerName() == (*it)[0]) {
+        for (std::list<ImagePlaneDesc>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
+            if (it2->getPlaneID() == planeID) {
                 found = true;
                 break;
             }
@@ -1277,21 +1295,22 @@ Project::getProjectDefaultLayers() const
             for (int i = 0; i < channels.size(); ++i) {
                 componentsName[i] = channels[i].toStdString();
             }
-            ImageComponents c( (*it)[0], (*it)[2], componentsName );
+            ImagePlaneDesc c( planeID, planeLabel, std::string(), componentsName );
             ret.push_back(c);
         }
     }
+
 
     return ret;
 }
 
 void
-Project::addProjectDefaultLayer(const ImageComponents& comps)
+Project::addProjectDefaultLayer(const ImagePlaneDesc& comps)
 {
-    const std::vector<std::string>& channels = comps.getComponentsNames();
+    const std::vector<std::string>& channels = comps.getChannels();
     std::vector<std::string> row(2);
 
-    row[0] = comps.getLayerName();
+    row[0] = comps.getPlaneLabel();
     std::string channelsStr;
     for (std::size_t i = 0; i < channels.size(); ++i) {
         channelsStr += channels[i];

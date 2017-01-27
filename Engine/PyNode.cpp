@@ -78,19 +78,19 @@ ImageLayer::ImageLayer(const QString& layerName,
     for (QStringList::const_iterator it = componentsName.begin(); it != componentsName.end(); ++it, ++i) {
         channels[i] = it->toStdString();
     }
-    _comps.reset( new ImageComponents(layerName.toStdString(), componentsPrettyName.toStdString(), channels) );
+    _comps.reset( new ImagePlaneDesc(layerName.toStdString(), "", componentsPrettyName.toStdString(), channels) );
 }
 
-ImageLayer::ImageLayer(const ImageComponents& comps)
-    : _layerName( QString::fromUtf8( comps.getLayerName().c_str() ) )
-    , _componentsPrettyName( QString::fromUtf8( comps.getComponentsGlobalName().c_str() ) )
+ImageLayer::ImageLayer(const ImagePlaneDesc& comps)
+    : _layerName( QString::fromUtf8( comps.getPlaneLabel().c_str() ) )
+    , _componentsPrettyName( QString::fromUtf8( comps.getChannelsLabel().c_str() ) )
 {
-    const std::vector<std::string>& channels = comps.getComponentsNames();
+    const std::vector<std::string>& channels = comps.getChannels();
 
     for (std::size_t i = 0; i < channels.size(); ++i) {
         _componentsName.push_back( QString::fromUtf8( channels[i].c_str() ) );
     }
-    _comps.reset( new ImageComponents(comps) );
+    _comps.reset( new ImagePlaneDesc(comps) );
 }
 
 int
@@ -98,8 +98,8 @@ ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
 
-    Hash64::appendQString(QString::fromUtf8( layer._comps->getLayerName().c_str() ), &h );
-    const std::vector<std::string>& comps = layer._comps->getComponentsNames();
+    Hash64::appendQString(QString::fromUtf8( layer._comps->getPlaneLabel().c_str() ), &h );
+    const std::vector<std::string>& comps = layer._comps->getChannels();
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64::appendQString(QString::fromUtf8( comps[i].c_str() ), &h );
     }
@@ -155,49 +155,49 @@ ImageLayer::operator<(const ImageLayer& other) const
 ImageLayer
 ImageLayer::getNoneComponents()
 {
-    return ImageLayer( ImageComponents::getNoneComponents() );
+    return ImageLayer( ImagePlaneDesc::getNoneComponents() );
 }
 
 ImageLayer
 ImageLayer::getRGBAComponents()
 {
-    return ImageLayer( ImageComponents::getRGBAComponents() );
+    return ImageLayer( ImagePlaneDesc::getRGBAComponents() );
 }
 
 ImageLayer
 ImageLayer::getRGBComponents()
 {
-    return ImageLayer( ImageComponents::getRGBComponents() );
+    return ImageLayer( ImagePlaneDesc::getRGBComponents() );
 }
 
 ImageLayer
 ImageLayer::getAlphaComponents()
 {
-    return ImageLayer( ImageComponents::getAlphaComponents() );
+    return ImageLayer( ImagePlaneDesc::getAlphaComponents() );
 }
 
 ImageLayer
 ImageLayer::getBackwardMotionComponents()
 {
-    return ImageLayer( ImageComponents::getBackwardMotionComponents() );
+    return ImageLayer( ImagePlaneDesc::getBackwardMotionComponents() );
 }
 
 ImageLayer
 ImageLayer::getForwardMotionComponents()
 {
-    return ImageLayer( ImageComponents::getForwardMotionComponents() );
+    return ImageLayer( ImagePlaneDesc::getForwardMotionComponents() );
 }
 
 ImageLayer
 ImageLayer::getDisparityLeftComponents()
 {
-    return ImageLayer( ImageComponents::getDisparityLeftComponents() );
+    return ImageLayer( ImagePlaneDesc::getDisparityLeftComponents() );
 }
 
 ImageLayer
 ImageLayer::getDisparityRightComponents()
 {
-    return ImageLayer( ImageComponents::getDisparityRightComponents() );
+    return ImageLayer( ImagePlaneDesc::getDisparityRightComponents() );
 }
 
 UserParamHolder::UserParamHolder()
@@ -1532,7 +1532,7 @@ Effect::addUserPlane(const QString& planeName,
         compsGlobal.append(c);
         chans[i] = c;
     }
-    ImageComponents comp(planeName.toStdString(), compsGlobal, chans);
+    ImagePlaneDesc comp(planeName.toStdString(), "", compsGlobal, chans);
 
     return n->addUserComponents(comp);
 }
@@ -1551,9 +1551,9 @@ Effect::getAvailableLayers(int inputNb) const
 
     TimeValue time(n->getApp()->getTimeLine()->currentFrame());
 
-    std::list<ImageComponents> availComps;
+    std::list<ImagePlaneDesc> availComps;
     n->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, TreeRenderNodeArgsPtr(), &availComps);
-    for (std::list<ImageComponents>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         ret.push_back(ImageLayer(*it));
     }
 

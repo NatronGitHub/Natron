@@ -121,7 +121,7 @@ public:
 
     NodePtr getInputRecursive(int inputIndex) const;
 
-    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImageComponents* rgbLayer, ImageComponents* alphaLayer, int* alphaChannelIndex, ImageComponents* displayChannels) const;
+    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
 
     /**
      * @brief A ViewerNode is composed of 2 ViewerProcess nodes but it only has 1 layer and 1 alpha channel choices.
@@ -146,8 +146,8 @@ private:
     ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                           ViewIdx view,
                                           const TreeRenderNodeArgsPtr& render,
-                                          std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                          std::list<ImageComponents>* layersProduced,
+                                          std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                          std::list<ImagePlaneDesc>* layersProduced,
                                           TimeValue* passThroughTime,
                                           ViewIdx* passThroughView,
                                           int* passThroughInputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -169,7 +169,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
                 Image::InitStorageArgs args;
                 args.renderArgs = fromImage._imp->renderArgs;
                 args.bounds = fromImage.getBounds();
-                args.layer = ImageComponents::getRGBAComponents();
+                args.layer = ImagePlaneDesc::getRGBAComponents();
                 tmpImage = Image::create(args);
 
                 Image::CopyPixelsArgs copyArgs;
@@ -185,7 +185,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             Image::InitStorageArgs args;
             args.renderArgs = fromImage._imp->renderArgs;
             args.bounds = fromImage.getBounds();
-            args.layer = ImageComponents::getRGBAComponents();
+            args.layer = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
 
             Image::CopyPixelsArgs copyArgs;
@@ -208,7 +208,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             Image::InitStorageArgs args;
             args.renderArgs = fromImage._imp->renderArgs;
             args.bounds = fromImage.getBounds();
-            args.layer = ImageComponents::getRGBAComponents();
+            args.layer = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
 
             Image::CopyPixelsArgs copyArgs;

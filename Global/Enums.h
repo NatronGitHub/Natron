@@ -466,7 +466,7 @@ enum AnimationLevelEnum
     eAnimationLevelExpression = 3
 };
 
-enum ImageComponentsEnum
+enum ImagePlaneDescEnum
 {
     eImageComponentNone = 0,
     eImageComponentAlpha,

@@ -36,7 +36,7 @@
 
 #include "Engine/CacheEntryBase.h"
 #include "Engine/Distortion2D.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/RectD.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
@@ -479,18 +479,18 @@ public:
     // to be the only one interacting with this object. Then all objects
     // should call the getter.
     //
-    void getResults(std::map<int, std::list<ImageComponents> >* neededInputLayers,
-                    std::list<ImageComponents>* producedLayers,
-                    std::list<ImageComponents>* passThroughPlanes,
+    void getResults(std::map<int, std::list<ImagePlaneDesc> >* neededInputLayers,
+                    std::list<ImagePlaneDesc>* producedLayers,
+                    std::list<ImagePlaneDesc>* passThroughPlanes,
                     int *passThroughInputNb,
                     TimeValue *passThroughTime,
                     ViewIdx *passThroughView,
                     std::bitset<4> *processChannels,
                     bool *processAllLayers) const;
 
-    void setResults(const std::map<int, std::list<ImageComponents> >& neededInputLayers,
-                    const std::list<ImageComponents>& producedLayers,
-                    const std::list<ImageComponents>& passThroughPlanes,
+    void setResults(const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
+                    const std::list<ImagePlaneDesc>& producedLayers,
+                    const std::list<ImagePlaneDesc>& passThroughPlanes,
                     int passThroughInputNb,
                     TimeValue passThroughTime,
                     ViewIdx passThroughView,
@@ -506,9 +506,9 @@ public:
     
 private:
 
-    std::map<int, std::list<ImageComponents> > _neededInputLayers;
-    std::list<ImageComponents> _producedLayers;
-    std::list<ImageComponents> _passThroughPlanes;
+    std::map<int, std::list<ImagePlaneDesc> > _neededInputLayers;
+    std::list<ImagePlaneDesc> _producedLayers;
+    std::list<ImagePlaneDesc> _passThroughPlanes;
 
     struct ShmData
     {

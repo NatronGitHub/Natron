@@ -35,28 +35,28 @@
 
 SERIALIZATION_NAMESPACE_ENTER;
 
-class ImageComponentsSerialization
+class ImagePlaneDescSerialization
 : public SerializationObjectBase
 {
 public:
 
-    ImageComponentsSerialization()
+    ImagePlaneDescSerialization()
     : SerializationObjectBase()
     {
 
     }
 
-    virtual ~ImageComponentsSerialization()
+    virtual ~ImagePlaneDescSerialization()
     {
 
     }
 
-    // The layer name, e.g: Beauty
-    std::string layerName;
+    // The plane id and label
+    std::string planeID, planeLabel;
 
-    // The components global label, e.g: "RGBA" or "MotionPass"
+    // The components label, e.g: "Motion" instead of "XY"
     // If not provided, this is just the concatenation of all channel names
-    std::string globalCompsName;
+    std::string channelsLabel;
 
     // Each individual channel names, e.g: "R", "G", "B", "A"
     std::vector<std::string> channelNames;
@@ -190,7 +190,7 @@ public:
     NodeSerializationList _children;
 
     // This is the user created components on the node
-    std::list<ImageComponentsSerialization> _userComponents;
+    std::list<ImagePlaneDescSerialization> _userComponents;
 
     // UI stuff
     double _nodePositionCoords[2]; // x,y  X=Y=INT_MIN if there is no position info

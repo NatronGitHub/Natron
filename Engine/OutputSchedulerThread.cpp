@@ -1701,7 +1701,7 @@ protected:
                                           TimeValue time,
                                           ViewIdx view,
                                           const RenderStatsPtr& stats,
-                                          std::map<ImageComponents, ImagePtr>* planes)
+                                          std::map<ImagePlaneDesc, ImagePtr>* planes)
     {
         if (!outputNode) {
             return eActionStatusFailed;
@@ -1788,7 +1788,7 @@ private:
             frame->view = viewsToRender[view];
             frame->stats = stats;
             
-            std::map<ImageComponents, ImagePtr> planes;
+            std::map<ImagePlaneDesc, ImagePtr> planes;
             ActionRetCodeEnum stat = renderFrameInternal(outputNode, time, viewsToRender[view], stats, &planes);
             if (isFailureRetCode(stat)) {
                 _imp->scheduler->notifyRenderFailure(stat, std::string());
@@ -2182,7 +2182,7 @@ public:
     static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs)
     {
         assert(inArgs->renderObject);
-        std::map<ImageComponents, ImagePtr> planes;
+        std::map<ImagePlaneDesc, ImagePtr> planes;
         inArgs->retCode = inArgs->renderObject->launchRender(&planes);
         if (planes.empty()) {
             inArgs->retCode = eActionStatusFailed;
@@ -2216,7 +2216,7 @@ public:
             initArgs.bounds = inArgs->outputImage->getBounds();
 
             // Viewer textures are always RGBA
-            initArgs.layer = ImageComponents::getRGBAComponents();
+            initArgs.layer = ImagePlaneDesc::getRGBAComponents();
             initArgs.bitdepth = inArgs->outputImage->getBitDepth();
             initArgs.storage = eStorageModeRAM;
             initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;

@@ -327,7 +327,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 
     // This is the image plane where we render, we are not multiplane so we only render out one plane
     assert(args.outputPlanes.size() == 1);
-    const std::pair<ImageComponents,ImagePtr>& outputPlane = args.outputPlanes.front();
+    const std::pair<ImagePlaneDesc,ImagePtr>& outputPlane = args.outputPlanes.front();
 
     // True if this render was trigger because the user is painting (with a pen or mouse)
     bool isDuringPainting = isStroke && isStroke->isCurrentlyDrawing();

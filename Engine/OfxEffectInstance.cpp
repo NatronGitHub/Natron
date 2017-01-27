@@ -1483,14 +1483,15 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     bool multiPlanar = isMultiPlanar();
     std::list<std::string> ofxPlanes;
-    for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
         if (!multiPlanar) {
             // When not multi-planar, the components of the image will be the colorplane
-            OfxClipInstance::natronsPlaneToOfxPlane(it->second->getLayer(), &ofxPlanes);
+            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->second->getLayer()));
         } else {
-            OfxClipInstance::natronsPlaneToOfxPlane(it->first, &ofxPlanes);
+            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
         }
+
     }
 
     {
@@ -2140,8 +2141,11 @@ OfxEffectInstance::addAcceptedComponents(int inputNb,
     const std::vector<std::string> & supportedComps = clip->getSupportedComponents();
     for (U32 i = 0; i < supportedComps.size(); ++i) {
         try {
-            ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(supportedComps[i]);
-            (*supported)[ofxComp.getNumComponents()] = 1;
+            ImagePlaneDesc plane, pairedPlane;
+            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(supportedComps[i], &plane, &pairedPlane);
+            if (plane.getNumComponents() > 0) {
+                (*supported)[plane.getNumComponents() - 1] = 1;
+            }
         } catch (const std::runtime_error &e) {
             // ignore unsupported components
         }
@@ -2166,13 +2170,13 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 
 ActionRetCodeEnum
 OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
-                                       ViewIdx view,
-                                       const TreeRenderNodeArgsPtr& /*renderArgs*/,
-                                       std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                       std::list<ImageComponents>* layersProduced,
-                                       TimeValue* passThroughTime,
-                                       ViewIdx* passThroughView,
-                                       int* passThroughInputNb)
+                                              ViewIdx view,
+                                              const TreeRenderNodeArgsPtr& /*renderArgs*/,
+                                              std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                              std::list<ImagePlaneDesc>* layersProduced,
+                                              TimeValue* passThroughTime,
+                                              ViewIdx* passThroughView,
+                                              int* passThroughInputNb)
 {
 
 
@@ -2201,7 +2205,7 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
         assert(clip);
         if (clip) {
 
-            std::list<ImageComponents>* compsList = 0;
+            std::list<ImagePlaneDesc>* compsList = 0;
             if (clip->isOutput()) {
                 compsList = layersProduced;
             } else {
@@ -2211,10 +2215,15 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
 
 
             for (std::list<std::string>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-                ImageComponents ofxComp = OfxClipInstance::ofxComponentsToNatronComponents(*it2);
-                if (ofxComp.getNumComponents() > 0) {
-                    compsList->push_back(ofxComp);
+                ImagePlaneDesc plane, pairedPlane;
+                ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(*it2, &plane, &pairedPlane);
+                if (plane.getNumComponents() > 0) {
+                    compsList->push_back(plane);
                 }
+                if (pairedPlane.getNumComponents() > 0) {
+                    compsList->push_back(pairedPlane);
+                }
+
             }
         }
     }

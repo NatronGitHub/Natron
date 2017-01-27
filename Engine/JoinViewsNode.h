@@ -37,9 +37,7 @@ struct JoinViewsNodePrivate;
 class JoinViewsNode
     : public EffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
+
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -90,12 +88,10 @@ public:
     virtual void initializeKnobs() OVERRIDE FINAL;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE WARN_UNUSED_RETURN;
 
-public Q_SLOTS:
-
-    void onProjectViewsChanged();
 
 private:
 
+    virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,

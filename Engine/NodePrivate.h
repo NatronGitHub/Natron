@@ -71,9 +71,9 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER
 
-#define kNodeParamProcessAllLayers "processAllLayers"
-#define kNodeParamProcessAllLayersLabel "All Layers"
-#define kNodeParamProcessAllLayersHint "When checked all layers in input will be processed and output to the same layer as in input. It is useful for example to apply a Transform effect on all layers."
+#define kNodeParamProcessAllLayers "processAllPlanes"
+#define kNodeParamProcessAllLayersLabel "All Planes"
+#define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
 
 
 /*The output node was connected from inputNumber to this...*/
@@ -152,8 +152,8 @@ public:
 
     void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
 
-    ImageComponents getSelectedLayerInternal(int inputNb,
-                                             const std::list<ImageComponents>& availableLayers,
+    ImagePlaneDesc getSelectedLayerInternal(int inputNb,
+                                             const std::list<ImagePlaneDesc>& availableLayers,
                                              const ChannelSelector& selector) const;
 
     void refreshDefaultPagesOrder();
@@ -370,7 +370,7 @@ public:
     mutable QMutex createdComponentsMutex;
 
     // Comps created by the user in the stream.
-    std::list<ImageComponents> createdComponents;
+    std::list<ImagePlaneDesc> createdComponents;
 
     // If this node is part of a RotoPaint item implementation
     // this is a pointer to the roto item itself

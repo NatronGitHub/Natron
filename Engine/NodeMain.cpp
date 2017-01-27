@@ -681,13 +681,11 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     }
 
     // User created components
-    std::list<ImageComponents> userComps;
+    std::list<ImagePlaneDesc> userComps;
     getUserCreatedComponents(&userComps);
-    for (std::list<ImageComponents>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
-        SERIALIZATION_NAMESPACE::ImageComponentsSerialization s;
-        s.layerName = it->getLayerName();
-        s.globalCompsName = it->getComponentsGlobalName();
-        s.channelNames = it->getComponentsNames();
+    for (std::list<ImagePlaneDesc>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
+        SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization s;
+        it->toSerialization(&s);
         serialization->_userComponents.push_back(s);
     }
 
@@ -797,6 +795,44 @@ Node::loadInternalNodeGraph(bool initialSetupAllowed,
 
 } // loadInternalNodeGraph
 
+static void checkForOldStringParametersForChoices(const AppInstancePtr& app, const KnobsVec& knobs, const SERIALIZATION_NAMESPACE::KnobSerializationList& knobValues)
+{
+    SERIALIZATION_NAMESPACE::ProjectBeingLoadedInfo projectInfos;
+    bool gotProjectInfos = app->getProject()->getProjectLoadedVersionInfo(&projectInfos);
+    if (!gotProjectInfos) {
+        return;
+    }
+
+    // Before Natron 2.2.3, all dynamic choice parameters for multiplane had a string parameter.
+    // The string parameter had the same name as the choice parameter plus "Choice" appended.
+    // If we found such a parameter, retrieve the string from it.
+    if (projectInfos.vMajor < 2 || projectInfos.vMajor >= 3 ||  projectInfos.vMinor >= 3) {
+        return;
+    }
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobChoicePtr isChoice = toKnobChoice(*it);
+        if (!isChoice) {
+            continue;
+        }
+
+
+        std::string stringParamName = isChoice->getName() + "Choice";
+        for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = knobValues.begin(); it != knobValues.end(); ++it) {
+            if ( (*it)->getName() == stringParamName && (*it)->_dataType == SERIALIZATION_NAMESPACE::eSerializationValueVariantTypeString) {
+
+                const SERIALIZATION_NAMESPACE::KnobSerialization::PerDimensionValueSerializationVec& perDimValues = (*it)->_values["Main"];
+                if (perDimValues.size() > 0) {
+                    isChoice->setActiveEntry(ChoiceOption(perDimValues[0]._value.isString, "",""));
+                }
+
+                break;
+            }
+        }
+
+
+    }
+} // checkForOldStringParametersForChoices
 
 void
 Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerialization& serialization)
@@ -807,20 +843,23 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
 
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<SERIALIZATION_NAMESPACE::ImageComponentsSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
-            ImageComponents s(it->layerName, it->globalCompsName, it->channelNames);
+        for (std::list<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
+            ImagePlaneDesc s;
+            s.fromSerialization(*it);
             _imp->createdComponents.push_back(s);
         }
     }
 
     {
         // Load all knobs
+        checkForOldStringParametersForChoices(getApp(), getKnobs(), serialization._knobsValues);
 
         for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = serialization._knobsValues.begin(); it!=serialization._knobsValues.end(); ++it) {
             KnobIPtr knob = getKnobByName((*it)->_scriptName);
             if (!knob) {
                 continue;
             }
+
             knob->fromSerialization(**it);
 
         }

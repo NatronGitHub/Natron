@@ -1195,8 +1195,8 @@ ActionRetCodeEnum
 ReadNode::getLayersProducedAndNeeded(TimeValue time,
                                          ViewIdx view,
                                          const TreeRenderNodeArgsPtr& render,
-                                         std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                         std::list<ImageComponents>* layersProduced,
+                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                         std::list<ImagePlaneDesc>* layersProduced,
                                          TimeValue* passThroughTime,
                                          ViewIdx* passThroughView,
                                          int* passThroughInputNb)

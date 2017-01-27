@@ -169,14 +169,14 @@ EffectInstance::optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
  **/
 ActionRetCodeEnum
 EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
-                                                        std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                                        std::list<ImageComponents> *planesToRender,
+                                                        std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                        std::list<ImagePlaneDesc> *planesToRender,
                                                         std::bitset<4>* processChannels,
-                                                        std::map<ImageComponents, ImagePtr>* outputPlanes)
+                                                        std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
 
 
-    std::list<ImageComponents> layersProduced, passThroughLayers;
+    std::list<ImagePlaneDesc> layersProduced, passThroughLayers;
     int passThroughInputNb;
     TimeValue passThroughTime;
     ViewIdx passThroughView;
@@ -191,19 +191,18 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
         results->getResults(inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, processChannels, &processAllLayers);
     }
 
-    std::list<ImageComponents> componentsToFetchUpstream;
+    std::list<ImagePlaneDesc> componentsToFetchUpstream;
     /*
      * For all requested planes, check which components can be produced in output by this node.
      * If the components are from the color plane, if another set of components of the color plane is present
      * we try to render with those instead.
      */
-    for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
 
         // We may not request paired layers
-        assert( *it && !it->isPairedComponents() );
         assert(it->getNumComponents() > 0);
 
-        std::list<ImageComponents>::const_iterator foundProducedLayer = ImageComponents::findEquivalentLayer(*it, layersProduced.begin(), layersProduced.end());
+        std::list<ImagePlaneDesc>::const_iterator foundProducedLayer = ImagePlaneDesc::findEquivalentLayer(*it, layersProduced.begin(), layersProduced.end());
         if (foundProducedLayer != layersProduced.end()) {
 
             // Make sure that we ask to render what is produced by this effect rather than the original requested component.
@@ -222,7 +221,7 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
             continue;
         }
 
-        std::list<ImageComponents>::const_iterator foundInPassThroughPlanes = ImageComponents::findEquivalentLayer(*it, passThroughLayers.begin(), passThroughLayers.end());
+        std::list<ImagePlaneDesc>::const_iterator foundInPassThroughPlanes = ImagePlaneDesc::findEquivalentLayer(*it, passThroughLayers.begin(), passThroughLayers.end());
         if (foundInPassThroughPlanes != passThroughLayers.end()) {
             componentsToFetchUpstream.push_back(*foundInPassThroughPlanes);
         }
@@ -268,8 +267,8 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
                                                      double par,
                                                      const RectD& rod,
                                                      const RenderScale& scale,
-                                                     const std::list<ImageComponents> &requestedComponents,
-                                                     const std::map<int, std::list<ImageComponents> >& neededComps,
+                                                     const std::list<ImagePlaneDesc> &requestedComponents,
+                                                     const std::map<int, std::list<ImagePlaneDesc> >& neededComps,
                                                      RenderRoIResults* results,
                                                      bool *isIdentity)
 {
@@ -332,9 +331,9 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
         //
         // Note that if we request a different plane upstream, we must ensure the returned plane is converted to an image
         // with the same number of components at least.
-        std::list<ImageComponents> compsToFetchUpstream;
+        std::list<ImagePlaneDesc> compsToFetchUpstream;
         if (requestedComponents.size() == 1) {
-            std::map<int, std::list<ImageComponents> >::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
+            std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
             if ( foundCompsNeeded != neededComps.end() ) {
                 if (foundCompsNeeded->second.size() == 1) {
                     compsToFetchUpstream.push_back(foundCompsNeeded->second.front());
@@ -349,7 +348,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     }
 
     // Save the planes that may already have been fetched from pass-through planes
-    std::map<ImageComponents, ImagePtr> existingPassThroughPlanes = results->outputPlanes;
+    std::map<ImagePlaneDesc, ImagePtr> existingPassThroughPlanes = results->outputPlanes;
     results->outputPlanes.clear();
 
     // Since we are identity, it may return a distortion
@@ -637,7 +636,7 @@ EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(
                                                                                 CacheAccessModeEnum cacheAccess,
                                                                                 const RectI& roi,
                                                                                 const OSGLContextAttacherPtr& glContextLocker,
-                                                                                std::map<ImageComponents, ImagePtr>* outputPlanes)
+                                                                                std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
     // Compute the rectangle portion (renderWindow) left to render.
     // The renderwindow is the bounding box of all tiles that are left to render (not the tiles that are pending)
@@ -646,9 +645,9 @@ EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(
     {
         bool renderWindowSet = false;
 
-        std::map<ImageComponents, PlaneToRender> planes = planesToRender->planes;
+        std::map<ImagePlaneDesc, PlaneToRender> planes = planesToRender->planes;
         planesToRender->planes.clear();
-        for (std::map<ImageComponents, PlaneToRender>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, PlaneToRender>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
 
             // If the image is entirely cached, do not even compute it and insert it in the output planes map
             bool planeHasPendingResults;
@@ -728,7 +727,7 @@ EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(
         // The bitdepth of the image
         ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(args.renderArgs, -1);
 
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
 
             // The image planes left are not entirely cached (or not at all): create a temporary image
             // with the memory layout supported by the plug-in that we will write to.
@@ -768,13 +767,13 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
                                                           const FrameViewRequestPtr& requestPassData,
                                                           CacheAccessModeEnum cacheAccess,
                                                           const ImagePlanesToRenderPtr &planesToRender,
-                                                          const std::list<ImageComponents>& requestedComponents,
+                                                          const std::list<ImagePlaneDesc>& requestedComponents,
                                                           const RectI& roi,
                                                           const RenderScale& mappedCombinedScale,
                                                           const RenderScale& mappedProxyScale,
                                                           unsigned int mappedMipMapLevel,
                                                           const OSGLContextAttacherPtr& glContextLocker,
-                                                          std::map<ImageComponents, ImagePtr>* outputPlanes)
+                                                          std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
 
 
@@ -863,7 +862,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
     // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
     // If using the cache, the image has to be in a mono-channel tiled format, hence we later create a temporary copy
     // on which the plug-in will work on.
-    for (std::list<ImageComponents>::const_iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
+    for (std::list<ImagePlaneDesc>::const_iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
 
 
         Image::InitStorageArgs initArgs;
@@ -906,8 +905,8 @@ EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderR
                                                                    const RectI& roi,
                                                                    const RenderScale& renderMappedScale,
                                                                    const std::bitset<4> &processChannels,
-                                                                   const std::map<int, std::list<ImageComponents> >& neededInputLayers,
-                                                                   std::map<ImageComponents, ImagePtr>* outputPlanes)
+                                                                   const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
+                                                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
 
     while (!planesToRender->planes.empty()) {
@@ -923,9 +922,9 @@ EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderR
         }
 
         // The render went OK: push the cache images tiles to the cache
-        std::map<ImageComponents, PlaneToRender> planes = planesToRender->planes;
+        std::map<ImagePlaneDesc, PlaneToRender> planes = planesToRender->planes;
         planesToRender->planes.clear();
-        for (std::map<ImageComponents, PlaneToRender>::iterator it = planes.begin(); it != planes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planes.begin(); it != planes.end(); ++it) {
             if (it->second.cacheImage->getCachePolicy() != eCacheAccessModeNone) {
 
                 // Destroy the temporary image if there was any.
@@ -953,7 +952,7 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
                                                               const OSGLContextAttacherPtr& glRenderContext,
                                                               const RenderScale& renderMappedScale,
                                                               const std::bitset<4> &processChannels,
-                                                              const std::map<int, std::list<ImageComponents> >& neededInputLayers)
+                                                              const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
 {
 
     // If we reach here, it can be either because the planes are cached or not, either way
@@ -1125,9 +1124,9 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle pass-through planes /////////////////////////////////////////////////////////////
-    std::list<ImageComponents> requestedPlanes;
+    std::list<ImagePlaneDesc> requestedPlanes;
     std::bitset<4> processChannels;
-    std::map<int, std::list<ImageComponents> > inputLayersNeeded;
+    std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
     {
 
         ActionRetCodeEnum upstreamRetCode = _imp->determinePlanesToRender(args, &inputLayersNeeded, &requestedPlanes, &processChannels, &results->outputPlanes);
@@ -1324,7 +1323,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     // If the node did not support render scale and the mipmap level rendered was different than what was requested, downcale the image.
     if (renderFullScaleThenDownScale) {
         assert(args.mipMapLevel > 0);
-        for (std::map<ImageComponents, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
             assert(it->second->getMipMapLevel() == 0);
             ImagePtr downscaledImage = it->second->downscaleMipMap(it->second->getBounds(), args.mipMapLevel);
             it->second = downscaledImage;
@@ -1335,13 +1334,13 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 #ifdef DEBUG
     if ( results->outputPlanes.size() != args.components.size() ) {
         qDebug() << "Requested:";
-        for (std::list<ImageComponents>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
-            qDebug() << it->getLayerName().c_str();
+        for (std::list<ImagePlaneDesc>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+            qDebug() << it->getPlaneID().c_str();
         }
         qDebug() << "But rendered:";
-        for (std::map<ImageComponents, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
             if (it->second) {
-                qDebug() << it->first.getLayerName().c_str();
+                qDebug() << it->first.getPlaneID().c_str();
             }
         }
     }
@@ -1357,7 +1356,7 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
                                const RenderScale& renderMappedScale,
                                const ImagePlanesToRenderPtr & planesToRender,
                                const std::bitset<4> processChannels,
-                               const std::map<int, std::list<ImageComponents> >& neededInputLayers)
+                               const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
 {
     assert( !planesToRender->planes.empty() && !planesToRender->rectsToRender.empty() );
 
@@ -1414,7 +1413,7 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     ImagePtr mainInputImage;
     if (mainInputNb != -1) {
         GetImageInArgs inArgs;
-        std::map<int, std::list<ImageComponents> >::const_iterator foundNeededLayers = neededInputLayers.find(mainInputNb);
+        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = neededInputLayers.find(mainInputNb);
         if (foundNeededLayers != neededInputLayers.end()) {
             inArgs.layers = &foundNeededLayers->second;
             inArgs.inputNb = mainInputNb;

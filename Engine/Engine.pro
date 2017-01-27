@@ -116,7 +116,7 @@ SOURCES += \
     HostOverlaySupport.cpp \
     Image.cpp \
     ImageConvert.cpp \
-    ImageComponents.cpp  \
+    ImagePlaneDesc.cpp  \
     ImageCopyChannels.cpp \
     ImageFill.cpp \
     ImagePrivate.cpp \
@@ -354,7 +354,7 @@ HEADERS += \
     HostOverlaySupport.h \
     Image.h \
     ImagePrivate.h \
-    ImageComponents.h \
+    ImagePlaneDesc.h \
     Interpolation.h \
     IPCCommon.h \
     ImageStorage.h \

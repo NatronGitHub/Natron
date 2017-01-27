@@ -188,7 +188,7 @@ class HostOverlayKnobsPosition;
 class HostOverlayKnobsTransform;
 class Image;
 class ImageTileKey;
-class ImageComponents;
+class ImagePlaneDesc;
 class IsIdentityKey;
 class IsIdentityResults;
 class JoinViewsNode;

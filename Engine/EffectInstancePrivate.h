@@ -100,10 +100,10 @@ public:
      * nodes.
      **/
     ActionRetCodeEnum determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
-                                             std::map<int, std::list<ImageComponents> >* inputLayersNeeded,
-                                             std::list<ImageComponents> *planesToRender,
+                                             std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                             std::list<ImagePlaneDesc> *planesToRender,
                                              std::bitset<4>* processChannels,
-                                             std::map<ImageComponents, ImagePtr>* outputPlanes);
+                                             std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
     /**
      * @brief Helper function in the implementation of renderRoI to handle identity effects
@@ -112,8 +112,8 @@ public:
                                           double par,
                                           const RectD& rod,
                                           const RenderScale& scale,
-                                          const std::list<ImageComponents> &requestedComponents,
-                                          const std::map<int, std::list<ImageComponents> >& neededComps,
+                                          const std::list<ImagePlaneDesc> &requestedComponents,
+                                          const std::map<int, std::list<ImagePlaneDesc> >& neededComps,
                                           RenderRoIResults* outputPlanes,
                                           bool *isIdentity);
 
@@ -151,13 +151,13 @@ public:
                                    const FrameViewRequestPtr& requestPassData,
                                    CacheAccessModeEnum cacheAccess,
                                    const ImagePlanesToRenderPtr &planesToRender,
-                                   const std::list<ImageComponents>& requestedComponents,
+                                   const std::list<ImagePlaneDesc>& requestedComponents,
                                    const RectI& roi,
                                    const RenderScale& mappedCombinedScale,
                                    const RenderScale& mappedProxyScale,
                                    unsigned int mappedMipMapLevel,
                                    const OSGLContextAttacherPtr& glContextLocker,
-                                   std::map<ImageComponents, ImagePtr>* outputPlanes);
+                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
 
     void checkPlanesToRenderAndComputeRectanglesToRender(const RenderRoIArgs & args,
@@ -165,7 +165,7 @@ public:
                                                          CacheAccessModeEnum cacheAccess,
                                                          const RectI& roi,
                                                          const OSGLContextAttacherPtr& glContextLocker,
-                                                         std::map<ImageComponents, ImagePtr>* outputPlanes);
+                                                         std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
     void computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow);
 
@@ -177,15 +177,15 @@ public:
                                                          const RectI& roi,
                                                          const RenderScale& renderMappedScale,
                                                          const std::bitset<4> &processChannels,
-                                                         const std::map<int, std::list<ImageComponents> >& neededInputLayers,
-                                                         std::map<ImageComponents, ImagePtr>* outputPlanes);
+                                                         const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
+                                                         std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
     ActionRetCodeEnum renderRoILaunchInternalRender(const RenderRoIArgs & args,
                                                     const ImagePlanesToRenderPtr &planesToRender,
                                                     const OSGLContextAttacherPtr& glRenderContext,
                                                     const RenderScale& renderMappedScale,
                                                     const std::bitset<4> &processChannels,
-                                                    const std::map<int, std::list<ImageComponents> >& neededInputLayers);
+                                                    const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
 
 
 

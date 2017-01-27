@@ -47,7 +47,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Global/KeySymbols.h"
 #include "Engine/ChoiceOption.h"
 #include "Engine/DimensionIdx.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Serialization/SerializationBase.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/Markdown.h"
@@ -457,7 +457,7 @@ public:
      * @brief Returns true if the given input supports the given components. If inputNb equals -1
      * then this function will check whether the effect can produce the given components.
      **/
-    bool isSupportedComponent(int inputNb, const ImageComponents& comp) const;
+    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
 
     /**
      * @brief Returns the most appropriate number of components that can be supported by the inputNb.
@@ -477,7 +477,7 @@ public:
      * B = 2
      * A = 3
      **/
-    int getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLayers, ImageComponents* comps) const;
+    int getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const;
 
     int isMaskChannelKnob(const KnobIConstPtr& knob) const;
 
@@ -1338,14 +1338,14 @@ public:
     KnobBoolPtr getProcessAllLayersKnob() const;
 
     bool getSelectedLayer(int inputNb,
-                          const std::list<ImageComponents>& availableLayers,
+                          const std::list<ImagePlaneDesc>& availableLayers,
                           std::bitset<4> *processChannels,
                           bool* isAll,
-                          ImageComponents *layer) const;
+                          ImagePlaneDesc *layer) const;
 
-    bool addUserComponents(const ImageComponents& comps);
+    bool addUserComponents(const ImagePlaneDesc& comps);
 
-    void getUserCreatedComponents(std::list<ImageComponents>* comps);
+    void getUserCreatedComponents(std::list<ImagePlaneDesc>* comps);
 
     bool hasAtLeastOneChannelToProcess() const;
 
@@ -1394,7 +1394,7 @@ public:
     void setStreamWarnings(const std::map<StreamWarningEnum, QString>& warnings);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
-    void refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps);
+    void refreshEnabledKnobsLabel(const ImagePlaneDesc& mainInputComps, const ImagePlaneDesc& outputComps);
 
     bool isNodeUpstream(const NodeConstPtr& input) const;
 

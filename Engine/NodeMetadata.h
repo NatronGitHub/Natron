@@ -130,9 +130,9 @@ NATRON_NAMESPACE_ENTER;
 // Valid values:
 // - kNatronColorPlaneName indicating the number of components specified with kNatronMetadataColorPlaneNComps should be mapped to the color-plane
 //  Special 2-channel images are mapped to XY images to enable non-multiplanar effects to support 2-channel images.
-// - kNatronDisparityComponentsName indicating that the plug-in expects to receive 2-channel images and 2 planes (Disparity Left/Right)
-// - kNatronMotionComponentsName indicating that the plug-in expects to receive 2-channel images and 2 planes (Motion Backward/Forward)
-// Default value: kNatronColorPlaneName
+// - kNatronDisparityComponentsLabel indicating that the plug-in expects to receive 2-channel images and 2 planes (Disparity Left/Right)
+// - kNatronMotionComponentsLabel indicating that the plug-in expects to receive 2-channel images and 2 planes (Motion Backward/Forward)
+// Default value: kNatronColorPlaneID
 //
 // The effect desired components type for images coming from an input or in output
 // of the effect.

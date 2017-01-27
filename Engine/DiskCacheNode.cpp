@@ -243,8 +243,8 @@ DiskCacheNode::render(const RenderActionArgs& args)
 {
     // fetch source images and copy them
 
-    for (std::list<std::pair<ImageComponents, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
-        std::list<ImageComponents> layersToFetch;
+    for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
+        std::list<ImagePlaneDesc> layersToFetch;
         layersToFetch.push_back(it->first);
 
         GetImageInArgs inArgs;

@@ -1284,7 +1284,7 @@ Node::endInputEdition(bool triggerRender)
 
             // Force a refresh of the meta-datas
 
-            _imp->effect->onMetadataChanged_public();
+            _imp->effect->onMetadataChanged_recursive_public();
 
             refreshDynamicProperties();
         }

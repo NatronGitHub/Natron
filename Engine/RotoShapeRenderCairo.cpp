@@ -1884,7 +1884,7 @@ RotoShapeRenderCairo::renderInternalShape_old_cairo(TimeValue time,
 void
 RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                                const RectI & roi,
-                                               const ImageComponents& components,
+                                               const ImagePlaneDesc& components,
                                                const TimeValue time,
                                                ViewIdx view,
                                                const RangeD& shutterRange,

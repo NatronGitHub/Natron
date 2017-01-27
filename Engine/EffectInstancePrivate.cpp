@@ -284,7 +284,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 
     // The render went OK: copy the temporary image with the plug-in preferred format to the cache image
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         if (it->second.cacheImage != it->second.tmpImage) {
             Image::CopyPixelsArgs cpyArgs;
             cpyArgs.roi = rectToRender.rect;
@@ -319,8 +319,8 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     renderArgs->inputView = rectToRender.identityView;
     renderArgs->inputNb = rectToRender.identityInputNumber;
 
-    std::list<ImageComponents> components;
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+    std::list<ImagePlaneDesc> components;
+    for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
         components.push_back(it->first);
     }
     renderArgs->layers = &components;
@@ -334,8 +334,8 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     }
 
 
-    for (std::map<ImageComponents, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-        std::map<ImageComponents, ImagePtr>::const_iterator foundIdentityPlane = inputResults.imagePlanes.find(it->first);
+    for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        std::map<ImagePlaneDesc, ImagePtr>::const_iterator foundIdentityPlane = inputResults.imagePlanes.find(it->first);
         if (foundIdentityPlane == inputResults.imagePlanes.end()) {
             continue;
         }
@@ -449,19 +449,19 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
         actionArgs.glContextAttacher = glContext;
     }
 
-    std::list< std::list<std::pair<ImageComponents, ImagePtr> > > planesLists;
+    std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
 
     bool multiPlanar = _publicInterface->isMultiPlanar();
     // If we can render all planes at once, do it, otherwise just render them all sequentially
     if (!multiPlanar) {
-        for (std::map<ImageComponents, PlaneToRender >::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-            std::list<std::pair<ImageComponents, ImagePtr> > tmp;
+        for (std::map<ImagePlaneDesc, PlaneToRender >::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+            std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
             tmp.push_back(std::make_pair(it->first, it->second.tmpImage));
             planesLists.push_back(tmp);
         }
     } else {
-        std::list<std::pair<ImageComponents, ImagePtr> > tmp;
-        for (std::map<ImageComponents, PlaneToRender >::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        std::list<std::pair<ImagePlaneDesc, ImagePtr> > tmp;
+        for (std::map<ImagePlaneDesc, PlaneToRender >::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
             tmp.push_back(std::make_pair(it->first, it->second.tmpImage));
         }
         planesLists.push_back(tmp);
@@ -469,7 +469,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
 
     OSGLContextPtr openGLContext = glContext->getContext();
 
-    for (std::list<std::list<std::pair<ImageComponents, ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
+    for (std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
 
         actionArgs.outputPlanes = *it;
 
@@ -518,7 +518,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
             return stat;
         }
 
-    } // for (std::list<std::list<std::pair<ImageComponents,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
+    } // for (std::list<std::list<std::pair<ImagePlaneDesc,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
     return args->renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // EffectInstance::Implementation::renderHandlerInternal
@@ -551,16 +551,16 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
             // Fetch the mask image
 
-            ImageComponents maskLayer;
+            ImagePlaneDesc maskLayer;
             {
-                std::list<ImageComponents> upstreamAvailableLayers;
+                std::list<ImagePlaneDesc> upstreamAvailableLayers;
                 ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(args->time, args->view, maskInputNb, args->renderArgs, &upstreamAvailableLayers);
                 (void)stat;
                 _publicInterface->getNode()->getMaskChannel(maskInputNb, upstreamAvailableLayers, &maskLayer);
             }
 
             GetImageInArgs inArgs;
-            std::list<ImageComponents> layersToFetch;
+            std::list<ImagePlaneDesc> layersToFetch;
             layersToFetch.push_back(maskLayer);
             inArgs.layers = &layersToFetch;
             inArgs.inputNb = maskInputNb;
@@ -595,7 +595,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     }
 
     // Check for NaNs, copy to output image and mark for rendered
-    for (std::map<ImageComponents, PlaneToRender>::const_iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, PlaneToRender>::const_iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
 
         //bool unPremultRequired = unPremultIfNeeded && it->second.tmpImage->getComponentsCount() == 4 && it->second.renderMappedImage->getComponentsCount() == 3;
 
@@ -632,7 +632,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             _publicInterface->getNode()->setLastRenderedImage(it->second.tmpImage);
         }
         
-    } // for (std::map<ImageComponents,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+    } // for (std::map<ImagePlaneDesc,PlaneToRender>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
     
 } // EffectInstance::Implementation::renderHandlerPostProcess
 

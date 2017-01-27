@@ -51,14 +51,14 @@ Node::refreshChannelSelectors()
         }
 
 
-        std::list<ImageComponents> availableComponents;
+        std::list<ImagePlaneDesc> availableComponents;
         {
             ActionRetCodeEnum stat = _imp->effect->getAvailableLayers(time, ViewIdx(0), inputNb, TreeRenderNodeArgsPtr(), &availableComponents);
             (void)stat;
         }
 
-        for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
-            ChoiceOption layerOption = it2->getLayerOption();
+        for (std::list<ImagePlaneDesc>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
+            ChoiceOption layerOption = it2->getPlaneOption();
             choices.push_back(layerOption);
         }
 
@@ -84,13 +84,13 @@ Node::refreshChannelSelectors()
         choices.push_back(ChoiceOption("None", "",""));
 
         // Get the mask input components
-        std::list<ImageComponents> availableComponents;
+        std::list<ImagePlaneDesc> availableComponents;
         {
             ActionRetCodeEnum stat = _imp->effect->getAvailableLayers(time, ViewIdx(0), inputNb, TreeRenderNodeArgsPtr(), &availableComponents);
             (void)stat;
         }
 
-        for (std::list<ImageComponents>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
+        for (std::list<ImagePlaneDesc>::const_iterator it2 = availableComponents.begin(); it2 != availableComponents.end(); ++it2) {
 
             std::size_t nChans = (std::size_t)it2->getNumComponents();
             for (std::size_t c = 0; c < nChans; ++c) {
@@ -110,10 +110,10 @@ Node::refreshChannelSelectors()
 
 bool
 Node::getSelectedLayer(int inputNb,
-                       const std::list<ImageComponents>& availableLayers,
+                       const std::list<ImagePlaneDesc>& availableLayers,
                        std::bitset<4> *processChannels,
                        bool* isAll,
-                       ImageComponents* layer) const
+                       ImagePlaneDesc* layer) const
 {
 
 
@@ -168,16 +168,16 @@ Node::getSelectedLayer(int inputNb,
     return foundSelector != _imp->channelsSelectors.end();
 } // getSelectedLayer
 
-ImageComponents
+ImagePlaneDesc
 NodePrivate::getSelectedLayerInternal(int inputNb,
-                                      const std::list<ImageComponents>& availableLayers,
+                                      const std::list<ImagePlaneDesc>& availableLayers,
                                       const ChannelSelector& selector) const
 {
     NodePtr node;
 
     assert(_publicInterface);
     if (!_publicInterface) {
-        return ImageComponents();
+        return ImagePlaneDesc();
     }
     if (inputNb == -1) {
         node = _publicInterface->shared_from_this();
@@ -187,24 +187,24 @@ NodePrivate::getSelectedLayerInternal(int inputNb,
 
     KnobChoicePtr layerKnob = selector.layer.lock();
     if (!layerKnob) {
-        return ImageComponents();
+        return ImagePlaneDesc();
     }
     ChoiceOption layerID = layerKnob->getActiveEntry();
 
-    for (std::list<ImageComponents>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
+    for (std::list<ImagePlaneDesc>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
-        const std::string& layerName = it2->getLayerName();
+        const std::string& layerName = it2->getPlaneID();
         if (layerID.id == layerName) {
             return *it2;
         }
     }
-    return ImageComponents();
+    return ImagePlaneDesc();
 } // getSelectedLayerInternal
 
 int
-Node::getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLayers, ImageComponents* comps) const
+Node::getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const
 {
-    *comps = ImageComponents::getNoneComponents();
+    *comps = ImagePlaneDesc::getNoneComponents();
     
     std::map<int, MaskSelector >::const_iterator it = _imp->maskSelectors.find(inputNb);
 
@@ -213,7 +213,7 @@ Node::getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLay
     }
     ChoiceOption maskChannelID =  it->second.channel.lock()->getActiveEntry();
 
-    for (std::list<ImageComponents>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
+    for (std::list<ImagePlaneDesc>::const_iterator it2 = availableLayers.begin(); it2 != availableLayers.end(); ++it2) {
 
         std::size_t nChans = (std::size_t)it2->getNumComponents();
         for (std::size_t c = 0; c < nChans; ++c) {
@@ -229,7 +229,7 @@ Node::getMaskChannel(int inputNb, const std::list<ImageComponents>& availableLay
 } // getMaskChannel
 
 bool
-Node::addUserComponents(const ImageComponents& comps)
+Node::addUserComponents(const ImagePlaneDesc& comps)
 {
     ///The node has node channel selector, don't allow adding a custom plane.
     KnobIPtr outputLayerKnob = getKnobByName(kNatronOfxParamOutputChannels);
@@ -249,8 +249,8 @@ Node::addUserComponents(const ImageComponents& comps)
 
     {
         QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<ImageComponents>::iterator it = _imp->createdComponents.begin(); it != _imp->createdComponents.end(); ++it) {
-            if ( it->getLayerName() == comps.getLayerName() ) {
+        for (std::list<ImagePlaneDesc>::iterator it = _imp->createdComponents.begin(); it != _imp->createdComponents.end(); ++it) {
+            if ( it->getPlaneID() == comps.getPlaneID() ) {
                 return false;
             }
         }
@@ -262,7 +262,7 @@ Node::addUserComponents(const ImageComponents& comps)
         ///Set the selector to the new channel
         KnobChoicePtr layerChoice = toKnobChoice(outputLayerKnob);
         if (layerChoice) {
-            layerChoice->setValueFromID(comps.getLayerName());
+            layerChoice->setValueFromID(comps.getPlaneID());
         }
     }
 
@@ -270,7 +270,7 @@ Node::addUserComponents(const ImageComponents& comps)
 } // addUserComponents
 
 void
-Node::getUserCreatedComponents(std::list<ImageComponents>* comps)
+Node::getUserCreatedComponents(std::list<ImagePlaneDesc>* comps)
 {
     QMutexLocker k(&_imp->createdComponentsMutex);
     
@@ -301,14 +301,14 @@ Node::refreshLayersSelectorsVisibility()
 
     // Disable all input selectors as it doesn't make sense to edit them whilst output is All
 
-    ImageComponents mainInputComps, outputComps;
+    ImagePlaneDesc mainInputComps, outputComps;
 
     int mainInputIndex = getPreferredInput();
 
     for (std::map<int, ChannelSelector>::iterator it = _imp->channelsSelectors.begin(); it != _imp->channelsSelectors.end(); ++it) {
 
         // Get the mask input components
-        std::list<ImageComponents> availableComponents;
+        std::list<ImagePlaneDesc> availableComponents;
         {
             ActionRetCodeEnum stat = _imp->effect->getAvailableLayers(_imp->effect->getCurrentTime_TLS(), ViewIdx(0), it->first, _imp->effect->getCurrentRender_TLS(), &availableComponents);
             (void)stat;
@@ -353,7 +353,7 @@ Node::refreshLayersSelectorsVisibility()
 
 
 void
-Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const ImageComponents& outputComps)
+Node::refreshEnabledKnobsLabel(const ImagePlaneDesc& mainInputComps, const ImagePlaneDesc& outputComps)
 {
     KnobBoolPtr enabledChan[4];
     bool hasRGBACheckboxes = false;
@@ -369,8 +369,8 @@ Node::refreshEnabledKnobsLabel(const ImageComponents& mainInputComps, const Imag
     int nOutputComps = outputComps.getNumComponents();
 
     // But we name the channels by the name of the input layer
-    const std::vector<std::string>& inputChannelNames = mainInputComps.getComponentsNames();
-    const std::vector<std::string>& outputChannelNames = outputComps.getComponentsNames();
+    const std::vector<std::string>& inputChannelNames = mainInputComps.getChannels();
+    const std::vector<std::string>& outputChannelNames = outputComps.getChannels();
 
     switch (nOutputComps) {
         case 1: {
@@ -499,7 +499,7 @@ Node::hasAtLeastOneChannelToProcess() const
 
 bool
 Node::isSupportedComponent(int inputNb,
-                           const ImageComponents& comp) const
+                           const ImagePlaneDesc& comp) const
 {
 
     std::bitset<4> supported;

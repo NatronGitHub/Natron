@@ -127,7 +127,7 @@ public:
 
     // For each plane to render, the pointers to the internal images used during render: this is used when calling
     // clipGetImage on the output clip.
-    std::map<ImageComponents, PlaneToRender> outputPlanes;
+    std::map<ImagePlaneDesc, PlaneToRender> outputPlanes;
 
     virtual GenericActionTLSArgsPtr createCopy() OVERRIDE FINAL
     {
@@ -176,7 +176,7 @@ public:
      **/
     void pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
                               const RectI& renderWindowPixel,
-                              const std::map<ImageComponents, PlaneToRender>& outputPlanes);
+                              const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes);
 
     /**
      * @brief Pop the current action TLS. This call must match a call to one of the push functions above.
@@ -204,12 +204,12 @@ public:
      **/
     bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
                                     RectI* renderWindowPixel,
-                                    std::map<ImageComponents, PlaneToRender>* outputPlanes) const;
+                                    std::map<ImagePlaneDesc, PlaneToRender>* outputPlanes) const;
 
     /**
      * @brief If the current action is the render action, this sets the output planes.
      **/
-    void updateCurrentRenderActionOutputPlanes(const std::map<ImageComponents, PlaneToRender>& outputPlanes);
+    void updateCurrentRenderActionOutputPlanes(const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes);
 
     /**
      * @brief This function pops the last action arguments of the stack if it is the render action.
@@ -274,7 +274,7 @@ public:
     RenderActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
                                 TimeValue time, ViewIdx view, RenderScale& scale,
                                 const RectI& renderWindowPixel,
-                                const std::map<ImageComponents, PlaneToRender>& outputPlanes)
+                                const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes)
     : tls(tls)
     {
         tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, outputPlanes);

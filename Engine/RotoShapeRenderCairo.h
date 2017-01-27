@@ -159,7 +159,7 @@ public:
      **/
     static void renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoItem,
                                          const RectI & roi,
-                                         const ImageComponents& components,
+                                         const ImagePlaneDesc& components,
                                          const TimeValue time,
                                          ViewIdx view,
                                          const RangeD& shutterRange,

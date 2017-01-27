@@ -117,7 +117,7 @@ public:
     void appendPreRenderedInputs(int inputNb,
                                  TimeValue time,
                                  ViewIdx view,
-                                 const std::map<ImageComponents, ImagePtr>& planes,
+                                 const std::map<ImagePlaneDesc, ImagePtr>& planes,
                                  const Distortion2DStackPtr& distortionStack);
 
 
@@ -128,9 +128,9 @@ public:
                               TimeValue time,
                               ViewIdx view,
                               const RectI& roi,
-                              const std::list<ImageComponents>& layers,
-                              std::map<ImageComponents, ImagePtr>* planes,
-                              std::list<ImageComponents>* planesLeftToRendered,
+                              const std::list<ImagePlaneDesc>& layers,
+                              std::map<ImagePlaneDesc, ImagePtr>* planes,
+                              std::list<ImagePlaneDesc>* planesLeftToRendered,
                               Distortion2DStackPtr* distortionStack) const;
 
     /**
@@ -411,7 +411,7 @@ public:
      **/
     ActionRetCodeEnum preRenderInputImages(TimeValue time,
                                            ViewIdx view,
-                                           const std::map<int, std::list<ImageComponents> >& neededInputLayers);
+                                           const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
 
 
 private:

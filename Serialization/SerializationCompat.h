@@ -68,7 +68,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Curve.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/RectI.h"
@@ -141,6 +141,9 @@ GCC_DIAG_OFF(unused-parameter)
 
 #define GROUP_KNOB_SERIALIZATION_INTRODUCES_TYPENAME 2
 #define GROUP_KNOB_SERIALIZATION_VERSION GROUP_KNOB_SERIALIZATION_INTRODUCES_TYPENAME
+
+#define IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID 2
+#define IMAGEPLANEDESC_SERIALIZATION_VERSION IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
@@ -412,6 +415,24 @@ public:
     std::list<TrackSerialization> _tracks;
 };
 
+class ImagePlaneDescSerialization
+{
+public:
+
+    ImagePlaneDescSerialization()
+    {
+
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+
+    std::string _planeID, _planeLabel, _channelsLabel;
+    std::vector<std::string> _channels;
+
+};
+
 } // namespace Compat
 
 
@@ -672,7 +693,7 @@ SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization::serialize(Archive 
 
 template<class Archive>
 void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
-               const unsigned int version)
+               const unsigned int /*version*/)
 {
     double time = _time;
     ar & ::boost::serialization::make_nvp("Time", time);
@@ -684,7 +705,7 @@ void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
 }
 
 template<class Archive>
-void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int version)
+void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int /*version*/)
 {
     QMutexLocker k(&_imp->_lock);
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
@@ -692,12 +713,22 @@ void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int version
 
 
 template<class Archive>
-void NATRON_NAMESPACE::ImageComponents::serialize(Archive & ar, const unsigned int version)
+void SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization::serialize(Archive & ar, const unsigned int version)
 {
-    ar &  boost::serialization::make_nvp("Layer", _layerName);
-    ar &  boost::serialization::make_nvp("Components", _componentNames);
-    ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
+    if (version < IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID) {
+        ar &  boost::serialization::make_nvp("Layer", _planeID);
+        _planeLabel = _planeID;
+        ar &  boost::serialization::make_nvp("Components", _channels);
+        ar &  boost::serialization::make_nvp("CompName", _channelsLabel);
+    } else {
+        ar &  boost::serialization::make_nvp("PlaneID", _planeID);
+        ar &  boost::serialization::make_nvp("PlaneLabel", _planeLabel);
+        ar &  boost::serialization::make_nvp("ChannelsLabel", _channelsLabel);
+        ar &  boost::serialization::make_nvp("Channels", _channels);
+
+    }
 }
+
 
 template<class Archive>
 void SERIALIZATION_NAMESPACE::Compat::RotoContextSerialization::serialize(Archive & ar,
@@ -1460,13 +1491,14 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         }
     }
     if (version >= NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS) {
-        std::list<NATRON_NAMESPACE::ImageComponents> comps;
+        std::list<SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization> comps;
         ar & ::boost::serialization::make_nvp("UserComponents", comps);
-        for (std::list<NATRON_NAMESPACE::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
-            ImageComponentsSerialization s;
-            s.layerName = it->getLayerName();
-            s.globalCompsName = it->getComponentsGlobalName();
-            s.channelNames = it->getComponentsNames();
+        for (std::list<SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization>::iterator it = comps.begin(); it!=comps.end(); ++it) {
+            SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization s;
+            s.planeID = it->_planeID;
+            s.planeLabel = it->_planeLabel;
+            s.channelsLabel = it->_channelsLabel;
+            s.channelNames = it->_channels;
             _userComponents.push_back(s);
         }
 
@@ -1653,6 +1685,7 @@ BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::TrackSerialization, TRACK_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoContextSerialization, ROTO_CTX_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization, IMAGEPLANEDESC_SERIALIZATION_VERSION)
 
 #endif // NATRON_BOOST_SERIALIZATION_COMPAT
 

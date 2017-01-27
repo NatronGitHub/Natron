@@ -83,7 +83,7 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 
 void
 ViewerTab::setImageFormat(int textureIndex,
-                          const ImageComponents& components,
+                          const ImagePlaneDesc& components,
                           ImageBitDepthEnum depth)
 {
     _imp->infoWidget[textureIndex]->setImageFormat(components, depth);

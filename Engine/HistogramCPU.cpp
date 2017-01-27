@@ -492,7 +492,7 @@ HistogramCPU::run()
             args->byPassCache = false;
             
             TreeRenderPtr render = TreeRender::create(args);
-            std::map<ImageComponents, ImagePtr> planes;
+            std::map<ImagePlaneDesc, ImagePtr> planes;
             ActionRetCodeEnum stat = render->launchRender(&planes);
             if (isFailureRetCode(stat)) {
                 continue;

@@ -645,7 +645,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
     }
 
 
-    std::list<ImageComponents> componentsToRender;
+    std::list<ImagePlaneDesc> componentsToRender;
     if (inArgs.layers) {
         componentsToRender = *inArgs.layers;
     } else {
@@ -659,8 +659,8 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         }
         assert(results);
 
-        std::map<int, std::list<ImageComponents> > neededInputLayers;
-        std::list<ImageComponents> producedLayers, availableLayers;
+        std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
+        std::list<ImagePlaneDesc> producedLayers, availableLayers;
         int passThroughInputNb;
         TimeValue passThroughTime;
         ViewIdx passThroughView;
@@ -668,7 +668,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         bool processAll;
         results->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
 
-        std::map<int, std::list<ImageComponents> >::const_iterator foundInput = neededInputLayers.find(inArgs.inputNb);
+        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInput = neededInputLayers.find(inArgs.inputNb);
         if (foundInput == neededInputLayers.end()) {
 #ifdef DEBUG
             qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the get components action did not specify any componentns to fetch";
@@ -779,13 +779,13 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
 
 
 
-    std::map<ImageComponents, ImagePtr> inputRenderedPlanes;
+    std::map<ImagePlaneDesc, ImagePtr> inputRenderedPlanes;
 
 
     // Look for any pre-rendered result for this frame-view. If not rendered already then call renderRoI
     // renderRoI may find stuff in the cache and not render anyway
     {
-        std::list<ImageComponents> planesLeftToRender;
+        std::list<ImagePlaneDesc> planesLeftToRender;
         thisFrameViewRequest->getPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, pixelRoI, componentsToRender, &inputRenderedPlanes, &planesLeftToRender, &outArgs->distortionStack);
         componentsToRender = planesLeftToRender;
     }
@@ -827,7 +827,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
 
     const bool supportsMultiPlane = isMultiPlanar();
 
-    for (std::map<ImageComponents, ImagePtr>::iterator it = inputRenderedPlanes.begin(); it != inputRenderedPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = inputRenderedPlanes.begin(); it != inputRenderedPlanes.end(); ++it) {
 
         if ( !pixelRoI.intersects( it->second->getBounds() ) ) {
             // The RoI requested does not intersect with the bounds of the input image computed, return a NULL image.
@@ -867,15 +867,16 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
             mustConvertImage = true;
         }
 
-        ImageComponents preferredLayer = it->second->getLayer();
+        ImagePlaneDesc preferredLayer = it->second->getLayer();
 
         // If this node does not support multi-plane or the image is the color plane,
         // map it to this node preferred color plane
         if (it->second->getLayer().isColorPlane() || !supportsMultiPlane) {
-            ImageComponents thisLayer = getMetadataComponents(inArgs.renderArgs, inArgs.inputNb);
-            if (it->second->getLayer() != thisLayer) {
+            ImagePlaneDesc plane, pairedPlane;
+            getMetadataComponents(inArgs.renderArgs, inArgs.inputNb, &plane, &pairedPlane);
+            if (it->second->getLayer() != plane) {
                 mustConvertImage = true;
-                preferredLayer = thisLayer;
+                preferredLayer = plane;
             }
         }
         ImageBitDepthEnum thisBitDepth = getBitDepth(inArgs.renderArgs, inArgs.inputNb);
@@ -1079,7 +1080,7 @@ EffectInstance::evaluate(bool isSignificant,
     if ( refreshMetadatas && node && node->isNodeCreated() ) {
         
         // Force a re-compute of the meta-data if needed
-        onMetadataChanged_public();
+        onMetadataChanged_recursive_public();
     }
 
     if (isSignificant) {
@@ -1459,18 +1460,31 @@ EffectInstance::getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb)
     }
 }
 
-ImageComponents
-EffectInstance::getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb)
+void
+EffectInstance::getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
     ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
     if (isFailureRetCode(stat)) {
-        return ImageComponents::getNoneComponents();
+        *plane = ImagePlaneDesc::getNoneComponents();
     } else {
         const NodeMetadataPtr& metadatas = results->getMetadatasResults();
-        int nComps = metadatas->getColorPlaneNComps(inputNb);
         std::string componentsType = metadatas->getComponentsType(inputNb);
-        return ImageComponents::mapNCompsToLayer(componentsType, nComps);
+        if (componentsType == kNatronColorPlaneID) {
+            int nComps = metadatas->getColorPlaneNComps(inputNb);
+            *plane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
+        } else if (componentsType == kNatronDisparityComponentsLabel) {
+            *plane = ImagePlaneDesc::getDisparityLeftComponents();
+            *pairedPlane = ImagePlaneDesc::getDisparityRightComponents();
+        } else if (componentsType == kNatronMotionComponentsLabel) {
+            *plane = ImagePlaneDesc::getBackwardMotionComponents();
+            *pairedPlane = ImagePlaneDesc::getForwardMotionComponents();
+        } else {
+            *plane = ImagePlaneDesc::getNoneComponents();
+            assert(false);
+            throw std::logic_error("");
+        }
+
     }
 }
 

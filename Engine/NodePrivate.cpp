@@ -31,7 +31,7 @@
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobItemsTable.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/Image.h"
 #include "Engine/Project.h"
 #include "Engine/Timer.h"

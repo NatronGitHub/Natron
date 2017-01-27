@@ -33,7 +33,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/TrackerNode.h"
@@ -708,7 +708,7 @@ TrackMarker::getMarkerImage(TimeValue time,
         args->byPassCache = false;
     }
 
-    std::map<ImageComponents, ImagePtr> planes;
+    std::map<ImagePlaneDesc, ImagePtr> planes;
     TreeRenderPtr render = TreeRender::create(args);
     ActionRetCodeEnum stat = render->launchRender(&planes);
     if (isFailureRetCode(stat)) {
@@ -829,14 +829,17 @@ TrackMarkerPM::trackMarker(bool forward,
                 double areaPixels = (topRight.x - btmLeft.x) * (topRight.y - btmLeft.y);
                 NodePtr trackerInput = trackerNode->getInput(0);
                 if (trackerInput) {
-                    ImageComponents comps = trackerInput->getEffectInstance()->getMetadataComponents(TreeRenderNodeArgsPtr(), -1);
+                    ImagePlaneDesc comps, paireComps;
+                    trackerInput->getEffectInstance()->getMetadataComponents(TreeRenderNodeArgsPtr(), -1, &comps, &paireComps);
                     areaPixels *= comps.getNumComponents();
                 }
 
                 double value = correlation->getValueAtTime(TimeValue(frame), DimIdx(0));
 
                 // Convert to a percentage
-                value /= areaPixels;
+                if (areaPixels > 0) {
+                    value /= areaPixels;
+                }
 
                 markerError->setValueAtTime(TimeValue(frame), value, ViewSetSpec::all(), DimIdx(0));
             }
