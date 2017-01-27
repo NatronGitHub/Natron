@@ -104,6 +104,7 @@ public:
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
+
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
@@ -130,6 +131,7 @@ private:
                                                 ViewIdx* passThroughView,
                                                 int* passThroughInputNb) OVERRIDE;
     virtual ActionRetCodeEnum beginSequenceRender(double first,
+
                                            double last,
                                            double step,
                                            bool interactive,

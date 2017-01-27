@@ -186,17 +186,20 @@ OfxClipInstance::getUnmappedComponents() const
         ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
     } else {
 
+
         // The node is not connected but optional, return the closest supported components
         // of the first connected non optional input.
         if (_imp->optional) {
             effect = getEffectHolder();
             TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
             assert(effect);
+
             int nInputs = effect->getMaxInputCount();
             for (int i = 0; i < nInputs; ++i) {
 
                 ImagePlaneDesc metadataPlane, metadataPairedPlane;
                 effect->getMetadataComponents(render, i, &metadataPlane, &metadataPairedPlane);
+
 
                 if (metadataPlane.getNumComponents() > 0) {
                     ret = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(metadataPlane);
@@ -216,6 +219,7 @@ OfxClipInstance::getUnmappedComponents() const
     return tls->unmappedComponents;
 
 } // getUnmappedComponents
+
 
 // PreMultiplication -
 //
@@ -825,7 +829,6 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     {
         const ImagePlaneDesc& imageLayer = image->getLayer();
         nComps = imageLayer.getNumComponents();
-
         if (multiPlanar) {
             // Multi-planar: return exactly the layer
             componentsStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(plane);
@@ -1033,7 +1036,6 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     return true;
 } // OfxClipInstance::getOutputImageInternal
-
 
 ImageBitDepthEnum
 OfxClipInstance::ofxDepthToNatronDepth(const std::string & depth, bool throwOnFailure)

@@ -377,6 +377,7 @@ ViewerTab::synchronizeOtherViewersProjection()
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
+
     }
     app->setMasterSyncViewer(getInternalNode()->getNode());
     double left, bottom, factor, par;

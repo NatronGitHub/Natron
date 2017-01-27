@@ -258,6 +258,7 @@ void applyMaskMixGLInternal(const GLImageStoragePtr& originalTexture,
     assert(shader);
     GLuint fboID = glContext->getOrCreateFBOId();
 
+
     int target = dstTexture->getGLTextureTarget();
     int dstTexID = dstTexture->getGLTextureID();
     int originalTexID = originalTexture ? originalTexture->getGLTextureID() : 0;

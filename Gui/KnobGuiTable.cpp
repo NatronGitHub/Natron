@@ -602,6 +602,7 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
 {
     NewLayerDialog dialog( ImagePlaneDesc::getNoneComponents(), getKnobGui()->getGui() );
 
+
     if ( dialog.exec() ) {
         ImagePlaneDesc comps = dialog.getComponents();
         if ( comps == ImagePlaneDesc::getNoneComponents() ) {
@@ -649,6 +650,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
     }
     ImagePlaneDesc original(row[0].toStdString(), "", row[2].toStdString(), channels);;
     NewLayerDialog dialog( original, getKnobGui()->getGui() );
+
     if ( dialog.exec() ) {
         ImagePlaneDesc comps = dialog.getComponents();
         if ( comps == ImagePlaneDesc::getNoneComponents() ) {
@@ -661,10 +663,12 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         std::string oldLayerName = row[0].toStdString();
         row[0] = ( QString::fromUtf8( comps.getPlaneID().c_str() ) );
 
+
         std::list<std::vector<std::string> > table;
         _knob.lock()->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
             if ( ( (*it)[0] == comps.getPlaneID() ) && ( (*it)[0] != oldLayerName ) ) {
+
                 Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
 
                 return false;

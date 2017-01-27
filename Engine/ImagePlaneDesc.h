@@ -31,6 +31,7 @@
 #include <vector>
 #include <list>
 
+
 #include <nuke/fnOfxExtensions.h>
 #include "Engine/EngineFwd.h"
 #include "Engine/ChoiceOption.h"
@@ -252,6 +253,7 @@ private:
     std::string _planeID, _planeLabel;
     std::vector<std::string> _channels;
     std::string _channelsLabel;
+
 };
 
 NATRON_NAMESPACE_EXIT;

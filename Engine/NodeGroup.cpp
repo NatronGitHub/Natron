@@ -1166,8 +1166,7 @@ NodeGroup::~NodeGroup()
 
 
 void
-NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                 std::bitset<4>* supported)
+NodeGroup::addAcceptedComponents(int /*inputNb*/,                                 std::bitset<4>* supported)
 {
     (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }

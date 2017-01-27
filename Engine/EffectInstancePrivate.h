@@ -200,7 +200,6 @@ public:
     };
 
 
-
     ActionRetCodeEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,
                                               const RectToRender & specificData,
                                               QThread* callingThread);

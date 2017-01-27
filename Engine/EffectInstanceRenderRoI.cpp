@@ -163,7 +163,6 @@ EffectInstance::optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
 } // optimizeRectsToRender
 
 
-
 /**
  * @brief This function determines the planes to render and calls recursively on upstream nodes unavailable planes
  **/
@@ -350,6 +349,7 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     // Save the planes that may already have been fetched from pass-through planes
     std::map<ImagePlaneDesc, ImagePtr> existingPassThroughPlanes = results->outputPlanes;
     results->outputPlanes.clear();
+
 
     // Since we are identity, it may return a distortion
     ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
@@ -962,7 +962,6 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     // There should always be at least 1 plane to render (The color plane)
     assert( !planesToRender->planes.empty() && !planesToRender->rectsToRender.empty() );
 
-
     EffectInstancePtr renderInstance;
     //
     // Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
@@ -1220,7 +1219,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     // Should the output of this render be cached ?
     CacheAccessModeEnum cacheAccess = _imp->shouldRenderUseCache(args, requestPassData);
 
-
     // The RoD in pixel coordinates at the scale of renderMappedScale
     RectI pixelRoDRenderMapped;
 
@@ -1276,7 +1274,6 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, mappedCombinedScale, args.proxyScale, mappedMipMapLevel, glContextLocker, &results->outputPlanes);
 
     bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////

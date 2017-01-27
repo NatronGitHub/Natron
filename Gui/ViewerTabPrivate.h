@@ -125,6 +125,7 @@ struct ViewerTabPrivate
     std::list<PluginViewerContext>::iterator findActiveNodeContextForNode(const NodePtr& plugin);
     std::list<PluginViewerContext>::iterator findActiveNodeContextForPlugin(const PluginPtr& plugin);
 
+
     // Returns true if this node has a viewer context but it is not active
     bool hasInactiveNodeViewerContext(const NodePtr& node);
 };

@@ -599,6 +599,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobChoicePtr isChoice = toKnobChoice(knob);
         if (isChoice) {
             std::vector<ChoiceOption> entries = isChoice->getEntries();
+
             QString data;
             for (U32 i = 0; i < entries.size(); ++i) {
                 QString line( QString::fromUtf8( entries[i].id.c_str() ) );
@@ -862,6 +863,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
         if (isChoice) {
             _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(DimIdx(0)) ).id.c_str() ) );
+
         } else if (isDbl) {
             _imp->default0->setValue( isDbl->getDefaultValue(DimIdx(0)) );
             if (isDbl->getNDimensions() >= 2) {
@@ -1387,12 +1389,11 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
 
         while ( !stream.atEnd() ) {
             QString line = stream.readLine();
-            
             int foundHelp = line.indexOf( QString::fromUtf8("<?>") );
             if (foundHelp != -1) {
                 QString entry = line.mid(0, foundHelp);
                 QString help = line.mid(foundHelp + 3, -1);
-            
+
                 entries.push_back(ChoiceOption( entry.toStdString(), "", help.toStdString()) );
             } else {
                 entries.push_back( ChoiceOption(line.toStdString(), "", "") );

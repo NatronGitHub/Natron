@@ -462,6 +462,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
         }
         if ( (*it)->getEffectInstance()->isWriter() ) {
             choices.push_back( ChoiceOption((*it)->getFullyQualifiedName(), "", "") );
+
         }
     }
 

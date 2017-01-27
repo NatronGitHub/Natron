@@ -473,6 +473,7 @@ OfxParamToKnob::onChoiceMenuPopulated()
     }
     std::vector<ChoiceOption> entries = isChoice->getEntries();
 
+
     std::vector<std::string> ids(entries.size());
     std::vector<std::string> tooltips(entries.size());
     std::vector<std::string> labels(entries.size());
@@ -506,7 +507,6 @@ OfxParamToKnob::onChoiceMenuEntryAppended()
         param->getProperties().setStringProperty(kOfxParamPropChoiceOption, entries[i].id, i);
         param->getProperties().setStringProperty(kOfxParamPropChoiceLabelOption, entries[i].tooltip, i);
     }
-
 
 }
 
@@ -1464,6 +1464,7 @@ OfxChoiceInstance::set(int v)
     if ( (0 <= v) && ( v < nEntries ) ) {
         knob->setValue(v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
+
         return kOfxStatOK;
     } else {
         return kOfxStatErrBadIndex;
@@ -1482,6 +1483,7 @@ OfxChoiceInstance::set(OfxTime time,
     int nEntries = knob->getNumEntries();
     if ( (0 <= v) && ( v < nEntries ) ) {
         knob->setValueAtTime(TimeValue(time), v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
+
 
         return kOfxStatOK;
     } else {
@@ -1556,10 +1558,10 @@ OfxChoiceInstance::setOption(int num)
     DYNAMIC_PROPERTY_CHECK();
 
     /*
-       This function can serve 3 type of behaviours depending on num:
-       - 0: meaning resetOptions
-       - num == nDim - 1: meaning appendOption
-       - num == nDim: meaning setOptions
+     This function can serve 3 type of behaviours depending on num:
+     - 0: meaning resetOptions
+     - num == nDim - 1: meaning appendOption
+     - num == nDim: meaning setOptions
      */
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     KnobChoicePtr knob = _knob.lock();
@@ -1593,6 +1595,7 @@ OfxChoiceInstance::setOption(int num)
         knob->populateChoices(entries);
     }
 }
+
 
 KnobIPtr
 OfxChoiceInstance::getKnob() const

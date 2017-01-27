@@ -1059,6 +1059,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
                     // Add to the red channel the matte value
                     uTmpPix[0] = Image::clampIfInt<U8>( (double)uTmpPix[0] + matteA );
+
                 }
 
                 *reinterpret_cast<unsigned int*>(dst_pixels[0]) = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);
@@ -1304,10 +1305,12 @@ public:
     }
 
     virtual ~ViewerProcessor()
+
     {
     }
 
     void setValues(const RenderViewerArgs& args)
+
     {
         _args = args;
     }
@@ -1382,7 +1385,7 @@ ViewerInstance::render(const RenderActionArgs& args)
             }
         }
     }
-
+    
     if (!colorImage) {
         setPersistentMessage(eMessageTypeError, tr("Could not fetch source image for selected layer").toStdString());
         return eActionStatusFailed;

@@ -1008,6 +1008,7 @@ Settings::getOpenGLCPUDriver() const
         ret.renderID =  _imp->_osmesaRenderers->getValue();
     } else {
         ret.renderID = 0;
+
     }
     return ret;
 }
@@ -1271,12 +1272,14 @@ SettingsPrivate::initializeKnobsColorManagement()
                     defaultIndex = j;
                 }
                 configs.push_back(ChoiceOption( entries[j].toStdString(), "",""));
+
             }
 
             break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
     configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME, "", ""));
+
     _ocioConfigKnob->populateChoices(configs);
     _ocioConfigKnob->setDefaultValue(defaultIndex);
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
@@ -1862,6 +1865,7 @@ SettingsPrivate::initializeKnobsViewers()
     std::vector<ChoiceOption> textureModes;
     textureModes.push_back(ChoiceOption("Byte", "", tr("Post-processing done by the viewer (such as colorspace conversion) is done "
                                                         "by the CPU. As a results, the size of cached textures is smaller.").toStdString() ));
+
     //textureModes.push_back("16bits half-float");
     //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
     textureModes.push_back(ChoiceOption("32bits floating-point", "",tr("Post-processing done by the viewer (such as colorspace conversion) is done "
@@ -1928,6 +1932,7 @@ SettingsPrivate::initializeKnobsViewers()
     autoProxyChoices.push_back(ChoiceOption("32", "",""));
     _autoProxyLevel->populateChoices(autoProxyChoices);
     _autoProxyLevel->setDefaultValue(1);
+
     _viewersTab->addKnob(_autoProxyLevel);
 
     _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( thisShared, tr("Max. opened node viewer interface") );
@@ -2305,7 +2310,6 @@ Settings::saveSettingsToFile()
 } // saveSettingsToFile
 
 
-
 void
 SettingsPrivate::loadSettingsFromFileInternal(const SERIALIZATION_NAMESPACE::SettingsSerialization& serialization, int loadType)
 {
@@ -2620,6 +2624,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
     } else if ( k == _imp->_ocioConfigKnob ) {
         if (_imp->_ocioConfigKnob->getActiveEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);
+
         } else {
             _imp->_customOcioConfigFile->setEnabled(false);
         }
@@ -2952,6 +2957,7 @@ Settings::populateSystemFonts(const std::vector<std::string>& fonts)
     }
     _imp->_systemFontChoice->populateChoices(options);
     _imp->_scriptEditorFontChoice->populateChoices(options);
+
     for (U32 i = 0; i < fonts.size(); ++i) {
         if (fonts[i] == NATRON_FONT) {
             _imp->_systemFontChoice->setDefaultValueWithoutApplying(i);
@@ -3265,6 +3271,7 @@ Settings::getHostName() const
     } else {
         if ( (entry_i >= 0) && ( entry_i < (int)_imp->_knownHostNames.size() ) ) {
             return _imp->_knownHostNames[entry_i].id;
+
         }
 
         return std::string();

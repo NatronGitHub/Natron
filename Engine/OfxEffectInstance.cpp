@@ -77,7 +77,6 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 #include "Serialization/NodeSerialization.h"
 
-
 NATRON_NAMESPACE_ENTER;
 
 
@@ -1003,7 +1002,6 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
         return eActionStatusFailed;
     }
     assert(_imp->context != eContextNone);
-
 
     // First push the "default" meta-datas to the clips so that they get proper values
     // EDIT: this is not needed as we no longer use any thread unsafe clips data anymore

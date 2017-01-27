@@ -891,12 +891,14 @@ Project::initializeKnobs()
 
 
     KnobPagePtr lutPages = AppManager::createKnob<KnobPage>( shared_from_this(), tr("LUT") );
+
     std::vector<ChoiceOption> colorSpaces;
     // Keep it in sync with ViewerColorSpaceEnum
     colorSpaces.push_back(ChoiceOption("Linear","",""));
     colorSpaces.push_back(ChoiceOption("sRGB","",""));
     colorSpaces.push_back(ChoiceOption("Rec.709","",""));
     _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("8-Bit Colorspace") );
+
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
     _imp->colorSpace8u->setAnimationEnabled(false);
@@ -1164,6 +1166,7 @@ Project::tryAddProjectFormat(const Format & f, bool addAsAdditionalFormat, bool*
         _imp->builtinFormats.push_back(f);
     }
     _imp->formatKnob->populateChoices(entries);
+
 
     return ret;
 }
@@ -1600,6 +1603,7 @@ Project::onKnobValueChanged(const KnobIPtr& knob,
 
         // Refresh nodes with a format parameter
         std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
+
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2773,6 +2777,7 @@ Project::onProjectFormatPopulated()
 
     getNodes_recursive(nodes, true);
     std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries();
+
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->refreshFormatParamChoice(entries, index, false);
     }

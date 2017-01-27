@@ -2951,6 +2951,7 @@ ChoiceParam::set(const QString& label, const QString& view)
             PyErr_SetString(PyExc_ValueError, e.what());
         }
 
+
     }
 }
 
@@ -3017,6 +3018,7 @@ ChoiceParam::setDefaultValue(const QString& value)
             PyErr_SetString(PyExc_ValueError, e.what());
         }
     }
+
 }
 
 int
@@ -3067,6 +3069,7 @@ ChoiceParam::addOption(const QString& optionID,
     }
     ChoiceOption c(optionID.toStdString(), optionLabel.toStdString(), optionHelper.toStdString());
     knob->appendChoice(c);
+
 }
 
 void
@@ -3098,6 +3101,7 @@ ChoiceParam::setOptions(const std::list<QString>& optionIDs,
         option.id = itID->toStdString();
         option.label = itLabel->toStdString();
         option.tooltip = itHelp->toStdString();
+
     }
     knob->populateChoices(entries);
 }
@@ -3111,6 +3115,7 @@ ChoiceParam::getOption(int index, QString* optionID, QString* optionLabel, QStri
         return false;
     }
     std::vector<ChoiceOption> entries =  knob->getEntries();
+
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
         PyErr_SetString(PyExc_IndexError, tr("Option index out of range").toStdString().c_str());
@@ -3139,6 +3144,7 @@ ChoiceParam::getActiveOption(QString* optionID, QString* optionLabel, QString* o
     *optionID = QString::fromUtf8(opt.id.c_str());
     *optionLabel = QString::fromUtf8(opt.label.c_str());
     *optionHelp = QString::fromUtf8(opt.tooltip.c_str());
+
 }
 
 int

@@ -45,6 +45,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
+#include "Engine/ChoiceOption.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -614,6 +615,7 @@ public:
     virtual bool copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs) OVERRIDE;
 };
 
+
 typedef boost::shared_ptr<ChoiceKnobDimView> ChoiceKnobDimViewPtr;
 
 inline ChoiceKnobDimViewPtr
@@ -629,7 +631,6 @@ class KnobChoice
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
 GCC_DIAG_SUGGEST_OVERRIDE_ON
-
 
 
 private: // derives from KnobI
@@ -711,6 +712,7 @@ public:
      **/
     void resetChoices(ViewSetSpec view = ViewSetSpec::all());
 
+
     /**
      * @brief Append an option to the menu 
      * @param help Optionnally specify the tooltip that should be displayed when the user hovers the entry in the menu
@@ -757,7 +759,7 @@ public:
     std::string getHintToolTipFull() const;
 
     static int choiceMatch(const std::string& choiceID, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
-    
+
     /**
      * @brief When set the menu will have a "New" entry which the user can select to create a new entry on its own.
      **/
@@ -781,6 +783,7 @@ public:
 
     void setColorForIndex(int index, const RGBAColourD& color);
     bool getColorForIndex(int index, RGBAColourD* color) const;
+
 
     void setTextToFitHorizontally(const std::string& text);
     std::string getTextToFitHorizontally() const;

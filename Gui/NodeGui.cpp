@@ -2794,7 +2794,6 @@ NodeGui::refreshNodeText()
     QRectF bbox = boundingRect();
     resize( bbox.width(), bbox.height(), false, !userAddedText.isEmpty() );
 
-
 }
 
 QColor

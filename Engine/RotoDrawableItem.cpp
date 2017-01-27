@@ -584,6 +584,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
     addHashListener(rotoPaintEffect);
 
+
     if (isStroke) {
         if (type == eRotoStrokeTypeSmear) {
             KnobDoublePtr spacingKnob = isStroke->getBrushSpacingKnob();
@@ -650,7 +651,6 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
     }
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
-
 
     // Any knob except transform center should break the multi-stroke into a new stroke
     if ( (reason == eValueChangedReasonUserEdited) && (knob->getName() != kRotoBrushCenterParam) && (knob->getName() != kRotoDrawableItemCenterParam)) {

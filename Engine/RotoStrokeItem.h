@@ -157,6 +157,7 @@ public:
     int getRenderCloneCurrentStrokeStartPointIndex() const;
     int getRenderCloneCurrentStrokeEndPointIndex() const;
 
+
     /**
      * @brief Internal to the cairo implementation of the stroke rendering. Do not call.
      **/

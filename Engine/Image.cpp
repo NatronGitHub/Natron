@@ -692,7 +692,6 @@ Image::getLevelFromScale(double s)
     return retval;
 }
 
-
 unsigned int
 Image::getComponentsCount() const
 {
@@ -1077,7 +1076,6 @@ Image::pixelAtStatic(int x,
         return ret;
     }
 }
-
 
 std::string
 Image::getFormatString(const ImagePlaneDesc& comps,

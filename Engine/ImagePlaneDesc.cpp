@@ -37,6 +37,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include "Serialization/NodeSerialization.h"
 
+
 NATRON_NAMESPACE_ENTER;
 
 static const char* rgbaComps[4] = {"R", "G", "B", "A"};
@@ -53,6 +54,7 @@ ImagePlaneDesc::ImagePlaneDesc()
     , _planeLabel("none")
     , _channels()
     , _channelsLabel("none")
+
 {
 }
 
@@ -446,7 +448,6 @@ ofxCustomCompToNatronComp(const std::string& comp)
     if (!extractOFXEncodedCustomPlane(comp, &planeID, &planeLabel, &channelsLabel, &channels)) {
         return ImagePlaneDesc::getNoneComponents();
     }
-    
     return ImagePlaneDesc(planeID, planeLabel, channelsLabel, channels);
 }
 

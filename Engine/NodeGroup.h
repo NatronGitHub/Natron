@@ -362,6 +362,7 @@ public:
     virtual TimeValue getCurrentTime_TLS() const OVERRIDE WARN_UNUSED_RETURN;
     virtual ViewIdx getCurrentView_TLS() const OVERRIDE WARN_UNUSED_RETURN;
     virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
+
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const NodePtr& node) OVERRIDE FINAL;

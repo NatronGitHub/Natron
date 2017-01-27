@@ -1720,7 +1720,6 @@ protected:
         assert(outputNode);
 
 
-
         TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
         args->treeRoot = outputNode;
         args->time = time;
@@ -1815,7 +1814,6 @@ DefaultScheduler::createRunnable(TimeValue frame,
 {
     return new DefaultRenderFrameRunnable(getOutputNode(), this, frame, useRenderStarts, viewsToRender);
 }
-
 
 
 void

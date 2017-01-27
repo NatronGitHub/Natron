@@ -404,7 +404,6 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         // Render all layers produced
         args->layers = 0;
         args->mipMapLevel = downscale;
-
         args->proxyScale = RenderScale(1.);
 
         args->canonicalRoI = &roiCanonical;
@@ -417,6 +416,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     TreeRenderPtr render = TreeRender::create(args);
     ActionRetCodeEnum stat = render->launchRender(&planes);
     if (isFailureRetCode(stat)) {
+
 #ifdef TRACE_LIB_MV
         qDebug() << QThread::currentThread() << "FrameAccessor::GetImage():" << "Failed to call renderRoI on input at frame" << frame << "with RoI x1="
         << roi.x1 << "y1=" << roi.y1 << "x2=" << roi.x2 << "y2=" << roi.y2;

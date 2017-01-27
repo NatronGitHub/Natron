@@ -3816,7 +3816,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     }
 
-
     // Restore viewer UI context
     if (serialization->_hasViewerInterface) {
         setInViewerContextItemSpacing(serialization->_inViewerContextItemSpacing);

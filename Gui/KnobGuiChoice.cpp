@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -338,6 +339,7 @@ KnobGuiChoice::onEntryAppended()
     }
 
     updateGUI();
+
 }
 
 void
@@ -345,8 +347,6 @@ KnobGuiChoice::onEntriesReset()
 {
     onEntriesPopulated();
 }
-
-
 
 QString
 KnobGuiChoice::getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
@@ -457,7 +457,6 @@ KnobGuiChoice::onEntriesPopulated()
 
     updateGUI();
 
-
 } // onEntriesPopulated
 
 void
@@ -493,6 +492,7 @@ KnobGuiChoice::updateGUI()
     if (!knob) {
         return;
     }
+
     ChoiceOption activeEntry = knob->getActiveEntry();
 
     QString activeEntryLabel;

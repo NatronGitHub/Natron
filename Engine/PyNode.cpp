@@ -59,6 +59,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoPaintPrivate.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"
+
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -79,6 +80,7 @@ ImageLayer::ImageLayer(const QString& layerName,
         channels[i] = it->toStdString();
     }
     _comps.reset( new ImagePlaneDesc(layerName.toStdString(), "", componentsPrettyName.toStdString(), channels) );
+
 }
 
 ImageLayer::ImageLayer(const ImagePlaneDesc& comps)
@@ -99,6 +101,7 @@ ImageLayer::getHash(const ImageLayer& layer)
     Hash64 h;
 
     Hash64::appendQString(QString::fromUtf8( layer._comps->getPlaneLabel().c_str() ), &h );
+
     const std::vector<std::string>& comps = layer._comps->getChannels();
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64::appendQString(QString::fromUtf8( comps[i].c_str() ), &h );
@@ -1534,6 +1537,7 @@ Effect::addUserPlane(const QString& planeName,
     }
     ImagePlaneDesc comp(planeName.toStdString(), "", compsGlobal, chans);
 
+
     return n->addUserComponents(comp);
 }
 
@@ -1556,6 +1560,7 @@ Effect::getAvailableLayers(int inputNb) const
     for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         ret.push_back(ImageLayer(*it));
     }
+
 
     return ret;
 }

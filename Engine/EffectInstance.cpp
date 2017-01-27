@@ -510,6 +510,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
     *type = eRenderRoITypeUnknownFrame;
 
 
+
     // Use the provided image bounds if any
     if (inArgs.optionalBounds) {
         *roiCanonical = * inArgs.optionalBounds;
@@ -556,6 +557,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
             thisEffectRenderWindowPixels.toCanonical(inArgs.currentScale, thisEffectOutputPar, thisEffectRoD, &thisEffectRenderWindowCanonical);
         } else {
             thisEffectRenderWindowCanonical = thisEffectRoD;
+
         }
     }
 
@@ -643,7 +645,6 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
             inputTime = TimeValue(roundedTime);
         }
     }
-
 
     std::list<ImagePlaneDesc> componentsToRender;
     if (inArgs.layers) {
@@ -748,6 +749,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         if (!roiCanonical.intersect(inputRod, &roiCanonical)) {
             return false;
         }
+
     }
 
 
@@ -1176,6 +1178,7 @@ EffectInstance::newMemoryInstance(size_t nBytes)
     return ret;
 }
 
+
 void
 EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool setColor, bool hasColor)
 {
@@ -1200,6 +1203,7 @@ EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool
                 interact->setLastColorPickerColor(color);
             }
             interact->setHasColorPicker(true);
+
         }
 
         k->redraw();
@@ -1212,7 +1216,6 @@ EffectInstance::setInteractColourPicker_public(const OfxRGBAColourD& color, bool
 bool
 EffectInstance::isDoingInteractAction() const
 {
-  
     return getNode()->isDoingInteractAction();
 }
 
@@ -1345,7 +1348,6 @@ EffectInstance::clearLastRenderedImage()
 {
     invalidateHashCache();
 }
-
 
 
 bool

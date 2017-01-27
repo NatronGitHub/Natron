@@ -53,6 +53,15 @@ struct ChoiceOption
         
     }
 
+
+    explicit ChoiceOption(const std::string& id_)
+    : id(id_)
+    , label()
+    , tooltip()
+    {
+
+    }
+
     ChoiceOption(const std::string& id_, const std::string& label_, const std::string& tooltip_)
     : id(id_)
     , label(label_)
@@ -60,7 +69,17 @@ struct ChoiceOption
     {
         
     }
-    
+
+    bool operator==(const ChoiceOption& other) const
+    {
+        return id == other.id;
+    }
+
+    bool operator!=(const ChoiceOption& other) const
+    {
+        return id != other.id;
+    }
+
 };
 
 NATRON_NAMESPACE_EXIT;

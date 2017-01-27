@@ -135,6 +135,7 @@ private:
 
     QString getPixmapPathFromFilePath(const QString& filePath) const;
 
+
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;
     virtual void setEnabled(const std::vector<bool>& perDimEnabled) OVERRIDE FINAL;

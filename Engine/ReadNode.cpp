@@ -744,6 +744,7 @@ ReadNodePrivate::refreshPluginSelectorKnob()
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
     std::vector<ChoiceOption> entries;
+
     entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", _publicInterface->tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
@@ -923,6 +924,7 @@ ReadNode::addAcceptedComponents(int inputNb,
         p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
     } else {
         (*comps)[3] = 1;
+
     }
 }
 
@@ -1093,7 +1095,7 @@ ReadNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-    
+
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();

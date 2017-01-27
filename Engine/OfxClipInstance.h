@@ -285,6 +285,7 @@ private:
 private:
 
     friend struct OfxClipInstancePrivate;
+
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 

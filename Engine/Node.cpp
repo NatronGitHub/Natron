@@ -113,7 +113,6 @@
 ///at most every...
 #define NATRON_RENDER_GRAPHS_HINTS_REFRESH_RATE_SECONDS 1
 
-
 NATRON_NAMESPACE_ENTER;
 
 Node::Node(const AppInstancePtr& app,
@@ -830,7 +829,6 @@ bool
 Node::isForceCachingEnabled() const
 {
     KnobBoolPtr b = _imp->forceCaching.lock();
-
     return b ? b->getValue() : false;
 }
 
@@ -1837,6 +1835,12 @@ Node::getDisabledKnobValue() const
     return !enabled;
 }
 
+boost::shared_ptr<KnobBool>
+Node::getProcessAllLayersKnob() const
+{
+    return _imp->processAllLayersKnob.lock();
+}
+
 void
 Node::setNodeDisabled(bool disabled)
 {
@@ -1892,7 +1896,6 @@ Node::getBestSupportedBitDepth() const
         case eImageBitDepthShort:
             foundShort = true;
             break;
-
         case eImageBitDepthHalf:
             break;
 

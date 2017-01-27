@@ -282,6 +282,7 @@ NewLayerDialog::getComponents() const
         comps.push_back(aFixed);
 
         return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
+
     } else if (nComps == 2) {
         if ( rFixed.empty() || gFixed.empty() ) {
             return ImagePlaneDesc::getNoneComponents();
@@ -289,8 +290,8 @@ NewLayerDialog::getComponents() const
         std::vector<std::string> comps;
         comps.push_back(rFixed);
         comps.push_back(gFixed);
-
         return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
+
     } else if (nComps == 3) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() ) {
             return ImagePlaneDesc::getNoneComponents();
@@ -301,6 +302,7 @@ NewLayerDialog::getComponents() const
         comps.push_back(bFixed);
 
         return ImagePlaneDesc(layerFixed, "", globalComponentsName, comps);
+
     } else if (nComps == 4) {
         if ( rFixed.empty() || gFixed.empty() || bFixed.empty() || aFixed.empty() ) {
             return ImagePlaneDesc::getNoneComponents();

@@ -205,8 +205,6 @@ public:
         // This flag indicates that we MUST lock the image in the cache through the whole render of the frame.
         eRenderRoITypeUnknownFrame
     };
-    
-
 
 
     struct RenderRoIArgs
@@ -1210,6 +1208,7 @@ public:
      **/
     ActionRetCodeEnum renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
 
+
     
     struct RectToRender
     {
@@ -1225,6 +1224,7 @@ public:
         // identity rectangles will not have render called but directly
         // copy the identity input image
         std::list<RectToRender> rectsToRender;
+
 
         // The planes to render. Fully cached planes are not in this list
         std::map<ImagePlaneDesc, PlaneToRender> planes;
@@ -1259,7 +1259,7 @@ private:
     
     
 public:
-    
+
 
 
     class NotifyRenderingStarted_RAII
@@ -1333,6 +1333,7 @@ public:
      * If inputNb equals -1 then this function will check the output components.
      **/
     double getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb);
+
 
     /**
      * @brief Returns the expected color plane components by this node on the given input.
@@ -1417,6 +1418,7 @@ public:
         return eViewInvarianceAllViewsVariant;
     }
 
+
 public:
 
 
@@ -1431,6 +1433,7 @@ public:
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
     virtual RenderSafetyEnum getCurrentRenderThreadSafety() const WARN_UNUSED_RETURN;
+
 
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
 
@@ -1608,6 +1611,7 @@ public:
 
 
 
+
 #ifdef DEBUG
     void checkCanSetValueAndWarn() const;
 #endif
@@ -1749,6 +1753,7 @@ protected:
     virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 
 
+
 private:
 
     EffectInstancePtr getOrCreateRenderInstance();
@@ -1797,7 +1802,6 @@ private:
 
     friend class ReadNode;
     friend class WriteNode;
-
 
 
 

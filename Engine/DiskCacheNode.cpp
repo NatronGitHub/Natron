@@ -88,6 +88,7 @@ DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
                                      std::bitset<4>* supported)
 {
     (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
+
 }
 
 void
@@ -266,6 +267,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = args.roi;
         it->second->copyPixels(*inputImage, cpyArgs);
+
     }
     return eActionStatusOK;
 

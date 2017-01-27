@@ -916,7 +916,6 @@ KnobChoice::resetChoices(ViewSetSpec view)
             }
         }
 
-
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         if (!data) {
             continue;
@@ -1222,7 +1221,6 @@ KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
     }
 
     throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
-
 }
 
 
@@ -1306,7 +1304,7 @@ KnobChoice::setDefaultValueFromID(const std::string & value)
     if (index != -1) {
         return setDefaultValue(index, DimSpec(0));
     }
-    throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
+     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 KnobDimViewBasePtr

@@ -1087,7 +1087,7 @@ WriteNode::knobChanged(const KnobIPtr& k,
         } catch (const std::exception& e) {
             setPersistentMessage( eMessageTypeError, e.what() );
         }
-      
+
     } else if ( k == _imp->pluginSelectorKnob.lock() ) {
         KnobStringPtr pluginIDKnob = _imp->pluginIDStringKnob.lock();
         ChoiceOption entry = _imp->pluginSelectorKnob.lock()->getActiveEntry();

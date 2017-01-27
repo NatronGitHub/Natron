@@ -38,6 +38,7 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
+#include "Engine/ChoiceOption.h"
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
@@ -225,7 +226,9 @@ public:
     bool getIconsBlackAndWhite() const;
 
     std::string getHostName() const;
+
     const std::string& getKnownHostName(KnownHostNameEnum e) const;
+
 
     std::string getDefaultLayoutFile() const;
 
@@ -424,6 +427,7 @@ private:
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     boost::scoped_ptr<SettingsPrivate> _imp;
+
 };
 
 NATRON_NAMESPACE_EXIT;

@@ -35,7 +35,6 @@
 NATRON_NAMESPACE_ENTER;
 
 
-
 class NodeMetadata::Implementation : public PropertiesHolder
 {
 public:
@@ -286,7 +285,7 @@ NodeMetadata::Implementation::toMemorySegment(ExternalSegmentType* segment, cons
             objectPointers->push_back(writeNamedSharedObject((int)type, metadataType, segment));
             objectPointers->push_back(writeNamedSharedObjectN(isString->value.data(), nDims, metadataData, segment));
         }
-        
+
     }
 } // toMemorySegment
 
@@ -454,6 +453,7 @@ NodeMetadata::getBitDepth(int inputNb) const
     return eImageBitDepthFloat;
 }
 
+
 void
 NodeMetadata::setColorPlaneNComps(int inputNb, int nComps)
 {
@@ -489,8 +489,7 @@ NodeMetadata::getComponentsType(int inputNb) const
     ss << kNatronMetadataComponentsType << inputNb;
     std::string ret;
     if (getStringMetadata(ss.str(), 0, &ret)) {
-        return ret;
-    }
+        return ret;    }
     return kNatronColorPlaneID;
 }
 

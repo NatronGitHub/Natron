@@ -690,8 +690,6 @@ TrackMarker::getMarkerImage(TimeValue time,
         return std::make_pair(ImagePtr(), roi);
     }
 
-
-
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
         args->treeRoot = input;
