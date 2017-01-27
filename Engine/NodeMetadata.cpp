@@ -309,9 +309,11 @@ NodeMetadata::getNComps(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.nComps;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
-
-        return _imp->inputsData[inputNb].nComps;
+        if ( inputNb < (int)_imp->inputsData.size() ) {
+            return _imp->inputsData[inputNb].nComps;
+        } else {
+            return 4;
+        }
     }
 }
 
@@ -332,9 +334,12 @@ NodeMetadata::getComponentsType(int inputNb) const
     if (inputNb == -1) {
         return _imp->outputData.componentsType;
     } else {
-        assert( inputNb < (int)_imp->inputsData.size() );
+        if ( inputNb < (int)_imp->inputsData.size() ) {
 
-        return _imp->inputsData[inputNb].componentsType;
+            return _imp->inputsData[inputNb].componentsType;
+        } else {
+            return kNatronColorPlaneID;
+        }
     }
 }
 
