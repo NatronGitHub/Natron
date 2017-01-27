@@ -28,6 +28,7 @@
 
 #include <cassert>
 #include <stdexcept>
+#include <cstring>
 #include <sstream>
 
 NATRON_NAMESPACE_ENTER;
