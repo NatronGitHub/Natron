@@ -2498,7 +2498,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
                                    const std::list<std::pair<Point, double> >& points,
                                    unsigned int mipmapLevel,
                                    double par,
-                                   const ImageComponents& components,
+                                   const ImagePlaneDesc& components,
                                    ImageBitDepthEnum depth,
                                    double distToNext,
                                    boost::shared_ptr<Image> *image)
@@ -2686,7 +2686,7 @@ RotoStrokeItem::renderSingleStroke(const RectD& pointsBbox,
 } // RotoStrokeItem::renderSingleStroke
 
 boost::shared_ptr<Image>
-RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
+RotoDrawableItem::renderMaskFromStroke(const ImagePlaneDesc& components,
                                        const double time,
                                        const ViewIdx view,
                                        const ImageBitDepthEnum depth,
@@ -2825,7 +2825,7 @@ RotoDrawableItem::renderMaskFromStroke(const ImageComponents& components,
 
 boost::shared_ptr<Image>
 RotoDrawableItem::renderMaskInternal(const RectI & roi,
-                                     const ImageComponents& components,
+                                     const ImagePlaneDesc& components,
                                      const double startTime,
                                      const double endTime,
                                      const double timeStep,

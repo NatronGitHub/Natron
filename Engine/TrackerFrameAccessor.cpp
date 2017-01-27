@@ -346,8 +346,8 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         precomputedRoD.toPixelEnclosing( (unsigned int)downscale, par, &roi );
     }
 
-    std::list<ImageComponents> components;
-    components.push_back( ImageComponents::getRGBComponents() );
+    std::list<ImagePlaneDesc> components;
+    components.push_back( ImagePlaneDesc::getRGBComponents() );
 
     NodePtr node = _imp->context->getNode();
     const bool isRenderUserInteraction = true;
@@ -382,7 +382,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
                                         _imp->context->getNode()->getEffectInstance().get(),
                                         eStorageModeRAM /*returnOpenGLTex*/,
                                         frame);
-    std::map<ImageComponents, ImagePtr> planes;
+    std::map<ImagePlaneDesc, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = effect->renderRoI(args, &planes);
     if ( (stat != EffectInstance::eRenderRoIRetCodeOk) || planes.empty() ) {
 #ifdef TRACE_LIB_MV

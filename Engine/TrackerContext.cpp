@@ -58,22 +58,15 @@ NATRON_NAMESPACE_ENTER;
 
 void
 TrackerContext::getMotionModelsAndHelps(bool addPerspective,
-                                        std::vector<std::string>* models,
-                                        std::vector<std::string>* tooltips)
+                                            std::vector<ChoiceOption>* models)
 {
-    models->push_back("Trans.");
-    tooltips->push_back(kTrackerParamMotionModelTranslation);
-    models->push_back("Trans.+Rot.");
-    tooltips->push_back(kTrackerParamMotionModelTransRot);
-    models->push_back("Trans.+Scale");
-    tooltips->push_back(kTrackerParamMotionModelTransScale);
-    models->push_back("Trans.+Rot.+Scale");
-    tooltips->push_back(kTrackerParamMotionModelTransRotScale);
-    models->push_back("Affine");
-    tooltips->push_back(kTrackerParamMotionModelAffine);
+    models->push_back(ChoiceOption("Trans.", "", tr(kTrackerParamMotionModelTranslation).toStdString()));
+    models->push_back(ChoiceOption("Trans.+Rot.", "", tr(kTrackerParamMotionModelTransRot).toStdString()));
+    models->push_back(ChoiceOption("Trans.+Scale", "", tr(kTrackerParamMotionModelTransScale).toStdString()));
+    models->push_back(ChoiceOption("Trans.+Rot.+Scale", "", tr(kTrackerParamMotionModelTransRotScale).toStdString()));
+    models->push_back(ChoiceOption("Affine", "", tr(kTrackerParamMotionModelAffine).toStdString()));
     if (addPerspective) {
-        models->push_back("Perspective");
-        tooltips->push_back(kTrackerParamMotionModelPerspective);
+        models->push_back(ChoiceOption("Perspective", "", tr(kTrackerParamMotionModelPerspective).toStdString()));
     }
 }
 

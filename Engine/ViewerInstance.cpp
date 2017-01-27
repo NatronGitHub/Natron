@@ -1084,7 +1084,7 @@ ViewerInstance::getViewerRoIAndTexture(const RectD& rod,
                          mipmapLevel,
                          inputToRenderName,
                          outArgs->params->layer,
-                         outArgs->params->alphaLayer.getLayerName() + outArgs->params->alphaChannelName,
+                         outArgs->params->alphaLayer.getPlaneID() + outArgs->params->alphaChannelName,
                          outArgs->params->depth == eImageBitDepthFloat,
                          isDraftMode);
             std::list<FrameEntryPtr> entries;
@@ -1422,9 +1422,10 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         clearPersistentMessage(true);
     }
 
-    ImageComponents components = inArgs.activeInputToRender->getComponents(-1);
+    ImagePlaneDesc components, pairedComponents;
+    inArgs.activeInputToRender->getMetadataComponents(-1, &components, &pairedComponents);
     ImageBitDepthEnum imageDepth = inArgs.activeInputToRender->getBitDepth(-1);
-    std::list<ImageComponents> requestedComponents;
+    std::list<ImagePlaneDesc> requestedComponents;
     int alphaChannelIndex = -1;
     if ( (inArgs.channels != eDisplayChannelsA) &&
          ( inArgs.channels != eDisplayChannelsMatte) ) {
@@ -1436,7 +1437,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         ///We fetch the alpha layer
         if ( !inArgs.params->alphaChannelName.empty() ) {
             requestedComponents.push_back(inArgs.params->alphaLayer);
-            const std::vector<std::string>& channels = inArgs.params->alphaLayer.getComponentsNames();
+            const std::vector<std::string>& channels = inArgs.params->alphaLayer.getChannels();
             for (std::size_t i = 0; i < channels.size(); ++i) {
                 if (channels[i] == inArgs.params->alphaChannelName) {
                     alphaChannelIndex = i;
@@ -1511,7 +1512,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         // by the HostSupport library.
         // We catch it  and rethrow it just to notify the rendering is done.
         try {
-            std::map<ImageComponents, ImagePtr> planes;
+            std::map<ImagePlaneDesc, ImagePtr> planes;
             EffectInstance::RenderRoIRetCode retCode;
             {
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
@@ -1534,11 +1535,11 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
             assert(planes.size() == 0 || planes.size() <= 2);
             if ( !planes.empty() && (retCode == EffectInstance::eRenderRoIRetCodeOk) ) {
                 if (planes.size() == 2) {
-                    std::map<ImageComponents, ImagePtr>::iterator foundColorLayer = planes.find(inArgs.params->layer);
+                    std::map<ImagePlaneDesc, ImagePtr>::iterator foundColorLayer = planes.find(inArgs.params->layer);
                     if ( foundColorLayer != planes.end() ) {
                         colorImage = foundColorLayer->second;
                     }
-                    std::map<ImageComponents, ImagePtr>::iterator foundAlphaLayer = planes.find(inArgs.params->alphaLayer);
+                    std::map<ImagePlaneDesc, ImagePtr>::iterator foundAlphaLayer = planes.find(inArgs.params->alphaLayer);
                     if ( foundAlphaLayer != planes.end() ) {
                         alphaImage = foundAlphaLayer->second;
                     }
@@ -1764,7 +1765,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
                                  inArgs.params->mipMapLevel,
                                  inputToRenderName,
                                  inArgs.params->layer,
-                                 inArgs.params->alphaLayer.getLayerName() + inArgs.params->alphaChannelName,
+                                 inArgs.params->alphaLayer.getPlaneID() + inArgs.params->alphaChannelName,
                                  inArgs.params->depth == eImageBitDepthFloat,
                                  inArgs.draftModeEnabled);
 
@@ -1952,7 +1953,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
 
 
         if ( stats && stats->isInDepthProfilingEnabled() ) {
-            stats->addRenderInfosForNode( getNode(), NodePtr(), colorImage->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation() );
+            stats->addRenderInfosForNode( getNode(), NodePtr(), colorImage->getComponents().getChannelsLabel(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation() );
         }
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {
 
@@ -3141,7 +3142,7 @@ ViewerInstance::setDisplayChannels(DisplayChannelsEnum channels,
 }
 
 void
-ViewerInstance::setActiveLayer(const ImageComponents& layer,
+ViewerInstance::setActiveLayer(const ImagePlaneDesc& layer,
                                bool doRender)
 {
     // always running in the main thread
@@ -3160,7 +3161,7 @@ ViewerInstance::setActiveLayer(const ImageComponents& layer,
 }
 
 void
-ViewerInstance::setAlphaChannel(const ImageComponents& layer,
+ViewerInstance::setAlphaChannel(const ImagePlaneDesc& layer,
                                 const std::string& channelName,
                                 bool doRender)
 {
@@ -3285,12 +3286,12 @@ ViewerInstance::isFullFrameProcessingEnabled() const
 
 void
 ViewerInstance::addAcceptedComponents(int /*inputNb*/,
-                                      std::list<ImageComponents>* comps)
+                                      std::list<ImagePlaneDesc>* comps)
 {
     ///Viewer only supports RGBA for now.
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
+    comps->push_back( ImagePlaneDesc::getRGBComponents() );
+    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
 }
 
 ViewIdx

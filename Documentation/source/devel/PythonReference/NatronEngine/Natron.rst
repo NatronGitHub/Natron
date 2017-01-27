@@ -37,7 +37,7 @@ that are more complicated than a simple boolean value.
     	* eStandardButtonReset              = 0x04000000,
     	* eStandardButtonRestoreDefaults    = 0x08000000
 
-.. attribute:: NatronEngine.Natron.ImageComponentsEnum
+.. attribute:: NatronEngine.Natron.ImagePlaneDescEnum
 
 	Can have the following values:
 	

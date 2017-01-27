@@ -409,19 +409,27 @@ OfxParamToKnob::onChoiceMenuPopulated()
     if (!knob) {
         return;
     }
-    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
     if (!isChoice) {
         return;
     }
-    std::vector<std::string> entries = isChoice->getEntries_mt_safe();
-    std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
-    setStringPropertyN(entries, param, kOfxParamPropChoiceOption);
-    setStringPropertyN(entriesHelp, param, kOfxParamPropChoiceLabelOption);
+    std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
+
+    std::vector<std::string> ids(entries.size());
+    std::vector<std::string> tooltips(entries.size());
+    std::vector<std::string> labels(entries.size());
+
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        ids[i] = entries[i].id;
+        tooltips[i] = entries[i].tooltip;
+        labels[i] = entries[i].label;
+    }
+    setStringPropertyN(ids, param, kOfxParamPropChoiceOption);
+    setStringPropertyN(tooltips, param, kOfxParamPropChoiceLabelOption);
 }
 
 void
-OfxParamToKnob::onChoiceMenuEntryAppended(const QString& entry,
-                                          const QString& help)
+OfxParamToKnob::onChoiceMenuEntryAppended()
 {
     DYNAMIC_PROPERTY_CHECK();
 
@@ -430,8 +438,21 @@ OfxParamToKnob::onChoiceMenuEntryAppended(const QString& entry,
     int nProps = param->getProperties().getDimension(kOfxParamPropChoiceOption);
     int nLabelProps = param->getProperties().getDimension(kOfxParamPropChoiceLabelOption);
     assert(nProps == nLabelProps);
-    param->getProperties().setStringProperty(kOfxParamPropChoiceOption, entry.toStdString(), nProps);
-    param->getProperties().setStringProperty(kOfxParamPropChoiceLabelOption, help.toStdString(), nLabelProps);
+
+    KnobPtr knob = getKnob();
+    if (!knob) {
+        return;
+    }
+
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>(knob.get());
+    assert(isChoice);
+    std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
+
+    // Add the difference since last append
+    for (std::size_t i = (std::size_t)nProps; i < entries.size(); ++i) {
+        param->getProperties().setStringProperty(kOfxParamPropChoiceOption, entries[i].id, i);
+        param->getProperties().setStringProperty(kOfxParamPropChoiceLabelOption, entries[i].tooltip, i);
+    }
 }
 
 void
@@ -1280,25 +1301,17 @@ OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>&
 
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
-    std::vector<std::string> entires;
-    std::vector<std::string> helpStrings;
-    bool hashelp = false;
+    std::vector<ChoiceOption> entries(dim);
     for (int i = 0; i < dim; ++i) {
-        std::string str = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
-        std::string help;
+
+        ChoiceOption& option = entries[i];
+        option.id = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
         if (i < labelOptionDim) {
-            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
+            option.tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
         }
-        if ( !help.empty() ) {
-            hashelp = true;
-        }
-        entires.push_back(str);
-        helpStrings.push_back(help);
     }
-    if (!hashelp) {
-        helpStrings.clear();
-    }
-    choice->populateChoices(entires, helpStrings);
+
+    choice->populateChoices(entries);
 
     int def = properties.getIntProperty(kOfxParamPropDefault);
     choice->blockValueChanges();
@@ -1312,7 +1325,7 @@ OfxChoiceInstance::OfxChoiceInstance(const boost::shared_ptr<OfxEffectInstance>&
         choice->setHostCanAddOptions(true);
     }
     QObject::connect( choice.get(), SIGNAL(populated()), this, SLOT(onChoiceMenuPopulated()) );
-    QObject::connect( choice.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onChoiceMenuEntryAppended(QString,QString)) );
+    QObject::connect( choice.get(), SIGNAL(entryAppended()), this, SLOT(onChoiceMenuEntryAppended()) );
     QObject::connect( choice.get(), SIGNAL(entriesReset()), this, SLOT(onChoiceMenuReset()) );
 }
 
@@ -1345,8 +1358,8 @@ OfxChoiceInstance::set(int v)
     if (!knob) {
         return kOfxStatFailed;
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
-    if ( (0 <= v) && ( v < (int)entries.size() ) ) {
+    int nEntries = knob->getNumEntries();
+    if ( (0 <= v) && ( v < nEntries ) ) {
         knob->setValueFromPlugin(v, ViewSpec::current(), 0);
 
         return kOfxStatOK;
@@ -1364,8 +1377,8 @@ OfxChoiceInstance::set(OfxTime time,
     if (!knob) {
         return kOfxStatFailed;
     }
-    std::vector<std::string> entries = knob->getEntries_mt_safe();
-    if ( (0 <= v) && ( v < (int)entries.size() ) ) {
+     int nEntries = knob->getNumEntries();
+    if ( (0 <= v) && ( v < nEntries ) ) {
         knob->setValueAtTimeFromPlugin(time, v, ViewSpec::current(), 0);
 
         return kOfxStatOK;
@@ -1441,42 +1454,42 @@ OfxChoiceInstance::setOption(int num)
     DYNAMIC_PROPERTY_CHECK();
 
     /*
-       This function can serve 3 type of behaviours depending on num:
-       - 0: meaning resetOptions
-       - num == nDim - 1: meaning appendOption
-       - num == nDim: meaning setOptions
+     This function can serve 3 type of behaviours depending on num:
+     - 0: meaning resetOptions
+     - num == nDim - 1: meaning appendOption
+     - num == nDim: meaning setOptions
      */
     int dim = getProperties().getDimension(kOfxParamPropChoiceOption);
     boost::shared_ptr<KnobChoice> knob = _knob.lock();
     if (dim == 0) {
         knob->resetChoices();
-
         return;
     }
 
     assert(num == dim - 1 || num == dim);
 
     if ( num == (dim - 1) ) {
-        std::string entry = getProperties().getStringProperty(kOfxParamPropChoiceOption, num);
-        std::string help;
+        ChoiceOption option;
+        option.id = getProperties().getStringProperty(kOfxParamPropChoiceOption, num);
         int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
         if (num < labelOptionDim) {
-            help = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, num);
+            option.tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, num);
         }
-        knob->appendChoice(entry, help);
+        knob->appendChoice(option);
     } else if (num == dim) {
+
         int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
         assert(labelOptionDim == 0 || labelOptionDim == dim);
-        std::vector<std::string> entries(dim), helps(labelOptionDim);
+
+        std::vector<ChoiceOption> entries(dim);
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            entries[i] = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
+            entries[i].id = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
             if ( (int)i < labelOptionDim ) {
-                helps[i] = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
+                entries[i].tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
             }
         }
-        knob->populateChoices(entries, helps);
-    }
-}
+        knob->populateChoices(entries);
+    }}
 
 KnobPtr
 OfxChoiceInstance::getKnob() const

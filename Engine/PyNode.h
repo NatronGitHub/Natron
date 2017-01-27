@@ -37,7 +37,7 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/Knob.h" // KnobI
 #include "Engine/PyNodeGroup.h" // Group
 #include "Engine/RectD.h"
@@ -51,7 +51,7 @@ class ImageLayer
     QString _layerName;
     QString _componentsPrettyName;
     QStringList _componentsName;
-    boost::shared_ptr<ImageComponents> _comps;
+    boost::shared_ptr<ImagePlaneDesc> _comps;
 
 public:
 
@@ -59,9 +59,9 @@ public:
                const QString& componentsPrettyName,
                const QStringList& componentsName);
 
-    ImageLayer(const ImageComponents& comps);
+    ImageLayer(const ImagePlaneDesc& comps);
 
-    const ImageComponents& getInternalComps() const
+    const ImagePlaneDesc& getInternalComps() const
     {
         return *_comps;
     }
@@ -375,7 +375,7 @@ public:
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
 
-    std::map<ImageLayer, Effect*> getAvailableLayers() const;
+    std::list<ImageLayer> getAvailableLayers(int inputNb) const;
 
     double getFrameRate() const;
 

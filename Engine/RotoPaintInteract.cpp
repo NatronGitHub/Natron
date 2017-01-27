@@ -907,17 +907,24 @@ RotoPaintInteract::showMenuForControlPoint(const boost::shared_ptr<BezierCP>& /*
     if (!menu) {
         return;
     }
-    std::vector<std::string> choices;
+    std::vector<boost::shared_ptr<KnobButton> > menuKnobs;
 
-    choices.push_back( removeItemsMenuAction.lock()->getName() );
-    choices.push_back( smoothItemMenuAction.lock()->getName() );
-    choices.push_back( cuspItemMenuAction.lock()->getName() );
-    choices.push_back( removeItemFeatherMenuAction.lock()->getName() );
-    choices.push_back( nudgeLeftMenuAction.lock()->getName() );
-    choices.push_back( nudgeBottomMenuAction.lock()->getName() );
-    choices.push_back( nudgeRightMenuAction.lock()->getName() );
-    choices.push_back( nudgeTopMenuAction.lock()->getName() );
+    menuKnobs.push_back( removeItemsMenuAction.lock());
+    menuKnobs.push_back( smoothItemMenuAction.lock());
+    menuKnobs.push_back( cuspItemMenuAction.lock());
+    menuKnobs.push_back( removeItemFeatherMenuAction.lock());
+    menuKnobs.push_back( nudgeLeftMenuAction.lock());
+    menuKnobs.push_back( nudgeBottomMenuAction.lock() );
+    menuKnobs.push_back( nudgeRightMenuAction.lock());
+    menuKnobs.push_back( nudgeTopMenuAction.lock());
+
+    std::vector<ChoiceOption> choices(menuKnobs.size());
+    for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
+        choices[i].id = menuKnobs[i]->getName();
+        choices[i].tooltip = menuKnobs[i]->getHintToolTip();
+    }
     menu->populateChoices(choices);
+
 } // showMenuForControlPoint
 
 void
@@ -928,20 +935,27 @@ RotoPaintInteract::showMenuForCurve(const boost::shared_ptr<Bezier> & curve)
     if (!menu) {
         return;
     }
-    std::vector<std::string> choices;
+    std::vector<boost::shared_ptr<KnobButton> > menuKnobs;
 
-    choices.push_back( selectAllMenuAction.lock()->getName() );
-    choices.push_back( removeItemsMenuAction.lock()->getName() );
+    menuKnobs.push_back( selectAllMenuAction.lock());
+    menuKnobs.push_back( removeItemsMenuAction.lock());
     if ( !curve->isOpenBezier() ) {
-        choices.push_back( openCloseCurveAction.lock()->getName() );
+        menuKnobs.push_back( openCloseCurveAction.lock());
     }
 
-    choices.push_back( smoothItemMenuAction.lock()->getName() );
-    choices.push_back( cuspItemMenuAction.lock()->getName() );
+    menuKnobs.push_back( smoothItemMenuAction.lock());
+    menuKnobs.push_back( cuspItemMenuAction.lock());
     if ( !curve->isOpenBezier() ) {
-        choices.push_back( removeItemFeatherMenuAction.lock()->getName() );
+        menuKnobs.push_back( removeItemFeatherMenuAction.lock());
     }
-    choices.push_back( lockShapeMenuAction.lock()->getName() );
+    menuKnobs.push_back( lockShapeMenuAction.lock() );
+
+    std::vector<ChoiceOption> choices(menuKnobs.size());
+    for (std::size_t i = 0; i < menuKnobs.size(); ++i) {
+        choices[i].id = menuKnobs[i]->getName();
+        choices[i].tooltip = menuKnobs[i]->getHintToolTip();
+    }
+
     menu->populateChoices(choices);
 } // showMenuForCurve
 
@@ -1114,7 +1128,7 @@ RotoPaintInteract::makeStroke(bool prepareForLater,
     strokeBeingPaintedTimelineFrame = time;
 
     colorKnob->setValues(color[0], color[1], color[2], ViewSpec::all(), eValueChangedReasonNatronGuiEdited);
-    operatorKnob->setValueFromLabel(Merge::getOperatorString(compOp), 0);
+    operatorKnob->setValueFromID(Merge::getOperatorString(compOp), 0);
     opacityKnob->setValue(opacity);
     sizeKnob->setValue(size);
     hardnessKnob->setValue(hardness);

@@ -1254,10 +1254,10 @@ RotoPanel::makeCustomWidgetsForItem(const boost::shared_ptr<RotoDrawableItem>& i
     ComboBox* cb = new ComboBox;
     cb->setFocusPolicy(Qt::NoFocus);
     QObject::connect( cb, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentItemCompOperatorChanged(int)) );
-    std::vector<std::string> compositingOperators, tooltips;
-    Merge::getOperatorStrings(&compositingOperators, &tooltips);
+    std::vector<ChoiceOption> compositingOperators;
+    Merge::getOperatorStrings(&compositingOperators);
     for (U32 i = 0; i < compositingOperators.size(); ++i) {
-        cb->addItem( QString::fromUtf8( compositingOperators[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( tooltips[i].c_str() ) );
+        cb->addItem( QString::fromUtf8( compositingOperators[i].id.c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( compositingOperators[i].tooltip.c_str() ) );
     }
     // set the tooltip
     const std::string & tt = item->getCompositingOperatorToolTip();

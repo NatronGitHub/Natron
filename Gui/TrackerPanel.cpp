@@ -635,12 +635,12 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         boost::shared_ptr<KnobChoice> motionModel = marker.getMotionModelKnob();
         ComboBox* cb = new ComboBox;
         cb->setFocusPolicy(Qt::NoFocus);
-        std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
+        std::vector<ChoiceOption> choices;
+        TrackerContext::getMotionModelsAndHelps(false, &choices);
         QObject::connect( cb, SIGNAL(currentIndexChanged(int)), _publicInterface, SLOT(onItemMotionModelChanged(int)) );
-        assert( choices.size() == helps.size() );
+
         for (std::size_t i = 0; i < choices.size(); ++i) {
-            cb->addItem( QString::fromUtf8( choices[i].c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( helps[i].c_str() ) );
+            cb->addItem( QString::fromUtf8( choices[i].id.c_str() ), QIcon(), QKeySequence(), QString::fromUtf8( choices[i].tooltip.c_str() ) );
         }
         cb->setCurrentIndex( motionModel->getValue() );
         TableItem* newItem = new TableItem;

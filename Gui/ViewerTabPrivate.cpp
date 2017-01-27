@@ -343,21 +343,20 @@ ViewerTabPrivate::getTimeTransform(double time,
 #endif // ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
 void
-ViewerTabPrivate::getComponentsAvailabel(std::set<ImageComponents>* comps) const
+ViewerTabPrivate::getComponentsAvailabel(std::set<ImagePlaneDesc>* comps) const
 {
     int activeInputIdx[2];
 
     viewerNode->getActiveInputs(activeInputIdx[0], activeInputIdx[1]);
     EffectInstPtr activeInput[2] = {EffectInstPtr(), EffectInstPtr()};
+    double time = publicInterface->getGui()->getApp()->getTimeLine()->currentFrame();
     for (int i = 0; i < 2; ++i) {
         activeInput[i] = viewerNode->getInput(activeInputIdx[i]);
         if (activeInput[i]) {
-            EffectInstance::ComponentsAvailableMap compsAvailable;
-            activeInput[i]->getComponentsAvailable(true, true, publicInterface->getGui()->getApp()->getTimeLine()->currentFrame(), &compsAvailable);
-            for (EffectInstance::ComponentsAvailableMap::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
-                if ( it->second.lock() ) {
-                    comps->insert(it->first);
-                }
+            std::list<ImagePlaneDesc> compsAvailable;
+            activeInput[i]->getAvailableLayers(time, ViewIdx(0), -1, &compsAvailable);
+            for (std::list<ImagePlaneDesc>::iterator it = compsAvailable.begin(); it != compsAvailable.end(); ++it) {
+                comps->insert(*it);
             }
         }
     }

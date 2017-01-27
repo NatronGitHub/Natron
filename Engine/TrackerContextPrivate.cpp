@@ -194,16 +194,12 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     patternMatchingScoreKnob->setName(kTrackerParamPatternMatchingScoreType);
     patternMatchingScoreKnob->setHintToolTip( tr(kTrackerParamPatternMatchingScoreTypeHint) );
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back(kTrackerParamPatternMatchingScoreOptionSSD);
-        helps.push_back(kTrackerParamPatternMatchingScoreOptionSSDHint);
-        choices.push_back(kTrackerParamPatternMatchingScoreOptionSAD);
-        helps.push_back(kTrackerParamPatternMatchingScoreOptionSADHint);
-        choices.push_back(kTrackerParamPatternMatchingScoreOptionNCC);
-        helps.push_back(kTrackerParamPatternMatchingScoreOptionNCCHint);
-        choices.push_back(kTrackerParamPatternMatchingScoreOptionZNCC);
-        helps.push_back(kTrackerParamPatternMatchingScoreOptionZNCCHint);
-        patternMatchingScoreKnob->populateChoices(choices, helps);
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption(kTrackerParamPatternMatchingScoreOptionSSD, "", tr(kTrackerParamPatternMatchingScoreOptionSSDHint).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamPatternMatchingScoreOptionSAD, "", tr(kTrackerParamPatternMatchingScoreOptionSADHint).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamPatternMatchingScoreOptionNCC, "", tr(kTrackerParamPatternMatchingScoreOptionNCCHint).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamPatternMatchingScoreOptionZNCC, "", tr(kTrackerParamPatternMatchingScoreOptionZNCCHint).toStdString()));
+        patternMatchingScoreKnob->populateChoices(choices);
     }
     patternMatchingScoreKnob->setDefaultValue(1); // SAD
     patternMatchingScoreKnob->setAnimationEnabled(false);
@@ -326,9 +322,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     defMotionModelKnob->setName(kTrackerParamDefaultMotionModel);
     defMotionModelKnob->setAnimationEnabled(false);
     {
-        std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
-        defMotionModelKnob->populateChoices(choices, helps);
+        std::vector<ChoiceOption> choices;
+        TrackerContext::getMotionModelsAndHelps(false, &choices);
+        defMotionModelKnob->populateChoices(choices);
 
     }
     defMotionModelKnob->setSecret(true);
@@ -370,9 +366,9 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     motionModelKnob->setName(kTrackerParamMotionModel);
     motionModelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
     {
-        std::vector<std::string> choices, helps;
-        TrackerContext::getMotionModelsAndHelps(false, &choices, &helps);
-        motionModelKnob->populateChoices(choices, helps);
+        std::vector<ChoiceOption> choices;
+        TrackerContext::getMotionModelsAndHelps(false, &choices);
+        motionModelKnob->populateChoices(choices);
     }
     motionModelKnob->setAllDimensionsEnabled(false);
     motionModelKnob->setAnimationEnabled(false);
@@ -390,19 +386,16 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     motionTypeKnob->setName(kTrackerParamMotionType);
     motionTypeKnob->setHintToolTip( tr(kTrackerParamMotionTypeHint) );
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back(kTrackerParamMotionTypeNone);
-        helps.push_back(kTrackerParamMotionTypeNoneHelp);
-        choices.push_back(kTrackerParamMotionTypeStabilize);
-        helps.push_back(kTrackerParamMotionTypeStabilizeHelp);
-        choices.push_back(kTrackerParamMotionTypeMatchMove);
-        helps.push_back(kTrackerParamMotionTypeMatchMoveHelp);
-        choices.push_back(kTrackerParamMotionTypeRemoveJitter);
-        helps.push_back(kTrackerParamMotionTypeRemoveJitterHelp);
-        choices.push_back(kTrackerParamMotionTypeAddJitter);
-        helps.push_back(kTrackerParamMotionTypeAddJitterHelp);
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeNone, "", tr(kTrackerParamMotionTypeNoneHelp).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeStabilize, "", tr(kTrackerParamMotionTypeStabilize).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeMatchMove, "", tr(kTrackerParamMotionTypeMatchMove).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeRemoveJitter, "", tr(kTrackerParamMotionTypeRemoveJitterHelp).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamMotionTypeAddJitter, "", tr(kTrackerParamMotionTypeAddJitterHelp).toStdString()));
 
-        motionTypeKnob->populateChoices(choices, helps);
+        motionTypeKnob->populateChoices(choices);
+
+
     }
     motionTypeKnob->setAddNewLine(false);
     motionType = motionTypeKnob;
@@ -412,13 +405,10 @@ TrackerContextPrivate::TrackerContextPrivate(TrackerContext* publicInterface,
     transformTypeKnob->setName(kTrackerParamTransformType);
     transformTypeKnob->setHintToolTip( tr(kTrackerParamTransformTypeHint) );
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back(kTrackerParamTransformTypeTransform);
-        helps.push_back(kTrackerParamTransformTypeTransformHelp);
-        choices.push_back(kTrackerParamTransformTypeCornerPin);
-        helps.push_back(kTrackerParamTransformTypeCornerPinHelp);
-
-        transformTypeKnob->populateChoices(choices, helps);
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption(kTrackerParamTransformTypeTransform, "", tr(kTrackerParamTransformTypeTransformHelp).toStdString()));
+        choices.push_back(ChoiceOption(kTrackerParamTransformTypeCornerPin, "", tr(kTrackerParamTransformTypeTransformHelp).toStdString()));
+        transformTypeKnob->populateChoices(choices);
     }
     transformTypeKnob->setDefaultValue(1);
     transformType = transformTypeKnob;

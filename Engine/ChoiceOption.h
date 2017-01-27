@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Gui_NewLayerDialog_h
-#define Gui_NewLayerDialog_h
+#ifndef Engine_ChoiceOption_h
+#define Engine_ChoiceOption_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -27,43 +27,60 @@
 
 #include "Global/Macros.h"
 
-#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
-#include <boost/scoped_ptr.hpp>
-#endif
+#include <string>
 
-CLANG_DIAG_OFF(deprecated)
-CLANG_DIAG_OFF(uninitialized)
-#include <QDialog>
-CLANG_DIAG_ON(deprecated)
-CLANG_DIAG_ON(uninitialized)
-
-#include "Gui/GuiFwd.h"
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-struct NewLayerDialogPrivate;
-class NewLayerDialog
-    : public QDialog
+struct ChoiceOption
 {
-    Q_OBJECT
+    // Must necessarily be set, this uniquely identifies the option
+    std::string id;
 
-public:
-    NewLayerDialog(const ImagePlaneDesc& original,
-                   QWidget* parent);
+    // Can be set to something different than the ID. This is what will be displayed in the option in the GUI
+    // If empty this will be set to the ID.
+    std::string label;
 
-    virtual ~NewLayerDialog();
+    // Can be set to display a tooltip when the user hovers the entry in the choice menu
+    std::string tooltip;
+    
+    ChoiceOption()
+    : id()
+    , label()
+    , tooltip()
+    {
+        
+    }
 
-    ImagePlaneDesc getComponents() const;
+    explicit ChoiceOption(const std::string& id_)
+    : id(id_)
+    , label()
+    , tooltip()
+    {
 
-public Q_SLOTS:
-    void onNumCompsChanged(double value);
+    }
 
-    void onRGBAButtonClicked();
+    ChoiceOption(const std::string& id_, const std::string& label_, const std::string& tooltip_)
+    : id(id_)
+    , label(label_)
+    , tooltip(tooltip_)
+    {
+        
+    }
 
-private:
-    boost::scoped_ptr<NewLayerDialogPrivate> _imp;
+    bool operator==(const ChoiceOption& other) const
+    {
+        return id == other.id;
+    }
+
+    bool operator!=(const ChoiceOption& other) const
+    {
+        return id != other.id;
+    }
+    
 };
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Gui_NewLayerDialog_h
+#endif // Engine_ChoiceOption_h
