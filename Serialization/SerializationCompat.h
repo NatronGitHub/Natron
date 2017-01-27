@@ -124,7 +124,8 @@ GCC_DIAG_OFF(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI 14
 #define KNOB_SERIALIZATION_INTRODUCE_USER_KNOB_ICON_FILE_PATH 15
 #define KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION 16
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION
+#define KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION 17
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -1189,6 +1190,36 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         if (isChoice) {
             std::string stringChoice;
             ar & ::boost::serialization::make_nvp("ChoiceLabel", stringChoice);
+
+            if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
+                // but planeID + "." + channels
+                // Hard-code the mapping
+                if (stringChoice == "Color.RGBA" || stringChoice == "Color.RGB" || stringChoice == "Color.Alpha") {
+                    stringChoice = kNatronColorPlaneID;
+                } else if (stringChoice == "Backward.Motion") {
+                    stringChoice = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+                } else if (stringChoice == "Forward.Motion") {
+                    stringChoice = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+                } else if (stringChoice == "DisparityLeft.Disparity") {
+                    stringChoice = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+                } else if (stringChoice == "DisparityRight.Disparity") {
+                    stringChoice = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+                }
+
+                // Map also channels
+                if (stringChoice == "RGBA.R") {
+                    stringChoice = kNatronColorPlaneID ".R";
+                } else if (stringChoice == "RGBA.G") {
+                    stringChoice = kNatronColorPlaneID ".B";
+                } else if (stringChoice == "RGBA.B") {
+                    stringChoice = kNatronColorPlaneID ".A";
+                } else if (stringChoice == "RGBA.A") {
+                    stringChoice = kNatronColorPlaneID ".A";
+                }
+            }
+            //_extraData = cData;
+
             values[0]._value.isString = stringChoice;
         }
 

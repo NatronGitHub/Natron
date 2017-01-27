@@ -1835,11 +1835,6 @@ Node::getDisabledKnobValue() const
     return !enabled;
 }
 
-boost::shared_ptr<KnobBool>
-Node::getProcessAllLayersKnob() const
-{
-    return _imp->processAllLayersKnob.lock();
-}
 
 void
 Node::setNodeDisabled(bool disabled)
