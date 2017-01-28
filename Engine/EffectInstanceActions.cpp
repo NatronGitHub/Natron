@@ -355,6 +355,15 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
         effect = shared_from_this();
     }
     if (!effect) {
+        // If input is diconnected, at least return the metadata plane
+        ImagePlaneDesc metadataPlane, metadataPairedPlane;
+        getMetadataComponents(render, inputNb, &metadataPlane, &metadataPairedPlane);
+        if (metadataPairedPlane.getNumComponents() > 0) {
+            availableLayers->push_back(metadataPairedPlane);
+        }
+        if (metadataPlane.getNumComponents() > 0) {
+            availableLayers->push_back(metadataPlane);
+        }
         return eActionStatusInputDisconnected;
     }
     TreeRenderNodeArgsPtr effectRenderArgs;

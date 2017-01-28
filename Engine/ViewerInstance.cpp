@@ -89,7 +89,7 @@ struct ViewerInstancePrivate
     , gainKnob()
     , autoContrastKnob()
     , viewerChannelsAutoswitchedToAlpha(false)
-    , layerAndAlphaChoiceRefreshEnabled(false)
+    , layerAndAlphaChoiceRefreshEnabled(true)
     {
 
     }
@@ -414,10 +414,6 @@ ActionRetCodeEnum
 ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
 
-   // ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
-   // int alphaChannelIndex;
-   // _imp->getChannelOptions(TreeRenderNodeArgsPtr(), getCurrentTime_TLS(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
-
     // For now we always output 4 channel images
     metadata.setColorPlaneNComps(-1, 4);
 
@@ -428,9 +424,6 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     ImageBitDepthEnum outputDepth = appPTR->getCurrentSettings()->getViewersBitDepth();
     metadata.setBitDepth(-1, outputDepth);
 
-    if (_imp->layerAndAlphaChoiceRefreshEnabled) {
-        _imp->refreshLayerAndAlphaChannelComboBox();
-    }
 
     return eActionStatusOK;
 } // getTimeInvariantMetadatas
@@ -439,6 +432,10 @@ ViewerInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 void
 ViewerInstance::onMetadataChanged(const NodeMetadata& metadata)
 {
+    if (_imp->layerAndAlphaChoiceRefreshEnabled) {
+        _imp->refreshLayerAndAlphaChannelComboBox();
+    }
+
     getViewerNodeGroup()->onViewerProcessNodeMetadataRefreshed(getNode(), metadata);
     EffectInstance::onMetadataChanged(metadata);
 

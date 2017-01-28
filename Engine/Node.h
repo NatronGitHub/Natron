@@ -1414,8 +1414,6 @@ private:
 
     void refreshCreatedViews(const KnobIPtr& knob);
 
-    bool refreshMaskEnabledNess(int inpubNb);
-
     void setNameInternal(const std::string& name, bool throwErrors);
 
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;

@@ -332,6 +332,20 @@ Node::refreshLayersSelectorsVisibility()
         }
     }
 
+    for (std::map<int, MaskSelector>::iterator it = _imp->maskSelectors.begin(); it != _imp->maskSelectors.end(); ++it) {
+        NodePtr inp = getInput(it->first);
+
+        KnobBoolPtr enabledKnob = it->second.enabled.lock();
+        assert(enabledKnob);
+        bool curValue = enabledKnob->getValue();
+        bool newValue = inp ? true : false;
+        bool changed = curValue != newValue;
+        if (changed) {
+            enabledKnob->setValue(newValue);
+        }
+
+    }
+
 
     // Refresh RGBA checkbox visibility
     KnobBoolPtr enabledChan[4];
@@ -725,28 +739,6 @@ NodePrivate::onMaskSelectorChanged(int inputNb,
         }
     }
 
-}
-
-
-bool
-Node::refreshMaskEnabledNess(int inputNb)
-{
-    std::map<int, MaskSelector>::iterator found = _imp->maskSelectors.find(inputNb);
-    NodePtr inp = getInput(inputNb);
-    bool changed = false;
-
-    if ( found != _imp->maskSelectors.end() ) {
-        KnobBoolPtr enabled = found->second.enabled.lock();
-        assert(enabled);
-        bool curValue = enabled->getValue();
-        bool newValue = inp ? true : false;
-        changed = curValue != newValue;
-        if (changed) {
-            enabled->setValue(newValue);
-        }
-    }
-
-    return changed;
 }
 
 NATRON_NAMESPACE_EXIT;

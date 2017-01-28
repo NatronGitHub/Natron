@@ -2474,7 +2474,7 @@ SettingsPrivate::ensureUserDataDirectory()
 {
     // Create the ~/NatronUserData directory if it doesn't exist.
     QDir homeDir = QDir::home();
-    QString userDataDirPath = QString::fromUtf8("%1UserData") + QString::fromUtf8(NATRON_APPLICATION_NAME);
+    QString userDataDirPath = QString::fromUtf8("%1UserData").arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
     if (!homeDir.exists(userDataDirPath)) {
         homeDir.mkdir(userDataDirPath);
     }
