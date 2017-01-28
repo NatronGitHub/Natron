@@ -354,6 +354,7 @@ MemoryFilePrivate::closeMapping()
     file_mapping_handle = INVALID_HANDLE_VALUE;
 #endif
     data = 0;
+    size = 0;
 
 } // closeMapping
 

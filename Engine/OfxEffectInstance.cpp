@@ -1003,21 +1003,10 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
     }
     assert(_imp->context != eContextNone);
 
-    // First push the "default" meta-datas to the clips so that they get proper values
-    // EDIT: this is not needed as we no longer use any thread unsafe clips data anymore
-    //_imp->pushMetadatasToClips(metadata);
-
     // It has been overriden and no data is actually set on the clip, everything will be set into the
     // metadata object
-    OfxStatus stat = _imp->effect->getClipPreferences_safe(metadata);
-    if (stat != kOfxStatOK && stat != kOfxStatReplyDefault) {
-        return eActionStatusFailed;
-    }
-
-    // Push the modified datas to clips now
-    // EDIT: this is not needed as we no longer use any thread unsafe clips data anymore
-    //_imp->pushMetadatasToClips(metadata);
-    return eActionStatusOK;
+    ActionRetCodeEnum stat = _imp->effect->getClipPreferences_safe(metadata);
+    return stat;
 }
 
 

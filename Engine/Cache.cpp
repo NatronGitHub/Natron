@@ -2271,26 +2271,29 @@ Cache::clear()
 {
 
 
+    _imp->ensureSharedMemoryIntegrity();
+
     for (int bucket_i = 0; bucket_i < NATRON_CACHE_BUCKETS_COUNT; ++bucket_i) {
         CacheBucket& bucket = _imp->buckets[bucket_i];
 
         // Close and re-create the memory mapped files
         {
-            boost::scoped_ptr<WriteLock> writeLock;
-            createLock<WriteLock>(_imp.get(), writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex);
 
             std::string tocFilePath = bucket.tocFile->path();
             bucket.tocFile->remove();
             bucket.tocFile->open(tocFilePath, MemoryFile::eFileOpenModeOpenTruncateOrCreate);
-            bucket.ensureTileMappingValid(*writeLock, 0);
+
+            boost::scoped_ptr<WriteLock> writeLock;
+            createLock<WriteLock>(_imp.get(), writeLock, &_imp->ipc->bucketsData[bucket_i].tocData.segmentMutex);
+            bucket.ensureToCFileMappingValid(*writeLock, 0);
         }
         {
-            boost::scoped_ptr<WriteLock> writeLock;
-            createLock<WriteLock>(_imp.get(), writeLock, &_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex);
-
             std::string tileFilePath = bucket.tileAlignedFile->path();
             bucket.tileAlignedFile->remove();
             bucket.tileAlignedFile->open(tileFilePath, MemoryFile::eFileOpenModeOpenTruncateOrCreate);
+
+            boost::scoped_ptr<WriteLock> writeLock;
+            createLock<WriteLock>(_imp.get(), writeLock, &_imp->ipc->bucketsData[bucket_i].tileData.segmentMutex);
             bucket.ensureTileMappingValid(*writeLock, 0);
         }
 
