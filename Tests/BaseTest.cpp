@@ -107,7 +107,9 @@ BaseTest::SetUp()
     if (!g_manager) {
         g_manager = new AppManager;
         int argc = 0;
-        CLArgs cl;
+        QStringList args;
+        args << "--clear-cache";
+        CLArgs cl(args);
         g_manager->load(argc, 0, cl);
     }
 
