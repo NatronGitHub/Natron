@@ -172,7 +172,7 @@ Gui::updateRecentFileActions()
         if (fileNames.count(fileNames[i]) > 1) {
             text = QString::fromUtf8("%1 - %2").arg(fileNames[i]).arg(dirNames[i]);
         } else {
-            text = dirNames[i];
+            text = fileNames[i];
         }
         _imp->actionsOpenRecentFile[i]->setText(text);
         _imp->actionsOpenRecentFile[i]->setData(files[i]);
