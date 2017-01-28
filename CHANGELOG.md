@@ -4,6 +4,11 @@
 
 # History
 
+## Version 2.2.3
+
+- add proper quality options to WriteFFmpeg, including CRF-based encoding for libx264.
+- fix bug in the recent files menu.
+
 ## Version 2.2.2
 
 This is a bug-fix release
