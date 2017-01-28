@@ -216,7 +216,7 @@ struct ViewerTabPrivate
 
 #endif
 
-    void getComponentsAvailabel(std::set<ImagePlaneDesc>* comps) const;
+    void getComponentsAvailabel(std::set<ImageComponents>* comps) const;
 
     std::list<PluginViewerContext>::iterator findActiveNodeContextForPlugin(const std::string& pluginID);
 

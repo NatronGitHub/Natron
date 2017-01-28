@@ -273,7 +273,7 @@ static PyObject* Sbk_AppFunc_createNode(PyObject* self, PyObject* args, PyObject
     return pyResult;
 
     Sbk_AppFunc_createNode_TypeError:
-        const char* overloads[] = {"unicode, int = -1, NatronEngine.Group = None, dict = NodeCreationPropertyMap()", 0};
+        const char* overloads[] = {"unicode, int = -1, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createNode", overloads);
         return 0;
 }
@@ -377,7 +377,7 @@ static PyObject* Sbk_AppFunc_createReader(PyObject* self, PyObject* args, PyObje
     return pyResult;
 
     Sbk_AppFunc_createReader_TypeError:
-        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = NodeCreationPropertyMap()", 0};
+        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createReader", overloads);
         return 0;
 }
@@ -481,7 +481,7 @@ static PyObject* Sbk_AppFunc_createWriter(PyObject* self, PyObject* args, PyObje
     return pyResult;
 
     Sbk_AppFunc_createWriter_TypeError:
-        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = NodeCreationPropertyMap()", 0};
+        const char* overloads[] = {"unicode, NatronEngine.Group = None, dict = std.map< QString,NodeCreationProperty* >()", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.App.createWriter", overloads);
         return 0;
 }

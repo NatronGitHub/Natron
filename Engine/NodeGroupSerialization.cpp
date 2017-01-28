@@ -183,10 +183,7 @@ NodeCollectionSerialization::restoreFromSerialization(const std::list< boost::sh
 
             //This is a python group plug-in, try to find the corresponding .py file, maybe a more recent version of the plug-in exists.
             QFileInfo pythonModuleInfo(qPyModulePath);
-            if (!pythonModuleInfo.exists() || appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled() ) {
-                pluginID = PLUGINID_NATRON_GROUP;
-                usingPythonModule = false;
-            } else {
+            if ( pythonModuleInfo.exists() && appPTR->getCurrentSettings()->isLoadFromPyPlugsEnabled() ) {
                 std::string pythonPluginID, pythonPluginLabel, pythonIcFilePath, pythonGrouping, pythonDesc;
                 unsigned int pyVersion;
                 QString pythonModuleName = pythonModuleInfo.fileName();

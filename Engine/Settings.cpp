@@ -195,59 +195,85 @@ Settings::initializeKnobsGeneral()
                                   "a restart of the application and requires clearing "
                                   "the OpenFX plugins cache from the Cache menu.").arg( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
     _knownHostNames.clear();
-    std::vector<ChoiceOption> visibleHostEntries;
-    assert(visibleHostEntries.size() == (int)eKnownHostNameNatron);
-    visibleHostEntries.push_back(ChoiceOption(NATRON_APPLICATION_NAME, NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME, ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameNuke);
-    visibleHostEntries.push_back(ChoiceOption("uk.co.thefoundry.nuke", "Nuke", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameFusion);
-    visibleHostEntries.push_back(ChoiceOption("com.eyeonline.Fusion", "Fusion", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameCatalyst);
-    visibleHostEntries.push_back(ChoiceOption("com.sony.Catalyst.Edit", "Sony Catalyst Edit", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameVegas);
-    visibleHostEntries.push_back(ChoiceOption("com.sonycreativesoftware.vegas", "Sony Vegas", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameToxik);
-    visibleHostEntries.push_back(ChoiceOption("Autodesk Toxik", "Toxik", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameScratch);
-    visibleHostEntries.push_back(ChoiceOption("Assimilator", "Scratch", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameDustBuster);
-    visibleHostEntries.push_back(ChoiceOption("Dustbuster", "DustBuster", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameResolve);
-    visibleHostEntries.push_back(ChoiceOption("DaVinciResolve", "Da Vinci Resolve", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameResolveLite);
-    visibleHostEntries.push_back(ChoiceOption("DaVinciResolveLite", "Da Vinci Resolve Lite", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameMistika);
-    visibleHostEntries.push_back(ChoiceOption("Mistika", "SGO Mistika", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNamePablo);
-    visibleHostEntries.push_back(ChoiceOption("com.quantel.genq", "Quantel Pablo Rio", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameMotionStudio);
-    visibleHostEntries.push_back(ChoiceOption("com.idtvision.MotionStudio", "IDT Motion Studio", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameShake);
-    visibleHostEntries.push_back(ChoiceOption("com.apple.shake", "Shake", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameBaselight);
-    visibleHostEntries.push_back(ChoiceOption("Baselight", "Baselight", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameFrameCycler);
-    visibleHostEntries.push_back(ChoiceOption("IRIDAS Framecycler", "FrameCycler", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameNucoda);
-    visibleHostEntries.push_back(ChoiceOption("Nucoda", "Nucoda Film Master", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameAvidDS);
-    visibleHostEntries.push_back(ChoiceOption("DS OFX HOST", "Avid DS", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameDX);
-    visibleHostEntries.push_back(ChoiceOption("com.chinadigitalvideo.dx", "China Digital Video DX", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameTitlerPro);
-    visibleHostEntries.push_back(ChoiceOption("com.newblue.titlerpro", "NewBlueFX Titler Pro", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameNewBlueOFXBridge);
-    visibleHostEntries.push_back(ChoiceOption("com.newblue.ofxbridge", "NewBlueFX OFX Bridge", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameRamen);
-    visibleHostEntries.push_back(ChoiceOption("Ramen", "Ramen", ""));
-    assert(visibleHostEntries.size() == (int)eKnownHostNameTuttleOfx);
-    visibleHostEntries.push_back(ChoiceOption("TuttleOfx", "TuttleOFX", ""));
+    std::vector<std::string> visibleHostEntries, hostEntriesHelp;
+    assert(_knownHostNames.size() == (int)eKnownHostNameNatron);
+    _knownHostNames.push_back(NATRON_ORGANIZATION_DOMAIN_TOPLEVEL "." NATRON_ORGANIZATION_DOMAIN_SUB "." NATRON_APPLICATION_NAME);
+    visibleHostEntries.push_back(NATRON_APPLICATION_NAME);
+    assert(_knownHostNames.size() == (int)eKnownHostNameNuke);
+    _knownHostNames.push_back("uk.co.thefoundry.nuke");
+    visibleHostEntries.push_back("Nuke");
+    assert(_knownHostNames.size() == (int)eKnownHostNameFusion);
+    _knownHostNames.push_back("com.eyeonline.Fusion");
+    visibleHostEntries.push_back("Fusion");
+    assert(_knownHostNames.size() == (int)eKnownHostNameCatalyst);
+    _knownHostNames.push_back("com.sony.Catalyst.Edit");
+    visibleHostEntries.push_back("Sony Catalyst Edit");
+    assert(_knownHostNames.size() == (int)eKnownHostNameVegas);
+    _knownHostNames.push_back("com.sonycreativesoftware.vegas");
+    visibleHostEntries.push_back("Sony Vegas");
+    assert(_knownHostNames.size() == (int)eKnownHostNameToxik);
+    _knownHostNames.push_back("Autodesk Toxik");
+    visibleHostEntries.push_back("Toxik");
+    assert(_knownHostNames.size() == (int)eKnownHostNameScratch);
+    _knownHostNames.push_back("Assimilator");
+    visibleHostEntries.push_back("Scratch");
+    assert(_knownHostNames.size() == (int)eKnownHostNameDustBuster);
+    _knownHostNames.push_back("Dustbuster");
+    visibleHostEntries.push_back("DustBuster");
+    assert(_knownHostNames.size() == (int)eKnownHostNameResolve);
+    _knownHostNames.push_back("DaVinciResolve");
+    visibleHostEntries.push_back("Da Vinci Resolve");
+    assert(_knownHostNames.size() == (int)eKnownHostNameResolveLite);
+    _knownHostNames.push_back("DaVinciResolveLite");
+    visibleHostEntries.push_back("Da Vinci Resolve Lite");
+    assert(_knownHostNames.size() == (int)eKnownHostNameMistika);
+    _knownHostNames.push_back("Mistika");
+    visibleHostEntries.push_back("SGO Mistika");
+    assert(_knownHostNames.size() == (int)eKnownHostNamePablo);
+    _knownHostNames.push_back("com.quantel.genq");
+    visibleHostEntries.push_back("Quantel Pablo Rio");
+    assert(_knownHostNames.size() == (int)eKnownHostNameMotionStudio);
+    _knownHostNames.push_back("com.idtvision.MotionStudio");
+    visibleHostEntries.push_back("IDT Motion Studio");
+    assert(_knownHostNames.size() == (int)eKnownHostNameShake);
+    _knownHostNames.push_back("com.apple.shake");
+    visibleHostEntries.push_back("Shake");
+    assert(_knownHostNames.size() == (int)eKnownHostNameBaselight);
+    _knownHostNames.push_back("Baselight");
+    visibleHostEntries.push_back("Baselight");
+    assert(_knownHostNames.size() == (int)eKnownHostNameFrameCycler);
+    _knownHostNames.push_back("IRIDAS Framecycler");
+    visibleHostEntries.push_back("FrameCycler");
+    assert(_knownHostNames.size() == (int)eKnownHostNameNucoda);
+    _knownHostNames.push_back("Nucoda");
+    visibleHostEntries.push_back("Nucoda Film Master");
+    assert(_knownHostNames.size() == (int)eKnownHostNameAvidDS);
+    _knownHostNames.push_back("DS OFX HOST");
+    visibleHostEntries.push_back("Avid DS");
+    assert(_knownHostNames.size() == (int)eKnownHostNameDX);
+    _knownHostNames.push_back("com.chinadigitalvideo.dx");
+    visibleHostEntries.push_back("China Digital Video DX");
+    assert(_knownHostNames.size() == (int)eKnownHostNameTitlerPro);
+    _knownHostNames.push_back("com.newblue.titlerpro");
+    visibleHostEntries.push_back("NewBlueFX Titler Pro");
+    assert(_knownHostNames.size() == (int)eKnownHostNameNewBlueOFXBridge);
+    _knownHostNames.push_back("com.newblue.ofxbridge");
+    visibleHostEntries.push_back("NewBlueFX OFX Bridge");
+    assert(_knownHostNames.size() == (int)eKnownHostNameRamen);
+    _knownHostNames.push_back("Ramen");
+    visibleHostEntries.push_back("Ramen");
+    assert(_knownHostNames.size() == (int)eKnownHostNameTuttleOfx);
+    _knownHostNames.push_back("TuttleOfx");
+    visibleHostEntries.push_back("TuttleOFX");
 
-    _knownHostNames = visibleHostEntries;
 
-    visibleHostEntries.push_back(ChoiceOption(NATRON_CUSTOM_HOST_NAME_ENTRY, "Custom host name", ""));
+    assert( visibleHostEntries.size() == _knownHostNames.size() );
+    hostEntriesHelp = _knownHostNames;
 
-    _hostName->populateChoices(visibleHostEntries);
+    visibleHostEntries.push_back(NATRON_CUSTOM_HOST_NAME_ENTRY);
+    hostEntriesHelp.push_back("Custom host name");
+
+    _hostName->populateChoices(visibleHostEntries, hostEntriesHelp);
     _hostName->setAddNewLine(false);
     _generalTab->addKnob(_hostName);
 
@@ -386,11 +412,11 @@ Settings::populateOpenGLRenderers(const std::list<OpenGLRendererInfo>& renderers
     _nOpenGLContexts->setSecret(false);
     _enableOpenGL->setSecret(false);
 
-    std::vector<ChoiceOption> entries( renderers.size() );
+    std::vector<std::string> entries( renderers.size() );
     int i = 0;
     for (std::list<OpenGLRendererInfo>::const_iterator it = renderers.begin(); it != renderers.end(); ++it, ++i) {
         std::string option = it->vendorName + ' ' + it->rendererName + ' ' + it->glVersionString;
-        entries[i] = ChoiceOption(option);
+        entries[i] = option;
     }
     _availableOpenGLRenderers->populateChoices(entries);
     _availableOpenGLRenderers->setSecret(renderers.size() == 1);
@@ -463,14 +489,18 @@ Settings::initializeKnobsGPU()
     _enableOpenGL = AppManager::createKnob<KnobChoice>( this, tr("OpenGL Rendering") );
     _enableOpenGL->setName("enableOpenGLRendering");
     {
-        std::vector<ChoiceOption> entries;
-        assert(entries.size() == (int)Settings::eEnableOpenGLEnabled);
-        entries.push_back(ChoiceOption("Enabled", "",  tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString()));
-        assert(entries.size() == (int)Settings::eEnableOpenGLDisabled);
-        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
-        assert(entries.size() == (int)Settings::eEnableOpenGLDisabledIfBackground);
-        entries.push_back(ChoiceOption("Disabled If Background", "", tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
-        _enableOpenGL->populateChoices(entries);
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        assert(entries.size() == (int)eEnableOpenGLEnabled);
+        entries.push_back("Enabled");
+        helps.push_back( tr("If a plug-in support GPU rendering, prefer rendering using the GPU if possible.").toStdString() );
+        assert(entries.size() == (int)eEnableOpenGLDisabled);
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        assert(entries.size() == (int)eEnableOpenGLDisabledIfBackground);
+        entries.push_back("Disabled If Background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        _enableOpenGL->populateChoices(entries, helps);
     }
     _enableOpenGL->setHintToolTip( tr("Select whether to activate OpenGL rendering or not. If disabled, even though a Project enable GPU rendering, it will not be activated.") );
     _gpuPage->addKnob(_enableOpenGL);
@@ -518,9 +548,9 @@ Settings::initializeKnobsDocumentation()
     _documentationSource = AppManager::createKnob<KnobChoice>( this, tr("Documentation Source") );
     _documentationSource->setName("documentationSource");
     _documentationSource->setHintToolTip( tr("Documentation source.") );
-    _documentationSource->appendChoice(ChoiceOption("Local"));
-    _documentationSource->appendChoice(ChoiceOption("Online"));
-    _documentationSource->appendChoice(ChoiceOption("None"));
+    _documentationSource->appendChoice("Local");
+    _documentationSource->appendChoice("Online");
+    _documentationSource->appendChoice("None");
     _documentationPage->addKnob(_documentationSource);
 #endif
 
@@ -607,7 +637,7 @@ Settings::initializeKnobsColorManagement()
     _ocioConfigKnob = AppManager::createKnob<KnobChoice>( this, tr("OpenColorIO configuration") );
     _ocioConfigKnob->setName("ocioConfig");
 
-    std::vector<ChoiceOption> configs;
+    std::vector<std::string> configs;
     int defaultIndex = 0;
     QStringList defaultOcioConfigsPaths = getDefaultOcioConfigPaths();
     Q_FOREACH(const QString &defaultOcioConfigsDir, defaultOcioConfigsPaths) {
@@ -619,13 +649,13 @@ Settings::initializeKnobsColorManagement()
                 if ( entries[j] == QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ) {
                     defaultIndex = j;
                 }
-                configs.push_back(ChoiceOption( entries[j].toStdString() ));
+                configs.push_back( entries[j].toStdString() );
             }
 
             break; //if we found 1 OpenColorIO-Configs directory, skip the next
         }
     }
-    configs.push_back(ChoiceOption(NATRON_CUSTOM_OCIO_CONFIG_NAME));
+    configs.push_back(NATRON_CUSTOM_OCIO_CONFIG_NAME);
     _ocioConfigKnob->populateChoices(configs);
     _ocioConfigKnob->setDefaultValue(defaultIndex, 0);
     _ocioConfigKnob->setHintToolTip( tr("Select the OpenColorIO configuration you would like to use globally for all "
@@ -1019,16 +1049,17 @@ Settings::initializeKnobsViewers()
 
     _texturesMode = AppManager::createKnob<KnobChoice>( this, tr("Viewer textures bit depth") );
     _texturesMode->setName("texturesBitDepth");
-    std::vector<ChoiceOption> textureModes;
-    textureModes.push_back(ChoiceOption("Byte", "", tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                                       "by the CPU. As a results, the size of cached textures is smaller.").toStdString() ));
+    std::vector<std::string> textureModes;
+    std::vector<std::string> helpStringsTextureModes;
+    textureModes.push_back("Byte");
+    helpStringsTextureModes.push_back( tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                          "by the CPU. As a results, the size of cached textures is smaller.").toStdString() );
     //textureModes.push_back("16bits half-float");
     //helpStringsTextureModes.push_back("Not available yet. Similar to 32bits fp.");
-    textureModes.push_back(ChoiceOption("32bits floating-point", "",tr("Post-processing done by the viewer (such as colorspace conversion) is done "
-                                                                       "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString()));
-    _texturesMode->populateChoices(textureModes);
-
-
+    textureModes.push_back("32bits floating-point");
+    helpStringsTextureModes.push_back( tr("Post-processing done by the viewer (such as colorspace conversion) is done "
+                                          "by the GPU, using GLSL. As a results, the size of cached textures is larger.").toStdString() );
+    _texturesMode->populateChoices(textureModes, helpStringsTextureModes);
     _texturesMode->setHintToolTip( tr("Bit depth of the viewer textures used for rendering."
                                       " Hover each option with the mouse for a detailed description.") );
     _viewersTab->addKnob(_texturesMode);
@@ -1079,14 +1110,13 @@ Settings::initializeKnobsViewers()
 
     _autoProxyLevel = AppManager::createKnob<KnobChoice>( this, tr("Auto-proxy level") );
     _autoProxyLevel->setName("autoProxyLevel");
-    std::vector<ChoiceOption> autoProxyChoices;
-    autoProxyChoices.push_back(ChoiceOption("2", "",""));
-    autoProxyChoices.push_back(ChoiceOption("4", "",""));
-    autoProxyChoices.push_back(ChoiceOption("8", "",""));
-    autoProxyChoices.push_back(ChoiceOption("16", "",""));
-    autoProxyChoices.push_back(ChoiceOption("32", "",""));
+    std::vector<std::string> autoProxyChoices;
+    autoProxyChoices.push_back("2");
+    autoProxyChoices.push_back("4");
+    autoProxyChoices.push_back("8");
+    autoProxyChoices.push_back("16");
+    autoProxyChoices.push_back("32");
     _autoProxyLevel->populateChoices(autoProxyChoices);
-
     _viewersTab->addKnob(_autoProxyLevel);
 
     _maximumNodeViewerUIOpened = AppManager::createKnob<KnobInt>( this, tr("Max. opened node viewer interface") );
@@ -1874,10 +1904,10 @@ Settings::saveSettings(const std::vector<KnobI*>& knobs,
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         int newIndex = isChoice->getValue(j);
-                        const std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
+                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         if ( newIndex < (int)entries.size() ) {
                             QString oldValue = settings.value(dimensionName).toString();
-                            QString newValue = QString::fromUtf8( entries[newIndex].id.c_str());
+                            QString newValue = QString::fromUtf8( entries[newIndex].c_str() );
                             if (oldValue != newValue) {
                                 changedKnobs.push_back(knobs[i]);
                             }
@@ -1944,11 +1974,11 @@ Settings::restoreKnobsFromSettings(const std::vector<KnobI*>& knobs)
                     if (isChoice) {
                         ///For choices,serialize the choice name instead
                         std::string value = settings.value(qDimName).toString().toStdString();
-                        const std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
+                        const std::vector<std::string> entries = isChoice->getEntries_mt_safe();
                         int found = -1;
 
                         for (U32 k = 0; k < entries.size(); ++k) {
-                            if (entries[k].id == value) {
+                            if (entries[k] == value) {
                                 found = (int)k;
                                 break;
                             }
@@ -1998,7 +2028,7 @@ Settings::restoreSettings()
 
     // Restore opengl renderer
     {
-        std::vector<ChoiceOption> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
+        std::vector<std::string> availableRenderers = _availableOpenGLRenderers->getEntries_mt_safe();
         QString missingGLError;
         bool hasGL = appPTR->hasOpenGLForRequirements(eOpenGLRequirementsTypeRendering, &missingGLError);
 
@@ -2098,7 +2128,7 @@ Settings::tryLoadOpenColorIOConfig()
     } else {
         try {
             ///try to load from the combobox
-            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntry().id.c_str() );
+            QString activeEntryText  = QString::fromUtf8( _ocioConfigKnob->getActiveEntryText_mt_safe().c_str() );
             QString configFileName = QString( activeEntryText + QString::fromUtf8(".ocio") );
             QStringList defaultConfigsPaths = getDefaultOcioConfigPaths();
             Q_FOREACH(const QString &defaultConfigsDirStr, defaultConfigsPaths) {
@@ -2208,7 +2238,7 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _nThreadsPerEffect.get() ) {
         appPTR->setNThreadsPerEffect( getNumberOfThreadsPerEffect() );
     } else if ( k == _ocioConfigKnob.get() ) {
-        if (_ocioConfigKnob->getActiveEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
+        if (_ocioConfigKnob->getActiveEntryText_mt_safe() == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _customOcioConfigFile->setAllDimensionsEnabled(true);
         } else {
             _customOcioConfigFile->setAllDimensionsEnabled(false);
@@ -2283,7 +2313,7 @@ Settings::onKnobValueChanged(KnobI* k,
     } else if ( k == _qssFile.get() ) {
         appPTR->reloadStylesheets();
     } else if ( k == _hostName.get() ) {
-        std::string hostName = _hostName->getActiveEntry().id;
+        std::string hostName = _hostName->getActiveEntryText_mt_safe();
         bool isCustom = hostName == NATRON_CUSTOM_HOST_NAME_ENTRY;
         _customHostName->setSecret(!isCustom);
     } else if ( ( k == _testCrashReportButton.get() ) && (reason == eValueChangedReasonUserEdited) ) {
@@ -2592,13 +2622,8 @@ void
 Settings::populateSystemFonts(const QSettings& settings,
                               const std::vector<std::string>& fonts)
 {
-    std::vector<ChoiceOption> options(fonts.size());
-    for (std::size_t i = 0; i < fonts.size(); ++i) {
-        options[i].id = fonts[i];
-    }
-    _systemFontChoice->populateChoices(options);
-    _scriptEditorFontChoice->populateChoices(options);
-
+    _systemFontChoice->populateChoices(fonts);
+    _scriptEditorFontChoice->populateChoices(fonts);
     for (U32 i = 0; i < fonts.size(); ++i) {
         if (fonts[i] == NATRON_FONT) {
             _systemFontChoice->setDefaultValue(i);
@@ -2905,13 +2930,13 @@ std::string
 Settings::getHostName() const
 {
     int entry_i =  _hostName->getValue();
-    std::vector<ChoiceOption> entries = _hostName->getEntries_mt_safe();
+    std::vector<std::string> entries = _hostName->getEntries_mt_safe();
 
-    if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i].id == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
+    if ( (entry_i >= 0) && ( entry_i < (int)entries.size() ) && (entries[entry_i] == NATRON_CUSTOM_HOST_NAME_ENTRY) ) {
         return _customHostName->getValue();
     } else {
         if ( (entry_i >= 0) && ( entry_i < (int)_knownHostNames.size() ) ) {
-            return _knownHostNames[entry_i].id;
+            return _knownHostNames[entry_i];
         }
 
         return std::string();
@@ -3030,11 +3055,11 @@ Settings::doOCIOStartupCheckIfNeeded()
 
     if (docheck && mainInstance) {
         int entry_i = _ocioConfigKnob->getValue();
-        std::vector<ChoiceOption> entries = _ocioConfigKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _ocioConfigKnob->getEntries_mt_safe();
         std::string warnText;
         if ( (entry_i < 0) || ( entry_i >= (int)entries.size() ) ) {
             warnText = tr("The current OCIO config selected in the preferences is invalid, would you like to set it to the default config (%1)?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
-        } else if (entries[entry_i].id != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
+        } else if (entries[entry_i] != NATRON_DEFAULT_OCIO_CONFIG_NAME) {
             warnText = tr("The current OCIO config selected in the preferences is not the default one (%1), would you like to set it to the default config?").arg( QString::fromUtf8(NATRON_DEFAULT_OCIO_CONFIG_NAME) ).toStdString();
         } else {
             return;
@@ -3053,7 +3078,7 @@ Settings::doOCIOStartupCheckIfNeeded()
         if (reply == eStandardButtonYes) {
             int defaultIndex = -1;
             for (unsigned i = 0; i < entries.size(); ++i) {
-                if (entries[i].id.find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
+                if (entries[i].find(NATRON_DEFAULT_OCIO_CONFIG_NAME) != std::string::npos) {
                     defaultIndex = i;
                     break;
                 }
@@ -3530,7 +3555,7 @@ Settings::getSEFontSize() const
 std::string
 Settings::getSEFontFamily() const
 {
-    return _scriptEditorFontChoice->getActiveEntry().id;
+    return _scriptEditorFontChoice->getActiveEntryText_mt_safe();
 }
 
 void

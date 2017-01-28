@@ -1136,21 +1136,10 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
         outArgs.createProperty(specComp);
 
-        std::string ofxClipComponentStr;
-        std::string componentsType = metadata.getComponentsType(inputNb);
-        int nComps = metadata.getNComps(inputNb);
-        ImagePlaneDesc natronPlane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
-        if (componentsType == kNatronColorPlaneID) {
-            ofxClipComponentStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(natronPlane);
-        } else if (componentsType == kNatronDisparityComponentsLabel) {
-            ofxClipComponentStr = kFnOfxImageComponentStereoDisparity;
-        } else if (componentsType == kNatronMotionComponentsLabel) {
-            ofxClipComponentStr = kFnOfxImageComponentMotionVectors;
-        } else {
-            ofxClipComponentStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(natronPlane);
-        }
+        ImageComponents clipComponents = metadata.getImageComponents(inputNb);
+        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(clipComponents);
+        outArgs.setStringProperty( componentParamName.c_str(), clipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
-        outArgs.setStringProperty( componentParamName.c_str(), ofxClipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
         const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) );
         OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, bitDepthStr.c_str()};
@@ -1230,21 +1219,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 #       endif
 
             defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
-            ImagePlaneDesc plane, pairedPlane;
-            std::string ofxComponentsType = outArgs.getStringProperty(componentParamName);
-            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(ofxComponentsType, &plane, &pairedPlane);
-            defaultPrefs.setNComps( inputNb, plane.getNumComponents() );
-
-            if (plane.isColorPlane()) {
-                defaultPrefs.setComponentsType( inputNb, kNatronColorPlaneID);
-            } else if (plane.getChannelsLabel() == kNatronMotionComponentsLabel) {
-                defaultPrefs.setComponentsType( inputNb, kNatronMotionComponentsLabel);
-            } else if (plane.getChannelsLabel() == kNatronDisparityComponentsLabel) {
-                defaultPrefs.setComponentsType( inputNb, kNatronDisparityComponentsLabel);
-            } else {
-                defaultPrefs.setComponentsType( inputNb, ofxComponentsType);
-            }
-
+            defaultPrefs.setImageComponents( inputNb, OfxClipInstance::ofxComponentsToNatronComponents( outArgs.getStringProperty(componentParamName) ) );
             defaultPrefs.setPixelAspectRatio( inputNb, outArgs.getDoubleProperty(parParamName) );
         }
 

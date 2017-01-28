@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
-#include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/CurveSelection.h"

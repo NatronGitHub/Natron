@@ -615,14 +615,14 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
 
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
         if (isChoice) {
-            std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
-
+            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
+            std::vector<std::string> entriesHelp = isChoice->getEntriesHelp_mt_safe();
             QString data;
             for (U32 i = 0; i < entries.size(); ++i) {
-                QString line( QString::fromUtf8( entries[i].id.c_str() ) );
-                if ( !entries[i].tooltip.empty() ) {
+                QString line( QString::fromUtf8( entries[i].c_str() ) );
+                if ( ( i < entriesHelp.size() ) && !entriesHelp[i].empty() ) {
                     line.append( QString::fromUtf8("<?>") );
-                    line.append( QString::fromUtf8( entries[i].tooltip.c_str() ) );
+                    line.append( QString::fromUtf8( entriesHelp[i].c_str() ) );
                 }
                 data.append(line);
                 data.append( QLatin1Char('\n') );
@@ -854,7 +854,7 @@ AddKnobDialog::AddKnobDialog(DockablePanel* panel,
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( knob.get() );
 
         if (isChoice) {
-            _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).id.c_str() ) );
+            _imp->defaultStr->setText( QString::fromUtf8( isChoice->getEntry( isChoice->getDefaultValue(0) ).c_str() ) );
         } else if (isDbl) {
             _imp->default0->setValue( isDbl->getDefaultValue(0) );
             if (isDbl->getDimension() >= 2) {
@@ -1380,27 +1380,32 @@ AddKnobDialogPrivate::createKnobFromSelection(int index,
         boost::shared_ptr<KnobChoice> k = AppManager::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
         QString entriesRaw = menuItemsEdit->toPlainText();
         QTextStream stream(&entriesRaw);
-        std::vector<ChoiceOption> entries;
+        std::vector<std::string> entries, helps;
 
         while ( !stream.atEnd() ) {
             QString line = stream.readLine();
-
             int foundHelp = line.indexOf( QString::fromUtf8("<?>") );
             if (foundHelp != -1) {
                 QString entry = line.mid(0, foundHelp);
                 QString help = line.mid(foundHelp + 3, -1);
-
-                entries.push_back(ChoiceOption( entry.toStdString(), "", help.toStdString()) );
+                for (int i = 0; i < (int)entries.size() - (int)helps.size(); ++i) {
+                    helps.push_back("");
+                }
+                entries.push_back( entry.toStdString() );
+                helps.push_back( help.toStdString() );
             } else {
-                entries.push_back( ChoiceOption(line.toStdString(), "", "") );
+                entries.push_back( line.toStdString() );
+                if ( !helps.empty() ) {
+                    helps.push_back("");
+                }
             }
         }
-        k->populateChoices(entries);
+        k->populateChoices(entries, helps);
 
         std::string defValue = defaultStr->text().toStdString();
         int defIndex = -1;
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i].id == defValue) {
+            if (entries[i] == defValue) {
                 defIndex = i;
                 break;
             }
@@ -1828,9 +1833,9 @@ AddKnobDialog::onOkClicked()
         } else if (isChoice) {
             std::string defValue = _imp->defaultStr->text().toStdString();
             int defIndex = -1;
-            std::vector<ChoiceOption> entries = isChoice->getEntries_mt_safe();
+            std::vector<std::string> entries = isChoice->getEntries_mt_safe();
             for (std::size_t i = 0; i < entries.size(); ++i) {
-                if (entries[i].id == defValue) {
+                if (entries[i] == defValue) {
                     defIndex = i;
                     break;
                 }

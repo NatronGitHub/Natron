@@ -146,7 +146,7 @@ class HostOverlayKnobsCornerPin;
 class HostOverlayKnobsPosition;
 class HostOverlayKnobsTransform;
 class Image;
-class ImagePlaneDesc;
+class ImageComponents;
 class ImageKey;
 class ImageParams;
 class KeyFrame;

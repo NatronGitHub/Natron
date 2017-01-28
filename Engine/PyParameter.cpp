@@ -1643,7 +1643,7 @@ ChoiceParam::set(const QString& label)
     if (!knob) {
         return;
     }
-    KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromID(label.toStdString(), 0);
+    KnobHelper::ValueChangedReturnCodeEnum s = knob->setValueFromLabel(label.toStdString(), 0);
 
     Q_UNUSED(s);
 }
@@ -1706,7 +1706,7 @@ ChoiceParam::setDefaultValue(const QString& value)
     if (!knob) {
         return;
     }
-    knob->setDefaultValueFromIDWithoutApplying( value.toStdString() );
+    knob->setDefaultValueFromLabelWithoutApplying( value.toStdString() );
 }
 
 int
@@ -1738,9 +1738,9 @@ ChoiceParam::addOption(const QString& option,
     if ( !knob || !knob->isUserKnob() ) {
         return;
     }
-
-    ChoiceOption opt(option.toStdString(), "", help.toStdString());
-    knob->appendChoice(opt);
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
+    std::vector<std::string> helps = knob->getEntriesHelp_mt_safe();
+    knob->appendChoice( option.toStdString(), help.toStdString() );
 }
 
 void
@@ -1752,11 +1752,12 @@ ChoiceParam::setOptions(const std::list<std::pair<QString, QString> >& options)
         return;
     }
 
-    std::vector<ChoiceOption> entries;
+    std::vector<std::string> entries, helps;
     for (std::list<std::pair<QString, QString> >::const_iterator it = options.begin(); it != options.end(); ++it) {
-        entries.push_back( ChoiceOption(it->first.toStdString(), "", it->second.toStdString()));
+        entries.push_back( it->first.toStdString() );
+        helps.push_back( it->second.toStdString() );
     }
-    knob->populateChoices(entries);
+    knob->populateChoices(entries, helps);
 }
 
 QString
@@ -1766,13 +1767,13 @@ ChoiceParam::getOption(int index) const
     if (!knob) {
         return QString();
     }
-    std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
 
     if ( (index < 0) || ( index >= (int)entries.size() ) ) {
         return QString();
     }
 
-    return QString::fromUtf8( entries[index].id.c_str() );
+    return QString::fromUtf8( entries[index].c_str() );
 }
 
 int
@@ -1793,10 +1794,10 @@ ChoiceParam::getOptions() const
     if (!knob) {
         return ret;
     }
-    std::vector<ChoiceOption> entries = knob->getEntries_mt_safe();
+    std::vector<std::string> entries = knob->getEntries_mt_safe();
 
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        ret.push_back( QString::fromUtf8( entries[i].id.c_str() ) );
+        ret.push_back( QString::fromUtf8( entries[i].c_str() ) );
     }
 
     return ret;

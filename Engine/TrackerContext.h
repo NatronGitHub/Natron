@@ -44,7 +44,6 @@
 
 #include "Global/KeySymbols.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/ChoiceOption.h"
 #include "Engine/RectI.h"
 #include "Engine/RectD.h"
 #include "Engine/GenericSchedulerThread.h"
@@ -222,8 +221,8 @@ public:
     bool isMarkerSelected(const TrackMarkerPtr& marker) const;
 
     static void getMotionModelsAndHelps(bool addPerspective,
-                                        std::vector<ChoiceOption>* models);
-
+                                        std::vector<std::string>* models,
+                                        std::vector<std::string>* tooltips);
 
     int getTransformReferenceFrame() const;
 

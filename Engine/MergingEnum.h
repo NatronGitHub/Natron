@@ -30,7 +30,6 @@
 #include <string>
 #include <vector>
 #include "Global/Enums.h"
-#include "Engine/ChoiceOption.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -421,16 +420,12 @@ getOperatorPixmap(MergingFunctionEnum operation)
 
 ///Keep this in sync with the MergeOperatorEnum !
 inline void
-getOperatorStrings(std::vector<ChoiceOption>* operators)
+getOperatorStrings(std::vector<std::string>* operators,
+                   std::vector<std::string>* toolTips)
 {
-    operators->resize((int)eMergeXOR + 1);
-
-    for (std::size_t i = 0; i < operators->size(); ++i) {
-
-        ChoiceOption& option = (*operators)[i];
-
-        option.id = Merge::getOperatorString( (MergingFunctionEnum)i );
-        option.tooltip = Merge::getOperatorHelpString( (MergingFunctionEnum)i );
+    for (int i = 0; i <= (int)eMergeXOR; ++i) {
+        operators->push_back( Merge::getOperatorString( (MergingFunctionEnum)i ) );
+        toolTips->push_back( Merge::getOperatorHelpString( (MergingFunctionEnum)i ) );
     }
 }
 } // namespace Merge

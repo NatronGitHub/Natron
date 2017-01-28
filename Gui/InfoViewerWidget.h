@@ -36,7 +36,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Format.h"
-#include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageComponents.h"
 
 #include "Gui/GuiFwd.h"
 
@@ -62,7 +62,7 @@ public:
 
     void setDataWindow(const RectI & r); // in pixel coordinates
 
-    void setImageFormat(const ImagePlaneDesc& comp, ImageBitDepthEnum depth);
+    void setImageFormat(const ImageComponents& comp, ImageBitDepthEnum depth);
 
     void setColor(float r, float g, float b, float a);
 
@@ -101,7 +101,7 @@ private:
     Label* color;
     Label* hvl_lastOption;
     Label* _fpsLabel;
-    ImagePlaneDesc _comp;
+    ImageComponents _comp;
     bool _colorValid;
     bool _colorApprox;
     double currentColor[4];

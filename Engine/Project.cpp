@@ -749,14 +749,14 @@ Project::initializeKnobs()
     _imp->formatKnob->setName("outputFormat");
 
     const std::vector<Format> & appFormats = appPTR->getFormats();
-    std::vector<ChoiceOption> entries;
+    std::vector<std::string> entries;
     for (U32 i = 0; i < appFormats.size(); ++i) {
         const Format& f = appFormats[i];
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
         if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
             _imp->formatKnob->setDefaultValue(i, 0);
         }
-        entries.push_back( ChoiceOption(formatStr.toStdString()) );
+        entries.push_back( formatStr.toStdString() );
         _imp->builtinFormats.push_back(f);
     }
     _imp->formatKnob->setAddNewLine(false);
@@ -819,11 +819,15 @@ Project::initializeKnobs()
     _imp->gpuSupport = AppManager::createKnob<KnobChoice>( this, tr("GPU Rendering") );
     _imp->gpuSupport->setName("gpuRendering");
     {
-        std::vector<ChoiceOption> entries;
-        entries.push_back(ChoiceOption("Enabled","",tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString()));
-        entries.push_back(ChoiceOption("Disabled", "", tr("Disable GPU rendering for all plug-ins.").toStdString()));
-        entries.push_back(ChoiceOption("Disabled if background","",tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString()));
-        _imp->gpuSupport->populateChoices(entries);
+        std::vector<std::string> entries;
+        std::vector<std::string> helps;
+        entries.push_back("Enabled");
+        helps.push_back( tr("Enable GPU rendering if required resources are available and the plugin supports it.").toStdString() );
+        entries.push_back("Disabled");
+        helps.push_back( tr("Disable GPU rendering for all plug-ins.").toStdString() );
+        entries.push_back("Disabled if background");
+        helps.push_back( tr("Disable GPU rendering when rendering with NatronRenderer but not in GUI mode.").toStdString() );
+        _imp->gpuSupport->populateChoices(entries, helps);
     }
     _imp->gpuSupport->setAnimationEnabled(false);
     _imp->gpuSupport->setHintToolTip( tr("Select when to activate GPU rendering for plug-ins. Note that if the OpenGL Rendering parameter in the Preferences/GPU Rendering is set to disabled then GPU rendering will not be activated regardless of that value.") );
@@ -863,19 +867,13 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setEvaluateOnChange(false);
     std::list<std::vector<std::string> > defaultLayers;
     {
-        std::vector<ImagePlaneDesc> defaultComponents;
-        defaultComponents.push_back(ImagePlaneDesc::getDisparityLeftComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getDisparityRightComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getBackwardMotionComponents());
-        defaultComponents.push_back(ImagePlaneDesc::getForwardMotionComponents());
-
-
-        for (std::size_t i = 0; i < defaultComponents.size(); ++i) {
-            const ImagePlaneDesc& comps = defaultComponents[i];
-            std::vector<std::string> row(3);
-            row[0] = comps.getPlaneLabel();
+        //Do not add the color plane, because it is handled in a separate case to make sure it is always the first choice
+        for (int i = 3; ImageComponents::defaultComponents[i][0] != NULL; ++i) {
+            std::vector<std::string> row(2);
+            row[0] = ImageComponents::defaultComponents[i][1];
+            const ImageComponents& comps = ImageComponents::getDefaultComponent(ImageComponents::defaultComponents[i][0]);
             std::string channelsStr;
-            const std::vector<std::string>& channels = comps.getChannels();
+            const std::vector<std::string>& channels = comps.getComponentsNames();
             for (std::size_t c = 0; c < channels.size(); ++c) {
                 if (c > 0) {
                     channelsStr += ' ';
@@ -883,7 +881,6 @@ Project::initializeKnobs()
                 channelsStr += channels[c];
             }
             row[1] = channelsStr;
-            row[2] = comps.getChannelsLabel();
             defaultLayers.push_back(row);
         }
     }
@@ -891,13 +888,12 @@ Project::initializeKnobs()
     _imp->defaultLayersList->setDefaultValue(encodedDefaultLayers);
     LayersPage->addKnob(_imp->defaultLayersList);
 
-    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
-    std::vector<ChoiceOption> colorSpaces;
-    // Keep it in sync with ViewerColorSpaceEnum
-    colorSpaces.push_back(ChoiceOption("Linear","",""));
-    colorSpaces.push_back(ChoiceOption("sRGB","",""));
-    colorSpaces.push_back(ChoiceOption("Rec.709","",""));
 
+    boost::shared_ptr<KnobPage> lutPages = AppManager::createKnob<KnobPage>( this, tr("LUT") );
+    std::vector<std::string> colorSpaces;
+    colorSpaces.push_back("sRGB");
+    colorSpaces.push_back("Linear");
+    colorSpaces.push_back("Rec.709");
     _imp->colorSpace8u = AppManager::createKnob<KnobChoice>( this, tr("8-Bit Colorspace") );
     _imp->colorSpace8u->setName("defaultColorSpace8u");
     _imp->colorSpace8u->setHintToolTip( tr("Defines the color-space in which 8-bit images are assumed to be by default.") );
@@ -1083,9 +1079,9 @@ Project::getProjectDefaultFormat(Format *f) const
 {
     assert(f);
     QMutexLocker l(&_imp->formatMutex);
-    ChoiceOption formatSpec = _imp->formatKnob->getActiveEntry();
-    if ( !formatSpec.id.empty() ) {
-        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.id.c_str() ), f);
+    std::string formatSpec = _imp->formatKnob->getActiveEntryText_mt_safe();
+    if ( !formatSpec.empty() ) {
+        ProjectPrivate::generateFormatFromString(QString::fromUtf8( formatSpec.c_str() ), f);
     } else {
         _imp->findFormat(_imp->formatKnob->getValue(), f);
     }
@@ -1137,20 +1133,20 @@ Project::tryAddProjectFormat(const Format & f, bool* existed)
         }
     }
 
-    std::vector<ChoiceOption> entries;
+    std::vector<std::string> entries;
     for (std::list<Format>::iterator it = _imp->builtinFormats.begin(); it != _imp->builtinFormats.end(); ++it) {
         const Format & f = *it;
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        entries.push_back( ChoiceOption(formatStr.toStdString()) );
+        entries.push_back( formatStr.toStdString() );
     }
     for (std::list<Format>::iterator it = _imp->additionalFormats.begin(); it != _imp->additionalFormats.end(); ++it) {
         const Format & f = *it;
         QString formatStr = ProjectPrivate::generateStringFromFormat(f);
-        entries.push_back( ChoiceOption(formatStr.toStdString()) );
+        entries.push_back( formatStr.toStdString() );
     }
     QString formatStr = ProjectPrivate::generateStringFromFormat(f);
     _imp->additionalFormats.push_back(f);
-    _imp->formatKnob->appendChoice( ChoiceOption(formatStr.toStdString()) );
+    _imp->formatKnob->appendChoice( formatStr.toStdString() );
 
     return ( _imp->builtinFormats.size() + _imp->additionalFormats.size() ) - 1;
 }
@@ -1168,7 +1164,7 @@ Project::setProjectDefaultFormat(const Format & f)
 }
 
 void
-Project::getProjectFormatEntries(std::vector<ChoiceOption>* formatStrings,
+Project::getProjectFormatEntries(std::vector<std::string>* formatStrings,
                                  int* currentValue) const
 {
     *formatStrings = _imp->formatKnob->getEntries_mt_safe();
@@ -1238,42 +1234,18 @@ Project::isGPURenderingEnabledInProject() const
     return false;
 }
 
-std::list<ImagePlaneDesc>
+std::vector<ImageComponents>
 Project::getProjectDefaultLayers() const
 {
-    std::list<ImagePlaneDesc> ret;
-    std::list<std::vector<std::string> > table;
+    std::vector<ImageComponents> ret;
+    std::list<std::vector<std::string> > pairs;
 
-    _imp->defaultLayersList->getTable(&table);
-    for (std::list<std::vector<std::string> >::iterator it = table.begin();
-         it != table.end(); ++it) {
-
-        const std::string& planeLabel = (*it)[0];
-        std::string planeID = planeLabel;
-        std::string componentsLabel;
-
-        // The layers knob only propose the user to display the label of the plane desc,
-        // but we need to recover the ID for the built-in planes to ensure compatibility
-        // with the old Nuke multi-plane suite.
-        if (planeID == kNatronColorPlaneLabel) {
-            planeID = kNatronColorPlaneID;
-        } else if (planeID == kNatronBackwardMotionVectorsPlaneLabel) {
-            planeID = kNatronBackwardMotionVectorsPlaneID;
-            componentsLabel = kNatronMotionComponentsLabel;
-        } else if (planeID == kNatronForwardMotionVectorsPlaneLabel) {
-            planeID = kNatronForwardMotionVectorsPlaneID;
-            componentsLabel = kNatronMotionComponentsLabel;
-        } else if (planeID == kNatronDisparityLeftPlaneLabel) {
-            planeID = kNatronDisparityLeftPlaneID;
-            componentsLabel = kNatronDisparityComponentsLabel;
-        } else if (planeID == kNatronDisparityRightPlaneLabel) {
-            planeID = kNatronDisparityRightPlaneID;
-            componentsLabel = kNatronDisparityComponentsLabel;
-        }
-
+    _imp->defaultLayersList->getTable(&pairs);
+    for (std::list<std::vector<std::string> >::iterator it = pairs.begin();
+         it != pairs.end(); ++it) {
         bool found = false;
-        for (std::list<ImagePlaneDesc>::const_iterator it2 = ret.begin(); it2 != ret.end(); ++it2) {
-            if (it2->getPlaneID() == planeID) {
+        for (std::size_t i = 0; i < ret.size(); ++i) {
+            if (ret[i].getLayerName() == (*it)[0]) {
                 found = true;
                 break;
             }
@@ -1286,7 +1258,7 @@ Project::getProjectDefaultLayers() const
             for (int i = 0; i < channels.size(); ++i) {
                 componentsName[i] = channels[i].toStdString();
             }
-            ImagePlaneDesc c( planeID, planeLabel, componentsLabel, componentsName );
+            ImageComponents c( (*it)[0], std::string(), componentsName );
             ret.push_back(c);
         }
     }
@@ -1295,12 +1267,12 @@ Project::getProjectDefaultLayers() const
 }
 
 void
-Project::addProjectDefaultLayer(const ImagePlaneDesc& comps)
+Project::addProjectDefaultLayer(const ImageComponents& comps)
 {
-    const std::vector<std::string>& channels = comps.getChannels();
+    const std::vector<std::string>& channels = comps.getComponentsNames();
     std::vector<std::string> row(2);
 
-    row[0] = comps.getPlaneLabel();
+    row[0] = comps.getLayerName();
     std::string channelsStr;
     for (std::size_t i = 0; i < channels.size(); ++i) {
         channelsStr += channels[i];
@@ -1550,7 +1522,7 @@ Project::onKnobValueChanged(KnobI* knob,
         getNodes_recursive(nodes, true);
 
         // Refresh nodes with a format parameter
-        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2046,7 +2018,7 @@ Project::setOrAddProjectFormat(const Format & frmt,
         NodesList nodes;
         getNodes_recursive(nodes, true);
         int index = _imp->formatKnob->getValue();
-        std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries_mt_safe();
+        std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
         for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
             (*it)->refreshFormatParamChoice(entries, index, false);
         }
@@ -2714,7 +2686,7 @@ Project::onProjectFormatPopulated()
     NodesList nodes;
 
     getNodes_recursive(nodes, true);
-    std::vector<ChoiceOption> entries = _imp->formatKnob->getEntries_mt_safe();
+    std::vector<std::string> entries = _imp->formatKnob->getEntries_mt_safe();
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         (*it)->refreshFormatParamChoice(entries, index, false);
     }

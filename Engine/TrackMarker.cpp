@@ -34,7 +34,7 @@
 #include "Engine/KnobTypes.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
-#include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/Node.h"
 #include "Engine/TrackerContext.h"
 #include "Engine/TimeLine.h"
@@ -220,9 +220,9 @@ TrackMarker::initializeKnobs()
     mmodelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
     mmodelKnob->setName(kTrackerParamMotionModel);
     {
-        std::vector<ChoiceOption> choices;
-        TrackerContext::getMotionModelsAndHelps(true, &choices);
-        mmodelKnob->populateChoices(choices);
+        std::vector<std::string> choices, helps;
+        TrackerContext::getMotionModelsAndHelps(true, &choices, &helps);
+        mmodelKnob->populateChoices(choices, helps);
     }
 
     mmodelKnob->setDefaultValue(defMotionModel_i);
@@ -1108,9 +1108,9 @@ std::pair<boost::shared_ptr<Image>, RectI>
 TrackMarker::getMarkerImage(int time,
                             const RectI& roi) const
 {
-    std::list<ImagePlaneDesc> components;
+    std::list<ImageComponents> components;
 
-    components.push_back( ImagePlaneDesc::getRGBComponents() );
+    components.push_back( ImageComponents::getRGBComponents() );
 
     const unsigned int mipmapLevel = 0;
     assert( !roi.isNull() );
@@ -1156,7 +1156,7 @@ TrackMarker::getMarkerImage(int time,
                                         node->getEffectInstance().get(),
                                         eStorageModeRAM /*returnOpenGlTex*/,
                                         time);
-    std::map<ImagePlaneDesc, ImagePtr> planes;
+    std::map<ImageComponents, ImagePtr> planes;
     EffectInstance::RenderRoIRetCode stat = input->getEffectInstance()->renderRoI(args, &planes);
 
     appPTR->getAppTLS()->cleanupTLSForThread();
@@ -1274,8 +1274,7 @@ TrackMarkerPM::trackMarker(bool forward,
                 double areaPixels = (topRight.x - btmLeft.x) * (topRight.y - btmLeft.y);
                 NodePtr trackerInput = trackerNode->getInput(0);
                 if (trackerInput) {
-                    ImagePlaneDesc comps, paireComps;
-                    trackerInput->getEffectInstance()->getMetadataComponents(-1, &comps, &paireComps);
+                    ImageComponents comps = trackerInput->getEffectInstance()->getComponents(-1);
                     areaPixels *= comps.getNumComponents();
                 }
 

@@ -34,7 +34,7 @@
 #endif
 
 #include "Engine/Format.h"
-#include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/NonKeyParams.h"
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
@@ -47,7 +47,7 @@
 NATRON_NAMESPACE_ENTER;
 
 inline int
-getElementsCountForComponents(ImagePlaneDescEnum comp)
+getElementsCountForComponents(ImageComponentsEnum comp)
 {
     switch (comp) {
     case eImageComponentNone:
@@ -72,7 +72,7 @@ getElementsCountForComponents(ImagePlaneDescEnum comp)
 }
 
 inline bool
-isColorComponents(ImagePlaneDescEnum comp)
+isColorComponents(ImageComponentsEnum comp)
 {
     switch (comp) {
     case eImageComponentNone:
@@ -105,7 +105,7 @@ public:
         : NonKeyParams()
         , _rod()
         , _par(1.)
-        , _components( ImagePlaneDesc::getRGBAComponents() )
+        , _components( ImageComponents::getRGBAComponents() )
         , _bitdepth(eImageBitDepthFloat)
         , _fielding(eImageFieldingOrderNone)
         , _premult(eImagePremultiplicationPremultiplied)
@@ -135,7 +135,7 @@ public:
                 ImageFieldingOrderEnum fielding,
                 ImagePremultiplicationEnum premult,
                 bool isRoDProjectFormat,
-                const ImagePlaneDesc& components,
+                const ImageComponents& components,
                 StorageModeEnum storageMode,
                 U32 textureTarget)
         : NonKeyParams()
@@ -197,7 +197,7 @@ public:
         _bitdepth = bitdepth;
     }
 
-    const ImagePlaneDesc& getComponents() const
+    const ImageComponents& getComponents() const
     {
         return _components;
     }
@@ -263,7 +263,7 @@ private:
 
     RectD _rod;
     double _par;
-    ImagePlaneDesc _components;
+    ImageComponents _components;
     ImageBitDepthEnum _bitdepth;
     ImageFieldingOrderEnum _fielding;
     ImagePremultiplicationEnum _premult;

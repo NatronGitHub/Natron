@@ -640,9 +640,9 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             //Use default
             readerPluginID = appPTR->getReaderPluginIDForFileType(ext);
         } else {
-            std::vector<ChoiceOption> entries = pluginChoiceKnob->getEntries_mt_safe();
+            std::vector<std::string> entries = pluginChoiceKnob->getEntries_mt_safe();
             if ( (pluginChoice_i >= 0) && ( pluginChoice_i < (int)entries.size() ) ) {
-                readerPluginID = entries[pluginChoice_i].id;
+                readerPluginID = entries[pluginChoice_i];
             }
         }
     }
@@ -799,8 +799,9 @@ ReadNodePrivate::refreshPluginSelectorKnob()
 
     assert(fileKnob);
     std::string filePattern = fileKnob->getValue();
-    std::vector<ChoiceOption> entries, help;
-    entries.push_back(ChoiceOption(kPluginSelectorParamEntryDefault, "", _publicInterface->tr("Use the default plug-in chosen from the Preferences to read this file format").toStdString()));
+    std::vector<std::string> entries, help;
+    entries.push_back(kPluginSelectorParamEntryDefault);
+    help.push_back("Use the default plug-in chosen from the Preferences to read this file format");
 
     QString qpattern = QString::fromUtf8( filePattern.c_str() );
     std::string ext = QtCompat::removeFileExtension(qpattern).toLower().toStdString();
@@ -813,17 +814,18 @@ ReadNodePrivate::refreshPluginSelectorKnob()
         // Reverse it so that we sort them by decreasing score order
         for (IOPluginSetForFormat::reverse_iterator it = readersForFormat.rbegin(); it != readersForFormat.rend(); ++it) {
             Plugin* plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
+            entries.push_back( plugin->getPluginID().toStdString() );
             std::stringstream ss;
             ss << "Use " << plugin->getPluginLabel().toStdString() << " version ";
             ss << plugin->getMajorVersion() << "." << plugin->getMinorVersion();
             ss << " to read this file format";
-            entries.push_back( ChoiceOption(plugin->getPluginID().toStdString(), "", ss.str()));
+            help.push_back( ss.str() );
         }
     }
 
     boost::shared_ptr<KnobChoice> pluginChoice = pluginSelectorKnob.lock();
 
-    pluginChoice->populateChoices(entries);
+    pluginChoice->populateChoices(entries, help);
     pluginChoice->blockValueChanges();
     pluginChoice->resetToDefaultValue(0);
     pluginChoice->unblockValueChanges();
@@ -1014,13 +1016,13 @@ ReadNode::isInputMask(int /*inputNb*/) const
 
 void
 ReadNode::addAcceptedComponents(int inputNb,
-                                std::list<ImagePlaneDesc>* comps)
+                                std::list<ImageComponents>* comps)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {
         p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
     } else {
-        comps->push_back( ImagePlaneDesc::getRGBAComponents() );
+        comps->push_back( ImageComponents::getRGBAComponents() );
     }
 }
 
@@ -1209,7 +1211,7 @@ ReadNode::knobChanged(KnobI* k,
         }
     } else if ( k == _imp->pluginSelectorKnob.lock().get() ) {
         boost::shared_ptr<KnobString> pluginIDKnob = _imp->pluginIDStringKnob.lock();
-        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntry().id;
+        std::string entry = _imp->pluginSelectorKnob.lock()->getActiveEntryText_mt_safe();
         if ( entry == pluginIDKnob->getValue() ) {
             return false;
         }
@@ -1307,9 +1309,9 @@ void
 ReadNode::getComponentsNeededAndProduced(double time,
                                          ViewIdx view,
                                          EffectInstance::ComponentsNeededMap* comps,
-                                         double* passThroughTime,
+                                         SequenceTime* passThroughTime,
                                          int* passThroughView,
-                                         int* passThroughInput)
+                                         NodePtr* passThroughInput)
 {
     NodePtr p = getEmbeddedReader();
     if (p) {

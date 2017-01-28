@@ -79,11 +79,11 @@ JoinViewsNode::getInputLabel (int inputNb) const
 
 void
 JoinViewsNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImagePlaneDesc>* comps)
+                                     std::list<ImageComponents>* comps)
 {
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getRGBComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
 }
 
 void

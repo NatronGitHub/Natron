@@ -75,17 +75,14 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
         int inputNb = it->first;
         bool inputIsMask = effect->isInputMask(inputNb);
-        ImagePlaneDesc maskComps;
+        ImageComponents maskComps;
         int channelForAlphaInput;
+        NodePtr maskInput;
         // if (inputIsMask) {
         if ( !effect->isMaskEnabled(inputNb) ) {
             continue;
         }
-
-        std::list<ImagePlaneDesc> availableLayers;
-        effect->getAvailableLayers(time, view, inputNb, &availableLayers);
-
-        channelForAlphaInput = effect->getMaskChannel(inputNb, availableLayers, &maskComps);
+        channelForAlphaInput = effect->getMaskChannel(inputNb, &maskComps, &maskInput);
         // } else {
         //}
 
@@ -105,6 +102,11 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 
         if (!inputEffect) {
             inputEffect = node->getEffectInstance()->getInput(inputNb);
+        }
+
+        //Redirect the mask input
+        if (maskInput) {
+            inputEffect = maskInput->getEffectInstance();
         }
 
         //Never pre-render the mask if we are rendering a node of the rotopaint tree
@@ -185,7 +187,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
         }
 
         ///There cannot be frames needed without components needed.
-        const std::list<ImagePlaneDesc>* compsNeeded = 0;
+        const std::vector<ImageComponents>* compsNeeded = 0;
 
         if (neededComps) {
             EffectInstance::ComponentsNeededMap::const_iterator foundCompsNeeded = neededComps->find(inputNb);
@@ -243,8 +245,18 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
 
                                 ///Render the input image with the bit depth of its preference
                                 ImageBitDepthEnum inputPrefDepth = inputEffect->getBitDepth(-1);
+                                std::list<ImageComponents> componentsToRender;
 
-                                if ( compsNeeded->empty() ) {
+                                assert(compsNeeded);
+                                if (!compsNeeded) {
+                                    continue;
+                                }
+                                for (U32 k = 0; k < compsNeeded->size(); ++k) {
+                                    if (compsNeeded->at(k).getNumComponents() > 0) {
+                                        componentsToRender.push_back( compsNeeded->at(k) );
+                                    }
+                                }
+                                if ( componentsToRender.empty() ) {
                                     continue;
                                 }
 
@@ -257,7 +269,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                 const RenderScale & upstreamScale = useScaleOneInputs ? scaleOne : scale;
                                 roi.toPixelEnclosing(upstreamMipMapLevel, inputPar, &inputRoIPixelCoords);
 
-                                std::map<ImagePlaneDesc, ImagePtr> inputImgs;
+                                std::map<ImageComponents, ImagePtr> inputImgs;
                                 {
                                     boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs;
                                     renderArgs.reset( new EffectInstance::RenderRoIArgs( f, //< time
@@ -267,7 +279,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                                                                          byPassCache,
                                                                                          inputRoIPixelCoords, //< roi in pixel coordinates
                                                                                          RectD(), // < did we precompute any RoD to speed-up the call ?
-                                                                                         *compsNeeded, //< requested comps
+                                                                                         componentsToRender, //< requested comps
                                                                                          inputPrefDepth,
                                                                                          false,
                                                                                          effect.get(),
@@ -280,7 +292,7 @@ EffectInstance::treeRecurseFunctor(bool isRenderFunctor,
                                         return ret;
                                     }
                                 }
-                                for (std::map<ImagePlaneDesc, ImagePtr>::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
+                                for (std::map<ImageComponents, ImagePtr>::iterator it3 = inputImgs.begin(); it3 != inputImgs.end(); ++it3) {
                                     if (inputImagesList && it3->second) {
                                         inputImagesList->push_back(it3->second);
                                     }

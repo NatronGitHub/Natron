@@ -62,17 +62,6 @@ struct IdentityResults
     ViewIdx inputView;
 };
 
-struct ComponentsNeededResults
-{
-    EffectInstance::ComponentsNeededMap neededComps;
-    std::bitset<4> processChannels;
-    bool processAll;
-    std::list<ImagePlaneDesc> passThroughPlanes;
-    int passThroughInputNb;
-    double passThroughTime;
-    ViewIdx passThroughView;
-};
-
 struct CompareActionsCacheKeys
 {
     bool operator() (const ActionKey & lhs,
@@ -101,7 +90,6 @@ struct CompareActionsCacheKeys
 typedef std::map<ActionKey, IdentityResults, CompareActionsCacheKeys> IdentityCacheMap;
 typedef std::map<ActionKey, RectD, CompareActionsCacheKeys> RoDCacheMap;
 typedef std::map<ActionKey, FramesNeededMap, CompareActionsCacheKeys> FramesNeededCacheMap;
-typedef std::map<ActionKey, ComponentsNeededResults, CompareActionsCacheKeys> ComponentsNeededCacheMap;
 
 /**
  * @brief This class stores all results of the following actions:
@@ -125,12 +113,6 @@ public:
 
     void setIdentityResult(U64 hash, double time, ViewIdx view, int inputNbIdentity, ViewIdx inputView, double identityTime);
 
-    bool getComponentsNeededResults(U64 hash, double time, ViewIdx view, EffectInstance::ComponentsNeededMap* neededComps, std::bitset<4> *processChannels, bool *processAll,
-                                    std::list<ImagePlaneDesc> *passThroughPlanes, int* passThroughInputNb, ViewIdx *passThroughView, double* passThroughTime);
-
-    void setComponentsNeededResults(U64 hash, double time, ViewIdx view, const EffectInstance::ComponentsNeededMap& neededComps, std::bitset<4> processChannels,  bool processAll,
-                                    const std::list<ImagePlaneDesc>& passThroughPlanes,int passThroughInputNb, ViewIdx passThroughView, double passThroughTime);
-
     bool getRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, RectD* rod);
 
     void setRoDResult(U64 hash, double time, ViewIdx view, unsigned int mipMapLevel, const RectD & rod);
@@ -153,7 +135,6 @@ private:
         IdentityCacheMap _identityCache;
         RoDCacheMap _rodCache;
         FramesNeededCacheMap _framesNeededCache;
-        ComponentsNeededCacheMap _componentsNeededCache;
 
         ActionsCacheInstance();
     };
@@ -216,6 +197,9 @@ public:
 #endif
 
     ///A cache for components available
+    mutable QMutex componentsAvailableMutex;
+    bool componentsAvailableDirty; /// Set to true when getClipPreferences is called to indicate it must be set again
+    EffectInstance::ComponentsAvailableMap outputComponentsAvailable;
     std::list< boost::weak_ptr<KnobI> > overlaySlaves;
     mutable QMutex metadatasMutex;
     NodeMetadata metadatas;
@@ -327,7 +311,7 @@ public:
         double par;
         ImageBitDepthEnum outputClipPrefDepth;
         boost::shared_ptr<ComponentsNeededMap>  compsNeeded;
-        ImagePlaneDesc outputClipPrefsComps;
+        ImageComponents outputClipPrefsComps;
         bool byPassCache;
         std::bitset<4> processChannels;
         boost::shared_ptr<ImagePlanesToRender> planes;
@@ -350,7 +334,7 @@ public:
                                                   const double par,
                                                   const bool byPassCache,
                                                   const ImageBitDepthEnum outputClipPrefDepth,
-                                                  const ImagePlaneDesc & outputClipPrefsComps,
+                                                  const ImageComponents & outputClipPrefsComps,
                                                   const boost::shared_ptr<ComponentsNeededMap> & compsNeeded,
                                                   const std::bitset<4>& processChannels,
                                                   const boost::shared_ptr<ImagePlanesToRender> & planes);
@@ -387,7 +371,7 @@ public:
                                           const bool byPassCache,
                                           const bool bitmapMarkedForRendering,
                                           const ImageBitDepthEnum outputClipPrefDepth,
-                                          const ImagePlaneDesc & outputClipPrefsComps,
+                                          const ImageComponents & outputClipPrefsComps,
                                           const std::bitset<4>& processChannels,
                                           const boost::shared_ptr<Image> & originalInputImage,
                                           const boost::shared_ptr<Image> & maskImage,

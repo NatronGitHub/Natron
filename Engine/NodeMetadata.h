@@ -33,7 +33,7 @@
 
 
 #include "Global/GlobalDefines.h"
-#include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageComponents.h"
 
 
 NATRON_NAMESPACE_ENTER;
@@ -91,13 +91,9 @@ public:
 
     ImageBitDepthEnum getBitDepth(int inputNb) const;
 
-    void setNComps(int inputNb, int nComps);
+    void setImageComponents(int inputNb, const ImageComponents& components);
 
-    int getNComps(int inputNb) const;
-
-    void setComponentsType(int inputNb,const std::string& componentsType);
-
-    std::string getComponentsType(int inputNb) const;
+    const ImageComponents& getImageComponents(int inputNb) const;
 
     void setOutputFormat(const RectI& format);
 

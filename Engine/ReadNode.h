@@ -105,7 +105,7 @@ public:
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<ImagePlaneDesc>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
     virtual void purgeCaches() OVERRIDE FINAL;
@@ -127,9 +127,9 @@ private:
     virtual void getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
                                                 EffectInstance::ComponentsNeededMap* comps,
-                                                double* passThroughTime,
+                                                SequenceTime* passThroughTime,
                                                 int* passThroughView,
-                                                int* passThroughInput) OVERRIDE;
+                                                NodePtr* passThroughInput) OVERRIDE;
     virtual StatusEnum beginSequenceRender(double first,
                                            double last,
                                            double step,

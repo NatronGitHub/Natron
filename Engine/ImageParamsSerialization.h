@@ -49,8 +49,6 @@ GCC_DIAG_ON(unused-parameter)
 
 #include "Engine/EngineFwd.h"
 
-
-
 // Note: these classes are used for cache serialization and do not have to maintain backward compatibility
 
 namespace boost {
@@ -71,31 +69,12 @@ NATRON_NAMESPACE_ENTER;
 
 template<class Archive>
 void
-ImagePlaneDesc::save(Archive & ar,
-                           const unsigned int /*version*/) const
+ImageComponents::serialize(Archive & ar,
+                           const unsigned int /*version*/)
 {
-    ar &  boost::serialization::make_nvp("PlaneID", _planeID);
-    ar &  boost::serialization::make_nvp("PlaneLabel", _planeLabel);
-    ar &  boost::serialization::make_nvp("ChannelsLabel", _channelsLabel);
-    ar &  boost::serialization::make_nvp("Channels", _channels);
-}
-
-template<class Archive>
-void
-ImagePlaneDesc::load(Archive & ar,
-                     const unsigned int version)
-{
-    if (version < IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID) {
-        ar &  boost::serialization::make_nvp("Layer", _planeID);
-        _planeLabel = _planeID;
-        ar &  boost::serialization::make_nvp("Components", _channels);
-        ar &  boost::serialization::make_nvp("CompName", _channelsLabel);
-    } else {
-        ar &  boost::serialization::make_nvp("PlaneID", _planeID);
-        ar &  boost::serialization::make_nvp("PlaneLabel", _planeLabel);
-        ar &  boost::serialization::make_nvp("ChannelsLabel", _channelsLabel);
-        ar &  boost::serialization::make_nvp("Channels", _channels);
-    }
+    ar &  boost::serialization::make_nvp("Layer", _layerName);
+    ar &  boost::serialization::make_nvp("Components", _componentNames);
+    ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
 }
 
 template<class Archive>

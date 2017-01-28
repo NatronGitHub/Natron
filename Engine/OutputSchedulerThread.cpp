@@ -2272,18 +2272,17 @@ private:
 
                     return;
                 }
-                std::list<ImagePlaneDesc> components;
+                std::list<ImageComponents> components;
                 ImageBitDepthEnum imageDepth;
 
                 //Use needed components to figure out what we need to render
                 EffectInstance::ComponentsNeededMap neededComps;
-                std::list<ImagePlaneDesc> passThroughPlanes;
                 bool processAll;
-                double ptTime;
+                SequenceTime ptTime;
                 int ptView;
                 std::bitset<4> processChannels;
-                int ptInput;
-                activeInputToRender->getComponentsNeededAndProduced_public(activeInputToRenderHash,time, viewsToRender[view], &neededComps, &passThroughPlanes, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
+                NodePtr ptInput;
+                activeInputToRender->getComponentsNeededAndProduced_public(true, true, time, viewsToRender[view], &neededComps, &processAll, &ptTime, &ptView, &processChannels, &ptInput);
 
 
                 //Retrieve bitdepth only
@@ -2292,8 +2291,8 @@ private:
 
                 EffectInstance::ComponentsNeededMap::iterator foundOutput = neededComps.find(-1);
                 if ( foundOutput != neededComps.end() ) {
-                    for (std::list<ImagePlaneDesc>::const_iterator it2 = foundOutput->second.begin(); it2 != foundOutput->second.end(); ++it2) {
-                        components.push_back(*it2);
+                    for (std::size_t j = 0; j < foundOutput->second.size(); ++j) {
+                        components.push_back(foundOutput->second[j]);
                     }
                 }
                 RectI renderWindow;
@@ -2329,7 +2328,7 @@ private:
                     frameRenderArgs.updateNodesRequest(request);
                 }
                 RenderingFlagSetter flagIsRendering( activeInputToRender->getNode() );
-                std::map<ImagePlaneDesc, ImagePtr> planes;
+                std::map<ImageComponents, ImagePtr> planes;
                 boost::scoped_ptr<EffectInstance::RenderRoIArgs> renderArgs( new EffectInstance::RenderRoIArgs(time, //< the time at which to render
                                                                                                                scale, //< the scale at which to render
                                                                                                                mipMapLevel, //< the mipmap level (redundant with the scale)
@@ -2357,7 +2356,7 @@ private:
 
                 ///If we need sequential rendering, pass the image to the output scheduler that will ensure the sequential ordering
                 /*if (!renderDirectly) {
-                    for (std::map<ImagePlaneDesc,ImagePtr>::iterator it = planes.begin(); it != planes.end(); ++it) {
+                    for (std::map<ImageComponents,ImagePtr>::iterator it = planes.begin(); it != planes.end(); ++it) {
                         _imp->scheduler->appendToBuffer(time, viewsToRender[view], stats, boost::dynamic_pointer_cast<BufferableObject>(it->second));
                     }
                    } else {*/
@@ -2410,16 +2409,8 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
     bool isProjectFormat;
     RectD rod;
     RectI roi;
-    std::list<ImagePlaneDesc> components;
-
-    {
-        ImagePlaneDesc metadataPlane, metadataPairedPlane;
-        effect->getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
-        if (metadataPlane.getNumComponents() > 0) {
-            components.push_back(metadataPlane);
-        }
-    }
-
+    std::list<ImageComponents> components;
+    components.push_back( effect->getComponents(-1) );
     ImageBitDepthEnum imageDepth = effect->getBitDepth(-1);
     const double par = effect->getAspectRatio(-1);
     const bool isRenderDueToRenderInteraction = false;
@@ -2467,7 +2458,7 @@ DefaultScheduler::processFrame(const BufferedFrames& frames)
                                                                                                        frame.time,
                                                                                                        inputImages) );
         try {
-            std::map<ImagePlaneDesc, ImagePtr> planes;
+            std::map<ImageComponents, ImagePtr> planes;
             EffectInstance::RenderRoIRetCode retCode;
             retCode = effect->renderRoI(*renderArgs, &planes);
             if (retCode != EffectInstance::eRenderRoIRetCodeOk) {

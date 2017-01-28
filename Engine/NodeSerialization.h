@@ -230,7 +230,7 @@ public:
         return _children;
     }
 
-    const std::list<ImagePlaneDesc>& getUserCreatedComponents() const
+    const std::list<ImageComponents>& getUserCreatedComponents() const
     {
         return _userComponents;
     }
@@ -261,7 +261,7 @@ private:
     std::list< boost::shared_ptr<NodeSerialization> > _children;
     std::string _pythonModule;
     unsigned int _pythonModuleVersion;
-    std::list<ImagePlaneDesc> _userComponents;
+    std::list<ImageComponents> _userComponents;
 
     friend class ::boost::serialization::access;
     template<class Archive>

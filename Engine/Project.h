@@ -152,7 +152,7 @@ public:
 
     bool getProjectFormatAtIndex(int index, Format* f) const;
 
-    void getProjectFormatEntries(std::vector<ChoiceOption>* formatStrings, int* currentValue) const;
+    void getProjectFormatEntries(std::vector<std::string>* formatStrings, int* currentValue) const;
 
     bool getFormatNameFromRect(const RectI& rect, double par, std::string* name) const;
 
@@ -169,9 +169,9 @@ public:
     bool isGPURenderingEnabledInProject() const;
 
     std::vector<std::string> getProjectDefaultLayerNames() const;
-    std::list<ImagePlaneDesc> getProjectDefaultLayers() const;
+    std::vector<ImageComponents> getProjectDefaultLayers() const;
 
-    void addProjectDefaultLayer(const ImagePlaneDesc& comps);
+    void addProjectDefaultLayer(const ImageComponents& comps);
 
     void setOrAddProjectFormat(const Format & frmt, bool skipAdd = false);
 

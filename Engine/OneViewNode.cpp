@@ -89,11 +89,11 @@ OneViewNode::getInputLabel (int /*inputNb*/) const
 
 void
 OneViewNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImagePlaneDesc>* comps)
+                                   std::list<ImageComponents>* comps)
 {
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
+    comps->push_back( ImageComponents::getRGBComponents() );
 }
 
 void
@@ -117,11 +117,9 @@ OneViewNode::initializeKnobs()
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
-    std::vector<ChoiceOption> options(views.size());
-    for (std::size_t i = 0; i < views.size(); ++i) {
-        options[i].id = views[i];
-    }
-    viewKnob->populateChoices(options);
+    std::string currentView = viewKnob->getActiveEntryText_mt_safe();
+    viewKnob->populateChoices(views);
+
 
     _imp->viewKnob = viewKnob;
 }
@@ -166,17 +164,13 @@ OneViewNode::onProjectViewsChanged()
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     boost::shared_ptr<KnobChoice> viewKnob = _imp->viewKnob.lock();
-    ChoiceOption currentView = viewKnob->getActiveEntry();
+    std::string currentView = viewKnob->getActiveEntryText_mt_safe();
 
-    std::vector<ChoiceOption> options(views.size());
-    for (std::size_t i = 0; i < views.size(); ++i) {
-        options[i].id = views[i];
-    }
-    viewKnob->populateChoices(options);
+    viewKnob->populateChoices(views);
 
     bool foundView = false;
     for (std::size_t i = 0; i < views.size(); ++i) {
-        if (views[i] == currentView.id) {
+        if (views[i] == currentView) {
             foundView = true;
             viewKnob->setValue(i);
             break;

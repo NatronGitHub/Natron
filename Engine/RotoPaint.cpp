@@ -166,14 +166,14 @@ RotoPaint::isInputMask(int inputNb) const
 
 void
 RotoPaint::addAcceptedComponents(int inputNb,
-                                 std::list<ImagePlaneDesc>* comps)
+                                 std::list<ImageComponents>* comps)
 {
     if (inputNb != ROTOPAINT_MASK_INPUT_INDEX) {
-        comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-        comps->push_back( ImagePlaneDesc::getRGBComponents() );
-        comps->push_back( ImagePlaneDesc::getXYComponents() );
+        comps->push_back( ImageComponents::getRGBAComponents() );
+        comps->push_back( ImageComponents::getRGBComponents() );
+        comps->push_back( ImageComponents::getXYComponents() );
     }
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
 }
 
 void
@@ -377,9 +377,9 @@ RotoPaint::initializeKnobs()
     blendingModes->setEvaluateOnChange(false);
     blendingModes->setSecretByDefault(true);
     {
-        std::vector<ChoiceOption> choices;
-        Merge::getOperatorStrings(&choices);
-        blendingModes->populateChoices(choices);
+        std::vector<std::string> choices, helps;
+        Merge::getOperatorStrings(&choices, &helps);
+        blendingModes->populateChoices(choices, helps);
     }
     blendingModes->setDefaultValue( (int)eMergeOver );
     generalPage->addKnob(blendingModes);
@@ -508,10 +508,12 @@ RotoPaint::initializeKnobs()
     timeOffsetMode->setEvaluateOnChange(false);
     timeOffsetMode->setSecretByDefault(true);
     {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("Relative", "", tr("The time offset is a frame number in the source").toStdString()));
-        choices.push_back(ChoiceOption("Absolute", "", tr("The time offset is a relative amount of frames relative to the current frame").toStdString()));
-        timeOffsetMode->populateChoices(choices);
+        std::vector<std::string> choices, helps;
+        choices.push_back("Relative");
+        helps.push_back("The time offset is a frame number in the source");
+        choices.push_back("Absolute");
+        helps.push_back("The time offset is a relative amount of frames relative to the current frame");
+        timeOffsetMode->populateChoices(choices, helps);
     }
     timeOffsetMode->setDefaultValue(0);
     generalPage->addKnob(timeOffsetMode);
@@ -523,12 +525,12 @@ RotoPaint::initializeKnobs()
     sourceType->setEvaluateOnChange(false);
     sourceType->setSecretByDefault(true);
     {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("foreground", "", ""));
-        choices.push_back(ChoiceOption("background", "", ""));
+        std::vector<std::string> choices, helps;
+        choices.push_back("foreground");
+        choices.push_back("background");
         for (int i = 1; i < 10; ++i) {
-            QString str = QString::fromUtf8("background") + QString::number(i + 1);
-            choices.push_back( ChoiceOption(str.toStdString(), "", ""));
+            QString str = tr("background") + QString::number(i + 1);
+            choices.push_back( str.toStdString() );
         }
         sourceType->populateChoices(choices);
     }
@@ -1334,8 +1336,7 @@ RotoPaint::refreshExtraStateAfterTimeChanged(bool isPlayback,
 StatusEnum
 RotoPaint::getPreferredMetaDatas(NodeMetadata& metadata)
 {
-    metadata.setNComps( -1, 4 );
-    metadata.setComponentsType(-1, kNatronColorPlaneID);
+    metadata.setImageComponents( -1, ImageComponents::getRGBAComponents() );
     /*boost::shared_ptr<KnobBool> premultKnob = _imp->premultKnob.lock();
        assert(premultKnob);
        bool premultiply = premultKnob->getValue();
@@ -1467,9 +1468,9 @@ RotoPaint::render(const RenderActionArgs& args)
     boost::shared_ptr<RotoContext> roto = getNode()->getRotoContext();
     std::list<boost::shared_ptr<RotoDrawableItem> > items = roto->getCurvesByRenderOrder(false /*onlyActiveItems*/);
     ImageBitDepthEnum bgDepth = getBitDepth(0);
-    std::list<ImagePlaneDesc> neededComps;
+    std::list<ImageComponents> neededComps;
 
-    for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
          plane != args.outputPlanes.end(); ++plane) {
         neededComps.push_back(plane->first);
     }
@@ -1482,7 +1483,7 @@ RotoPaint::render(const RenderActionArgs& args)
         RectI bgImgRoI;
         ImagePtr bgImg = getImage(0, args.time, args.mappedScale, args.view, 0, 0, false /*mapToClipPrefs*/, false /*dontUpscale*/, eStorageModeRAM /*returnOpenGLtexture*/, 0 /*textureDepth*/, &bgImgRoI);
 
-        for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
             if (bgImg) {
                 if ( bgImg->getComponents() != plane->second->getComponents() ) {
@@ -1495,7 +1496,7 @@ RotoPaint::render(const RenderActionArgs& args)
                 }
 
 
-                if ( premultiply && ( plane->second->getComponents() == ImagePlaneDesc::getRGBAComponents() ) ) {
+                if ( premultiply && ( plane->second->getComponents() == ImageComponents::getRGBAComponents() ) ) {
                     plane->second->premultImage(args.roi);
                 }
             } else {
@@ -1531,14 +1532,14 @@ RotoPaint::render(const RenderActionArgs& args)
                                     this,
                                     eStorageModeRAM /*returnOpenGLtex*/,
                                     args.time);
-        std::map<ImagePlaneDesc, ImagePtr> rotoPaintImages;
+        std::map<ImageComponents, ImagePtr> rotoPaintImages;
         RenderRoIRetCode code = bottomMerge->getEffectInstance()->renderRoI(rotoPaintArgs, &rotoPaintImages);
         if (code == eRenderRoIRetCodeFailed) {
             return eStatusFailed;
         } else if (code == eRenderRoIRetCodeAborted) {
             return eStatusOK;
         } else if ( rotoPaintImages.empty() ) {
-            for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+            for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
                  plane != args.outputPlanes.end(); ++plane) {
                 plane->second->fillZero(args.roi);
             }
@@ -1552,9 +1553,9 @@ RotoPaint::render(const RenderActionArgs& args)
         ImagePremultiplicationEnum outputPremult = getPremult();
         bool triedGetImage = false;
 
-        for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
+        for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator plane = args.outputPlanes.begin();
              plane != args.outputPlanes.end(); ++plane) {
-            std::map<ImagePlaneDesc, ImagePtr>::iterator rotoImagesIt = rotoPaintImages.find(plane->first);
+            std::map<ImageComponents, ImagePtr>::iterator rotoImagesIt = rotoPaintImages.find(plane->first);
             assert( rotoImagesIt != rotoPaintImages.end() );
             if ( rotoImagesIt == rotoPaintImages.end() ) {
                 continue;
@@ -1638,7 +1639,7 @@ RotoPaint::render(const RenderActionArgs& args)
                 plane->second->pasteFrom(*(rotoImagesIt->second), args.roi, false);
             }
             plane->second->copyUnProcessedChannels(args.roi, outputPremult, bgImg ? bgImg->getPremultiplication() : eImagePremultiplicationOpaque, copyChannels, bgImg, false);
-            if ( premultiply && ( plane->second->getComponents() == ImagePlaneDesc::getRGBAComponents() ) ) {
+            if ( premultiply && ( plane->second->getComponents() == ImageComponents::getRGBAComponents() ) ) {
                 plane->second->premultImage(args.roi);
             }
         }

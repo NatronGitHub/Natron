@@ -35,7 +35,6 @@
 #include "Engine/NodeGroup.h"
 #include "Engine/PyRoto.h"
 #include "Engine/PyTracker.h"
-#include "Engine/TimeLine.h"
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -55,19 +54,19 @@ ImageLayer::ImageLayer(const QString& layerName,
     for (QStringList::const_iterator it = componentsName.begin(); it != componentsName.end(); ++it, ++i) {
         channels[i] = it->toStdString();
     }
-    _comps.reset( new ImagePlaneDesc(layerName.toStdString(), layerName.toStdString(), componentsPrettyName.toStdString(), channels) );
+    _comps.reset( new ImageComponents(layerName.toStdString(), componentsPrettyName.toStdString(), channels) );
 }
 
-ImageLayer::ImageLayer(const ImagePlaneDesc& comps)
-    : _layerName( QString::fromUtf8( comps.getPlaneLabel().c_str() ) )
-    , _componentsPrettyName( QString::fromUtf8( comps.getChannelsLabel().c_str() ) )
+ImageLayer::ImageLayer(const ImageComponents& comps)
+    : _layerName( QString::fromUtf8( comps.getLayerName().c_str() ) )
+    , _componentsPrettyName( QString::fromUtf8( comps.getComponentsGlobalName().c_str() ) )
 {
-    const std::vector<std::string>& channels = comps.getChannels();
+    const std::vector<std::string>& channels = comps.getComponentsNames();
 
     for (std::size_t i = 0; i < channels.size(); ++i) {
         _componentsName.push_back( QString::fromUtf8( channels[i].c_str() ) );
     }
-    _comps.reset( new ImagePlaneDesc(comps) );
+    _comps.reset( new ImageComponents(comps) );
 }
 
 int
@@ -75,8 +74,8 @@ ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
 
-    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getChannelsLabel().c_str() ) );
-    const std::vector<std::string>& comps = layer._comps->getChannels();
+    Hash64_appendQString( &h, QString::fromUtf8( layer._comps->getLayerName().c_str() ) );
+    const std::vector<std::string>& comps = layer._comps->getComponentsNames();
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64_appendQString( &h, QString::fromUtf8( comps[i].c_str() ) );
     }
@@ -132,49 +131,49 @@ ImageLayer::operator<(const ImageLayer& other) const
 ImageLayer
 ImageLayer::getNoneComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getNoneComponents() );
+    return ImageLayer( ImageComponents::getNoneComponents() );
 }
 
 ImageLayer
 ImageLayer::getRGBAComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getRGBAComponents() );
+    return ImageLayer( ImageComponents::getRGBAComponents() );
 }
 
 ImageLayer
 ImageLayer::getRGBComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getRGBComponents() );
+    return ImageLayer( ImageComponents::getRGBComponents() );
 }
 
 ImageLayer
 ImageLayer::getAlphaComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getAlphaComponents() );
+    return ImageLayer( ImageComponents::getAlphaComponents() );
 }
 
 ImageLayer
 ImageLayer::getBackwardMotionComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getBackwardMotionComponents() );
+    return ImageLayer( ImageComponents::getBackwardMotionComponents() );
 }
 
 ImageLayer
 ImageLayer::getForwardMotionComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getForwardMotionComponents() );
+    return ImageLayer( ImageComponents::getForwardMotionComponents() );
 }
 
 ImageLayer
 ImageLayer::getDisparityLeftComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getDisparityLeftComponents() );
+    return ImageLayer( ImageComponents::getDisparityLeftComponents() );
 }
 
 ImageLayer
 ImageLayer::getDisparityRightComponents()
 {
-    return ImageLayer( ImagePlaneDesc::getDisparityRightComponents() );
+    return ImageLayer( ImageComponents::getDisparityRightComponents() );
 }
 
 UserParamHolder::UserParamHolder()
@@ -978,27 +977,29 @@ Effect::addUserPlane(const QString& planeName,
         compsGlobal.append(c);
         chans[i] = c;
     }
-    ImagePlaneDesc comp(planeName.toStdString(),planeName.toStdString(), compsGlobal, chans);
+    ImageComponents comp(planeName.toStdString(), compsGlobal, chans);
 
     return getInternalNode()->addUserComponents(comp);
 }
 
-std::list<ImageLayer>
-Effect::getAvailableLayers(int inputNb) const
+std::map<ImageLayer, Effect*>
+Effect::getAvailableLayers() const
 {
-    std::list<ImageLayer> ret;
+    std::map<ImageLayer, Effect*> ret;
 
     if ( !getInternalNode() ) {
         return ret;
     }
-    double time(getInternalNode()->getApp()->getTimeLine()->currentFrame());
-
-    std::list<ImagePlaneDesc> availComps;
-    getInternalNode()->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, &availComps);
-    for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
-        ret.push_back(ImageLayer(*it));
+    EffectInstance::ComponentsAvailableMap availComps;
+    getInternalNode()->getEffectInstance()->getComponentsAvailable(true, true, getInternalNode()->getEffectInstance()->getCurrentTime(), &availComps);
+    for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+        NodePtr node = it->second.lock();
+        if (node) {
+            Effect* effect = new Effect(node);
+            ImageLayer layer(it->first);
+            ret.insert( std::make_pair(layer, effect) );
+        }
     }
-
 
     return ret;
 }

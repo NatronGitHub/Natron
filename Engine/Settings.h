@@ -34,7 +34,6 @@
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
-#include "Engine/ChoiceOption.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -217,7 +216,7 @@ public:
     std::string getHostName() const;
     const std::string& getKnownHostName(KnownHostNameEnum e) const
     {
-        return _knownHostNames[(int)e].id;
+        return _knownHostNames[(int)e];
     }
 
     std::string getDefaultLayoutFile() const;
@@ -621,7 +620,7 @@ private:
     boost::shared_ptr<KnobColor> _defaultMergeGroupColor;
     boost::shared_ptr<KnobColor> _defaultViewsGroupColor;
     boost::shared_ptr<KnobColor> _defaultDeepGroupColor;
-    std::vector<ChoiceOption> _knownHostNames;
+    std::vector<std::string> _knownHostNames;
     bool _restoringSettings;
     bool _ocioRestored;
     bool _settingsExisted;

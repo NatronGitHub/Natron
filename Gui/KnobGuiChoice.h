@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Singleton.h"
 #include "Engine/Knob.h"
-#include "Engine/ImagePlaneDesc.h"
+#include "Engine/ImageComponents.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/CurveSelection.h"
@@ -116,14 +116,17 @@ public Q_SLOTS:
 
     void onEntriesPopulated();
 
-    void onEntryAppended();
+    void onEntryAppended(const QString& entry, const QString& help);
 
     void onEntriesReset();
 
     void onItemNewSelected();
 
+    void onRefreshMenuActionTriggered();
+
 private:
 
+    virtual void addRightClickMenuEntries(QMenu* menu) OVERRIDE FINAL;
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void _hide() OVERRIDE FINAL;
     virtual void _show() OVERRIDE FINAL;

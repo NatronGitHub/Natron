@@ -61,11 +61,11 @@ DiskCacheNode::~DiskCacheNode()
 
 void
 DiskCacheNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImagePlaneDesc>* comps)
+                                     std::list<ImageComponents>* comps)
 {
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getRGBComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
 }
 
 void
@@ -91,13 +91,11 @@ DiskCacheNode::initializeKnobs()
 
     frameRange->setName("frameRange");
     frameRange->setAnimationEnabled(false);
-    {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("Input frame range", "", ""));
-        choices.push_back(ChoiceOption("Project frame range", "", ""));
-        choices.push_back(ChoiceOption("Manual","", ""));
-        frameRange->populateChoices(choices);
-    }
+    std::vector<std::string> choices;
+    choices.push_back("Input frame range");
+    choices.push_back("Project frame range");
+    choices.push_back("Manual");
+    frameRange->populateChoices(choices);
     frameRange->setEvaluateOnChange(false);
     frameRange->setDefaultValue(0);
     page->addKnob(frameRange);
@@ -211,9 +209,9 @@ DiskCacheNode::render(const RenderActionArgs& args)
     }
 
 
-    const std::pair<ImagePlaneDesc, ImagePtr>& output = args.outputPlanes.front();
+    const std::pair<ImageComponents, ImagePtr>& output = args.outputPlanes.front();
 
-    for (std::list<std::pair<ImagePlaneDesc, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
+    for (std::list<std::pair<ImageComponents, boost::shared_ptr<Image> > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
         RectI roiPixel;
         ImagePtr srcImg = getImage(0, args.time, args.originalScale, args.view, NULL, &it->first, false /*mapToClipPrefs*/, true /*dontUpscale*/, eStorageModeRAM /*useOpenGL*/, 0 /*textureDepth*/,  &roiPixel);
         if (!srcImg) {

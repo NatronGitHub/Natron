@@ -43,7 +43,6 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/Knob.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/ChoiceOption.h"
 
 #define kFontSizeTag "<font size=\""
 #define kFontColorTag "color=\""
@@ -451,6 +450,20 @@ private:
 };
 
 /******************************KnobChoice**************************************/
+class KnobChoiceMergeEntriesData
+{
+public:
+
+    KnobChoiceMergeEntriesData()
+    {
+    }
+
+    virtual void clear() = 0;
+
+    virtual ~KnobChoiceMergeEntriesData()
+    {
+    }
+};
 
 class KnobChoice
     : public QObject, public Knob<int>
@@ -461,7 +474,12 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
-
+    // Used in populateChoices() to add new entries in the menu. If not passed the entries will be completly replaced.
+    // It should return wether a equals b. The userData are the one passed to populateChoice and can be used to store temporary
+    // potentially costly operations.
+    // The clear() function will be called right before attempting to compare the first member of the entries to merge to b.
+    // Then throughout the cycling of the internal entries, b will remain at the same value and temporary data can be used.
+    typedef bool (*MergeMenuEqualityFunctor)(const std::string& a, const std::string& b, KnobChoiceMergeEntriesData* userData);
     static KnobHelper * BuildKnob(KnobHolder* holder,
                                   const std::string &label,
                                   int dimension,
@@ -496,18 +514,24 @@ public:
      *
      * @returns true if something changed, false otherwise.
      **/
-    bool populateChoices(const std::vector<ChoiceOption> &entries);
+    bool populateChoices(const std::vector<std::string> &entries,
+                         const std::vector<std::string> &entriesHelp = std::vector<std::string>(),
+                         MergeMenuEqualityFunctor mergingFunctor = 0,
+                         KnobChoiceMergeEntriesData* mergingData = 0,
+                         bool restoreOldChoice = true);
 
     void resetChoices();
 
-    void appendChoice( const ChoiceOption& entry);
+    void appendChoice( const std::string& entry, const std::string& help = std::string() );
+
+    void refreshMenu();
 
     bool isActiveEntryPresentInEntries() const;
 
-    std::vector<ChoiceOption> getEntries_mt_safe() const;
-    ChoiceOption getEntry(int v) const;
-    ChoiceOption getActiveEntry();
-    void setActiveEntry(const ChoiceOption& opt);
+    std::vector<std::string> getEntries_mt_safe() const;
+    const std::string& getEntry(int v) const;
+    std::vector<std::string> getEntriesHelp_mt_safe() const;
+    std::string getActiveEntryText_mt_safe();
 
     int getNumEntries() const;
 
@@ -522,7 +546,7 @@ public:
     static const std::string & typeNameStatic();
     std::string getHintToolTipFull() const;
 
-    static int choiceMatch(const std::string& choice, const std::vector<ChoiceOption>& entries, ChoiceOption* matchedEntry);
+    static int choiceMatch(const std::string& choice, const std::vector<std::string>& entries, std::string* matchedEntry);
     
     void choiceRestoration(KnobChoice* knob, const ChoiceExtraData* data);
 
@@ -544,31 +568,32 @@ public:
     }
 
     /// set the KnobChoice value from the label
-    ValueChangedReturnCodeEnum setValueFromID(const std::string & value,
+    ValueChangedReturnCodeEnum setValueFromLabel(const std::string & value,
                                                  int dimension,
                                                  bool turnOffAutoKeying = false);
 
     /// set the KnobChoice default value from the label
-    void setDefaultValueFromID(const std::string & value, int dimension = 0);
-    void setDefaultValueFromIDWithoutApplying(const std::string & value, int dimension = 0);
+    void setDefaultValueFromLabel(const std::string & value, int dimension = 0);
+    void setDefaultValueFromLabelWithoutApplying(const std::string & value, int dimension = 0);
 
 public Q_SLOTS:
 
     void onOriginalKnobPopulated();
     void onOriginalKnobEntriesReset();
-    void onOriginalKnobEntryAppend();
+    void onOriginalKnobEntryAppend(const QString& text, const QString& help);
 
 Q_SIGNALS:
 
     void populated();
     void entriesReset();
-    void entryAppended();
+    void entryAppended(QString, QString);
 
 private:
 
     virtual void onKnobAboutToAlias(const KnobPtr& slave) OVERRIDE FINAL;
 
-    void findAndSetOldChoice();
+    void findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor = 0,
+                             KnobChoiceMergeEntriesData* mergingData = 0);
 
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
@@ -581,8 +606,9 @@ private:
 private:
 
     mutable QMutex _entriesMutex;
-    std::vector<ChoiceOption> _entries;
-    ChoiceOption _currentEntry; // protected by _entriesMutex
+    std::vector<std::string> _newEntries, _mergedEntries;
+    std::vector<std::string> _newEntriesHelp, _mergedEntriesHelp;
+    std::string _currentEntryLabel; // protected by _entriesMutex
     bool _addNewChoice;
     static const std::string _typeNameStr;
     bool _isCascading;

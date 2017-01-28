@@ -99,7 +99,7 @@ public:
                               const std::list<std::pair<Point, double> >& points,
                               unsigned int mipmapLevel,
                               double par,
-                              const ImagePlaneDesc& components,
+                              const ImageComponents& components,
                               ImageBitDepthEnum depth,
                               double distToNext,
                               boost::shared_ptr<Image> *wholeStrokeImage);

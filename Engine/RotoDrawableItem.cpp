@@ -114,11 +114,12 @@ RotoDrawableItem::RotoDrawableItem(const boost::shared_ptr<RotoContext>& context
     QObject::connect( _imp->color->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this, SIGNAL(shapeColorChanged()) );
     QObject::connect( _imp->compOperator->getSignalSlotHandler().get(), SIGNAL(valueChanged(ViewSpec,int,int)), this,
                       SIGNAL(compositingOperatorChanged(ViewSpec,int,int)) );
-    std::vector<ChoiceOption> operators;
-    Merge::getOperatorStrings(&operators);
+    std::vector<std::string> operators;
+    std::vector<std::string> tooltips;
+    Merge::getOperatorStrings(&operators, &tooltips);
 
-    _imp->compOperator->populateChoices(operators);
-    _imp->compOperator->setDefaultValueFromID( Merge::getOperatorString(eMergeCopy) );
+    _imp->compOperator->populateChoices(operators, tooltips);
+    _imp->compOperator->setDefaultValueFromLabel( Merge::getOperatorString(eMergeCopy) );
 }
 
 RotoDrawableItem::~RotoDrawableItem()
@@ -303,9 +304,9 @@ RotoDrawableItem::createNodes(bool connectNodes)
         op = eMergeCopy;
     }
     if (mergeOp) {
-        mergeOp->setValueFromID(Merge::getOperatorString(op), 0);
+        mergeOp->setValueFromLabel(Merge::getOperatorString(op), 0);
     }
-    compOp->setValueFromID(Merge::getOperatorString(op), 0);
+    compOp->setValueFromLabel(Merge::getOperatorString(op), 0);
 
     if (isStroke) {
         if (type == eRotoStrokeTypeBlur) {
@@ -525,7 +526,7 @@ RotoDrawableItem::rotoKnobChanged(const KnobPtr& knob,
         KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
         KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
         if (mergeOp) {
-            mergeOp->setValueFromID(compKnob->getEntry( compKnob->getValue() ).id, 0);
+            mergeOp->setValueFromLabel(compKnob->getEntry( compKnob->getValue() ), 0);
         }
 
         ///Since the compositing operator might have changed, we may have to change the rotopaint tree layout
@@ -953,7 +954,7 @@ RotoDrawableItem::load(const RotoItemSerialization &obj)
     KnobPtr mergeOperatorKnob = _imp->mergeNode->getKnobByName(kMergeOFXParamOperation);
     KnobChoice* mergeOp = dynamic_cast<KnobChoice*>( mergeOperatorKnob.get() );
     if (mergeOp) {
-        mergeOp->setValueFromID(compKnob->getEntry( compKnob->getValue() ).id, 0);
+        mergeOp->setValueFromLabel(compKnob->getEntry( compKnob->getValue() ), 0);
     }
 
     if ( (type == eRotoStrokeTypeClone) || (type == eRotoStrokeTypeReveal) ) {

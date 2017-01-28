@@ -699,7 +699,7 @@ Image::Image(const ImageKey & key,
 /*This constructor can be used to allocate a local Image. The deallocation should
    then be handled by the user. Note that no view number is passed in parameter
    as it is not needed.*/
-Image::Image(const ImagePlaneDesc& components,
+Image::Image(const ImageComponents& components,
              const RectD & regionOfDefinition, //!< rod in canonical coordinates
              const RectI & bounds, //!< bounds in pixel coordinates
              unsigned int mipMapLevel,
@@ -789,7 +789,7 @@ Image::makeParams(const RectD & rod,
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  const ImagePlaneDesc& components,
+                  const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
@@ -819,7 +819,7 @@ Image::makeParams(const RectD & rod,    // the image rod in canonical coordinate
                   const double par,
                   unsigned int mipMapLevel,
                   bool isRoDProjectFormat,
-                  const ImagePlaneDesc& components,
+                  const ImageComponents& components,
                   ImageBitDepthEnum bitdepth,
                   ImagePremultiplicationEnum premult,
                   ImageFieldingOrderEnum fielding,
@@ -1228,7 +1228,7 @@ Image::pasteFrom(const Image & src,
         assert(gpuData);
         if (gpuData) {
             // update data directly on the mapped buffer
-            ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
+            ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), src.getRoD(), roi, 0, src.getPixelAspectRatio(), src.getBitDepth(), src.getPremultiplication(), src.getFieldingOrder(), false, eStorageModeRAM) );
             tmpImg->pasteFrom(src, roi);
 
             Image::ReadAccess racc(tmpImg ? tmpImg.get() : this);
@@ -1291,7 +1291,7 @@ Image::pasteFrom(const Image & src,
         glFinish();
         glCheckError();
         // Read to a temporary RGBA buffer then conver to the image which may not be RGBA
-        ImagePtr tmpImg( new Image( ImagePlaneDesc::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
+        ImagePtr tmpImg( new Image( ImageComponents::getRGBAComponents(), getRoD(), roi, 0, getPixelAspectRatio(), getBitDepth(), getPremultiplication(), getFieldingOrder(), false, eStorageModeRAM) );
 
         {
             Image::WriteAccess tmpAcc(tmpImg ? tmpImg.get() : this);
@@ -1617,8 +1617,8 @@ Image::getComponentsCount() const
 }
 
 bool
-Image::hasEnoughDataToConvert(ImagePlaneDescEnum from,
-                              ImagePlaneDescEnum to)
+Image::hasEnoughDataToConvert(ImageComponentsEnum from,
+                              ImageComponentsEnum to)
 {
     switch (from) {
     case eImageComponentRGBA:
@@ -1666,10 +1666,10 @@ Image::hasEnoughDataToConvert(ImagePlaneDescEnum from,
 }
 
 std::string
-Image::getFormatString(const ImagePlaneDesc& comps,
+Image::getFormatString(const ImageComponents& comps,
                        ImageBitDepthEnum depth)
 {
-    std::string s = comps.getPlaneLabel() + '.' + comps.getChannelsLabel();
+    std::string s = comps.getLayerName() + '.' + comps.getComponentsGlobalName();
 
     s.append( getDepthString(depth) );
 

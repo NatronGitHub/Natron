@@ -201,7 +201,7 @@ public:
 
     void resetTransformCenter();
 
-    boost::shared_ptr<Image> renderMaskFromStroke(const ImagePlaneDesc& components,
+    boost::shared_ptr<Image> renderMaskFromStroke(const ImageComponents& components,
                                                   const double time,
                                                   const ViewIdx view,
                                                   const ImageBitDepthEnum depth,
@@ -211,7 +211,7 @@ public:
 private:
 
     boost::shared_ptr<Image> renderMaskInternal(const RectI & roi,
-                                                const ImagePlaneDesc& components,
+                                                const ImageComponents& components,
                                                 const double startTime,
                                                 const double endTime,
                                                 const double timeStep,

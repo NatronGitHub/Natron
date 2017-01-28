@@ -186,11 +186,11 @@ PrecompNode::getPluginGrouping(std::list<std::string>* grouping) const
 
 void
 PrecompNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImagePlaneDesc>* comps)
+                                   std::list<ImageComponents>* comps)
 {
-    comps->push_back( ImagePlaneDesc::getRGBAComponents() );
-    comps->push_back( ImagePlaneDesc::getRGBComponents() );
-    comps->push_back( ImagePlaneDesc::getAlphaComponents() );
+    comps->push_back( ImageComponents::getRGBAComponents() );
+    comps->push_back( ImageComponents::getRGBComponents() );
+    comps->push_back( ImageComponents::getAlphaComponents() );
 }
 
 void
@@ -259,8 +259,8 @@ PrecompNode::initializeKnobs()
                                     "hit the \"Render\" button.").toStdString() );
     writeChoice->setAnimationEnabled(false);
     {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("None"));
+        std::vector<std::string> choices;
+        choices.push_back("None");
         writeChoice->populateChoices(choices);
     }
     renderGroup->addKnob(writeChoice);
@@ -290,14 +290,19 @@ PrecompNode::initializeKnobs()
     error->setHintToolTip( tr("Indicates the behavior when an image is missing from the render of the pre-comp project").toStdString() );
     error->setAnimationEnabled(false);
     {
-        std::vector<ChoiceOption> choices;
-        choices.push_back(ChoiceOption("Load Previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
-        choices.push_back(ChoiceOption("Load Next", "", tr("Loads the next frame in the sequence.").toStdString()));
-        choices.push_back(ChoiceOption("Load Nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
-        choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
-        choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
+        std::vector<std::string> choices, helps;
+        choices.push_back("Load Previous");
+        helps.push_back( tr("Loads the previous frame in the sequence.").toStdString() );
+        choices.push_back("Load Next");
+        helps.push_back( tr("Loads the next frame in the sequence.").toStdString() );
+        choices.push_back("Load Nearest");
+        helps.push_back( tr("Loads the nearest frame in the sequence.").toStdString() );
+        choices.push_back("Error");
+        helps.push_back( tr("Fails to render.").toStdString() );
+        choices.push_back("Black");
+        helps.push_back( tr("Black Image.").toStdString() );
 
-        error->populateChoices(choices);
+        error->populateChoices(choices, helps);
     }
     error->setDefaultValue(3);
     renderGroup->addKnob(error);
@@ -446,8 +451,8 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     if (!param) {
         return;
     }
-    std::vector<ChoiceOption> choices;
-    choices.push_back(ChoiceOption("None"));
+    std::vector<std::string> choices;
+    choices.push_back("None");
 
     NodesList nodes;
     app.lock()->getProject()->getNodes_recursive(nodes, true);
@@ -472,7 +477,7 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
             (*it)->setPrecompNode(precomp);
         }
         if ( (*it)->getEffectInstance()->isWriter() ) {
-            choices.push_back( ChoiceOption((*it)->getFullyQualifiedName() ));
+            choices.push_back( (*it)->getFullyQualifiedName() );
         }
     }
 
@@ -488,16 +493,16 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntry();
+    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText_mt_safe();
 
-    if (userChoiceNodeName.id == "None") {
+    if (userChoiceNodeName == "None") {
         return NodePtr();
     }
-    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName.id);
+    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName);
     if (!writeNode) {
         std::stringstream ss;
         ss << tr("Could not find a node named %1 in the pre-comp project")
-            .arg( QString::fromUtf8( userChoiceNodeName.id.c_str() ) ).toStdString();
+            .arg( QString::fromUtf8( userChoiceNodeName.c_str() ) ).toStdString();
         Dialogs::errorDialog( tr("Pre-Comp").toStdString(), ss.str() );
 
         return NodePtr();
