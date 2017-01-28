@@ -546,6 +546,24 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
 
     visitedNodes->insert(node);
 
+
+
+    // Recurse on all inputs to ensure they are part of the tree and make the connections to this
+    // node render args
+    std::vector<TreeRenderNodeArgsPtr> inputsRenderArgs;
+    {
+        int nInputs = node->getMaxInputCount();
+        inputsRenderArgs.resize(nInputs);
+        for (int i = 0; i < nInputs; ++i) {
+            NodePtr inputNode = node->getInput(i);
+            if (!inputNode) {
+                continue;
+            }
+            inputsRenderArgs[i] = buildRenderTreeRecursive(inputNode, visitedNodes);
+            assert(inputsRenderArgs[i]);
+        }
+    }
+
     // Ensure this node has a render object. If this is the first time we visit this node it will create it.
     // The render object will copy and cache all knob values and inputs and anything that may change during
     // the render.
@@ -558,24 +576,14 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
             frameArgs = foundArgs->second;
         } else {
             frameArgs = TreeRenderNodeArgs::create(_publicInterface->shared_from_this(), node);
+            for (std::size_t i = 0; i < inputsRenderArgs.size(); ++i) {
+                frameArgs->setInputRenderArgs(i, inputsRenderArgs[i]);
+            }
             node->getEffectInstance()->setCurrentRender_TLS(frameArgs);
             perNodeArgs[node] = frameArgs;
         }
     }
 
-    
-    // Recurse on all inputs to ensure they are part of the tree and make the connections to this
-    // node render args
-    int nInputs = node->getMaxInputCount();
-    for (int i = 0; i < nInputs; ++i) {
-        NodePtr inputNode = node->getInput(i);
-        if (!inputNode) {
-            continue;
-        }
-        TreeRenderNodeArgsPtr inputArgs = buildRenderTreeRecursive(inputNode, visitedNodes);
-        assert(inputArgs);
-        frameArgs->setInputRenderArgs(i, inputArgs);
-    }
 
     // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
     // and a render time and view when we run the expression.
@@ -692,9 +700,13 @@ TreeRender::create(const CtorArgsPtr& inArgs)
         render->_imp->init(inArgs, render);
     } catch (...) {
         render->_imp->state = eActionStatusFailed;
-        appPTR->getAppTLS()->cleanupTLSForThread();
+
 
     }
+
+     if (isFailureRetCode(render->_imp->state)) {
+         appPTR->getAppTLS()->cleanupTLSForThread();
+     }
     
     return render;
 }
