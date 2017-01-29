@@ -44,7 +44,7 @@
 
 #include "Engine/AbortableRenderInfo.h"
 #include "Engine/OutputSchedulerThread.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/FrameEntry.h"
 #include "Engine/Settings.h"
 #include "Engine/Image.h"
@@ -136,8 +136,8 @@ public:
         , viewerParamsLut(eViewerColorSpaceSRGB)
         , viewerParamsAutoContrast(false)
         , viewerParamsChannels()
-        , viewerParamsLayer( ImageComponents::getRGBAComponents() )
-        , viewerParamsAlphaLayer( ImageComponents::getRGBAComponents() )
+        , viewerParamsLayer( ImagePlaneDesc::getRGBAComponents() )
+        , viewerParamsAlphaLayer( ImagePlaneDesc::getRGBAComponents() )
         , viewerParamsAlphaChannelName("a")
         , viewerMipMapLevel(0)
         , fullFrameProcessingEnabled(false)
@@ -383,8 +383,8 @@ public:
                                                  0 = sRGB ,  1 = linear , 2 = Rec 709*/
     bool viewerParamsAutoContrast;
     DisplayChannelsEnum viewerParamsChannels[2];
-    ImageComponents viewerParamsLayer;
-    ImageComponents viewerParamsAlphaLayer;
+    ImagePlaneDesc viewerParamsLayer;
+    ImagePlaneDesc viewerParamsAlphaLayer;
     std::string viewerParamsAlphaChannelName;
     unsigned int viewerMipMapLevel; //< the mipmap level the viewer should render at (0 == no downscaling)
     bool fullFrameProcessingEnabled;

@@ -108,7 +108,7 @@ SOURCES += \
     Image.cpp \
     ImageConvert.cpp \
     ImageCopyChannels.cpp \
-    ImageComponents.cpp \
+    ImagePlaneDesc.cpp \
     ImageKey.cpp \
     ImageMaskMix.cpp \
     ImageParamsSerialization.cpp \
@@ -274,6 +274,7 @@ HEADERS += \
     CacheEntryHolder.h \
     CacheSerialization.h \
     CoonsRegularization.h \
+    ChoiceOption.h \
     CreateNodeArgs.h \
     Curve.h \
     CurveSerialization.h \
@@ -309,7 +310,7 @@ HEADERS += \
     HistogramCPU.h \
     HostOverlaySupport.h \
     Image.h \
-    ImageComponents.h \
+    ImagePlaneDesc.h \
     ImageKey.h \
     ImageLocker.h \
     ImageSerialization.h \

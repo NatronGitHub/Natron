@@ -51,7 +51,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -217,7 +217,7 @@ public:
 
     void setClipTLS(ViewIdx view,
                     unsigned int mipmapLevel,
-                    const ImageComponents& components);
+                    const ImagePlaneDesc& components);
     void invalidateClipTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
@@ -227,20 +227,8 @@ public:
 
 
     /**
-     * @brief Used to convert plane argument as passed to the clipGetImage() function to Natron plane.
-     **/
-    ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
-
-    /**
-     * @brief Used to convert Natron planes given to the render() function to OpenFX layer name.
-     **/
-    static void natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes);
-
-    /**
      * @brief Converts Natron components to OpenFX components.
      **/
-    static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
-    static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
     static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth, bool throwOnFailure = true);
     static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
     static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
@@ -254,7 +242,7 @@ public:
         std::list<OfxImageCommon*> imagesBeingRendered;
 
         //Used to determine the plane to render in a call to getOutputImageInternal()
-        ImageComponents clipComponents;
+        ImagePlaneDesc clipComponents;
 
         RenderActionData()
             : imagesBeingRendered()
@@ -325,6 +313,7 @@ private:
     bool getImagePlaneInternal(OfxTime time, ViewSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
 
 private:
+    friend class OfxClipInstancePrivate;
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 

@@ -861,11 +861,11 @@ public:
         lifeTime->populate();
         lifeTime->setName(kRotoDrawableItemLifeTimeParam);
         {
-            std::vector<std::string> choices;
-            choices.push_back(kRotoDrawableItemLifeTimeSingle);
-            choices.push_back(kRotoDrawableItemLifeTimeFromStart);
-            choices.push_back(kRotoDrawableItemLifeTimeToEnd);
-            choices.push_back(kRotoDrawableItemLifeTimeCustom);
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeSingle));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeFromStart));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom));
             lifeTime->populateChoices(choices);
         }
         lifeTime->setDefaultValue(isPaintingNode ? 0 : 3);
@@ -954,9 +954,9 @@ public:
         skewOrder->populate();
         knobs.push_back(skewOrder);
         {
-            std::vector<std::string> choices;
-            choices.push_back("XY");
-            choices.push_back("YX");
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("XY"));
+            choices.push_back(ChoiceOption("YX"));
             skewOrder->populateChoices(choices);
         }
 
@@ -1090,9 +1090,9 @@ public:
         cloneSkewOrder->populate();
         knobs.push_back(cloneSkewOrder);
         {
-            std::vector<std::string> choices;
-            choices.push_back("XY");
-            choices.push_back("YX");
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("XY"));
+            choices.push_back(ChoiceOption("YX"));
             cloneSkewOrder->populateChoices(choices);
         }
 
@@ -1106,26 +1106,16 @@ public:
         cloneFilter->setHintToolTip( tr(kRotoBrushFilterParamHint) );
         cloneFilter->populate();
         {
-            std::vector<std::string> choices, helps;
-
-            choices.push_back(kFilterImpulse);
-            helps.push_back(kFilterImpulseHint);
-            choices.push_back(kFilterBilinear);
-            helps.push_back(kFilterBilinearHint);
-            choices.push_back(kFilterCubic);
-            helps.push_back(kFilterCubicHint);
-            choices.push_back(kFilterKeys);
-            helps.push_back(kFilterKeysHint);
-            choices.push_back(kFilterSimon);
-            helps.push_back(kFilterSimonHint);
-            choices.push_back(kFilterRifman);
-            helps.push_back(kFilterRifmanHint);
-            choices.push_back(kFilterMitchell);
-            helps.push_back(kFilterMitchellHint);
-            choices.push_back(kFilterParzen);
-            helps.push_back(kFilterParzenHint);
-            choices.push_back(kFilterNotch);
-            helps.push_back(kFilterNotchHint);
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption(kFilterImpulse, "", tr(kFilterImpulseHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterBilinear, "", tr(kFilterBilinearHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterCubic, "", tr(kFilterCubicHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterKeys, "", tr(kFilterKeysHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterSimon, "", tr(kFilterSimonHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterRifman, "", tr(kFilterRifmanHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterMitchell, "", tr(kFilterMitchellHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterParzen, "", tr(kFilterParzenHint).toStdString()));
+            choices.push_back(ChoiceOption(kFilterNotch, "", tr(kFilterNotchHint).toStdString()));
             cloneFilter->populateChoices(choices);
         }
         cloneFilter->setDefaultValue(2);
@@ -1143,13 +1133,13 @@ public:
         sourceColor->populate();
         sourceColor->setDefaultValue(1);
         {
-            std::vector<std::string> choices;
-            choices.push_back("foreground");
-            choices.push_back("background");
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("foreground"));
+            choices.push_back(ChoiceOption("background"));
             for (int i = 1; i < 10; ++i) {
                 std::stringstream ss;
                 ss << "background " << i + 1;
-                choices.push_back( ss.str() );
+                choices.push_back( ChoiceOption(ss.str()) );
             }
             sourceColor->populateChoices(choices);
         }
@@ -1166,9 +1156,9 @@ public:
         timeOffsetMode->setHintToolTip( tr(kRotoBrushTimeOffsetModeParamHint) );
         timeOffsetMode->populate();
         {
-            std::vector<std::string> modes;
-            modes.push_back("Relative");
-            modes.push_back("Absolute");
+            std::vector<ChoiceOption> modes;
+            modes.push_back(ChoiceOption("Relative"));
+            modes.push_back(ChoiceOption("Absolute"));
             timeOffsetMode->populateChoices(modes);
         }
         knobs.push_back(timeOffsetMode);
@@ -1438,16 +1428,13 @@ public:
         lifeTimeKnob->setDefaultAllDimensionsEnabled(false);
         lifeTimeKnob->setAnimationEnabled(false);
         {
-            std::vector<std::string> choices, helps;
-            choices.push_back(kRotoDrawableItemLifeTimeSingle);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString() );
-            choices.push_back(kRotoDrawableItemLifeTimeFromStart);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeFromStartHelp).toStdString() );
-            choices.push_back(kRotoDrawableItemLifeTimeToEnd);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString() );
-            choices.push_back(kRotoDrawableItemLifeTimeCustom);
-            helps.push_back( tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString() );
-            lifeTimeKnob->populateChoices(choices, helps);
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeAll, "",tr(kRotoDrawableItemLifeTimeAllHelp).toStdString() ));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeSingle, "", tr(kRotoDrawableItemLifeTimeSingleHelp).toStdString()));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeFromStart, "", tr(kRotoDrawableItemLifeTimeFromStartHelp).toStdString()));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeToEnd, "" ,tr(kRotoDrawableItemLifeTimeToEndHelp).toStdString()));
+            choices.push_back(ChoiceOption(kRotoDrawableItemLifeTimeCustom, "", tr(kRotoDrawableItemLifeTimeCustomHelp).toStdString()));
+            lifeTimeKnob->populateChoices(choices);
         }
         lifeTimeKnob->setDefaultValue(isPaintNode ? 0 : 3);
         generalPage->addKnob(lifeTimeKnob);
@@ -1524,13 +1511,13 @@ public:
             sourceType->setHintToolTip( tr(kRotoBrushSourceColorHint) );
             sourceType->setDefaultValue(1);
             {
-                std::vector<std::string> choices;
-                choices.push_back("foreground");
-                choices.push_back("background");
+                std::vector<ChoiceOption> choices;
+                choices.push_back(ChoiceOption("foreground"));
+                choices.push_back(ChoiceOption("background"));
                 for (int i = 1; i < 10; ++i) {
                     std::stringstream ss;
                     ss << "background " << i + 1;
-                    choices.push_back( ss.str() );
+                    choices.push_back( ChoiceOption(ss.str()) );
                 }
                 sourceType->populateChoices(choices);
             }
@@ -1615,9 +1602,9 @@ public:
             skewOrder->setHintToolTip( tr(kRotoBrushSkewOrderParamHint) );
             skewOrder->setDefaultValue(0);
             {
-                std::vector<std::string> choices;
-                choices.push_back("XY");
-                choices.push_back("YX");
+                std::vector<ChoiceOption> choices;
+                choices.push_back(ChoiceOption("XY"));
+                choices.push_back(ChoiceOption("YX"));
                 skewOrder->populateChoices(choices);
             }
             skewOrder->setDefaultAllDimensionsEnabled(false);
@@ -1667,26 +1654,16 @@ public:
             filter->setName(kRotoBrushFilterParam);
             filter->setHintToolTip( tr(kRotoBrushFilterParamHint) );
             {
-                std::vector<std::string> choices, helps;
-
-                choices.push_back(kFilterImpulse);
-                helps.push_back(kFilterImpulseHint);
-                choices.push_back(kFilterBilinear);
-                helps.push_back(kFilterBilinearHint);
-                choices.push_back(kFilterCubic);
-                helps.push_back(kFilterCubicHint);
-                choices.push_back(kFilterKeys);
-                helps.push_back(kFilterKeysHint);
-                choices.push_back(kFilterSimon);
-                helps.push_back(kFilterSimonHint);
-                choices.push_back(kFilterRifman);
-                helps.push_back(kFilterRifmanHint);
-                choices.push_back(kFilterMitchell);
-                helps.push_back(kFilterMitchellHint);
-                choices.push_back(kFilterParzen);
-                helps.push_back(kFilterParzenHint);
-                choices.push_back(kFilterNotch);
-                helps.push_back(kFilterNotchHint);
+                std::vector<ChoiceOption> choices;
+                choices.push_back(ChoiceOption(kFilterImpulse, "", tr(kFilterImpulseHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterBilinear, "", tr(kFilterBilinearHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterCubic, "", tr(kFilterCubicHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterKeys, "", tr(kFilterKeysHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterSimon, "", tr(kFilterSimonHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterRifman, "", tr(kFilterRifmanHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterMitchell, "", tr(kFilterMitchellHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterParzen, "", tr(kFilterParzenHint).toStdString()));
+                choices.push_back(ChoiceOption(kFilterNotch, "", tr(kFilterNotchHint).toStdString()));
                 filter->populateChoices(choices);
             }
             filter->setDefaultValue(2);
@@ -1724,9 +1701,9 @@ public:
             timeOffsetMode->setName(kRotoBrushTimeOffsetModeParam);
             timeOffsetMode->setHintToolTip( tr(kRotoBrushTimeOffsetModeParamHint) );
             {
-                std::vector<std::string> modes;
-                modes.push_back("Relative");
-                modes.push_back("Absolute");
+                std::vector<ChoiceOption> modes;
+                modes.push_back(ChoiceOption("Relative"));
+                modes.push_back(ChoiceOption("Absolute"));
                 timeOffsetMode->populateChoices(modes);
             }
             timeOffsetMode->setDefaultAllDimensionsEnabled(false);
@@ -1938,9 +1915,9 @@ public:
         skewOrder->setHintToolTip( tr(kRotoDrawableItemSkewOrderParamHint) );
         skewOrder->setDefaultValue(0);
         {
-            std::vector<std::string> choices;
-            choices.push_back("XY");
-            choices.push_back("YX");
+            std::vector<ChoiceOption> choices;
+            choices.push_back(ChoiceOption("XY"));
+            choices.push_back(ChoiceOption("YX"));
             skewOrder->populateChoices(choices);
         }
         skewOrder->setDefaultAllDimensionsEnabled(false);
@@ -2058,16 +2035,12 @@ public:
         shutterType->setHintToolTip( tr(kRotoShutterOffsetTypeParamHint) );
         shutterType->setDefaultValue(0);
         {
-            std::vector<std::string> options, helps;
-            options.push_back("Centered");
-            helps.push_back(kRotoShutterOffsetCenteredHint);
-            options.push_back("Start");
-            helps.push_back(kRotoShutterOffsetStartHint);
-            options.push_back("End");
-            helps.push_back(kRotoShutterOffsetEndHint);
-            options.push_back("Custom");
-            helps.push_back(kRotoShutterOffsetCustomHint);
-            shutterType->populateChoices(options, helps);
+            std::vector<ChoiceOption> options;
+            options.push_back(ChoiceOption("Centered", "", tr(kRotoShutterOffsetCenteredHint).toStdString()));
+            options.push_back(ChoiceOption("Start", "", tr(kRotoShutterOffsetStartHint).toStdString()));
+            options.push_back(ChoiceOption("End", "", tr(kRotoShutterOffsetEndHint).toStdString()));
+            options.push_back(ChoiceOption("Custom", "", tr(kRotoShutterOffsetCustomHint).toStdString()));
+            shutterType->populateChoices(options);
         }
         shutterType->setAllDimensionsEnabled(false);
         shutterType->setAddNewLine(false);

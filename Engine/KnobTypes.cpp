@@ -506,7 +506,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        bool declaredByPlugin)
     : Knob<int>(holder, label, dimension, declaredByPlugin)
     , _entriesMutex()
-    , _currentEntryLabel()
+    , _currentEntry()
     , _addNewChoice(false)
     , _isCascading(false)
 {
@@ -518,7 +518,7 @@ KnobChoice::KnobChoice(KnobHolder* holder,
                        bool declaredByPlugin)
     : Knob<int>(holder, label.toStdString(), dimension, declaredByPlugin)
     , _entriesMutex()
-    , _currentEntryLabel()
+    , _currentEntry()
     , _addNewChoice(false)
     , _isCascading(false)
 {
@@ -571,7 +571,7 @@ KnobChoice::cloneExtraData(KnobI* other,
     }
 
     QMutexLocker k(&_entriesMutex);
-    _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
+    _currentEntry = isChoice->getActiveEntry();
 }
 
 bool
@@ -585,10 +585,10 @@ KnobChoice::cloneExtraDataAndCheckIfChanged(KnobI* other,
         return false;
     }
 
-    std::string otherEntry = isChoice->getActiveEntryText_mt_safe();
+    ChoiceOption otherEntry = isChoice->getActiveEntry();
     QMutexLocker k(&_entriesMutex);
-    if (_currentEntryLabel != otherEntry) {
-        _currentEntryLabel = otherEntry;
+    if (_currentEntry.id != otherEntry.id) {
+        _currentEntry = otherEntry;
 
         return true;
     }
@@ -610,12 +610,10 @@ KnobChoice::cloneExtraData(KnobI* other,
     }
 
     QMutexLocker k(&_entriesMutex);
-    _currentEntryLabel = isChoice->getActiveEntryText_mt_safe();
+    _currentEntry = isChoice->getActiveEntry();
 }
 
-#ifdef DEBUG
-#pragma message WARN("When enabling multi-view knobs, make this multi-view too")
-#endif
+
 void
 KnobChoice::onInternalValueChanged(int dimension,
                                    double time,
@@ -625,8 +623,8 @@ KnobChoice::onInternalValueChanged(int dimension,
     int index = getValueAtTime(time, dimension, ViewSpec::current(), true, true);
     QMutexLocker k(&_entriesMutex);
 
-    if ( (index >= 0) && ( index < (int)_mergedEntries.size() ) ) {
-        _currentEntryLabel = _mergedEntries[index];
+    if ( (index >= 0) && ( index < (int)_entries.size() ) ) {
+        _currentEntry = _entries[index];
     }
 }
 
@@ -653,112 +651,65 @@ caseInsensitiveCompare(const std::string& a,
 
 #endif
 
-static bool
-stringEqualFunctor(const std::string& a,
-                   const std::string& b,
-                   KnobChoiceMergeEntriesData* /*data*/)
-{
-    return a == b;
-}
 
 void
-KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
-                                KnobChoiceMergeEntriesData* mergingData)
+KnobChoice::findAndSetOldChoice()
 {
-    std::string curEntry;
+
+    int found = -1;
+
     {
         QMutexLocker k(&_entriesMutex);
-        curEntry = _currentEntryLabel;
-    }
 
-    if ( !curEntry.empty() ) {
-        if (mergingFunctor) {
-            assert(mergingData);
-            mergingData->clear();
-        } else {
-            mergingFunctor = stringEqualFunctor;
-        }
-        int found = -1;
-        {
-            QMutexLocker k(&_entriesMutex);
-            for (std::size_t i = 0; i < _mergedEntries.size(); ++i) {
-                if ( mergingFunctor(_mergedEntries[i], curEntry, mergingData) ) {
+        if ( !_currentEntry.id.empty() ) {
+
+            for (std::size_t i = 0; i < _entries.size(); ++i) {
+                if ( _entries[i].id == _currentEntry.id ) {
+                    // Refresh label and hint, even if ID is the same
+                    _currentEntry = _entries[i];
                     found = i;
-
-                    // Update the label if different
-                    _currentEntryLabel = _mergedEntries[i];
                     break;
                 }
             }
         }
-        if (found != -1 && getValue() != found) {
-            blockValueChanges();
-            setValue(found);
-            unblockValueChanges();
-        } else {
-            /*// We are in invalid state
-               blockValueChanges();
-               setValue(-1);
-               unblockValueChanges();*/
-        }
+    }
+    if (found != -1) {
+        // Make sure we don't call knobChanged if we found the value
+        blockValueChanges();
+        beginChanges();
+        setValue(found);
+        unblockValueChanges();
+        endChanges();
     }
 }
 
 bool
-KnobChoice::populateChoices(const std::vector<std::string> &entries,
-                            const std::vector<std::string> &entriesHelp,
-                            MergeMenuEqualityFunctor mergingFunctor,
-                            KnobChoiceMergeEntriesData* mergingData,
-                            bool restoreOldChoice)
+KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 {
-    assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
     bool hasChanged = false;
     {
         QMutexLocker l(&_entriesMutex);
+        _entries = entries;
+        for (std::size_t i = 0; i < _entries.size(); ++i) {
 
-        _newEntries = entries;
-        if ( !entriesHelp.empty() ) {
-            _newEntriesHelp = entriesHelp;
-        } else {
-            _newEntriesHelp.resize( entries.size() );
-        }
-        if (mergingFunctor) {
-            assert(mergingData);
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                mergingData->clear();
-                bool found = false;
-                for (std::size_t j = 0; j < _mergedEntries.size(); ++j) {
-                    if ( mergingFunctor(_mergedEntries[j], entries[i], mergingData) ) {
-                        if (_mergedEntries[j] != entries[i]) {
-                            hasChanged = true;
-                            _mergedEntries[j] = entries[i];
-                        }
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    hasChanged = true;
-                    if ( i < _newEntriesHelp.size() ) {
-                        _mergedEntriesHelp.push_back(_newEntriesHelp[i]);
-                    }
-                    _mergedEntries.push_back(entries[i]);
-                }
+            // The ID cannot be empty, this is the only way to uniquely identify the choice.
+            assert(!_entries[i].id.empty());
+
+            // If the label is not set, use the ID
+            if (_entries[i].label.empty()) {
+                _entries[i].label = _entries[i].id;
             }
-        } else {
-            _mergedEntries = _newEntries;
-            _mergedEntriesHelp = _newEntriesHelp;
-            hasChanged = true;
         }
+        hasChanged = true;
+
     }
 
     /*
        Try to restore the last choice.
      */
     if (hasChanged) {
-        if (restoreOldChoice) {
-            findAndSetOldChoice(mergingFunctor, mergingData);
-        }
+        findAndSetOldChoice();
+
 
         if (_signalSlotHandler) {
             _signalSlotHandler->s_helpChanged();
@@ -770,42 +721,11 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
 } // KnobChoice::populateChoices
 
 void
-KnobChoice::refreshMenu()
-{
-    KnobHolder* holder = getHolder();
-
-    if (holder) {
-        // In OpenFX we reset the menu with a button
-        KnobPtr hasRefreshButton = holder->getKnobByName(getName() + "RefreshButton");
-        if (hasRefreshButton) {
-            KnobButton* button = dynamic_cast<KnobButton*>( hasRefreshButton.get() );
-            if (button) {
-                button->trigger();
-            }
-
-            return;
-        }
-    }
-    std::vector<std::string> entries;
-    {
-        QMutexLocker l(&_entriesMutex);
-
-        _mergedEntries = _newEntries;
-        _mergedEntriesHelp = _newEntriesHelp;
-    }
-    findAndSetOldChoice();
-    Q_EMIT populated();
-}
-
-void
 KnobChoice::resetChoices()
 {
     {
         QMutexLocker l(&_entriesMutex);
-        _newEntries.clear();
-        _newEntriesHelp.clear();
-        _mergedEntries.clear();
-        _mergedEntriesHelp.clear();
+        _entries.clear();
     }
     findAndSetOldChoice();
     if (_signalSlotHandler) {
@@ -815,31 +735,32 @@ KnobChoice::resetChoices()
 }
 
 void
-KnobChoice::appendChoice(const std::string& entry,
-                         const std::string& help)
+KnobChoice::appendChoice(const ChoiceOption& entry)
 {
     {
         QMutexLocker l(&_entriesMutex);
+        _entries.push_back(entry);
+        ChoiceOption& opt = _entries.back();
 
-        _mergedEntriesHelp.push_back(help);
-        _mergedEntries.push_back(entry);
-        _newEntries.push_back(entry);
-        _newEntriesHelp.push_back(help);
+        // If label is empty, set to the option id
+        if (opt.label.empty()) {
+            opt.label = opt.id;
+        }
     }
 
     findAndSetOldChoice();
     if (_signalSlotHandler) {
         _signalSlotHandler->s_helpChanged();
     }
-    Q_EMIT entryAppended( QString::fromUtf8( entry.c_str() ), QString::fromUtf8( help.c_str() ) );
+    Q_EMIT entryAppended();
 }
 
-std::vector<std::string>
+std::vector<ChoiceOption>
 KnobChoice::getEntries_mt_safe() const
 {
     QMutexLocker l(&_entriesMutex);
 
-    return _mergedEntries;
+    return _entries;
 }
 
 bool
@@ -847,11 +768,11 @@ KnobChoice::isActiveEntryPresentInEntries() const
 {
     QMutexLocker k(&_entriesMutex);
 
-    if ( _currentEntryLabel.empty() ) {
+    if ( _currentEntry.id.empty() ) {
         return true;
     }
-    for (std::size_t i = 0; i < _newEntries.size(); ++i) {
-        if (_newEntries[i] == _currentEntryLabel) {
+    for (std::size_t i = 0; i < _entries.size(); ++i) {
+        if (_entries[i].id == _currentEntry.id) {
             return true;
         }
     }
@@ -859,15 +780,14 @@ KnobChoice::isActiveEntryPresentInEntries() const
     return false;
 }
 
-const std::string&
+ChoiceOption
 KnobChoice::getEntry(int v) const
 {
-    assert(v != -1); // use getActiveEntryText_mt_safe() otherwise
-    if ( (int)_mergedEntries.size() <= v ) {
+    if ( (int)_entries.size() <= v || v < 0) {
         throw std::runtime_error( std::string("KnobChoice::getEntry: index out of range") );
     }
 
-    return _mergedEntries[v];
+    return _entries[v];
 }
 
 int
@@ -875,39 +795,40 @@ KnobChoice::getNumEntries() const
 {
     QMutexLocker l(&_entriesMutex);
 
-    return (int)_mergedEntries.size();
+    return (int)_entries.size();
 }
 
-std::vector<std::string>
-KnobChoice::getEntriesHelp_mt_safe() const
+void
+KnobChoice::setActiveEntry(const ChoiceOption& opt)
 {
     QMutexLocker l(&_entriesMutex);
-
-    return _mergedEntriesHelp;
+    _currentEntry = opt;
 }
 
-std::string
-KnobChoice::getActiveEntryText_mt_safe()
+
+ChoiceOption
+KnobChoice::getActiveEntry()
 {
     std::pair<int, KnobPtr> master = getMaster(0);
 
     if (master.second) {
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>( master.second.get() );
         if (isChoice) {
-            return isChoice->getActiveEntryText_mt_safe();
+            return isChoice->getActiveEntry();
         }
     }
     QMutexLocker l(&_entriesMutex);
 
-    if ( !_currentEntryLabel.empty() ) {
-        return _currentEntryLabel;
+    if ( !_currentEntry.id.empty() ) {
+        return _currentEntry;
     }
     int activeIndex = getValue();
-    if ( activeIndex < (int)_mergedEntries.size() ) {
-        return _mergedEntries[activeIndex];
+    if ( activeIndex < (int)_entries.size() ) {
+        _currentEntry = _entries[activeIndex];
+        return _entries[activeIndex];
     }
 
-    return std::string();
+    return ChoiceOption();
 }
 
 #if 0 // dead code
@@ -950,10 +871,10 @@ KnobChoice::getHintToolTipFull() const
 
     int gothelp = 0;
 
-    if ( !_mergedEntriesHelp.empty() ) {
-        assert( _mergedEntriesHelp.size() == _mergedEntries.size() );
-        for (U32 i = 0; i < _mergedEntries.size(); ++i) {
-            if ( !_mergedEntriesHelp.empty() && !_mergedEntriesHelp[i].empty() ) {
+    if ( !_entries.empty() ) {
+        assert( _entries.size() == _entries.size() );
+        for (U32 i = 0; i < _entries.size(); ++i) {
+            if ( !_entries.empty() && !_entries[i].tooltip.empty() ) {
                 ++gothelp;
             }
         }
@@ -973,11 +894,11 @@ KnobChoice::getHintToolTipFull() const
     }
     // param may have no hint but still have per-option help
     if (gothelp) {
-        for (U32 i = 0; i < _mergedEntriesHelp.size(); ++i) {
-            if ( !_mergedEntriesHelp[i].empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = boost::trim_copy(_mergedEntries[i]);
+        for (U32 i = 0; i < _entries.size(); ++i) {
+            if ( !_entries[i].tooltip.empty() ) { // no help line is needed if help is unavailable for this option
+                std::string entry = boost::trim_copy(_entries[i].label);
                 std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-                std::string help = boost::trim_copy(_mergedEntriesHelp[i]);
+                std::string help = boost::trim_copy(_entries[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
                     ss << "* **" << entry << "**";
@@ -986,7 +907,7 @@ KnobChoice::getHintToolTipFull() const
                 }
                 ss << ": ";
                 ss << help;
-                if (i < _mergedEntriesHelp.size() - 1) {
+                if (i < _entries.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -997,11 +918,15 @@ KnobChoice::getHintToolTipFull() const
 } // KnobChoice::getHintToolTipFull
 
 KnobHelper::ValueChangedReturnCodeEnum
-KnobChoice::setValueFromLabel(const std::string & value,
+KnobChoice::setValueFromID(const std::string & value,
                               int dimension,
                               bool turnOffAutoKeying)
 {
-    int i = choiceMatch(value, _mergedEntries, 0);
+    int i;
+    {
+        QMutexLocker k(&_entriesMutex);
+        i = choiceMatch(value, _entries, &_currentEntry);
+    }
     if (i >= 0) {
         return setValue(i, ViewIdx(0), dimension, turnOffAutoKeying);
     }
@@ -1014,10 +939,10 @@ KnobChoice::setValueFromLabel(const std::string & value,
 }
 
 void
-KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,
+KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value,
                                                     int dimension)
 {
-    int i = choiceMatch(value, _mergedEntries, 0);
+    int i = choiceMatch(value, _entries, 0);
     if (i >= 0) {
         return setDefaultValueWithoutApplying(i, dimension);
     }
@@ -1025,10 +950,10 @@ KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value,
 }
 
 void
-KnobChoice::setDefaultValueFromLabel(const std::string & value,
+KnobChoice::setDefaultValueFromID(const std::string & value,
                                      int dimension)
 {
-    int i = choiceMatch(value, _mergedEntries, 0);
+    int i = choiceMatch(value, _entries, 0);
     if (i >= 0) {
         return setDefaultValue(i, dimension);
     }
@@ -1043,12 +968,12 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value,
 // returns index if choice was matched, -1 if not matched
 int
 KnobChoice::choiceMatch(const std::string& choice,
-                        const std::vector<std::string>& entries,
-                        std::string* matchedEntry)
+                        const std::vector<ChoiceOption>& entries,
+                        ChoiceOption* matchedEntry)
 {
     // first, try exact match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i] == choice) {
+        if (entries[i].id == choice) {
             if (matchedEntry) {
                 *matchedEntry = entries[i];
             }
@@ -1060,9 +985,9 @@ KnobChoice::choiceMatch(const std::string& choice,
     std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
     std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        const std::string& entry(entries[i]);
-        std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
-        std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
+        const ChoiceOption& entry(entries[i]);
+        std::size_t entrytab = entry.id.find('\t'); // returns string::npos if no tab was found
+        std::string entrymain = entry.id.substr(0, entrytab); // gives the entire string if no tabs were found
 
         if (entrymain == choicemain) {
             if (matchedEntry) {
@@ -1074,7 +999,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 
     // third, case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if ( boost::iequals(entries[i], choice) ) {
+        if ( boost::iequals(entries[i].id, choice) ) {
             if (matchedEntry) {
                 *matchedEntry = entries[i];
             }
@@ -1103,24 +1028,23 @@ KnobChoice::choiceRestoration(KnobChoice* knob,
 
     {
         QMutexLocker k(&_entriesMutex);
-        _currentEntryLabel = data->_choiceString;
+        _currentEntry.id = data->_choiceString;
     }
 
     int serializedIndex = knob->getValue();
-    if ( ( serializedIndex < (int)_mergedEntries.size() ) && (_mergedEntries[serializedIndex] == data->_choiceString) ) {
+    if ( ( serializedIndex < (int)_entries.size() ) && (_entries[serializedIndex].id == data->_choiceString) ) {
         // we're lucky, entry hasn't changed
         setValue(serializedIndex);
 
     } else {
         // try to find the same label at some other index
-        std::string matchedEntry;
-        int i = choiceMatch(data->_choiceString, _mergedEntries, &matchedEntry);
+        int i;
+        {
+            QMutexLocker k(&_entriesMutex);
+            i = choiceMatch(data->_choiceString, _entries, &_currentEntry);
+        }
 
         if (i >= 0) {
-            {
-                QMutexLocker k(&_entriesMutex);
-                _currentEntryLabel = matchedEntry;
-            }
             setValue(i);
         }
         //   setValue(-1);
@@ -1133,8 +1057,7 @@ KnobChoice::onKnobAboutToAlias(const KnobPtr &slave)
     KnobChoice* isChoice = dynamic_cast<KnobChoice*>( slave.get() );
 
     if (isChoice) {
-        populateChoices(isChoice->getEntries_mt_safe(),
-                        isChoice->getEntriesHelp_mt_safe(), 0, 0, false);
+        populateChoices(isChoice->getEntries_mt_safe());
     }
 }
 
@@ -1146,7 +1069,7 @@ KnobChoice::onOriginalKnobPopulated()
     if (!isChoice) {
         return;
     }
-    populateChoices(isChoice->_mergedEntries, isChoice->_mergedEntriesHelp, 0, 0, true);
+    populateChoices(isChoice->_entries);
 }
 
 void
@@ -1156,10 +1079,15 @@ KnobChoice::onOriginalKnobEntriesReset()
 }
 
 void
-KnobChoice::onOriginalKnobEntryAppend(const QString& text,
-                                      const QString& help)
+KnobChoice::onOriginalKnobEntryAppend()
 {
-    appendChoice( text.toStdString(), help.toStdString() );
+    KnobChoice* isChoice = dynamic_cast<KnobChoice*>( sender() );
+
+    if (!isChoice) {
+        return;
+    }
+
+    populateChoices(isChoice->_entries);
 }
 
 void
@@ -1174,13 +1102,13 @@ KnobChoice::handleSignalSlotsForAliasLink(const KnobPtr& alias,
     if (connect) {
         QObject::connect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
         QObject::connect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
-        QObject::connect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
-                          SLOT(onOriginalKnobEntryAppend(QString,QString)) );
+        QObject::connect( this, SIGNAL(entryAppended()), aliasIsChoice,
+                          SLOT(onOriginalKnobEntryAppend()) );
     } else {
         QObject::disconnect( this, SIGNAL(populated()), aliasIsChoice, SLOT(onOriginalKnobPopulated()) );
         QObject::disconnect( this, SIGNAL(entriesReset()), aliasIsChoice, SLOT(onOriginalKnobEntriesReset()) );
-        QObject::disconnect( this, SIGNAL(entryAppended(QString,QString)), aliasIsChoice,
-                             SLOT(onOriginalKnobEntryAppend(QString,QString)) );
+        QObject::disconnect( this, SIGNAL(entryAppended()), aliasIsChoice,
+                             SLOT(onOriginalKnobEntryAppend()) );
     }
 }
 

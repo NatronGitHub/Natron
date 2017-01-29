@@ -4334,7 +4334,7 @@ KnobHelper::createDuplicateOnHolder(KnobHolder* otherHolder,
     } else if (isChoice) {
         boost::shared_ptr<KnobChoice> newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (!makeAlias) {
-            newKnob->populateChoices( isChoice->getEntries_mt_safe(), isChoice->getEntriesHelp_mt_safe() );
+            newKnob->populateChoices( isChoice->getEntries_mt_safe() );
         }
         output = newKnob;
     } else if (isColor) {
