@@ -95,7 +95,7 @@ KnobGui::initialize()
         QObject::connect( handler, SIGNAL(secretChanged()), this, SLOT(setSecret()) );
         QObject::connect( handler, SIGNAL(enabledChanged()), this, SLOT(setEnabledSlot()) );
         QObject::connect( handler, SIGNAL(selectedMultipleTimes(bool)), this, SLOT(onKnobMultipleSelectionChanged(bool)) );
-        QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,double,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,double,bool)) );
+        QObject::connect( handler, SIGNAL(appendParamEditChange(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,TimeValue,bool)), this, SLOT(onAppendParamEditChanged(ValueChangedReasonEnum,ValueChangedReturnCodeEnum,PerDimViewVariantMap,Variant,ViewSetSpec,DimSpec,TimeValue,bool)) );
         QObject::connect( handler, SIGNAL(frozenChanged(bool)), this, SLOT(onFrozenChanged(bool)) );
         QObject::connect( handler, SIGNAL(helpChanged()), this, SLOT(onHelpChanged()) );
         QObject::connect( handler, SIGNAL(expressionChanged(DimIdx,ViewIdx)), this, SLOT(onExprChanged(DimIdx,ViewIdx)) );
@@ -925,7 +925,7 @@ KnobGui::createAnimationMenu(QMenu* menu, DimSpec dimensionIn, ViewSetSpec viewI
             if (i > 0 && !knob->getAllDimensionsVisible(*it)) {
                 continue;
             }
-            AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), *it);
+            AnimationLevelEnum lvl = knob->getAnimationLevel(DimIdx(i), knob->getHolder()->getTimelineCurrentTime(), *it);
             if (lvl != eAnimationLevelOnKeyframe) {
                 hasAllKeyframesAtTime = false;
             } else if ( (dimension == i || nDims == 1) &&

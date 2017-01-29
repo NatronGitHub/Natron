@@ -27,225 +27,379 @@
 
 #include "Global/Macros.h"
 
-#include <list>
-#include <map>
-#include <algorithm> // min, max
 #include <bitset>
+#include <list>
+
+#if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
+#include <boost/scoped_ptr.hpp>
+#include <boost/enable_shared_from_this.hpp>
+#endif
 
 #include "Global/GlobalDefines.h"
 
-CLANG_DIAG_OFF(deprecated)
-#include <QtCore/QHash>
-CLANG_DIAG_ON(deprecated)
-#include <QtCore/QReadWriteLock>
-
-#include "Engine/ImageKey.h"
-#include "Engine/ImageComponents.h"
-#include "Engine/ImageParams.h"
-#include "Engine/CacheEntry.h"
-#include "Engine/OutputSchedulerThread.h"
-#include "Engine/RectD.h"
+#include "Global/GLIncludes.h"
+#include "Engine/Cache.h" // CacheEntryLockerPtr - put it in EngineFwd.h?
+#include "Engine/ImagePlaneDesc.h"
+#include "Engine/RectI.h"
+#include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
-
-class GenericAccess
+/**
+ * @brief An image in Natron is a view one or multiple buffers that may be cached.
+ * An image may have the following forms: tiled, single rectangle, packed buffer or mono-channel...
+ * This is described in the ImageBufferLayoutEnum enum.
+ *
+ * The underlying storage of the image may be requested by using the InitStorageArgs struct as well as the bounds
+ * and more details. At the very least the bounds must be specified.
+ *
+ * If the image fails to create, an std::bad_alloc exception will be thrown.
+ * 
+ * The image may use the cache to recover underlying tiles that were already computed. To specify whether this Image
+ * should interact with the cache or not you may use the CacheAccessModeEnum.
+ * By default an image does not use the cache.
+ *
+ * If the image uses the cache, then when the destructor is invoked, all underlying tiles that were not cached will be pushed
+ * to the cache so that other threads may re-use it.
+ *
+ * Since tiled mono-channel format may not be ideal for most processing formats, you may create a temporary image that takes in
+ * parameter another image that itself is mono-channel and tiled. 
+ * When the temporary image is destroyed, it will update the other mirror image, which in turn when destroyed will update the cache.
+ *
+ **/
+struct ImagePrivate;
+class Image
+: public boost::enable_shared_from_this<Image>
 {
+    /**
+     * @brief Ctor. Make a new empty image. This is private, the static create() function should be used instead.
+     **/
+    Image();
+
 public:
 
-    GenericAccess() {}
-
-    virtual ~GenericAccess()
+    struct MonoChannelTile
     {
-    }
-};
+        // A pointer to the internal storage
+        ImageStorageBasePtr buffer;
 
-class Bitmap
-{
-public:
-    Bitmap(const RectI & bounds)
-        : _bounds(bounds)
-        , _map()
-        , _dirtyZone()
-        , _dirtyZoneSet(false)
+        // Used when working with the cache
+        // to ensure a single thread computed this tile
+        CacheEntryLockerPtr entryLocker;
+
+        // The index of the channel 0 <= channel <= 3
+        // if mono channel.
+        // If not mon channel this is -1
+        int channelIndex;
+        
+    };
+
+    struct Tile
     {
-        //Do not assert !rod.isNull() : An empty image can be created for entries that correspond to
-        // "identities" images (i.e: images that are just a link to another image). See EffectInstance :
-        // "!!!Note that if isIdentity is true it will allocate an empty image object with 0 bytes of data."
-        //assert(!rod.isNull());
-        _map.resize(bounds.area());
-        memset(_map.getData(), 0, _map.size());
-    }
+        // Each Tile internally holds a pointer to a mono-channel tile in the cache
+        std::vector<MonoChannelTile> perChannelTile;
 
-    Bitmap()
-        : _bounds()
-        , _map()
-        , _dirtyZone()
-        , _dirtyZoneSet(false)
+        // The bounds covered by this tile
+        RectI tileBounds;
+        
+    };
+    
+
+
+    struct InitStorageArgs
     {
-    }
+        // The bounds of the image. This will internally set the required number of tiles
+        //
+        // Must be set
+        RectI bounds;
 
-    void initialize(const RectI & bounds)
-    {
-        _bounds = bounds;
-        _map.resize( _bounds.area() );
-        memset(_map.getData(), 0, _map.size());
-    }
+        // The storage for the image.
+        //
+        // - If storage is an OpenGL texture, then it is expected that the buffer layout is set to
+        // eImageBufferLayoutRGBAPackedFullRect and bitdepth to eImageBitDepthFloat
+        //
+        // - If storage is on disk (using MMAP), then it is expected that the buffer layout is set to
+        // eImageBufferLayoutMonoChannelTiled as this is the only format supported by MMAP.
+        //
+        // Default - eStorageModeRAM
+        StorageModeEnum storage;
 
-    ~Bitmap()
-    {
-    }
+        // The bitdepth of the image. Internally this will control how many tiles this image spans.
+        // For OpenGL textures, only float RGBA textures are supported for now.
+        //
+        // Default - eImageBitDepthFloat
+        ImageBitDepthEnum bitdepth;
 
-    void setTo1()
-    {
-        memset(_map.getData(), 1, _map.size());
-    }
+        // The layer represented by this image.
+        //
+        // Default - Color.RGBA layer
+        ImagePlaneDesc layer;
 
-    const RectI & getBounds() const
-    {
-        return _bounds;
-    }
+        // Components represented by the image.
+        // This is only used for a mono channel buffered layout
+        // it allows to only create storage for specific channels.
+        // The relevant bits are only those that are in the range of layer.getNumComponents()
+        //
+        // Default - All bits set to 1
+        std::bitset<4> components;
 
-#if NATRON_ENABLE_TRIMAP
-    void minimalNonMarkedRects_trimap(const RectI & roi, std::list<RectI>& ret, bool* isBeingRenderedElsewhere) const;
-    RectI minimalNonMarkedBbox_trimap(const RectI & roi, bool* isBeingRenderedElsewhere) const;
-#endif
+        // Whether or not the initializeStorage() may look for already existing tiles in the cache
+        //
+        // Default: eCacheAccessModeNone
+        CacheAccessModeEnum cachePolicy;
 
-    void minimalNonMarkedRects(const RectI & roi, std::list<RectI>& ret) const;
-    RectI minimalNonMarkedBbox(const RectI & roi) const;
+        // This must be set if the cache policy is not none.
+        // This will be used to prevent inserting in the cache part of images that had
+        // their render aborted.
+        // Also any of the algorithms used by this image (fill, copyUnprocessChannels, etc..)
+        // will use this to check if the render has been aborted and cancel early the processing
+        // if needed.
+        TreeRenderNodeArgsPtr renderArgs;
 
+        // Indicates the desired buffer format for the image. This defaults to eImageBufferLayoutRGBAPackedFullRect
+        //
+        // Default - eImageBufferLayoutRGBAPackedFullRect
+        ImageBufferLayoutEnum bufferFormat;
+        
+        // The scale of the image: This is the scale of the render: for a proxy render, this should be (1,1)
+        // and for a proxy render, the scale to convert from the full format to proxy format
+        //
+        // Default - (1,1)
+        RenderScale proxyScale;
 
-    ///Fill with 1 the roi
-    void markForRendered(const RectI & roi);
+        // This is the mip map level of the image: it is a scale factor applied to the proxyScale.
+        // For a mipMapLevel of 0, the factor is 1, level 1=0.5, level 2= 0.25, etc...
+        //
+        // Default - 0
+        unsigned int mipMapLevel;
 
-#if NATRON_ENABLE_TRIMAP
-    ///Fill with 2 the roi
-    void markForRendering(const RectI & roi);
-#endif
+        // Is this image used to perform draft computations ? (i.e that were computed with low samples)
+        // This is relevant only if the image is cached
+        //
+        // Default - false
+        bool isDraft;
 
-    void clear(const RectI& roi);
+        // In order to be cached, the tiles of the image need to know the node hash of the node they correspond to.
+        //
+        // Default - 0
+        U64 nodeTimeInvariantHash;
 
-    void swap(Bitmap& other);
+        // In order to be cached, the image may need to be stamped with a time.
+        // Effects that are time invariant should leave this to the default value
+        //
+        // Default - 0
+        TimeValue time;
 
-    const char* getBitmap() const
-    {
-        return _map.getData();
-    }
+        // In order to be cached, the image may need to be stamped with a view.
+        // Effects that are view invariant should leave this to the default value
+        //
+        // Default - 0
+        ViewIdx view;
 
-    char* getBitmap()
-    {
-        return _map.getData();
-    }
+        // If the storage is set to OpenGL texture, this is the OpenGL context to which the texture belongs to.
+        //
+        // Default - NULL
+        OSGLContextPtr glContext;
 
-    const char* getBitmapAt(int x, int y) const;
-    char* getBitmapAt(int x, int y);
+        // The texture target, only relevant when storage is set to an OpenGL texture
+        //
+        // Default - GL_TEXTURE_2D
+        U32 textureTarget;
 
-    void copyRowPortion(int x1, int x2, int y, const Bitmap& other);
+        // If set, the internal storage of the image will be set to this buffer instead of allocating a new one
+        // In this case, this is expected that the image is single tiled with bounds exactly covering the bounds
+        // of the memory buffer and storage, bitdepth etc... matching the provided buffer properties.
+        //
+        // Default - NULL
+        ImageStorageBasePtr externalBuffer;
 
-    void copyBitmapPortion(const RectI& roi, const Bitmap& other);
-
-    void setDirtyZone(const RectI& zone)
-    {
-        _dirtyZone = zone;
-        _dirtyZoneSet = true;
-    }
+        InitStorageArgs();
+    };
 
 private:
-    RectI _bounds;
-    RamBuffer<char> _map;
 
-    /**
-     * This represents the zone that has potentially something to render. In minimalNonMarkedRects
-     * we intersect the region of interest with the dirty zone. This is useful to optimize the bitmap checking
-     * when we are sure multiple threads are not using the image and we have a very small RoI to render.
-     * For now it's only used for the rotopaint while painting.
-     **/
-    RectI _dirtyZone;
-    bool _dirtyZoneSet;
-};
+    void initializeStorage(const InitStorageArgs& args);
 
-class Image
-    : public CacheEntryHelper<unsigned char, ImageKey, ImageParams>, public BufferableObject
-{
 public:
 
-    Image(const ImageKey & key,
-          const ImageParamsPtr &  params,
-          const CacheAPI* cache);
+    /**
+     * @brief Make an image with the given storage parameters. 
+     * This may fail, in which case a std::bad_alloc exception is thrown. 
+     **/
+    static ImagePtr create(const InitStorageArgs& args);
 
-
-    /*This constructor can be used to allocate a local Image. The deallocation should
-       then be handled by the user. Note that no view number is passed in parameter
-       as it is not needed.*/
-    Image(const ImageComponents& components,
-          const RectD & regionOfDefinition,    //!< rod in canonical coordinates
-          const RectI & bounds,    //!< bounds in pixel coordinates
-          unsigned int mipMapLevel,
-          double par,
-          ImageBitDepthEnum bitdepth,
-          ImagePremultiplicationEnum premult,
-          ImageFieldingOrderEnum fielding,
-          bool useBitmap,
-          StorageModeEnum storage,
-          const OSGLContextPtr& context,
-          U32 textureTarget,
-          bool isGPUTexture);
-
-    //Same as above but parameters are in the ImageParams object
-    Image(const ImageKey & key,
-          const ImageParamsPtr& params);
-
-
+    /**
+      * @brief Releases the storage used by this image and if needed push the pixels to the cache.
+     **/
     virtual ~Image();
 
-    bool usesBitMap() const { return _useBitmap; }
+    /**
+     * @brief Returns the internal buffer formating
+     **/
+    ImageBufferLayoutEnum getBufferFormat() const;
 
-    StorageModeEnum getStorageMode() const
+    /**
+     * @brief Returns the internal storage of the image that was supplied in the create() function.
+     **/
+    StorageModeEnum getStorageMode() const;
+
+    /**
+     * @brief Returns the bounds of the image. This is the area
+     * where the pixels are defined.
+     **/
+    const RectI& getBounds() const;
+
+    /**
+     * @brief Returns the scale of the image.
+     **/
+    const RenderScale& getProxyScale() const;
+
+    /**
+     * @brief Return the mipmap level of the image
+     **/
+    unsigned int getMipMapLevel() const;
+
+    /**
+     * @brief Converts the mipmap level to a scale factor
+     **/
+    static double getScaleFromMipMapLevel(unsigned int level);
+
+    /**
+     * @brief Converts the given scale factor to a mipmap level.
+     * The scale factor must correspond to a mipmap level.
+     **/
+    static unsigned int getLevelFromScale(double s);
+
+    /**
+     * @brief Short for getLayer().getNumComponents()
+     **/
+    unsigned int getComponentsCount() const;
+
+    /**
+     * @brief Returns the layer that was passed to the create() function
+     **/
+    const ImagePlaneDesc& getLayer() const;
+
+    /**
+     * @brief Returns the bitdepth of the image as passed to the create() function
+     **/
+    ImageBitDepthEnum getBitDepth() const;
+
+    /**
+     * @brief This enum controls the behavior when doing the following conversion:
+     * anything-->RGBA
+     * anything-->Alpha
+     **/
+    enum AlphaChannelHandlingEnum
     {
-        return _params->getStorageInfo().mode;
-    }
+        // If the alpha channel does not exist in input, it is filled with 0
+        // otherwise it is copied from the input.
+        eAlphaChannelHandlingCreateFill0,
 
-    virtual void onMemoryAllocated(bool diskRestoration) OVERRIDE FINAL;
+        // If the alpha channel does not exist in input, it is filled with 1
+        // otherwise it is copied from the input.
+        eAlphaChannelHandlingCreateFill1,
 
-    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
-                                     const double par,
-                                     unsigned int mipMapLevel,
-                                     const ImageComponents& components,
-                                     ImageBitDepthEnum bitdepth,
-                                     ImagePremultiplicationEnum premult,
-                                     ImageFieldingOrderEnum fielding,
-                                     const OSGLContextPtr& context,
-                                     StorageModeEnum storage,
-                                     U32 textureTarget);
-    
-    static ImageParamsPtr makeParams(const RectD & rod,    // the image rod in canonical coordinates
-                                     const RectI& bounds,
-                                     const double par,
-                                     unsigned int mipMapLevel,
-                                     const ImageComponents& components,
-                                     ImageBitDepthEnum bitdepth,
-                                     ImagePremultiplicationEnum premult,
-                                     ImageFieldingOrderEnum fielding,
-                                     const OSGLContextPtr& context,
-                                     StorageModeEnum storage,
-                                     U32 textureTarget);
+        // The alpha channel is copied from the channel given by channelForAlpha
+        eAlphaChannelHandlingFillFromChannel,
 
-    // ImageParamsPtr getParams() const WARN_UNUSED_RETURN;
+    };
 
     /**
-     * @brief Resizes this image so it contains newBounds, copying all the content of the current bounds of the image into
-     * a new buffer. This is not thread-safe and should be called only while under an ImageLocker
+     * @brief This enum controls the behavior when copying a single channel image
+     * to a multiple channel image.
      **/
-    bool ensureBounds(const OSGLContextPtr& glContext, const RectI& newBounds, bool fillWithBlackAndTransparent = false, bool setBitmapTo1 = false);
+    enum MonoToPackedConversionEnum
+    {
+        // The mono channel will be copied to the channel given by conversionChannel
+        // Other channels will be filled with a constant that is 0
+        eMonoToPackedConversionCopyToChannelAndFillOthers,
+
+        // The mono channel will be copied to the channel given by conversionChannel
+        // Other channels will be leaved intact
+        eMonoToPackedConversionCopyToChannelAndLeaveOthers,
+
+        // The mono channel will be copied to all channels of the destination image
+        eMonoToPackedConversionCopyToAll
+    };
+
+    struct CopyPixelsArgs
+    {
+        // The portion of rectangle to copy.
+        //
+        // Must be set to an area that intersects both image bounds.
+        RectI roi;
+
+        // A value in 0 <= index < 4 indicating the channel to use
+        // for the AlphaChannelHandlingEnum and MonoToPackedConversionEnum flags
+        //
+        // Default - 0
+        int conversionChannel;
+
+        // @see AlphaChannelHandlingEnum
+        //
+        // Default - eAlphaChannelHandlingFillFromChannel
+        AlphaChannelHandlingEnum alphaHandling;
+
+        // @see MonoToPackedConversionEnum
+        //
+        // Default - eMonoToPackedConversionCopyToChannelAndLeaveOthers
+        MonoToPackedConversionEnum monoConversion;
+
+        // Input image is assumed to be in this colorspace
+        // This is used when converting from bitdepth
+        //
+        // Default - eViewerColorSpaceLinear
+        ViewerColorSpaceEnum srcColorspace;
+
+        // Output image is assumed to be in this colorspace
+        // This is used when converting from bitdepth
+        //
+        // Default - eViewerColorSpaceLinear
+        ViewerColorSpaceEnum dstColorspace;
+
+        // When converting from RGBA to RGB, if set to true the image
+        // will be unpremultiplied.
+        //
+        // Default - false
+        bool unPremultIfNeeded;
+
+        // When copying the image, tiles that are marked cached on the
+        // destination image will not be written to
+        //
+        // Default - false
+        bool skipDestinationTilesMarkedCached;
+
+        // If this image and the other image have the same number of components,
+        // same buffer layout, same bitdepth and same bounds
+        // by default the memory buffer pointers will be copied instead of all pixels.
+        // This can be turned off by setting this flag to true
+        //
+        // Default - false
+        bool forceCopyEvenIfBuffersHaveSameLayout;
+
+        CopyPixelsArgs();
+    };
 
     /**
-     * @brief Same as ensureBounds() except that if a resize is needed, it will do the resize in the output image instead to avoid taking the
-     * write lock from this image.
+     * @brief Copy pixels from another image in the given rectangle.
+     * The other image may have a different bitdepth or components.
+     *
+     * If both images are tiled, their tile size may differ.
+     * The other image will be copied to a temporary
+     * untiled buffer which will then be copied to this image tiles.
+     *
+     * If the other image is an OpenGL texture and this image is tiled
+     * the texture will be read into a temporary buffer first, to ensure
+     * a single call to glReadPixels.
+     *
+     * @param conversionChannel A value in 0 <= index < 4 indicating the channel to use
+     * for the AlphaChannelHandlingEnum and MonoToPackedConversionEnum flags
      **/
-    bool copyAndResizeIfNeeded(const RectI& newBounds, bool fillWithBlackAndTransparent, bool setBitmapTo1, ImagePtr* output, const OSGLContextPtr& glContext);
+    void copyPixels(const Image& other, const CopyPixelsArgs& args);
 
     /*
      Compute the rectangles (A,B,C,D) where to set the image to 0
@@ -261,838 +415,288 @@ public:
      */
     static void getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, RectI& aRect, RectI& bRect, RectI& cRect, RectI& dRect);
 
-    template <typename GL>
-    static void setupGLViewport(const RectI& bounds, const RectI& roi)
-    {
-        GL::Viewport( roi.x1 - bounds.x1, roi.y1 - bounds.y1, roi.width(), roi.height() );
-        glCheckError(GL);
-        GL::MatrixMode(GL_PROJECTION);
-        GL::LoadIdentity();
-        GL::Ortho( roi.x1, roi.x2,
-                    roi.y1, roi.y2,
-                    -10.0 * (roi.y2 - roi.y1), 10.0 * (roi.y2 - roi.y1) );
-        glCheckError(GL);
-        GL::MatrixMode(GL_MODELVIEW);
-        GL::LoadIdentity();
-    }
-
-    template <typename GL>
-    static void applyTextureMapping(const RectI& srcBounds, const RectI& dstBounds, const RectI& roi)
-    {
-        setupGLViewport<GL>(dstBounds, roi);
-
-        // Compute the texture coordinates to match the srcRoi
-        Point srcTexCoords[4], vertexCoords[4];
-        vertexCoords[0].x = roi.x1;
-        vertexCoords[0].y = roi.y1;
-        srcTexCoords[0].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[0].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
-
-        vertexCoords[1].x = roi.x2;
-        vertexCoords[1].y = roi.y1;
-        srcTexCoords[1].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[1].y = (roi.y1 - srcBounds.y1) / (double)srcBounds.height();
-
-        vertexCoords[2].x = roi.x2;
-        vertexCoords[2].y = roi.y2;
-        srcTexCoords[2].x = (roi.x2 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[2].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
-
-        vertexCoords[3].x = roi.x1;
-        vertexCoords[3].y = roi.y2;
-        srcTexCoords[3].x = (roi.x1 - srcBounds.x1) / (double)srcBounds.width();
-        srcTexCoords[3].y = (roi.y2 - srcBounds.y1) / (double)srcBounds.height();
-
-        GL::Begin(GL_POLYGON);
-        for (int i = 0; i < 4; ++i) {
-            GL::TexCoord2d(srcTexCoords[i].x, srcTexCoords[i].y);
-            GL::Vertex2d(vertexCoords[i].x, vertexCoords[i].y);
-        }
-        GL::End();
-        glCheckError(GL);
-    }
-
-private:
-
-    static void resizeInternal(const OSGLContextPtr& glContext,
-                               const Image* srcImg,
-                               const RectI& srcBounds,
-                               const RectI& merge,
-                               bool fillWithBlackAndTransparent,
-                               bool setBitmapTo1,
-                               bool createInCache,
-                               ImagePtr* outputImage);
-
-public:
+    /**
+     * @brief Helper function to get string from a layer and bitdepth
+     **/
+    static std::string getFormatString(const ImagePlaneDesc& comps, ImageBitDepthEnum depth);
 
     /**
-     * @brief Returns the region of definition of the image in canonical coordinates. It doesn't have any
-     * scale applied to it. In order to return the true pixel data window you must call getBounds()
-     * WARNING: this is NOT the same definition as in OpenFX, where the Image RoD is always in pixels.
+     * @brief Helper function to get string from  bitdepth
      **/
-    const RectD & getRoD() const
-    {
-        return _rod;
-    };
-
-    /**
-     * @brief Do not use this. This is used only to circumvent a situation where 2 images of the same hash could have a different RoD
-     * to prevent an assert from triggering.
-     **/
-    void setRoD(const RectD& rod);
-
-    /**
-     * @brief Returns the bounds where data is in the image.
-     * This is equivalent to calling getRoD().mipMapLevel(getMipMapLevel());
-     * but slightly faster since it is stored as a member of the image.
-     **/
-    RectI getBounds() const
-    {
-        QReadLocker k(&_entryLock);
-
-        return _bounds;
-    };
-    virtual size_t size() const OVERRIDE FINAL
-    {
-        std::size_t dt = dataSize();
-        bool got = _entryLock.tryLockForRead();
-
-        dt += _bitmap.getBounds().area();
-        if (got) {
-            _entryLock.unlock();
-        }
-
-        return dt;
-    }
-
-    ///Overriden from BufferableObject
-    virtual std::size_t sizeInRAM() const OVERRIDE FINAL
-    {
-        return size();
-    }
-
-    unsigned int getMipMapLevel() const
-    {
-        return this->_params->getMipMapLevel();
-    }
-
-    double getScale() const
-    {
-        return getScaleFromMipMapLevel( getMipMapLevel() );
-    }
-
-    unsigned int getComponentsCount() const;
-    const ImageComponents& getComponents() const
-    {
-        return this->_params->getComponents();
-    }
-
-    void setBitmapDirtyZone(const RectI& zone);
-
-    /**
-     * @brief This function returns true if the components 'from' have enough components to
-     * convert to the 'to' components.
-     * e.g: RGBA to RGB would return true , the opposite would return false.
-     **/
-    static bool hasEnoughDataToConvert(ImageComponentsEnum from, ImageComponentsEnum to);
-    static std::string getFormatString(const ImageComponents& comps, ImageBitDepthEnum depth);
     static std::string getDepthString(ImageBitDepthEnum depth);
+
+    /**
+     * @brief Helper function that returns true if the conversion of bitdepth is lossy
+     **/
     static bool isBitDepthConversionLossy(ImageBitDepthEnum from, ImageBitDepthEnum to);
-    ImageBitDepthEnum getBitDepth() const
-    {
-        return this->_bitDepth;
-    }
-
-    ImageFieldingOrderEnum getFieldingOrder() const;
-
-    ImagePremultiplicationEnum getPremultiplication() const;
-
-    double getPixelAspectRatio() const;
-
 
     /**
-     * @brief Same as getElementsCount(getComponents()) * getBounds().width()
+     * @brief Helper function to retrieve a pointer to the pixel at the given coordinates for an image with the given specs.
      **/
-    unsigned int getRowElements() const;
-
-
-    /**
-     * @brief Lock the image for reading, while this object is living, the image buffer can't be written to.
-     * You must ensure that the image will live as long as this object lives otherwise the pointer will be invalidated.
-     * You may no longer use the pointer returned by pixelAt once this object dies.
-     **/
-    class ReadAccess
-        : public GenericAccess
-    {
-        const Image* img;
-
-public:
-
-        ReadAccess(const Image* img)
-            : GenericAccess()
-            , img(img)
-        {
-            if (img) {
-                img->lockForRead();
-            }
-        }
-
-        ReadAccess(const ReadAccess& other)
-            : GenericAccess()
-            , img(other.img)
-        {
-            //This is a recursive lock so it doesn't matter if we take it twice
-            if (img) {
-                img->lockForRead();
-            }
-        }
-
-        virtual ~ReadAccess()
-        {
-            if (img) {
-                img->unlock();
-            }
-        }
-
-        /**
-         * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
-         **/
-        const unsigned char* pixelAt(int x,
-                                     int y) const
-        {
-            assert(img);
-
-            return img->pixelAt(x, y);
-        }
-
-        const char* bitmapAt(int x,
-                             int y) const
-        {
-            assert(img);
-
-            return img->getBitmapAt(x, y);
-        }
-    };
-
-    /**
-     * @brief Lock the image for writing, while this object is living, the image buffer can't be read.
-     * You must ensure that the image will live as long as this object lives otherwise the pointer will be invalidated.
-     * You may no longer use the pointer returned by pixelAt once this object dies.
-     **/
-    class WriteAccess
-        : public GenericAccess
-    {
-        Image* img;
-
-public:
-
-        WriteAccess(Image* img)
-            : GenericAccess()
-            , img(img)
-        {
-            img->lockForWrite();
-        }
-
-        WriteAccess(const WriteAccess& other)
-            : GenericAccess()
-            , img(other.img)
-        {
-            //This is a recursive lock so it doesn't matter if we take it twice
-            img->lockForWrite();
-        }
-
-        virtual ~WriteAccess()
-        {
-            img->unlock();
-        }
-
-        /**
-         * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
-         **/
-        unsigned char* pixelAt(int x,
-                               int y)
-        {
-            return img->pixelAt(x, y);
-        }
-
-        char* bitmapAt(int x,
-                       int y) const
-        {
-            assert(img);
-
-            return img->getBitmapAt(x, y);
-        }
-    };
-
-    ReadAccess getReadRights() const
-    {
-        return ReadAccess(this);
-    }
-
-    WriteAccess getWriteRights()
-    {
-        return WriteAccess(this);
-    }
-
+    static const unsigned char* pixelAtStatic(int x, int y, const RectI& bounds, int nComps, int dataSizeOf, const unsigned char* buf);
     static unsigned char* pixelAtStatic(int x, int y, const RectI& bounds, int nComps, int dataSizeOf, unsigned char* buf);
 
-    static inline unsigned char* getPixelAddress_internal(int x, int y, unsigned char* basePtr, int pixelSize, const RectI& bounds)
-    {
-        return basePtr + (qint64)( y - bounds.y1 ) * pixelSize * bounds.width() + (qint64)( x - bounds.x1 ) * pixelSize;
-    }
-
-private:
-
-    friend class ReadAccess;
-    friend class WriteAccess;
-
     /**
-     * These are private accessors to the buffer. They may only exclusively called while under the lock
-     * of an image.
+     * @brief Utility function to retrieve pointers to the RGBA buffers as well as the pixel stride (in the PIX type).
+     * @param ptrs In input, if in a packed RGBA format, only the first pointer has been set and others are NULL. If co-planar
+     * each pointer points to the appropriate channel or NULL if it does not exist.
+     * @param dataSizeOf The number of bytes
      **/
-
-    const char* getBitmapAt(int x,
-                            int y) const
+    template <typename PIX, int nComps>
+    static inline void getChannelPointers(const PIX* ptrs[4],
+                                          int x, int y,
+                                          const RectI& bounds,
+                                          PIX* outPtrs[4],
+                                          int* pixelStride)
     {
-        return this->_bitmap.getBitmapAt(x, y);
-    }
-
-    char* getBitmapAt(int x,
-                      int y)
-    {
-        return this->_bitmap.getBitmapAt(x, y);
-    }
-
-    /**
-     * @brief Access pixels. The pointer must be cast to the appropriate type afterwards.
-     **/
-    unsigned char* pixelAt(int x, int y);
-    const unsigned char* pixelAt(int x, int y) const;
-
-    /**
-     * @brief Locks the image for read/write access.
-     * There can be a deadlock situation in the following situation:
-     * The lock for read is taken when a plugin attempts to
-     * fetch an image from a source clip. But if the plug-in
-     * fetches twice the very same image (likely if this is a tracker on the last frame for example) then it will deadlock
-     * if a clip is not asking for the exact same region because it is likely there is something left to render.
-     *
-     * We detect such calls and ensure that there are no deadlock.
-     *
-     *
-     * NB: We cannot also rely on a mutex based implementation since it can lead to a deadlock in the following situation:
-     * Thread A requests image at time T and locks it
-     * Thread B requests image at time T+1 and locks it
-     * Thread A requests image at time T+1 and hangs
-     * Thread B requests image at time T and hangs
-     **/
-    void lockForRead() const
-    {
-        _entryLock.lockForRead();
-    }
-
-    void lockForWrite() const
-    {
-        _entryLock.lockForWrite();
-    }
-
-    void unlock() const
-    {
-        _entryLock.unlock();
-    }
-
-    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue>
-    static void convertToFormatInternal_sameComps(const RectI & renderWindow,
-                                                  const Image & srcImg,
-                                                  Image & dstImg,
-                                                  ViewerColorSpaceEnum srcColorSpace,
-                                                  ViewerColorSpaceEnum dstColorSpace,
-                                                  bool copyBitmap);
-
-    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps>
-    static void convertToFormatInternal(const RectI & renderWindow,
-                                        const Image & srcImg,
-                                        Image & dstImg,
-                                        ViewerColorSpaceEnum srcColorSpace,
-                                        ViewerColorSpaceEnum dstColorSpace,
-                                        int channelForAlpha,
-                                        bool useAlpha0,
-                                        bool copyBitmap,
-                                        bool requiresUnpremult);
-
-
-    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps,
-              bool requiresUnpremult>
-    static void convertToFormatInternalForUnpremult(const RectI & renderWindow,
-                                                    const Image & srcImg,
-                                                    Image & dstImg,
-                                                    ViewerColorSpaceEnum srcColorSpace,
-                                                    ViewerColorSpaceEnum dstColorSpace,
-                                                    bool useAlpha0,
-                                                    bool copyBitmap,
-                                                    int channelForAlpha);
-
-
-    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue, int srcNComps, int dstNComps,
-              bool requiresUnpremult, bool useColorspaces>
-    static void convertToFormatInternalForColorSpace(const RectI & renderWindow,
-                                                     const Image & srcImg,
-                                                     Image & dstImg,
-                                                     bool copyBitmap,
-                                                     bool useAlpha0,
-                                                     ViewerColorSpaceEnum srcColorSpace,
-                                                     ViewerColorSpaceEnum dstColorSpace,
-                                                     int channelForAlpha);
-
-
-    template <typename SRCPIX, typename DSTPIX, int srcMaxValue, int dstMaxValue>
-    static void convertToFormatInternalForDepth(const RectI & renderWindow,
-                                                const Image & srcImg,
-                                                Image & dstImg,
-                                                ViewerColorSpaceEnum srcColorSpace,
-                                                ViewerColorSpaceEnum dstColorSpace,
-                                                int channelForAlpha,
-                                                bool useAlpha0,
-                                                bool copyBitmap,
-                                                bool requiresUnpremult);
-
-public:
-
-
-    /**
-     * @brief Returns a list of portions of image that are not yet rendered within the
-     * region of interest given. This internally uses the bitmap to know what portion
-     * are already rendered in the image. It aims to return the minimal
-     * area to render. Since this problem is quite hard to solve,the different portions
-     * of image returned may contain already rendered pixels.
-     *
-     * Note that if the RoI is larger than the bounds of the image, the out of bounds portions
-     * will be added to the resulting list of rectangles.
-     **/
-#if NATRON_ENABLE_TRIMAP
-    void getRestToRender_trimap(const RectI & regionOfInterest,
-                                std::list<RectI>& ret,
-                                bool* isBeingRenderedElsewhere) const
-    {
-        if (!_useBitmap) {
-            return;
-        }
-        QReadLocker locker(&_entryLock);
-        _bitmap.minimalNonMarkedRects_trimap(regionOfInterest, ret, isBeingRenderedElsewhere);
-    }
-
-#endif
-    void getRestToRender(const RectI & regionOfInterest,
-                         std::list<RectI>& ret) const
-    {
-        if (!_useBitmap) {
-            return;
-        }
-        QReadLocker locker(&_entryLock);
-        _bitmap.minimalNonMarkedRects(regionOfInterest, ret);
-    }
-
-#if NATRON_ENABLE_TRIMAP
-    RectI getMinimalRect_trimap(const RectI & regionOfInterest,
-                                bool* isBeingRenderedElsewhere) const
-    {
-        if (!_useBitmap) {
-            return regionOfInterest;
-        }
-        QReadLocker locker(&_entryLock);
-
-        return _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest, isBeingRenderedElsewhere);
-    }
-
-#endif
-    RectI getMinimalRect(const RectI & regionOfInterest) const
-    {
-        if (!_useBitmap) {
-            return regionOfInterest;
-        }
-        QReadLocker locker(&_entryLock);
-
-        return _bitmap.minimalNonMarkedBbox(regionOfInterest);
-    }
-
-#if NATRON_ENABLE_TRIMAP
-    RectI getMinimalRectAndMarkForRendering_trimap(const RectI & regionOfInterest,
-                                                   bool* isBeingRenderedElsewhere)
-    {
-        if (!_useBitmap) {
-            return regionOfInterest;
-        }
-        RectI ret;
+        const int dataSizeOf = sizeof(PIX);
+        memset(outPtrs, 0, dataSizeOf * 4);
         {
-            QReadLocker locker(&_entryLock);
-            ret = _bitmap.minimalNonMarkedBbox_trimap(regionOfInterest, isBeingRenderedElsewhere);
+            // If co-planar and number of components greater than 1, then ptrs[1] should be set,
+            // In this case the pixel stride is always 1.
+            // If nComps >1 and !ptrs[1] then we are in a packed format buffer.
+            int redNComps = nComps;
+            if (nComps != 1 && ptrs[1]) {
+                redNComps = 1;
+            }
+            *pixelStride = redNComps;
+            outPtrs[0] = (PIX*)pixelAtStatic(x, y, bounds, redNComps, dataSizeOf, (unsigned char*)ptrs[0]);
         }
-        markForRendering(ret);
+        if (nComps > 1) {
+            if (ptrs[1]) {
+                outPtrs[1] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[1]);
+            } else {
+                outPtrs[1] = outPtrs[0] + 1;
+            }
+            if (nComps > 2) {
+                if (ptrs[2]) {
+                    outPtrs[2] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[2]);
+                } else {
+                    outPtrs[2] = outPtrs[1] + 1;
+                }
+            }
+            if (nComps > 3) {
+                if (ptrs[3]) {
+                    outPtrs[3] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[3]);
+                } else {
+                    outPtrs[3] = outPtrs[2] + 1;
+                }
+            }
+        }
+    } // getChannelPointers
 
-        return ret;
-    }
-
-#endif
-
-    void markForRendered(const RectI & roi)
+    template <typename PIX>
+    static inline void getChannelPointers(const PIX* ptrs[4],
+                                          int x, int y,
+                                          const RectI& bounds,
+                                          int nComps,
+                                          PIX* outPtrs[4],
+                                          int* pixelStride)
     {
-        if (!_useBitmap) {
-            return;
+        switch (nComps) {
+            case 1:
+                getChannelPointers<PIX, 1>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            case 2:
+                getChannelPointers<PIX, 2>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            case 3:
+                getChannelPointers<PIX, 3>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            case 4:
+                getChannelPointers<PIX, 4>(ptrs, x, y, bounds, outPtrs, pixelStride);
+                break;
+            default:
+                memset(outPtrs, 0, sizeof(void*) * 4);
+                *pixelStride = 0;
+                break;
         }
-        QWriteLocker locker(&_entryLock);
-        RectI intersection;
-        _bounds.intersect(roi, &intersection);
-        _bitmap.markForRendered(intersection);
+
     }
 
-#if NATRON_ENABLE_TRIMAP
-    ///Fill with 2 the roi
-    void markForRendering(const RectI & roi)
+    static void getChannelPointers(const void* ptrs[4],
+                                   int x, int y,
+                                   const RectI& bounds,
+                                   int nComps,
+                                   ImageBitDepthEnum bitdepth,
+                                   void* outPtrs[4],
+                                   int* pixelStride);
+
+
+    struct CPUTileData
     {
-        if (!_useBitmap) {
-            return;
+        void* ptrs[4];
+        RectI tileBounds;
+        ImageBitDepthEnum bitDepth;
+        int nComps;
+
+        CPUTileData()
+        : ptrs()
+        , tileBounds()
+        , bitDepth(eImageBitDepthNone)
+        , nComps(0)
+        {
+            memset(ptrs, 0, sizeof(void*) * 4);
         }
-        QWriteLocker locker(&_entryLock);
-        RectI intersection;
-        _bounds.intersect(roi, &intersection);
-        _bitmap.markForRendering(intersection);
-    }
 
-#endif
-
-    void clearBitmap(const RectI& roi)
-    {
-        if (!_useBitmap) {
-            return;
+        CPUTileData(const CPUTileData& other)
+        : ptrs()
+        , tileBounds(other.tileBounds)
+        , bitDepth(other.bitDepth)
+        , nComps(other.nComps)
+        {
+            memcpy(ptrs, other.ptrs, sizeof(void*) * 4);
         }
-        QWriteLocker locker(&_entryLock);
-        RectI intersection;
-        _bounds.intersect(roi, &intersection);
-        _bitmap.clear(intersection);
-    }
+    };
 
-#ifdef DEBUG
-    void printUnrenderedPixels(const RectI& roi) const;
-#endif
+    /**
+     * @brief For an image that is represented as an OpenGL texture, returns the associated texture.
+     **/
+    GLImageStoragePtr getGLImageStorage() const;
+
+    /**
+     * @brief For a tile with CPU (RAM or MMAP) storage, returns the buffer data.
+     **/
+    void getCPUTileData(const Tile& tile, CPUTileData* data) const;
+
+    static void getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data);
+
+    /**
+     * @brief Returns the tile at the given tileIndex.
+     * An untiled image has a single tile at index 0.
+     **/
+    bool getTileAt(int tileIndex, Tile* tile) const;
+
+    /**
+     * @brief Returns the number of tiles
+     **/
+    int getNumTiles() const;
+
+    /**
+     * @brief Returns the cache access policy for this image
+     **/
+    CacheAccessModeEnum getCachePolicy() const;
+
+    /**
+     * @brief If this image has cache write access, push the tiles to the cache.
+     * This will only push the tiles that are marked eCacheEntryStatusMustCompute.
+     * making them available to other threads waiting for it (and waking them up).
+     **/
+    void pushTilesToCacheIfNotAborted();
+
+    /**
+     * @brief If this image has some tiles pending (i.e: another thread is computing it),
+     * wait for them to be available. This function returns once all tiles are marked as cached
+     * or to be computed.
+     * @returns true if everything is rendered, false if there's still tiles to render
+     **/
+    bool waitForPendingTiles();
+
+    /**
+     * @brief If this image is cached, this will return what portion of the image is left to render.
+     * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
+     * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
+     **/
+    std::list<RectI> getRestToRender(bool *hasPendingResults) const;
+
 
     /**
      * @brief Fills the image with the given colour. If the image components
-     * are not RGBA it will ignore the unsupported components.
-     * For example if the image comps is eImageComponentAlpha, then only the alpha value 'a' will
+     * are not RGBA it will ignore the unexisting components.
+     * If the image is single channel, only the alpha value 'a' will
      * be used.
+     * Filling the image with black and transparant is optimized
      **/
-    void fill( const RectI & roi, float r, float g, float b, float a, const OSGLContextPtr& glContext = OSGLContextPtr() );
-
-    void fillZero( const RectI& roi, const OSGLContextPtr& glContext = OSGLContextPtr() );
-
-    void fillBoundsZero( const OSGLContextPtr& glContext = OSGLContextPtr() );
+    void fill( const RectI & roi, float r, float g, float b, float a);
 
     /**
-     * @brief Same as fill(const RectI&,float,float,float,float) but fills the R,G and B
-     * components with the same value.
+     * @brief Short for fill(roi, 0,0,0,0)
      **/
-    void fill( const RectI & rect,
-               float colorValue = 0.f,
-               float alphaValue = 1.f,
-               const OSGLContextPtr& glContext = OSGLContextPtr() )
-    {
-        fill(rect, colorValue, colorValue, colorValue, alphaValue, glContext);
-    }
+    void fillZero( const RectI& roi);
 
     /**
-     * @brief Copies the content of the portion defined by roi of the other image pixels into this image.
-     * The internal bitmap will be copied aswell
+     * @brief Short for fill(getBounds(), 0,0,0,0)
      **/
-    void pasteFrom( const Image & src, const RectI & srcRoi, bool copyBitmap = true, const OSGLContextPtr& glContext = OSGLContextPtr() );
+    void fillBoundsZero();
+
+    /**
+     * @brief Ensures the image bounds can contain the given roi.
+     * If it does not, a temporary image is created to the union of
+     * the existing bounds and the passed RoI. 
+     * Data is copied over to the temporary image and then swaped with this image.
+     * In output of this function, the image bounds contain at least the RoI.
+     **/
+    void ensureBounds(const RectI& roi);
 
 
     /**
-     * @brief Downscales a portion of this image into output.
-     * This function will adjust roi to the largest enclosed rectangle for the
-     * given mipmap level,
-     * and then computes the mipmap of the given level of that rectangle.
+     * @brief Downscales by pow(2, downscaleLevels) a portion of this image and returns a new image with 
+     * the downscaled data.
+     * If downscaleLevels is 0, this will return this image.
+     * The new image in output if created will have a packed RGBA full rect format.
+     * If the roi will be rounded to the closest enclosing rectangle that has
+     * a multiple of 2 width and height.
      **/
-    void downscaleMipMap(const RectD& rod,
-                         const RectI & roi,
-                         unsigned int fromLevel, unsigned int toLevel,
-                         bool copyBitMap,
-                         Image* output) const;
+    ImagePtr downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const;
 
     /**
-     * @brief Upscales a portion of this image into output.
-     * If the upscaled roi does not fit into output's bounds, it is cropped first.
-     **/
-    void upscaleMipMap(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
+     * @brief Returns true if the image contains NaNs or infinite values, and fix them.
+     * Currently, no OpenGL implementation is provided.
+     */
+    bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
 
-
-    static double getScaleFromMipMapLevel(unsigned int level);
-    static unsigned int getLevelFromScale(double s);
 
     /**
-     * @brief This function can be used to do the following conversion:
-     * 1) RGBA to RGB
-     * 2) RGBA to alpha
-     * 3) RGB to RGBA
-     * 4) RGB to alpha
-     *
-     * Also this function converts to the output bit depth.
-     *
-     * This function only works for images with the same region of definition and mipmaplevel.
-     *
-     *
-     * @param renderWindow The rectangle to convert
-     *
-     * @param srcColorSpace Input data will be taken to be in this color-space
-     *
-     * @param dstColorSpace Output data will be converted to this color-space.
-     *
-     * @param channelForAlpha is used in cases 2) and 4) to determine from which channel we should
-     * fill the alpha. If it is -1 it indicates you want to clear the mask.
-     *
-     * @param copyBitMap The bitmap will also be copied.
-     *
-     * @param requiresUnpremult If true, if a component conversion from RGBA to RGB happens
-     * the RGB channels will be divided by the alpha channel when copied to the output image.
-     *
-     * Note that this function is mainly used for the following conversion:
-     * RGBA --> Alpha
-     * or bit depth conversion
-     * Implementation should tend to optimize these cases.
+     * @brief Returns whether copyUnProcessedChannels() will have any effect at all
      **/
-    void convertToFormat(const RectI & renderWindow,
-                         ViewerColorSpaceEnum srcColorSpace,
-                         ViewerColorSpaceEnum dstColorSpace,
-                         int channelForAlpha,
-                         bool copyBitMap,
-                         bool requiresUnpremult,
-                         Image* dstImg) const;
-
-    void convertToFormatAlpha0(const RectI & renderWindow,
-                               ViewerColorSpaceEnum srcColorSpace,
-                               ViewerColorSpaceEnum dstColorSpace,
-                               int channelForAlpha,
-                               bool copyBitMap,
-                               bool requiresUnpremult,
-                               Image* dstImg) const;
-
-private:
-
-
-    void convertToFormatCommon(const RectI & renderWindow,
-                               ViewerColorSpaceEnum srcColorSpace,
-                               ViewerColorSpaceEnum dstColorSpace,
-                               int channelForAlpha,
-                               bool useAlpha0,
-                               bool copyBitMap,
-                               bool requiresUnpremult,
-                               Image* dstImg) const;
-
-    template <typename PIX, bool doPremult>
-    void premultInternal(const RectI& roi);
-    template <bool doPremult>
-    void premultForDepth(const RectI& roi);
-
-public:
-
-    /**
-     * @brief Premultiply the image by its alpha channel on the given RoI.
-     * Currently there is no implementation for OpenGL textures.
-     **/
-    void premultImage(const RectI& roi);
-
-    /**
-     * @brief Unpremultiply the image by its alpha channel on the given RoI.
-     * Currently there is no implementation for OpenGL textures.
-     **/
-    void unpremultImage(const RectI& roi);
-
     bool canCallCopyUnProcessedChannels(std::bitset<4> processChannels) const;
 
     /**
      * @brief Given the channels to process, this function copies from the originalImage the channels
      * that are not marked to true in processChannels.
      **/
-    void copyUnProcessedChannels( const RectI& roi,
-                                  ImagePremultiplicationEnum outputPremult,
-                                  ImagePremultiplicationEnum originalImagePremult,
-                                  std::bitset<4> processChannels,
-                                  const ImagePtr& originalImage,
-                                  bool ignorePremult,
-                                  const OSGLContextPtr& glContext = OSGLContextPtr() );
+    void copyUnProcessedChannels(const RectI& roi,
+                                 std::bitset<4> processChannels,
+                                 const ImagePtr& originalImage);
 
     /**
      * @brief Mask the image by the given mask and also disolves it to the originalImg with the given mix.
      **/
-    void applyMaskMix( const RectI& roi,
-                       const Image* maskImg,
-                       const Image* originalImg,
-                       bool masked,
-                       bool maskInvert,
-                       float mix,
-                       const OSGLContextPtr& glContext = OSGLContextPtr() );
+    void applyMaskMix(const RectI& roi,
+                      const ImagePtr& maskImg,
+                      const ImagePtr& originalImg,
+                      bool masked,
+                      bool maskInvert,
+                      float mix);
+
 
     /**
-     * @brief Eeturns true if image contains NaNs or infinite values, and fix them.
-     * Currently, no OpenGL implementation is provided.
-     */
-    bool checkForNaNs(const RectI& roi) WARN_UNUSED_RETURN;
-
-    void copyBitmapRowPortion(int x1, int x2, int y, const Image& other);
-
-    void copyBitmapPortion(const RectI& roi, const Image& other);
-
+     * @brief Clamp the pixel to the given minval and maxval
+     **/
     template <typename PIX>
     static PIX clamp(PIX x, PIX minval, PIX maxval);
 
 
+    /**
+     * @brief If PIX is an integer format (unsigned char/unsigned short)
+     * then it is clamped between 0 and maxValue, otherwise if floating point type
+     * it is left untouched.
+     **/
     template<typename PIX>
     static PIX clampIfInt(float v);
 
+    /**
+     * @brief Convert pixel depth
+     **/
     template <typename SRCPIX, typename DSTPIX>
     static DSTPIX convertPixelDepth(SRCPIX pix);
 
-private:
-
-    template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked, bool maskInvert>
-    void applyMaskMixForMaskInvert(const RectI& roi,
-                                   const Image* maskImg,
-                                   const Image* originalImg,
-                                   float mix);
-
-
-    template<int srcNComps, int dstNComps, typename PIX, int maxValue, bool masked>
-    void applyMaskMixForMasked(const RectI& roi,
-                               const Image* maskImg,
-                               const Image* originalImg,
-                               bool maskInvert,
-                               float mix);
-
-    template<int srcNComps, int dstNComps, typename PIX, int maxValue>
-    void applyMaskMixForDepth(const RectI& roi,
-                              const Image* maskImg,
-                              const Image* originalImg,
-                              bool masked,
-                              bool maskInvert,
-                              float mix);
-
-
-    template<int srcNComps, int dstNComps>
-    void applyMaskMixForDstComponents(const RectI& roi,
-                                      const Image* maskImg,
-                                      const Image* originalImg,
-                                      bool masked,
-                                      bool maskInvert,
-                                      float mix);
-
-    template<int srcNComps>
-    void applyMaskMixForSrcComponents(const RectI& roi,
-                                      const Image* maskImg,
-                                      const Image* originalImg,
-                                      bool masked,
-                                      bool maskInvert,
-                                      float mix);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA, bool premult, bool originalPremult, bool ignorePremult>
-    void copyUnProcessedChannelsForPremult(std::bitset<4> processChannels,
-                                           const RectI& roi,
-                                           const ImagePtr& originalImage);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool ignorePremult>
-    void copyUnProcessedChannelsForPremult(bool premult, bool originalPremult,
-                                           std::bitset<4> processChannels,
-                                           const RectI& roi,
-                                           const ImagePtr& originalImage);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps, bool doR, bool doG, bool doB, bool doA>
-    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
-                                            const bool premult,
-                                            const RectI& roi,
-                                            const ImagePtr& originalImage,
-                                            const bool originalPremult,
-                                            const bool ignorePremult);
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-    void copyUnProcessedChannelsForChannels(const std::bitset<4> processChannels,
-                                            const bool premult,
-                                            const RectI& roi,
-                                            const ImagePtr& originalImage,
-                                            const bool originalPremult,
-                                            const bool ignorePremult);
-
-
-    template <typename PIX, int maxValue, int srcNComps, int dstNComps>
-    void copyUnProcessedChannelsForComponents(bool premult,
-                                              const RectI& roi,
-                                              const std::bitset<4> processChannels,
-                                              const ImagePtr& originalImage,
-                                              const bool originalPremult,
-                                              const bool ignorePremult);
-
-    template <typename PIX, int maxValue>
-    void copyUnProcessedChannelsForDepth(bool premult,
-                                         const RectI& roi,
-                                         std::bitset<4> processChannels,
-                                         const ImagePtr& originalImage,
-                                         bool originalPremult,
-                                         bool ignorePremult);
-
-
-    /**
-     * @brief Given the output buffer,the region of interest and the mip map level, this
-     * function computes the mip map of this image in the given roi.
-     * If roi is NOT a power of 2, then it will be rounded to the closest power of 2.
-     **/
-    void buildMipMapLevel(const RectD& dstRoD, const RectI & roiCanonical, unsigned int level, bool copyBitMap,
-                          Image* output) const;
-
-
-    /**
-     * @brief Halve the given roi of this image into output.
-     * If the RoI bounds are odd, the largest enclosing RoI with even bounds will be considered.
-     **/
-    void halveRoI(const RectI & roi, bool copyBitMap,
-                  Image* output) const;
-
-
-    template <typename PIX, int maxValue>
-    void halveRoIForDepth(const RectI & roi,
-                          bool copyBitMap,
-                          Image* output) const;
-
-    /**
-     * @brief Same as halveRoI but for 1D only (either width == 1 or height == 1)
-     **/
-    void halve1DImage(const RectI & roi, Image* output) const;
-
-    template <typename PIX, int maxValue>
-    void halve1DImageForDepth(const RectI & roi, Image* output) const;
-
-    template <typename PIX, int maxValue>
-    void upscaleMipMapForDepth(const RectI & roi, unsigned int fromLevel, unsigned int toLevel, Image* output) const;
-
-    template<typename PIX>
-    void pasteFromForDepth(const Image & src, const RectI & srcRoi, bool copyBitmap = true, bool takeSrcLock = true);
-
-    template <typename PIX, int maxValue>
-    void fillForDepth(const RectI & roi, float r, float g, float b, float a);
-
-    template <typename PIX, int maxValue, int nComps>
-    void fillForDepthForComponents(const RectI & roi_,  float r, float g, float b, float a);
-
-    template<typename PIX>
-    void scaleBoxForDepth(const RectI & roi, Image* output) const;
 
 private:
-    ImageBitDepthEnum _bitDepth;
-    int _depthBytesSize;
-    Bitmap _bitmap;
-    RectD _rod;     // rod in canonical coordinates (not the same as the OFX::Image RoD, which is in pixel coordinates)
-    RectI _bounds;
-    double _par;
-    ImageFieldingOrderEnum _fielding;
-    ImagePremultiplicationEnum _premult;
-    bool _useBitmap;
-    int _nbComponents;
+
+    friend struct ImagePrivate;
+    
+    boost::scoped_ptr<ImagePrivate> _imp;
 };
 
 //template <> inline unsigned char clamp(unsigned char v) { return v; }

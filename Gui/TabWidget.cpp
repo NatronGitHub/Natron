@@ -1832,15 +1832,15 @@ TabWidget::keyPressEvent (QKeyEvent* e)
     Qt::Key key = (Qt::Key)e->key();
     bool accepted = true;
 
-    if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionShowPaneFullScreen, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupGlobal, kShortcutActionShowPaneFullScreen, modifiers, key) ) {
         togglePaneFullScreen();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionNextTab, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionNextTab, modifiers, key) ) {
         moveToNextTab();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionPrevTab, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionPrevTab, modifiers, key) ) {
         moveToPreviousTab();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionCloseTab, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionCloseTab, modifiers, key) ) {
         closeCurrentWidget();
-    } else if ( isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutIDActionFullscreen, modifiers, key) ) {
+    } else if ( isFloatingWindowChild() && isKeybind(kShortcutGroupGlobal, kShortcutActionFullscreen, modifiers, key) ) {
         _imp->gui->toggleFullScreen();
     } else {
         accepted = false;

@@ -30,6 +30,7 @@
 #include <cstring> // for std::memcpy
 #include <stdexcept>
 
+#include <QThread>
 #include <QApplication> // qApp
 #include "Global/GLIncludes.h" //!<must be included before QGLWidget
 #include <QtOpenGL/QGLWidget>
@@ -73,9 +74,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , iboTriangleStripId(0)
     , displayTextures()
     , partialUpdateTextures()
-    , shaderRGB()
-    , shaderBlack()
-    , shaderLoaded(false)
     , infoViewer()
     , viewerTab(parent)
     , zoomOrPannedSinceLastFit(false)
@@ -106,7 +104,6 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , checkerboardTileSize(0)
     , savedTexture(0)
     , prevBoundTexture(0)
-    , lastRenderedImageMutex()
     , sizeH()
     , pointerTypeOnPress(ePenTypeLMB)
     , pressureOnPress(1.)
@@ -135,14 +132,7 @@ ViewerGL::Implementation::~Implementation()
     assert( qApp && qApp->thread() == QThread::currentThread() );
     _this->makeCurrent();
 
-    if (shaderRGB) {
-        shaderRGB->removeAllShaders();
-        shaderRGB.reset();
-    }
-    if (shaderBlack) {
-        shaderBlack->removeAllShaders();
-        shaderBlack.reset();
-    }
+
     for (int i = 0; i < 2; ++i) {
         displayTextures[i].texture.reset();
     }
@@ -219,22 +209,18 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == _this->context() );
 
-    bool useShader = _this->getBitDepth() != eImageBitDepthByte;
-
 
     ///the texture rectangle in image coordinates. The values in it are multiples of tile size.
     ///
-    const TextureRect &roiRounded = this->displayTextures[textureIndex].texture->getTextureRect();
-    const TextureRect& roiNotRounded = this->displayTextures[textureIndex].roiNotRoundedToTileSize;
+    const RectI &textureBounds = this->displayTextures[textureIndex].texture->getBounds();
+    //const RectD& originalCanonicalRoI = this->displayTextures[textureIndex].originalCanonicalRoi;
 
     ///This is the coordinates in the image being rendered where datas are valid, this is in pixel coordinates
     ///at the time we initialize it but we will convert it later to canonical coordinates. See 1)
-    const double par = roiRounded.par;
-    RectD canonicalRoIRoundedToTileSize;
-    roiRounded.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
+    const double par = this->displayTextures[textureIndex].pixelAspectRatio;
 
-    RectD canonicalRoINotRounded;
-    roiNotRounded.toCanonical_noClipping(mipMapLevel, par, &canonicalRoINotRounded);
+    RectD canonicalRoIRoundedToTileSize;
+    textureBounds.toCanonical_noClipping(mipMapLevel, par /*, rod*/, &canonicalRoIRoundedToTileSize);
 
     ///the RoD of the image in canonical coords.
     RectD rod = _this->getRoD(textureIndex);
@@ -295,8 +281,6 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         } else if (polyType == Implementation::eWipePolygonPartial) {
             this->getPolygonTextureCoordinates(polygonPoints, canonicalRoIRoundedToTileSize, polygonTexCoords);
 
-            this->bindTextureAndActivateShader(textureIndex, useShader);
-
             GL_GPU::Begin(GL_POLYGON);
             for (int i = 0; i < polygonTexCoords.size(); ++i) {
                 const QPointF & tCoord = polygonTexCoords[i];
@@ -306,7 +290,6 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
             }
             GL_GPU::End();
 
-            this->unbindTextureAndReleaseShader(useShader);
         } else {
             ///draw the all polygon as usual
             polygonMode = eDrawPolygonModeWhole;
@@ -379,8 +362,6 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
             }
         }
 
-        this->bindTextureAndActivateShader(textureIndex, useShader);
-
         glCheckError(GL_GPU);
 
         GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);
@@ -407,7 +388,6 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
         GL_GPU::DisableClientState(GL_TEXTURE_COORD_ARRAY);
         glCheckError(GL_GPU);
 
-        this->unbindTextureAndReleaseShader(useShader);
     }
 } // drawRenderingVAO
 
@@ -421,8 +401,8 @@ ViewerGL::Implementation::initializeGL()
 
     int format, internalFormat, glType;
     Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, true) );
-    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, Texture::eDataTypeByte, format, internalFormat, glType, true) );
+    displayTextures[0].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte, format, internalFormat, glType, true) );
+    displayTextures[1].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, eImageBitDepthByte, format, internalFormat, glType, true) );
 
 
     GL_GPU::GenBuffers(1, &this->vboVerticesId);
@@ -444,7 +424,6 @@ ViewerGL::Implementation::initializeGL()
 
     initializeCheckerboardTexture(true);
 
-    _this->initShaderGLSL();
 
     glCheckError(GL_GPU);
 }
@@ -460,21 +439,6 @@ ViewerGL::Implementation::initAndCheckGlExtensions()
     return true;
 }
 
-void
-ViewerGL::Implementation::getBaseTextureCoordinates(const RectI & r,
-                                                    int closestPo2,
-                                                    int texW,
-                                                    int texH,
-                                                    GLfloat & bottom,
-                                                    GLfloat & top,
-                                                    GLfloat & left,
-                                                    GLfloat & right)
-{
-    bottom =  0;
-    top =  (GLfloat)(r.y2 - r.y1)  / (GLfloat)(texH * closestPo2);
-    left = 0;
-    right = (GLfloat)(r.x2 - r.x1)  / (GLfloat)(texW * closestPo2);
-}
 
 void
 ViewerGL::Implementation::getPolygonTextureCoordinates(const QPolygonF & polygonPoints,
@@ -620,35 +584,6 @@ public:
         }
     }
 };
-
-
-
-void
-ViewerGL::Implementation::bindTextureAndActivateShader(int i,
-                                                       bool useShader)
-{
-    assert(displayTextures[i].texture);
-    GL_GPU::ActiveTexture(GL_TEXTURE0);
-    GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
-    GL_GPU::BindTexture( GL_TEXTURE_2D, displayTextures[i].texture->getTexID() );
-    // debug (so the OpenGL debugger can make a breakpoint here)
-    //GLfloat d;
-    //glReadPixels(0, 0, 1, 1, GL_RED, GL_FLOAT, &d);
-    if (useShader) {
-        activateShaderRGB(i);
-    }
-    glCheckError(GL_GPU);
-}
-
-void
-ViewerGL::Implementation::unbindTextureAndReleaseShader(bool useShader)
-{
-    if (useShader) {
-        shaderRGB->release();
-    }
-    glCheckError(GL_GPU);
-    GL_GPU::BindTexture(GL_TEXTURE_2D, prevBoundTexture);
-}
 
 void
 ViewerGL::Implementation::drawSelectionRectangle()
@@ -814,33 +749,6 @@ ViewerGL::Implementation::initializeCheckerboardTexture(bool mustCreateTexture)
 
     checkerboardTileSize = appPTR->getCurrentSettings()->getCheckerboardTileSize();
 }
-
-void
-ViewerGL::Implementation::activateShaderRGB(int texIndex)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    // we assume that:
-    // - 8-bits textures are stored non-linear and must be displayer as is
-    // - floating-point textures are linear and must be decompressed according to the given lut
-
-    if ( !shaderRGB->bind() ) {
-        qDebug() << "Error when binding shader" << qPrintable( shaderRGB->log() );
-    }
-
-    ViewerNodePtr node = _this->getInternalNode();
-
-    double gain = node->getGain();
-    double gamma = node->getGamma();
-
-    shaderRGB->setUniformValue("Tex", 0);
-    shaderRGB->setUniformValue("gain", (float)gain);
-    shaderRGB->setUniformValue("offset", (float)displayTextures[texIndex].offset);
-    shaderRGB->setUniformValue("lut", (GLint)displayingImageLut);
-    shaderRGB->setUniformValue("gamma", (float)gamma);
-}
-
 
 
 void

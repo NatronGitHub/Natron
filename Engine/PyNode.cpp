@@ -59,6 +59,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/RotoPaintPrivate.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"
+
 #include "Engine/Hash64.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -78,19 +79,20 @@ ImageLayer::ImageLayer(const QString& layerName,
     for (QStringList::const_iterator it = componentsName.begin(); it != componentsName.end(); ++it, ++i) {
         channels[i] = it->toStdString();
     }
-    _comps.reset( new ImageComponents(layerName.toStdString(), componentsPrettyName.toStdString(), channels) );
+    _comps.reset( new ImagePlaneDesc(layerName.toStdString(), "", componentsPrettyName.toStdString(), channels) );
+
 }
 
-ImageLayer::ImageLayer(const ImageComponents& comps)
-    : _layerName( QString::fromUtf8( comps.getLayerName().c_str() ) )
-    , _componentsPrettyName( QString::fromUtf8( comps.getComponentsGlobalName().c_str() ) )
+ImageLayer::ImageLayer(const ImagePlaneDesc& comps)
+    : _layerName( QString::fromUtf8( comps.getPlaneLabel().c_str() ) )
+    , _componentsPrettyName( QString::fromUtf8( comps.getChannelsLabel().c_str() ) )
 {
-    const std::vector<std::string>& channels = comps.getComponentsNames();
+    const std::vector<std::string>& channels = comps.getChannels();
 
     for (std::size_t i = 0; i < channels.size(); ++i) {
         _componentsName.push_back( QString::fromUtf8( channels[i].c_str() ) );
     }
-    _comps.reset( new ImageComponents(comps) );
+    _comps.reset( new ImagePlaneDesc(comps) );
 }
 
 int
@@ -98,8 +100,9 @@ ImageLayer::getHash(const ImageLayer& layer)
 {
     Hash64 h;
 
-    Hash64::appendQString(QString::fromUtf8( layer._comps->getLayerName().c_str() ), &h );
-    const std::vector<std::string>& comps = layer._comps->getComponentsNames();
+    Hash64::appendQString(QString::fromUtf8( layer._comps->getPlaneLabel().c_str() ), &h );
+
+    const std::vector<std::string>& comps = layer._comps->getChannels();
     for (std::size_t i = 0; i < comps.size(); ++i) {
         Hash64::appendQString(QString::fromUtf8( comps[i].c_str() ), &h );
     }
@@ -155,49 +158,49 @@ ImageLayer::operator<(const ImageLayer& other) const
 ImageLayer
 ImageLayer::getNoneComponents()
 {
-    return ImageLayer( ImageComponents::getNoneComponents() );
+    return ImageLayer( ImagePlaneDesc::getNoneComponents() );
 }
 
 ImageLayer
 ImageLayer::getRGBAComponents()
 {
-    return ImageLayer( ImageComponents::getRGBAComponents() );
+    return ImageLayer( ImagePlaneDesc::getRGBAComponents() );
 }
 
 ImageLayer
 ImageLayer::getRGBComponents()
 {
-    return ImageLayer( ImageComponents::getRGBComponents() );
+    return ImageLayer( ImagePlaneDesc::getRGBComponents() );
 }
 
 ImageLayer
 ImageLayer::getAlphaComponents()
 {
-    return ImageLayer( ImageComponents::getAlphaComponents() );
+    return ImageLayer( ImagePlaneDesc::getAlphaComponents() );
 }
 
 ImageLayer
 ImageLayer::getBackwardMotionComponents()
 {
-    return ImageLayer( ImageComponents::getBackwardMotionComponents() );
+    return ImageLayer( ImagePlaneDesc::getBackwardMotionComponents() );
 }
 
 ImageLayer
 ImageLayer::getForwardMotionComponents()
 {
-    return ImageLayer( ImageComponents::getForwardMotionComponents() );
+    return ImageLayer( ImagePlaneDesc::getForwardMotionComponents() );
 }
 
 ImageLayer
 ImageLayer::getDisparityLeftComponents()
 {
-    return ImageLayer( ImageComponents::getDisparityLeftComponents() );
+    return ImageLayer( ImagePlaneDesc::getDisparityLeftComponents() );
 }
 
 ImageLayer
 ImageLayer::getDisparityRightComponents()
 {
-    return ImageLayer( ImageComponents::getDisparityRightComponents() );
+    return ImageLayer( ImagePlaneDesc::getDisparityRightComponents() );
 }
 
 UserParamHolder::UserParamHolder()
@@ -691,7 +694,7 @@ Effect::getParam(const QString& name) const
     }
 }
 
-int
+double
 Effect::getCurrentTime() const
 {
     NodePtr n = getInternalNode();
@@ -700,7 +703,7 @@ Effect::getCurrentTime() const
         PythonSetNullError();
         return 0.;
     }
-    return n->getEffectInstance()->getCurrentTime();
+    return n->getEffectInstance()->getCurrentTime_TLS();
 }
 
 void
@@ -794,6 +797,18 @@ Effect::isNodeSelected() const
         return false;
     }
     return n->isUserSelected();
+}
+
+bool
+Effect::isNodeActivated() const
+{
+    NodePtr n = getInternalNode();
+
+    if (!n) {
+        PythonSetNullError();
+        return false;
+    }
+    return n->isActivated();
 }
 
 void
@@ -1443,10 +1458,12 @@ Effect::getRegionOfDefinition(double time,
     }
     RenderScale s(1.);
 
-    StatusEnum stat = effect->getRegionOfDefinition_public(0, time, s, ViewIdx(view), &rod);
-    if (stat != eStatusOK) {
-        return RectD();
+    GetRegionOfDefinitionResultsPtr results;
+    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(TimeValue(time), s, ViewIdx(view), TreeRenderNodeArgsPtr(), &results);
+    if (isFailureRetCode(stat)) {
+        return rod;
     }
+    rod = results->getRoD();
 
     return rod;
 }
@@ -1518,15 +1535,16 @@ Effect::addUserPlane(const QString& planeName,
         compsGlobal.append(c);
         chans[i] = c;
     }
-    ImageComponents comp(planeName.toStdString(), compsGlobal, chans);
+    ImagePlaneDesc comp(planeName.toStdString(), "", compsGlobal, chans);
+
 
     return n->addUserComponents(comp);
 }
 
-std::map<ImageLayer, Effect*>
-Effect::getAvailableLayers() const
+std::list<ImageLayer>
+Effect::getAvailableLayers(int inputNb) const
 {
-    std::map<ImageLayer, Effect*> ret;
+    std::list<ImageLayer> ret;
 
     NodePtr n = getInternalNode();
 
@@ -1535,16 +1553,14 @@ Effect::getAvailableLayers() const
         return ret;
     }
 
-    EffectInstance::ComponentsAvailableMap availComps;
-    n->getEffectInstance()->getComponentsAvailable(true, true, getInternalNode()->getEffectInstance()->getCurrentTime(), &availComps);
-    for (EffectInstance::ComponentsAvailableMap::iterator it = availComps.begin(); it != availComps.end(); ++it) {
-        NodePtr node = it->second.lock();
-        if (node) {
-            Effect* effect = App::createEffectFromNodeWrapper(node);
-            ImageLayer layer(it->first);
-            ret.insert( std::make_pair(layer, effect) );
-        }
+    TimeValue time(n->getApp()->getTimeLine()->currentFrame());
+
+    std::list<ImagePlaneDesc> availComps;
+    n->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, TreeRenderNodeArgsPtr(), &availComps);
+    for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
+        ret.push_back(ImageLayer(*it));
     }
+
 
     return ret;
 }
@@ -1559,7 +1575,7 @@ Effect::getFrameRate() const
         return 24.;
     }
 
-    return node->getEffectInstance()->getFrameRate();
+    return node->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
 }
 
 double
@@ -1572,7 +1588,7 @@ Effect::getPixelAspectRatio() const
         return 1.;
     }
 
-    return node->getEffectInstance()->getAspectRatio(-1);
+    return node->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
 }
 
 ImageBitDepthEnum
@@ -1585,7 +1601,7 @@ Effect::getBitDepth() const
         return eImageBitDepthFloat;
     }
 
-    return node->getEffectInstance()->getBitDepth(-1);
+    return node->getEffectInstance()->getBitDepth(TreeRenderNodeArgsPtr(), -1);
 }
 
 ImagePremultiplicationEnum
@@ -1598,7 +1614,7 @@ Effect::getPremult() const
         return eImagePremultiplicationPremultiplied;
     }
 
-    return node->getEffectInstance()->getPremult();
+    return node->getEffectInstance()->getPremult(TreeRenderNodeArgsPtr());
 }
 
 void

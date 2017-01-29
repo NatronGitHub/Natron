@@ -642,7 +642,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
         TrackerContext::getMotionModelsAndHelps(false, &choices, &helps, &icons);
 
         QObject::connect( cb, SIGNAL(currentIndexChanged(int)), _publicInterface, SLOT(onItemMotionModelChanged(int)) );
-        assert( choices.size() == helps.size() );
+
         for (std::size_t i = 0; i < choices.size(); ++i) {
             std::map<int, std::string>::const_iterator foundIcon = icons.find(i);
             std::string iconFilePath;
@@ -660,6 +660,7 @@ TrackerPanelPrivate::makeTrackRowItems(const TrackMarker& marker,
             }
 
             cb->addItem( QString::fromUtf8( choices[i].c_str() ), icon, QKeySequence(), QString::fromUtf8( helps[i].c_str() ) );
+
         }
         cb->setCurrentIndex( motionModel->getValue() );
         TableItem* newItem = new TableItem;

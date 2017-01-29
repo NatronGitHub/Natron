@@ -6,18 +6,23 @@ The following sections contain documentation about every node in the  Filter gro
 .. toctree::
     :maxdepth: 1
 
+    plugins/fr.inria.AngleBlur.rst
     plugins/net.sf.cimg.CImgBloom.rst
     plugins/net.sf.cimg.CImgBlur.rst
     plugins/net.sf.cimg.CImgChromaBlur.rst
     plugins/net.sf.openfx.DenoiseSharpen.rst
     plugins/net.sf.cimg.CImgDilate.rst
     plugins/net.sf.openfx.DirBlur.rst
+    plugins/fr.inria.DropShadow.rst
+    plugins/fr.inria.EdgeBlur.rst
     plugins/eu.cimg.EdgeDetect.rst
     plugins/eu.cimg.EdgeExtend.rst
     plugins/net.sf.cimg.CImgErode.rst
     plugins/eu.cimg.ErodeBlur.rst
     plugins/net.sf.cimg.CImgErodeSmooth.rst
+    plugins/fr.inria.Fill.rst
     plugins/net.sf.cimg.CImgExpression.rst
+    plugins/fr.inria.Glow.rst
     plugins/net.sf.openfx.GodRays.rst
     plugins/net.sf.cimg.CImgLaplacian.rst
     plugins/net.sf.cimg.CImgMedian.rst
@@ -32,4 +37,6 @@ The following sections contain documentation about every node in the  Filter gro
     plugins/net.sf.cimg.CImgDenoise.rst
     plugins/net.sf.cimg.CImgRollingGuidance.rst
     plugins/net.sf.cimg.CImgSoften.rst
+    plugins/fr.inria.ZMask.rst
+    plugins/fr.inria.ZRemap.rst
 

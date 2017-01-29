@@ -53,6 +53,7 @@ CLANG_DIAG_ON(deprecated)
 #include "Engine/KnobTypes.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EffectInstance.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -170,7 +171,7 @@ public Q_SLOTS:
     void onMustRefreshGuiTriggered(ViewSetSpec,DimSpec,ValueChangedReasonEnum);
     void onChoiceMenuReset();
     void onChoiceMenuPopulated();
-    void onChoiceMenuEntryAppended(const QString& entry, const QString& help);
+    void onChoiceMenuEntryAppended();
     void onInViewportSecretChanged();
     void onInViewportLabelChanged();
 

@@ -24,7 +24,6 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyNode.h>
 #include <PyParameter.h>
 #include <list>
-#include <utility>
 
 
 // Native ---------------------------------------------------------
@@ -119,24 +118,25 @@ static PyObject* Sbk_ChoiceParamFunc_addOption(PyObject* self, PyObject* args)
         return 0;
     cppSelf = (ChoiceParamWrapper*)((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
     int overloadId = -1;
-    PythonToCppFunc pythonToCpp[] = { 0, 0 };
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
     SBK_UNUSED(pythonToCpp)
     int numArgs = PyTuple_GET_SIZE(args);
-    PyObject* pyArgs[] = {0, 0};
+    PyObject* pyArgs[] = {0, 0, 0};
 
     // invalid argument lengths
 
 
-    if (!PyArg_UnpackTuple(args, "addOption", 2, 2, &(pyArgs[0]), &(pyArgs[1])))
+    if (!PyArg_UnpackTuple(args, "addOption", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
         return 0;
 
 
     // Overloaded function decisor
-    // 0: addOption(QString,QString)
-    if (numArgs == 2
+    // 0: addOption(QString,QString,QString)
+    if (numArgs == 3
         && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))
-        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))) {
-        overloadId = 0; // addOption(QString,QString)
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[2])))) {
+        overloadId = 0; // addOption(QString,QString,QString)
     }
 
     // Function signature not found.
@@ -148,10 +148,12 @@ static PyObject* Sbk_ChoiceParamFunc_addOption(PyObject* self, PyObject* args)
         pythonToCpp[0](pyArgs[0], &cppArg0);
         ::QString cppArg1 = ::QString();
         pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::QString cppArg2 = ::QString();
+        pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // addOption(QString,QString)
-            cppSelf->addOption(cppArg0, cppArg1);
+            // addOption(QString,QString,QString)
+            cppSelf->addOption(cppArg0, cppArg1, cppArg2);
         }
     }
 
@@ -161,7 +163,7 @@ static PyObject* Sbk_ChoiceParamFunc_addOption(PyObject* self, PyObject* args)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_addOption_TypeError:
-        const char* overloads[] = {"unicode, unicode", 0};
+        const char* overloads[] = {"unicode, unicode, unicode", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.addOption", overloads);
         return 0;
 }
@@ -299,11 +301,11 @@ static PyObject* Sbk_ChoiceParamFunc_getActiveOption(PyObject* self, PyObject* a
 
 
     // Overloaded function decisor
-    // 0: getActiveOption(QString)const
+    // 0: getActiveOption(QString*,QString*,QString*,QString)const
     if (numArgs == 0) {
-        overloadId = 0; // getActiveOption(QString)const
+        overloadId = 0; // getActiveOption(QString*,QString*,QString*,QString)const
     } else if ((pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], (pyArgs[0])))) {
-        overloadId = 0; // getActiveOption(QString)const
+        overloadId = 0; // getActiveOption(QString*,QString*,QString*,QString)const
     }
 
     // Function signature not found.
@@ -326,9 +328,20 @@ static PyObject* Sbk_ChoiceParamFunc_getActiveOption(PyObject* self, PyObject* a
         if (pythonToCpp[0]) pythonToCpp[0](pyArgs[0], &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getActiveOption(QString)const
-            QString cppResult = const_cast<const ::ChoiceParamWrapper*>(cppSelf)->getActiveOption(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+            // getActiveOption(QString*,QString*,QString*,QString)const
+            // Begin code injection
+
+            QString optionID, optionLabel, optionHint;
+            cppSelf->getActiveOption(&optionID,&optionLabel, &optionHint, cppArg0);
+            pyResult = PyTuple_New(3);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &optionID));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &optionLabel));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &optionHint));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -339,7 +352,7 @@ static PyObject* Sbk_ChoiceParamFunc_getActiveOption(PyObject* self, PyObject* a
     return pyResult;
 
     Sbk_ChoiceParamFunc_getActiveOption_TypeError:
-        const char* overloads[] = {"unicode = QLatin1String(\"Main\")", 0};
+        const char* overloads[] = {"PySide.QtCore.QString, PySide.QtCore.QString, PySide.QtCore.QString, unicode = QLatin1String(\"Main\")", 0};
         Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.getActiveOption", overloads);
         return 0;
 }
@@ -409,9 +422,9 @@ static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: getOption(int)const
+    // 0: getOption(int,QString*,QString*,QString*)const
     if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
-        overloadId = 0; // getOption(int)const
+        overloadId = 0; // getOption(int,QString*,QString*,QString*)const
     }
 
     // Function signature not found.
@@ -423,9 +436,21 @@ static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
         pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getOption(int)const
-            QString cppResult = const_cast<const ::ChoiceParamWrapper*>(cppSelf)->getOption(cppArg0);
-            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &cppResult);
+            // getOption(int,QString*,QString*,QString*)const
+            // Begin code injection
+
+            QString optionID, optionLabel, optionHint;
+            bool ok = cppSelf->getOption(cppArg0, &optionID,&optionLabel, &optionHint);
+            pyResult = PyTuple_New(4);
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &ok));
+            PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &optionID));
+            PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &optionLabel));
+            PyTuple_SET_ITEM(pyResult, 3, Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], &optionHint));
+            return pyResult;
+
+            // End of code injection
+
+
         }
     }
 
@@ -436,35 +461,67 @@ static PyObject* Sbk_ChoiceParamFunc_getOption(PyObject* self, PyObject* pyArg)
     return pyResult;
 
     Sbk_ChoiceParamFunc_getOption_TypeError:
-        const char* overloads[] = {"int", 0};
+        const char* overloads[] = {"int, PySide.QtCore.QString, PySide.QtCore.QString, PySide.QtCore.QString", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.getOption", overloads);
         return 0;
 }
 
-static PyObject* Sbk_ChoiceParamFunc_getOptions(PyObject* self)
+static PyObject* Sbk_ChoiceParamFunc_getOptions(PyObject* self, PyObject* args)
 {
     ChoiceParamWrapper* cppSelf = 0;
     SBK_UNUSED(cppSelf)
     if (!Shiboken::Object::isValid(self))
         return 0;
     cppSelf = (ChoiceParamWrapper*)((::ChoiceParam*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_CHOICEPARAM_IDX], (SbkObject*)self));
-    PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp[] = { 0, 0, 0 };
+    SBK_UNUSED(pythonToCpp)
+    int numArgs = PyTuple_GET_SIZE(args);
+    PyObject* pyArgs[] = {0, 0, 0};
+
+    // invalid argument lengths
+
+
+    if (!PyArg_UnpackTuple(args, "getOptions", 3, 3, &(pyArgs[0]), &(pyArgs[1]), &(pyArgs[2])))
+        return 0;
+
+
+    // Overloaded function decisor
+    // 0: getOptions(std::list<QString>*,std::list<QString>*,std::list<QString>*)const
+    if (numArgs == 3
+        && (pythonToCpp[0] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_QSTRING_IDX], (pyArgs[0])))
+        && (pythonToCpp[1] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_QSTRING_IDX], (pyArgs[1])))
+        && (pythonToCpp[2] = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_QSTRING_IDX], (pyArgs[2])))) {
+        overloadId = 0; // getOptions(std::list<QString>*,std::list<QString>*,std::list<QString>*)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_ChoiceParamFunc_getOptions_TypeError;
 
     // Call function/method
     {
+        ::std::list<QString >* cppArg0;
+        pythonToCpp[0](pyArgs[0], &cppArg0);
+        ::std::list<QString >* cppArg1;
+        pythonToCpp[1](pyArgs[1], &cppArg1);
+        ::std::list<QString >* cppArg2;
+        pythonToCpp[2](pyArgs[2], &cppArg2);
 
         if (!PyErr_Occurred()) {
-            // getOptions()const
-            QStringList cppResult = const_cast<const ::ChoiceParamWrapper*>(cppSelf)->getOptions();
-            pyResult = Shiboken::Conversions::copyToPython(SbkPySide_QtCoreTypeConverters[SBK_QSTRINGLIST_IDX], &cppResult);
+            // getOptions(std::list<QString>*,std::list<QString>*,std::list<QString>*)const
+            const_cast<const ::ChoiceParamWrapper*>(cppSelf)->getOptions(cppArg0, cppArg1, cppArg2);
         }
     }
 
-    if (PyErr_Occurred() || !pyResult) {
-        Py_XDECREF(pyResult);
+    if (PyErr_Occurred()) {
         return 0;
     }
-    return pyResult;
+    Py_RETURN_NONE;
+
+    Sbk_ChoiceParamFunc_getOptions_TypeError:
+        const char* overloads[] = {"list, list, list", 0};
+        Shiboken::setErrorAboutWrongArguments(args, "NatronEngine.ChoiceParam.getOptions", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_ChoiceParamFunc_getValue(PyObject* self, PyObject* args, PyObject* kwds)
@@ -899,9 +956,9 @@ static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
     SBK_UNUSED(pythonToCpp)
 
     // Overloaded function decisor
-    // 0: setOptions(std::list<std::pair<QString,QString> >)
-    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_STD_PAIR_QSTRING_QSTRING_IDX], (pyArg)))) {
-        overloadId = 0; // setOptions(std::list<std::pair<QString,QString> >)
+    // 0: setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
+    if (PySequence_Check(pyArg)) {
+        overloadId = 0; // setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
     }
 
     // Function signature not found.
@@ -909,12 +966,55 @@ static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
 
     // Call function/method
     {
-        ::std::list<std::pair<QString, QString > > cppArg0;
-        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // setOptions(std::list<std::pair<QString,QString> >)
-            cppSelf->setOptions(cppArg0);
+            // setOptions(std::list<QString>,std::list<QString>,std::list<QString>)
+            // Begin code injection
+
+
+            if (!PyList_Check(pyArg)) {
+                PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                return 0;
+            }
+
+            int listSize = PyList_Size(pyArg);
+            if (listSize == 0) {
+                PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                return 0;
+            }
+
+            std::list<QString> optionIDs, optionLabels, optionHelps;
+            for (int i = 0; i < listSize; ++i) {
+                PyObject* obj = PyList_GetItem(pyArg, i);
+                if (!PyTuple_Check(obj)) {
+                    PyErr_SetString(PyExc_ValueError, "Argument must be a list of tuples");
+                    return 0;
+                }
+                int tupleSize = PyTuple_Size(obj);
+                if (tupleSize != 3) {
+                    PyErr_SetString(PyExc_ValueError, "Each option must be a tuple of 3 strings");
+                    return 0;
+                }
+                PyObject* pyOptionId = PyTuple_GetItem(obj, 0);
+                PyObject* pyOptionLabel = PyTuple_GetItem(obj, 1);
+                PyObject* pyOptionHnt = PyTuple_GetItem(obj, 2);
+                ::QString optionId = ::QString();
+                Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionId, &(optionId));
+                ::QString optionLabel = ::QString();
+                Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionLabel, &(optionLabel));
+                ::QString optionHint = ::QString();
+                Shiboken::Conversions::pythonToCppCopy(SbkPySide_QtCoreTypeConverters[SBK_QSTRING_IDX], pyOptionHnt, &(optionHint));
+                optionIDs.push_back(optionId);
+                optionLabels.push_back(optionLabel);
+                optionHelps.push_back(optionHint);
+            }
+
+            cppSelf->setOptions(optionIDs, optionLabels, optionHelps);
+
+
+            // End of code injection
+
+
         }
     }
 
@@ -924,7 +1024,7 @@ static PyObject* Sbk_ChoiceParamFunc_setOptions(PyObject* self, PyObject* pyArg)
     Py_RETURN_NONE;
 
     Sbk_ChoiceParamFunc_setOptions_TypeError:
-        const char* overloads[] = {"list", 0};
+        const char* overloads[] = {"list, list, list", 0};
         Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.ChoiceParam.setOptions", overloads);
         return 0;
 }
@@ -1091,7 +1191,7 @@ static PyMethodDef Sbk_ChoiceParam_methods[] = {
     {"getDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_getDefaultValue, METH_NOARGS},
     {"getNumOptions", (PyCFunction)Sbk_ChoiceParamFunc_getNumOptions, METH_NOARGS},
     {"getOption", (PyCFunction)Sbk_ChoiceParamFunc_getOption, METH_O},
-    {"getOptions", (PyCFunction)Sbk_ChoiceParamFunc_getOptions, METH_NOARGS},
+    {"getOptions", (PyCFunction)Sbk_ChoiceParamFunc_getOptions, METH_VARARGS},
     {"getValue", (PyCFunction)Sbk_ChoiceParamFunc_getValue, METH_VARARGS|METH_KEYWORDS},
     {"getValueAtTime", (PyCFunction)Sbk_ChoiceParamFunc_getValueAtTime, METH_VARARGS|METH_KEYWORDS},
     {"restoreDefaultValue", (PyCFunction)Sbk_ChoiceParamFunc_restoreDefaultValue, METH_VARARGS|METH_KEYWORDS},

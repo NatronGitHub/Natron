@@ -9,7 +9,7 @@ PortGroup                   conflicts_build 1.0
 # PHP Warning:  Version warning: Imagick was compiled against Image Magick version XXXX but version YYYY is loaded. Imagick will run but may behave surprisingly in Unknown on line 0
 
 name                        ImageMagick
-version                     6.9.6-6
+version                     6.9.7-5
 set reasonable_version      [lindex [split ${version} -] 0]
 homepage                    http://www.imagemagick.org/
 categories                  graphics devel
@@ -41,8 +41,8 @@ master_sites                http://www.imagemagick.org/download/ \
                             ftp://ftp.sunet.se/pub/multimedia/graphics/ImageMagick \
                             ftp://sunsite.icm.edu.pl/packages/ImageMagick
 
-checksums                   rmd160  b972268ab7eae84a8c5eb46f794a0fdccba0b44f \
-                            sha256  9cd1fe001d3ecb68b7d053ede40950d411956d47afc5267acc3ca57a77070d0a
+checksums                   rmd160  5d426e52232c3cd4afd08fd81c36a8a71cb6cabe \
+                            sha256  0ce1850661fe7751d39071b0596d28d86980b225bdcbd920eb0fef7dd31b6e04
 
 depends_lib                 port:bzip2 \
                             port:djvulibre \
@@ -160,8 +160,8 @@ variant natron conflicts x11 requires pango rsvg q32 hdri universal description 
     configure.args-replace  --enable-shared --disable-shared
     configure.args-replace  --with-modules --without-modules
     pre-extract {
-        if {${version} != "6.9.6-6"} {
-            ui_msg "Natron variant requires ImageMagick version 6.9.6-6 (this is ${version}), please modify the Portfile."
+        if {${version} != "6.9.7-5"} {
+            ui_msg "Natron variant requires ImageMagick version 6.9.7-5 (this is ${version}), please modify the Portfile."
             return -code error "incompatible ImageMagick version"
         }
     }

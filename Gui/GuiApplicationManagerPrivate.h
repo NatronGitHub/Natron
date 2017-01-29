@@ -41,6 +41,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QFutureWatcher>
 #include <QtCore/QString>
 #include <QtCore/QTimer>
+#include <QCursor>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -50,7 +51,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/DimensionIdx.h"
 #include "Engine/ViewIdx.h"
 
-#include "Gui/ActionShortcuts.h" // AppShortcuts
 #include "Gui/GuiApplicationManager.h" // PythonUserCommand
 #include "Serialization/NodeClipBoard.h"
 #include "Gui/GuiFwd.h"
@@ -79,11 +79,8 @@ struct GuiApplicationManagerPrivate
     ///We store here the file open request that was made on startup but that
     ///we couldn't handle at that time
     QString _openFileRequest;
-    AppShortcuts _actionShortcuts;
-    bool _shortcutsChangedVersion;
     QString _fontFamily;
     int _fontSize;
-    std::list<PythonUserCommand> pythonCommands;
 
     ///Used temporarily to store startup args while we load fonts
     CLArgs startupArgs;
@@ -106,35 +103,6 @@ struct GuiApplicationManagerPrivate
     void removePluginToolButtonInternal(const PluginGroupNodePtr& n, const std::vector<std::string>& grouping);
     void removePluginToolButton(const std::vector<std::string>& grouping);
 
-    void addStandardKeybind(const std::string & grouping, const std::string & id,
-                            const std::string & description, QKeySequence::StandardKey key,
-                            const Qt::KeyboardModifiers & fallbackmodifiers, Qt::Key fallbacksymbol);
-
-    void addKeybind(const std::string & grouping, const std::string & id,
-                    const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers, Qt::Key symbol);
-
-    void addKeybind(const std::string & grouping, const std::string & id,
-                    const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers, Qt::Key symbol,
-                    const Qt::KeyboardModifiers & modifiersMask);
-
-    void addKeybind(const std::string & grouping, const std::string & id,
-                    const std::string & description,
-                    const Qt::KeyboardModifiers & modifiers1, Qt::Key symbol1,
-                    const Qt::KeyboardModifiers & modifiers2, Qt::Key symbol2);
-
-    void addKeybindInternal(const QString & grouping, const QString & id,
-                            const QString & description,
-                            const std::list<Qt::KeyboardModifiers>& modifiersList,
-                            const std::list<Qt::Key>& symbolsList,
-                            const Qt::KeyboardModifiers& modifiersMask);
-
-    void removeKeybind(const QString& grouping, const QString& id);
-
-    void addMouseShortcut(const std::string & grouping, const std::string & id,
-                          const std::string & description,
-                          const Qt::KeyboardModifiers & modifiers, Qt::MouseButton button);
 
     /**
      * @brief Finds and existing (or create) PluginGroupNode that matches the given grouping, e.g: "Color/Math" and plugin

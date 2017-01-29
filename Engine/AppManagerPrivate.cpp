@@ -52,17 +52,17 @@
 
 #include "Engine/FStreamsSupport.h"
 #include "Engine/CLArgs.h"
+#include "Engine/Cache.h"
 #include "Engine/ExistenceCheckThread.h"
 #include "Engine/Format.h"
-#include "Engine/FrameEntry.h"
+#include "Engine/MultiThread.h"
 #include "Engine/Image.h"
 #include "Engine/OfxHost.h"
 #include "Engine/OSGLContext.h"
+#include "Engine/Settings.h"
 #include "Engine/ProcessHandler.h" // ProcessInputChannel
 #include "Engine/StandardPaths.h"
 
-#include "Serialization/CacheSerialization.h"
-#include "Serialization/CacheSerializationImpl.h"
 #include "Serialization/SerializationIO.h"
 
 // Don't forget to update glad.h and glad.c aswell when updating theses
@@ -83,27 +83,15 @@ AppManagerPrivate::AppManagerPrivate()
     , readerPlugins()
     , writerPlugins()
     , ofxHost( new OfxHost() )
+    , multiThreadSuite(new MultiThread())
     , _knobFactory( new KnobFactory() )
-    , _nodeCache()
-    , _diskCache()
-    , _viewerCache()
-    , diskCachesLocationMutex()
-    , diskCachesLocation()
+    , cache()
     , _backgroundIPC()
     , _loaded(false)
     , _binaryPath()
-    , _nodesGlobalMemoryUse(0)
     , errorLogMutex()
     , errorLog()
-    , maxCacheFiles(0)
-    , currentCacheFilesCount(0)
-    , currentCacheFilesCountMutex()
     , idealThreadCount(0)
-    , nThreadsToRender(0)
-    , nThreadsPerEffect(0)
-    , useThreadPool(true)
-    , nThreadsMutex()
-    , runningThreadsCount()
     , commandLineArgsUtf8()
     , nArgs(0)
     , mainModule(0)
@@ -115,7 +103,6 @@ AppManagerPrivate::AppManagerPrivate()
     , breakpadAliveThread()
 #endif
     , natronPythonGIL(QMutex::Recursive)
-    , pluginsUseInputImageCopyToRender(false)
     , glRequirements()
     , glHasTextureFloat(false)
     , hasInitializedOpenGLFunctions(false)
@@ -126,8 +113,6 @@ AppManagerPrivate::AppManagerPrivate()
     , openGLRenderers()
 {
     setMaxCacheFiles();
-
-    runningThreadsCount = 0;
 }
 
 AppManagerPrivate::~AppManagerPrivate()
@@ -234,15 +219,19 @@ AppManagerPrivate::loadBuiltinFormats()
         { "PC_Video",              640,  480, 1 },
         { "NTSC",                  720,  486, 0.91 },
         { "PAL",                   720,  576, 1.09 },
-        { "HD",                   1920, 1080, 1 },
         { "NTSC_16:9",             720,  486, 1.21 },
         { "PAL_16:9",              720,  576, 1.46 },
+        { "HD_720",               1280,  720, 1 },
+        { "HD",                   1920, 1080, 1 },
+        { "UHD_4K",               3840, 2160, 1 },
         { "1K_Super_35(full-ap)", 1024,  778, 1 },
         { "1K_Cinemascope",        914,  778, 2 },
         { "2K_Super_35(full-ap)", 2048, 1556, 1 },
         { "2K_Cinemascope",       1828, 1556, 2 },
+        { "2K_DCP",               2048, 1080, 1 },
         { "4K_Super_35(full-ap)", 4096, 3112, 1 },
         { "4K_Cinemascope",       3656, 3112, 2 },
+        { "4K_DCP",               4096, 2160, 1 },
         { "square_256",            256,  256, 1 },
         { "square_512",            512,  512, 1 },
         { "square_1K",            1024, 1024, 1 },
@@ -295,180 +284,12 @@ AppManagerPrivate::declareSettingsToPython()
     }
 }
 
-template <typename T>
-void
-saveCache(const boost::shared_ptr<Cache<T> >& cache)
-{
-    std::string cacheRestoreFilePath = cache->getRestoreFilePath();
-    FStreamsSupport::ofstream ofile;
-    FStreamsSupport::open(&ofile, cacheRestoreFilePath);
-
-    if (!ofile) {
-        std::cerr << "Failed to save cache to " << cacheRestoreFilePath.c_str() << std::endl;
-
-        return;
-    }
-
-
-    typename SERIALIZATION_NAMESPACE::CacheSerialization<T> toc;
-    cache->toSerialization(&toc);
-    try {
-        SERIALIZATION_NAMESPACE::write(ofile, toc, std::string());
-    } catch (const std::exception & e) {
-        qDebug() << "Failed to serialize the cache table of contents:" << e.what();
-    }
-}
-
-void
-AppManagerPrivate::saveCaches()
-{
-    saveCache<FrameEntry>( _viewerCache );
-    saveCache<Image>( _diskCache );
-} // saveCaches
-
-template <typename T>
-void
-restoreCache(AppManagerPrivate* p,
-             const boost::shared_ptr<Cache<T> >& cache)
-{
-    if ( p->checkForCacheDiskStructure( cache->getCachePath(), cache->isTileCache() ) ) {
-        std::string settingsFilePath = cache->getRestoreFilePath();
-        FStreamsSupport::ifstream ifile;
-        FStreamsSupport::open(&ifile, settingsFilePath);
-        if (!ifile) {
-            std::cerr << "Failure to open cache restore file at: " << settingsFilePath << std::endl;
-
-            return;
-        }
-        typename SERIALIZATION_NAMESPACE::CacheSerialization<T> toc;
-        try {
-            SERIALIZATION_NAMESPACE::read(std::string(), ifile, &toc);
-
-            //Only load caches with same version, otherwise wipe it!
-            if ( toc.cacheVersion != (int)cache->cacheVersion() ) {
-                p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
-            } else {
-                cache->fromSerialization(toc);
-            }
-
-        } catch (const std::exception & e) {
-            qDebug() << "Exception when reading disk cache TOC:" << e.what();
-            p->cleanUpCacheDiskStructure( cache->getCachePath(), cache->isTileCache() );
-
-            return;
-        }
-
-        QFile restoreFile( QString::fromUtf8( settingsFilePath.c_str() ) );
-        restoreFile.remove();
-
-    }
-}
-
-void
-AppManagerPrivate::restoreCaches()
-{
-    if ( !appPTR->isBackground() ) {
-        restoreCache<FrameEntry>( this, _viewerCache );
-        restoreCache<Image>( this, _diskCache );
-    }
-} // restoreCaches
-
-bool
-AppManagerPrivate::checkForCacheDiskStructure(const QString & cachePath, bool isTiled)
-{
-    QString settingsFilePath = cachePath;
-
-    if ( !settingsFilePath.endsWith( QChar::fromLatin1('/') ) ) {
-        settingsFilePath += QChar::fromLatin1('/');
-    }
-    settingsFilePath += QString::fromUtf8("restoreFile.");
-    settingsFilePath += QString::fromUtf8(NATRON_CACHE_FILE_EXT);
-
-    if ( !QFile::exists(settingsFilePath) ) {
-        cleanUpCacheDiskStructure(cachePath, isTiled);
-
-        return false;
-    }
-
-    if (!isTiled) {
-        QDir directory(cachePath);
-        QStringList files = directory.entryList(QDir::AllDirs);
-
-
-        /*Now counting actual data files in the cache*/
-        /*check if there's 256 subfolders, otherwise reset cache.*/
-        int count = 0; // -1 because of the restoreFile
-        int subFolderCount = 0;
-        Q_FOREACH(const QString &file, files) {
-            QString subFolder(cachePath);
-
-            subFolder.append( QDir::separator() );
-            subFolder.append(file);
-            if ( ( subFolder.right(1) == QString::fromUtf8(".") ) || ( subFolder.right(2) == QString::fromUtf8("..") ) ) {
-                continue;
-            }
-            QDir d(subFolder);
-            if ( d.exists() ) {
-                ++subFolderCount;
-                QStringList items = d.entryList();
-                for (int j = 0; j < items.size(); ++j) {
-                    if ( ( items[j] != QString::fromUtf8(".") ) && ( items[j] != QString::fromUtf8("..") ) ) {
-                        ++count;
-                    }
-                }
-            }
-        }
-        if (subFolderCount < 256) {
-            qDebug() << cachePath << "doesn't contain sub-folders indexed from 00 to FF. Reseting.";
-            cleanUpCacheDiskStructure(cachePath, isTiled);
-            
-            return false;
-        }
-    }
-    return true;
-} // AppManagerPrivate::checkForCacheDiskStructure
-
-void
-AppManagerPrivate::cleanUpCacheDiskStructure(const QString & cachePath, bool isTiled)
-{
-    /*re-create cache*/
-
-    QDir cacheFolder(cachePath);
-
-#   if QT_VERSION < 0x050000
-    QtCompat::removeRecursively(cachePath);
-#   else
-    if ( cacheFolder.exists() ) {
-        cacheFolder.removeRecursively();
-    }
-#endif
-    cacheFolder.mkpath( QChar::fromLatin1('.') );
-
-    QStringList etr = cacheFolder.entryList(QDir::NoDotAndDotDot);
-    // if not 256 subdirs, we re-create the cache
-    if (etr.size() < 256) {
-        Q_FOREACH (const QString &e, etr) {
-            cacheFolder.rmdir(e);
-        }
-    }
-    if (!isTiled) {
-        for (U32 i = 0x00; i <= 0xF; ++i) {
-            for (U32 j = 0x00; j <= 0xF; ++j) {
-                std::ostringstream oss;
-                oss << std::hex <<  i;
-                oss << std::hex << j;
-                std::string str = oss.str();
-                cacheFolder.mkdir( QString::fromUtf8( str.c_str() ) );
-            }
-        }
-    }
-}
 
 void
 AppManagerPrivate::setMaxCacheFiles()
 {
     /*Default to something reasonnable if the code below would happen to not work for some reason*/
-    size_t hardMax = NATRON_MAX_CACHE_FILES_OPENED;
+    size_t hardMax = 10000;
 
 #if defined(Q_OS_UNIX) && defined(RLIMIT_NOFILE)
     /*
@@ -547,7 +368,6 @@ AppManagerPrivate::setMaxCacheFiles()
      */
 #endif
 
-    maxCacheFiles = hardMax * 0.9;
 }
 
 #ifdef DEBUG

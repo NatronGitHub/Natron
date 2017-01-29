@@ -27,7 +27,7 @@ Functions
 *    def :meth:`clearViewerUIParameters<NatronEngine.Effect.clearViewerUIParameters>` ()
 *    def :meth:`destroy<NatronEngine.Effect.destroy>` ([autoReconnect=true])
 *    def :meth:`disconnectInput<NatronEngine.Effect.disconnectInput>` (inputNumber)
-*    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` ()
+*    def :meth:`getAvailableLayers<NatronEngine.Effect.getAvailableLayers>` (inputNumber)
 *    def :meth:`getBitDepth<NatronEngine.Effect.getBitDepth>` ()
 *    def :meth:`getColor<NatronEngine.Effect.getColor>` ()
 *    def :meth:`getContainerGroup<NatronEngine.Effect.getContainerGroup>` ()
@@ -49,6 +49,7 @@ Functions
 *    def :meth:`getScriptName<NatronEngine.Effect.getScriptName>` ()
 *    def :meth:`getSize<NatronEngine.Effect.getSize>` ()
 *    def :meth:`getUserPageParam<NatronEngine.Effect.getUserPageParam>` ()
+*    def :meth:`isNodeActivated<NatronEngine.Effect.isNodeActivated>` ()
 *    def :meth:`isUserSelected<NatronEngine.Effect.isUserSelected>` ()
 *    def :meth:`isReaderNode<NatronEngine.Effect.isReaderNode>` ()
 *    def :meth:`isWriterNode<NatronEngine.Effect.isWriterNode>` ()
@@ -241,18 +242,16 @@ their input to the input of this node instead.
 Removes any input Effect connected to the given *inputNumber* of this node.
 
 
-.. method:: NatronEngine.Effect.getAvailableLayers()
+.. method:: NatronEngine.Effect.getAvailableLayers(inputNumber)
 
-	:rtype: :class:`dict`
+	:param inputNumber: :class:`int<PySide.QtCore.int>`
+	:rtype: :class:`sequence`
 	
-	Returns the layer available on this node. This is a dict with a :ref:`ImageLayer<NatronEngine.ImageLayer>`
-	as key and :ref:`Effect<NatronEngine.Effect>` as value. The Effect is the closest node in
-	the upstream tree (including this node) that produced that layer.
+	Returns the layers available for the given *inputNumber*.
+	This is a list of :ref:`ImageLayer<NatronEngine.ImageLayer>`.
+	Note that if passing *-1* then this function will return the layers available in the
+	*main* input in addition to the layers produced by this node.
 	
-	For example, in a simple graph Read --> Blur, if the Read node has a layer available
-	named "RenderLayer.combined" but Blur is set to process only the color layer (RGBA), then
-	calling this function on the Blur will return a dict containing for key "RenderLayer.combined"
-	the Read node, whereas the dict will have for the key "RGBA" the Blur node.
 
 .. method:: NatronEngine.Effect.getBitDepth()
 
@@ -451,6 +450,18 @@ should not be used.
 
 
 Convenience function to return the user page parameter if this Effect has one.
+
+.. method:: NatronEngine.Effect.isNodeActivated()
+
+
+    :rtype: :class:`bool<PySide.QtCore.bool>`
+
+
+	Returns whether the node is activated or not.
+    When deactivated, the user cannot interact with the node.
+ 	A node is in a deactivated state after the user removed it from the node-graph:
+    it still lives a little longer so that an undo operation can insert it again in the nodegraph.
+    This state has nothing to do with the "Disabled" parameter in the "Node" tab of the settings panel.
 
 
 .. method:: NatronEngine.Effect.isUserSelected()

@@ -262,7 +262,11 @@ Gui::loadStyleSheet()
     if ( qss.open(QIODevice::ReadOnly
                   | QIODevice::Text) ) {
         QTextStream in(&qss);
-        QString content = QString::fromUtf8("QWidget { font-family: \"%1\"; font-size: %2pt; }\n").arg(appPTR->getAppFont()).arg(appPTR->getAppFontSize());
+        QString content = QString::fromUtf8("QWidget { font-family: \"%1\"; font-size: %2pt; }\n"
+                                            "QListView { font-family: \"%1\"; font-size: %2pt; }\n" // .. or the items in the QListView get the wrong font
+                                            "QComboBox::drop-down { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the drop-down doesn't get the right font
+                                            "QInputDialog { font-family: \"%1\"; font-size: %2pt; }\n" // ... or the label doesn't get the right font
+                                            ).arg(appFont).arg(appFontSize);
         content += in.readAll();
         qApp->setStyleSheet( content
                              .arg( qcolor_to_qstring(selCol) ) // %1: selection-color
@@ -397,7 +401,7 @@ Gui::addNewViewerTab(const NodeGuiPtr& node,
     ViewerTab* tab = new ViewerTab(nodeName, nodeViewerUi, activeNodeViewerUi, this, node, where);
     tab->setLabel(label);
 
-    QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int,bool)), this, SLOT(onViewerImageChanged(int,bool)) );
+    QObject::connect( tab->getViewer(), SIGNAL(imageChanged(int)), this, SLOT(onViewerImageChanged(int)) );
     {
         QMutexLocker l(&_imp->_viewerTabsMutex);
         _imp->_viewerTabs.push_back(tab);
@@ -412,8 +416,7 @@ Gui::addNewViewerTab(const NodeGuiPtr& node,
 } // Gui::addNewViewerTab
 
 void
-Gui::onViewerImageChanged(int texIndex,
-                          bool hasImageBackend)
+Gui::onViewerImageChanged(int texIndex)
 {
     ///notify all histograms a viewer image changed
     ViewerGL* viewer = qobject_cast<ViewerGL*>( sender() );
@@ -421,7 +424,7 @@ Gui::onViewerImageChanged(int texIndex,
     if (viewer) {
         QMutexLocker l(&_imp->_histogramsMutex);
         for (std::list<Histogram*>::iterator it = _imp->_histograms.begin(); it != _imp->_histograms.end(); ++it) {
-            (*it)->onViewerImageChanged(viewer, texIndex, hasImageBackend);
+            (*it)->onViewerImageChanged(viewer, texIndex);
         }
     }
 }
@@ -531,13 +534,9 @@ Gui::removeViewerTab(ViewerTab* tab,
     }
 
     ViewerNodePtr viewerNode = tab->getInternalNode();
-    ViewerInstancePtr internalViewer;
     if (viewerNode) {
-        internalViewer = viewerNode->getInternalViewerNode();
-    }
-    if (internalViewer) {
-        internalViewer->abortAnyEvaluation();
-        if (getApp()->getLastViewerUsingTimeline() == internalViewer) {
+        viewerNode->getNode()->abortAnyProcessing_non_blocking();
+        if (getApp()->getLastViewerUsingTimeline() == viewerNode) {
             getApp()->discardLastViewerUsingTimeline();
         }
     }
@@ -836,11 +835,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
         }
         {
             // If the plug-in has a shortcut get it
-
-            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(internalPlugin->getPluginID().c_str()));
-            if (!keybinds.empty()) {
-                defaultNodeShortcut = keybinds.front();
-            }
+            defaultNodeShortcut = getKeybind(shortcutGroup, QString::fromUtf8(internalPlugin->getPluginID().c_str()));
         }
 
         QAction* defaultPresetAction = new QAction(this);
@@ -877,10 +872,8 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
                     shortcutKey += "_preset_";
                     shortcutKey += it->presetLabel.toStdString();
 
-                    std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
-                    if (!keybinds.empty()) {
-                        presetShortcut = keybinds.front();
-                    }
+                    presetShortcut = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
+
                 }
 
                 QString presetLabel = QString::fromUtf8(pluginLabel.c_str());

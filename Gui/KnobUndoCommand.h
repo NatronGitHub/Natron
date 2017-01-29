@@ -50,6 +50,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Knob.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/TimeValue.h"
 
 #include "Gui/KnobGui.h"
 #include "Gui/Gui.h"
@@ -122,7 +123,7 @@ public:
     , _valueChangedReturnCode( oldValue.size() )
     , _merge(true)
     , _firstRedoCalled(false)
-    , _timelineTime(knob->getCurrentTime())
+    , _timelineTime(knob->getHolder()->getTimelineCurrentTime())
     {
         assert(oldValue.size() == newValue.size() && (int)oldValue.size() == knob->getNDimensions());
 
@@ -268,7 +269,7 @@ private:
     bool _firstRedoCalled;
 
     // The timeline time at which initially we called redo() the first time
-    double _timelineTime;
+    TimeValue _timelineTime;
 };
 
 
@@ -290,7 +291,7 @@ public:
         Variant newValue;
         PerDimViewVariantMap oldValues;
         DimSpec dimension;
-        double time;
+        TimeValue time;
         ViewSetSpec view;
         bool setKeyFrame;
         ValueChangedReturnCodeEnum setValueRetCode;
@@ -334,7 +335,7 @@ public:
                                  const PerDimViewVariantMap& oldValue,
                                  const Variant & newValue,
                                  DimSpec dimension,
-                                 double time,
+                                 TimeValue time,
                                  ViewSetSpec view);
 
     virtual ~MultipleKnobEditsUndoCommand();

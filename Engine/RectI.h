@@ -37,15 +37,16 @@
 
 #include "Global/GlobalDefines.h"
 
-#include "Engine/EngineFwd.h"
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 //Shiboken fails if defined at the start of a header
 GCC_DIAG_OFF(strict-overflow)
 #endif
-
-NATRON_NAMESPACE_ENTER;
 
 /**
  * @brief A rectangle where x1 < x2 and y1 < y2 such as width() == (x2 - x1) && height() == (y2 - y1)
@@ -172,8 +173,10 @@ public:
         return ret;
     }
 
+    void toCanonical(const RenderScale& thisScale, double par, const RectD & rod, RectD *rect) const;
     void toCanonical(unsigned int thisLevel, double par, const RectD & rod, RectD *rect) const;
     void toCanonical_noClipping(unsigned int thisLevel, double par, RectD *rect) const;
+    void toCanonical_noClipping(const RenderScale& thisScale, double par, RectD *rect) const;
 
     // the following should never be used: only canonical coordinates may be downscaled
     /**

@@ -352,7 +352,7 @@ KnobDouble::~KnobDouble()
 
 static void
 getNormalizeRect(const EffectInstancePtr& effect,
-            double /*time*/,
+            TimeValue /*time*/,
             RectD & rod)
 {
 #ifdef NATRON_NORMALIZE_SPATIAL_WITH_ROD
@@ -373,7 +373,7 @@ getNormalizeRect(const EffectInstancePtr& effect,
 
 double
 KnobDouble::denormalize(DimIdx dimension,
-                        double time,
+                        TimeValue time,
                         double value) const
 {
     EffectInstancePtr effect = toEffectInstance( getHolder() );
@@ -396,7 +396,7 @@ KnobDouble::denormalize(DimIdx dimension,
 
 double
 KnobDouble::normalize(DimIdx dimension,
-                     double time,
+                     TimeValue time,
                      double value) const
 {
     EffectInstancePtr effect = toEffectInstance( getHolder() );
@@ -431,7 +431,7 @@ KnobDouble::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
 
     double defaultValue = getDefaultValue(dimension);
     if (_defaultValuesAreNormalized) {
-        double denormalizedDefaultValue = denormalize(dimension, 0, defaultValue);
+        double denormalizedDefaultValue = denormalize(dimension, TimeValue(0), defaultValue);
         QMutexLocker k(&doubleData->valueMutex);
         return doubleData->value != denormalizedDefaultValue;
     } else {
@@ -477,7 +477,7 @@ KnobButton::typeName() const
 bool
 KnobButton::trigger()
 {
-    return evaluateValueChange(DimSpec(0), getCurrentTime(), ViewSetSpec(0),  eValueChangedReasonUserEdited);
+    return evaluateValueChange(DimSpec(0), getCurrentTime_TLS(), ViewSetSpec(0),  eValueChangedReasonUserEdited);
 }
 
 /******************************KnobChoice**************************************/
@@ -488,7 +488,6 @@ KnobButton::trigger()
 ChoiceKnobDimView::ChoiceKnobDimView()
 : ValueKnobDimView<int>()
 , menuOptions()
-, menuOptionTooltips()
 , activeEntry()
 , separators()
 , shortcuts()
@@ -508,14 +507,14 @@ ChoiceKnobDimView::setValueAndCheckIfChanged(const int& v)
     ValueKnobDimView<int>::setValueAndCheckIfChanged(v);
 
     QMutexLocker k(&valueMutex);
-    std::string newChoice;
+    ChoiceOption newChoice;
     if (v >= 0 && v < (int)menuOptions.size()) {
         newChoice = menuOptions[v];
     } else {
         // No current value, assume they are different
         return true;
     }
-    if (activeEntry != newChoice) {
+    if (activeEntry.id != newChoice.id) {
         activeEntry = newChoice;
         return true;
     }
@@ -534,7 +533,6 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     QMutexLocker k2(&inArgs.other->valueMutex);
 
     menuOptions = otherType->menuOptions;
-    menuOptionTooltips = otherType->menuOptionTooltips;
     separators = otherType->separators;
     shortcuts = otherType->shortcuts;
     menuIcons = otherType->menuIcons;
@@ -544,7 +542,7 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     showMissingEntryWarning = otherType->showMissingEntryWarning;
     menuColors = otherType->menuColors;
 
-    if (activeEntry != otherType->activeEntry) {
+    if (activeEntry.id != otherType->activeEntry.id) {
         activeEntry = otherType->activeEntry;
         hasChanged = true;
     }
@@ -688,7 +686,7 @@ KnobChoice::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx th
 
     // Choice parameters with different menus cannot be linked
     QString menuDifferentError = tr("You cannot link choice parameters with different menus. To overcome this, use an expression instead.");
-    std::vector<std::string> thisOptions, otherOptions;
+    std::vector<ChoiceOption> thisOptions, otherOptions;
     {
         QMutexLocker k(&thisData->valueMutex);
         thisOptions = thisData->menuOptions;
@@ -702,7 +700,7 @@ KnobChoice::canLinkWith(const KnobIPtr & other, DimIdx thisDimension, ViewIdx th
         return false;
     }
     for (std::size_t i = 0; i < thisOptions.size(); ++i) {
-        if (thisOptions[i] != otherOptions[i]) {
+        if (thisOptions[i].id != otherOptions[i].id) {
             *error = menuDifferentError.toStdString();
             return false;
         }
@@ -745,10 +743,10 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
     QMutexLocker k(&data->valueMutex);
 
     if (def_i >= 0 && def_i < (int)choiceData->menuOptions.size()) {
-        defaultVal = choiceData->menuOptions[def_i];
+        defaultVal = choiceData->menuOptions[def_i].id;
     }
 
-    if (choiceData->activeEntry != defaultVal) {
+    if (choiceData->activeEntry.id != defaultVal) {
         return true;
     }
 
@@ -757,70 +755,52 @@ KnobChoice::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
 
 
 
-static bool
-stringEqualFunctor(const std::string& a,
-                   const std::string& b,
-                   KnobChoiceMergeEntriesData* /*data*/)
-{
-    return a == b;
-}
-
 void
-KnobChoice::findAndSetOldChoice(MergeMenuEqualityFunctor mergingFunctor,
-                                KnobChoiceMergeEntriesData* mergingData)
+KnobChoice::findAndSetOldChoice()
 {
     std::list<ViewIdx> views = getViewsList();
     if (views.empty()) {
         return;
     }
 
-    // Make sure we don't call knobChanged if we found the value
-    blockValueChanges();
-    beginChanges();
+
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         assert(data);
 
-        QMutexLocker k(&data->valueMutex);
+        int found = -1;
 
-        if ( !data->activeEntry.empty() ) {
-            if (mergingFunctor) {
-                assert(mergingData);
-                mergingData->clear();
-            } else {
-                mergingFunctor = stringEqualFunctor;
-            }
-            int found = -1;
-            {
+        {
+            QMutexLocker k(&data->valueMutex);
+
+            if ( !data->activeEntry.id.empty() ) {
+
                 for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                    if ( mergingFunctor(data->menuOptions[i], data->activeEntry, mergingData) ) {
-                        found = i;
-
-                        // Update the label if different
+                    if ( data->menuOptions[i].id == data->activeEntry.id ) {
+                        // Refresh label and hint, even if ID is the same
                         data->activeEntry = data->menuOptions[i];
+                        found = i;
                         break;
                     }
                 }
             }
-            if (found != -1) {
-                k.unlock();
-                setValue(found, ViewSetSpec(*it));
-            }
+        }
+        if (found != -1) {
+            // Make sure we don't call knobChanged if we found the value
+            blockValueChanges();
+            beginChanges();
+            setValue(found, ViewSetSpec(*it));
+            unblockValueChanges();
+            endChanges();
         }
     } // for all views
-    unblockValueChanges();
-    endChanges();
 
 }
 
 bool
-KnobChoice::populateChoices(const std::vector<std::string> &entries,
-                            const std::vector<std::string> &entriesHelp,
-                            MergeMenuEqualityFunctor mergingFunctor,
-                            KnobChoiceMergeEntriesData* mergingData)
+KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 {
-    assert( entriesHelp.empty() || entriesHelp.size() == entries.size() );
     bool hasChanged = false;
     KnobDimViewKeySet sharedKnobs;
     {
@@ -829,45 +809,26 @@ KnobChoice::populateChoices(const std::vector<std::string> &entries,
 
         QMutexLocker k(&data->valueMutex);
         sharedKnobs = data->sharedKnobs;
-        if (!mergingFunctor) {
-            // No merging functor, replace
-            data->menuOptions = entries;
-            data->menuOptionTooltips = entriesHelp;
-            hasChanged = true;
-        } else {
-            assert(mergingData);
-            // If there is a merging functor to merge current entries with new entries, do the merging
 
-            // For all new entries, check if one of the merged entry matches and then merge
-            // otherwise add to the merged entries
-            for (std::size_t i = 0; i < entries.size(); ++i) {
-                mergingData->clear();
-                bool found = false;
-                for (std::size_t j = 0; j < data->menuOptions.size(); ++j) {
-                    if ( mergingFunctor(data->menuOptions[j], entries[i], mergingData) ) {
-                        if (data->menuOptions[j] != entries[i]) {
-                            hasChanged = true;
-                            data->menuOptions[j] = entries[i];
-                        }
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    hasChanged = true;
-                    if ( i < data->menuOptionTooltips.size() ) {
-                        data->menuOptionTooltips.push_back(entriesHelp[i]);
-                    }
-                    data->menuOptions.push_back(entries[i]);
-                }
+        data->menuOptions = entries;
+        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+
+            // The ID cannot be empty, this is the only way to uniquely identify the choice.
+            assert(!data->menuOptions[i].id.empty());
+
+            // If the label is not set, use the ID
+            if (data->menuOptions[i].label.empty()) {
+                data->menuOptions[i].label = data->menuOptions[i].id;
             }
         }
+        hasChanged = true;
+
     } // QMutexLocker
 
     if (hasChanged) {
 
         //  Try to restore the last choice.
-        findAndSetOldChoice(mergingFunctor, mergingData);
+        findAndSetOldChoice();
 
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
             KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
@@ -949,12 +910,11 @@ KnobChoice::resetChoices(ViewSetSpec view)
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
         }
-
 
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         if (!data) {
@@ -965,8 +925,6 @@ KnobChoice::resetChoices(ViewSetSpec view)
             QMutexLocker k(&data->valueMutex);
             sharedKnobs = data->sharedKnobs;
             data->menuOptions.clear();
-            data->menuOptionTooltips.clear();
-
         }
 
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
@@ -990,14 +948,16 @@ KnobChoice::resetChoices(ViewSetSpec view)
 }
 
 void
-KnobChoice::appendChoice(const std::string& entry,
-                         const std::string& help,
+KnobChoice::appendChoice(const ChoiceOption& option,
                          ViewSetSpec view)
 {
+    // The ID is the only way to uniquely identify the option! It must be set.
+    assert(!option.id.empty());
+
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -1010,8 +970,13 @@ KnobChoice::appendChoice(const std::string& entry,
         KnobDimViewKeySet sharedKnobs;
         {
             QMutexLocker k(&data->valueMutex);
-            data->menuOptions.push_back(entry);
-            data->menuOptionTooltips.push_back(help);
+            data->menuOptions.push_back(option);
+            ChoiceOption& copiedOption = data->menuOptions.back();
+
+            // If label is empty, set to the option
+            if (copiedOption.label.empty()) {
+                copiedOption.label = copiedOption.id;
+            }
             sharedKnobs = data->sharedKnobs;
         }
         for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
@@ -1023,7 +988,7 @@ KnobChoice::appendChoice(const std::string& entry,
             // Notify tooltip changed because we changed the menu entries
             sharedKnob->_signalSlotHandler->s_helpChanged();
 
-            Q_EMIT sharedKnob->entryAppended( QString::fromUtf8( entry.c_str() ), QString::fromUtf8( help.c_str() ) );
+            Q_EMIT sharedKnob->entryAppended();
         }
     }
 
@@ -1031,33 +996,19 @@ KnobChoice::appendChoice(const std::string& entry,
     findAndSetOldChoice();
 }
 
-std::vector<std::string>
-KnobChoice::getEntries(ViewGetSpec view) const
+std::vector<ChoiceOption>
+KnobChoice::getEntries(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
-            return std::vector<std::string>();
+            return std::vector<ChoiceOption>();
         }
         QMutexLocker k(&data->valueMutex);
         return data->menuOptions;
     }
 
-}
-
-std::vector<std::string>
-KnobChoice::getEntriesHelp(ViewGetSpec view) const
-{
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
-    {
-        ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
-        if (!data) {
-            return std::vector<std::string>();
-        }
-        QMutexLocker k(&data->valueMutex);
-        return data->menuOptionTooltips;
-    }
 }
 
 bool
@@ -1071,7 +1022,7 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
         }
         QMutexLocker k(&data->valueMutex);
         for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-            if (data->menuOptions[i] == data->activeEntry) {
+            if (data->menuOptions[i].id == data->activeEntry.id) {
                 return true;
             }
         }
@@ -1080,14 +1031,14 @@ KnobChoice::isActiveEntryPresentInEntries(ViewIdx view) const
     return false;
 }
 
-std::string
-KnobChoice::getEntry(int v, ViewGetSpec view) const
+ChoiceOption
+KnobChoice::getEntry(int v, ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
-            return std::string();
+            return ChoiceOption("","","");
         }
         QMutexLocker k(&data->valueMutex);
         if (v < 0 || (int)data->menuOptions.size() <= v ) {
@@ -1098,9 +1049,9 @@ KnobChoice::getEntry(int v, ViewGetSpec view) const
 }
 
 int
-KnobChoice::getNumEntries(ViewGetSpec view) const
+KnobChoice::getNumEntries(ViewIdx view) const
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
@@ -1114,13 +1065,13 @@ KnobChoice::getNumEntries(ViewGetSpec view) const
 
 
 void
-KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
+KnobChoice::setActiveEntry(const ChoiceOption& entry, ViewSetSpec view)
 {
 
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -1149,18 +1100,18 @@ KnobChoice::setActiveEntryText(const std::string& entry, ViewSetSpec view)
     }
 }
 
-std::string
-KnobChoice::getActiveEntryText(ViewGetSpec view)
+ChoiceOption
+KnobChoice::getActiveEntry(ViewIdx view)
 {
-    ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+    ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), view_i));
         if (!data) {
-            return false;
+            return ChoiceOption();
         }
         {
             QMutexLocker k(&data->valueMutex);
-            if (!data->activeEntry.empty()) {
+            if (!data->activeEntry.id.empty()) {
                 return data->activeEntry;
             }
         }
@@ -1177,8 +1128,9 @@ KnobChoice::getActiveEntryText(ViewGetSpec view)
         }
     }
 
-    return std::string();
+    return ChoiceOption();
 }
+
 
 
 std::string
@@ -1189,11 +1141,14 @@ KnobChoice::getHintToolTipFull() const
     QMutexLocker k(&data->valueMutex);
 
     int gothelp = 0;
-
-    if ( !data->menuOptionTooltips.empty() ) {
-        for (std::size_t i = 0; i < data->menuOptionTooltips.size(); ++i) {
-            if ( !data->menuOptionTooltips[i].empty() ) {
+    int gotIdDifferentThanLabel = 0;
+    if ( !data->menuOptions.empty() ) {
+        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+            if ( !data->menuOptions[i].tooltip.empty() ) {
                 ++gothelp;
+            }
+            if (data->menuOptions[i].id != data->menuOptions[i].label) {
+                ++gotIdDifferentThanLabel;
             }
         }
     }
@@ -1205,27 +1160,29 @@ KnobChoice::getHintToolTipFull() const
     std::stringstream ss;
     if ( !getHintToolTip().empty() ) {
         ss << boost::trim_copy( getHintToolTip() );
-        if (gothelp) {
+        if (gothelp || gotIdDifferentThanLabel) {
             // if there are per-option help strings, separate them from main hint
             ss << "\n\n";
         }
     }
     // param may have no hint but still have per-option help
-    if (gothelp) {
-        for (std::size_t i = 0; i < data->menuOptionTooltips.size(); ++i) {
-            if ( !data->menuOptionTooltips[i].empty() ) { // no help line is needed if help is unavailable for this option
-                std::string entry = boost::trim_copy(data->menuOptions[i]);
-                std::replace_if(entry.begin(), entry.end(), ::isspace, ' ');
-                std::string help = boost::trim_copy(data->menuOptionTooltips[i]);
+    if (gothelp || gotIdDifferentThanLabel) {
+        for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+            if ( !data->menuOptions[i].tooltip.empty() || data->menuOptions[i].id != data->menuOptions[i].label ) { // no help line is needed if help is unavailable for this option
+                std::string entryID = boost::trim_copy(data->menuOptions[i].id);
+                std::replace_if(entryID.begin(), entryID.end(), ::isspace, ' ');
+                std::string help = boost::trim_copy(data->menuOptions[i].tooltip);
                 std::replace_if(help.begin(), help.end(), ::isspace, ' ');
                 if ( isHintInMarkdown() ) {
-                    ss << "* **" << entry << "**";
+                    ss << "* **" << entryID << "**";
                 } else {
-                    ss << entry;
+                    ss << entryID;
                 }
-                ss << ": ";
-                ss << help;
-                if (i < data->menuOptionTooltips.size() - 1) {
+                if (!data->menuOptions[i].tooltip.empty()) {
+                    ss << ": ";
+                    ss << help;
+                }
+                if (i < data->menuOptions.size() - 1) {
                     ss << '\n';
                 }
             }
@@ -1236,12 +1193,12 @@ KnobChoice::getHintToolTipFull() const
 } // KnobChoice::getHintToolTipFull
 
 ValueChangedReturnCodeEnum
-KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
+KnobChoice::setValueFromID(const std::string & value, ViewSetSpec view)
 {
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
             if (view_i != *it) {
                 continue;
             }
@@ -1264,7 +1221,6 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
     }
 
     throw std::runtime_error(std::string("KnobChoice::setValueFromLabel: unknown label ") + value);
-
 }
 
 
@@ -1275,13 +1231,13 @@ KnobChoice::setValueFromLabel(const std::string & value, ViewSetSpec view)
 // 4- case-insensistive string match, other index
 // returns index if choice was matched, -1 if not matched
 int
-KnobChoice::choiceMatch(const std::string& choice,
-                        const std::vector<std::string>& entries,
-                        std::string* matchedEntry)
+KnobChoice::choiceMatch(const std::string& choiceID,
+                        const std::vector<ChoiceOption>& entries,
+                        ChoiceOption* matchedEntry)
 {
     // first, try exact match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if (entries[i] == choice) {
+        if (entries[i].id == choiceID) {
             if (matchedEntry) {
                 *matchedEntry = entries[i];
             }
@@ -1290,10 +1246,10 @@ KnobChoice::choiceMatch(const std::string& choice,
     }
 
     // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
-    std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
-    std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
+    std::size_t choicetab = choiceID.find('\t'); // returns string::npos if no tab was found
+    std::string choicemain = choiceID.substr(0, choicetab); // gives the entire string if no tabs were found
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        const std::string& entry(entries[i]);
+        const std::string& entry(entries[i].id);
         std::size_t entrytab = entry.find('\t'); // returns string::npos if no tab was found
         std::string entrymain = entry.substr(0, entrytab); // gives the entire string if no tabs were found
 
@@ -1307,7 +1263,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 
     // third, case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        if ( boost::iequals(entries[i], choice) ) {
+        if ( boost::iequals(entries[i].id, choiceID) ) {
             if (matchedEntry) {
                 *matchedEntry = entries[i];
             }
@@ -1320,7 +1276,7 @@ KnobChoice::choiceMatch(const std::string& choice,
 }
 
 void
-KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
+KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value)
 {
     int index = -1;
     {
@@ -1336,7 +1292,7 @@ KnobChoice::setDefaultValueFromLabelWithoutApplying(const std::string & value)
 }
 
 void
-KnobChoice::setDefaultValueFromLabel(const std::string & value)
+KnobChoice::setDefaultValueFromID(const std::string & value)
 {
     int index = -1;
     {
@@ -1348,7 +1304,7 @@ KnobChoice::setDefaultValueFromLabel(const std::string & value)
     if (index != -1) {
         return setDefaultValue(index, DimSpec(0));
     }
-    throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
+     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 KnobDimViewBasePtr
@@ -1788,7 +1744,7 @@ KnobString::decorateStringWithCurrentState(const QString& str)
 }
 
 QString
-KnobString::getValueDecorated(double time, ViewGetSpec view)
+KnobString::getValueDecorated(TimeValue time, ViewIdx view)
 {
     QString ret;
     if (isAnimated(DimIdx(0), view)) {
@@ -2208,7 +2164,7 @@ KnobParametric::typeName() const
 }
 
 CurvePtr
-KnobParametric::getAnimationCurve(ViewGetSpec idx, DimIdx dimension) const
+KnobParametric::getAnimationCurve(ViewIdx idx, DimIdx dimension) const
 {
     if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getAnimationCurve dimension out of range");
@@ -2291,7 +2247,7 @@ KnobParametric::getDefaultParametricCurve(DimIdx dimension) const
 }
 
 CurvePtr
-KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewGetSpec view, ParametricKnobDimViewPtr* outData) const
+KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewIdx view, ParametricKnobDimViewPtr* outData) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
     if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
@@ -2308,7 +2264,7 @@ KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewGetSpec view, P
 
     EffectInstancePtr holder = toEffectInstance(getHolder());
     if (holder) {
-        RenderValuesCachePtr cache = holder->getRenderValuesCacheTLS();
+        RenderValuesCachePtr cache = holder->getRenderValuesCache_TLS(0, 0);
         if (cache) {
             KnobParametricPtr thisShared = boost::const_pointer_cast<KnobParametric>(boost::dynamic_pointer_cast<const KnobParametric>(shared_from_this()));
             return cache->getOrCreateCachedParametricKnobCurve(thisShared, data->parametricCurve, dimension);
@@ -2317,7 +2273,7 @@ KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewGetSpec view, P
     return data->parametricCurve;
 }
 
-CurvePtr KnobParametric::getParametricCurve(DimIdx dimension, ViewGetSpec view) const
+CurvePtr KnobParametric::getParametricCurve(DimIdx dimension, ViewIdx view) const
 {
     return getParametricCurveInternal(dimension, view, 0);
 }
@@ -2341,7 +2297,7 @@ KnobParametric::signalCurveChanged(DimSpec dimension, const KnobDimViewBasePtr& 
     }
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
                                 DimIdx dimension,
                                 double key,
@@ -2354,7 +2310,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
          boost::math::isinf(value) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     KeyFrame k(key, value);
@@ -2364,12 +2320,12 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     CurvePtr curve = getParametricCurveInternal(dimension, ViewIdx(0), &data);
     assert(curve);
     curve->addKeyFrame(k);
-    evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
+    evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
     signalCurveChanged(dimension, data);
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
                                 DimIdx dimension,
                                 double key,
@@ -2384,7 +2340,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
          boost::math::isinf(value) ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     KeyFrame k(key, value, leftDerivative, rightDerivative);
@@ -2394,77 +2350,77 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
     assert(curve);
     curve->addKeyFrame(k);
     signalCurveChanged(dimension, data);
-    evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
+    evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::evaluateCurve(DimIdx dimension,
-                         ViewGetSpec view,
+                         ViewIdx view,
                          double parametricPosition,
                          double *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
-    *returnValue = curve->getValueAt(parametricPosition);
-    return eStatusOK;
+    *returnValue = curve->getValueAt(TimeValue(parametricPosition));
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::getNControlPoints(DimIdx dimension,
-                                  ViewGetSpec view,
+                                  ViewIdx view,
                                   int *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *returnValue =  curve->getKeyFramesCount();
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::getNthControlPoint(DimIdx dimension,
-                                   ViewGetSpec view,
+                                   ViewIdx view,
                                    int nthCtl,
                                    double *key,
                                    double *value) const
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
 
     KeyFrame kf;
     bool ret = curve->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *key = kf.getTime();
     *value = kf.getValue();
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::getNthControlPoint(DimIdx dimension,
-                                   ViewGetSpec view,
+                                   ViewIdx view,
                                    int nthCtl,
                                    double *key,
                                    double *value,
@@ -2473,26 +2429,26 @@ KnobParametric::getNthControlPoint(DimIdx dimension,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
     if (!curve) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     KeyFrame kf;
     bool ret = curve->getKeyFrameWithIndex(nthCtl, &kf);
     if (!ret) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     *key = kf.getTime();
     *value = kf.getValue();
     *leftDerivative = kf.getLeftDerivative();
     *rightDerivative = kf.getRightDerivative();
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
                                                 DimIdx dimension,
                                                 ViewSetSpec view,
@@ -2502,12 +2458,12 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2518,13 +2474,13 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
 
         try {
             curve->setKeyFrameInterpolation(interpolation, nThCtl);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         signalCurveChanged(dimension, data);
 
@@ -2532,12 +2488,12 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    DimIdx dimension,
                                    ViewSetSpec view,
@@ -2547,12 +2503,12 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
 {
     ///Mt-safe as Curve is MT-safe
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2563,23 +2519,23 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         try {
-            curve->setKeyFrameValueAndTime(key, value, nthCtl);
+            curve->setKeyFrameValueAndTime(TimeValue(key), value, nthCtl);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         signalCurveChanged(dimension, data);
     }
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    DimIdx dimension,
                                    ViewSetSpec view,
@@ -2590,12 +2546,12 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    double rightDerivative)
 {
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2606,36 +2562,36 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         int newIdx;
         try {
-            curve->setKeyFrameValueAndTime(key, value, nthCtl, &newIdx);
+            curve->setKeyFrameValueAndTime(TimeValue(key), value, nthCtl, &newIdx);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         curve->setKeyFrameDerivatives(leftDerivative, rightDerivative, newIdx);
         signalCurveChanged(dimension, data);
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 } // setNthControlPoint
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
                                    DimIdx dimension,
                                    ViewSetSpec view,
                                    int nthCtl)
 {
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2646,33 +2602,33 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         try {
             curve->removeKeyFrameWithIndex(nthCtl);
         } catch (...) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         signalCurveChanged(dimension, data);
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
-StatusEnum
+ActionRetCodeEnum
 KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
                                        DimIdx dimension,
                                        ViewSetSpec view)
 {
     if ( dimension >= (int)_defaultCurves.size() ) {
-        return eStatusFailed;
+        return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2683,16 +2639,16 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
         ParametricKnobDimViewPtr data;
         CurvePtr curve = getParametricCurveInternal(dimension, *it, &data);
         if (!curve) {
-            return eStatusFailed;
+            return eActionStatusFailed;
         }
         curve->clearKeyFrames();
         signalCurveChanged(dimension, data);
 
     }
 
-    evaluateValueChange(DimIdx(0), getCurrentTime(), ViewSetSpec::all(), reason);
+    evaluateValueChange(DimIdx(0), getCurrentTime_TLS(), ViewSetSpec::all(), reason);
 
-    return eStatusOK;
+    return eActionStatusOK;
 }
 
 
@@ -2752,7 +2708,7 @@ KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2815,15 +2771,18 @@ KnobParametric::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx d
 
 
 void
-KnobParametric::appendToHash(double /*time*/, ViewIdx view, Hash64* hash)
+KnobParametric::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
 
+    if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
+        return;
+    }
     for (std::size_t i = 0; i < _defaultCurves.size(); ++i) {
         // Parametric params are a corner case:
         // The plug-in will try to call getValue at many parametric times, which are unknown.
         // The only way to identify uniquely the curve as a hash is to append all control points
         // of the curve to the hash.
-        CurvePtr curve = getParametricCurve(DimIdx(i), view);
+        CurvePtr curve = getParametricCurve(DimIdx(i), args.view);
         if (curve) {
             Hash64::appendCurve(curve, hash);
         }
@@ -2847,7 +2806,7 @@ KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, d
     bool ret = thisCurve->cloneAndCheckIfChanged(curve, offset, range);
     if (ret) {
         signalCurveChanged(dimension, data);
-        evaluateValueChange(dimension, getCurrentTime(), ViewSetSpec(view), eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getCurrentTime_TLS(), ViewSetSpec(view), eValueChangedReasonUserEdited);
     }
     return ret;
 }
@@ -2859,7 +2818,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2879,7 +2838,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
             }
 
             for (std::list<double>::const_iterator it2 = times.begin(); it2!=times.end(); ++it2) {
-                curve->removeKeyFrameWithTime(*it2);
+                curve->removeKeyFrameWithTime(TimeValue(*it2));
             }
             signalCurveChanged(dimension, data);
 
@@ -2888,7 +2847,7 @@ KnobParametric::deleteValuesAtTime(const std::list<double>& times, ViewSetSpec v
     }
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 }
 
 bool
@@ -2900,7 +2859,7 @@ KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec vie
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2927,7 +2886,7 @@ KnobParametric::warpValuesAtTime(const std::list<double>& times, ViewSetSpec vie
 
 
     if (ok) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
         return true;
     }
     return false;
@@ -2940,7 +2899,7 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReaso
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -2966,18 +2925,18 @@ KnobParametric::removeAnimation(ViewSetSpec view, DimSpec dim, ValueChangedReaso
     }
 
 
-    evaluateValueChange(dim, getCurrentTime(), view, reason);
+    evaluateValueChange(dim, getCurrentTime_TLS(), view, reason);
 
 }
 
 void
-KnobParametric::deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec dimension)
+KnobParametric::deleteAnimationBeforeTime(TimeValue time, ViewSetSpec view, DimSpec dimension)
 {
     std::list<ViewIdx> views = getViewsList();
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3002,18 +2961,18 @@ KnobParametric::deleteAnimationBeforeTime(double time, ViewSetSpec view, DimSpec
         
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
 
 }
 
 void
-KnobParametric::deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec dimension)
+KnobParametric::deleteAnimationAfterTime(TimeValue time, ViewSetSpec view, DimSpec dimension)
 {
     std::list<ViewIdx> views = getViewsList();
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3038,7 +2997,7 @@ KnobParametric::deleteAnimationAfterTime(double time, ViewSetSpec view, DimSpec 
     }
 
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
 }
 
 void
@@ -3049,7 +3008,7 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3069,7 +3028,7 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
             }
             for (std::list<double>::const_iterator it2 = times.begin(); it2!=times.end(); ++it2) {
                 KeyFrame k;
-                if (curve->setKeyFrameInterpolation(interpolation, *it2, &k)) {
+                if (curve->setKeyFrameInterpolation(interpolation, TimeValue(*it2), &k)) {
                     if (newKeys) {
                         newKeys->push_back(k);
                     }
@@ -3079,17 +3038,17 @@ KnobParametric::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, con
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
 }
 
 bool
-KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, double time, double left, double right)
+KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double left, double right)
 {
     std::list<ViewIdx> views = getViewsList();
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3121,19 +3080,19 @@ KnobParametric::setLeftAndRightDerivativesAtTime(ViewSetSpec view, DimSpec dimen
         
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
     return true;
 }
 
 bool
-KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double time, double derivative, bool isLeft)
+KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, TimeValue time, double derivative, bool isLeft)
 {
 
     std::list<ViewIdx> views = getViewsList();
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3168,12 +3127,12 @@ KnobParametric::setDerivativeAtTime(ViewSetSpec view, DimSpec dimension, double 
 
         }
     }
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
     return true;
 }
 
 ValueChangedReturnCodeEnum
-KnobParametric::setKeyFrameInternal(double time, double value, DimIdx dimension, ViewIdx view, KeyFrame* newKey)
+KnobParametric::setKeyFrameInternal(TimeValue time, double value, DimIdx dimension, ViewIdx view, KeyFrame* newKey)
 {
     ParametricKnobDimViewPtr data;
     CurvePtr curve = getParametricCurveInternal(dimension, view, &data);
@@ -3190,14 +3149,14 @@ KnobParametric::setKeyFrameInternal(double time, double value, DimIdx dimension,
 }
 
 ValueChangedReturnCodeEnum
-KnobParametric::setDoubleValueAtTime(double time, double value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
+KnobParametric::setDoubleValueAtTime(TimeValue time, double value, ViewSetSpec view, DimSpec dimension, ValueChangedReasonEnum reason, KeyFrame* newKey)
 {
     ValueChangedReturnCodeEnum ret = eValueChangedReturnCodeNothingChanged;
     std::list<ViewIdx> views = getViewsList();
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3216,7 +3175,7 @@ KnobParametric::setDoubleValueAtTime(double time, double value, ViewSetSpec view
     }
 
     if (ret != eValueChangedReturnCodeNothingChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view, reason);
+        evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
     }
     return ret;
 }
@@ -3235,7 +3194,7 @@ KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3258,11 +3217,11 @@ KnobParametric::setMultipleDoubleValueAtTime(const std::list<DoubleTimeValuePair
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 }
 
 void
-KnobParametric::setDoubleValueAtTimeAcrossDimensions(double time, const std::vector<double>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
+KnobParametric::setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::vector<double>& values, DimIdx dimensionStartIndex, ViewSetSpec view, ValueChangedReasonEnum reason, std::vector<ValueChangedReturnCodeEnum>* retCodes)
 {
     if (values.empty()) {
         return;
@@ -3274,7 +3233,7 @@ KnobParametric::setDoubleValueAtTimeAcrossDimensions(double time, const std::vec
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -3290,7 +3249,7 @@ KnobParametric::setDoubleValueAtTimeAcrossDimensions(double time, const std::vec
         }
     }
 
-    evaluateValueChange(DimSpec::all(), getCurrentTime(), view, reason);
+    evaluateValueChange(DimSpec::all(), getCurrentTime_TLS(), view, reason);
 
 }
 
@@ -3310,7 +3269,7 @@ KnobParametric::setMultipleDoubleValueAtTimeAcrossDimensions(const PerCurveDoubl
 
     }
 
-    evaluateValueChange(DimSpec::all(), getCurrentTime(), ViewSetSpec(0), reason);
+    evaluateValueChange(DimSpec::all(), getCurrentTime_TLS(), ViewSetSpec(0), reason);
 }
 
 bool

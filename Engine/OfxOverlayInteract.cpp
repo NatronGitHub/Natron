@@ -217,14 +217,10 @@ OfxOverlayInteract::redraw()
     NodePtr node = nEffect->getNode();
     assert(node);
 
-    if ( effect && node->shouldDrawOverlay(nEffect->getCurrentTime(), nEffect->getCurrentView()) ) {
+    if ( effect && node->shouldDrawOverlay(nEffect->getCurrentTime_TLS(), nEffect->getCurrentView_TLS()) ) {
         AppInstancePtr app =  effect->getOfxEffectInstance()->getApp();
         assert(app);
-        if ( effect->getOfxEffectInstance()->isDoingInteractAction() ) {
-            app->queueRedrawForAllViewers();
-        } else {
-            app->redrawAllViewers();
-        }
+        effect->getOfxEffectInstance()->requestOverlayInteractRefresh();
     }
 
     return kOfxStatOK;

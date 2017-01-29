@@ -41,7 +41,7 @@ CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_ON(deprecated)
 #include <QtCore/QStringList>
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
 
 #include "Engine/EngineFwd.h"
@@ -49,19 +49,19 @@ CLANG_DIAG_ON(deprecated)
 NATRON_NAMESPACE_ENTER;
 
 class AbstractOfxEffectInstance
-    : public OutputEffectInstance
+    : public EffectInstance
 {
 protected: // derives from EffectInstance, parent of OfxEffectInstance
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     AbstractOfxEffectInstance(const NodePtr& node)
-        : OutputEffectInstance(node)
+        : EffectInstance(node)
     {
     }
 
 protected:
     AbstractOfxEffectInstance(const AbstractOfxEffectInstance& other)
-    : OutputEffectInstance(other)
+    : EffectInstance(other)
     {
     }
 
@@ -113,8 +113,6 @@ public:
 
     bool isInitialized() const;
 
-    const std::string & ofxGetOutputPremultiplication() const;
-
     /**
      * @brief Calls syncPrivateDataAction from another thread than the main thread. The actual
      * call of the action will take place in the main-thread.
@@ -123,52 +121,47 @@ public:
 
 public:
     /********OVERRIDEN FROM EFFECT INSTANCE*************/
-    virtual void initializeDataAfterCreate() OVERRIDE FINAL;
+    virtual void describePlugin() OVERRIDE FINAL;
     virtual void createInstanceAction() OVERRIDE FINAL;
     virtual bool isGenerator() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool isVideoReader() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isVideoWriter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isOpenFX() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return true;
-    }
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual RenderSafetyEnum getCurrentRenderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
-    virtual bool isEffectCreated() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputHint(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputOptional(int inputNb) const OVERRIDE WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     /// calculate the default rod for this effect instance
-    virtual void calcDefaultRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD *rod)  OVERRIDE;
-    virtual void getRegionsOfInterest(double time,
+    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod)  OVERRIDE;
+    virtual ActionRetCodeEnum getRegionsOfInterest(TimeValue time,
                                       const RenderScale & scale,
-                                      const RectD & outputRoD, //!< full RoD in canonical coordinates
                                       const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                       ViewIdx view,
+                                      const TreeRenderNodeArgsPtr& render,
                                       RoIMap* ret) OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE WARN_UNUSED_RETURN;
-    virtual void getFrameRange(double *first, double *last) OVERRIDE;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
     virtual void initializeOverlayInteract() OVERRIDE FINAL;
     virtual bool hasOverlay() const OVERRIDE FINAL;
-    virtual void redrawOverlayInteract() OVERRIDE FINAL;
-    virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
-                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
     virtual bool canHandleRenderScaleForOverlays() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void setCurrentViewportForOverlays(OverlaySupport* viewport) OVERRIDE FINAL;
     virtual void beginKnobsValuesChanged(ValueChangedReasonEnum reason) OVERRIDE;
@@ -176,16 +169,17 @@ public:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE;
+                             TimeValue time) OVERRIDE;
     virtual void beginEditKnobs() OVERRIDE;
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
-    virtual bool isIdentity(double time,
-                            const RenderScale & scale,
-                            const RectI & renderWindow, //!< render window in pixel coords
-                            ViewIdx view,
-                            double* inputTime,
-                            ViewIdx* inputView,
-                            int* inputNb) OVERRIDE;
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
+                                  const RenderScale & scale,
+                                  const RectI & renderWindow, //!< render window in pixel coords
+                                  ViewIdx view,
+                                  const TreeRenderNodeArgsPtr& render,
+                                  TimeValue* inputTime,
+                                  ViewIdx* inputView,
+                                  int* inputNb) OVERRIDE;
     virtual void purgeCaches() OVERRIDE;
 
     /**
@@ -209,8 +203,8 @@ public:
     virtual bool supportsMultipleClipPARs() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostChannelSelectorSupported(bool* defaultR, bool* defaultG, bool* defaultB, bool* defaultA) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void onInputChanged(int inputNo, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
-    virtual StatusEnum beginSequenceRender(double first,
+    virtual void onInputChanged(int inputNo) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum beginSequenceRender(double first,
                                            double last,
                                            double step,
                                            bool interactive,
@@ -219,9 +213,10 @@ public:
                                            bool isRenderResponseToUserInteraction,
                                            bool draftMode,
                                            ViewIdx view,
-                                           bool isOpenGLRender,
-                                           const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum endSequenceRender(double first,
+                                           RenderBackendTypeEnum backendType,
+                                           const EffectOpenGLContextDataPtr& glContextData,
+                                           const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum endSequenceRender(double first,
                                          double last,
                                          double step,
                                          bool interactive,
@@ -230,38 +225,39 @@ public:
                                          bool isRenderResponseToUserInteraction,
                                          bool draftMode,
                                          ViewIdx view,
-                                         bool isOpenGLRender,
-                                         const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+                                         RenderBackendTypeEnum backendType,
+                                         const EffectOpenGLContextDataPtr& glContextData,
+                                         const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual SequentialPreferenceEnum getSequentialPreference() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void onMetaDatasRefreshed(const NodeMetadata& metadata) OVERRIDE FINAL;
-    virtual void getComponentsNeededAndProduced(double time, ViewIdx view,
-                                                EffectInstance::ComponentsNeededMap* comps,
-                                                SequenceTime* passThroughTime,
-                                                int* passThroughView,
-                                                NodePtr* passThroughInput) OVERRIDE;
+    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& renderArgs, std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded, std::list<ImagePlaneDesc>* layersProduced, TimeValue* passThroughTime, ViewIdx* passThroughView, int* passThroughInputNb) OVERRIDE;
+
     virtual bool isMultiPlanar() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::PassThroughEnum isPassThroughForNonRenderedPlanes() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isViewAware() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual EffectInstance::ViewInvarianceLevel isViewInvariant() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool supportsConcurrentOpenGLRenders() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
     virtual EffectInstancePtr createRenderClone() OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onInteractViewportSelectionCleared() OVERRIDE FINAL;
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
 public:
 
+    virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool getInputsHoldingTransform(std::list<int>* inputs) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual StatusEnum getTransform(double time,
+
+    virtual bool getInputCanReceiveTransform(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool getInputCanReceiveDistortion(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getDistortion(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    int* inputToTransform,
-                                    Transform::Matrix3x3* transform) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                     const TreeRenderNodeArgsPtr& renderArgs,
+                                    DistortionFunction2D* distortion) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMaskingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isHostMixingEnabled() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onEnableOpenGLKnobValueChanged(bool activated) OVERRIDE FINAL;
@@ -277,6 +273,7 @@ public:
     void onClipLabelChanged(int inputNb, const std::string& label);
     void onClipHintChanged(int inputNb, const std::string& hint);
     void onClipSecretChanged(int inputNb, bool isSecret);
+
 public Q_SLOTS:
 
     void onSyncPrivateDataRequested();

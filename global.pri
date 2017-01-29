@@ -140,7 +140,7 @@ CONFIG(enable-osmesa) {
         OSMESA_PATH="/opt/osmesa"
     }
     # When using static Mesa libraries, the LLVM libs (necessary for llvmpipe) are not included
-    OSMESA_LIBS=$$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --libs --static osmesa) $$system($$LLVM_PATH/bin/llvm-config --ldflags --system-libs --libs engine mcjit mcdisassembler)
+    OSMESA_LIBS=$$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --libs --static osmesa) $$system($$LLVM_PATH/bin/llvm-config --ldflags --system-libs --libs engine mcjit mcdisassembler 2>/dev/null || $$LLVM_PATH/bin/llvm-config --ldflags --libs engine mcjit mcdisassembler)
 
     DEFINES += HAVE_OSMESA
     INCLUDEPATH += $$system(env PKG_CONFIG_PATH=$$OSMESA_PATH/lib/pkgconfig pkg-config --variable=includedir osmesa)
@@ -339,7 +339,6 @@ unix {
 
      PKGCONFIG += freetype2 fontconfig
 
-     # GLFW will require a link to X11 on linux and OpenGL framework on OS X
      linux-* {
           LIBS += -lGL -lX11
          # link with static cairo on linux, to avoid linking to X11 libraries in NatronRenderer
@@ -347,7 +346,7 @@ unix {
              PKGCONFIG += pixman-1
              LIBS +=  $$system(pkg-config --variable=libdir cairo)/libcairo.a
          }
-         LIBS += -ldl
+         LIBS += -ldl -lrt
          QMAKE_LFLAGS += '-Wl,-rpath,\'\$$ORIGIN/../lib\',-z,origin'
      } else {
          LIBS += -framework OpenGL

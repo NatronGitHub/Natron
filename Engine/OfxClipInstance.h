@@ -51,8 +51,9 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Image.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -112,7 +113,6 @@ public:
     //  The pixel aspect ratio of a clip or image.
     virtual double getAspectRatio() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    void setAspectRatio(double par);
 
     // Frame Rate -
     //
@@ -204,111 +204,48 @@ public:
     virtual const std::string &findSupportedComp(const std::string &s) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual const std::string &getComponents() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    /// override this to set the view to be returned by getImage()
-    /// This is called by Instance::renderAction() for each clip, before calling
-    /// kOfxImageEffectActionRender on the Instance.
-    /// The view number has to be stored in the Clip, so this is typically not thread-safe,
-    /// except if thread-local storage is used
+
     //// EDIT: We don't use this function anymore, instead we handle thread storage ourselves in OfxEffectInstance
     //// via the ClipsThreadStorageSetter, this way we can be sure actions are not called recursively and do other checks.
     virtual void setView(int /*view*/) OVERRIDE
     {
     }
 
-    void setClipTLS(ViewIdx view,
-                    unsigned int mipmapLevel,
-                    const ImageComponents& components);
-    void invalidateClipTLS();
 
     //returns the index of this clip if it is an input clip, otherwise -1.
     int getInputNb() const WARN_UNUSED_RETURN;
 
     EffectInstancePtr getAssociatedNode() const WARN_UNUSED_RETURN;
 
+public:
 
-    /**
-     * @brief Used to convert plane argument as passed to the clipGetImage() function to Natron plane.
-     **/
-    ImageComponents ofxPlaneToNatronPlane(const std::string& plane);
-
-    /**
-     * @brief Used to convert Natron planes given to the render() function to OpenFX layer name.
-     **/
-    static void natronsPlaneToOfxPlane(const ImageComponents& plane, std::list<std::string>* ofxPlanes);
 
     /**
      * @brief Converts Natron components to OpenFX components.
      **/
-    static std::string natronsComponentsToOfxComponents(const ImageComponents& comp);
-    static ImageComponents ofxComponentsToNatronComponents(const std::string & comp);
     static ImageBitDepthEnum ofxDepthToNatronDepth(const std::string & depth, bool throwOnFailure = true);
     static const std::string& natronsDepthToOfxDepth(ImageBitDepthEnum depth);
     static ImagePremultiplicationEnum ofxPremultToNatronPremult(const std::string& premult);
     static const std::string& natronsPremultToOfxPremult(ImagePremultiplicationEnum premult);
     static ImageFieldingOrderEnum ofxFieldingToNatronFielding(const std::string& fielding);
     static const std::string& natronsFieldingToOfxFielding(ImageFieldingOrderEnum fielding);
-    struct RenderActionData
-    {
-        //We keep track of the images being rendered (on the output clip) so that we return the same pointer
-        //if this is the same image
-        std::list<OfxImageCommon*> imagesBeingRendered;
 
-        //Used to determine the plane to render in a call to getOutputImageInternal()
-        ImageComponents clipComponents;
-
-        RenderActionData()
-            : imagesBeingRendered()
-            , clipComponents()
-        {
-        }
-    };
 
     //These are per-clip thread-local data
     struct ClipTLSData
     {
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-        ///////These data are valid only throughout a recursive action
 
-        //View may be involved in a recursive action
-        std::list<ViewIdx> view;
-        //mipmaplevel may be involved in a recursive action
-        std::list<unsigned int> mipMapLevel;
-
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-        /// Valid only throughought a render action
-        std::list< boost::shared_ptr<RenderActionData> > renderData;
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-
-
-        //////////////////////////////////////////////////////////////
-        //////////////////////////////////////////////////////////////
-        //The following data are always valid and do not necessitate a valid flag
+        // Used to implement suite functions that return strings
+        // to ensure that the string lives as long as the action runs
         std::vector<std::string> componentsPresent;
         std::string unmappedComponents;
+        std::string components;
 
         ClipTLSData()
-            : view()
-            , mipMapLevel()
-            , componentsPresent()
+            : componentsPresent()
             , unmappedComponents()
+            , components()
         {
-        }
-
-        ClipTLSData(const ClipTLSData& other)
-            : view(other.view)
-            , mipMapLevel(other.mipMapLevel)
-            , renderData()
-            , componentsPresent(other.componentsPresent)
-            , unmappedComponents(other.unmappedComponents)
-        {
-            for (std::list< boost::shared_ptr<RenderActionData> >::const_iterator it = other.renderData.begin();
-                 it != other.renderData.end(); ++it) {
-                boost::shared_ptr<RenderActionData> d( new RenderActionData(**it) );
-                renderData.push_back(d);
-            }
         }
     };
 
@@ -317,14 +254,38 @@ public:
 private:
     EffectInstancePtr getEffectHolder() const;
 
-    void getRegionOfDefinitionInternal(OfxTime time, ViewIdx view, unsigned int mipmapLevel, EffectInstancePtr associatedNode,
+    void getRegionOfDefinitionInternal(OfxTime time,
+                                       ViewIdx view,
+                                       const RenderScale& scale,
+                                       EffectInstancePtr associatedNode,
+                                       const TreeRenderNodeArgsPtr& associatedNodeRenderArgs,
                                        OfxRectD* rod) const;
 
-    bool getInputImageInternal(const OfxTime time, const ViewGetSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
-    bool getOutputImageInternal(const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
-    bool getImagePlaneInternal(OfxTime time, ViewGetSpec view, const OfxRectD *optionalBounds, const std::string* ofxPlane, const ImageBitDepthEnum* textureDepth, OFX::Host::ImageEffect::Image** image, OFX::Host::ImageEffect::Texture** texture);
+    bool getInputImageInternal(const OfxTime time,
+                               const ViewIdx* view,
+                               const OfxRectD *optionalBounds,
+                               const std::string* ofxPlane,
+                               const ImageBitDepthEnum* textureDepth,
+                               OFX::Host::ImageEffect::Image** image,
+                               OFX::Host::ImageEffect::Texture** texture);
+
+    bool getOutputImageInternal(const std::string* ofxPlane,
+                                const ImageBitDepthEnum* textureDepth,
+                                OFX::Host::ImageEffect::Image** image,
+                                OFX::Host::ImageEffect::Texture** texture);
+
+    bool getImagePlaneInternal(OfxTime time,
+                               const ViewIdx* view,
+                               const OfxRectD *optionalBounds,
+                               const std::string* ofxPlane,
+                               const ImageBitDepthEnum* textureDepth,
+                               OFX::Host::ImageEffect::Image** image,
+                               OFX::Host::ImageEffect::Texture** texture);
 
 private:
+
+    friend struct OfxClipInstancePrivate;
+
     boost::scoped_ptr<OfxClipInstancePrivate> _imp;
 };
 
@@ -332,12 +293,16 @@ struct OfxImageCommonPrivate;
 class OfxImageCommon
 {
 public:
-    explicit OfxImageCommon(OFX::Host::ImageEffect::ImageBase* ofxImageBase,
-                            const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                            const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                            bool isSrcImage,
+    explicit OfxImageCommon(const EffectInstancePtr& outputClipEffect,
+                            int inputNb,
+                            OFX::Host::ImageEffect::ImageBase* ofxImageBase,
+                            const ImagePtr& internalImage,
+                            const RectD& rod,
+                            ImagePremultiplicationEnum premult,
+                            ImageFieldingOrderEnum fielding,
+                            U64 nodeFrameViewHash,
                             const RectI& renderWindow,
-                            const boost::shared_ptr<Transform::Matrix3x3>& mat,
+                            const Distortion2DStackPtr& distortion,
                             const std::string& components,
                             int nComps,
                             double par);
@@ -357,16 +322,20 @@ class OfxImage
       , public OfxImageCommon
 {
 public:
-    explicit OfxImage( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                       const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                       bool isSrcImage,
-                       const RectI& renderWindow,
-                       const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                       const std::string& components,
-                       int nComps,
+    explicit OfxImage(const EffectInstancePtr& outputClipEffect,
+                      int inputNb,
+                      const ImagePtr& internalImage,
+                      const RectD& rod,
+                      ImagePremultiplicationEnum premult,
+                      ImageFieldingOrderEnum fielding,
+                      U64 nodeFrameViewHash,
+                      const RectI& renderWindow,
+                      const Distortion2DStackPtr& distortion,
+                      const std::string& components,
+                      int nComps,
                       double par)
         : OFX::Host::ImageEffect::Image()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod,  premult, fielding, nodeFrameViewHash, renderWindow, distortion, components, nComps, par)
     {
     }
 };
@@ -376,16 +345,20 @@ class OfxTexture
       , public OfxImageCommon
 {
 public:
-    explicit OfxTexture( const boost::shared_ptr<OfxClipInstance::RenderActionData>& renderData,
-                         const boost::shared_ptr<NATRON_NAMESPACE::Image>& internalImage,
-                         bool isSrcImage,
-                         const RectI& renderWindow,
-                         const boost::shared_ptr<Transform::Matrix3x3>& mat,
-                         const std::string& components,
-                         int nComps,
+    explicit OfxTexture(const EffectInstancePtr& outputClipEffect,
+                        int inputNb,
+                        const ImagePtr& internalImage,
+                        const RectD& rod,
+                        ImagePremultiplicationEnum premult,
+                        ImageFieldingOrderEnum fielding,
+                        U64 nodeFrameViewHash,
+                        const RectI& renderWindow,
+                        const Distortion2DStackPtr& distortion,
+                        const std::string& components,
+                        int nComps,
                         double par)
         : OFX::Host::ImageEffect::Texture()
-        , OfxImageCommon(this, renderData, internalImage, isSrcImage, renderWindow, mat, components, nComps, par)
+        , OfxImageCommon(outputClipEffect, inputNb, this, internalImage, rod, premult, fielding, nodeFrameViewHash, renderWindow, distortion, components, nComps, par)
     {
     }
 };

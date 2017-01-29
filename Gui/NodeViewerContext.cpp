@@ -412,10 +412,10 @@ NodeViewerContextPrivate::addToolBarTool(const std::string& toolID,
         toolTip += QString::fromUtf8( hintToolTip.c_str() );
         toolTip.append( QString::fromUtf8("</p>") );
         if ( !roleShortcutID.empty() ) {
-            std::list<QKeySequence> keybinds = getKeybind( shortcutGroup, QString::fromUtf8( toolID.c_str() ) );
-            if (keybinds.size() >= 1) {
+            QKeySequence keybinds = getKeybind( shortcutGroup, QString::fromUtf8( toolID.c_str() ) );
+            if (!keybinds.isEmpty()) {
                 toolTip += QString::fromUtf8("<p><b>");
-                toolTip += tr("Keyboard shortcut: %1").arg( keybinds.front().toString(QKeySequence::NativeText) );
+                toolTip += tr("Keyboard shortcut: %1").arg( keybinds.toString(QKeySequence::NativeText) );
                 toolTip += QString::fromUtf8("</b></p>");
             }
         }
@@ -696,7 +696,7 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
                         oldIsGroup->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                     } else {
                         // We must issue at least a knobChanged call
-                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0));
+                        effect->onKnobValueChanged_public(oldIsGroup, eValueChangedReasonUserEdited, effect->getTimelineCurrentTime(), ViewSetSpec(0));
                     }
                 }
                 
@@ -704,7 +704,7 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
                     newIsGroup->setValue(true, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                 } else {
                     // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0));
+                    effect->onKnobValueChanged_public(newIsGroup, eValueChangedReasonUserEdited, effect->getTimelineCurrentTime(), ViewSetSpec(0));
                 }
 
 
@@ -714,14 +714,14 @@ NodeViewerContextPrivate::onToolActionTriggeredInternal(QAction* action,
                         oldIsButton->setValue(false, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                     } else {
                         // We must issue at least a knobChanged call
-                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0));
+                        effect->onKnobValueChanged_public(oldIsButton, eValueChangedReasonUserEdited, effect->getTimelineCurrentTime(), ViewSetSpec(0));
                     }
                 }
                 if (newIsButton->getValue() != true) {
                     newIsButton->setValue(true, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited);
                 } else {
                     // We must issue at least a knobChanged call
-                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getCurrentTime(), ViewSetSpec(0));
+                    effect->onKnobValueChanged_public(newIsButton, eValueChangedReasonUserEdited, effect->getTimelineCurrentTime(), ViewSetSpec(0));
                 }
             }
         }

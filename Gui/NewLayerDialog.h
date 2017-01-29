@@ -48,12 +48,12 @@ class NewLayerDialog
     Q_OBJECT
 
 public:
-    NewLayerDialog(const ImageComponents& original,
+    NewLayerDialog(const ImagePlaneDesc& original,
                    QWidget* parent);
 
     virtual ~NewLayerDialog();
 
-    ImageComponents getComponents() const;
+    ImagePlaneDesc getComponents() const;
 
 public Q_SLOTS:
     void onNumCompsChanged(double value);

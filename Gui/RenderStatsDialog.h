@@ -61,12 +61,11 @@ public:
 
     virtual ~RenderStatsDialog();
 
-    void addStats(int time, ViewIdx view, double wallTime, const std::map<NodePtr, NodeRenderStats >& stats);
+    void addStats(int time, double wallTime, const std::map<NodePtr, NodeRenderStats >& stats);
 
 public Q_SLOTS:
 
     void resetStats();
-    void refreshAdvancedColsVisibility();
     void onKnobsTreeSelectionChanged(const QItemSelection &selected, const QItemSelection &deselected);
 
     void updateVisibleRows();

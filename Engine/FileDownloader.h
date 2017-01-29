@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef __NATRON_FILEDOWNLOADER_H
-#define __NATRON_FILEDOWNLOADER_H
+#ifndef Engine_FileDownloader_h
+#define Engine_FileDownloader_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:

@@ -27,7 +27,7 @@
 #include <cstring>
 #include <QByteArray>
 #include <QtAlgorithms>
-#include <QString>
+#include <QtCore/QString>
 
 // This code is taken from qcolor_p.cpp
 

@@ -36,7 +36,10 @@
 
 #include "Engine/NodeGroup.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kViewerNodeParamPlayerToolBarPage "playerToolBar"
 
@@ -97,8 +100,6 @@
 #define kViewerNodeParamNextIncrLabel "Next Increment"
 #define kViewerNodeParamNextIncrHint "Moves the timeline cursor forward by the number of frames indicated by the Frame Increment parameter"
 
-NATRON_NAMESPACE_ENTER;
-
 typedef std::map<NodePtr, NodeRenderStats > RenderStatsMap;
 
 
@@ -124,9 +125,24 @@ public:
         return boost::dynamic_pointer_cast<ViewerNode>(KnobHolder::shared_from_this());
     }
 
-    ViewerInstancePtr getInternalViewerNode() const;
 
     virtual ~ViewerNode();
+
+    // This node is output as it provides a custom implementation of RenderEngine
+    virtual bool isOutput() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+    virtual RenderEngine* createRenderEngine() OVERRIDE FINAL WARN_UNUSED_RETURN;
+
+
+    /**
+     * @brief Returns the actual viewer process node in the internal sub-graph for the given index.
+     * Index must be either 0 or 1
+     **/
+    ViewerInstancePtr getViewerProcessNode(int index) const;
+
 
     // Called upon node creation and then never changed
     void setUiContext(OpenGLViewerI* viewer);
@@ -155,11 +171,9 @@ public:
 
     void setCurrentView(ViewIdx view);
 
-    virtual ViewIdx getCurrentView() const OVERRIDE FINAL;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE FINAL;
 
     void setZoomComboBoxText(const std::string& text);
-
-    void setDisplayChannels(int index, bool setBoth);
 
     DisplayChannelsEnum getDisplayChannels(int index) const;
 
@@ -211,7 +225,7 @@ public:
 
     void setUserRoI(const RectD& rect);
 
-    unsigned int getProxyModeKnobMipMapLevel() const;
+    int getDownscaleMipMapLevelKnobIndex() const;
 
     KnobChoicePtr getLayerKnob() const;
 
@@ -230,19 +244,55 @@ public:
     virtual void loadSubGraph(const SERIALIZATION_NAMESPACE::NodeSerialization* projectSerialization,
                               const SERIALIZATION_NAMESPACE::NodeSerialization* pyPlugSerialization) OVERRIDE FINAL;
 
+    bool isViewerUIVisible() const;
 
-    virtual bool isOutput() const OVERRIDE FINAL
+    TimeLinePtr getTimeline() const;
+
+    virtual TimeValue getTimelineCurrentTime() const OVERRIDE FINAL;
+
+    TimeValue getLastRenderedTime() const;
+
+    void getTimelineBounds(int* first, int* last) const;
+
+    double getUIZoomFactor() const;
+    
+    unsigned int getMipMapLevelFromZoomFactor() const;
+
+    struct UpdateViewerArgs
     {
-        return true;
-    }
+        TimeValue time;
+        ViewIdx view;
+        bool isPartialRect;
 
-    virtual void reportStats(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats) OVERRIDE FINAL;
+        struct TextureUpload
+        {
+            // The RoI that was originally requested to render this image
+            RectD canonicalRoI;
+
+            // A pointer to the image on CPU
+            ImagePtr image;
+
+            // The hash of the viewer process node
+            ImageTileKeyPtr viewerProcessImageKey;
+        };
+        std::list<TextureUpload> viewerUploads[2];
+        bool recenterViewer;
+        Point viewerCenter;
+    };
+
+    void updateViewer(const UpdateViewerArgs& args);
+
+    void disconnectViewer();
+
+    void disconnectTexture(int index, bool clearRod);
+    
+    void reportStats(int time , double wallTime, const RenderStatsMap& stats) ;
 
     void refreshFps();
 
-    void s_renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats)
+    void s_renderStatsAvailable(int time, double wallTime, const RenderStatsMap& stats)
     {
-        Q_EMIT renderStatsAvailable(time, view, wallTime, stats);
+        Q_EMIT renderStatsAvailable(time, wallTime, stats);
     }
 
     void s_redrawOnMainThread()
@@ -262,6 +312,31 @@ public:
 
     virtual void onKnobsLoaded() OVERRIDE FINAL;
 
+    void forceNextRenderWithoutCacheRead();
+
+    bool isRenderWithoutCacheEnabledAndTurnOff();
+
+    /**
+     * @brief Used to re-render only selected portions of the texture.
+     * This requires that the renderviewer_internal() function gets called on a single thread
+     * because the texture will get resized (i.e copied and swapped) to fit new RoIs.
+     * After this call, the function isDoingPartialUpdates() will return true until
+     * clearPartialUpdateParams() gets called.
+     **/
+    void setPartialUpdateParams(const std::list<RectD>& rois, bool recenterViewer);
+    std::list<RectD> getPartialUpdateRects() const;
+    void clearPartialUpdateParams();
+
+    bool getViewerCenterPoint(Point* center) const;
+
+    void setDoingPartialUpdates(bool doing);
+    bool isDoingPartialUpdates() const;
+
+    void onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNode, const NodeMetadata& metadata);
+
+    virtual void clearLastRenderedImage() OVERRIDE FINAL;
+
+
 public Q_SLOTS:
 
 
@@ -271,6 +346,8 @@ public Q_SLOTS:
 
     void redrawViewer();
 
+    void redrawViewerNow();
+
     void onEngineStopped();
     
     void onEngineStarted(bool forward);
@@ -279,7 +356,7 @@ public Q_SLOTS:
 
 Q_SIGNALS:
 
-    void renderStatsAvailable(int time, ViewIdx view, double wallTime, const RenderStatsMap& stats);
+    void renderStatsAvailable(int time, double wallTime, const RenderStatsMap& stats);
 
     void redrawOnMainThread();
 
@@ -291,13 +368,14 @@ Q_SIGNALS:
 
 private:
 
+
     void createViewerProcessNode();
 
     void setupGraph(bool createViewerProcess);
 
     void clearGroupWithoutViewerProcess();
 
-    virtual void onInputChanged(int inputNb, const NodePtr& oldNode, const NodePtr& newNode) OVERRIDE FINAL;
+    virtual void onInputChanged(int inputNb) OVERRIDE FINAL;
 
     virtual bool hasOverlay() const OVERRIDE FINAL
     {
@@ -305,26 +383,26 @@ private:
     }
 
 
-    virtual bool onOverlayPenDown(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual void drawOverlay(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayPenMotion(double time, const RenderScale & renderScale, ViewIdx view,
-                                    const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUp(double time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, double timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenDoubleClicked(double time,
+    virtual bool onOverlayPenDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp, PenType pen) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual void drawOverlay(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayPenMotion(TimeValue time, const RenderScale & renderScale, ViewIdx view,
+                                    const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure, TimeValue timestamp) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual bool onOverlayPenDoubleClicked(TimeValue time,
                                            const RenderScale & renderScale,
                                            ViewIdx view,
                                            const QPointF & viewportPos,
                                            const QPointF & pos) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDown(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyUp(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayKeyRepeat(double time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
-    virtual bool onOverlayFocusGained(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
-    virtual bool onOverlayFocusLost(double time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayKeyDown(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyUp(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayKeyRepeat(TimeValue time, const RenderScale & renderScale, ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL;
+    virtual bool onOverlayFocusGained(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
+    virtual bool onOverlayFocusLost(TimeValue time, const RenderScale & renderScale, ViewIdx view) OVERRIDE FINAL;
 
 
     virtual bool knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
                              ViewSetSpec /*view*/,
-                             double /*time*/) OVERRIDE FINAL;
+                             TimeValue /*time*/) OVERRIDE FINAL;
 
 
     virtual void initializeKnobs() OVERRIDE FINAL;

@@ -37,11 +37,14 @@
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
-#include "Engine/EngineFwd.h"
 #include "Engine/Knob.h"
 #include "Engine/KnobItemsTable.h"
 
 #include "Serialization/SerializationBase.h"
+
+#include "Engine/EngineFwd.h"
+
+NATRON_NAMESPACE_ENTER;
 
 #define kTrackerParamSearchWndBtmLeft "searchWndBtmLeft"
 #define kTrackerParamSearchWndBtmLeftLabel "Search Window Bottom Left"
@@ -99,8 +102,6 @@
 #define kTrackerParamEnabledHint "When checked, this track data will be used to generate the resulting Transform/CornerPin out of the tracker. You can animate this parameter to control the lifetime of the track."
 //#define NATRON_TRACK_MARKER_USE_WEIGHT
 
-NATRON_NAMESPACE_ENTER;
-
 struct TrackMarkerPrivate;
 class TrackMarker
     : public KnobTableItem
@@ -149,17 +150,15 @@ public:
     KnobChoicePtr getMotionModelKnob() const;
     KnobBoolPtr getEnabledKnob() const;
 
-    int getReferenceFrame(double time, int frameStep) const;
+    int getReferenceFrame(TimeValue time, int frameStep) const;
 
     void getCenterKeyframes(std::set<double>* keyframes) const;
 
-    bool isEnabled(double time) const;
+    bool isEnabled(TimeValue time) const;
 
-    void setEnabledAtTime(double time, bool enabled);
+    void setEnabledAtTime(TimeValue time, bool enabled);
 
-    AnimationLevelEnum getEnabledNessAnimationLevel() const;
-
-    void setEnabledFromGui(double time, bool enabled);
+    void setEnabledFromGui(TimeValue time, bool enabled);
 
     void setMotionModelFromGui(int index);
 
@@ -169,18 +168,18 @@ public:
 
     void resetTrack();
 
-    void setKeyFrameOnCenterAndPatternAtTime(double time);
+    void setKeyFrameOnCenterAndPatternAtTime(TimeValue time);
     /*
        Controls animation of the center & offset not the pattern
      */
     void clearAnimation();
-    void clearAnimationBeforeTime(double time);
-    void clearAnimationAfterTime(double time);
+    void clearAnimationBeforeTime(TimeValue time);
+    void clearAnimationAfterTime(TimeValue time);
 
 
-    std::pair<ImagePtr, RectI> getMarkerImage(double time, const RectI& roi) const;
+    std::pair<ImagePtr, RectD> getMarkerImage(TimeValue time, const RectD& roi) const;
 
-    RectI getMarkerImageRoI(double time) const;
+    RectD getMarkerImageRoI(TimeValue time) const;
 
     void notifyTrackingStarted();
     void notifyTrackingEnded();

@@ -68,7 +68,7 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Curve.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Format.h"
 #include "Engine/RectI.h"
@@ -124,7 +124,8 @@ GCC_DIAG_OFF(unused-parameter)
 #define KNOB_SERIALIZATION_INTRODUCE_VIEWER_UI 14
 #define KNOB_SERIALIZATION_INTRODUCE_USER_KNOB_ICON_FILE_PATH 15
 #define KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION 16
-#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_CHANGE_CURVE_SERIALIZATION
+#define KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION 17
+#define KNOB_SERIALIZATION_VERSION KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION
 
 #define VALUE_SERIALIZATION_INTRODUCES_CHOICE_LABEL 2
 #define VALUE_SERIALIZATION_INTRODUCES_EXPRESSIONS 3
@@ -141,6 +142,9 @@ GCC_DIAG_OFF(unused-parameter)
 
 #define GROUP_KNOB_SERIALIZATION_INTRODUCES_TYPENAME 2
 #define GROUP_KNOB_SERIALIZATION_VERSION GROUP_KNOB_SERIALIZATION_INTRODUCES_TYPENAME
+
+#define IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID 2
+#define IMAGEPLANEDESC_SERIALIZATION_VERSION IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID
 
 #define NODE_SERIALIZATION_V_INTRODUCES_ROTO 2
 #define NODE_SERIALIZATION_INTRODUCES_MULTI_INSTANCE 3
@@ -412,6 +416,24 @@ public:
     std::list<TrackSerialization> _tracks;
 };
 
+class ImagePlaneDescSerialization
+{
+public:
+
+    ImagePlaneDescSerialization()
+    {
+
+    }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version);
+
+
+    std::string _planeID, _planeLabel, _channelsLabel;
+    std::vector<std::string> _channels;
+
+};
+
 } // namespace Compat
 
 
@@ -672,9 +694,11 @@ SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization::serialize(Archive 
 
 template<class Archive>
 void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
-               const unsigned int version)
+               const unsigned int /*version*/)
 {
-    ar & ::boost::serialization::make_nvp("Time", _time);
+    double time = _time;
+    ar & ::boost::serialization::make_nvp("Time", time);
+    _time = TimeValue(time);
     ar & ::boost::serialization::make_nvp("Value", _value);
     ar & ::boost::serialization::make_nvp("InterpolationMethod", _interpolation);
     ar & ::boost::serialization::make_nvp("LeftDerivative", _leftDerivative);
@@ -682,7 +706,7 @@ void NATRON_NAMESPACE::KeyFrame::serialize(Archive & ar,
 }
 
 template<class Archive>
-void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int version)
+void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int /*version*/)
 {
     QMutexLocker k(&_imp->_lock);
     ar & ::boost::serialization::make_nvp("KeyFrameSet", _imp->keyFrames);
@@ -690,12 +714,22 @@ void NATRON_NAMESPACE::Curve::serialize(Archive & ar, const unsigned int version
 
 
 template<class Archive>
-void NATRON_NAMESPACE::ImageComponents::serialize(Archive & ar, const unsigned int version)
+void SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization::serialize(Archive & ar, const unsigned int version)
 {
-    ar &  boost::serialization::make_nvp("Layer", _layerName);
-    ar &  boost::serialization::make_nvp("Components", _componentNames);
-    ar &  boost::serialization::make_nvp("CompName", _globalComponentsName);
+    if (version < IMAGEPLANEDESC_SERIALIZATION_INTRODUCES_ID) {
+        ar &  boost::serialization::make_nvp("Layer", _planeID);
+        _planeLabel = _planeID;
+        ar &  boost::serialization::make_nvp("Components", _channels);
+        ar &  boost::serialization::make_nvp("CompName", _channelsLabel);
+    } else {
+        ar &  boost::serialization::make_nvp("PlaneID", _planeID);
+        ar &  boost::serialization::make_nvp("PlaneLabel", _planeLabel);
+        ar &  boost::serialization::make_nvp("ChannelsLabel", _channelsLabel);
+        ar &  boost::serialization::make_nvp("Channels", _channels);
+
+    }
 }
+
 
 template<class Archive>
 void SERIALIZATION_NAMESPACE::Compat::RotoContextSerialization::serialize(Archive & ar,
@@ -1156,6 +1190,36 @@ SERIALIZATION_NAMESPACE::KnobSerialization::serialize(Archive & ar,
         if (isChoice) {
             std::string stringChoice;
             ar & ::boost::serialization::make_nvp("ChoiceLabel", stringChoice);
+
+            if (version < KNOB_SERIALIZATION_CHANGE_PLANES_SERIALIZATION) {
+                // In Natron 2.2.3 we changed the encoding of planes: they no longer are planeLabel + "." + channels
+                // but planeID + "." + channels
+                // Hard-code the mapping
+                if (stringChoice == "Color.RGBA" || stringChoice == "Color.RGB" || stringChoice == "Color.Alpha") {
+                    stringChoice = kNatronColorPlaneID;
+                } else if (stringChoice == "Backward.Motion") {
+                    stringChoice = kNatronBackwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+                } else if (stringChoice == "Forward.Motion") {
+                    stringChoice = kNatronForwardMotionVectorsPlaneID "." kNatronMotionComponentsLabel;
+                } else if (stringChoice == "DisparityLeft.Disparity") {
+                    stringChoice = kNatronDisparityLeftPlaneID "." kNatronDisparityComponentsLabel;
+                } else if (stringChoice == "DisparityRight.Disparity") {
+                    stringChoice = kNatronDisparityRightPlaneID "." kNatronDisparityComponentsLabel;
+                }
+
+                // Map also channels
+                if (stringChoice == "RGBA.R") {
+                    stringChoice = kNatronColorPlaneID ".R";
+                } else if (stringChoice == "RGBA.G") {
+                    stringChoice = kNatronColorPlaneID ".B";
+                } else if (stringChoice == "RGBA.B") {
+                    stringChoice = kNatronColorPlaneID ".A";
+                } else if (stringChoice == "RGBA.A") {
+                    stringChoice = kNatronColorPlaneID ".A";
+                }
+            }
+            //_extraData = cData;
+
             values[0]._value.isString = stringChoice;
         }
 
@@ -1458,13 +1522,14 @@ SERIALIZATION_NAMESPACE::NodeSerialization::serialize(Archive & ar,
         }
     }
     if (version >= NODE_SERIALIZATION_INTRODUCES_USER_COMPONENTS) {
-        std::list<NATRON_NAMESPACE::ImageComponents> comps;
+        std::list<SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization> comps;
         ar & ::boost::serialization::make_nvp("UserComponents", comps);
-        for (std::list<NATRON_NAMESPACE::ImageComponents>::iterator it = comps.begin(); it!=comps.end(); ++it) {
-            ImageComponentsSerialization s;
-            s.layerName = it->getLayerName();
-            s.globalCompsName = it->getComponentsGlobalName();
-            s.channelNames = it->getComponentsNames();
+        for (std::list<SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization>::iterator it = comps.begin(); it!=comps.end(); ++it) {
+            SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization s;
+            s.planeID = it->_planeID;
+            s.planeLabel = it->_planeLabel;
+            s.channelsLabel = it->_channelsLabel;
+            s.channelNames = it->_channels;
             _userComponents.push_back(s);
         }
 
@@ -1651,6 +1716,7 @@ BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoStrokeItemSerialization
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::TrackSerialization, TRACK_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::TrackerContextSerialization, TRACKER_CONTEXT_SERIALIZATION_VERSION)
 BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::RotoContextSerialization, ROTO_CTX_VERSION)
+BOOST_CLASS_VERSION(SERIALIZATION_NAMESPACE::Compat::ImagePlaneDescSerialization, IMAGEPLANEDESC_SERIALIZATION_VERSION)
 
 #endif // NATRON_BOOST_SERIALIZATION_COMPAT
 

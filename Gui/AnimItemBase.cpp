@@ -260,7 +260,7 @@ AnimItemBase::evaluateCurve(bool /*useExpressionIfAny*/, double x, DimIdx dimens
     if (!curve) {
         throw std::runtime_error("Curve is null");
     }
-    return curve->getValueAt(x, false /*doClamp*/);
+    return curve->getValueAt(TimeValue(x), false /*doClamp*/);
    
 }
 

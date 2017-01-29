@@ -26,7 +26,6 @@ NATRON_NAMESPACE_USING NATRON_PYTHON_NAMESPACE_USING
 #include <PyParameter.h>
 #include <RectD.h>
 #include <list>
-#include <map>
 
 
 // Native ---------------------------------------------------------
@@ -484,7 +483,7 @@ static PyObject* Sbk_EffectFunc_endParametersUndoCommand(PyObject* self)
     Py_RETURN_NONE;
 }
 
-static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self)
+static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self, PyObject* pyArg)
 {
     ::Effect* cppSelf = 0;
     SBK_UNUSED(cppSelf)
@@ -492,34 +491,28 @@ static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self)
         return 0;
     cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
     PyObject* pyResult = 0;
+    int overloadId = -1;
+    PythonToCppFunc pythonToCpp;
+    SBK_UNUSED(pythonToCpp)
+
+    // Overloaded function decisor
+    // 0: getAvailableLayers(int)const
+    if ((pythonToCpp = Shiboken::Conversions::isPythonToCppConvertible(Shiboken::Conversions::PrimitiveTypeConverter<int>(), (pyArg)))) {
+        overloadId = 0; // getAvailableLayers(int)const
+    }
+
+    // Function signature not found.
+    if (overloadId == -1) goto Sbk_EffectFunc_getAvailableLayers_TypeError;
 
     // Call function/method
     {
+        int cppArg0;
+        pythonToCpp(pyArg, &cppArg0);
 
         if (!PyErr_Occurred()) {
-            // getAvailableLayers()const
-            // Begin code injection
-
-            std::map<ImageLayer,Effect*> comps = cppSelf->getAvailableLayers();
-
-            PyObject* ret = PyDict_New();
-            std::map<ImageLayer,Effect*>::iterator it = comps.begin();
-            for (; it != comps.end(); ++it) {
-                const ImageLayer& key = it->first;
-                Effect* value = it->second;
-                PyObject* pyKey = Shiboken::Conversions::copyToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_IMAGELAYER_IDX], &key);
-                PyObject* pyValue = Shiboken::Conversions::pointerToPython((SbkObjectType*)SbkNatronEngineTypes[SBK_EFFECT_IDX], value);
-                // Ownership transferences.
-                Shiboken::Object::getOwnership(pyValue);
-                PyDict_SetItem(ret, pyKey, pyValue);
-                Py_DECREF(pyKey);
-                Py_DECREF(pyValue);
-            }
-            return ret;
-
-            // End of code injection
-
-
+            // getAvailableLayers(int)const
+            std::list<ImageLayer > cppResult = const_cast<const ::Effect*>(cppSelf)->getAvailableLayers(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(SbkNatronEngineTypeConverters[SBK_NATRONENGINE_STD_LIST_IMAGELAYER_IDX], &cppResult);
         }
     }
 
@@ -528,6 +521,11 @@ static PyObject* Sbk_EffectFunc_getAvailableLayers(PyObject* self)
         return 0;
     }
     return pyResult;
+
+    Sbk_EffectFunc_getAvailableLayers_TypeError:
+        const char* overloads[] = {"int", 0};
+        Shiboken::setErrorAboutWrongArguments(pyArg, "NatronEngine.Effect.getAvailableLayers", overloads);
+        return 0;
 }
 
 static PyObject* Sbk_EffectFunc_getBitDepth(PyObject* self)
@@ -636,8 +634,8 @@ static PyObject* Sbk_EffectFunc_getCurrentTime(PyObject* self)
 
         if (!PyErr_Occurred()) {
             // getCurrentTime()const
-            int cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
-            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<int>(), &cppResult);
+            double cppResult = const_cast<const ::Effect*>(cppSelf)->getCurrentTime();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &cppResult);
         }
     }
 
@@ -1321,6 +1319,32 @@ static PyObject* Sbk_EffectFunc_insertParamInViewerUI(PyObject* self, PyObject* 
         return 0;
 }
 
+static PyObject* Sbk_EffectFunc_isNodeActivated(PyObject* self)
+{
+    ::Effect* cppSelf = 0;
+    SBK_UNUSED(cppSelf)
+    if (!Shiboken::Object::isValid(self))
+        return 0;
+    cppSelf = ((::Effect*)Shiboken::Conversions::cppPointer(SbkNatronEngineTypes[SBK_EFFECT_IDX], (SbkObject*)self));
+    PyObject* pyResult = 0;
+
+    // Call function/method
+    {
+
+        if (!PyErr_Occurred()) {
+            // isNodeActivated()const
+            bool cppResult = const_cast<const ::Effect*>(cppSelf)->isNodeActivated();
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
+        }
+    }
+
+    if (PyErr_Occurred() || !pyResult) {
+        Py_XDECREF(pyResult);
+        return 0;
+    }
+    return pyResult;
+}
+
 static PyObject* Sbk_EffectFunc_isNodeSelected(PyObject* self)
 {
     ::Effect* cppSelf = 0;
@@ -1805,7 +1829,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"disconnectInput", (PyCFunction)Sbk_EffectFunc_disconnectInput, METH_O},
     {"endChanges", (PyCFunction)Sbk_EffectFunc_endChanges, METH_NOARGS},
     {"endParametersUndoCommand", (PyCFunction)Sbk_EffectFunc_endParametersUndoCommand, METH_NOARGS},
-    {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_NOARGS},
+    {"getAvailableLayers", (PyCFunction)Sbk_EffectFunc_getAvailableLayers, METH_O},
     {"getBitDepth", (PyCFunction)Sbk_EffectFunc_getBitDepth, METH_NOARGS},
     {"getColor", (PyCFunction)Sbk_EffectFunc_getColor, METH_NOARGS},
     {"getContainerGroup", (PyCFunction)Sbk_EffectFunc_getContainerGroup, METH_NOARGS},
@@ -1827,6 +1851,7 @@ static PyMethodDef Sbk_Effect_methods[] = {
     {"getSize", (PyCFunction)Sbk_EffectFunc_getSize, METH_NOARGS},
     {"getUserPageParam", (PyCFunction)Sbk_EffectFunc_getUserPageParam, METH_NOARGS},
     {"insertParamInViewerUI", (PyCFunction)Sbk_EffectFunc_insertParamInViewerUI, METH_VARARGS|METH_KEYWORDS},
+    {"isNodeActivated", (PyCFunction)Sbk_EffectFunc_isNodeActivated, METH_NOARGS},
     {"isNodeSelected", (PyCFunction)Sbk_EffectFunc_isNodeSelected, METH_NOARGS},
     {"isReaderNode", (PyCFunction)Sbk_EffectFunc_isReaderNode, METH_NOARGS},
     {"isWriterNode", (PyCFunction)Sbk_EffectFunc_isWriterNode, METH_NOARGS},

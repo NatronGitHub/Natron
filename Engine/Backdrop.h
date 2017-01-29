@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef BACKDROP_H
-#define BACKDROP_H
+#ifndef Engine_Backdrop_h
+#define Engine_Backdrop_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -32,6 +32,7 @@
 #endif
 
 #include "Engine/NoOpBase.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -78,7 +79,7 @@ private:
     virtual bool knobChanged(const KnobIPtr&,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSetSpec /*view*/,
-                             double /*time*/) OVERRIDE FINAL;
+                             TimeValue /*time*/) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;
     boost::scoped_ptr<BackdropPrivate> _imp;
 };
@@ -91,4 +92,4 @@ toBackdrop(const EffectInstancePtr& effect)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // BACKDROP_H
+#endif // Engine_Backdrop_h

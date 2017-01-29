@@ -59,6 +59,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
+#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxClipInstance.h"
@@ -357,7 +358,7 @@ OfxImageEffectInstance::getEffectDuration() const
         return std::max(double(lastFrame - firstFrame) + 1., 1.);
     } else {
         // return the project duration if the effect has no lifetime
-        double projFirstFrame, projLastFrame;
+        TimeValue projFirstFrame, projLastFrame;
         node->getApp()->getProject()->getFrameRange(&projFirstFrame, &projLastFrame);
 
         return std::max(projLastFrame - projFirstFrame + 1., 1.);
@@ -380,7 +381,7 @@ OfxImageEffectInstance::getFrameRecursive() const
 {
     assert( getOfxEffectInstance() );
 
-    return getOfxEffectInstance()->getCurrentTime();
+    return getOfxEffectInstance()->getCurrentTime_TLS();
 }
 
 /// This is called whenever a param is changed by the plugin so that
@@ -390,19 +391,10 @@ void
 OfxImageEffectInstance::getRenderScaleRecursive(double &x,
                                                 double &y) const
 {
-    assert( getOfxEffectInstance() );
-    std::list<ViewerInstancePtr> attachedViewers;
-    getOfxEffectInstance()->getNode()->hasViewersConnected(&attachedViewers);
-    ///get the render scale of the 1st viewer
-    if ( !attachedViewers.empty() ) {
-        ViewerNodePtr first = attachedViewers.front()->getViewerNodeGroup();
-        int mipMapLevel = first->getProxyModeKnobMipMapLevel();
-        x = Image::getScaleFromMipMapLevel( (unsigned int)mipMapLevel );
-        y = x;
-    } else {
-        x = 1.;
-        y = 1.;
-    }
+
+    x = 1.;
+    y = 1.;
+
 }
 
 OfxStatus
@@ -1027,12 +1019,7 @@ OfxImageEffectInstance::timeLineGotoTime(double t)
 {
     OfxEffectInstancePtr effect = getOfxEffectInstance();
 
-
-    ///Calling seek will force a re-render of the frame T so we wipe the overlay redraw needed counter
-    bool redrawNeeded = effect->checkIfOverlayRedrawNeeded();
-    Q_UNUSED(redrawNeeded);
-
-    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek );
+    effect->getApp()->getTimeLine()->seekFrame( (int)t, false, EffectInstancePtr(), eTimelineChangeReasonOtherSeek );
 }
 
 /// get the first and last times available on the effect's timeline
@@ -1040,9 +1027,8 @@ void
 OfxImageEffectInstance::timeLineGetBounds(double &t1,
                                           double &t2)
 {
-    double first, last;
-
-    _ofxEffectInstance.lock()->getApp()->getFrameRange(&first, &last);
+    TimeValue first, last;
+    _ofxEffectInstance.lock()->getApp()->getProject()->getFrameRange(&first, &last);
     t1 = first;
     t2 = last;
 }
@@ -1051,7 +1037,11 @@ OfxImageEffectInstance::timeLineGetBounds(double &t1,
 int
 OfxImageEffectInstance::abort()
 {
-    return (int)getOfxEffectInstance()->aborted();
+    TreeRenderNodeArgsPtr currentRender = getOfxEffectInstance()->getCurrentRender_TLS();
+    if (!currentRender) {
+        return 0;
+    }
+    return (int)currentRender->isRenderAborted();
 }
 
 OFX::Host::Memory::Instance*
@@ -1138,10 +1128,23 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
         OFX::Host::Property::PropSpec specComp = {componentParamName.c_str(),  OFX::Host::Property::eString, 0, false,          ""}; // note the support for multi-planar clips
         outArgs.createProperty(specComp);
 
-        ImageComponents clipComponents = metadata.getImageComponents(inputNb);
-        std::string clipComponentStr = OfxClipInstance::natronsComponentsToOfxComponents(clipComponents);
-        outArgs.setStringProperty( componentParamName.c_str(), clipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
+        std::string ofxClipComponentStr;
+        std::string componentsType = metadata.getComponentsType(inputNb);
+        int nComps = metadata.getColorPlaneNComps(inputNb);
 
+        ImagePlaneDesc natronPlane = ImagePlaneDesc::mapNCompsToColorPlane(nComps);
+        if (componentsType == kNatronColorPlaneID) {
+            ofxClipComponentStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(natronPlane);
+        } else if (componentsType == kNatronDisparityComponentsLabel) {
+            ofxClipComponentStr = kFnOfxImageComponentStereoDisparity;
+        } else if (componentsType == kNatronMotionComponentsLabel) {
+            ofxClipComponentStr = kFnOfxImageComponentMotionVectors;
+        } else {
+            ofxClipComponentStr = ImagePlaneDesc::mapPlaneToOFXComponentsTypeString(natronPlane);
+        }
+
+
+        outArgs.setStringProperty( componentParamName.c_str(), ofxClipComponentStr.c_str() ); // as it is variable dimension, there is no default value, so we have to set it explicitly
 
         const std::string& bitDepthStr = OfxClipInstance::natronsDepthToOfxDepth( metadata.getBitDepth(inputNb) );
         OFX::Host::Property::PropSpec specDep = {depthParamName.c_str(),       OFX::Host::Property::eString, 1, !multiBitDepth, bitDepthStr.c_str()};
@@ -1153,7 +1156,7 @@ OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata(NodeMetadata& metad
     }
 } // OfxImageEffectInstance::setupClipPreferencesArgsFromMetadata
 
-StatusEnum
+ActionRetCodeEnum
 OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
@@ -1184,7 +1187,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
         std::cout << "default" << std::endl;
 #       endif
 
-        return eStatusReplyDefault;
+        return eActionStatusReplyDefault;
     }
 
     /// Only copy the meta-data if they actually changed
@@ -1194,7 +1197,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 #       endif
 
         /// ouch
-        return eStatusFailed;
+        return eActionStatusFailed;
     } else {
         /// OK, go pump the components/depths back into the clips themselves
         for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::iterator it = _clips.begin();
@@ -1221,7 +1224,23 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 #       endif
 
             defaultPrefs.setBitDepth( inputNb, OfxClipInstance::ofxDepthToNatronDepth( outArgs.getStringProperty(depthParamName) ) );
-            defaultPrefs.setImageComponents( inputNb, OfxClipInstance::ofxComponentsToNatronComponents( outArgs.getStringProperty(componentParamName) ) );
+
+            ImagePlaneDesc plane, pairedPlane;
+            std::string ofxComponentsType = outArgs.getStringProperty(componentParamName);
+            ImagePlaneDesc::mapOFXComponentsTypeStringToPlanes(ofxComponentsType, &plane, &pairedPlane);
+            defaultPrefs.setColorPlaneNComps( inputNb, plane.getNumComponents() );
+
+
+            if (plane.isColorPlane()) {
+                defaultPrefs.setComponentsType( inputNb, kNatronColorPlaneID);
+            } else if (plane.getChannelsLabel() == kNatronMotionComponentsLabel) {
+                defaultPrefs.setComponentsType( inputNb, kNatronMotionComponentsLabel);
+            } else if (plane.getChannelsLabel() == kNatronDisparityComponentsLabel) {
+                defaultPrefs.setComponentsType( inputNb, kNatronDisparityComponentsLabel);
+            } else {
+                defaultPrefs.setComponentsType( inputNb, ofxComponentsType);
+            }
+
             defaultPrefs.setPixelAspectRatio( inputNb, outArgs.getDoubleProperty(parParamName) );
         }
 
@@ -1248,7 +1267,7 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
                   << outArgs.getIntProperty(kOfxImageEffectFrameVarying) << std::endl;
 #       endif
 
-        return eStatusOK;
+        return eActionStatusOK;
     } //if (st == kOfxStatOK)
 } // OfxImageEffectInstance::getClipPreferences_safe
 
@@ -1292,31 +1311,6 @@ OfxImageEffectInstance::getClips() const
     return _clips;
 }
 
-bool
-OfxImageEffectInstance::getInputsHoldingTransform(std::list<int>* inputs) const
-{
-    if (!inputs) {
-        return false;
-    }
-    for (std::map<std::string, OFX::Host::ImageEffect::ClipInstance*>::const_iterator it = _clips.begin(); it != _clips.end(); ++it) {
-        if ( it->second && it->second->canTransform() ) {
-            ///Output clip should not have the property set.
-            assert( !it->second->isOutput() );
-            if ( it->second->isOutput() ) {
-                continue;
-            }
-
-
-            OfxClipInstance* clip = dynamic_cast<OfxClipInstance*>(it->second);
-            assert(clip);
-            if (clip) {
-                inputs->push_back( clip->getInputNb() );
-            }
-        }
-    }
-
-    return !inputs->empty();
-}
 
 #ifdef kOfxImageEffectPropInAnalysis // removed in OFX 1.4
 bool

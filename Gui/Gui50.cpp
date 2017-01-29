@@ -53,13 +53,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include <QClipboard>
 #include <QVBoxLayout>
 #include <QTreeWidget>
-#include <QThread>
+#include <QtCore/QThread>
 #include <QTabBar>
 #include <QTextEdit>
 #include <QLineEdit>
 #include <QCursor>
 #include <QCheckBox>
-#include <QComboBox>
 #include <QTreeView>
 
 #include "Global/QtCompat.h"
@@ -71,7 +70,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h" // NodesList, NodeCollection
 #include "Engine/Project.h"
-#include "Engine/FileSystemModel.h" // FileSystemModel::mapPathWithDriveLetterToPathWithNetworkShareName
+#include "Engine/OutputSchedulerThread.h"
+#include "Engine/FileSystemModel.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewerInstance.h"
@@ -303,25 +303,7 @@ Gui::minimizeMaximizeAllPanels(bool clicked)
     getApp()->redrawAllViewers();
 }
 
-void
-Gui::connectViewersToViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
 
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->connectToViewerCache();
-    }
-}
-
-void
-Gui::disconnectViewersFromViewerCache()
-{
-    QMutexLocker l(&_imp->_viewerTabsMutex);
-
-    for (std::list<ViewerTab*>::iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        (*it)->disconnectFromViewerCache();
-    }
-}
 
 void
 Gui::moveEvent(QMoveEvent* e)
@@ -576,51 +558,51 @@ Gui::keyPressEvent(QKeyEvent* e)
             // valid serialization
             (void)lastUsedGraph->pasteClipboard();
         }
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionProjectSettings, modifiers, key)) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionProjectSettings, modifiers, key)) {
         setVisibleProjectSettingsPanel();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphDisableNodes, modifiers, key) ) {
         _imp->_nodeGraphArea->toggleSelectedNodesEnabled();
-    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupNodegraph, kShortcutActionGraphFindNode, modifiers, key) ) {
         _imp->_nodeGraphArea->popFindDialog();
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput1, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput1, modifiers, key) ) {
         connectAInput(0);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput2, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput2, modifiers, key) ) {
         connectAInput(1);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput3, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput3, modifiers, key) ) {
         connectAInput(2);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput4, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput4, modifiers, key) ) {
         connectAInput(3);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput5, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput5, modifiers, key) ) {
         connectAInput(4);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput6, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput6, modifiers, key) ) {
         connectAInput(5);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput7, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput7, modifiers, key) ) {
         connectAInput(6);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput8, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput8, modifiers, key) ) {
         connectAInput(7);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput9, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput9, modifiers, key) ) {
         connectAInput(8);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerToInput10, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerToInput10, modifiers, key) ) {
         connectAInput(9);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput1, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput1, modifiers, key) ) {
         connectBInput(0);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput2, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput2, modifiers, key) ) {
         connectBInput(1);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput3, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput3, modifiers, key) ) {
         connectBInput(2);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput4, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput4, modifiers, key) ) {
         connectBInput(3);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput5, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput5, modifiers, key) ) {
         connectBInput(4);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput6, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput6, modifiers, key) ) {
         connectBInput(5);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput7, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput7, modifiers, key) ) {
         connectBInput(6);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput8, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput8, modifiers, key) ) {
         connectBInput(7);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput9, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput9, modifiers, key) ) {
         connectBInput(8);
-    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutIDActionConnectViewerBToInput10, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupGlobal, kShortcutActionConnectViewerBToInput10, modifiers, key) ) {
         connectBInput(9);
     } else {
 
@@ -751,7 +733,7 @@ Gui::isGUIFrozen() const
 void
 Gui::refreshAllTimeEvaluationParams(bool onlyTimeEvaluationKnobs)
 {
-    int time = getApp()->getProject()->getCurrentTime();
+    TimeValue time = getApp()->getProject()->getTimelineCurrentTime();
 
     for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
         (*it)->refreshNodesKnobsAtTime(true, time);
@@ -788,19 +770,11 @@ Gui::onFreezeUIButtonClicked(bool clicked)
     _imp->_propertiesBin->setEnabled(!clicked);
 
     if (!clicked) {
-        int time = getApp()->getProject()->getCurrentTime();
+        TimeValue time(getApp()->getProject()->getTimelineCurrentTime());
         for (std::list<NodeGraph*>::iterator it = _imp->_groups.begin(); it != _imp->_groups.end(); ++it) {
             (*it)->refreshNodesKnobsAtTime(false, time);
         }
         getNodeGraph()->refreshNodesKnobsAtTime(false, time);
-    }
-}
-
-void
-Gui::addShortcut(BoundAction* action)
-{
-    if (_imp->_settingsGui) {
-        _imp->_settingsGui->addShortcut(action);
     }
 }
 
@@ -822,26 +796,41 @@ Gui::redrawAllViewers()
 }
 
 void
-Gui::renderAllViewers(bool canAbort)
+Gui::renderAllViewers()
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
         if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(canAbort);
+            (*it)->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
         }
     }
 }
 
 void
-Gui::abortAllViewers()
+Gui::abortAllViewers(bool autoRestartPlayback)
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::list<ViewerTab*>::const_iterator it = _imp->_viewerTabs.begin(); it != _imp->_viewerTabs.end(); ++it) {
-        if ( (*it)->isVisible() ) {
-            (*it)->getInternalNode()->getInternalViewerNode()->getNode()->abortAnyProcessing_non_blocking();
+        if ( !(*it)->isVisible() ) {
+            continue;
+        }
+        ViewerNodePtr viewerGroup = (*it)->getInternalNode();
+        if (!viewerGroup) {
+            continue;
+        }
+
+        RenderEnginePtr engine = viewerGroup->getNode()->getRenderEngine();
+        if (!engine) {
+            continue;
+        }
+
+        if (autoRestartPlayback) {
+            engine->abortRenderingAutoRestart();
+        } else {
+            engine->abortRenderingNoRestart();
         }
     }
-}
+} // abortAllViewers
 
 void
 Gui::toggleAutoHideGraphInputs()

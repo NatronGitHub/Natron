@@ -28,8 +28,8 @@
 #include "Global/Macros.h"
 
 #include "Global/GlobalDefines.h"
+#include "Engine/RectI.h"
 
-#include "Engine/TextureRect.h"
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -38,21 +38,11 @@ class Texture
 {
 public:
 
-    enum DataTypeEnum
-    {
-        eDataTypeNone,
-        eDataTypeByte,
-        eDataTypeFloat,
-        eDataTypeUShort,
-        eDataTypeHalf,
-    };
-
-
     Texture(U32 target,
             int minFilter,
             int magFilter,
             int clamp,
-            DataTypeEnum type,
+            ImageBitDepthEnum type,
             int format,
             int internalFormat,
             int glType,
@@ -73,18 +63,18 @@ public:
 
     int w() const
     {
-        return _textureRect.width();
+        return _bounds.width();
     }
 
     int h() const
     {
-        return _textureRect.height();
+        return _bounds.height();
     }
 
     /**
      * @brief The bitdepth of the texture
      **/
-    DataTypeEnum type() const
+    ImageBitDepthEnum type() const
     {
         return _type;
     }
@@ -92,17 +82,17 @@ public:
     std::size_t getDataSizeOf() const
     {
         switch (_type) {
-        case eDataTypeByte:
+        case eImageBitDepthByte:
 
             return sizeof(unsigned char);
-        case eDataTypeFloat:
+        case eImageBitDepthFloat:
 
             return sizeof(float);
-        case eDataTypeHalf:
+        case eImageBitDepthHalf:
 
             // Fixme when we support half
             return sizeof(float);
-        case eDataTypeNone:
+        case eImageBitDepthNone:
         default:
 
             return 0;
@@ -115,7 +105,7 @@ public:
     std::size_t getSize() const
     {
         // textures are always RGBA for now.
-        return _textureRect.area() * getDataSizeOf() * 4;
+        return _bounds.area() * getDataSizeOf() * 4;
     }
 
     /*
@@ -124,23 +114,22 @@ public:
      * Note: Internally this function calls glTexImage2D to reallocate the texture buffer
      * @param originalRAMBuffer Optional pointer to a mapped PBO for asynchronous texture upload
      */
-    bool ensureTextureHasSize(const TextureRect& texRect, const unsigned char* originalRAMBuffer);
+    bool ensureTextureHasSize(const RectI & bounds, const unsigned char* originalRAMBuffer);
 
     /**
      * @brief Update the texture with the currently bound PBO across the given rectangle.
-     * @param texRect The bounds of the texture, if the texture does not match these bounds, it will be reallocated
+     * @param bounds The bounds of the texture, if the texture does not match these bounds, it will be reallocated
      * using ensureTextureHasSize(texRect,type)/
-     * @param roi if updateOnlyRoi is true, this will be the portion of the texture to update with glTexSubImage2D
-     * @param updateOnlyRoI if updateOnlyRoi is true, only the portion defined by roi will be updated on the texture
+     * @param roi if set, this will be the portion of the texture to update with glTexSubImage2D
      **/
-    void fillOrAllocateTexture(const TextureRect & texRect, const RectI& roi, bool updateOnlyRoi, const unsigned char* originalRAMBuffer);
+    void fillOrAllocateTexture(const RectI & bounds, const RectI* roiParam, const unsigned char* originalRAMBuffer);
 
     /**
      * @brief The bounds of the texture
      **/
-    const TextureRect & getTextureRect() const
+    const RectI & getBounds() const
     {
-        return _textureRect;
+        return _bounds;
     }
 
     int getFormat() const
@@ -166,8 +155,8 @@ private:
     U32 _target;
     int _minFilter, _magFilter, _clamp;
     int _internalFormat, _format, _glType;
-    TextureRect _textureRect;
-    DataTypeEnum _type;
+    RectI _bounds;
+    ImageBitDepthEnum _type;
     bool _useOpenGL;
 };
 

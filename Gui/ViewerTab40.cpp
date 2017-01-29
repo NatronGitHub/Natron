@@ -68,8 +68,7 @@ void
 ViewerTab::manageSlotsForInfoWidget(int textureIndex,
                                     bool connect)
 {
-    ViewerInstancePtr viewerNode = _imp->viewerNode.lock()->getInternalViewerNode();
-    RenderEnginePtr engine = viewerNode->getRenderEngine();
+    RenderEnginePtr engine = _imp->viewerNode.lock()->getNode()->getRenderEngine();
 
     assert(engine);
     if (connect) {
@@ -84,7 +83,7 @@ ViewerTab::manageSlotsForInfoWidget(int textureIndex,
 
 void
 ViewerTab::setImageFormat(int textureIndex,
-                          const ImageComponents& components,
+                          const ImagePlaneDesc& components,
                           ImageBitDepthEnum depth)
 {
     _imp->infoWidget[textureIndex]->setImageFormat(components, depth);
@@ -107,31 +106,13 @@ ViewerTab::onTimelineBoundariesChanged(SequenceTime first,
     }
     KnobIntPtr inPoint = viewer->getPlaybackInPointKnob();
     KnobIntPtr outPoint = viewer->getPlaybackOutPointKnob();
-    inPoint->setValue(first, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
-    outPoint->setValue(second, ViewSetSpec::current(), DimIdx(0), eValueChangedReasonPluginEdited);
+    inPoint->setValue(first, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
+    outPoint->setValue(second, ViewSetSpec::all(), DimIdx(0), eValueChangedReasonPluginEdited);
 
     abortViewersAndRefresh();
 }
 
-void
-ViewerTab::connectToViewerCache()
-{
-    _imp->timeLineGui->connectSlotsToViewerCache();
-}
 
-void
-ViewerTab::disconnectFromViewerCache()
-{
-    _imp->timeLineGui->disconnectSlotsFromViewerCache();
-}
-
-void
-ViewerTab::clearTimelineCacheLine()
-{
-    if (_imp->timeLineGui) {
-        _imp->timeLineGui->clearCachedFrames();
-    }
-}
 
 void
 ViewerTab::setLeftToolbarVisible(bool visible)
@@ -259,6 +240,12 @@ ViewerTab::getTimeLine() const
     return _imp->timeLineGui->getTimeline();
 }
 
+TimeLineGui*
+ViewerTab::getTimeLineGui() const
+{
+    return _imp->timeLineGui;
+}
+
 void
 ViewerTab::onMousePressCalledInViewer()
 {
@@ -287,12 +274,20 @@ ViewerTab::refreshViewerRenderingState()
     if (!internalNode) {
         return;
     }
-    ViewerInstancePtr viewerNode = internalNode->getInternalViewerNode();
-    if (!viewerNode) {
-        return;
+
+    for (int i = 0; i < 2; ++i) {
+        ViewerInstancePtr viewerNode = internalNode->getViewerProcessNode(0);
+        if (!viewerNode) {
+            continue;
+        }
+        int value = viewerNode->getNode()->getIsNodeRenderingCounter();
+        if (value > 0) {
+            internalNode->setRefreshButtonDown(true);
+            return;
+        }
     }
-    int value = viewerNode->getNode()->getIsNodeRenderingCounter();
-    internalNode->setRefreshButtonDown(value > 0);
+
+    internalNode->setRefreshButtonDown(false);
 }
 
 void
@@ -362,14 +357,13 @@ ViewerTab::onInternalNodeScriptNameChanged(const QString& /*name*/)
 
 void
 ViewerTab::onRenderStatsAvailable(int time,
-                                  ViewIdx view,
                                   double wallTime,
                                   const RenderStatsMap& stats)
 {
     assert( QThread::currentThread() == qApp->thread() );
     RenderStatsDialog* dialog = getGui()->getRenderStatsDialog();
     if (dialog) {
-        dialog->addStats(time, view, wallTime, stats);
+        dialog->addStats(time, wallTime, stats);
     }
 }
 
@@ -383,6 +377,7 @@ ViewerTab::synchronizeOtherViewersProjection()
     GuiAppInstancePtr app = gui->getApp();
     if (!app) {
         return;
+
     }
     app->setMasterSyncViewer(getInternalNode()->getNode());
     double left, bottom, factor, par;
@@ -391,7 +386,7 @@ ViewerTab::synchronizeOtherViewersProjection()
     for (std::list<ViewerTab*>::const_iterator it = viewers.begin(); it != viewers.end(); ++it) {
         if ( (*it) != this ) {
             (*it)->getViewer()->setProjection(left, bottom, factor, par);
-            (*it)->getInternalNode()->renderCurrentFrame(true);
+            (*it)->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
         }
     }
 }
@@ -423,10 +418,7 @@ ViewerTab::onPanelMadeCurrent()
     ViewerNodePtr viewerNode = _imp->viewerNode.lock();
     // Refresh the image since so far the viewer was probably not in sync with internal data
     if ( viewerNode && !app->getProject()->isLoadingProject() && !app->isTopLevelNodeBeingCreated(viewerNode->getNode())) {
-        ViewerInstancePtr viewer = viewerNode->getInternalViewerNode();
-        if (viewer) {
-            viewer->renderCurrentFrame(true);
-        }
+        viewerNode->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 }
 

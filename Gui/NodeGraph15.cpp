@@ -71,8 +71,8 @@ handleConnectionError(const NodeGuiPtr& outputNode,
                                                         "This might yield unwanted results.")
                             .arg( QString::fromUtf8( outputNode->getNode()->getLabel().c_str() ) )
                             .arg( QString::fromUtf8( inputNode->getNode()->getLabel().c_str() ) )
-                            .arg( outputNode->getNode()->getEffectInstance()->getAspectRatio(-1) )
-                            .arg( inputNode->getNode()->getEffectInstance()->getAspectRatio(-1) );
+                            .arg( outputNode->getNode()->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(),-1) )
+                            .arg( inputNode->getNode()->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(),-1) );
             Dialogs::warningDialog( QCoreApplication::translate("NodeGraph", "Different pixel aspect").toStdString(),
                                     error.toStdString() );
 
@@ -83,8 +83,8 @@ handleConnectionError(const NodeGuiPtr& outputNode,
                                                         "Either change the FPS from the Read node parameters or change the settings of the project.")
                             .arg( QString::fromUtf8( outputNode->getNode()->getLabel().c_str() ) )
                             .arg( QString::fromUtf8( inputNode->getNode()->getLabel().c_str() ) )
-                            .arg( outputNode->getNode()->getEffectInstance()->getFrameRate() )
-                            .arg( inputNode->getNode()->getEffectInstance()->getFrameRate() );
+                            .arg( outputNode->getNode()->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr()) )
+                            .arg( inputNode->getNode()->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr()) );
             Dialogs::warningDialog( QCoreApplication::translate("NodeGraph", "Different frame rate").toStdString(),
                                     error.toStdString() );
 

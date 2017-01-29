@@ -82,11 +82,11 @@ DockablePanelTabWidget::keyPressEvent(QKeyEvent* event)
     /*Qt::Key key = (Qt::Key)event->key();
     Qt::KeyboardModifiers modifiers = event->modifiers();
 
-    if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerPrevious, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupPlayer, kShortcutActionPlayerPrevious, modifiers, key) ) {
         if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
             _gui->getNodeGraph()->getLastSelectedViewer()->previousFrame();
         }
-    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutIDActionPlayerNext, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupPlayer, kShortcutActionPlayerNext, modifiers, key) ) {
         if ( _gui->getNodeGraph()->getLastSelectedViewer() ) {
             _gui->getNodeGraph()->getLastSelectedViewer()->nextFrame();
         }

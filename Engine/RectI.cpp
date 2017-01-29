@@ -125,15 +125,43 @@ RectI::toCanonical(unsigned int thisLevel,
 }
 
 void
+RectI::toCanonical(const RenderScale& thisScale,
+                   double par,
+                   const RectD & rod,
+                   RectD *rect) const
+{
+    toCanonical_noClipping(thisScale, par, rect);
+    rect->intersect(rod, rect);
+}
+
+
+void
 RectI::toCanonical_noClipping(unsigned int thisLevel,
                               double par,
                               RectD *rect) const
 {
-    rect->x1 = (x1 << thisLevel) * par;
-    rect->x2 = (x2 << thisLevel) * par;
-    rect->y1 = y1 << thisLevel;
-    rect->y2 = y2 << thisLevel;
+    double scale = (1 << thisLevel);
+    
+    rect->x1 = (x1 * scale) * par;
+    rect->x2 = (x2 * scale) * par;
+    rect->y1 = y1 * scale;
+    rect->y2 = y2 * scale;
 }
+
+void
+RectI::toCanonical_noClipping(const RenderScale& thisScale,
+                              double par,
+                              RectD *rect) const
+{
+    RenderScale inverseScale;
+    inverseScale.x = 1. / thisScale.x;
+    inverseScale.y = 1./ thisScale.y;
+    rect->x1 = (x1 * inverseScale.x) * par;
+    rect->x2 = (x2 * inverseScale.x) * par;
+    rect->y1 = y1 * inverseScale.y;
+    rect->y2 = y2 * inverseScale.y;
+}
+
 
 void
 RectI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)

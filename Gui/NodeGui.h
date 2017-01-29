@@ -54,7 +54,7 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/NodeGuiI.h"
 #include "Engine/EngineFwd.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/TimeLineKeys.h"
 
 #include "Gui/GuiFwd.h"
@@ -299,7 +299,7 @@ public:
 
     void setOverlayColor(const QColor& c);
 
-    void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, SequenceTime time);
+    void refreshKnobsAfterTimeChange(bool onlyTimeEvaluationKnobs, TimeValue time);
 
     void setParentMultiInstance(const NodeGuiPtr & parent);
 
@@ -336,34 +336,34 @@ public:
     virtual void addDefaultInteract(const HostOverlayKnobsPtr& knobs) OVERRIDE FINAL;
 
     boost::shared_ptr<HostOverlay> getHostOverlay() const WARN_UNUSED_RETURN;
-    virtual void drawHostOverlay(double time,
+    virtual void drawHostOverlay(TimeValue time,
                                  const RenderScale& renderScale,
                                  ViewIdx view)  OVERRIDE FINAL;
-    virtual bool onOverlayPenDownDefault(double time,
+    virtual bool onOverlayPenDownDefault(TimeValue time,
                                          const RenderScale& renderScale,
                                          ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenDoubleClickedDefault(double time,
+    virtual bool onOverlayPenDoubleClickedDefault(TimeValue time,
                                                   const RenderScale& renderScale,
                                                   ViewIdx view, const QPointF & viewportPos, const QPointF & pos)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenMotionDefault(double time,
+    virtual bool onOverlayPenMotionDefault(TimeValue time,
                                            const RenderScale& renderScale,
                                            ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayPenUpDefault(double time,
+    virtual bool onOverlayPenUpDefault(TimeValue time,
                                        const RenderScale& renderScale,
                                        ViewIdx view, const QPointF & viewportPos, const QPointF & pos, double pressure)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyDownDefault(double time,
+    virtual bool onOverlayKeyDownDefault(TimeValue time,
                                          const RenderScale& renderScale,
                                          ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyUpDefault(double time,
+    virtual bool onOverlayKeyUpDefault(TimeValue time,
                                        const RenderScale& renderScale,
                                        ViewIdx view, Key key, KeyboardModifiers modifiers)  OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayKeyRepeatDefault(double time,
+    virtual bool onOverlayKeyRepeatDefault(TimeValue time,
                                            const RenderScale& renderScale,
                                            ViewIdx view, Key key, KeyboardModifiers modifiers) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayFocusGainedDefault(double time,
+    virtual bool onOverlayFocusGainedDefault(TimeValue time,
                                              const RenderScale& renderScale,
                                              ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool onOverlayFocusLostDefault(double time,
+    virtual bool onOverlayFocusLostDefault(TimeValue time,
                                            const RenderScale& renderScale,
                                            ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool hasHostOverlay() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -450,10 +450,10 @@ public Q_SLOTS:
     void refreshSize();
 
     /*Updates the preview image, only if the project is in auto-preview mode*/
-    void updatePreviewImage(double time);
+    void updatePreviewImage(TimeValue time);
 
     /*Updates the preview image no matter what*/
-    void forceComputePreview(double time);
+    void forceComputePreview(TimeValue time);
 
     void setName(const QString & _nameItem);
 

@@ -75,7 +75,7 @@ transformToOpenGLMatrix(const Transform::Matrix3x3& mat,
 
 
 void
-ViewerTab::getNodesEntitledForOverlays(double time, ViewIdx view, NodesList & nodes) const
+ViewerTab::getNodesEntitledForOverlays(TimeValue time, ViewIdx view, NodesList & nodes) const
 {
     assert(QThread::currentThread() == qApp->thread());
 
@@ -126,7 +126,7 @@ ViewerTab::getNodesEntitledForOverlays(double time, ViewIdx view, NodesList & no
 
 
 void
-ViewerTab::drawOverlays(double time,
+ViewerTab::drawOverlays(TimeValue time,
                         const RenderScale & renderScale) const
 {
     Gui* gui = getGui();
@@ -157,7 +157,7 @@ ViewerTab::drawOverlays(double time,
         return;
     }
 
-    ViewIdx view = getInternalNode()->getCurrentView();
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
 
@@ -169,7 +169,7 @@ ViewerTab::drawOverlays(double time,
             continue;
         }
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        double transformedTime;
+        TimeValue transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (!nodeUi) {
             continue;
@@ -203,7 +203,7 @@ ViewerTab::drawOverlays(double time,
         if (!isInActiveViewerUI) {
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
             effect->drawOverlay_public(time, renderScale, view);
         }
 
@@ -223,7 +223,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
                                           const QPointF & viewportPos,
                                           const QPointF & pos,
                                           double pressure,
-                                          double timestamp)
+                                          TimeValue timestamp)
 {
     ViewerNodePtr isViewerNode = node->isEffectViewerNode();
     if (isViewerNode && isViewerNode != getInternalNode()) {
@@ -239,14 +239,14 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     if (!app) {
         return false;
     }
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
 
-    double transformedTime;
+    TimeValue transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
         /*
@@ -297,7 +297,7 @@ ViewerTab::notifyOverlaysPenDown_internal(const NodePtr& node,
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
+        node->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenDown_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp, pen);
         if (didSmthing) {
             //http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html
@@ -320,7 +320,7 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
                                  const QPointF & viewportPos,
                                  const QPointF & pos,
                                  double pressure,
-                                 double timestamp)
+                                 TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -348,8 +348,8 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
     _imp->hasPenDown = true;
     _imp->hasCaughtPenMotionWhileDragging = false;
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -375,10 +375,6 @@ ViewerTab::notifyOverlaysPenDown(const RenderScale & renderScale,
         }
     }
 
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     return false;
 }
@@ -400,8 +396,8 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         return false;
     }
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -417,7 +413,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         QPointF transformPos;
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
-        double transformedTime;
+        TimeValue transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (ok) {
             time = transformedTime;
@@ -460,7 +456,7 @@ ViewerTab::notifyOverlaysPenDoubleClick(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
 
             bool didSmthing = effect->onOverlayPenDoubleClicked_public(time, renderScale, view, transformViewportPos, transformPos);
             if (didSmthing) {
@@ -484,7 +480,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
                                             const QPointF & viewportPos,
                                             const QPointF & pos,
                                             double pressure,
-                                            double timestamp)
+                                            TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -501,12 +497,12 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 
     QPointF transformViewportPos;
     QPointF transformPos;
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
-    double transformedTime;
+    TimeValue transformedTime;
     bool ok = _imp->getTimeTransform(time, view, node, getInternalNode(), &transformedTime);
     if (ok) {
         /*
@@ -562,7 +558,7 @@ ViewerTab::notifyOverlaysPenMotion_internal(const NodePtr& node,
 
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
+        node->setCurrentViewportForOverlays_public(_imp->viewer);
         bool didSmthing = effect->onOverlayPenMotion_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
         if (didSmthing) {
             if (_imp->hasPenDown) {
@@ -588,7 +584,7 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
                                    const QPointF & viewportPos,
                                    const QPointF & pos,
                                    double pressure,
-                                   double timestamp)
+                                   TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -614,8 +610,8 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
         return false;
     }
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -643,12 +639,6 @@ ViewerTab::notifyOverlaysPenMotion(const RenderScale & renderScale,
     }
 
 
-    if ( !didSomething && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
-
-
     return didSomething;
 }
 
@@ -657,7 +647,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
                                const QPointF & viewportPos,
                                const QPointF & pos,
                                double pressure,
-                               double timestamp)
+                               TimeValue timestamp)
 {
     Gui* gui = getGui();
     if (!gui) {
@@ -696,8 +686,8 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 
     _imp->lastOverlayNode.reset();
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
 
     NodesList nodes;
@@ -715,7 +705,7 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
 
 
-        double transformedTime;
+        TimeValue transformedTime;
         bool ok = _imp->getTimeTransform(time, view, *it, getInternalNode(), &transformedTime);
         if (ok) {
             /*
@@ -766,20 +756,15 @@ ViewerTab::notifyOverlaysPenUp(const RenderScale & renderScale,
         if (!isInActiveViewerUI) {
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
-            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
             didSomething |= effect->onOverlayPenUp_public(time, renderScale, view, transformViewportPos, transformPos, pressure, timestamp);
         }
     }
 
 
-    if ( !mustTriggerRender && !didSomething && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
-
     if (mustTriggerRender) {
         //We had draft enabled but penRelease didn't trigger any render, trigger one to refresh the viewer
-        app->renderAllViewers(true);
+        app->renderAllViewers();
     }
 
 
@@ -878,7 +863,7 @@ ViewerTab::checkNodeViewerContextShortcuts(const NodePtr& node,
                     if ( isButton->getIsCheckable() ) {
 
                         // Refresh the button state
-                        isButton->setValue(!isButton->getValue(), ViewSetSpec::current(), DimIdx(0), eValueChangedReasonUserEdited, 0 /*keyframe*/, true /*forceHandlerEvenIfNoChange*/);
+                        isButton->setValue(!isButton->getValue(), ViewSetSpec::all(), DimIdx(0), eValueChangedReasonUserEdited, 0 /*keyframe*/, true /*forceHandlerEvenIfNoChange*/);
 
                         ret = true;
                     } else {
@@ -922,11 +907,11 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
         return false;
     }
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-    double transformedTime;
+    TimeValue transformedTime;
     bool ok = _imp->getTimeTransform(time, ViewIdx(0), node, getInternalNode(), &transformedTime);
     if (ok) {
         /*
@@ -946,7 +931,7 @@ ViewerTab::notifyOverlaysKeyDown_internal(const NodePtr& node,
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
+        node->setCurrentViewportForOverlays_public(_imp->viewer);
 
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
@@ -996,11 +981,16 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
     Key natronKey = QtEnumConvert::fromQtKey(qKey );
     KeyboardModifiers natronMod = QtEnumConvert::fromQtModifiers(qMods);
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
 
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
+
+    if (isModifier) {
+        // Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->redrawAllViewers();
+    }
 
     NodePtr lastOverlay = _imp->lastOverlayNode.lock();
     if (lastOverlay) {
@@ -1034,15 +1024,8 @@ ViewerTab::notifyOverlaysKeyDown(const RenderScale & renderScale,
         }
     }
 
-    if (isModifier) {
-        //Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->queueRedrawForAllViewers();
-    }
 
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
+
 
     return didSomething;
 } // ViewerTab::notifyOverlaysKeyDown
@@ -1066,10 +1049,23 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 
     _imp->lastOverlayNode.reset();
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
+
+    /*
+     Do not catch the event if this is a modifier, let it propagate to the Gui
+     */
+    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
+    e->key() == Qt::Key_Meta;
+
+    if (isModifier) {
+        //Modifiers may not necessarily return true for plug-ins but may require a redraw
+        app->redrawAllViewers();
+    }
+
+
     for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
 
         ViewerNodePtr isViewerNode = (*it)->isEffectViewerNode();
@@ -1080,7 +1076,7 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
         assert(effect);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        double transformedTime;
+        TimeValue transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
         if (ok) {
             /*
@@ -1098,28 +1094,12 @@ ViewerTab::notifyOverlaysKeyUp(const RenderScale & renderScale,
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
             didSomething |= effect->onOverlayKeyUp_public( time, renderScale, view,
                                                            QtEnumConvert::fromQtKey( (Qt::Key)e->key() ), QtEnumConvert::fromQtModifiers( e->modifiers() ) );
         }
     }
 
-    /*
-       Do not catch the event if this is a modifier, let it propagate to the Gui
-     */
-    bool isModifier = e->key() == Qt::Key_Control || e->key() == Qt::Key_Shift || e->key() == Qt::Key_Alt ||
-                      e->key() == Qt::Key_Meta;
-
-    if (isModifier) {
-        //Modifiers may not necessarily return true for plug-ins but may require a redraw
-        app->queueRedrawForAllViewers();
-    }
-
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-
-    app->clearOverlayRedrawRequests();
 
 
     return didSomething;
@@ -1149,11 +1129,11 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
         return false;
     }
 
-    ViewIdx view = getInternalNode()->getCurrentView();
-    double time = app->getTimeLine()->currentFrame();
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
+    TimeValue time(app->getTimeLine()->currentFrame());
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-    double transformedTime;
+    TimeValue transformedTime;
     bool ok = _imp->getTimeTransform(time, ViewIdx(0), node, getInternalNode(), &transformedTime);
     if (ok) {
         /*
@@ -1172,7 +1152,7 @@ ViewerTab::notifyOverlaysKeyRepeat_internal(const NodePtr& node,
     if (!isInActiveViewerUI) {
         EffectInstancePtr effect = node->getEffectInstance();
         assert(effect);
-        effect->setCurrentViewportForOverlays_public(_imp->viewer);
+        node->setCurrentViewportForOverlays_public(_imp->viewer);
 
         bool didSmthing = checkNodeViewerContextShortcuts(node, qKey, mods);
 
@@ -1236,10 +1216,7 @@ ViewerTab::notifyOverlaysKeyRepeat(const RenderScale & renderScale,
         }
     }
 
-    if (app->getOverlayRedrawRequestsCount() > 0) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
+
 
     return false;
 }
@@ -1270,8 +1247,8 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
     }
 
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time(app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
     bool ret = false;
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -1286,7 +1263,7 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
         assert(effect);
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        double transformedTime;
+        TimeValue transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
         if (ok) {
             time = transformedTime;
@@ -1295,18 +1272,13 @@ ViewerTab::notifyOverlaysFocusGained(const RenderScale & renderScale)
 
         bool isInActiveViewerUI = _imp->hasInactiveNodeViewerContext(*it);
         if (!isInActiveViewerUI) {
-            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
             bool didSmthing = effect->onOverlayFocusGained_public(time, renderScale, view);
             if (didSmthing) {
                 ret = true;
             }
         }
     }
-
-    if ( !ret && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusGained
@@ -1340,8 +1312,8 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
     }
 
 
-    double time = app->getTimeLine()->currentFrame();
-    ViewIdx view = getInternalNode()->getCurrentView();
+    TimeValue time (app->getTimeLine()->currentFrame());
+    ViewIdx view = getInternalNode()->getCurrentView_TLS();
     bool ret = false;
     NodesList nodes;
     getNodesEntitledForOverlays(time, view, nodes);
@@ -1353,7 +1325,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         }
 
 #ifdef NATRON_TRANSFORM_AFFECTS_OVERLAYS
-        double transformedTime;
+        TimeValue transformedTime;
         bool ok = _imp->getTimeTransform(time, ViewIdx(0), *it, getInternalNode(), &transformedTime);
         if (ok) {
             time = transformedTime;
@@ -1364,7 +1336,7 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
             EffectInstancePtr effect = (*it)->getEffectInstance();
             assert(effect);
 
-            effect->setCurrentViewportForOverlays_public(_imp->viewer);
+            (*it)->setCurrentViewportForOverlays_public(_imp->viewer);
             bool didSmthing = effect->onOverlayFocusLost_public(time, renderScale, view);
             if (didSmthing) {
                 ret = true;
@@ -1372,11 +1344,6 @@ ViewerTab::notifyOverlaysFocusLost(const RenderScale & renderScale)
         }
     }
 
-
-    if ( !ret && (app->getOverlayRedrawRequestsCount() > 0) ) {
-        app->redrawAllViewers();
-    }
-    app->clearOverlayRedrawRequests();
 
     return ret;
 } // ViewerTab::notifyOverlaysFocusLost

@@ -172,6 +172,9 @@ NodeCollection::addNode(const NodePtr& node)
 void
 NodeCollection::removeNode(const Node* node)
 {
+    if (!node) {
+        return;
+    }
     QMutexLocker k(&_imp->nodesMutex);
     for (NodesList::iterator it =_imp->nodes.begin(); it != _imp->nodes.end();++it) {
         if ( it->get() == node ) {
@@ -256,15 +259,13 @@ NodeCollection::getViewers(std::list<ViewerInstancePtr>* viewers) const
 }
 
 void
-NodeCollection::getWriters(std::list<OutputEffectInstancePtr>* writers) const
+NodeCollection::getWriters(std::list<EffectInstancePtr>* writers) const
 {
     QMutexLocker k(&_imp->nodesMutex);
 
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
         if ( (*it)->getGroup() && (*it)->isActivated() && (*it)->getEffectInstance()->isWriter() && (*it)->isPersistent() ) {
-            OutputEffectInstancePtr out = (*it)->isEffectOutput();
-            assert(out);
-            writers->push_back(out);
+            writers->push_back((*it)->getEffectInstance());
         }
         NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
         if (isGrp) {
@@ -327,8 +328,7 @@ NodeCollection::hasNodeRendering() const
                     return true;
                 }
             } else {
-                OutputEffectInstancePtr effect = toOutputEffectInstance( (*it)->getEffectInstance() );
-                if ( effect && effect->getRenderEngine()->hasThreadsWorking() ) {
+                if ( (*it)->getRenderEngine()->hasThreadsWorking() ) {
                     return true;
                 }
             }
@@ -345,25 +345,26 @@ NodeCollection::refreshViewersAndPreviews()
     assert( QThread::currentThread() == qApp->thread() );
 
     AppInstancePtr appInst = getApplication();
-    if (!appInst) {
+    if (!appInst || appInst->isBackground()) {
         return;
     }
-    if ( !appInst->isBackground() ) {
-        NodesList nodes = getNodes();
-        for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-            assert(*it);
-            (*it)->refreshPreviewsAfterProjectLoad();
-            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-            if (isGrp) {
-                isGrp->refreshViewersAndPreviews();
-            } else {
-                ViewerInstancePtr n = (*it)->isEffectViewerInstance();
-                if (n) {
-                    n->renderCurrentFrame(true);
-                }
-            }
+
+
+
+    NodesList nodes = getNodes();
+    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
+        assert(*it);
+        (*it)->refreshPreviewsAfterProjectLoad();
+
+        if ((*it)->isEffectViewerNode()) {
+            (*it)->getRenderEngine()->renderCurrentFrame();
+        }
+        NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
+        if (isGrp) {
+            isGrp->refreshViewersAndPreviews();
         }
     }
+
 }
 
 void
@@ -376,7 +377,7 @@ NodeCollection::refreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    double time = appInst->getTimeLine()->currentFrame();
+    TimeValue time(appInst->getTimeLine()->currentFrame());
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -400,7 +401,7 @@ NodeCollection::forceRefreshPreviews()
     if ( appInst->isBackground() ) {
         return;
     }
-    double time = appInst->getTimeLine()->currentFrame();
+    TimeValue time(appInst->getTimeLine()->currentFrame());
     NodesList nodes;
     getActiveNodes(&nodes);
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
@@ -759,14 +760,6 @@ NodeCollection::autoConnectNodes(const NodePtr& selected,
             ret = false;
         }
     }
-
-    ///update the render trees
-    std::list<ViewerInstancePtr> viewers;
-    created->hasViewersConnected(&viewers);
-    for (std::list<ViewerInstancePtr>::iterator it = viewers.begin(); it != viewers.end(); ++it) {
-        (*it)->renderCurrentFrame(true);
-    }
-
     return ret;
 } // autoConnectNodes
 
@@ -967,14 +960,22 @@ NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
         if ( (*it)->isActivated() ) {
             if ( (*it)->getEffectInstance()->isReader() ) {
-                double thisFirst, thislast;
-                (*it)->getEffectInstance()->getFrameRange_public( 0, &thisFirst, &thislast );
-                if (thisFirst != INT_MIN) {
-                    *firstFrame = setFrameRange ? thisFirst : std::min(*firstFrame, (int)thisFirst);
+
+
+                GetFrameRangeResultsPtr results;
+                ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public( TreeRenderNodeArgsPtr(), &results );
+                if (!isFailureRetCode(stat)) {
+                    RangeD thisRange;
+
+                    results->getFrameRangeResults(&thisRange);
+                    if (thisRange.min != INT_MIN) {
+                        *firstFrame = setFrameRange ? thisRange.min : std::min(*firstFrame, (int)thisRange.min);
+                    }
+                    if (thisRange.max != INT_MAX) {
+                        *lastFrame = setFrameRange ? thisRange.max : std::max(*lastFrame, (int)thisRange.max);
+                    }
                 }
-                if (thislast != INT_MAX) {
-                    *lastFrame = setFrameRange ? thislast : std::max(*lastFrame, (int)thislast);
-                }
+
             } else {
                 NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
                 if (isGrp) {
@@ -992,51 +993,6 @@ NodeCollection::recomputeFrameRangeForAllReaders(int* firstFrame,
     recomputeFrameRangeForAllReadersInternal(firstFrame, lastFrame, true);
 }
 
-void
-NodeCollection::forceComputeInputDependentDataOnAllTrees()
-{
-    NodesList nodes;
-
-    getNodes_recursive(nodes, true);
-    std::list<Project::NodesTree> trees;
-    Project::extractTreesFromNodes(nodes, trees);
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->markAllInputRelatedDataDirty();
-    }
-
-    std::list<NodePtr> markedNodes;
-    for (std::list<Project::NodesTree>::iterator it = trees.begin(); it != trees.end(); ++it) {
-        it->output.node->forceRefreshAllInputRelatedData();
-    }
-}
-
-void
-NodeCollection::getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >& argsMap) const
-{
-    NodesList nodes = getNodes();
-
-    for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        if ( !(*it)->isActivated() ) {
-            continue;
-        }
-        ParallelRenderArgsPtr args = (*it)->getEffectInstance()->getParallelRenderArgsTLS();
-        if (args) {
-            argsMap.insert( std::make_pair(*it, args) );
-        }
-
-
-        const NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-        if (isGrp) {
-            isGrp->getParallelRenderArgs(argsMap);
-        }
-
-        const PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
-        if (isPrecomp) {
-            isPrecomp->getPrecompApp()->getProject()->getParallelRenderArgs(argsMap);
-        }
-    }
-}
 
 void
 NodeCollection::setSubGraphEditedByUser(bool edited)
@@ -1096,6 +1052,23 @@ NodeCollection::isSubGraphEditable() const
     return _imp->isEditable;
 }
 
+
+void
+NodeCollection::refreshTimeInvariantMetadatasOnAllNodes_recursive()
+{
+    NodesList nodes = getNodes();
+    for (NodesList::const_iterator it = nodes.begin(); it != nodes.end(); ++it) {
+
+        NodeGroupPtr isGroup = (*it)->isEffectNodeGroup();
+        if (isGroup) {
+            isGroup->refreshTimeInvariantMetadatasOnAllNodes_recursive();
+        } else {
+            (*it)->getEffectInstance()->onMetadataChanged_nonRecursive_public();
+        }
+
+    }
+}
+
 struct NodeGroupPrivate
 {
     mutable QMutex nodesLock; // protects inputs & outputs
@@ -1151,11 +1124,10 @@ NodeGroup::createPlugin()
 
 
 NodeGroup::NodeGroup(const NodePtr &node)
-    : OutputEffectInstance(node)
+    : EffectInstance(node)
     , NodeCollection( node ? node->getApp() : AppInstancePtr() )
     , _imp( new NodeGroupPrivate() )
 {
-    setSupportsRenderScaleMaybe(EffectInstance::eSupportsYes);
 }
 
 bool
@@ -1194,12 +1166,9 @@ NodeGroup::~NodeGroup()
 
 
 void
-NodeGroup::addAcceptedComponents(int /*inputNb*/,
-                                 std::list<ImageComponents>* comps)
+NodeGroup::addAcceptedComponents(int /*inputNb*/,                                 std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -1242,26 +1211,24 @@ NodeGroup::getInputLabel(int inputNb) const
     return inputName.toStdString();
 }
 
-
-
-double
-NodeGroup::getCurrentTime() const
+TimeValue
+NodeGroup::getCurrentTime_TLS() const
 {
     NodePtr node = getOutputNodeInput();
 
     if (node) {
         EffectInstancePtr effect = node->getEffectInstance();
         if (!effect) {
-            return 0;
+            return TimeValue(0);
         }
-        return effect->getCurrentTime();
+        return effect->getCurrentTime_TLS();
     }
 
-    return EffectInstance::getCurrentTime();
+    return EffectInstance::getCurrentTime_TLS();
 }
 
 ViewIdx
-NodeGroup::getCurrentView() const
+NodeGroup::getCurrentView_TLS() const
 {
     NodePtr node = getOutputNodeInput();
 
@@ -1270,10 +1237,10 @@ NodeGroup::getCurrentView() const
         if (!effect) {
             return ViewIdx(0);
         }
-        return effect->getCurrentView();
+        return effect->getCurrentView_TLS();
     }
 
-    return EffectInstance::getCurrentView();
+    return EffectInstance::getCurrentView_TLS();
 }
 
 bool
@@ -1403,7 +1370,7 @@ NodeGroup::notifyNodeDeactivated(const NodePtr& node)
         }
         int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
-        output->onInputChanged(idx, thisNode, thisNode);
+        output->onInputChanged(idx);
     }
 } // NodeGroup::notifyNodeDeactivated
 
@@ -1437,7 +1404,7 @@ NodeGroup::notifyNodeActivated(const NodePtr& node)
         }
         int idx = output->getInputIndex(thisNode);
         assert(idx != -1);
-        output->onInputChanged(idx, thisNode, thisNode);
+        output->onInputChanged(idx);
     }
 }
 
@@ -1545,7 +1512,7 @@ NodeGroup::purgeCaches()
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->purgeCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
 }
 
@@ -1556,7 +1523,7 @@ NodeGroup::clearLastRenderedImage()
     NodesList nodes = getNodes();
 
     for (NodesList::iterator it = nodes.begin(); it != nodes.end(); ++it) {
-        (*it)->getEffectInstance()->purgeCaches();
+        (*it)->getEffectInstance()->purgeCaches_public();
     }
 }
 

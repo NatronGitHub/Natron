@@ -56,25 +56,12 @@
 #define isKeybind(group, action, modifiers, symbol) ( appPTR->matchesKeybind(group, action, modifiers, symbol) )
 
 /**
- * @brief Returns true if the given modifiers and button should trigger the given action of the given group.
- **/
-#define isMouseShortcut(group, action, modifiers, button) ( appPTR->matchesMouseShortcut(group, action, modifiers, button) )
-
-/**
  * @brief Returns the QKeySequence object for the given action of the given group.
  **/
 #define getKeybind(group, action) ( appPTR->getKeySequenceForAction(group, action) )
 
 
 NATRON_NAMESPACE_ENTER;
-
-struct PythonUserCommand
-{
-    QString grouping;
-    Qt::Key key;
-    Qt::KeyboardModifiers modifiers;
-    std::string pythonFunction;
-};
 
 struct GuiApplicationManagerPrivate;
 class GuiApplicationManager
@@ -136,33 +123,9 @@ public:
                         const Qt::KeyboardModifiers & modifiers,
                         int symbol) const;
 
-    /**
-     * @brief Returns true if the given keyboard modifiers and the given mouse button match the given action.
-     * The button parameter is to be casted to the Qt::MouseButton enum
-     **/
-    bool matchesMouseShortcut(const std::string & group, const std::string & actionID, const Qt::KeyboardModifiers & modifiers, int button) const;
+    QKeySequence getKeySequenceForAction(const QString & group, const QString & actionID) const;
 
-    std::list<QKeySequence> getKeySequenceForAction(const QString & group, const QString & actionID) const;
 
-    /**
-     * @brief Save shortcuts to QSettings
-     **/
-    void saveShortcuts() const;
-
-    void restoreDefaultShortcuts();
-
-    const std::map<QString, std::map<QString, BoundAction*> > & getAllShortcuts() const;
-
-    /**
-     * @brief Register an action to the shortcut manager indicating it is using a shortcut.
-     * This is used to update the action's shortcut when it gets modified by the user.
-     **/
-    void addShortcutAction(const QString & group, const QString & actionID, ActionWithShortcut* action);
-    void removeShortcutAction(const QString & group, const QString & actionID, QAction* action);
-
-    void notifyShortcutChanged(KeyBoundAction* action);
-
-    bool isShorcutVersionUpToDate() const;
 
     virtual void showErrorLog() OVERRIDE FINAL;
     virtual QString getAppFont() const OVERRIDE FINAL WARN_UNUSED_RETURN;
@@ -174,12 +137,10 @@ public:
     virtual void reloadStylesheets() OVERRIDE FINAL;
     virtual void reloadScriptEditorFonts() OVERRIDE FINAL;
 
-    virtual void addCommand(const QString& grouping, const std::string& pythonFunction, Qt::Key key, const Qt::KeyboardModifiers& modifiers) OVERRIDE;
-    const std::list<PythonUserCommand>& getUserPythonCommands() const;
 
     bool handleImageFileOpenRequest(const std::string& imageFile);
 
-    void appendTaskToPreviewThread(const NodeGuiPtr& node, double time);
+    void appendTaskToPreviewThread(const NodeGuiPtr& node, TimeValue time);
 
     int getDocumentationServerPort();
 
@@ -208,8 +169,6 @@ private:
     virtual void initBuiltinPythonModules() OVERRIDE FINAL;
 
     void onPluginLoaded(const PluginPtr& plugin) OVERRIDE;
-    virtual void ignorePlugin(const PluginPtr& plugin) OVERRIDE FINAL;
-    virtual void onAllPluginsLoaded() OVERRIDE FINAL;
     virtual void loadBuiltinNodePlugins(IOPluginsMap* readersMap,
                                         IOPluginsMap* writersMap) OVERRIDE;
     virtual bool initGui(const CLArgs& args) OVERRIDE FINAL;
@@ -220,13 +179,7 @@ private:
     void handleOpenFileRequest();
 
     virtual void onLoadCompleted() OVERRIDE FINAL;
-    virtual void clearLastRenderedTextures() OVERRIDE FINAL;
-    /**
-     * @brief Load shortcuts from QSettings
-     **/
-    void loadShortcuts();
 
-    void populateShortcuts();
 
     boost::scoped_ptr<GuiApplicationManagerPrivate> _imp;
 };

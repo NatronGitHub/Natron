@@ -27,18 +27,11 @@
 
 #include "Global/Macros.h"
 
-//----------------------------------------------------------------------------
-//
-//	Timing control
-//
-//----------------------------------------------------------------------------
-
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 #include <windows.h>
 #else
 #include <sys/time.h>
 #endif
-
 
 #include <QtCore/QString>
 #include <QtCore/QObject>
@@ -46,6 +39,12 @@
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
+
+//----------------------------------------------------------------------------
+//
+//	Timing control
+//
+//----------------------------------------------------------------------------
 
 #if defined(__NATRON_WIN32__) && !defined(__NATRON_MINGW__)
 int gettimeofday (struct timeval *tv, void *tz);

@@ -29,15 +29,14 @@
 
 #include "Engine/EffectInstance.h"
 
+#include "Engine/EngineFwd.h"
+
 NATRON_NAMESPACE_ENTER;
 
 struct OneViewNodePrivate;
 class OneViewNode
     : public EffectInstance
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
@@ -68,7 +67,8 @@ public:
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
+
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 
@@ -102,19 +102,19 @@ public:
         return eViewInvarianceAllViewsVariant;
     }
 
-public Q_SLOTS:
-
-    void onProjectViewsChanged();
 
 private:
 
+    virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
+
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual FramesNeededMap getFramesNeeded(double time, ViewIdx view) OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool isIdentity(double time,
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            double* inputTime,
+                            const TreeRenderNodeArgsPtr& render,
+                            TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<OneViewNodePrivate> _imp;

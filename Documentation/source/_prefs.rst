@@ -10,7 +10,13 @@ When checked, Natron will check for new updates on start-up of the application.
 
 **Enable crash reporting**
 
-When checked, if Natron crashes a window will pop-up asking you whether you want to upload the crash dump to the developers or not. This can help them track down the bug. If you need to turn the crash reporting system off, uncheck this. Note that when using the application in command-line mode, if crash reports are enabled, they will be automatically uploaded. Changing this requires a restart of the application to take effect.
+When checked, if Natron crashes a window will pop-up asking you whether you want to upload the crash dump to the developers or not. This can help them track down the bug.
+
+If you need to turn the crash reporting system off, uncheck this.
+
+Note that when using the application in command-line mode, if crash reports are enabled, they will be automatically uploaded.
+
+Changing this requires a restart of the application to take effect.
 
 **Test Crash Reporting**
 
@@ -33,7 +39,11 @@ Threading
 
 **Number of render threads (0="guess")**
 
-Controls how many threads Natron should use to render. -1: Disable multithreading totally (useful for debugging) 0: Guess the thread count from the number of cores. The ideal threads count for this hardware is 4.
+Controls how many threads Natron should use to render.
+
+-1: Disable multithreading totally (useful for debugging)
+
+0: Guess the thread count from the number of cores.
 
 **Number of parallel renders (0="guess")**
 
@@ -41,7 +51,9 @@ Controls the number of parallel frame that will be rendered at the same time by 
 
 **Effects use the thread-pool**
 
-When checked, all effects will use a global thread-pool to do their processing instead of launching their own threads. This suppresses the overhead created by the operating system creating new threads on demand for each rendering of a special effect. As a result of this, the rendering might be faster on systems with a lot of cores (>= 8). WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, make sure to uncheck this option first otherwise it will crash Natron.
+When checked, all effects will use a global thread-pool to do their processing instead of launching their own threads. This suppresses the overhead created by the operating system creating new threads on demand for each rendering of a special effect. As a result of this, the rendering might be faster on systems with a lot of cores (>= 8).
+
+WARNING: This is known not to work when using The Foundry's Furnace plug-ins (and potentially some other plug-ins that the dev team hasn't not tested against it). When using these plug-ins, make sure to uncheck this option first otherwise it will crash Natron.
 
 **Max threads usable per effect (0="guess")**
 
@@ -148,7 +160,9 @@ This property holds the maximum number of settings panels that can be held by th
 
 **Value increments based on cursor position**
 
-When enabled, incrementing the value fields of parameters with the mouse wheel or with arrow keys will increment the digits on the right of the cursor. When disabled, the value fields are incremented given what the plug-in decided it should be. You can alter this increment by holding Shift (x10) or Control (/10) while incrementing.
+When enabled, incrementing the value fields of parameters with the mouse wheel or with arrow keys will increment the digits on the right of the cursor.
+
+When disabled, the value fields are incremented given what the plug-in decided it should be. You can alter this increment by holding Shift (x10) or Control (/10) while incrementing.
 
 **Default layout file**
 
@@ -178,11 +192,13 @@ Caching
 
 **Aggressive caching**
 
-When checked, Natron will cache the output of all images rendered by all nodes, regardless of their "Force caching" parameter. When enabling this option you need to have at least 8GiB of RAM, and 16GiB is recommended. If not checked, Natron will only cache the nodes which have multiple outputs, or their parameter "Force caching" checked or if one of its output has its settings panel opened.
+When checked, Natron will cache the output of all images rendered by all nodes, regardless of their "Force caching" parameter. When enabling this option you need to have at least 8GiB of RAM, and 16GiB is recommended.
+
+If not checked, Natron will only cache the nodes which have multiple outputs, or their parameter "Force caching" checked or if one of its output has its settings panel opened.
 
 **Maximum amount of RAM memory used for caching (% of total RAM)**
 
-This setting indicates the percentage of the total RAM which can be used by the memory caches. This system has 8.00 GB of RAM.
+This setting indicates the percentage of the total RAM which can be used by the memory caches.
 
 **System RAM to keep free (% of total RAM)**
 
@@ -198,7 +214,11 @@ The maximum size that may be used by the DiskCache node on disk (in GiB)
 
 **Disk cache path (empty = default)**
 
-WARNING: Changing this parameter requires a restart of the application. This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is: /Users/devernay/Library/Caches/INRIA/Natron
+WARNING: Changing this parameter requires a restart of the application.
+
+This is points to the location where Natron on-disk caches will be. This variable should point to your fastest disk. If the parameter is left empty or the location set is invalid, the default location will be used. The default location is:
+
+/Users/devernay/Library/Caches/INRIA/Natron
 
 **Wipe Disk Cache**
 
@@ -241,7 +261,9 @@ Controls the maximum amount of nodes that can have their interface showing up at
 
 **Use number keys for the viewer**
 
-When enabled, the row of number keys on the keyboard is used for switching input ( connects input to A side, connects input to B side), even if the corresponding character in the current keyboard layout is not a number. This may have to be disabled when using a remote display connection to Linux from a different OS.
+When enabled, the row of number keys on the keyboard is used for switching input (<key> connects input to A side, <shift-key> connects input to B side), even if the corresponding character in the current keyboard layout is not a number.
+
+This may have to be disabled when using a remote display connection to Linux from a different OS.
 
 Nodegraph
 ---------
@@ -260,7 +282,9 @@ When moving nodes on the node graph, snap to positions where they are lined up w
 
 **Maximum undo/redo for the node graph**
 
-Set the maximum of events related to the node graph Natron remembers. Past this limit, older events will be deleted forever, allowing to re-use the RAM for other purposes. Changing this value will clear the undo/redo stack.
+Set the maximum of events related to the node graph Natron remembers. Past this limit, older events will be deleted forever, allowing to re-use the RAM for other purposes.
+
+Changing this value will clear the undo/redo stack.
 
 **Disconnected arrow length**
 
@@ -279,7 +303,9 @@ Plug-ins
 
 **Use bundled plug-ins**
 
-When checked, Natron also uses the plug-ins bundled with the binary distribution. When unchecked, only system-wide plug-ins found in are loaded (more information can be found in the help for the "Extra plug-ins search paths" setting).
+When checked, Natron also uses the plug-ins bundled with the binary distribution.
+
+When unchecked, only system-wide plug-ins found in are loaded (more information can be found in the help for the "Extra plug-ins search paths" setting).
 
 **Prefer bundled plug-ins over system-wide plug-ins**
 
@@ -291,7 +317,19 @@ When checked, Natron also uses the OpenFX plug-ins found in the default location
 
 **OpenFX plug-ins search path**
 
-Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX\_PLUGIN\_PATH environment variable. The priority order for system-wide plug-ins, from high to low, is: - plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is checked) - plug-ins found in OFX\_PLUGIN\_PATH - plug-ins found in /Library/OFX/Plugins (if "Enable default OpenFX plug-ins location" is checked) - plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is not checked) Any change will take effect on the next launch of Natron.
+Extra search paths where Natron should scan for OpenFX plug-ins. Extra plug-ins search paths can also be specified using the OFX\_PLUGIN\_PATH environment variable.
+
+The priority order for system-wide plug-ins, from high to low, is:
+
+- plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is checked)
+
+- plug-ins found in OFX\_PLUGIN\_PATH
+
+- plug-ins found in /Library/OFX/Plugins (if "Enable default OpenFX plug-ins location" is checked)
+
+- plugins bundled with the binary distribution of Natron (if "Prefer bundled plug-ins over system-wide plug-ins" is not checked)
+
+Any change will take effect on the next launch of Natron.
 
 **PyPlugs search path**
 
@@ -302,7 +340,11 @@ Python
 
 **After project created**
 
-Callback called once a new project is created (this is never called when "After project loaded" is called.) The signature of the callback is : callback(app) where: - app: points to the current application instance
+Callback called once a new project is created (this is never called when "After project loaded" is called.)
+
+The signature of the callback is : callback(app) where:
+
+- app: points to the current application instance
 
 **Default after project loaded**
 

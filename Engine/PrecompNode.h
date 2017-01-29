@@ -32,7 +32,8 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -71,7 +72,8 @@ public:
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
+
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
   
@@ -108,7 +110,7 @@ private:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
-                             double time) OVERRIDE FINAL;
+                             TimeValue time) OVERRIDE FINAL;
     boost::scoped_ptr<PrecompNodePrivate> _imp;
 };
 

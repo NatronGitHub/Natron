@@ -37,7 +37,7 @@
 #endif
 
 
-#include <QString>
+#include <QtCore/QString>
 
 #include "Gui/GuiFwd.h"
 

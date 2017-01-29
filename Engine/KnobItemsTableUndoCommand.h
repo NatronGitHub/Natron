@@ -36,9 +36,9 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/EngineFwd.h"
 #include "Engine/UndoCommand.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 

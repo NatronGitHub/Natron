@@ -46,7 +46,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QCheckBox>
 #include <QFileIconProvider>
 #include <QFileSystemModel>
-#include <QInputDialog>
+//#include <QInputDialog>
 #include <QSplitter>
 #include <QtGui/QIcon>
 #include <QDialog>
@@ -91,25 +91,28 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/KnobFile.h"
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/Project.h"
+#include "Engine/PyParameter.h" // StringParam
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 
 #include "Gui/Button.h"
-#include "Gui/LineEdit.h"
 #include "Gui/ComboBox.h"
 #include "Gui/DialogButtonBox.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/Gui.h"
-#include "Gui/NodeGui.h"
 #include "Gui/GuiAppInstance.h"
+#include "Gui/Label.h"
+#include "Gui/LineEdit.h"
+#include "Gui/Menu.h"
+#include "Gui/NodeGui.h"
+#include "Gui/PythonPanels.h"
+#include "Gui/TabWidget.h"
 #include "Gui/ViewerTab.h"
 #include "Gui/ViewerGL.h"
-#include "Gui/TabWidget.h"
-#include "Gui/Label.h"
-#include "Gui/Menu.h"
 #include "Global/QtCompat.h" // removeFileExtension
 
 #define FILE_DIALOG_DISABLE_ICONS
@@ -293,24 +296,28 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _previousButton = new Button(style()->standardIcon(QStyle::SP_ArrowBack), QString(), _buttonsWidget);
     _previousButton->setFixedSize(buttonSize);
     _previousButton->setIconSize(buttonIconSize);
+    _previousButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Go back in the directory history."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _buttonsLayout->addWidget(_previousButton);
     QObject::connect( _previousButton, SIGNAL(clicked()), this, SLOT(previousFolder()) );
 
     _nextButton = new Button(style()->standardIcon(QStyle::SP_ArrowForward), QString(), _buttonsWidget);
     _nextButton->setFixedSize(buttonSize);
     _nextButton->setIconSize(buttonIconSize);
+    _nextButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Go forward in the directory history."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _buttonsLayout->addWidget(_nextButton);
     QObject::connect( _nextButton, SIGNAL(clicked()), this, SLOT(nextFolder()) );
 
     _upButton = new Button(style()->standardIcon(QStyle::SP_ArrowUp), QString(), _buttonsWidget);
     _upButton->setIconSize(buttonIconSize);
     _upButton->setFixedSize(buttonSize);
+    _upButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Go to the parent directory."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _buttonsLayout->addWidget(_upButton);
     QObject::connect( _upButton, SIGNAL(clicked()), this, SLOT(parentFolder()) );
 
     _createDirButton = new Button(style()->standardIcon(QStyle::SP_FileDialogNewFolder), QString(), _buttonsWidget);
     _createDirButton->setIconSize(buttonIconSize);
     _createDirButton->setFixedSize(buttonSize);
+    _createDirButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Create a new directory here."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _buttonsLayout->addWidget(_createDirButton);
     QObject::connect( _createDirButton, SIGNAL(clicked()), this, SLOT(createDir()) );
 
@@ -338,13 +345,21 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _favoriteButtonsLayout->setContentsMargins(0, 0, 0, 0);
     _favoriteButtonsWidget->setLayout(_favoriteButtonsLayout);
 
-    _addFavoriteButton = new Button(QString::fromUtf8("+"), this);
+    _addFavoriteButton = new Button(QString::fromUtf8(" + "), this);
     _addFavoriteButton->setMaximumSize(20, 20);
+    _addFavoriteButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Add the current directory to the favorites list."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _favoriteButtonsLayout->addWidget(_addFavoriteButton);
     QObject::connect( _addFavoriteButton, SIGNAL(clicked()), this, SLOT(addFavorite()) );
 
-    _removeFavoriteButton = new Button(QString::fromUtf8("-"), this);
+    // we don't need an editor: just romove favorite and add a new one
+    //_editFavoriteButton = new Button(tr("Edit"), this);
+    //_editFavoriteButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Edit the selected favorite."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    //_favoriteButtonsLayout->addWidget(_editFavoriteButton);
+    //QObject::connect( _editFavoriteButton, SIGNAL(clicked()), this, SLOT(editUrl()) );
+
+    _removeFavoriteButton = new Button(QString::fromUtf8(" - "), this);
     _removeFavoriteButton->setMaximumSize(20, 20);
+    _removeFavoriteButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Remove the selected directory from the favorites list."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _favoriteButtonsLayout->addWidget(_removeFavoriteButton);
     QObject::connect( _removeFavoriteButton, SIGNAL(clicked()), _favoriteView, SLOT(removeEntry()) );
 
@@ -366,7 +381,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
 
     _relativeChoice = new ComboBox(_selectionWidget);
     QObject::connect( _relativeChoice, SIGNAL(currentIndexChanged(int)), this, SLOT(onRelativeChoiceChanged(int)) );
-    _relativeChoice->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This controls how the file-path (absolute/relative) that you choose will be fetched once you have " "chosen a file. The path will be made relative to the selected project path only when OK will be pressed."), NATRON_NAMESPACE::WhiteSpaceNormal) );
+    _relativeChoice->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("This controls how the selected file path is referred to. It can be either Absolute, or relative to one of the project paths. Note that the [Project] path exists only once the project is saved, so it is best to save an empty project before opening any external file."), NATRON_NAMESPACE::WhiteSpaceNormal) );
     _selectionLayout->addWidget(_relativeChoice);
     _relativeChoice->addItem( tr("Absolute") );
     std::map<std::string, std::string> projectPaths;
@@ -387,6 +402,7 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     _sequenceButton = new ComboBox(_selectionWidget);
     _sequenceButton->addItem( tr("Sequence:") );
     _sequenceButton->addItem( tr("File:") );
+    _sequenceButton->setToolTip( NATRON_NAMESPACE::convertFromPlainText(tr("Control whether to select a file sequence or a single file."), NATRON_NAMESPACE::WhiteSpaceNormal) );
 
 
     if (isSequenceDialog) {
@@ -566,7 +582,6 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
     } else {
         setWindowTitle( tr("Select Directory") );
     }
-
     QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
     bool hasRestoredDir;
     restoreState( settings.value( QLatin1String("FileDialog") ).toByteArray(), directoryArgs.empty(), &hasRestoredDir );
@@ -581,9 +596,9 @@ SequenceFileDialog::SequenceFileDialog( QWidget* parent, // necessary to transmi
         //qDebug() << "dir=" << dir;
         while (!dir.isEmpty() && !hasRestoredDir) {
             dir = QDir::cleanPath(dir + QString::fromUtf8("/.."));
-            //qDebug() << "dir=" << dir;
             if ( QDir(dir).exists() ) {
                 hasRestoredDir = setDirectory(dir);
+                break;
             }
         }
     }
@@ -631,13 +646,12 @@ SequenceFileDialog::saveState() const
     QByteArray data;
     QDataStream stream(&data, QIODevice::WriteOnly);
 
-    QList<QUrl> urls;
+    KnobPathPtr favoriteKnob = appPTR->getCurrentSettings()->getFileDialogFavoritePathsKnob();
     std::vector<QUrl> stdUrls = _favoriteView->urls();
     for (unsigned int i = 0; i < stdUrls.size(); ++i) {
-        urls.push_back(stdUrls[i]);
+        favoriteKnob->appendPath(stdUrls[i].toLocalFile().toStdString());
     }
     stream << _centerSplitter->saveState();
-    stream << urls;
     stream << history();
     stream << currentDirectory().path();
     stream << _view->header()->saveState();
@@ -661,13 +675,11 @@ SequenceFileDialog::restoreState(const QByteArray & state,
     }
     QByteArray splitterState;
     QByteArray headerData;
-    QList<QUrl> bookmarks;
     QStringList history;
     QString currentDirectory;
     QString relativeChoice;
     int sequenceMode_i;
     stream >> splitterState
-    >> bookmarks
     >> history
     >> currentDirectory
     >> headerData
@@ -713,8 +725,14 @@ SequenceFileDialog::restoreState(const QByteArray & state,
         }
     }
 
-    for (int i = 0; i < bookmarks.count(); ++i) {
-        QString urlPath = bookmarks[i].path();
+    std::list<std::vector<std::string> > bookmarks;
+    appPTR->getCurrentSettings()->getFileDialogFavoritePathsKnob()->getTable(&bookmarks);
+
+    for (std::list<std::vector<std::string> >::const_iterator it = bookmarks.begin(); it!=bookmarks.end(); ++it) {
+        if (it->size() != 2) {
+            continue;
+        }
+        QString urlPath = QString::fromUtf8((*it)[1].c_str());
 
         // On windows url.path() will return something starting with a /
 #ifdef __NATRON_WIN32__
@@ -748,7 +766,7 @@ SequenceFileDialog::restoreState(const QByteArray & state,
 
             QDir dir(urlPath);
             if ( !alreadyFound && dir.exists() ) {
-                stdBookMarks.push_back( bookmarks[i] );
+                stdBookMarks.push_back( QString::fromUtf8((*it)[1].c_str()) );
             }
         }
     }
@@ -989,6 +1007,7 @@ SequenceFileDialog::setDirectory(const QString &directory)
 {
     QString newDirectory = directory;
 
+
    #ifdef __NATRON_WIN32__
     newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
@@ -998,7 +1017,6 @@ SequenceFileDialog::setDirectory(const QString &directory)
     if ( !newDirectory.isEmpty() && !dir.exists() ) {
         return false;
     }
-
 
     _view->selectionModel()->clear();
     _view->verticalScrollBar()->setValue(0);
@@ -1011,13 +1029,17 @@ SequenceFileDialog::setDirectory(const QString &directory)
         return false;
     }
 
+
 #ifdef __NATRON_WIN32__
     newDirectory = appPTR->mapUNCPathToPathWithDriveLetter(newDirectory);
 #endif
 
+
     if ( !newDirectory.isEmpty() && !FileSystemModel::startsWithDriveName(newDirectory) ) {
         return false;
     }
+
+
 
     _requestedDir = newDirectory;
     if ( !_model->setRootPath(newDirectory) ) {
@@ -1106,7 +1128,7 @@ SequenceDialogView::SequenceDialogView(Gui* /*gui*/, SequenceFileDialog* fd)
     setContextMenuPolicy(Qt::CustomContextMenu);
     setDragEnabled(true);
     setDragDropMode(QAbstractItemView::DragOnly);
-    //setAttribute(Qt::WA_MacShowFocusRect,0);
+    setAttribute(Qt::WA_MacShowFocusRect, 0);
     setAcceptDrops(true);
 
 }
@@ -1407,12 +1429,13 @@ void
 SequenceFileDialog::createDir()
 {
     _favoriteView->clearSelection();
-    QString newFolderString;
-    QInputDialog dialog(this);
-    dialog.setLabelText( tr("Folder name:") );
+
+    NATRON_PYTHON_NAMESPACE::PyModalDialog dialog(_gui);
     dialog.setWindowTitle( tr("New Folder") );
+    boost::shared_ptr<NATRON_PYTHON_NAMESPACE::StringParam> folderName( dialog.createStringParam( QString::fromUtf8("folderName"), QString::fromUtf8("Folder Name") ) );
+    dialog.refreshUserParamsGUI();
     if ( dialog.exec() ) {
-        newFolderString = dialog.textValue();
+        QString newFolderString = folderName->getValue();
         if ( !newFolderString.isEmpty() ) {
             QString folderName = newFolderString;
             QString prefix  = currentDirectory().absolutePath();
@@ -1433,76 +1456,13 @@ SequenceFileDialog::createDir()
     }
 }
 
-AddFavoriteDialog::AddFavoriteDialog(SequenceFileDialog* fd,
-                                     QWidget* parent)
-    : QDialog(parent)
-    , _fd(fd)
-{
-    _mainLayout = new QVBoxLayout(this);
-    _mainLayout->setSpacing(0);
-    _mainLayout->setContentsMargins(5, 5, 0, 0);
-    setLayout(_mainLayout);
-    setWindowTitle( tr("New Favorite") );
-
-    _descriptionLabel = new Label(QString(), this);
-    _mainLayout->addWidget(_descriptionLabel);
-
-    _secondLine = new QWidget(this);
-    _secondLineLayout = new QHBoxLayout(_secondLine);
-
-    _pathLineEdit = new LineEdit(_secondLine);
-    _pathLineEdit->setPlaceholderText( tr("path...") );
-    _secondLineLayout->addWidget(_pathLineEdit);
-
-
-    QPixmap pix;
-    appPTR->getIcon(NATRON_PIXMAP_OPEN_FILE, &pix);
-
-    _openDirButton = new Button(_secondLine);
-    _openDirButton->setIcon( QIcon(pix) );
-    QObject::connect( _openDirButton, SIGNAL(clicked()), this, SLOT(openDir()) );
-    _secondLineLayout->addWidget(_openDirButton);
-
-    _mainLayout->addWidget(_secondLine);
-
-    _buttonBox = new DialogButtonBox(QDialogButtonBox::StandardButtons(QDialogButtonBox::Ok | QDialogButtonBox::Cancel), Qt::Horizontal, this);
-    QObject::connect( _buttonBox, SIGNAL(rejected()), this, SLOT(reject()) );
-    QObject::connect( _buttonBox, SIGNAL(accepted()), this, SLOT(accept()) );
-    _mainLayout->addWidget(_buttonBox);
-}
-
-void
-AddFavoriteDialog::setLabelText(const QString & text)
-{
-    _descriptionLabel->setText(text);
-}
-
-void
-AddFavoriteDialog::openDir()
-{
-    QString str = QFileDialog::getExistingDirectory( this, tr("Select a directory"), _fd->currentDirectory().path(), QFileDialog::ShowDirsOnly | QFileDialog::DontUseNativeDialog );
-
-    _pathLineEdit->setText(str);
-}
-
-QString
-AddFavoriteDialog::textValue() const
-{
-    return _pathLineEdit->text();
-}
 
 void
 SequenceFileDialog::addFavorite()
 {
-    AddFavoriteDialog dialog(this, this);
-
-    dialog.setLabelText( tr("Folder path:") );
-    QString newFavName, newFavPath;
-    if ( dialog.exec() ) {
-        newFavName = dialog.textValue();
-        newFavPath = dialog.textValue();
-        addFavorite(newFavName, newFavPath);
-    }
+    // add the current directory
+    QString newFav = currentDirectory().absolutePath();
+    addFavorite(newFav, newFav);
 }
 
 void
@@ -1745,7 +1705,6 @@ SequenceFileDialog::onLookingComboboxChanged(const QString & /*path*/)
         urlPath.remove(0, 1);
     }
 #endif
-
     setDirectory(urlPath);
 }
 
@@ -2404,7 +2363,9 @@ void
 FavoriteView::setModelAndUrls(QFileSystemModel *model,
                               const std::vector<QUrl> &newUrls)
 {
-    setIconSize( QSize(24, 24) );
+    setIconSize( QSize(appFontSize, appFontSize) ); // setIconSize resets the font of the QListView AND the QComboBox!!!
+    setFont( QFont(appFont, appFontSize) );
+
     setUniformItemSizes(true);
     assert(!urlModel);
 
@@ -2420,9 +2381,12 @@ FavoriteView::setModelAndUrls(QFileSystemModel *model,
     setEditTriggers(QAbstractItemView::NoEditTriggers);
 
     setDragDropMode(QAbstractItemView::DragDrop);
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect( this, SIGNAL(customContextMenuRequested(QPoint)),
-             this, SLOT(showMenu(QPoint)) );
+
+    // we don't need a context menu here, there are the "+" and "-" buttons
+    //setContextMenuPolicy(Qt::CustomContextMenu);
+    //connect( this, SIGNAL(customContextMenuRequested(QPoint)),
+    //         this, SLOT(showMenu(QPoint)) );
+
     urlModel->setUrls(newUrls);
     setCurrentIndex( this->model()->index(0, 0) );
     connect( selectionModel(), SIGNAL(currentChanged(QModelIndex,QModelIndex)),
@@ -2490,6 +2454,8 @@ FavoriteView::removeEntry()
     }
 }
 
+// we don't need a favorite editor: just remove and add a new one
+/*
 void
 FavoriteView::rename()
 {
@@ -2507,9 +2473,11 @@ FavoriteView::rename()
         }
     }
     QString newName;
+    #warning "TODO: use NATRON_PYTHON_NAMESPACE::PyModalDialog"
     QInputDialog dialog(this);
     dialog.setLabelText( tr("Favorite Name:") );
     dialog.setWindowTitle( tr("Rename Favorite") );
+    dialog.setAttribute(Qt::WA_MacShowFocusRect, 0);
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
@@ -2522,7 +2490,10 @@ FavoriteView::rename(const QModelIndex & index,
 {
     model()->setData(index, name, Qt::EditRole);
 }
+*/
 
+// we don't need an editor: just romove favorite and add a new one
+/*
 void
 FavoriteView::editUrl()
 {
@@ -2540,9 +2511,11 @@ FavoriteView::editUrl()
         }
     }
     QString newName;
+    #warning "TODO: use NATRON_PYTHON_NAMESPACE::PyModalDialog"
     QInputDialog dialog(this);
     dialog.setLabelText( tr("Folder Path:") );
     dialog.setWindowTitle( tr("Change Folder Path") );
+    dialog.setAttribute(Qt::WA_MacShowFocusRect, 0);
     if ( dialog.exec() ) {
         newName = dialog.textValue();
     }
@@ -2561,6 +2534,7 @@ FavoriteView::editUrl()
     }
     myurlModel->setUrl(index, url, idx);
 }
+ */
 
 void
 FavoriteView::clicked(const QModelIndex &index)
@@ -2571,6 +2545,8 @@ FavoriteView::clicked(const QModelIndex &index)
     selectUrl(url);
 }
 
+// we don't need a context menu, there are the "+" and "-" buttons
+/*
 void
 FavoriteView::showMenu(const QPoint &position)
 {
@@ -2597,6 +2573,7 @@ FavoriteView::showMenu(const QPoint &position)
         menu.exec( mapToGlobal(position) );
     }
 }
+*/
 
 void
 FavoriteView::keyPressEvent(QKeyEvent* e)
@@ -2698,6 +2675,8 @@ FileDialogComboBox::FileDialogComboBox(SequenceFileDialog *p,
     , dialog(p)
     , doResize(false)
 {
+    setIconSize( QSize(appFontSize, appFontSize) ); // setIconSize resets the font of the QListView AND the QComboBox!!!
+    setFont( QFont(appFont, appFontSize) );
     urlModel->setFileSystemModel( p->getLookingFileSystemModel() );
     setModel(urlModel);
     QObject::connect( this, SIGNAL(currentIndexChanged(int)), this, SLOT(onCurrentIndexChanged(int)) );
@@ -3011,12 +2990,18 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         }
         _preview->viewerNode->getNode()->connectInput(reader, 0);
 
-        double firstFrame, lastFrame;
-        reader->getEffectInstance()->getFrameRange_public(0, &firstFrame, &lastFrame);
-        _preview->viewerUI->setTimelineBounds(firstFrame, lastFrame);
-        _preview->viewerUI->centerOn(firstFrame, lastFrame);
+        RangeD range = {1., 1.};
+        {
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = reader->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            if (!isFailureRetCode(stat)) {
+                results->getFrameRangeResults(&range);
+            }
+        }
+        _preview->viewerUI->setTimelineBounds(range.min, range.max);
+        _preview->viewerUI->centerOn(range.min, range.max);
     }
-    _preview->viewerUI->getInternalNode()->getInternalViewerNode()->renderCurrentFrame(true);
+    _preview->viewerUI->getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
 }
 
 ///Reset everything as it was prior to the dialog being opened, also avoid the nodes being deleted

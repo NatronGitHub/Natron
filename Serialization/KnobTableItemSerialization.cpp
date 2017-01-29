@@ -214,10 +214,10 @@ KnobItemsTableSerialization::decode(const YAML::Node& node)
         for (std::size_t i = 0; i < itemsNode.size(); ++i) {
             const std::string& nodeTag = itemsNode[i].Tag();
             KnobTableItemSerializationPtr s = createSerializationObjectForItemTag(nodeTag);
-            s->verbatimTag = nodeTag;
             if (!s) {
                 continue;
             }
+            s->verbatimTag = nodeTag;
             s->decode(itemsNode[i]);
             items.push_back(s);
         }

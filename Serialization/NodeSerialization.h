@@ -29,12 +29,45 @@
 
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
-#include "Serialization/ImageParamsSerialization.h"
 #include "Serialization/SerializationBase.h"
 #include "Serialization/SerializationFwd.h"
 
 
 SERIALIZATION_NAMESPACE_ENTER;
+
+class ImagePlaneDescSerialization
+: public SerializationObjectBase
+{
+public:
+
+    ImagePlaneDescSerialization()
+    : SerializationObjectBase()
+    {
+
+    }
+
+    virtual ~ImagePlaneDescSerialization()
+    {
+
+    }
+
+    // The plane id and label
+    std::string planeID, planeLabel;
+
+    // The components label, e.g: "Motion" instead of "XY"
+    // If not provided, this is just the concatenation of all channel names
+    std::string channelsLabel;
+
+    // Each individual channel names, e.g: "R", "G", "B", "A"
+    std::vector<std::string> channelNames;
+
+    virtual void encode(YAML::Emitter& em) const OVERRIDE;
+
+    virtual void decode(const YAML::Node& node) OVERRIDE;
+    
+};
+
+
 
 /**
  * @class This is the main class for everything related to the serialization of nodes.
@@ -157,7 +190,7 @@ public:
     NodeSerializationList _children;
 
     // This is the user created components on the node
-    std::list<ImageComponentsSerialization> _userComponents;
+    std::list<ImagePlaneDescSerialization> _userComponents;
 
     // UI stuff
     double _nodePositionCoords[2]; // x,y  X=Y=INT_MIN if there is no position info

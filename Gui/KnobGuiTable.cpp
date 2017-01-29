@@ -600,22 +600,23 @@ KnobGuiLayers::~KnobGuiLayers()
 bool
 KnobGuiLayers::addNewUserEntry(QStringList& row)
 {
-    NewLayerDialog dialog( ImageComponents::getNoneComponents(), getKnobGui()->getGui() );
+    NewLayerDialog dialog( ImagePlaneDesc::getNoneComponents(), getKnobGui()->getGui() );
+
 
     if ( dialog.exec() ) {
-        ImageComponents comps = dialog.getComponents();
-        if ( comps == ImageComponents::getNoneComponents() ) {
+        ImagePlaneDesc comps = dialog.getComponents();
+        if ( comps == ImagePlaneDesc::getNoneComponents() ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
                                                                 "Python compliant.").toStdString() );
 
             return false;
         }
-        row.push_back( QString::fromUtf8( comps.getLayerName().c_str() ) );
+        row.push_back( QString::fromUtf8( comps.getPlaneLabel().c_str() ) );
 
         std::list<std::vector<std::string> > table;
         _knob.lock()->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
-            if ( (*it)[0] == comps.getLayerName() ) {
+            if ( (*it)[0] == comps.getPlaneLabel() ) {
                 Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
 
                 return false;
@@ -623,7 +624,7 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
         }
 
         std::string channelsStr;
-        const std::vector<std::string>& channels = comps.getComponentsNames();
+        const std::vector<std::string>& channels = comps.getChannels();
         for (std::size_t i = 0; i < channels.size(); ++i) {
             channelsStr += channels[i];
             if ( i < (channels.size() - 1) ) {
@@ -631,7 +632,7 @@ KnobGuiLayers::addNewUserEntry(QStringList& row)
             }
         }
         row.push_back( QString::fromUtf8( channelsStr.c_str() ) );
-
+        row.push_back(QString::fromUtf8(comps.getChannelsLabel().c_str()));
         return true;
     }
 
@@ -647,11 +648,12 @@ KnobGuiLayers::editUserEntry(QStringList& row)
     for (int i = 0; i < splits.size(); ++i) {
         channels.push_back( splits[i].toStdString() );
     }
-    ImageComponents original(row[0].toStdString(), std::string(), channels);;
+    ImagePlaneDesc original(row[0].toStdString(), "", row[2].toStdString(), channels);;
     NewLayerDialog dialog( original, getKnobGui()->getGui() );
+
     if ( dialog.exec() ) {
-        ImageComponents comps = dialog.getComponents();
-        if ( comps == ImageComponents::getNoneComponents() ) {
+        ImagePlaneDesc comps = dialog.getComponents();
+        if ( comps == ImagePlaneDesc::getNoneComponents() ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A layer must contain at least 1 channel and channel names must be "
                                                                 "Python compliant.").toStdString() );
 
@@ -659,12 +661,14 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         }
 
         std::string oldLayerName = row[0].toStdString();
-        row[0] = ( QString::fromUtf8( comps.getLayerName().c_str() ) );
+        row[0] = ( QString::fromUtf8( comps.getPlaneID().c_str() ) );
+
 
         std::list<std::vector<std::string> > table;
         _knob.lock()->getTable(&table);
         for (std::list<std::vector<std::string> >::iterator it = table.begin(); it != table.end(); ++it) {
-            if ( ( (*it)[0] == comps.getLayerName() ) && ( (*it)[0] != oldLayerName ) ) {
+            if ( ( (*it)[0] == comps.getPlaneID() ) && ( (*it)[0] != oldLayerName ) ) {
+
                 Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
 
                 return false;
@@ -672,7 +676,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
         }
 
         std::string channelsStr;
-        const std::vector<std::string>& channels = comps.getComponentsNames();
+        const std::vector<std::string>& channels = comps.getChannels();
         for (std::size_t i = 0; i < channels.size(); ++i) {
             channelsStr += channels[i];
             if ( i < (channels.size() - 1) ) {
@@ -680,7 +684,7 @@ KnobGuiLayers::editUserEntry(QStringList& row)
             }
         }
         row[1] = ( QString::fromUtf8( channelsStr.c_str() ) );
-
+        row[2] = QString::fromUtf8(comps.getChannelsLabel().c_str());
         return true;
     }
 

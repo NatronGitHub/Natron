@@ -29,7 +29,7 @@
 NATRON_NAMESPACE_ENTER
 
 
-CurvePtr KnobHelper::getAnimationCurve(ViewGetSpec view,
+CurvePtr KnobHelper::getAnimationCurve(ViewIdx view,
                               DimIdx dimension) const
 {
     if ( (dimension < 0) || ( dimension >= _imp->dimension) ) {
@@ -69,7 +69,7 @@ KnobHelper::deleteValuesAtTimeInternal(const std::list<double>& times, ViewIdx v
     try {
         for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
             // This may throw exceptions if keyframes do not exist
-            curve->removeKeyFrameWithTime(*it);
+            curve->removeKeyFrameWithTime(TimeValue(*it));
         }
     } catch (const std::exception & /*e*/) {
     }
@@ -101,7 +101,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
                     deleteValuesAtTimeInternal(times, *it, DimIdx(i));
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 deleteValuesAtTimeInternal(times, view_i, DimIdx(i));
             }
         }
@@ -114,7 +114,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
                 deleteValuesAtTimeInternal(times, *it, DimIdx(dimension));
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             deleteValuesAtTimeInternal(times, view_i, DimIdx(dimension));
         }
     }
@@ -124,14 +124,14 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
 
 
     // Evaluate the change
-    evaluateValueChange(dimension, *times.begin(), view, reason);
+    evaluateValueChange(dimension, TimeValue(*times.begin()), view, reason);
 
 
 
 } // deleteValuesAtTime
 
 void
-KnobHelper::deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx dimension, bool before)
+KnobHelper::deleteAnimationConditionalInternal(TimeValue time, ViewIdx view, DimIdx dimension, bool before)
 {
     if (!isAnimated(dimension, view)) {
         return;
@@ -157,7 +157,7 @@ KnobHelper::deleteAnimationConditionalInternal(double time, ViewIdx view, DimIdx
 } // deleteAnimationConditionalInternal
 
 void
-KnobHelper::deleteAnimationConditional(double time,
+KnobHelper::deleteAnimationConditional(TimeValue time,
                                        ViewSetSpec view,
                                        DimSpec dimension,
                                        bool before)
@@ -170,7 +170,7 @@ KnobHelper::deleteAnimationConditional(double time,
                     deleteAnimationConditionalInternal(time, *it, DimIdx(i), before);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 deleteAnimationConditionalInternal(time, view_i, DimIdx(i), before);
             }
         }
@@ -183,7 +183,7 @@ KnobHelper::deleteAnimationConditional(double time,
                 deleteAnimationConditionalInternal(time, *it, DimIdx(dimension.value()), before);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             deleteAnimationConditionalInternal(time, view_i, DimIdx(dimension.value()), before);
         }
     }
@@ -196,7 +196,7 @@ KnobHelper::deleteAnimationConditional(double time,
 } // deleteAnimationConditional
 
 void
-KnobHelper::deleteAnimationBeforeTime(double time,
+KnobHelper::deleteAnimationBeforeTime(TimeValue time,
                                       ViewSetSpec view,
                                       DimSpec dimension)
 {
@@ -204,7 +204,7 @@ KnobHelper::deleteAnimationBeforeTime(double time,
 }
 
 void
-KnobHelper::deleteAnimationAfterTime(double time,
+KnobHelper::deleteAnimationAfterTime(TimeValue time,
                                      ViewSetSpec view,
                                      DimSpec dimension)
 {
@@ -282,7 +282,7 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
                     ret &= warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 ret &= warpValuesAtTimeInternal(times, view_i, DimIdx(i), warp, outKeys);
             }
         }
@@ -295,12 +295,12 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
                 ret &= warpValuesAtTimeInternal(times, *it, DimIdx(dimension), warp, outKeys);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             ret &= warpValuesAtTimeInternal(times, view_i, DimIdx(dimension), warp, outKeys);
         }
     }
 
-    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, TimeValue(times.front()), view, eValueChangedReasonUserEdited);
 
     return ret;
 
@@ -342,7 +342,7 @@ KnobHelper::cloneCurve(ViewIdx view,
     }
 
     if (hasChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view,  eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view,  eValueChangedReasonUserEdited);
     }
 
 
@@ -370,7 +370,7 @@ KnobHelper::setInterpolationAtTimesInternal(ViewIdx view, DimIdx dimension, cons
 
     for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
         KeyFrame k;
-        if (curve->setKeyFrameInterpolation(interpolation, *it, &k)) {
+        if (curve->setKeyFrameInterpolation(interpolation, TimeValue(*it), &k)) {
             if (newKeys) {
                 newKeys->push_back(k);
             }
@@ -401,7 +401,7 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
                     setInterpolationAtTimesInternal(*it, DimIdx(i), times, interpolation, newKeys);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 setInterpolationAtTimesInternal(view_i, DimIdx(i), times, interpolation, newKeys);
             }
         }
@@ -414,18 +414,18 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
                 setInterpolationAtTimesInternal(*it, DimIdx(dimension), times, interpolation, newKeys);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             setInterpolationAtTimesInternal(view_i, DimIdx(dimension), times, interpolation, newKeys);
         }
     }
 
-    evaluateValueChange(dimension, times.front(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, TimeValue(times.front()), view, eValueChangedReasonUserEdited);
 
 
 } // setInterpolationAtTimes
 
 bool
-KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double left, double right)
+KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValue time, double left, double right)
 {
 
     if (!isAnimated(dimension, view)) {
@@ -455,7 +455,7 @@ KnobHelper::setLeftAndRightDerivativesAtTimeInternal(ViewIdx view, DimIdx dimens
 bool
 KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
                                              DimSpec dimension,
-                                             double time,
+                                             TimeValue time,
                                              double left,
                                              double right)
 {
@@ -472,7 +472,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
                     ok |= setLeftAndRightDerivativesAtTimeInternal(*it, DimIdx(i), time, left, right);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 ok |= setLeftAndRightDerivativesAtTimeInternal(view_i, DimIdx(i), time, left, right);
             }
         }
@@ -485,7 +485,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
                 ok |= setLeftAndRightDerivativesAtTimeInternal(*it, DimIdx(dimension), time, left, right);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             ok |= setLeftAndRightDerivativesAtTimeInternal(view_i, DimIdx(dimension), time, left, right);
         }
     }
@@ -496,7 +496,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
 } // KnobHelper::moveDerivativesAtTime
 
 bool
-KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double time, double derivative, bool isLeft)
+KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, TimeValue time, double derivative, bool isLeft)
 {
     if (!isAnimated(dimension, view)) {
         return false;
@@ -530,7 +530,7 @@ KnobHelper::setDerivativeAtTimeInternal(ViewIdx view, DimIdx dimension, double t
 bool
 KnobHelper::setDerivativeAtTime(ViewSetSpec view,
                                 DimSpec dimension,
-                                double time,
+                                TimeValue time,
                                 double derivative,
                                 bool isLeft)
 {
@@ -546,7 +546,7 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
                     ok |= setDerivativeAtTimeInternal(*it, DimIdx(i), time, derivative, isLeft);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 ok |= setDerivativeAtTimeInternal(view_i, DimIdx(i), time, derivative, isLeft);
             }
         }
@@ -559,7 +559,7 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
                 ok |= setDerivativeAtTimeInternal(*it, DimIdx(dimension), time, derivative, isLeft);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             ok |= setDerivativeAtTimeInternal(view_i, DimIdx(dimension), time, derivative, isLeft);
         }
     }
@@ -632,7 +632,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
                     removeAnimationInternal(*it, DimIdx(i));
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 removeAnimationInternal(view_i, DimIdx(i));
             }
         }
@@ -645,13 +645,13 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
                 removeAnimationInternal(*it, DimIdx(dimension));
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             removeAnimationInternal(view_i, DimIdx(dimension));
         }
     }
     
     
-    evaluateValueChange(dimension, getCurrentTime(), view, reason);
+    evaluateValueChange(dimension, getCurrentTime_TLS(), view, reason);
 } // removeAnimation
 
 NATRON_NAMESPACE_EXIT

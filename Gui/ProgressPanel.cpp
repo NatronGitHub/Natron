@@ -46,7 +46,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppInstance.h"
 #include "Engine/Node.h"
 #include "Engine/Timer.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/Image.h"
 #include "Engine/ProcessHandler.h"
@@ -405,7 +405,7 @@ ProgressPanel::doProgressStartOnMainThread(const NodePtr& node,
                                            const QString & /*messageid*/,
                                            bool canCancel)
 {
-    startTask(node, INT_MIN, INT_MAX, 1, false, canCancel, message);
+    startTask(node, TimeValue(INT_MIN), TimeValue(INT_MAX), TimeValue(1), false, canCancel, message);
 }
 
 void
@@ -427,9 +427,9 @@ ProgressPanel::progressStart(const NodePtr& node,
 
 void
 ProgressPanel::startTask(const NodePtr& node,
-                         const int firstFrame,
-                         const int lastFrame,
-                         const int frameStep,
+                         const TimeValue firstFrame,
+                         const TimeValue lastFrame,
+                         const TimeValue frameStep,
                          const bool canPause,
                          const bool canCancel,
                          const QString& message,
@@ -474,19 +474,17 @@ ProgressPanel::startTask(const NodePtr& node,
     }
     if (!process) {
         if ( node->getEffectInstance()->isOutput() ) {
-            OutputEffectInstancePtr isOutput = toOutputEffectInstance( node->getEffectInstance() );
-            if (isOutput) {
 
-                if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
-                    getGui()->onFreezeUIButtonClicked(true);
-                }
-
-                RenderEnginePtr engine = isOutput->getRenderEngine();
-                assert(engine);
-                QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
-                QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
-                QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
+            if ( getGui() && !getGui()->isGUIFrozen() && appPTR->getCurrentSettings()->isAutoTurboEnabled() ) {
+                getGui()->onFreezeUIButtonClicked(true);
             }
+
+            RenderEnginePtr engine = node->getRenderEngine();
+            assert(engine);
+            QObject::connect( engine.get(), SIGNAL(frameRendered(int,double)), task.get(), SLOT(onRenderEngineFrameComputed(int,double)) );
+            QObject::connect( engine.get(), SIGNAL(renderFinished(int)), task.get(), SLOT(onRenderEngineStopped(int)) );
+            QObject::connect( task.get(), SIGNAL(taskCanceled()), engine.get(), SLOT(abortRendering_non_blocking()) );
+
         }
     }
     _imp->tasks[node] = task;

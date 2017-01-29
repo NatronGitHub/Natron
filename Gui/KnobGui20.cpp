@@ -84,11 +84,12 @@ KnobGui::refreshGuiNow()
         if (!knob) {
             return;
         }
+        TimeValue time = knob->getHolder()->getTimelineCurrentTime();
         int nDims = knob->getNDimensions();
         for (KnobGuiPrivate::PerViewWidgetsMap::const_iterator it = _imp->views.begin(); it != _imp->views.end(); ++it) {
             it->second.widgets->updateGUI();
             for (int i = 0; i < nDims; ++i) {
-                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), it->first));
+                it->second.widgets->reflectAnimationLevel(DimIdx(i), knob->getAnimationLevel(DimIdx(i), time, it->first));
             }
         }
     } else {
@@ -565,7 +566,7 @@ KnobGui::onAppendParamEditChanged(ValueChangedReasonEnum reason,
                                   Variant newValue,
                                   ViewSetSpec view,
                                   DimSpec dim,
-                                  double time,
+                                  TimeValue time,
                                   bool setKeyFrame)
 {
     KnobIPtr knob = getKnob();
@@ -629,7 +630,7 @@ KnobGui::onExprChanged(DimIdx dimension, ViewIdx view)
     if (foundView == _imp->views.end()) {
         return;
     }
-    foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, view) );
+    foundView->second.widgets->reflectAnimationLevel( dimension, knob->getAnimationLevel(dimension, knob->getHolder()->getTimelineCurrentTime(), view) );
     if ( !exp.empty() ) {
 
         if (_imp->warningIndicator) {
@@ -788,7 +789,6 @@ KnobGui::onRefreshDimensionsVisibilityLaterReceived()
             }
             break;
         } else {
-            assert(!it->isCurrent());
             views.insert(ViewIdx(*it));
         }
     }

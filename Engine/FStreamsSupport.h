@@ -36,9 +36,9 @@
 #include "fstream_mingw.h"
 #endif
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
-
 
 namespace FStreamsSupport {
 #if FSTREAM_USE_STDIO_FILEBUF

@@ -43,10 +43,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/AppInstance.h"
 #include "Engine/Image.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/ProcessHandler.h"
 #include "Engine/Settings.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/Timer.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
@@ -112,7 +113,8 @@ public:
     bool canceled;
     bool canCancel;
     bool updatedProgressOnce;
-    int firstFrame, lastFrame, frameStep, lastRenderedFrame, nFramesRendered;
+    TimeValue firstFrame, lastFrame, frameStep, lastRenderedFrame;
+    int nFramesRendered;
     boost::scoped_ptr<TimeLapse> timer;
     boost::scoped_ptr<QTimer> refreshLabelTimer;
     QString message;
@@ -123,9 +125,9 @@ public:
     ProgressTaskInfoPrivate(ProgressPanel* panel,
                             const NodePtr& node,
                             ProgressTaskInfo* publicInterface,
-                            const int firstFrame,
-                            const int lastFrame,
-                            const int frameStep,
+                            const TimeValue firstFrame,
+                            const TimeValue lastFrame,
+                            const TimeValue frameStep,
                             const bool canPause,
                             const bool canCancel,
                             const QString& message,
@@ -172,9 +174,9 @@ public:
 
 ProgressTaskInfo::ProgressTaskInfo(ProgressPanel* panel,
                                    const NodePtr& node,
-                                   const int firstFrame,
-                                   const int lastFrame,
-                                   const int frameStep,
+                                   const TimeValue firstFrame,
+                                   const TimeValue lastFrame,
+                                   const TimeValue frameStep,
                                    const bool canPause,
                                    const bool canCancel,
                                    const QString& message,
@@ -264,8 +266,7 @@ ProgressTaskInfo::cancelTask(bool calledFromRenderEngine,
 
 
     NodePtr node = getNode();
-    OutputEffectInstancePtr effect = toOutputEffectInstance( node->getEffectInstance() );
-    node->getApp()->removeRenderFromQueue(effect);
+    node->getApp()->getRenderQueue()->removeRenderFromQueue(node);
     if ( ( _imp->panel->isRemoveTasksAfterFinishChecked() && (retCode == 0) ) || (!_imp->canBePaused && !calledFromRenderEngine) ) {
         _imp->panel->removeTaskFromTable( shared_from_this() );
     }
@@ -298,26 +299,27 @@ ProgressTaskInfo::restartTask()
         return;
     }
     if ( effect->isOutput() ) {
-        int firstFrame;
+        TimeValue firstFrame;
         if ( (_imp->lastRenderedFrame == _imp->lastFrame) || (_imp->lastRenderedFrame == -1) ) {
             firstFrame = _imp->firstFrame;
             _imp->nFramesRendered = 0;
         } else {
             firstFrame =  _imp->lastRenderedFrame;
         }
-        AppInstance::RenderWork w( toOutputEffectInstance( node->getEffectInstance() ),
-                                   firstFrame,
-                                   _imp->lastFrame,
-                                   _imp->frameStep,
-                                   node->getApp()->isRenderStatsActionChecked() );
+        RenderQueue::RenderWork w( node,
+                                  std::string(),
+                                  firstFrame,
+                                  _imp->lastFrame,
+                                  _imp->frameStep,
+                                  node->getApp()->isRenderStatsActionChecked() );
         w.isRestart = true;
         _imp->item->setTextColor(COL_STATUS, Qt::yellow);
         _imp->status = eProgressTaskStatusQueued;
         _imp->item->setText(COL_STATUS, tr("Queued") );
         _imp->refreshButtons();
-        std::list<AppInstance::RenderWork> works;
+        std::list<RenderQueue::RenderWork> works;
         works.push_back(w);
-        node->getApp()->renderWritersNonBlocking(works);
+        node->getApp()->getRenderQueue()->renderNonBlocking(works);
     }
 }
 
@@ -331,10 +333,7 @@ ProgressTaskInfo::onRenderEngineFrameComputed(int frame,
     if (!r && !process) {
         return;
     }
-    OutputEffectInstancePtr output = r ? r->getOutput() : process->getWriter();
-    if (!output) {
-        return;
-    }
+
     updateProgress(frame, progress);
 }
 
@@ -347,11 +346,6 @@ ProgressTaskInfo::onRenderEngineStopped(int retCode)
     if (!r && !process) {
         return;
     }
-    OutputEffectInstancePtr output = r ? r->getOutput() : process->getWriter();
-    if (!output) {
-        return;
-    }
-
 
     //Hold a shared ptr because removeTasksFromTable would remove the last ref otherwise
     ProgressTaskInfoPtr thisShared = shared_from_this();
@@ -545,7 +539,7 @@ ProgressTaskInfo::updateProgress(const int frame,
     if (totalFrames > 0) {
         percent = _imp->nFramesRendered / (double)totalFrames;
     }
-    _imp->lastRenderedFrame = frame;
+    _imp->lastRenderedFrame = TimeValue(frame);
     updateProgressBar(percent, progress);
 }
 

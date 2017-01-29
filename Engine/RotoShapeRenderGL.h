@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ROTOSHAPERENDERGL_H
 #define ROTOSHAPERENDERGL_H
 
@@ -26,10 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <list>
 
 #include "Global/GlobalDefines.h"
 #include "Engine/EffectOpenGLContextData.h"
+#include "Engine/TimeValue.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -123,7 +125,7 @@ public:
 
 
 
-    static void renderStroke_gl(const OSGLContextPtr& glContext,
+    static void renderStroke_gl(const OSGLContextAttacherPtr& glContext,
                                 const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const ImagePtr& dstImage,
@@ -133,15 +135,15 @@ public:
                                 const RotoDrawableItemPtr& stroke,
                                 bool doBuildup,
                                 double opacity,
-                                double time,
+                                TimeValue time,
                                 ViewIdx view,
                                 const RangeD& shutterRange,
                                 int nDivisions,
-                                unsigned int mipmapLevel,
+                                const RenderScale& scale,
                                 double *distToNextOut,
                                 Point* lastCenterPointOut);
 
-    static bool renderSmear_gl(const OSGLContextPtr& glContext,
+    static bool renderSmear_gl(const OSGLContextAttacherPtr& glContext,
                                const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                const RectI& roi,
                                const ImagePtr& dstImage,
@@ -149,26 +151,26 @@ public:
                                const Point& lastCenterPointIn,
                                const RotoStrokeItemPtr& stroke,
                                double opacity,
-                               double time,
+                               TimeValue time,
                                ViewIdx view,
-                               unsigned int mipmapLevel,
+                               const RenderScale& scale,
                                double *distToNextOut,
                                Point* lastCenterPointOut);
 
 
 
 
-    static void renderBezier_gl(const OSGLContextPtr& glContext,
+    static void renderBezier_gl(const OSGLContextAttacherPtr& glContext,
                                 const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const BezierPtr& bezier,
                                 const ImagePtr& dstImage,
                                 double opacity,
-                                double time,
+                                TimeValue time,
                                 ViewIdx view,
                                 const RangeD& shutterRange,
                                 int nDivisions,
-                                unsigned int mipmapLevel,
+                                const RenderScale& scale,
                                 int target);
 
 };

@@ -61,6 +61,43 @@ static void serializeInputsMap(const std::map<std::string, std::string>& inputs,
 } // serializeInputsMap
 
 void
+ImagePlaneDescSerialization::encode(YAML::Emitter& em) const
+{
+    em << YAML::Flow << YAML::BeginMap;
+    em << YAML::Key << "PlaneID" << YAML::Value << planeID;
+    if (!planeLabel.empty()) {
+        em << YAML::Key << "PlaneLabel" << YAML::Value << planeLabel;
+    }
+    if (!channelsLabel.empty()) {
+        em << YAML::Key << "ChannelsLabel" << YAML::Value << channelsLabel;
+    }
+    em << YAML::Key << "Channels" << YAML::Value << YAML::Flow << YAML::BeginSeq;
+    for (std::size_t i = 0; i < channelNames.size(); ++i) {
+        em << channelNames[i];
+    }
+    em << YAML::EndSeq;
+    em << YAML::EndMap;
+}
+
+void
+ImagePlaneDescSerialization::decode(const YAML::Node& node)
+{
+
+    planeID = node["PlaneID"].as<std::string>();
+    if (node["PlaneLabel"]) {
+        planeLabel = node["PlaneLabel"].as<std::string>();
+    }
+    if (node["ChannelsLabel"]) {
+        channelsLabel = node["ChannelsLabel"].as<std::string>();
+    }
+    YAML::Node channelsNode = node["Channels"];
+    for (std::size_t i = 0; i < channelsNode.size(); ++i) {
+        channelNames.push_back(channelsNode[i].as<std::string>());
+    }
+}
+
+
+void
 NodeSerialization::encode(YAML::Emitter& em) const
 {
     em << YAML::BeginMap;
@@ -151,7 +188,7 @@ NodeSerialization::encode(YAML::Emitter& em) const
     // Only serialize created components for non pyplugs/non presets
     if (_encodeType == eNodeSerializationTypeRegular && !_userComponents.empty()) {
         em << YAML::Key << "NewLayers" << YAML::Value << YAML::Flow << YAML::BeginSeq;
-        for (std::list<ImageComponentsSerialization>::const_iterator it = _userComponents.begin(); it!=_userComponents.end(); ++it) {
+        for (std::list<ImagePlaneDescSerialization>::const_iterator it = _userComponents.begin(); it!=_userComponents.end(); ++it) {
             it->encode(em);
         }
         em << YAML::EndSeq;
@@ -289,7 +326,7 @@ NodeSerialization::decode(const YAML::Node& node)
     if (node["NewLayers"]) {
         YAML::Node layersNode = node["NewLayers"];
         for (std::size_t i = 0; i < layersNode.size(); ++i) {
-            ImageComponentsSerialization s;
+            ImagePlaneDescSerialization s;
             s.decode(layersNode[i]);
             _userComponents.push_back(s);
         }

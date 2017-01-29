@@ -31,30 +31,7 @@
 
 SERIALIZATION_NAMESPACE_ENTER;
 
-class FrameParamsSerialization
-: public NonKeyParamsSerialization
-{
-public:
-    
-    RectDSerialization rod;
 
-    FrameParamsSerialization()
-    : NonKeyParamsSerialization()
-    , rod()
-    {
-
-    }
-
-    virtual ~FrameParamsSerialization()
-    {
-
-    }
-
-    virtual void encode(YAML::Emitter& em) const OVERRIDE;
-
-    virtual void decode(const YAML::Node& node) OVERRIDE;
-
-};
 
 SERIALIZATION_NAMESPACE_EXIT;
 

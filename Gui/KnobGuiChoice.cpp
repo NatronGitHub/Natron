@@ -57,6 +57,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/Lut.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Node.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
@@ -263,7 +264,7 @@ KnobGuiChoice::KnobGuiChoice(const KnobGuiPtr& knob, ViewIdx view)
 {
     KnobChoicePtr k = toKnobChoice(knob->getKnob());
     QObject::connect( k.get(), SIGNAL(populated()), this, SLOT(onEntriesPopulated()) );
-    QObject::connect( k.get(), SIGNAL(entryAppended(QString,QString)), this, SLOT(onEntryAppended(QString,QString)) );
+    QObject::connect( k.get(), SIGNAL(entryAppended()), this, SLOT(onEntryAppended()) );
     QObject::connect( k.get(), SIGNAL(entriesReset()), this, SLOT(onEntriesReset()) );
 
     _knob = k;
@@ -318,35 +319,27 @@ KnobGuiChoice::onCurrentIndexChanged(int i)
 }
 
 void
-KnobGuiChoice::onEntryAppended(const QString& entry,
-                               const QString& help)
+KnobGuiChoice::onEntryAppended()
 {
     KnobChoicePtr knob = _knob.lock();
     if (!knob) {
         return;
     }
-    std::string activeEntry = knob->getActiveEntryText();
 
-    if ( knob->getNewOptionCallback()) {
-        _comboBox->insertItem(_comboBox->count() - 1, entry, QIcon(), QKeySequence(), help);
-    } else {
-        _comboBox->addItem(entry, QIcon(), QKeySequence(), help);
-    }
-    int activeIndex = knob->getValue();
-    if (activeIndex >= 0) {
-        _comboBox->setCurrentIndex_no_emit(activeIndex);
-    } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
-    }
-    if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
-        if (!activeIndexPresent) {
-            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
-            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
+
+    std::vector<ChoiceOption> options = knob->getEntries();
+
+    for (int i = _comboBox->count(); i < (int)options.size(); ++i) {
+        if ( knob->getNewOptionCallback()) {
+            _comboBox->insertItem(_comboBox->count() - 1, QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
         } else {
-            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
+            _comboBox->addItem(QString::fromUtf8(options[i].label.c_str()), QIcon(), QKeySequence(), QString::fromUtf8(options[i].tooltip.c_str()));
         }
+
     }
+
+    updateGUI();
+
 }
 
 void
@@ -354,8 +347,6 @@ KnobGuiChoice::onEntriesReset()
 {
     onEntriesPopulated();
 }
-
-
 
 QString
 KnobGuiChoice::getPixmapPathFromFilePath(const KnobHolderPtr& holder, const QString& filePath)
@@ -397,9 +388,7 @@ KnobGuiChoice::onEntriesPopulated()
     KnobChoicePtr knob = _knob.lock();
 
     _comboBox->clear();
-    std::vector<std::string> entries = knob->getEntries();
-    const std::vector<std::string> help =  knob->getEntriesHelp();
-    std::string activeEntry = knob->getActiveEntryText();
+    std::vector<ChoiceOption> entries = knob->getEntries();
 
     std::string pluginShortcutGroup;
     EffectInstancePtr isEffect = toEffectInstance(knob->getHolder());
@@ -415,10 +404,6 @@ KnobGuiChoice::onEntriesPopulated()
     const std::map<int, std::string>& iconsMap = knob->getIcons();
 
     for (U32 i = 0; i < entries.size(); ++i) {
-        std::string helpStr;
-        if ( !help.empty() && !help[i].empty() ) {
-            helpStr = help[i];
-        }
 
         std::string shortcutID;
         std::string iconFilePath;
@@ -447,7 +432,7 @@ KnobGuiChoice::onEntriesPopulated()
         if (!shortcutID.empty() && !pluginShortcutGroup.empty() && !_comboBox->isCascading()) {
             QAction* action = new ActionWithShortcut(pluginShortcutGroup,
                                                      shortcutID,
-                                                     entries[i],
+                                                     entries[i].label,
                                                      _comboBox);
             if (!icon.isNull()) {
                 action->setIcon(icon);
@@ -455,12 +440,10 @@ KnobGuiChoice::onEntriesPopulated()
             _comboBox->addAction(action);
 
         } else {
-            _comboBox->addItem( QString::fromUtf8( entries[i].c_str() ), icon, QKeySequence(), QString::fromUtf8( helpStr.c_str() ) );
+            _comboBox->addItem( QString::fromUtf8( entries[i].label.c_str() ), icon, QKeySequence(), QString::fromUtf8( entries[i].tooltip.c_str() ) );
             
         }
-        
-        
-    }
+    } // for all entries
 
     const std::vector<int>& separators = knob->getSeparators();
     for (std::size_t i = 0; i < separators.size(); ++i) {
@@ -471,24 +454,9 @@ KnobGuiChoice::onEntriesPopulated()
     if (knob->getNewOptionCallback()) {
         _comboBox->addItemNew();
     }
-    ///we don't use setCurrentIndex because the signal emitted by combobox will call onCurrentIndexChanged and
-    ///we don't want that to happen because the index actually didn't change.
-    if ( _comboBox->isCascading() || activeEntry.empty() ) {
-        _comboBox->setCurrentIndex_no_emit( knob->getValue() );
-    } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
-    }
 
+    updateGUI();
 
-    if ( !activeEntry.empty() ) {
-        bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
-        if (!activeIndexPresent) {
-            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
-            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
-        } else {
-            getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
-        }
-    }
 } // onEntriesPopulated
 
 void
@@ -524,21 +492,28 @@ KnobGuiChoice::updateGUI()
     if (!knob) {
         return;
     }
-    std::string activeEntry = knob->getActiveEntryText();
 
-    if ( !activeEntry.empty() ) {
+    ChoiceOption activeEntry = knob->getActiveEntry();
+
+    QString activeEntryLabel;
+    if (!activeEntry.label.empty()) {
+        activeEntryLabel = QString::fromUtf8(activeEntry.label.c_str());
+    } else {
+        activeEntryLabel = QString::fromUtf8(activeEntry.id.c_str());
+    }
+    if ( !activeEntry.id.empty() ) {
         bool activeIndexPresent = knob->isActiveEntryPresentInEntries(getView());
         if (!activeIndexPresent) {
-            QString error = tr("The value %1 no longer exist in the menu.").arg(QString::fromUtf8(activeEntry.c_str()));
+            QString error = tr("The value %1 no longer exist in the menu.").arg(activeEntryLabel);
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, NATRON_NAMESPACE::convertFromPlainText(error, NATRON_NAMESPACE::WhiteSpaceNormal) );
         } else {
             getKnobGui()->setWarningValue( KnobGui::eKnobWarningChoiceMenuOutOfDate, QString() );
         }
     }
-    if ( _comboBox->isCascading() || activeEntry.empty() ) {
+    if ( _comboBox->isCascading() || activeEntry.id.empty() ) {
         _comboBox->setCurrentIndex_no_emit( knob->getValue() );
     } else {
-        _comboBox->setCurrentText_no_emit( QString::fromUtf8( activeEntry.c_str() ) );
+        _comboBox->setCurrentText_no_emit( activeEntryLabel );
     }
 }
 

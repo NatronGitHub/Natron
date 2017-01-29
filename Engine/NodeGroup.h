@@ -41,15 +41,15 @@ CLANG_DIAG_OFF(uninitialized)
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kNatronGroupInputIsMaskParamName "isMask"
 #define kNatronGroupInputIsOptionalParamName "optional"
-
-NATRON_NAMESPACE_ENTER;
 
 
 struct NodeCollectionPrivate;
@@ -234,7 +234,7 @@ public:
     /**
      * @brief Get all Writers in the group and sub groups
      **/
-    void getWriters(std::list<OutputEffectInstancePtr>* writers) const;
+    void getWriters(std::list<EffectInstancePtr>* writers) const;
 
     /**
      * @brief Controls whether the user can ever edit this graph from the UI. 
@@ -248,6 +248,11 @@ public:
     void setSubGraphEditedByUser(bool edited);
     bool isSubGraphEditedByUser() const;
 
+    /**
+     * @brief Refresh the meta-datas on all nodes in the group
+     **/
+    void refreshTimeInvariantMetadatasOnAllNodes_recursive();
+
 public:
 
 
@@ -255,12 +260,6 @@ public:
      * @brief Computes the union of the frame range of all readers in the group and subgroups.
      **/
     void recomputeFrameRangeForAllReaders(int* firstFrame, int* lastFrame);
-
-
-    void getParallelRenderArgs(std::map<NodePtr, ParallelRenderArgsPtr >& argsMap) const;
-
-
-    void forceComputeInputDependentDataOnAllTrees();
 
     /**
      * @brief Callback called when a node of the collection is being deactivated
@@ -313,7 +312,7 @@ private:
 
 struct NodeGroupPrivate;
 class NodeGroup
-    : public OutputEffectInstance
+    : public EffectInstance
     , public NodeCollection
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
@@ -360,9 +359,10 @@ public:
     virtual bool isInputOptional(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isInputMask(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel(int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual double getCurrentTime() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual ViewIdx getCurrentView() const OVERRIDE WARN_UNUSED_RETURN;
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual TimeValue getCurrentTime_TLS() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual ViewIdx getCurrentView_TLS() const OVERRIDE WARN_UNUSED_RETURN;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
+
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
     virtual void notifyNodeDeactivated(const NodePtr& node) OVERRIDE FINAL;
     virtual void notifyNodeActivated(const NodePtr& node) OVERRIDE FINAL;
@@ -428,9 +428,10 @@ private:
     virtual void onNodeRemoved(const Node* node) OVERRIDE FINAL;
 
     // A group render function should never get called
-    virtual StatusEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+    virtual ActionRetCodeEnum render(const RenderActionArgs& /*args*/) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
-        return eStatusOK;
+        assert(false);
+        return eActionStatusFailed;
     }
 
     virtual void onGraphEditableChanged(bool changed) OVERRIDE FINAL

@@ -75,37 +75,34 @@ enum PickerStateEnum
 struct TextureInfo
 {
     TextureInfo()
-        : texture()
-        , roiNotRoundedToTileSize()
-        , offset(0.)
-        , mipMapLevel(0)
-        , premult(eImagePremultiplicationOpaque)
-        , time(0)
-        , rod()
-        , format()
-        , pixelAspectRatio(1.)
-        , lastRenderedTiles(MAX_MIP_MAP_LEVELS)
-        , memoryHeldByLastRenderedImages(0)
-        , isPartialImage(false)
-        , isVisible(false)
+    : texture()
+    , image()
+    , mipMapLevel(0)
+    , premult(eImagePremultiplicationOpaque)
+    , time(0)
+    , originalCanonicalRoi()
+    , rod()
+    , format()
+    , pixelAspectRatio(1.)
+    , isPartialImage(false)
+    , isVisible(false)
     {
     }
 
     GLTexturePtr texture;
-    TextureRect roiNotRoundedToTileSize;
-    double offset;
+
+    ImagePtr image;
+
     unsigned int mipMapLevel;
+
+    // These are meta-datas at the time the texture was uploaded
     ImagePremultiplicationEnum premult;
-    SequenceTime time;
+    TimeValue time;
+    RectD originalCanonicalRoi;
     RectD rod;
-
     RectD format;
-
     double pixelAspectRatio;
 
-    // Hold shared pointers here because some images might not be held by the cache
-    std::vector<ImagePtr> lastRenderedTiles;
-    U64 memoryHeldByLastRenderedImages;
     bool isPartialImage;
 
     // false if this input is disconnected for the viewer
@@ -124,15 +121,11 @@ struct ViewerGL::Implementation
     /////////////////////////////////////////////////////////
     // The following are only accessed from the main thread:
     std::vector<GLuint> pboIds; //!< PBO's id's used by the OpenGL context
-    //   GLuint vaoId; //!< VAO holding the rendering VBOs for texture mapping.
     GLuint vboVerticesId; //!< VBO holding the vertices for the texture mapping.
     GLuint vboTexturesId; //!< VBO holding texture coordinates.
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
     TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
     std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
-    boost::scoped_ptr<QGLShaderProgram> shaderRGB; /*!< The shader program used to render RGB data*/
-    boost::scoped_ptr<QGLShaderProgram> shaderBlack; /*!< The shader program used when the viewer is disconnected.*/
-    bool shaderLoaded; /*!< Flag to check whether the shaders have already been loaded.*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
     ViewerTab* const viewerTab; /*!< Pointer to the viewer tab GUI*/
     bool zoomOrPannedSinceLastFit; //< true if the user zoomed or panned the image since the last call to fitToRoD
@@ -176,7 +169,6 @@ struct ViewerGL::Implementation
     int checkerboardTileSize; // to avoid a call to getValue() of the settings at each draw
     GLuint savedTexture; // @see saveOpenGLContext/restoreOpenGLContext
     GLuint prevBoundTexture; // @see bindTextureAndActivateShader/unbindTextureAndReleaseShader
-    mutable QMutex lastRenderedImageMutex; //protects lastRenderedImage & memoryHeldByLastRenderedImages
     QSize sizeH;
     PenType pointerTypeOnPress;
     double pressureOnPress, pressureOnRelease;
@@ -184,6 +176,13 @@ struct ViewerGL::Implementation
     bool isUpdatingTexture;
     bool renderOnPenUp;
     int updateViewerPboIndex;  // always accessed in the main thread: initialized in the constructor, then always accessed and modified by updateViewer()
+
+    // A map storing the hash of the viewerProcess A node accross time.
+    // This is used to display the timeline cache bar.
+    std::map<TimeValue, ImageTileKeyPtr> uploadedTexturesViewerHash;
+
+    // Protects uploadedTexturesViewerHash
+    mutable QMutex uploadedTexturesViewerHashMutex;
 
 public:
 
@@ -196,17 +195,6 @@ public:
     void initializeGL();
 
 
-
-    void bindTextureAndActivateShader(int i,
-                                      bool useShader);
-
-    void unbindTextureAndReleaseShader(bool useShader);
-
-    /**
-     *@brief Starts using the RGB shader to display the frame
-     **/
-    void activateShaderRGB(int texIndex);
-
     enum WipePolygonEnum
     {
         eWipePolygonEmpty = 0,  // don't draw anything
@@ -218,8 +206,6 @@ public:
                                    bool rightPlane,
                                    QPolygonF * polygonPoints) const;
 
-    static void getBaseTextureCoordinates(const RectI & texRect, int closestPo2, int texW, int texH,
-                                          GLfloat & bottom, GLfloat & top, GLfloat & left, GLfloat & right);
     static void getPolygonTextureCoordinates(const QPolygonF & polygonPoints,
                                              const RectD & texRect, //!< in canonical coordinates
                                              QPolygonF & texCoords);

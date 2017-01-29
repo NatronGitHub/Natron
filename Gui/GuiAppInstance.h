@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef GUIAPPINSTANCE_H
-#define GUIAPPINSTANCE_H
+#ifndef Gui_GuiAppInstance_h
+#define Gui_GuiAppInstance_h
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -137,11 +137,11 @@ public:
                                               bool* stopAsking) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void loadProjectGui(bool isAutosave,  const SERIALIZATION_NAMESPACE::ProjectSerializationPtr& serialization) const OVERRIDE FINAL;
     virtual void notifyRenderStarted(const QString & sequenceName,
-                                     int firstFrame, int lastFrame,
-                                     int frameStep, bool canPause,
-                                     const OutputEffectInstancePtr& writer,
+                                     TimeValue firstFrame, TimeValue lastFrame,
+                                     TimeValue frameStep, bool canPause,
+                                     const NodePtr& writer,
                                      const ProcessHandlerPtr & process) OVERRIDE FINAL;
-    virtual void notifyRenderRestarted( const OutputEffectInstancePtr& writer,
+    virtual void notifyRenderRestarted( const NodePtr& writer,
                                         const ProcessHandlerPtr & process) OVERRIDE FINAL;
     virtual void setupViewersForViews(const std::vector<std::string>& viewNames) OVERRIDE FINAL;
 
@@ -160,17 +160,14 @@ public:
     virtual bool progressUpdate(const NodePtr& node, double t) OVERRIDE FINAL;
     virtual void onMaxPanelsOpenedChanged(int maxPanels) OVERRIDE FINAL;
     virtual void onRenderQueuingChanged(bool queueingEnabled) OVERRIDE FINAL;
-    virtual void connectViewersToViewerCache() OVERRIDE FINAL;
-    virtual void disconnectViewersFromViewerCache() OVERRIDE FINAL;
     boost::shared_ptr<FileDialogPreviewProvider> getPreviewProvider() const;
     virtual std::string openImageFileDialog() OVERRIDE FINAL;
     virtual std::string saveImageFileDialog() OVERRIDE FINAL;
-    virtual void clearViewersLastRenderedTexture() OVERRIDE FINAL;
     virtual void appendToScriptEditor(const std::string& str) OVERRIDE FINAL;
     virtual void printAutoDeclaredVariable(const std::string& str) OVERRIDE FINAL;
     virtual void toggleAutoHideGraphInputs() OVERRIDE FINAL;
     virtual void setLastViewerUsingTimeline(const NodePtr& node) OVERRIDE FINAL;
-    virtual ViewerInstancePtr getLastViewerUsingTimeline() const OVERRIDE FINAL;
+    virtual ViewerNodePtr getLastViewerUsingTimeline() const OVERRIDE FINAL;
 
     void discardLastViewerUsingTimeline();
 
@@ -179,15 +176,11 @@ public:
     virtual void createLoadProjectSplashScreen(const QString& projectFile) OVERRIDE FINAL;
     virtual void updateProjectLoadStatus(const QString& str) OVERRIDE FINAL;
     virtual void closeLoadPRojectSplashScreen() OVERRIDE FINAL;
-    virtual void renderAllViewers(bool canAbort) OVERRIDE FINAL;
+    virtual void getAllViewers(std::list<ViewerNodePtr>* viewers) const OVERRIDE FINAL;
+    virtual void renderAllViewers() OVERRIDE FINAL;
     virtual void refreshAllPreviews() OVERRIDE FINAL;
     virtual void getViewersOpenGLContextFormat(int* bitdepthPerComponent, bool *hasAlpha) const OVERRIDE FINAL;
-    virtual void abortAllViewers() OVERRIDE FINAL;
-    virtual void queueRedrawForAllViewers() OVERRIDE FINAL;
-
-    int getOverlayRedrawRequestsCount() const;
-
-    void clearOverlayRedrawRequests();
+    virtual void abortAllViewers(bool autoRestartPlayback) OVERRIDE FINAL;
 
     void setKnobDnDData(QDrag* drag, const KnobIPtr& knob, DimSpec dimension, ViewSetSpec view);
     void getKnobDnDData(QDrag** drag,  KnobIPtr* knob, DimSpec* dimension, ViewSetSpec* view) const;
@@ -265,4 +258,4 @@ toGuiAppInstance(const AppInstancePtr& instance)
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // GUIAPPINSTANCE_H
+#endif // Gui_GuiAppInstance_h

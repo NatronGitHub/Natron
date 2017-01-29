@@ -16,7 +16,6 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-
 #ifndef ROTOSHAPERENDERNODE_H
 #define ROTOSHAPERENDERNODE_H
 
@@ -34,8 +33,10 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kRotoShapeRenderNodeParamOutputComponents "outputComponents"
 #define kRotoShapeRenderNodeParamOutputComponentsLabel "Output Components"
@@ -49,7 +50,6 @@
 #define kRotoShapeRenderNodeParamTypeSolid "Solid"
 #define kRotoShapeRenderNodeParamTypeSmear "Smear"
 
-NATRON_NAMESPACE_ENTER;
 
 class RotoShapeRenderNodePrivate;
 class RotoShapeRenderNode
@@ -83,7 +83,6 @@ public:
         return 1;
     }
 
-    virtual bool getCanTransform() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
 
     virtual std::string getInputLabel (int /*inputNb*/) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -95,7 +94,7 @@ public:
         return false;
     }
 
-    virtual void addAcceptedComponents(int inputNb, std::list<ImageComponents>* comps) OVERRIDE FINAL;
+    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
 
@@ -117,7 +116,7 @@ public:
 
     virtual bool canCPUImplementationSupportOSMesa() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash)  OVERRIDE FINAL;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash)  OVERRIDE FINAL;
 
 private:
 
@@ -125,23 +124,24 @@ private:
 
     virtual void purgeCaches() OVERRIDE FINAL;
 
-    virtual StatusEnum attachOpenGLContext(const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
 
-    virtual StatusEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
 
-    virtual StatusEnum getRegionOfDefinition(double time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
-    virtual StatusEnum getPreferredMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
-    virtual bool isIdentity(double time,
+    virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            double* inputTime,
+                            const TreeRenderNodeArgsPtr& render,
+                            TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
-    virtual StatusEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
     boost::scoped_ptr<RotoShapeRenderNodePrivate> _imp;
 

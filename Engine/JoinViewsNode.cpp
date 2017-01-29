@@ -63,11 +63,7 @@ JoinViewsNode::JoinViewsNode(const NodePtr& node)
     : EffectInstance(node)
     , _imp( new JoinViewsNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
-    if (node) {
-        ProjectPtr project = node->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
-    }
+
 }
 
 JoinViewsNode::~JoinViewsNode()
@@ -94,11 +90,9 @@ JoinViewsNode::getInputLabel (int inputNb) const
 
 void
 JoinViewsNode::addAcceptedComponents(int /*inputNb*/,
-                                     std::list<ImageComponents>* comps)
+                                     std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -112,7 +106,6 @@ JoinViewsNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 JoinViewsNode::initializeKnobs()
 {
-    onProjectViewsChanged();
 }
 
 bool
@@ -124,12 +117,13 @@ JoinViewsNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-bool
-JoinViewsNode::isIdentity(double time,
+ActionRetCodeEnum
+JoinViewsNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,
-                          double* inputTime,
+                          const TreeRenderNodeArgsPtr& /*render*/,
+                          TimeValue* inputTime,
                           ViewIdx* inputView,
                           int* inputNb)
 {
@@ -137,11 +131,11 @@ JoinViewsNode::isIdentity(double time,
     *inputNb = getMaxInputCount() - 1 - view.value();
     *inputView = view;
 
-    return true;
+    return eActionStatusOK;
 }
 
 void
-JoinViewsNode::onProjectViewsChanged()
+JoinViewsNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
 {
     std::size_t nInputs, oldNInputs;
     {
@@ -183,6 +177,3 @@ JoinViewsNode::onProjectViewsChanged()
 }
 
 NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
-#include "moc_JoinViewsNode.cpp"

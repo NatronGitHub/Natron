@@ -46,14 +46,8 @@ INCLUDEPATH += $$PWD/../libs/SequenceParsing
 HEADERS += \
     BezierSerialization.h \
     BezierCPSerialization.h \
-    CacheSerialization.h \
-    CacheSerializationImpl.h \
     CurveSerialization.h \
     FormatSerialization.h \
-    FrameKeySerialization.h \
-    FrameParamsSerialization.h \
-    ImageKeySerialization.h \
-    ImageParamsSerialization.h \
     KnobSerialization.h \
     KnobTableItemSerialization.h \
     NodeSerialization.h \
@@ -62,17 +56,16 @@ HEADERS += \
     NodeGroupSerialization.h \
     NodeGuiSerialization.h \
     NodeSerialization.h \
-    NonKeyParamsSerialization.h \
     ProjectGuiSerialization.h \
     ProjectSerialization.h \
     RectDSerialization.h \
     RectISerialization.h \
     RotoStrokeItemSerialization.h \
+    SettingsSerialization.h \
     SerializationBase.h \
     SerializationFwd.h \
     SerializationIO.h \
     SerializationCompat.h \
-    TextureRectSerialization.h \
     WorkspaceSerialization.h
 
 
@@ -81,18 +74,13 @@ SOURCES += \
     BezierSerialization.cpp \
     CurveSerialization.cpp \
     FormatSerialization.cpp \
-    FrameKeySerialization.cpp \
-    FrameParamsSerialization.cpp \
-    ImageKeySerialization.cpp \
-    ImageParamsSerialization.cpp \
     KnobSerialization.cpp \
     KnobTableItemSerialization.cpp \
     NodeSerialization.cpp \
     NodeClipBoard.cpp \
-    NonKeyParamsSerialization.cpp \
     ProjectSerialization.cpp \
     RectDSerialization.cpp \
     RectISerialization.cpp \
     RotoStrokeItemSerialization.cpp \
-    TextureRectSerialization.cpp \
+    SettingsSerialization.cpp \
     WorkspaceSerialization.cpp

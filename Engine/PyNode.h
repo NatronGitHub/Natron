@@ -37,11 +37,12 @@
 #include <boost/shared_ptr.hpp>
 #endif
 
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/Knob.h" // KnobI
 #include "Engine/PyNodeGroup.h" // Group
 #include "Engine/PyItemsTable.h"
 #include "Engine/RectD.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -52,7 +53,7 @@ class ImageLayer
     QString _layerName;
     QString _componentsPrettyName;
     QStringList _componentsName;
-    boost::shared_ptr<ImageComponents> _comps;
+    boost::shared_ptr<ImagePlaneDesc> _comps;
 
 public:
 
@@ -60,9 +61,9 @@ public:
                const QString& componentsPrettyName,
                const QStringList& componentsName);
 
-    ImageLayer(const ImageComponents& comps);
+    ImageLayer(const ImagePlaneDesc& comps);
 
-    const ImageComponents& getInternalComps() const
+    const ImagePlaneDesc& getInternalComps() const
     {
         return *_comps;
     }
@@ -338,7 +339,7 @@ public:
      * @brief Get the current time on the timeline or the time of the frame being rendered by the caller thread if a render
      * is ongoing in that thread.
      **/
-    int getCurrentTime() const;
+    double getCurrentTime() const;
 
     /**
      * @brief Set the position of the top left corner of the node in the nodegraph. This is ignored in background mode.
@@ -362,6 +363,15 @@ public:
      * @brief Returns true if the node is selected in the nodegraph
      **/
     bool isNodeSelected() const;
+
+
+    /**
+     * @brief Returns whether the node is activated or not. When deactivated, the user cannot interact with the node.
+     * A node is in a deactivated state after the user removed it from the node-graph: it still lives a little longer
+     * so that an undo operation can insert it again in the nodegraph.
+     * This state has nothing to do with the "Disabled" parameter in the "Node" tab of the settings panel.
+     **/
+    bool isNodeActivated() const;
 
     /**
      * @brief Get the user page param. Note that user created params (with the function above) may only be added to user created pages,
@@ -389,7 +399,7 @@ public:
 
     bool addUserPlane(const QString& planeName, const QStringList& channels);
 
-    std::map<ImageLayer, Effect*> getAvailableLayers() const;
+    std::list<ImageLayer> getAvailableLayers(int inputNb) const;
 
     double getFrameRate() const;
 

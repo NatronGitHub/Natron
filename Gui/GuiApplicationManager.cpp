@@ -68,11 +68,7 @@ GuiApplicationManager::GuiApplicationManager()
 
 GuiApplicationManager::~GuiApplicationManager()
 {
-    for (AppShortcuts::iterator it = _imp->_actionShortcuts.begin(); it != _imp->_actionShortcuts.end(); ++it) {
-        for (GroupShortcuts::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
-            delete it2->second;
-        }
-    }
+  
     _imp->previewRenderThread.quitThread(false);
 }
 
@@ -866,7 +862,6 @@ GuiApplicationManager::getLinkToMultCursor() const
 bool
 GuiApplicationManager::initGui(const CLArgs& args)
 {
-    QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
 #ifdef __NATRON_UNIX__
 #ifndef __NATRON_OSX__
@@ -888,21 +883,10 @@ GuiApplicationManager::initGui(const CLArgs& args)
 
         qDebug() << "fontID=" << fontID << "families=" << QFontDatabase::applicationFontFamilies(fontID);
     }
-    QString fontFamily = QString::fromUtf8(NATRON_FONT);
-    int fontSize = NATRON_FONT_SIZE_DEFAULT;
+    QString fontFamily = QString::fromUtf8(getCurrentSettings()->getApplicationFontFamily().c_str());
+    int fontSize = getCurrentSettings()->getApplicationFontSize();
 
 
-    ///Do not load old font stored in the setting "systemFont" on Natron < 2 because it might contain a crappy font.
-    if ( settings.contains( QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName) ) && (settings.value( QString::fromUtf8(kQSettingsSoftwareMajorVersionSettingName) ).toInt() >= 2) ) {
-        if ( settings.contains( QString::fromUtf8("systemFont") ) ) {
-            fontFamily = settings.value( QString::fromUtf8("systemFont") ).toString();
-        }
-    }
-
-
-    if ( settings.contains( QString::fromUtf8("fontSize") ) ) {
-        fontSize = settings.value( QString::fromUtf8("fontSize") ).toInt();
-    }
     //fontFamily = "Courier"; fontSize = 24; // for debugging purposes
     qDebug() << "Setting application font to " << fontFamily << fontSize;
     {
@@ -950,7 +934,7 @@ GuiApplicationManager::initGui(const CLArgs& args)
     for (int i = 0; i < families.size(); ++i) {
         systemFonts[i] = families[i].toStdString();
     }
-    getCurrentSettings()->populateSystemFonts(settings, systemFonts);
+    getCurrentSettings()->populateSystemFonts(systemFonts);
 
     _imp->createColorPickerCursor();
     _imp->createLinkToCursor();
@@ -1003,65 +987,15 @@ GuiApplicationManager::onFontconfigTimerTriggered()
 void
 GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 {
-    std::string shortcutGrouping(kShortcutGroupNodes);
-    std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
-    std::string pluginID = plugin->getPluginID();
-    std::string pluginLabel = plugin->getLabelWithoutSuffix();
-
-    for (std::size_t i = 0; i < groups.size(); ++i) {
-        shortcutGrouping.append("/");
-        shortcutGrouping.append(groups[i]);
-    }
-
+    AppManager::onPluginLoaded(plugin);
+    
     // Ensure the toolbutton is created for this plug-in with its grouping hierarchy
     PluginGroupNodePtr child = findPluginToolButtonOrCreate(plugin);
     Q_UNUSED(child);
 
-    Qt::KeyboardModifiers modifiers = Qt::NoModifier;
-    Qt::Key symbol = (Qt::Key)0;
-    {
-        int symbol_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 0);
-        int mods_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 1);
-        if (symbol_i != 0) {
-            symbol = QtEnumConvert::toQtKey((Key)symbol_i);
-        }
-        if (mods_i != 0) {
-            modifiers = QtEnumConvert::toQtModifiers((KeyboardModifiers)mods_i);
-        }
-    }
-
-    if ( plugin->getIsUserCreatable() ) {
-        _imp->addKeybind(shortcutGrouping, pluginID, pluginLabel, modifiers, symbol);
-    }
-
-    // If this plug-in has presets, add shortcuts as well
-    plugin->sortPresetsByLabel();
-    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
-    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
-        std::string shortcutKey = pluginID;
-        shortcutKey += "_preset_";
-        shortcutKey += it->presetLabel.toStdString();
-
-        std::string shortcutLabel = pluginLabel;
-        shortcutLabel += " (";
-        shortcutLabel += it->presetLabel.toStdString();
-        shortcutLabel += ")";
-        _imp->addKeybind(shortcutGrouping, shortcutKey, shortcutLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->symbol));
-    }
-
-    const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
-    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup();
-    for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
-        _imp->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, QtEnumConvert::toQtModifiers(it->modifiers), QtEnumConvert::toQtKey(it->key) );
-    }
 } // GuiApplicationManager::onPluginLoaded
 
-void
-GuiApplicationManager::ignorePlugin(const PluginPtr& plugin)
-{
-    _imp->removePluginToolButton( plugin->getPropertyN<std::string>(kNatronPluginPropGrouping) );
-    _imp->removeKeybind( QString::fromUtf8(kShortcutGroupNodes), QString::fromUtf8(plugin->getPluginID().c_str()) );
-}
+
 
 PluginGroupNodePtr
 GuiApplicationManager::findPluginToolButtonOrCreate(const PluginPtr& plugin)
@@ -1124,7 +1058,7 @@ GuiApplicationManager::getKnobClipBoard(KnobClipBoardType *type,
 
 void
 GuiApplicationManager::appendTaskToPreviewThread(const NodeGuiPtr& node,
-                                                 double time)
+                                                 TimeValue time)
 {
     _imp->previewRenderThread.appendToQueue(node, time);
 }

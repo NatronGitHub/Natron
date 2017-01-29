@@ -29,7 +29,7 @@
 #include "Global/GLObfuscate.h" //!<must be included after QGLWidget
 #include <QApplication>
 
-#include <QThread>
+#include <QtCore/QThread>
 #include <QImage>
 
 #include "Engine/Image.h"
@@ -796,33 +796,33 @@ AnimationModuleView::keyPressEvent(QKeyEvent* e)
     if (!model) {
         return;
     }
-    if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleRemoveKeys, modifiers, key) ) {
+    if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleRemoveKeys, modifiers, key) ) {
         onRemoveSelectedKeyFramesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleConstant, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleConstant, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeConstant);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleLinear, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleLinear, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeLinear);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSmooth, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSmooth, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeSmooth);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCatmullrom, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCatmullrom, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeCatmullRom);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCubic, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCubic, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeCubic);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleHorizontal, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleHorizontal, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeHorizontal);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleBreak, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleBreak, modifiers, key) ) {
         model->setSelectedKeysInterpolation(eKeyframeTypeBroken);
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenterAll, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenterAll, modifiers, key) ) {
         onCenterAllCurvesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCenter, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCenter, modifiers, key) ) {
         onCenterOnSelectedCurvesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleSelectAll, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleSelectAll, modifiers, key) ) {
         onSelectAllKeyFramesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModuleCopy, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModuleCopy, modifiers, key) ) {
         onCopySelectedKeyFramesToClipBoardActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframes, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframes, modifiers, key) ) {
         onPasteClipBoardKeyFramesActionTriggered();
-    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutIDActionAnimationModulePasteKeyframesAbsolute, modifiers, key) ) {
+    } else if ( isKeybind(kShortcutGroupAnimationModule, kShortcutActionAnimationModulePasteKeyframesAbsolute, modifiers, key) ) {
         onPasteClipBoardKeyFramesAbsoluteActionTriggered();
     } else if ( key == Qt::Key_Plus ) { // zoom in/out doesn't care about modifiers
         QWheelEvent e(mapFromGlobal( QCursor::pos() ), 120, Qt::NoButton, Qt::NoModifier); // one wheel click = +-120 delta
@@ -1181,7 +1181,7 @@ AnimationModuleView::mouseReleaseEvent(QMouseEvent* e)
         _imp->_gui->setDraftRenderEnabled(false);
         bool autoProxyEnabled = appPTR->getCurrentSettings()->isAutoProxyEnabled();
         if (autoProxyEnabled) {
-            _imp->_gui->renderAllViewers(true);
+            _imp->_gui->renderAllViewers();
         }
     }
 

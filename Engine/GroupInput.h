@@ -32,6 +32,7 @@
 #endif
 
 #include "Engine/NoOpBase.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -82,7 +83,7 @@ public:
     virtual bool knobChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum /*reason*/,
                              ViewSetSpec /*view*/,
-                             double /*time*/) OVERRIDE FINAL;
+                             TimeValue /*time*/) OVERRIDE FINAL;
 };
 
 inline GroupInputPtr

@@ -170,10 +170,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
             // If the preset has a shortcut get it
 
             std::string shortcutKey = internalPlugin->getPluginID();
-            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
-            if (!keybinds.empty()) {
-                presetShortcut = keybinds.front();
-            }
+            presetShortcut = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
         }
 
         QAction* action = new QAction(loadPresetsMenu);
@@ -210,10 +207,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
             shortcutKey += "_preset_";
             shortcutKey += it->presetLabel.toStdString();
 
-            std::list<QKeySequence> keybinds = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
-            if (!keybinds.empty()) {
-                presetShortcut = keybinds.front();
-            }
+            presetShortcut = getKeybind(shortcutGroup, QString::fromUtf8(shortcutKey.c_str()));
         }
 
         QAction* action = new QAction(it->presetLabel, loadPresetsMenu);

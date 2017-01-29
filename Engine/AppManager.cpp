@@ -55,8 +55,11 @@
 #include <shlobj.h>
 #endif
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 #include <boost/algorithm/string.hpp>
 #include <boost/version.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
+
 #include <libs/hoedown/src/version.h>
 #include <ceres/version.h>
 #include <openMVG/version.hpp>
@@ -82,7 +85,9 @@
 #include "Engine/AppInstance.h"
 #include "Engine/Backdrop.h"
 #include "Engine/CLArgs.h"
+#include "Engine/Cache.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/StorageDeleterThread.h"
 #include "Engine/DiskCacheNode.h"
 #include "Engine/DimensionIdx.h"
 #include "Engine/Dot.h"
@@ -93,6 +98,7 @@
 #include "Engine/GroupOutput.h"
 #include "Engine/JoinViewsNode.h"
 #include "Engine/LibraryBinary.h"
+#include "Engine/KeybindShortcut.h"
 #include "Engine/Log.h"
 #include "Engine/MemoryInfo.h" // getSystemTotalRAM, printAsRAM
 #include "Engine/Node.h"
@@ -111,6 +117,7 @@
 #include "Engine/RotoShapeRenderCairo.h"
 #include "Engine/StandardPaths.h"
 #include "Engine/StubNode.h"
+#include "Engine/Settings.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
@@ -361,11 +368,6 @@ oom:
 
 //} // anon namespace
 
-void
-AppManager::saveCaches() const
-{
-    _imp->saveCaches();
-}
 
 int
 AppManager::getHardwareIdealThreadCount()
@@ -402,7 +404,9 @@ AppManager::releaseNatronGIL()
 void
 AppManager::loadProjectFromFileFunction(std::istream& ifile, const std::string& filename, const AppInstancePtr& /*app*/, SERIALIZATION_NAMESPACE::ProjectSerialization* obj)
 {
-    if (!SERIALIZATION_NAMESPACE::read(NATRON_PROJECT_FILE_HEADER,  ifile, obj)) {
+    try {
+        SERIALIZATION_NAMESPACE::read(NATRON_PROJECT_FILE_HEADER,  ifile, obj);
+    } catch (SERIALIZATION_NAMESPACE::InvalidSerializationFileException& e) {
         throw std::runtime_error(tr("Failed to open %1: This file does not appear to be a %2 project file").arg(QString::fromUtf8(filename.c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME)).toStdString());
     }
 
@@ -608,22 +612,14 @@ AppManager::~AppManager()
 
     _imp->_backgroundIPC.reset();
 
-    try {
-        _imp->saveCaches();
-    } catch (std::runtime_error) {
-        // ignore errors
-    }
+    // Ensure the cache is synced on disk when exiting.
+    _imp->cache->flushCacheOnDisk(false /*async*/);
+
+    _imp->storageDeleteThread->quitThread();
+
 
     ///Caches may have launched some threads to delete images, wait for them to be done
     QThreadPool::globalInstance()->waitForDone();
-
-    ///Kill caches now because decreaseNCacheFilesOpened can be called
-    _imp->_nodeCache->waitForDeleterThread();
-    _imp->_diskCache->waitForDeleterThread();
-    _imp->_viewerCache->waitForDeleterThread();
-    _imp->_nodeCache.reset();
-    _imp->_viewerCache.reset();
-    _imp->_diskCache.reset();
 
     tearDownPython();
     _imp->tearDownGL();
@@ -824,9 +820,6 @@ AppManager::loadInternal(const CLArgs& cl)
     qApp->setOrganizationDomain( QString::fromUtf8(NATRON_ORGANIZATION_DOMAIN) );
     qApp->setApplicationName( QString::fromUtf8(NATRON_APPLICATION_NAME) );
 
-    //Set it once setApplicationName is set since it relies on it
-    _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-
     // Set the locale AGAIN, because Qt resets it in the QCoreApplication constructor
     // see http://doc.qt.io/qt-4.8/qcoreapplication.html#locale-settings
     setApplicationLocale();
@@ -879,8 +872,15 @@ AppManager::loadInternal(const CLArgs& cl)
 
     if (!cl.isLoadedUsingDefaultSettings()) {
         ///Call restore after initializing knobs
-        _imp->_settings->restoreAllSettings();
+        _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypeKnobs);
     }
+
+    // Create cache once we loaded the cache directory path wanted by the user
+    _imp->cache = Cache::create();
+    if (cl.isCacheClearRequestedOnLaunch()) {
+        _imp->cache->clear();
+    }
+    _imp->storageDeleteThread.reset(new StorageDeleterThread);
 
     _imp->declareSettingsToPython();
 
@@ -927,17 +927,6 @@ AppManager::isSpawnedFromCrashReporter() const
 #endif
 }
 
-void
-AppManager::setPluginsUseInputImageCopyToRender(bool b)
-{
-    _imp->pluginsUseInputImageCopyToRender = b;
-}
-
-bool
-AppManager::isCopyInputImageForPluginRenderEnabled() const
-{
-    return _imp->pluginsUseInputImageCopyToRender;
-}
 
 bool
 AppManager::isOpenGLLoaded() const
@@ -1095,38 +1084,9 @@ AppManager::initGui(const CLArgs& cl)
 bool
 AppManager::loadInternalAfterInitGui(const CLArgs& cl)
 {
-    try {
-        size_t maxCacheRAM = _imp->_settings->getRamMaximumPercent() * getSystemTotalRAM();
-        U64 viewerCacheSize = _imp->_settings->getMaximumViewerDiskCacheSize();
-        U64 maxDiskCacheNode = _imp->_settings->getMaximumDiskCacheNodeSize();
 
-        _imp->_nodeCache.reset( new ImageCache("NodeCache", NATRON_CACHE_VERSION, maxCacheRAM, 1.) );
-        _imp->_diskCache.reset( new ImageCache("DiskCache", NATRON_CACHE_VERSION, maxDiskCacheNode, 0.) );
-        _imp->_viewerCache.reset( new FrameEntryCache("ViewerCache", NATRON_CACHE_VERSION, viewerCacheSize, 0.) );
-        _imp->setViewerCacheTileSize();
-    } catch (std::logic_error) {
-        // ignore
-    }
 
-    int oldCacheVersion = 0;
-    {
-        QSettings settings( QString::fromUtf8(NATRON_ORGANIZATION_NAME), QString::fromUtf8(NATRON_APPLICATION_NAME) );
-
-        if ( settings.contains( QString::fromUtf8(kNatronCacheVersionSettingsKey) ) ) {
-            oldCacheVersion = settings.value( QString::fromUtf8(kNatronCacheVersionSettingsKey) ).toInt();
-        }
-        settings.setValue(QString::fromUtf8(kNatronCacheVersionSettingsKey), NATRON_CACHE_VERSION);
-    }
-
-    setLoadingStatus( tr("Restoring the image cache...") );
-
-    if (oldCacheVersion != NATRON_CACHE_VERSION) {
-        wipeAndCreateDiskCacheStructure();
-    } else {
-        _imp->restoreCaches();
-    }
-
-    setLoadingStatus( tr("Loading plug-in cache...") );
+    setLoadingStatus( tr("Loading Plug-in Cache...") );
 
 
     ///Set host properties after restoring settings since it depends on the host name.
@@ -1215,41 +1175,6 @@ AppManager::loadInternalAfterInitGui(const CLArgs& cl)
     }
 } // AppManager::loadInternalAfterInitGui
 
-void
-AppManager::onViewerTileCacheSizeChanged()
-{
-    if (_imp->_viewerCache) {
-        _imp->_viewerCache->clear();
-        _imp->setViewerCacheTileSize();
-    }
-    for (AppInstanceVec::const_iterator it = _imp->_appInstances.begin(); it != _imp->_appInstances.end(); ++it) {
-        (*it)->renderAllViewers(true);
-    }
-}
-
-void
-AppManagerPrivate::setViewerCacheTileSize()
-{
-    if (!_viewerCache) {
-        return;
-    }
-    std::size_t tileSize =  (std::size_t)std::pow( 2., (double)_settings->getViewerTilesPowerOf2() );
-
-    // Viewer tiles are always RGBA
-    tileSize = tileSize * tileSize * 4;
-
-
-    ImageBitDepthEnum viewerDepth = _settings->getViewersBitDepth();
-    switch (viewerDepth) {
-        case eImageBitDepthFloat:
-        case eImageBitDepthHalf:
-            tileSize *= sizeof(float);
-            break;
-        default:
-            break;
-    }
-    _viewerCache->setTiled(true, tileSize);
-}
 
 AppInstancePtr
 AppManager::newAppInstanceInternal(const CLArgs& cl,
@@ -1370,52 +1295,6 @@ AppManager::getAppType() const
     return _imp->_appType;
 }
 
-void
-AppManager::clearPlaybackCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-    _imp->_viewerCache->clearInMemoryPortion();
-    clearLastRenderedTextures();
-}
-
-void
-AppManager::clearViewerCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-
-    _imp->_viewerCache->clear();
-}
-
-void
-AppManager::clearDiskCache()
-{
-    if (!_imp->_viewerCache) {
-        return;
-    }
-
-    clearLastRenderedTextures();
-    _imp->_viewerCache->clear();
-    _imp->_diskCache->clear();
-}
-
-void
-AppManager::clearNodeCache()
-{
-    AppInstanceVec copy;
-    {
-        QMutexLocker k(&_imp->_appInstancesMutex);
-        copy = _imp->_appInstances;
-    }
-
-    for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->clearAllLastRenderedImages();
-    }
-    _imp->_nodeCache->clear();
-}
 
 void
 AppManager::clearPluginsLoadedCache()
@@ -1433,40 +1312,23 @@ AppManager::clearAllCaches()
     }
 
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->abortAllViewers();
+        (*it)->abortAllViewers(true);
     }
 
-    clearDiskCache();
-    clearNodeCache();
-
-
+    _imp->cache->clear();
+    
     ///for each app instance clear all its nodes cache
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
         (*it)->clearOpenFXPluginsCaches();
     }
 
     for (AppInstanceVec::iterator it = copy.begin(); it != copy.end(); ++it) {
-        (*it)->renderAllViewers(true);
+        (*it)->renderAllViewers();
     }
 
     Project::clearAutoSavesDir();
 }
 
-void
-AppManager::wipeAndCreateDiskCacheStructure()
-{
-    //Should be called on the main-thread because potentially can interact with rendering
-    assert( QThread::currentThread() == qApp->thread() );
-
-    abortAnyProcessing();
-
-    clearAllCaches();
-
-    assert(_imp->_diskCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_diskCache->getCachePath(), false );
-    assert(_imp->_viewerCache);
-    _imp->cleanUpCacheDiskStructure( _imp->_viewerCache->getCachePath() , true);
-}
 
 AppInstancePtr
 AppManager::getTopLevelInstance () const
@@ -1521,26 +1383,6 @@ AppManager::writeToOutputPipe(const QString & longMessage,
     return true;
 }
 
-void
-AppManager::setApplicationsCachesMaximumMemoryPercent(double p)
-{
-    size_t maxCacheRAM = p * getSystemTotalRAM_conditionnally();
-
-    _imp->_nodeCache->setMaximumCacheSize(maxCacheRAM);
-    _imp->_nodeCache->setMaximumInMemorySize(1);
-}
-
-void
-AppManager::setApplicationsCachesMaximumViewerDiskSpace(unsigned long long size)
-{
-    _imp->_viewerCache->setMaximumCacheSize(size);
-}
-
-void
-AppManager::setApplicationsCachesMaximumDiskSpace(unsigned long long size)
-{
-    _imp->_diskCache->setMaximumCacheSize(size);
-}
 
 void
 AppManager::loadAllPlugins()
@@ -1561,7 +1403,7 @@ AppManager::loadAllPlugins()
     // Load presets after all plug-ins are loaded
     loadNodesPresets();
 
-    _imp->_settings->restorePluginSettings();
+    _imp->_settings->loadSettingsFromFile(Settings::eLoadSettingsTypePlugins);
 
 
     onAllPluginsLoaded();
@@ -1666,9 +1508,67 @@ AppManager::onAllPluginsLoaded()
                 onPluginLoaded(*itver);
             }
         }
-    }
+    } // for all plugins
+
+    // Now that we know all plug-ins, restore shortcuts.
+    getCurrentSettings()->loadSettingsFromFile(Settings::eLoadSettingsTypeShortcuts);
+
 } // AppManager::onAllPluginsLoaded
 
+void
+AppManager::onPluginLoaded(const PluginPtr& plugin)
+{
+    std::string shortcutGrouping(kShortcutGroupNodes);
+    std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::string pluginID = plugin->getPluginID();
+    std::string pluginLabel = plugin->getLabelWithoutSuffix();
+
+    for (std::size_t i = 0; i < groups.size(); ++i) {
+        shortcutGrouping.append("/");
+        shortcutGrouping.append(groups[i]);
+    }
+
+    KeyboardModifiers modifiers(eKeyboardModifierNone);
+    Key symbol = (Key)0;
+    {
+        int symbol_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 0);
+        int mods_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 1);
+        if (symbol_i != 0) {
+            symbol = (Key)symbol_i;
+        }
+        if (mods_i != 0) {
+            modifiers = (KeyboardModifiers)mods_i;
+        }
+    }
+
+    if ( plugin->getIsUserCreatable() ) {
+        std::string hint = tr("Create an instance of %1").arg(QString::fromUtf8(pluginID.c_str())).toStdString();
+        getCurrentSettings()->addKeybind(shortcutGrouping, pluginID, pluginLabel, hint, modifiers, symbol);
+    }
+
+    // If this plug-in has presets, add shortcuts as well
+    plugin->sortPresetsByLabel();
+    const std::vector<PluginPresetDescriptor>& presets = plugin->getPresetFiles();
+    for (std::vector<PluginPresetDescriptor>::const_iterator it = presets.begin(); it!=presets.end(); ++it) {
+        std::string shortcutKey = pluginID;
+        shortcutKey += "_preset_";
+        shortcutKey += it->presetLabel.toStdString();
+
+        std::string shortcutLabel = pluginLabel;
+        shortcutLabel += " (";
+        shortcutLabel += it->presetLabel.toStdString();
+        shortcutLabel += ")";
+
+        std::string hint = tr("Create an instance of %1 with %2 preset").arg(QString::fromUtf8(pluginID.c_str())).arg(it->presetLabel).toStdString();
+        getCurrentSettings()->addKeybind(shortcutGrouping, shortcutKey, shortcutLabel, hint, it->modifiers, it->symbol);
+    }
+
+    const std::list<PluginActionShortcut>& shortcuts =  plugin->getShortcuts();
+    std::string pluginShortcutGroup =  plugin->getPluginShortcutGroup();
+    for (std::list<PluginActionShortcut>::const_iterator it = shortcuts.begin(); it != shortcuts.end(); ++it) {
+        getCurrentSettings()->addKeybind( pluginShortcutGroup, it->actionID, it->actionLabel, it->actionHint, it->modifiers, it->key );
+    }
+} // onPluginLoaded
 
 void
 AppManager::loadBuiltinNodePlugins(IOPluginsMap* /*readersMap*/,
@@ -1789,16 +1689,9 @@ AppManager::getAllNonOFXPluginsPaths() const
     QStringList templatesSearchPath;
 
     //add ~/.Natron
-    QString dataLocation = QDir::homePath();
-    QString mainPath = dataLocation + QString::fromUtf8("/.") + QString::fromUtf8(NATRON_APPLICATION_NAME);
-    QDir mainPathDir(mainPath);
 
-    if ( !mainPathDir.exists() ) {
-        QDir dataDir(dataLocation);
-        if ( dataDir.exists() ) {
-            dataDir.mkdir( QChar::fromLatin1('.') + QString( QString::fromUtf8(NATRON_APPLICATION_NAME) ) );
-        }
-    }
+    QString mainPath = QString::fromUtf8(getCurrentSettings()->getSettingsAbsoluteFilePath().c_str());
+
 
     QString envvar( QString::fromUtf8( qgetenv(NATRON_PATH_ENV_VAR) ) );
 #ifdef __NATRON_WIN32__
@@ -1990,9 +1883,7 @@ AppManager::loadNodesPresets()
         }
         SERIALIZATION_NAMESPACE::NodeSerialization obj;
         try {
-            if (!SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile, &obj)) {
-                continue;
-            }
+            SERIALIZATION_NAMESPACE::read(NATRON_PRESETS_FILE_HEADER, ifile, &obj);
         } catch (...) {
             continue;
         }
@@ -2338,13 +2229,8 @@ AppManager::setAsTopLevelInstance(int appID)
     for (AppInstanceVec::iterator it = _imp->_appInstances.begin();
          it != _imp->_appInstances.end();
          ++it) {
-        if ( (*it)->getAppID() != _imp->_topLevelInstanceID ) {
+        if ( (*it)->getAppID() == _imp->_topLevelInstanceID ) {
             if ( !isBackground() ) {
-                (*it)->disconnectViewersFromViewerCache();
-            }
-        } else {
-            if ( !isBackground() ) {
-                (*it)->connectViewersToViewerCache();
                 setOFXHostHandle( (*it)->getOfxHostOSHandle() );
             }
         }
@@ -2357,11 +2243,6 @@ AppManager::setOFXHostHandle(void* handle)
     _imp->ofxHost->setOfxHostOSHandle(handle);
 }
 
-void
-AppManager::clearExceedingEntriesFromNodeCache()
-{
-    _imp->_nodeCache->clearExceedingEntries();
-}
 
 const PluginsMap&
 AppManager::getPluginsList() const
@@ -2586,109 +2467,61 @@ AppManager::createNodeForProjectLoading(const SERIALIZATION_NAMESPACE::NodeSeria
     return retNode;
 }
 
-void
-AppManager::removeFromNodeCache(const ImagePtr & image)
+CachePtr
+AppManager::getCache() const
 {
-    _imp->_nodeCache->removeEntry(image);
+    return _imp->cache;
 }
 
 void
-AppManager::removeFromViewerCache(const FrameEntryPtr & texture)
+AppManager::deleteCacheEntriesInSeparateThread(const std::list<ImageStorageBasePtr> & entriesToDelete)
 {
-    _imp->_viewerCache->removeEntry(texture);
-}
-
-void
-AppManager::removeFromNodeCache(U64 hash)
-{
-    _imp->_nodeCache->removeEntry(hash);
-}
-
-void
-AppManager::removeFromViewerCache(U64 hash)
-{
-    _imp->_viewerCache->removeEntry(hash);
-}
-
-
-void
-AppManager::removeAllCacheEntriesForPlugin(const std::string& pluginID)
-{
-    _imp->_nodeCache->removeAllEntriesForPluginPublic(pluginID, false);
-    _imp->_diskCache->removeAllEntriesForPluginPublic(pluginID, false);
-    _imp->_viewerCache->removeAllEntriesForPluginPublic(pluginID, false);
-}
-
-void
-AppManager::queueEntriesForDeletion(const std::list<ImagePtr>& images)
-{
-    _imp->_nodeCache->appendToQueue(images);
-}
-
-void
-AppManager::queueEntriesForDeletion(const std::list<FrameEntryPtr>& images)
-{
-    _imp->_viewerCache->appendToQueue(images);
+    _imp->storageDeleteThread->appendToQueue(entriesToDelete);
 }
 
 void
 AppManager::printCacheMemoryStats() const
 {
     appPTR->clearErrorLog_mt_safe();
-    std::map<std::string, CacheEntryReportInfo> infos;
+    std::map<std::string, CacheReportInfo> infos;
+    _imp->cache->getMemoryStats(&infos);
 
-    {
-        // Cache entries for the viewer cache don't have a plug-in ID since this is the only plug-in using it
-        std::map<std::string, CacheEntryReportInfo> viewerInfos;
-        _imp->_viewerCache->getMemoryStats(&viewerInfos);
-
-        CacheEntryReportInfo& data = infos[PLUGINID_NATRON_VIEWER_INTERNAL];
-        for (std::map<std::string, CacheEntryReportInfo>::iterator it = viewerInfos.begin(); it!=viewerInfos.end(); ++it) {
-            data.diskBytes += it->second.diskBytes;
-            data.ramBytes += it->second.ramBytes;
-        }
-    }
-    {
-        _imp->_nodeCache->getMemoryStats(&infos);
-    }
-    {
-        _imp->_diskCache->getMemoryStats(&infos);
-    }
 
     QString reportStr;
-    std::size_t totalDisk = 0;
-    std::size_t totalRam = 0;
+    std::size_t totalBytes = 0;
+    int totalNEntries = 0;
     reportStr += QLatin1String("\n");
     if (!infos.empty()) {
-        for (std::map<std::string, CacheEntryReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
-            if (it->second.ramBytes == 0 && it->second.diskBytes == 0) {
+        for (std::map<std::string, CacheReportInfo>::iterator it = infos.begin(); it!= infos.end(); ++it) {
+            if (it->second.nBytes == 0) {
                 continue;
             }
-            totalRam += it->second.ramBytes;
-            totalDisk += it->second.diskBytes;
-
+            totalBytes += it->second.nBytes;
+            totalNEntries += it->second.nEntries;
+            
             reportStr += QString::fromUtf8(it->first.c_str());
             reportStr += QLatin1String("--> ");
-            reportStr += QLatin1String("RAM: ");
-            reportStr += printAsRAM(it->second.ramBytes);
-            reportStr += QLatin1String(" Disk: ");
-            reportStr += printAsRAM(it->second.diskBytes);
+            if (it->second.nBytes > 0) {
+                reportStr += printAsRAM(it->second.nBytes);
+            }
+
+            if (it->second.nEntries > 0) {
+                reportStr += tr(" Number of Cache Entries: ");
+                reportStr += QString::number(it->second.nEntries);
+            }
             reportStr += QLatin1String("\n");
         }
         reportStr += QLatin1String("-------------------------------\n");
     }
     reportStr += tr("Total");
     reportStr += QLatin1String("--> ");
-    reportStr += QLatin1String("RAM: ");
-    reportStr += printAsRAM(totalRam);
-    reportStr += QLatin1String(" Disk: ");
-    reportStr += printAsRAM(totalDisk);
-
+    reportStr += printAsRAM(totalBytes);
+    reportStr += tr(" taken by %1 cache entries.").arg(QString::number(totalNEntries));
 
     appPTR->writeToErrorLog_mt_safe(tr("Cache Report"), QDateTime::currentDateTime(), reportStr);
 
     appPTR->showErrorLog();
-}
+} // printCacheMemoryStats
 
 
 
@@ -2698,65 +2531,7 @@ AppManager::getApplicationBinaryPath() const
     return _imp->_binaryPath;
 }
 
-void
-AppManager::setNumberOfThreads(int threadsNb)
-{
-    if (_imp->_settings) {
-        _imp->_settings->setNumberOfThreads(threadsNb);
-    }
-}
 
-bool
-AppManager::getImage(const ImageKey & key,
-                     std::list<ImagePtr >* returnValue) const
-{
-    return _imp->_nodeCache->get(key, returnValue);
-}
-
-bool
-AppManager::getImageOrCreate(const ImageKey & key,
-                             const ImageParamsPtr& params,
-                             ImageLocker* locker,
-                             ImagePtr* returnValue) const
-{
-    return _imp->_nodeCache->getOrCreate(key, params, locker, returnValue);
-}
-
-bool
-AppManager::getImage_diskCache(const ImageKey & key,
-                               std::list<ImagePtr >* returnValue) const
-{
-    return _imp->_diskCache->get(key, returnValue);
-}
-
-bool
-AppManager::getImageOrCreate_diskCache(const ImageKey & key,
-                                       const ImageParamsPtr& params,
-                                       ImagePtr* returnValue) const
-{
-    return _imp->_diskCache->getOrCreate(key, params, 0, returnValue);
-}
-
-bool
-AppManager::getTexture(const FrameKey & key,
-                       std::list<FrameEntryPtr>* returnValue) const
-{
-    std::list<FrameEntryPtr > retList;
-    bool ret =  _imp->_viewerCache->get(key, &retList);
-
-    *returnValue = retList;
-
-    return ret;
-}
-
-bool
-AppManager::getTextureOrCreate(const FrameKey & key,
-                               const boost::shared_ptr<FrameParams>& params,
-                               FrameEntryLocker* locker,
-                               FrameEntryPtr* returnValue) const
-{
-    return _imp->_viewerCache->getOrCreate(key, params, locker, returnValue);
-}
 
 bool
 AppManager::isAggressiveCachingEnabled() const
@@ -2764,23 +2539,7 @@ AppManager::isAggressiveCachingEnabled() const
     return _imp->_settings->isAggressiveCachingEnabled();
 }
 
-U64
-AppManager::getCachesTotalMemorySize() const
-{
-    return  _imp->_nodeCache->getMemoryCacheSize();
-}
 
-U64
-AppManager::getCachesTotalDiskSize() const
-{
-    return  _imp->_diskCache->getDiskCacheSize() + _imp->_viewerCache->getDiskCacheSize();
-}
-
-boost::shared_ptr<CacheSignalEmitter>
-AppManager::getOrActivateViewerCacheSignalEmitter() const
-{
-    return _imp->_viewerCache->activateSignalEmitter();
-}
 
 SettingsPtr AppManager::getCurrentSettings() const
 {
@@ -2815,7 +2574,6 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<RenderStatsMap>("RenderStatsMap");
     qRegisterMetaType<ViewIdx>("ViewIdx");
     qRegisterMetaType<ViewSetSpec>("ViewSetSpec");
-    qRegisterMetaType<ViewGetSpec>("ViewGetSpec");
     qRegisterMetaType<NodePtr >("NodePtr");
     qRegisterMetaType<ViewerInstancePtr >("ViewerInstancePtr");
     qRegisterMetaType<std::list<double> >("std::list<double>");
@@ -2827,70 +2585,6 @@ AppManager::registerEngineMetaTypes() const
     qRegisterMetaType<PerDimViewVariantMap>("PerDimViewVariantMap");
 #if QT_VERSION < 0x050000
     qRegisterMetaType<QAbstractSocket::SocketState>("SocketState");
-#endif
-}
-
-void
-AppManager::setDiskCacheLocation(const QString& path)
-{
-    QDir d(path);
-    QMutexLocker k(&_imp->diskCachesLocationMutex);
-
-    if ( d.exists() && !path.isEmpty() ) {
-        _imp->diskCachesLocation = path;
-    } else {
-        _imp->diskCachesLocation = StandardPaths::writableLocation(StandardPaths::eStandardLocationCache);
-    }
-}
-
-const QString&
-AppManager::getDiskCacheLocation() const
-{
-    QMutexLocker k(&_imp->diskCachesLocationMutex);
-
-    return _imp->diskCachesLocation;
-}
-
-bool
-AppManager::isNCacheFilesOpenedCapped() const
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    return _imp->currentCacheFilesCount >= _imp->maxCacheFiles;
-}
-
-size_t
-AppManager::getNCacheFilesOpened() const
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    return _imp->currentCacheFilesCount;
-}
-
-void
-AppManager::increaseNCacheFilesOpened()
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    ++_imp->currentCacheFilesCount;
-#ifdef DEBUG
-    if (_imp->currentCacheFilesCount > _imp->maxCacheFiles) {
-        qDebug() << "Cache has more files opened than the limit allowed:" << _imp->currentCacheFilesCount << '/' << _imp->maxCacheFiles;
-    }
-#endif
-#ifdef NATRON_DEBUG_CACHE
-    qDebug() << "N Cache Files Opened:" << _imp->currentCacheFilesCount;
-#endif
-}
-
-void
-AppManager::decreaseNCacheFilesOpened()
-{
-    QMutexLocker l(&_imp->currentCacheFilesCountMutex);
-
-    --_imp->currentCacheFilesCount;
-#ifdef NATRON_DEBUG_CACHE
-    qDebug() << "NFiles Opened:" << _imp->currentCacheFilesCount;
 #endif
 }
 
@@ -2928,29 +2622,7 @@ AppManager::exec()
     return qApp->exec();
 }
 
-void
-AppManager::onNodeMemoryRegistered(qint64 mem)
-{
-    ///runs only in the main thread
-    assert( QThread::currentThread() == qApp->thread() );
 
-    if ( ( (qint64)_imp->_nodesGlobalMemoryUse + mem ) < 0 ) {
-        qDebug() << "Memory underflow...a node is trying to release more memory than it registered.";
-        _imp->_nodesGlobalMemoryUse = 0;
-
-        return;
-    }
-
-    _imp->_nodesGlobalMemoryUse += mem;
-}
-
-qint64
-AppManager::getTotalNodesMemoryRegistered() const
-{
-    assert( QThread::currentThread() == qApp->thread() );
-
-    return _imp->_nodesGlobalMemoryUse;
-}
 
 void
 AppManager::getErrorLog_mt_safe(std::list<LogEntry>* entries) const
@@ -3059,43 +2731,6 @@ AppManager::qt_tildeExpansion(const QString &path,
 
 #endif
 
-bool
-AppManager::isNodeCacheAlmostFull() const
-{
-    std::size_t nodeCacheSize = _imp->_nodeCache->getMemoryCacheSize();
-    std::size_t nodeMaxCacheSize = _imp->_nodeCache->getMaximumMemorySize();
-
-    if (nodeMaxCacheSize == 0) {
-        return true;
-    }
-
-    if ( (double)nodeCacheSize / nodeMaxCacheSize >= NATRON_CACHE_LIMIT_PERCENT ) {
-        return true;
-    } else {
-        return false;
-    }
-}
-
-void
-AppManager::checkCacheFreeMemoryIsGoodEnough()
-{
-    ///Before allocating the memory check that there's enough space to fit in memory
-    size_t systemRAMToKeepFree = getSystemTotalRAM() * appPTR->getCurrentSettings()->getUnreachableRamPercent();
-    size_t totalFreeRAM = getAmountFreePhysicalRAM();
-
-    while (totalFreeRAM <= systemRAMToKeepFree) {
-#ifdef NATRON_DEBUG_CACHE
-        qDebug() << "Total system free RAM is below the threshold:" << printAsRAM(totalFreeRAM)
-        << ", clearing least recently used NodeCache image...";
-#endif
-        if ( !_imp->_nodeCache->evictLRUInMemoryEntry() ) {
-            break;
-        }
-
-
-        totalFreeRAM = getAmountFreePhysicalRAM();
-    }
-}
 
 void
 AppManager::onOCIOConfigPathChanged(const std::string& path)
@@ -3120,65 +2755,43 @@ AppManager::getOCIOConfigPath() const
 }
 
 void
-AppManager::setNThreadsToRender(int nThreads)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->nThreadsToRender = nThreads;
-}
-
-void
-AppManager::getNThreadsSettings(int* nThreadsToRender,
-                                int* nThreadsPerEffect) const
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    *nThreadsToRender = _imp->nThreadsToRender;
-    *nThreadsPerEffect = _imp->nThreadsPerEffect;
-}
-
-void
-AppManager::setNThreadsPerEffect(int nThreadsPerEffect)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->nThreadsPerEffect = nThreadsPerEffect;
-}
-
-void
-AppManager::setUseThreadPool(bool useThreadPool)
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    _imp->useThreadPool = useThreadPool;
-}
-
-bool
-AppManager::getUseThreadPool() const
-{
-    QMutexLocker l(&_imp->nThreadsMutex);
-
-    return _imp->useThreadPool;
-}
-
-void
-AppManager::fetchAndAddNRunningThreads(int nThreads)
-{
-    _imp->runningThreadsCount.fetchAndAddRelaxed(nThreads);
-}
-
-int
-AppManager::getNRunningThreads() const
-{
-    return (int)_imp->runningThreadsCount;
-}
-
-void
 AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
                                     bool actionCaller)
 {
     _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
 }
+
+void
+AppManager::addMenuCommand(const std::string& grouping,
+                    const std::string& pythonFunction,
+                    const KeyboardModifiers& modifiers,
+                    Key key)
+{
+    QStringList split = QString::fromUtf8(grouping.c_str()).split( QLatin1Char('/') );
+
+    if ( grouping.empty() || split.isEmpty() ) {
+        return;
+    }
+    PythonUserCommand c;
+    c.grouping = QString::fromUtf8(grouping.c_str());
+    c.pythonFunction = pythonFunction;
+    c.key = key;
+    c.modifiers = modifiers;
+    _imp->pythonCommands.push_back(c);
+
+
+    std::string actionID = split[split.size() - 1].toStdString();
+    getCurrentSettings()->addKeybind(kShortcutGroupGlobal, actionID, actionID, "", modifiers, key);
+
+}
+
+
+const std::list<PythonUserCommand>&
+AppManager::getUserPythonCommands() const
+{
+    return _imp->pythonCommands;
+}
+
 
 void
 AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
@@ -3933,6 +3546,12 @@ const NATRON_NAMESPACE::OfxHost*
 AppManager::getOFXHost() const
 {
     return _imp->ofxHost.get();
+}
+
+const MultiThread*
+AppManager::getMultiThreadHandler() const
+{
+    return _imp->multiThreadSuite.get();
 }
 
 GPUContextPool*

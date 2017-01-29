@@ -48,8 +48,11 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/TrackerHelperPrivate.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/Timer.h"
+#include "Engine/Node.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/TrackerParamsProvider.h"
 #include "Engine/ViewerInstance.h"
+#include "Engine/ViewerNode.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -93,7 +96,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
     const std::vector<TrackMarkerAndOptionsPtr >& tracks = args.getTracks();
     const TrackMarkerAndOptionsPtr& track = tracks[trackIndex];
 
-    if ( !track->natronMarker->isEnabled(time) ) {
+    if ( !track->natronMarker->isEnabled(TimeValue(time)) ) {
         return false;
     }
 
@@ -107,7 +110,7 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
 
     // Disable the marker since it failed to track
     if (!ret && args.isAutoKeyingEnabledParamEnabled()) {
-        track->natronMarker->setEnabledAtTime(time, false);
+        track->natronMarker->setEnabledAtTime(TimeValue(time), false);
     }
 
     appPTR->getAppTLS()->cleanupTLSForThread();
@@ -121,7 +124,7 @@ class IsTrackingFlagSetter_RAII
     Q_DECLARE_TR_FUNCTIONS(TrackScheduler)
 
 private:
-    ViewerInstancePtr _v;
+    ViewerNodePtr _v;
     EffectInstancePtr _effect;
     TrackScheduler* _base;
     bool _reportProgress;
@@ -132,7 +135,7 @@ public:
     IsTrackingFlagSetter_RAII(TrackScheduler* base,
                               int step,
                               bool reportProgress,
-                              const ViewerInstancePtr& viewer,
+                              const ViewerNodePtr& viewer,
                               bool doPartialUpdates)
     : _v(viewer)
     , _base(base)
@@ -169,7 +172,7 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     ThreadStateEnum state = eThreadStateActive;
     TimeLinePtr timeline = args->getTimeLine();
-    ViewerInstancePtr viewer =  args->getViewer();
+    ViewerNodePtr viewer =  args->getViewer();
     int end = args->getEnd();
     int start = args->getStart();
     int cur = start;
@@ -272,12 +275,12 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
             if (isUpdateViewerOnTrackingEnabled && viewer) {
                 //This will not refresh the viewer since when tracking, renderCurrentFrame()
                 //is not called on viewers, see Gui::onTimeChanged
-                timeline->seekFrame(cur, true, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+                timeline->seekFrame(cur, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
 
                 if (enoughTimePassedToReportProgress) {
                     if (doPartialUpdates) {
                         std::list<RectD> updateRects;
-                        args->getRedrawAreasNeeded(cur, &updateRects);
+                        args->getRedrawAreasNeeded(TimeValue(cur), &updateRects);
                         viewer->setPartialUpdateParams(updateRects, isCenterViewerEnabled);
                     } else {
                         viewer->clearPartialUpdateParams();
@@ -311,17 +314,17 @@ TrackScheduler::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
 
     if ( paramsProvider->getUpdateViewer() ) {
         //Refresh all viewers to the current frame
-        timeline->seekFrame(lastValidFrame, true, OutputEffectInstancePtr(), eTimelineChangeReasonOtherSeek);
+        timeline->seekFrame(lastValidFrame, true, EffectInstancePtr(), eTimelineChangeReasonOtherSeek);
     }
     
     return state;
 } // >::threadLoopOnce
 
 void
-TrackScheduler::doRenderCurrentFrameForViewer(const ViewerInstancePtr& viewer)
+TrackScheduler::doRenderCurrentFrameForViewer(const ViewerNodePtr& viewer)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    viewer->renderCurrentFrame(true);
+    viewer->getNode()->getRenderEngine()->renderCurrentFrame();
 }
 
 void

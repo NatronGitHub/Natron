@@ -40,6 +40,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
+#include "Engine/Cache.h"
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/Settings.h"
@@ -260,11 +261,11 @@ NodeGraph::updateCacheSizeText()
     }
 
     QString oldText = _imp->_cacheSizeText->text();
-    quint64 cacheSize = appPTR->getCachesTotalMemorySize();
+    quint64 cacheSize = appPTR->getCache()->getCurrentSize(eStorageModeRAM);
     QString cacheSizeStr = QDirModelPrivate_size(cacheSize);
-    quint64 diskSize = appPTR->getCachesTotalDiskSize();
+    quint64 diskSize = appPTR->getCache()->getCurrentSize(eStorageModeDisk);
     QString diskCacheSizeStr = QDirModelPrivate_size(diskSize);
-    QString newText = tr("Memory cache: %1 / Disk cache: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
+    QString newText = tr("Memory used: %1 / Disk used: %2").arg(cacheSizeStr).arg(diskCacheSizeStr);
     if (newText != oldText) {
         _imp->_cacheSizeText->setText(newText);
     }
@@ -316,8 +317,8 @@ NodeGraph::showMenu(const QPoint & pos)
 {
     _imp->_menu->clear();
 
-    QAction* findAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphFindNode,
-                                                 kShortcutDescActionGraphFindNode, _imp->_menu);
+    QAction* findAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphFindNode,
+                                                 kShortcutActionGraphFindNodeLabel, _imp->_menu);
     _imp->_menu->addAction(findAction);
     _imp->_menu->addSeparator();
 
@@ -326,19 +327,19 @@ NodeGraph::showMenu(const QPoint & pos)
     //editMenu->setFont(font);
     _imp->_menu->addAction( editMenu->menuAction() );
 
-    QAction* copyAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphCopy,
-                                                 kShortcutDescActionGraphCopy, editMenu);
+    QAction* copyAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphCopy,
+                                                 kShortcutActionGraphCopyLabel, editMenu);
     QObject::connect( copyAction, SIGNAL(triggered()), this, SLOT(copySelectedNodes()) );
     editMenu->addAction(copyAction);
 
-    QAction* cutAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphCut,
-                                                kShortcutDescActionGraphCut, editMenu);
+    QAction* cutAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphCut,
+                                                kShortcutActionGraphCutLabel, editMenu);
     QObject::connect( cutAction, SIGNAL(triggered()), this, SLOT(cutSelectedNodes()) );
     editMenu->addAction(cutAction);
 
 
-    QAction* pasteAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphPaste,
-                                                  kShortcutDescActionGraphPaste, editMenu);
+    QAction* pasteAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphPaste,
+                                                  kShortcutActionGraphPasteLabel, editMenu);
     bool cbEnabled = false;
     {
         QClipboard* clipboard = QApplication::clipboard();
@@ -350,56 +351,56 @@ NodeGraph::showMenu(const QPoint & pos)
     pasteAction->setEnabled(cbEnabled);
     editMenu->addAction(pasteAction);
 
-    QAction* deleteAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphRemoveNodes,
-                                                   kShortcutDescActionGraphRemoveNodes, editMenu);
+    QAction* deleteAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphRemoveNodes,
+                                                   kShortcutActionGraphRemoveNodesLabel, editMenu);
     QObject::connect( deleteAction, SIGNAL(triggered()), this, SLOT(deleteSelection()) );
     editMenu->addAction(deleteAction);
 
-    QAction* renameAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphRenameNode,
-                                                   kShortcutDescActionGraphRenameNode, editMenu);
+    QAction* renameAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphRenameNode,
+                                                   kShortcutActionGraphRenameNodeLabel, editMenu);
     QObject::connect( renameAction, SIGNAL(triggered()), this, SLOT(renameNode()) );
     editMenu->addAction(renameAction);
 
-    QAction* duplicateAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphDuplicate,
-                                                      kShortcutDescActionGraphDuplicate, editMenu);
+    QAction* duplicateAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphDuplicate,
+                                                      kShortcutActionGraphDuplicateLabel, editMenu);
     editMenu->addAction(duplicateAction);
 
-    QAction* cloneAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphClone,
-                                                  kShortcutDescActionGraphClone, editMenu);
+    QAction* cloneAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphClone,
+                                                  kShortcutActionGraphCloneLabel, editMenu);
     editMenu->addAction(cloneAction);
 
-    QAction* decloneAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphDeclone,
-                                                    kShortcutDescActionGraphDeclone, editMenu);
+    QAction* decloneAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphDeclone,
+                                                    kShortcutActionGraphDecloneLabel, editMenu);
     QObject::connect( decloneAction, SIGNAL(triggered()), this, SLOT(decloneSelectedNodes()) );
     editMenu->addAction(decloneAction);
 
-    QAction* switchInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphExtractNode,
-                                                   kShortcutDescActionGraphExtractNode, editMenu);
+    QAction* switchInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphExtractNode,
+                                                   kShortcutActionGraphExtractNodeLabel, editMenu);
     QObject::connect( switchInputs, SIGNAL(triggered()), this, SLOT(extractSelectedNode()) );
     editMenu->addAction(switchInputs);
 
-    QAction* extractNode = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphSwitchInputs,
-                                                  kShortcutDescActionGraphSwitchInputs, editMenu);
+    QAction* extractNode = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphSwitchInputs,
+                                                  kShortcutActionGraphSwitchInputsLabel, editMenu);
     QObject::connect( extractNode, SIGNAL(triggered()), this, SLOT(switchInputs1and2ForSelectedNodes()) );
     editMenu->addAction(extractNode);
 
-    QAction* disableNodes = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphDisableNodes,
-                                                   kShortcutDescActionGraphDisableNodes, editMenu);
+    QAction* disableNodes = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphDisableNodes,
+                                                   kShortcutActionGraphDisableNodesLabel, editMenu);
     QObject::connect( disableNodes, SIGNAL(triggered()), this, SLOT(toggleSelectedNodesEnabled()) );
     editMenu->addAction(disableNodes);
 
-    QAction* groupFromSel = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphMakeGroup,
-                                                   kShortcutDescActionGraphMakeGroup, editMenu);
+    QAction* groupFromSel = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphMakeGroup,
+                                                   kShortcutActionGraphMakeGroupLabel, editMenu);
     QObject::connect( groupFromSel, SIGNAL(triggered()), this, SLOT(createGroupFromSelection()) );
     editMenu->addAction(groupFromSel);
 
-    QAction* expandGroup = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphExpandGroup,
-                                                  kShortcutDescActionGraphExpandGroup, editMenu);
+    QAction* expandGroup = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphExpandGroup,
+                                                  kShortcutActionGraphExpandGroupLabel, editMenu);
     QObject::connect( expandGroup, SIGNAL(triggered()), this, SLOT(expandSelectedGroups()) );
     editMenu->addAction(expandGroup);
 
-    QAction* displayCacheInfoAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphShowCacheSize,
-                                                             kShortcutDescActionGraphShowCacheSize, _imp->_menu);
+    QAction* displayCacheInfoAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphShowCacheSize,
+                                                             kShortcutActionGraphShowCacheSizeLabel, _imp->_menu);
     displayCacheInfoAction->setCheckable(true);
     displayCacheInfoAction->setChecked( _imp->_cacheSizeText->isVisible() );
     QObject::connect( displayCacheInfoAction, SIGNAL(triggered()), this, SLOT(toggleCacheInfo()) );
@@ -407,16 +408,16 @@ NodeGraph::showMenu(const QPoint & pos)
 
     const NodesGuiList& selectedNodes = getSelectedNodes();
     if ( !selectedNodes.empty() ) {
-        QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphTogglePreview,
-                                                               kShortcutDescActionGraphTogglePreview, _imp->_menu);
+        QAction* turnOffPreviewAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphTogglePreview,
+                                                               kShortcutActionGraphTogglePreviewLabel, _imp->_menu);
         turnOffPreviewAction->setCheckable(true);
         turnOffPreviewAction->setChecked(false);
         QObject::connect( turnOffPreviewAction, SIGNAL(triggered()), this, SLOT(togglePreviewsForSelectedNodes()) );
         _imp->_menu->addAction(turnOffPreviewAction);
 
         if (selectedNodes.size() == 1) {
-            QAction* openNodePanelAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphOpenNodePanel,
-                                                                  kShortcutDescActionGraphOpenNodePanel, _imp->_menu);
+            QAction* openNodePanelAction = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphOpenNodePanel,
+                                                                  kShortcutActionGraphOpenNodePanelLabel, _imp->_menu);
             openNodePanelAction->setCheckable(true);
             openNodePanelAction->setChecked(false);
             QObject::connect( openNodePanelAction, SIGNAL(triggered()), this, SLOT(showSelectedNodeSettingsPanel()) );
@@ -424,15 +425,15 @@ NodeGraph::showMenu(const QPoint & pos)
         }
     }
 
-    QAction* autoHideInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphAutoHideInputs,
-                                                     kShortcutDescActionGraphAutoHideInputs, _imp->_menu);
+    QAction* autoHideInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphAutoHideInputs,
+                                                     kShortcutActionGraphAutoHideInputsLabel, _imp->_menu);
     autoHideInputs->setCheckable(true);
     autoHideInputs->setChecked( appPTR->getCurrentSettings()->areOptionalInputsAutoHidden() );
     QObject::connect( autoHideInputs, SIGNAL(triggered()), this, SLOT(toggleAutoHideInputs()) );
     _imp->_menu->addAction(autoHideInputs);
 
-    QAction* hideInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphHideInputs,
-                                                 kShortcutDescActionGraphHideInputs, _imp->_menu);
+    QAction* hideInputs = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphHideInputs,
+                                                 kShortcutActionGraphHideInputsLabel, _imp->_menu);
     hideInputs->setCheckable(true);
     bool hideInputsVal = false;
     if ( !selectedNodes.empty() ) {
@@ -443,36 +444,36 @@ NodeGraph::showMenu(const QPoint & pos)
     _imp->_menu->addAction(hideInputs);
 
 
-    QAction* knobLinks = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphShowExpressions,
-                                                kShortcutDescActionGraphShowExpressions, _imp->_menu);
+    QAction* knobLinks = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphShowExpressions,
+                                                kShortcutActionGraphShowExpressionsLabel, _imp->_menu);
     knobLinks->setCheckable(true);
     knobLinks->setChecked( areKnobLinksVisible() );
     QObject::connect( knobLinks, SIGNAL(triggered()), this, SLOT(toggleKnobLinksVisible()) );
     _imp->_menu->addAction(knobLinks);
 
-    QAction* autoPreview = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoPreview,
-                                                  kShortcutDescActionGraphToggleAutoPreview, _imp->_menu);
+    QAction* autoPreview = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphToggleAutoPreview,
+                                                  kShortcutActionGraphToggleAutoPreviewLabel, _imp->_menu);
     autoPreview->setCheckable(true);
     autoPreview->setChecked( getGui()->getApp()->getProject()->isAutoPreviewEnabled() );
     QObject::connect( autoPreview, SIGNAL(triggered()), this, SLOT(toggleAutoPreview()) );
     QObject::connect( getGui()->getApp()->getProject().get(), SIGNAL(autoPreviewChanged(bool)), autoPreview, SLOT(setChecked(bool)) );
     _imp->_menu->addAction(autoPreview);
 
-    QAction* autoTurbo = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphToggleAutoTurbo,
-                                                kShortcutDescActionGraphToggleAutoTurbo, _imp->_menu);
+    QAction* autoTurbo = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphToggleAutoTurbo,
+                                                kShortcutActionGraphToggleAutoTurboLabel, _imp->_menu);
     autoTurbo->setCheckable(true);
     autoTurbo->setChecked( appPTR->getCurrentSettings()->isAutoTurboEnabled() );
     QObject::connect( autoTurbo, SIGNAL(triggered()), this, SLOT(toggleAutoTurbo()) );
     _imp->_menu->addAction(autoTurbo);
 
 
-    QAction* forceRefreshPreviews = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphForcePreview,
-                                                           kShortcutDescActionGraphForcePreview, _imp->_menu);
+    QAction* forceRefreshPreviews = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphForcePreview,
+                                                           kShortcutActionGraphForcePreviewLabel, _imp->_menu);
     QObject::connect( forceRefreshPreviews, SIGNAL(triggered()), this, SLOT(forceRefreshAllPreviews()) );
     _imp->_menu->addAction(forceRefreshPreviews);
 
-    QAction* frameAllNodes = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutIDActionGraphFrameNodes,
-                                                    kShortcutDescActionGraphFrameNodes, _imp->_menu);
+    QAction* frameAllNodes = new ActionWithShortcut(kShortcutGroupNodegraph, kShortcutActionGraphFrameNodes,
+                                                    kShortcutActionGraphFrameNodesLabel, _imp->_menu);
     QObject::connect( frameAllNodes, SIGNAL(triggered()), this, SLOT(centerOnAllNodes()) );
     _imp->_menu->addAction(frameAllNodes);
 

@@ -56,8 +56,9 @@ public:
     virtual ~HistogramCPU();
 
     void computeHistogram(int mode, //< corresponds to the enum Histogram::DisplayModeEnum
-                          const ImagePtr & image,
-                          const RectI & rect,
+                          const ViewerNodePtr & viewer,
+                          int viewerInputNb,
+                          const RectD& roiParam,
                           int binsCount,
                           double vmin,
                           double vmax,

@@ -107,6 +107,8 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_PRESETS_FILE_HEADER "# Natron Presets File"
 #define NATRON_PRESETS_FILE_MIME_TYPE "application/vnd.natron.nodepresets"
 #define NATRON_CLIPBOARD_HEADER "# Natron Clipboard Content"
+#define NATRON_SETTINGS_FILE_HEADER "# Natron Settings File"
+#define NATRON_SETTINGS_FILE_EXT "txt"
 #define NATRON_PROJECT_ENV_VAR_NAME "Project"
 #define NATRON_OCIO_ENV_VAR_NAME "OCIO"
 
@@ -115,7 +117,6 @@ namespace NATRON_PYTHON_NAMESPACE { }
 #define NATRON_GUI_PYTHON_MODULE_NAME "NatronGui"
 
 #define NATRON_PROJECT_ENV_VAR_MAX_RECURSION 100
-#define NATRON_MAX_CACHE_FILES_OPENED 20000
 #define NATRON_CUSTOM_HTML_TAG_START "<" NATRON_APPLICATION_NAME ">"
 #define NATRON_CUSTOM_HTML_TAG_END "</" NATRON_APPLICATION_NAME ">"
 
@@ -126,14 +127,22 @@ namespace NATRON_PYTHON_NAMESPACE { }
 //////////////////////////////////////////Natron version/////////////////////////////////////////////
 
 // The currently maintained Natron versions
+// RB-3: 3.0.0
 #define NATRON_VERSION_MAJOR_30 3
 #define NATRON_VERSION_MINOR_30 0
 #define NATRON_VERSION_REVISION_30 0
 
+// RB-2: 2.3.0
+#define NATRON_VERSION_MAJOR_23 2
+#define NATRON_VERSION_MINOR_23 3
+#define NATRON_VERSION_REVISION_23 0
+
+// RB-2.2: 2.2.2
 #define NATRON_VERSION_MAJOR_22 2
 #define NATRON_VERSION_MINOR_22 2
-#define NATRON_VERSION_REVISION_22 0
+#define NATRON_VERSION_REVISION_22 2
 
+// RB-2.1: 2.1.10
 #define NATRON_VERSION_MAJOR_21 2
 #define NATRON_VERSION_MINOR_21 1
 #define NATRON_VERSION_REVISION_21 10
@@ -306,11 +315,6 @@ NATRON_VERSION_STRINGIZE__(major, minor)
 #define NATRON_FONT "Droid Sans"
 #define NATRON_FONT_ALT "Droid Sans"
 #define NATRON_SCRIPT_FONT "Courier New"
-
-//Use this to use trimap instead of bitmap to avoid several threads computing the same area of an image at the same time.
-//When enabled the value of 2 is a code for a pixel being rendered but not yet available.
-//In this context, the reader of the bitmap should then wait for the pixel to be available.
-#define NATRON_ENABLE_TRIMAP 1
 
 // compiler_warning.h
 #define STRINGISE_IMPL(x) # x

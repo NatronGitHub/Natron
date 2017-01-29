@@ -16,8 +16,9 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef COLORPARSER_H
-#define COLORPARSER_H
+#ifndef Engine_ColorParser_h
+#define Engine_ColorParser_h
+
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
@@ -25,9 +26,11 @@
 // ***** END PYTHON BLOCK *****
 
 #include "Global/Macros.h"
+
+#include <QtCore/QString>
+
 #include "Engine/EngineFwd.h"
 
-#include <QString>
 
 NATRON_NAMESPACE_ENTER
 
@@ -45,4 +48,4 @@ public:
 
 NATRON_NAMESPACE_EXIT
 
-#endif // COLORPARSER_H
+#endif // Engine_ColorParser_h

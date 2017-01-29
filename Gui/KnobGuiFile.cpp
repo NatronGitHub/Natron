@@ -234,7 +234,7 @@ KnobGuiFile::updateGUI()
 
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
     if ( useNotifications && knob->getHolder() && knob->getEvaluateOnChange() ) {
-        std::string newValue = knob->getValueAtTime( knob->getCurrentTime(), DimIdx(0), getView() );
+        std::string newValue = knob->getValueAtTime( knob->getHolder()->getTimelineCurrentTime(), DimIdx(0), getView() );
         if ( knob->getHolder()->getApp() ) {
             knob->getHolder()->getApp()->getProject()->canonicalizePath(newValue);
         }
@@ -262,12 +262,12 @@ void
 KnobGuiFile::onTimelineFrameChanged(SequenceTime time,
                                     int /*reason*/)
 {
-    checkFileModificationAndWarnInternal(false, time, false);
+    checkFileModificationAndWarnInternal(false, TimeValue(time), false);
 }
 
 bool
 KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
-                                                  SequenceTime time,
+                                                  TimeValue time,
                                                   bool errorAndAbortRender)
 {
     bool useNotifications = appPTR->getCurrentSettings()->notifyOnFileChange();
@@ -287,7 +287,7 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
 
     ///Get the current file, if it exists, add the file path to the file system watcher
     ///to get notified if the file changes.
-    std::string filepath = knob->getValueAtTime( time, DimIdx(0), knob->getCurrentView() );
+    std::string filepath = knob->getValueAtTime( time, DimIdx(0), ViewIdx(0) );
     if ( !filepath.empty() && knob->getHolder() && knob->getHolder()->getApp() ) {
         knob->getHolder()->getApp()->getProject()->canonicalizePath(filepath);
     }
@@ -310,10 +310,9 @@ KnobGuiFile::checkFileModificationAndWarnInternal(bool doCheck,
                 QString warn = tr("The file \"%1\" has changed on disk.\n"
                                   "Press reload file to load the new version of the file").arg(qfilePath);
                 effect->setPersistentMessage( eMessageTypeError, warn.toStdString() );
-                effect->abortAnyEvaluation();
+                effect->getNode()->abortAnyProcessing_non_blocking();
             }
-            effect->purgeCaches();
-            effect->getNode()->removeAllImagesFromCache();
+            effect->purgeCaches_public();
             _lastModificationDates.clear();
             ret = true;
         } else {
@@ -329,7 +328,7 @@ bool
 KnobGuiFile::checkFileModificationAndWarn(SequenceTime time,
                                           bool errorAndAbortRender)
 {
-    return checkFileModificationAndWarnInternal(true, time, errorAndAbortRender);
+    return checkFileModificationAndWarnInternal(true, TimeValue(time), errorAndAbortRender);
 }
 
 void

@@ -184,7 +184,7 @@ KnobHelper::deleteKnob()
         holder->getApp()->recheckInvalidExpressions();
     }
 
-    clearExpression(DimSpec::all(), ViewSetSpec::all(), true);
+    clearExpression(DimSpec::all(), ViewSetSpec::all());
 
 
     resetParent();
@@ -258,7 +258,7 @@ KnobHelper::convertDimViewArgAccordingToKnobState(DimSpec dimIn, ViewSetSpec vie
 
 
 bool
-KnobHelper::getAllDimensionsVisible(ViewGetSpec view) const
+KnobHelper::getAllDimensionsVisible(ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     QMutexLocker k(&_imp->stateMutex);
@@ -395,7 +395,7 @@ KnobHelper::setAllDimensionsVisible(ViewSetSpec view, bool visible)
             setAllDimensionsVisibleInternal(*it, visible);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         setAllDimensionsVisibleInternal(view_i, visible);
     }
     endChanges();
@@ -577,7 +577,7 @@ KnobHelper::setSignalSlotHandler(const boost::shared_ptr<KnobSignalSlotHandler> 
 
 bool
 KnobHelper::isAnimated(DimIdx dimension,
-                       ViewGetSpec view) const
+                       ViewIdx view) const
 {
     if (dimension < 0 || dimension >= (int)_imp->dimension) {
         throw std::invalid_argument("KnobHelper::isAnimated; dimension out of range");
@@ -813,7 +813,7 @@ KnobHelper::setAutoKeyingEnabled(bool enabled)
 }
 
 bool
-KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, ViewIdx view) const
+KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, TimeValue time, ViewIdx view) const
 {
 
     if (dimension < 0 || dimension >= _imp->dimension) {
@@ -822,7 +822,7 @@ KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, ViewIdx view) const
 
 
     // The knob doesn't have any animation don't start keying automatically
-    if (getAnimationLevel(dimension, view) == eAnimationLevelNone) {
+    if (getAnimationLevel(dimension, time, view) == eAnimationLevelNone) {
         return false;
     }
     
@@ -831,7 +831,7 @@ KnobHelper::isAutoKeyingEnabledInternal(DimIdx dimension, ViewIdx view) const
 }
 
 bool
-KnobHelper::isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChangedReasonEnum reason) const
+KnobHelper::isAutoKeyingEnabled(DimSpec dimension, TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason) const
 {
 
     // Knobs without an effect cannot auto-key
@@ -865,11 +865,11 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChange
         for (int i = 0; i < _imp->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), *it);
+                    hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), time, *it);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), view_i);
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(i), time, view_i);
             }
         }
     } else {
@@ -878,11 +878,11 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChange
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), *it);
+                hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), time, *it);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), view_i);
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            hasAutoKeying |= isAutoKeyingEnabledInternal(DimIdx(dimension), time, view_i);
         }
     }
 
@@ -897,7 +897,7 @@ KnobHelper::isAutoKeyingEnabled(DimSpec dimension, ViewSetSpec view, ValueChange
 
 bool
 KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
-                                        double time,
+                                        TimeValue time,
                                         ViewSetSpec view,
                                         ValueChangedReasonEnum reason,
                                         std::set<KnobIPtr>* evaluatedKnobs)
@@ -934,9 +934,6 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
     // Refresh modifications state
     computeHasModifications();
 
-    // Clear expression now before anything else gets updated
-    clearExpressionsResults(dimension, view);
-
     // Invalidate the hash cache
     invalidateHashCache();
 
@@ -958,7 +955,7 @@ KnobHelper::evaluateValueChangeInternal(DimSpec dimension,
 
 bool
 KnobHelper::evaluateValueChange(DimSpec dimension,
-                                double time,
+                                TimeValue time,
                                 ViewSetSpec view,
                                 ValueChangedReasonEnum reason)
 {
@@ -967,7 +964,7 @@ KnobHelper::evaluateValueChange(DimSpec dimension,
 }
 
 void
-KnobHelper::refreshListenersAfterValueChangeInternal(double time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs)
+KnobHelper::refreshListenersAfterValueChangeInternal(TimeValue time, ViewIdx view, ValueChangedReasonEnum reason, DimIdx dimension, std::set<KnobIPtr>* evaluatedKnobs)
 {
     KnobDimViewBasePtr data = getDataForDimView(dimension, view);
     if (!data) {
@@ -999,13 +996,13 @@ KnobHelper::refreshListenersAfterValueChangeInternal(double time, ViewIdx view, 
 }
 
 void
-KnobHelper::refreshListenersAfterValueChange(double time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs)
+KnobHelper::refreshListenersAfterValueChange(TimeValue time, ViewSetSpec view, ValueChangedReasonEnum reason, DimSpec dimension, std::set<KnobIPtr>* evaluatedKnobs)
 {
 
     std::list<ViewIdx> views = getViewsList();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     int nDims = getNDimensions();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1023,7 +1020,7 @@ KnobHelper::refreshListenersAfterValueChange(double time, ViewSetSpec view, Valu
 } // KnobHelper::refreshListenersAfterValueChange
 
 void
-KnobHelper::onTimeChanged(bool isPlayback,  double time)
+KnobHelper::onTimeChanged(bool isPlayback,  TimeValue time)
 {
     if ( getIsSecret() ) {
         return;
@@ -1216,7 +1213,7 @@ KnobHelper::setSecret(bool b)
         if (holder) {
             AppInstancePtr app = holder->getApp();
             if (app) {
-                onTimeChanged( false, app->getTimeLine()->currentFrame() );
+                onTimeChanged( false, TimeValue(app->getTimeLine()->currentFrame()) );
             }
         }
     }
@@ -1530,13 +1527,13 @@ KnobHelper::getCanUndo() const
 void
 KnobHelper::setIsMetadataSlave(bool slave)
 {
-    _imp->isClipPreferenceSlave = slave;
+    _imp->isMetadataSlave = slave;
 }
 
 bool
 KnobHelper::getIsMetadataSlave() const
 {
-    return _imp->isClipPreferenceSlave;
+    return _imp->isMetadataSlave;
 }
 
 bool
@@ -1820,7 +1817,7 @@ KnobHelper::copyKnob(const KnobIPtr& other,
 
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     std::list<ViewIdx> views = getViewsList();
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
@@ -1832,7 +1829,8 @@ KnobHelper::copyKnob(const KnobIPtr& other,
 
 
     if (hasChanged) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+        TimeValue time = getHolder()->getTimelineCurrentTime();
+        evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
     }
     endChanges();
 
@@ -1992,7 +1990,9 @@ KnobHelper::linkTo(const KnobIPtr & otherKnob, DimSpec thisDimension, DimSpec ot
             ok |= linkToInternal(otherKnob, DimIdx(thisDimension), DimIdx(otherDimension), ViewIdx(thisView.value()), ViewIdx(otherView.value()));
         }
     }
-    evaluateValueChange(thisDimension, getCurrentTime(), thisView, eValueChangedReasonUserEdited);
+
+    TimeValue time = getHolder()->getTimelineCurrentTime();
+    evaluateValueChange(thisDimension, time, thisView, eValueChangedReasonUserEdited);
     endChanges();
     return ok;
 } // slaveTo
@@ -2102,7 +2102,7 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
                     unlinkInternal(DimIdx(i), *it, copyState);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 unlinkInternal(DimIdx(i), view_i, copyState);
             }
         }
@@ -2115,11 +2115,12 @@ KnobHelper::unlink(DimSpec dimension, ViewSetSpec view, bool copyState)
                 unlinkInternal(DimIdx(dimension), *it, copyState);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             unlinkInternal(DimIdx(dimension), view_i, copyState);
         }
     }
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    TimeValue time = getHolder()->getTimelineCurrentTime();
+    evaluateValueChange(dimension, time, view, eValueChangedReasonUserEdited);
 
     endChanges();
 } // unlink
@@ -2168,7 +2169,7 @@ KnobHelper::getSharedValues(DimIdx dimension, ViewIdx view, KnobDimViewKeySet* s
 }
 
 AnimationLevelEnum
-KnobHelper::getAnimationLevel(DimIdx dimension, ViewGetSpec view) const
+KnobHelper::getAnimationLevel(DimIdx dimension, TimeValue time, ViewIdx view) const
 {
     AnimationLevelEnum level = eAnimationLevelNone;
     
@@ -2185,7 +2186,6 @@ KnobHelper::getAnimationLevel(DimIdx dimension, ViewGetSpec view) const
         if (!c || !c->isAnimated()) {
             level = eAnimationLevelNone;
         } else {
-            double time = getCurrentTime();
             KeyFrame kf;
             int nKeys = c->getNKeyFramesInRange(time, time + 1);
             if (nKeys > 0) {
@@ -2199,7 +2199,7 @@ KnobHelper::getAnimationLevel(DimIdx dimension, ViewGetSpec view) const
 }
 
 bool
-KnobHelper::getKeyFrameTime(ViewGetSpec view,
+KnobHelper::getKeyFrameTime(ViewIdx view,
                             int index,
                             DimIdx dimension,
                             double* time) const
@@ -2223,7 +2223,7 @@ KnobHelper::getKeyFrameTime(ViewGetSpec view,
 }
 
 bool
-KnobHelper::getLastKeyFrameTime(ViewGetSpec view,
+KnobHelper::getLastKeyFrameTime(ViewIdx view,
                                 DimIdx dimension,
                                 double* time) const
 {
@@ -2244,7 +2244,7 @@ KnobHelper::getLastKeyFrameTime(ViewGetSpec view,
 }
 
 bool
-KnobHelper::getFirstKeyFrameTime(ViewGetSpec view,
+KnobHelper::getFirstKeyFrameTime(ViewIdx view,
                                  DimIdx dimension,
                                  double* time) const
 {
@@ -2252,7 +2252,7 @@ KnobHelper::getFirstKeyFrameTime(ViewGetSpec view,
 }
 
 int
-KnobHelper::getKeyFramesCount(ViewGetSpec view,
+KnobHelper::getKeyFramesCount(ViewIdx view,
                               DimIdx dimension) const
 {
     if ( !canAnimate() || !isAnimated(dimension, view) ) {
@@ -2268,9 +2268,9 @@ KnobHelper::getKeyFramesCount(ViewGetSpec view,
 }
 
 bool
-KnobHelper::getNearestKeyFrameTime(ViewGetSpec view,
+KnobHelper::getNearestKeyFrameTime(ViewIdx view,
                                    DimIdx dimension,
-                                   double time,
+                                   TimeValue time,
                                    double* nearestTime) const
 {
     if ( dimension < 0 || dimension >= _imp->dimension ) {
@@ -2296,9 +2296,9 @@ KnobHelper::getNearestKeyFrameTime(ViewGetSpec view,
 }
 
 int
-KnobHelper::getKeyFrameIndex(ViewGetSpec view,
+KnobHelper::getKeyFrameIndex(ViewIdx view,
                              DimIdx dimension,
-                             double time) const
+                             TimeValue time) const
 {
     if ( dimension < 0 || dimension >= _imp->dimension ) {
         throw std::invalid_argument("Knob::getKeyFrameIndex(): Dimension out of range");
@@ -2425,10 +2425,6 @@ KnobHelper::cloneExpressions(const KnobIPtr& other, ViewSetSpec view, ViewSetSpe
         }
     }
 
-    if (hasChanged) {
-        cloneExpressionsResults(other, view, otherView, dimension, otherDimension);
-    }
-
     return hasChanged;
 }
 
@@ -2505,21 +2501,22 @@ KnobHelper::getListeners(KnobDimViewKeySet& listeners, ListenersTypeFlags flags)
 
 }
 
-double
-KnobHelper::getCurrentTime() const
+TimeValue
+KnobHelper::getCurrentTime_TLS() const
 {
     KnobHolderPtr holder = getHolder();
 
-    return holder && holder->getApp() ? holder->getCurrentTime() : 0;
+    return holder && holder->getApp() ? holder->getCurrentTime_TLS() : TimeValue(0);
 }
 
 ViewIdx
-KnobHelper::getCurrentView() const
+KnobHelper::getCurrentView_TLS() const
 {
     KnobHolderPtr holder = getHolder();
 
-    return ( holder && holder->getApp() ) ? holder->getCurrentView() : ViewIdx(0);
+    return ( holder && holder->getApp() ) ? holder->getCurrentView_TLS() : ViewIdx(0);
 }
+
 
 bool
 KnobI::hasDefaultValueChanged() const
@@ -2534,7 +2531,7 @@ KnobI::hasDefaultValueChanged() const
 
 
 double
-KnobHelper::random(double time,
+KnobHelper::random(TimeValue time,
                    unsigned int seed) const
 {
     randomSeed(time, seed);
@@ -2554,7 +2551,7 @@ KnobHelper::random(double min,
 }
 
 int
-KnobHelper::randomInt(double time,
+KnobHelper::randomInt(TimeValue time,
                       unsigned int seed) const
 {
     randomSeed(time, seed);
@@ -2584,7 +2581,7 @@ struct alias_cast_float
 };
 
 void
-KnobHelper::randomSeed(double time,
+KnobHelper::randomSeed(TimeValue time,
                        unsigned int seed) const
 {
     // Make the hash vary from seed
@@ -2636,7 +2633,7 @@ KnobHelper::refreshCurveMinMax(ViewSetSpec view, DimSpec dimension)
             }
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         if (dimension.isAll()) {
             for (int i = 0;i < nDims; ++i) {
                 refreshCurveMinMaxInternal(view_i, DimIdx(i));
@@ -2649,7 +2646,7 @@ KnobHelper::refreshCurveMinMax(ViewSetSpec view, DimSpec dimension)
 }
 
 RenderValuesCachePtr
-KnobHelper::getHolderRenderValuesCache(double* currentTime, ViewIdx* currentView) const
+KnobHelper::getHolderRenderValuesCache(TimeValue* currentTime, ViewIdx* currentView) const
 {
     KnobHolderPtr holder = getHolder();
     if (!holder) {
@@ -2672,7 +2669,7 @@ KnobHelper::getHolderRenderValuesCache(double* currentTime, ViewIdx* currentView
     if (!isEffect) {
         return RenderValuesCachePtr();
     }
-    return isEffect->getRenderValuesCacheTLS(currentTime, currentView);
+    return isEffect->getRenderValuesCache_TLS(currentTime, currentView);
 }
 
 bool
@@ -2816,7 +2813,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
     } else if (isChoice) {
         KnobChoicePtr newKnob = otherHolder->createChoiceKnob(newScriptName, newLabel, isUserKnob);
         if (duplicateType != eDuplicateKnobTypeAlias) {
-            newKnob->populateChoices( isChoice->getEntries(), isChoice->getEntriesHelp() );
+            newKnob->populateChoices( isChoice->getEntries());
         }
         output = newKnob;
     } else if (isColor) {
@@ -2932,7 +2929,7 @@ KnobHelper::createDuplicateOnHolder(const KnobHolderPtr& otherHolder,
 
                 try {
                     std::string script = ss.str();
-                    clearExpression(DimSpec::all(), ViewSetSpec::all(), true);
+                    clearExpression(DimSpec::all(), ViewSetSpec::all());
                     setExpression(DimSpec::all(), ViewSetSpec::all(), script, false /*hasRetVariable*/, false /*failIfInvalid*/);
                 } catch (...) {
                 }
@@ -3035,11 +3032,11 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
     } else if (isChoice) {
         knobSer->_dataType = eSerializationValueVariantTypeString;
         //serialization->_defaultValue.isString
-        std::vector<std::string> entries = isChoice->getEntries();
+        std::vector<ChoiceOption> entries = isChoice->getEntries();
         int defIndex = isChoice->getDefaultValue(dimension);
         std::string defaultValueChoice;
         if (defIndex >= 0 && defIndex < (int)entries.size()) {
-            defaultValueChoice = entries[defIndex];
+            defaultValueChoice = entries[defIndex].id;
         }
         defValue->value.isString = defaultValueChoice;
         defValue->serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
@@ -3167,7 +3164,7 @@ initializeValueSerializationStorage(const KnobIPtr& knob,
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
 
         } else if (isChoice) {
-            serialization->_value.isString = isChoice->getActiveEntryText(view);
+            serialization->_value.isString = isChoice->getActiveEntry(view).id;
             serialization->_serializeValue = (serialization->_value.isString != defValue.value.isString);
         }
     }
@@ -3279,14 +3276,15 @@ KnobHelper::restoreValueFromSerialization(const SERIALIZATION_NAMESPACE::ValueSe
     } else if (isStringBase) {
         isStringBase->setValue(obj._value.isString, view, targetDimension, eValueChangedReasonUserEdited, 0);
     } else if (isChoice) {
-        std::string matchedEntry;
+        ChoiceOption matchedEntry;
         int foundValue = KnobChoice::choiceMatch(obj._value.isString, isChoice->getEntries(), &matchedEntry);
 
         if (foundValue == -1) {
             // Just remember the active entry if not found
-            isChoice->setActiveEntryText(obj._value.isString, view);
+            ChoiceOption activeEntry(obj._value.isString, "", "");
+            isChoice->setActiveEntry(activeEntry, view);
         } else {
-            isChoice->setActiveEntryText(matchedEntry, view);
+            isChoice->setActiveEntry(matchedEntry, view);
             isChoice->setValue(foundValue, view, targetDimension, eValueChangedReasonUserEdited, 0);
         }
 
@@ -3480,8 +3478,14 @@ KnobHelper::toSerialization(SerializationObjectBase* serializationBase)
         KnobChoice* isChoice = dynamic_cast<KnobChoice*>(this);
         if (isChoice) {
             ChoiceExtraData* extraData = new ChoiceExtraData;
-            extraData->_entries = isChoice->getEntries();
-            extraData->_helpStrings = isChoice->getEntriesHelp();
+            std::vector<ChoiceOption> options = isChoice->getEntries();
+            std::vector<std::string> ids(options.size()), helps(options.size());
+            for (std::size_t i = 0; i < options.size(); ++i) {
+                ids[i] = options[i].id;
+                helps[i] = options[i].tooltip;
+            }
+            extraData->_entries = ids;
+            extraData->_helpStrings = helps;
             serialization->_extraData.reset(extraData);
         }
         KnobParametric* isParametric = dynamic_cast<KnobParametric*>(this);
@@ -3694,7 +3698,14 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
         } else if (isChoice) {
             const ChoiceExtraData* data = dynamic_cast<const ChoiceExtraData*>(serialization->_extraData.get());
             if (data) {
-                isChoice->populateChoices(data->_entries, data->_helpStrings);
+                std::vector<ChoiceOption> options(data->_entries.size());
+                for (std::size_t i = 0; i < data->_entries.size(); ++i) {
+                    options[i].id = data->_entries[i];
+                    if (i < data->_helpStrings.size()) {
+                        options[i].tooltip = data->_helpStrings[i];
+                    }
+                }
+                isChoice->populateChoices(options);
             }
         } else if (isColor) {
             const ValueExtraData* data = dynamic_cast<const ValueExtraData*>(serialization->_extraData.get());
@@ -3805,7 +3816,6 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
 
     }
 
-
     // Restore viewer UI context
     if (serialization->_hasViewerInterface) {
         setInViewerContextItemSpacing(serialization->_inViewerContextItemSpacing);
@@ -3829,7 +3839,9 @@ KnobHelper::fromSerialization(const SerializationObjectBase& serializationBase)
     // Allow changes again
     endChanges();
     unblockValueChanges();
-    evaluateValueChange(DimSpec::all(), getCurrentTime(), ViewSetSpec::all(), eValueChangedReasonRestoreDefault);
+
+    TimeValue time = getHolder()->getTimelineCurrentTime();
+    evaluateValueChange(DimSpec::all(), time, ViewSetSpec::all(), eValueChangedReasonRestoreDefault);
 } // KnobHelper::fromSerialization
 
 // E.G: Imagine a nodegraph as such:
@@ -4138,9 +4150,6 @@ struct KnobHolder::KnobHolderPrivate
 
     ///Count how many times an overlay needs to be redrawn for the instanceChanged/penMotion/penDown etc... actions
     ///to just redraw it once when the recursion level is back to 0
-    QMutex overlayRedrawStackMutex;
-    int overlayRedrawStack;
-    bool isDequeingValuesSet;
     mutable QMutex paramsEditLevelMutex;
 
     struct MultipleParamsEditData {
@@ -4193,9 +4202,6 @@ struct KnobHolder::KnobHolderPrivate
         , knobs()
         , knobsInitialized(false)
         , isInitializingKnobs(false)
-        , overlayRedrawStackMutex()
-        , overlayRedrawStack(0)
-        , isDequeingValuesSet(false)
         , evaluationBlockedMutex(QMutex::Recursive)
         , evaluationBlocked(0)
         , nbSignificantChangesDuringEvaluationBlock(0)
@@ -4221,9 +4227,6 @@ struct KnobHolder::KnobHolderPrivate
     , knobs(other.knobs)
     , knobsInitialized(other.knobsInitialized)
     , isInitializingKnobs(other.isInitializingKnobs)
-    , overlayRedrawStackMutex()
-    , overlayRedrawStack(0)
-    , isDequeingValuesSet(other.isDequeingValuesSet)
     , evaluationBlockedMutex(QMutex::Recursive)
     , evaluationBlocked(0)
     , nbSignificantChangesDuringEvaluationBlock(0)
@@ -4533,14 +4536,11 @@ KnobHolder::isOverlaySlaveParam(const KnobIConstPtr& knob) const
 }
 
 void
-KnobHolder::redrawOverlayInteract()
+KnobHolder::requestOverlayInteractRefresh()
 {
-    if ( isDoingInteractAction() ) {
-        getApp()->queueRedrawForAllViewers();
-    } else {
-        getApp()->redrawAllViewers();
-    }
+    getApp()->redrawAllViewers();
 }
+
 
 
 bool
@@ -5066,7 +5066,7 @@ KnobHolder::endChanges(bool discardRendering)
 
 bool
 KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
-                                       double time,
+                                       TimeValue time,
                                        ViewSetSpec view,
                                        ValueChangedReasonEnum reason)
 {
@@ -5081,6 +5081,8 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
     }
     bool ret = false;
 
+    bool valueChangesBlocked = knob->isValueChangesBlocked();
+
     {
         QMutexLocker l(&_imp->evaluationBlockedMutex);
 
@@ -5089,11 +5091,11 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
             beginKnobsValuesChanged_public(reason);
         }
 
-        if (  knob->getIsMetadataSlave() ) {
+        if (knob->getIsMetadataSlave()) {
             ++_imp->nbChangesRequiringMetadataRefresh;
         }
 
-        if ( knob->getEvaluateOnChange() ) {
+        if ( !valueChangesBlocked && knob->getEvaluateOnChange() ) {
             ++_imp->nbSignificantChangesDuringEvaluationBlock;
         }
         if (_imp->nbChangesDuringEvaluationBlock == 0) {
@@ -5104,7 +5106,7 @@ KnobHolder::onKnobValueChangedInternal(const KnobIPtr& knob,
     }
 
     // Call the knobChanged action
-    if (!knob->isValueChangesBlocked()) {
+    if (!valueChangesBlocked) {
         ret |= onKnobValueChanged_public(knob, reason, time, view);
     }
 
@@ -5221,7 +5223,7 @@ KnobHolder::initializeKnobsPublic()
 
 void
 KnobHolder::refreshAfterTimeChange(bool isPlayback,
-                                   double time)
+                                   TimeValue time)
 {
     assert( QThread::currentThread() == qApp->thread() );
     AppInstancePtr app = getApp();
@@ -5237,8 +5239,31 @@ KnobHolder::refreshAfterTimeChange(bool isPlayback,
     refreshExtraStateAfterTimeChanged(isPlayback, time);
 }
 
+TimeValue
+KnobHolder::getTimelineCurrentTime() const
+{
+    AppInstancePtr app = getApp();
+    if (app) {
+        return TimeValue(app->getTimeLine()->currentFrame());
+    } else {
+        return TimeValue(0);
+    }
+}
+
+TimeValue
+KnobHolder::getCurrentTime_TLS() const
+{
+    return TimeValue(getTimelineCurrentTime());
+}
+
+ViewIdx
+KnobHolder::getCurrentView_TLS() const
+{
+    return ViewIdx(0);
+}
+
 void
-KnobHolder::refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(double time)
+KnobHolder::refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(TimeValue time)
 {
     assert( QThread::currentThread() == qApp->thread() );
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
@@ -5305,7 +5330,6 @@ KnobHolder::beginKnobsValuesChanged_public(ValueChangedReasonEnum reason)
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION();
     beginKnobsValuesChanged(reason);
 }
 
@@ -5315,14 +5339,13 @@ KnobHolder::endKnobsValuesChanged_public(ValueChangedReasonEnum reason)
     ///cannot run in another thread.
     assert( QThread::currentThread() == qApp->thread() );
 
-    RECURSIVE_ACTION();
     endKnobsValuesChanged(reason);
 }
 
 bool
 KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
                                       ValueChangedReasonEnum reason,
-                                      double time,
+                                      TimeValue time,
                                       ViewSetSpec view)
 {
     ///cannot run in another thread.
@@ -5330,7 +5353,6 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
     if (!_imp->knobsInitialized) {
         return false;
     }
-    RECURSIVE_ACTION();
 
     bool ret = onKnobValueChanged(k, reason, time, view);
     if (ret) {
@@ -5343,79 +5365,6 @@ KnobHolder::onKnobValueChanged_public(const KnobIPtr& k,
     return ret;
 }
 
-void
-KnobHolder::checkIfRenderNeeded()
-{
-    ///cannot run in another thread.
-    assert( QThread::currentThread() == qApp->thread() );
-    if ( (getRecursionLevel() == 0) ) {
-        endChanges();
-    }
-}
-
-void
-KnobHolder::incrementRedrawNeededCounter()
-{
-    {
-        QMutexLocker k(&_imp->overlayRedrawStackMutex);
-        ++_imp->overlayRedrawStack;
-    }
-}
-
-bool
-KnobHolder::checkIfOverlayRedrawNeeded()
-{
-    {
-        QMutexLocker k(&_imp->overlayRedrawStackMutex);
-        bool ret = _imp->overlayRedrawStack > 0;
-        _imp->overlayRedrawStack = 0;
-
-        return ret;
-    }
-}
-
-
-void
-KnobHolder::setKnobsFrozen(bool frozen)
-{
-    {
-        QMutexLocker l(&_imp->knobsFrozenMutex);
-        if (frozen == _imp->knobsFrozen) {
-            return;
-        }
-        _imp->knobsFrozen = frozen;
-    }
-    KnobsVec knobs = getKnobs_mt_safe();
-
-    for (U32 i = 0; i < knobs.size(); ++i) {
-        knobs[i]->setIsFrozen(frozen);
-    }
-}
-
-bool
-KnobHolder::areKnobsFrozen() const
-{
-    QMutexLocker l(&_imp->knobsFrozenMutex);
-
-    return _imp->knobsFrozen;
-}
-
-bool
-KnobHolder::isDequeueingValuesSet() const
-{
-    {
-        QMutexLocker k(&_imp->overlayRedrawStackMutex);
-
-        return _imp->isDequeingValuesSet;
-    }
-}
-
-
-double
-KnobHolder::getCurrentTime() const
-{
-    return getApp() ? getApp()->getTimeLine()->currentFrame() : 0;
-}
 
 int
 KnobHolder::getPageIndex(const KnobPagePtr page) const
@@ -5473,14 +5422,14 @@ KnobHolder::updateHasAnimation()
 }
 
 void
-KnobHolder::appendToHash(double time, ViewIdx view, Hash64* hash)
+KnobHolder::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
     KnobsVec knobs = getKnobs_mt_safe();
     for (KnobsVec::const_iterator it = knobs.begin(); it!=knobs.end(); ++it) {
         if (!(*it)->getEvaluateOnChange()) {
             continue;
         }
-        U64 knobHash = (*it)->computeHash(time, view);
+        U64 knobHash = (*it)->computeHash(args);
         hash->append(knobHash);
 
     }
@@ -5546,7 +5495,7 @@ AnimatingKnobStringHelper::getStringAnimation(ViewIdx view) const
 
 
 void
-AnimatingKnobStringHelper::stringToKeyFrameValue(double time,
+AnimatingKnobStringHelper::stringToKeyFrameValue(TimeValue time,
                                                  ViewIdx view,
                                                  const std::string & v,
                                                  double* returnValue)
@@ -5560,7 +5509,7 @@ AnimatingKnobStringHelper::stringToKeyFrameValue(double time,
 
 void
 AnimatingKnobStringHelper::stringFromInterpolatedValue(double interpolated,
-                                                       ViewGetSpec view,
+                                                       ViewIdx view,
                                                        std::string* returnValue) const
 {
     Q_UNUSED(view);
@@ -5581,7 +5530,7 @@ AnimatingKnobStringHelper::onKeyframesRemoved( const std::list<double>& keysRemo
     int nDims = getNDimensions();
     ViewIdx view_i;
     if (!view.isAll()) {
-        view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        view_i = getViewIdxFromGetSpec(ViewIdx(view));
     }
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it!=views.end(); ++it) {
         if (!view.isAll()) {
@@ -5604,8 +5553,8 @@ AnimatingKnobStringHelper::onKeyframesRemoved( const std::list<double>& keysRemo
 }
 
 std::string
-AnimatingKnobStringHelper::getStringAtTime(double time,
-                                           ViewGetSpec view)
+AnimatingKnobStringHelper::getStringAtTime(TimeValue time,
+                                           ViewIdx view)
 {
     std::string ret;
     ViewIdx view_i = getViewIdxFromGetSpec(view);

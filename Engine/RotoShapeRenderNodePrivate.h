@@ -24,12 +24,18 @@
 // "Since Python may define some pre-processor definitions which affect the standard headers on some systems, you must include Python.h before any standard headers are included."
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
+
+#include "Global/Macros.h"
+
 #include <map>
 #include <list>
-#include "Engine/EngineFwd.h"
-#include "Global/GlobalDefines.h"
-#include "Engine/OSGLContext.h"
 
+#include "Global/GlobalDefines.h"
+#include "Engine/Color.h"
+#include "Engine/OSGLContext.h"
+#include "Engine/TimeValue.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -60,14 +66,15 @@ public:
      **/
     typedef void (*PFNRenderStrokeBeginRender) (
     RenderStrokeDataPtr userData,
-    double brushSizePixel,
+    double brushSizePixelX,
+    double brushSizePixelY,
     double brushSpacing,
     double brushHardness,
     bool pressureAffectsOpacity,
     bool pressureAffectsHardness,
     bool pressureAffectsSize,
     bool buildUp,
-    double shapeColor[3],
+    const ColorRgbaD& shapeColor,
     double opacity);
 
     /**
@@ -102,9 +109,9 @@ public:
                                      const RotoDrawableItemPtr& stroke,
                                      bool doBuildup,
                                      double opacity,
-                                     double time,
+                                     TimeValue time,
                                      ViewIdx view,
-                                     unsigned int mipmapLevel,
+                                     const RenderScale& scale,
                                      double* distToNextOut,
                                      Point* lastCenterPoint);
 

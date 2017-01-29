@@ -447,7 +447,7 @@ KnobGui::onSetKeyActionTriggered()
     KnobDoubleBasePtr isDouble = toKnobDoubleBase(internalKnob);
 
 
-    double time = internalKnob->getCurrentTime();
+    TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
     AnimItemDimViewKeyFramesMap keysToAdd;
 
     int nDims = internalKnob->getNDimensions();
@@ -516,7 +516,7 @@ KnobGui::onRemoveKeyActionTriggered()
     AnimatingKnobStringHelperPtr isString = boost::dynamic_pointer_cast<AnimatingKnobStringHelper>(internalKnob);
 
 
-    double time = internalKnob->getCurrentTime();
+    TimeValue time = internalKnob->getHolder()->getTimelineCurrentTime();
     AnimItemDimViewKeyFramesMap keysToRemove;
 
     int nDims = internalKnob->getNDimensions();
@@ -721,36 +721,27 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
             QString additionalKeyboardShortcutString;
             QString thisActionID = QString::fromUtf8( knob->getName().c_str() );
 
-            std::list<QKeySequence> keybinds;
+            QKeySequence keybinds;
 
             // Try with the shortcut group of the original plugin.
             QString pluginShortcutGroup = QString::fromUtf8(isEffect->getNode()->getOriginalPlugin()->getPluginShortcutGroup().c_str());
             keybinds = getKeybind( pluginShortcutGroup, thisActionID );
-            /*
-             // If this is a pyplug, try again with the pyplug group
-             if (keybinds.empty()) {
-                PluginPtr pyPlug = isEffect->getNode()->getPyPlugPlugin();
-                if (pyPlug) {
-                    pluginShortcutGroup = QString::fromUtf8(pyPlug->getPluginShortcutGroup().c_str());
-                    keybinds = getKeybind( pluginShortcutGroup, thisActionID );
-                }
-            }*/
 
-            if (keybinds.size() > 0) {
+            {
                 if (!isMarkdown) {
                     additionalKeyboardShortcutString += QLatin1String("<br/>");
                 } else {
                     additionalKeyboardShortcutString += QLatin1String("\n");
                 }
                 additionalKeyboardShortcutString += QString::fromUtf8("<b>Keyboard shortcut: %1</b>");
-            }
-
-            if (keybinds.empty()) {
                 // add a fake %1 because additional shortcuts start at %2
                 additionalKeyboardShortcutString.push_back(QString::fromUtf8("%1"));
+
+
+                tt += additionalKeyboardShortcutString;
+                additionalShortcuts.push_front(thisActionID.toStdString());
             }
-            tt += additionalKeyboardShortcutString;
-            additionalShortcuts.push_front(thisActionID.toStdString());
+
 
             if (w) {
                 QList<QAction*> actions = w->actions();
@@ -766,10 +757,10 @@ KnobGui::toolTip(QWidget* w, ViewIdx view) const
             }
             // Ok we set the tooltip with the formating args (%1, %2) on the widget, we can now replace them to make the return value
             for (std::list<std::string>::iterator it = additionalShortcuts.begin(); it!=additionalShortcuts.end(); ++it) {
-                std::list<QKeySequence> keybinds = getKeybind( pluginShortcutGroup, QString::fromUtf8( it->c_str() ) );
+                QKeySequence keybinds = getKeybind( pluginShortcutGroup, QString::fromUtf8( it->c_str() ) );
                 QString argValue;
-                if (keybinds.size() > 0) {
-                    argValue = keybinds.front().toString(QKeySequence::NativeText);
+                if (!keybinds.isEmpty()) {
+                    argValue = keybinds.toString(QKeySequence::NativeText);
                 }
                 tt = tt.arg(argValue);
             }

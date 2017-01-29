@@ -52,6 +52,8 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/Plugin.h"
 #include "Engine/Curve.h"
 #include "Engine/CLArgs.h"
+#include "Engine/RenderQueue.h"
+#include "Engine/Settings.h"
 #include "Engine/ViewIdx.h"
 
 NATRON_NAMESPACE_USING
@@ -105,7 +107,9 @@ BaseTest::SetUp()
     if (!g_manager) {
         g_manager = new AppManager;
         int argc = 0;
-        CLArgs cl;
+        QStringList args;
+        args << "--clear-cache";
+        CLArgs cl(args);
         g_manager->load(argc, 0, cl);
     }
 
@@ -116,7 +120,7 @@ BaseTest::SetUp()
 void
 BaseTest::TearDown()
 {
-    appPTR->setNumberOfThreads(0);
+    appPTR->getCurrentSettings()->setNumberOfThreads(0);
 }
 
 NodePtr
@@ -260,22 +264,17 @@ TEST_F(BaseTest, GenerateDot)
 
     const QString& binPath = appPTR->getApplicationBinaryPath();
     QString filePath = binPath + QString::fromUtf8("/test_dot_generator.jpg");
-    writer->setOutputFilesForWriter( filePath.toStdString() );
+    writer->getEffectInstance()->setOutputFilesForWriter( filePath.toStdString() );
 
     ///attempt to connect the 2 nodes together
     connectNodes(generator, writer, 0, true);
 
     ///and start rendering. This call is blocking.
-    std::list<AppInstance::RenderWork> works;
-    AppInstance::RenderWork w;
-    w.writer = toOutputEffectInstance( writer->getEffectInstance() );
-    assert(w.writer);
-    w.firstFrame = INT_MIN;
-    w.lastFrame = INT_MAX;
-    w.frameStep = INT_MIN;
-    w.useRenderStats = false;
+    std::list<RenderQueue::RenderWork> works;
+    RenderQueue::RenderWork w;
+    w.treeRoot = writer;
     works.push_back(w);
-    getApp()->renderWritersBlocking(works);
+    getApp()->getRenderQueue()->renderBlocking(works);
 
     EXPECT_TRUE( QFile::exists(filePath) );
     QFile::remove(filePath);
@@ -297,11 +296,11 @@ TEST_F(BaseTest, SetValues)
 
     //Check that linear interpolation is working as intended
     KeyFrame kf;
-    radius->setInterpolationAtTime(ViewSetSpec::all(),  DimIdx(0),  0, eKeyframeTypeLinear, &kf);
-    radius->setValueAtTime(0, 0., ViewSetSpec::all(), DimIdx(0));
-    radius->setValueAtTime(100, 1., ViewSetSpec::all(), DimIdx(0));
+    radius->setInterpolationAtTime(ViewSetSpec::all(),  DimIdx(0),  TimeValue(0), eKeyframeTypeLinear, &kf);
+    radius->setValueAtTime(TimeValue(0), 0., ViewSetSpec::all(), DimIdx(0));
+    radius->setValueAtTime(TimeValue(100), 1., ViewSetSpec::all(), DimIdx(0));
     for (int i = 0; i <= 100; ++i) {
-        double v = radius->getValueAtTime(i);
+        double v = radius->getValueAtTime(TimeValue(i));
         EXPECT_TRUE(std::abs(v - i / 100.) < 1e-6);
     }
 }

@@ -36,6 +36,7 @@
 
 #include "Engine/MergingEnum.h"
 #include "Engine/PyItemsTable.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;

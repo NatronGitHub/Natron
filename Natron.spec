@@ -2,7 +2,8 @@ Summary: Open source compositing software
 Name: Natron
 # The two actively maintained versions (that are merged into master)
 Version21: 2.1.10
-Version22: 2.2.0
+Version22: 2.2.2
+Version23: 2.3
 Version30: 3.0.0
 
 # The version for this branch of the sources

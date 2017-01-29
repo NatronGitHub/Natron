@@ -25,11 +25,13 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <vector>
-
 #include "Global/Macros.h"
 
+#include <vector>
+
 #include "Engine/PyParameter.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;

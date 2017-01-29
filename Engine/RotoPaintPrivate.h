@@ -28,20 +28,22 @@
 #include "Global/Macros.h"
 
 #include <list>
-#include <QtCore/QPointF>
-#include <QtCore/QRectF>
-
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/enable_shared_from_this.hpp>
 #endif
 
+#include <QtCore/QPointF>
+#include <QtCore/QRectF>
+
+
 #include <ofxNatron.h>
 
-#include "Engine/EngineFwd.h"
 #include "Engine/BezierCP.h"
 #include "Engine/Bezier.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/KnobItemsTable.h"
+
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -245,7 +247,7 @@ NATRON_NAMESPACE_ENTER;
 
 #define kRotoUIParamRippleEdit "rippleEditButton"
 #define kRotoUIParamRippleEditLabel "Enable Ripple Edit"
-#define kRotoUIParamRippleEditLabelHint "Ripple-edit: When activated, moving a control point" \
+#define kRotoUIParamRippleEditHint "Ripple-edit: When activated, moving a control point" \
     " will move it by the same amount for all the keyframes " \
     "it has"
 
@@ -341,59 +343,59 @@ NATRON_NAMESPACE_ENTER;
 
 // Shortcuts
 
-#define kShortcutIDActionRotoDelete "delete"
-#define kShortcutDescActionRotoDelete "Delete Element"
+#define kShortcutActionRotoDelete "delete"
+#define kShortcutActionRotoDeleteLabel "Delete Element"
 
-#define kShortcutIDActionRotoCloseBezier "closeBezier"
-#define kShortcutDescActionRotoCloseBezier "Close Bezier"
+#define kShortcutActionRotoCloseBezier "closeBezier"
+#define kShortcutActionRotoCloseBezierLabel "Close Bezier"
 
-#define kShortcutIDActionRotoSelectAll "selectAll"
-#define kShortcutDescActionRotoSelectAll "Select All"
+#define kShortcutActionRotoSelectAll "selectAll"
+#define kShortcutActionRotoSelectAllLabel "Select All"
 
-#define kShortcutIDActionRotoSelectionTool "selectionTool"
-#define kShortcutDescActionRotoSelectionTool "Switch to Selection Mode"
+#define kShortcutActionRotoSelectionTool "selectionTool"
+#define kShortcutActionRotoSelectionToolLabel "Switch to Selection Mode"
 
-#define kShortcutIDActionRotoAddTool "addTool"
-#define kShortcutDescActionRotoAddTool "Switch to Add Mode"
+#define kShortcutActionRotoAddTool "addTool"
+#define kShortcutActionRotoAddToolLabel "Switch to Add Mode"
 
-#define kShortcutIDActionRotoEditTool "editTool"
-#define kShortcutDescActionRotoEditTool "Switch to Edition Mode"
+#define kShortcutActionRotoEditTool "editTool"
+#define kShortcutActionRotoEditToolLabel "Switch to Edition Mode"
 
-#define kShortcutIDActionRotoBrushTool "brushTool"
-#define kShortcutDescActionRotoBrushTool "Switch to Brush Mode"
+#define kShortcutActionRotoBrushTool "brushTool"
+#define kShortcutActionRotoBrushToolLabel "Switch to Brush Mode"
 
-#define kShortcutIDActionRotoCloneTool "cloneTool"
-#define kShortcutDescActionRotoCloneTool "Switch to Clone Mode"
+#define kShortcutActionRotoCloneTool "cloneTool"
+#define kShortcutActionRotoCloneToolLabel "Switch to Clone Mode"
 
-#define kShortcutIDActionRotoEffectTool "EffectTool"
-#define kShortcutDescActionRotoEffectTool "Switch to Effect Mode"
+#define kShortcutActionRotoEffectTool "EffectTool"
+#define kShortcutActionRotoEffectToolLabel "Switch to Effect Mode"
 
-#define kShortcutIDActionRotoColorTool "colorTool"
-#define kShortcutDescActionRotoColorTool "Switch to Color Mode"
+#define kShortcutActionRotoColorTool "colorTool"
+#define kShortcutActionRotoColorToolLabel "Switch to Color Mode"
 
-#define kShortcutIDActionRotoNudgeLeft "nudgeLeft"
-#define kShortcutDescActionRotoNudgeLeft "Move Bezier to the Left"
+#define kShortcutActionRotoNudgeLeft "nudgeLeft"
+#define kShortcutActionRotoNudgeLeftLabel "Move Bezier to the Left"
 
-#define kShortcutIDActionRotoNudgeRight "nudgeRight"
-#define kShortcutDescActionRotoNudgeRight "Move Bezier to the Right"
+#define kShortcutActionRotoNudgeRight "nudgeRight"
+#define kShortcutActionRotoNudgeRightLabel "Move Bezier to the Right"
 
-#define kShortcutIDActionRotoNudgeBottom "nudgeBottom"
-#define kShortcutDescActionRotoNudgeBottom "Move Bezier to the Bottom"
+#define kShortcutActionRotoNudgeBottom "nudgeBottom"
+#define kShortcutActionRotoNudgeBottomLabel "Move Bezier to the Bottom"
 
-#define kShortcutIDActionRotoNudgeTop "nudgeTop"
-#define kShortcutDescActionRotoNudgeTop "Move Bezier to the Top"
+#define kShortcutActionRotoNudgeTop "nudgeTop"
+#define kShortcutActionRotoNudgeTopLabel "Move Bezier to the Top"
 
-#define kShortcutIDActionRotoSmooth "smooth"
-#define kShortcutDescActionRotoSmooth "Smooth Bezier"
+#define kShortcutActionRotoSmooth "smooth"
+#define kShortcutActionRotoSmoothLabel "Smooth Bezier"
 
-#define kShortcutIDActionRotoCuspBezier "cusp"
-#define kShortcutDescActionRotoCuspBezier "Cusp Bezier"
+#define kShortcutActionRotoCuspBezier "cusp"
+#define kShortcutActionRotoCuspBezierLabel "Cusp Bezier"
 
-#define kShortcutIDActionRotoRemoveFeather "rmvFeather"
-#define kShortcutDescActionRotoRemoveFeather "Remove Feather"
+#define kShortcutActionRotoRemoveFeather "rmvFeather"
+#define kShortcutActionRotoRemoveFeatherLabel "Remove Feather"
 
-#define kShortcutIDActionRotoLockCurve "lock"
-#define kShortcutDescActionRotoLockCurve "Lock Shape"
+#define kShortcutActionRotoLockCurve "lock"
+#define kShortcutActionRotoLockCurveLabel "Lock Shape"
 
 
 ///A list of points and their counter-part, that is: either a control point and its feather point, or
@@ -531,7 +533,7 @@ public:
      * Non-active curves will not be inserted into the list.
      * MT-safe
      **/
-    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(double time, ViewIdx view, bool onlyActivated = true) const;
+    std::list< RotoDrawableItemPtr > getRotoItemsByRenderOrder(TimeValue time, ViewIdx view, bool onlyActivated = true) const;
 
     SelectedItems getSelectedDrawableItems() const;
 
@@ -853,12 +855,12 @@ public:
 
     void handleControlPointSelection(const std::pair<BezierCPPtr, BezierCPPtr > & p);
 
-    void drawSelectedCp(double time,
+    void drawSelectedCp(TimeValue time,
                         const BezierCPPtr & cp,
                         double x, double y,
                         const Transform::Matrix3x3& transform);
 
-    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(double time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
+    std::pair<BezierCPPtr, BezierCPPtr >isNearbyFeatherBar(TimeValue time, ViewIdx view, const std::pair<double, double> & pixelScale, const QPointF & pos) const;
 
     bool isNearbySelectedCpsCrossHair(const QPointF & pos) const;
 
@@ -879,7 +881,7 @@ public:
     * @brief Returns a bezier curves nearby the point (x,y) and the parametric value
     * which would be used to find the exact bezier point lying on the curve.
     **/
-    BezierPtr isNearbyBezier(double x, double y, double time, ViewIdx view, double acceptance, int* index, double* t, bool *feather) const;
+    BezierPtr isNearbyBezier(double x, double y, TimeValue time, ViewIdx view, double acceptance, int* index, double* t, bool *feather) const;
 
     bool isNearbySelectedCpsBoundingBox(const QPointF & pos, double tolerance) const;
 
@@ -888,8 +890,6 @@ public:
     bool isBboxClickAnywhereEnabled() const;
 
     void makeStroke(bool prepareForLater, const RotoPoint& p);
-
-    void checkViewersAreDirectlyConnected();
 
     void showMenuForControlPoint(const BezierCPPtr& cp);
 
@@ -916,8 +916,8 @@ public:
 
     BezierPtr getBezierBeingBuild() const;
 
-    bool smoothSelectedCurve(double time, ViewIdx view);
-    bool cuspSelectedCurve(double time, ViewIdx view);
+    bool smoothSelectedCurve(TimeValue time, ViewIdx view);
+    bool cuspSelectedCurve(TimeValue time, ViewIdx view);
     bool removeFeatherForSelectedCurve(ViewIdx view);
     bool lockSelectedCurves();
 
@@ -926,7 +926,7 @@ public:
      *@brief Moves of the given pixel the selected control points.
      * This takes into account the zoom factor.
      **/
-    bool moveSelectedCpsWithKeyArrows(int x, int y, double time, ViewIdx view);
+    bool moveSelectedCpsWithKeyArrows(int x, int y, TimeValue time, ViewIdx view);
 
     void autoSaveAndRedraw();
 

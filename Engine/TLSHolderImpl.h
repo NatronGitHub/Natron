@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef Engine_TLSHolderImpl_h
-#define Engine_TLSHolderImpl_h
+#ifndef NATRON_ENGINE_TLSHOLDERIMPL_H
+#define NATRON_ENGINE_TLSHOLDERIMPL_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -30,11 +30,14 @@
 #include "TLSHolder.h"
 
 #include "Engine/AppManager.h"
-#include "Engine/EffectInstance.h"
+#include "Engine/EffectInstanceTLSData.h"
+
+#include "Engine/EngineFwd.h"
+
 
 NATRON_NAMESPACE_ENTER;
 
-//Template specialization for EffectInstance::EffectTLSData:
+//Template specialization for EffectInstance::EffectInstanceTLSData:
 //We do this  for the following reasons:
 //We may be here in 2 cases: either in a thread from the multi-thread suite or from a thread that just got spawned
 //from the host-frame threading (executing tiledRenderingFunctor).
@@ -45,21 +48,20 @@ NATRON_NAMESPACE_ENTER;
 //set on the TLS, so just copy this instead of the whole TLS.
 
 template <>
-boost::shared_ptr<EffectInstance::EffectTLSData>
-TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fromThread,
-                                                              const QThread* toThread) const
+boost::shared_ptr<EffectInstanceTLSData>
+TLSHolder<EffectInstanceTLSData>::copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const
 {
     QWriteLocker k(&perThreadDataMutex);
     ThreadDataMap::iterator found = perThreadData.find(fromThread);
 
     if ( found == perThreadData.end() ) {
         ///No TLS for fromThread
-        return boost::shared_ptr<EffectInstance::EffectTLSData>();
+        return boost::shared_ptr<EffectInstanceTLSData>();
     }
 
     ThreadData data;
     //Copy constructor
-    data.value.reset( new EffectInstance::EffectTLSData( *(found->second.value) ) );
+    data.value.reset( new EffectInstanceTLSData( *(found->second.value) ) );
     perThreadData[toThread] = data;
 
     return data.value;
@@ -67,10 +69,10 @@ TLSHolder<EffectInstance::EffectTLSData>::copyAndReturnNewTLS(const QThread* fro
 
 template <>
 void
-TLSHolder<EffectInstance::EffectTLSData>::copyTLS(const QThread* fromThread,
-                                                  const QThread* toThread) const
+TLSHolder<EffectInstanceTLSData>::copyTLS(const QThread* fromThread,
+                                          const QThread* toThread) const
 {
-    boost::shared_ptr<EffectInstance::EffectTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
+    boost::shared_ptr<EffectInstanceTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
 
     Q_UNUSED(tlsDataPtr);
 }
@@ -134,7 +136,6 @@ TLSHolder<T>::getTLSData() const
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
     boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
-
     if (ret) {
         return ret;
     }
@@ -189,7 +190,6 @@ TLSHolder<T>::getOrCreateTLSData() const
         perThreadData.insert( std::make_pair(curThread, data) );
     }
     assert(data.value);
-
     return data.value;
 }
 
@@ -285,4 +285,4 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
 
 NATRON_NAMESPACE_EXIT;
 
-#endif // Engine_TLSHolderImpl_h
+#endif // NATRON_ENGINE_TLSHOLDERIMPL_H

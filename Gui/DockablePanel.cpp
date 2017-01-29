@@ -53,6 +53,8 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
 
+#include "Global/StrUtils.h"
+
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/AnimationModule.h"
 #include "Gui/AnimationModuleUndoRedo.h"
@@ -413,10 +415,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
 DockablePanel::~DockablePanel()
 {
-    Gui* gui = getGui();
-    if (gui) {
-        gui->removeVisibleDockablePanel(this);
-    }
+    
 }
 
 bool
@@ -934,7 +933,7 @@ DockablePanel::setClosedInternal(bool closed)
                 if (app) {
                     boost::shared_ptr<TimeLine> timeline = app->getTimeLine();
                     if (timeline) {
-                        internalNode->getEffectInstance()->refreshAfterTimeChange( false, timeline->currentFrame() );
+                        internalNode->getEffectInstance()->refreshAfterTimeChange( false, TimeValue(timeline->currentFrame()) );
                     }
                 }
             }
@@ -1414,7 +1413,7 @@ DockablePanel::setKeyOnAllParameters()
     const std::vector<KnobAnimPtr>& knobs = nodeAnim->getKnobs();
 
     AnimItemDimViewKeyFramesMap keys;
-    double time = getGui()->getApp()->getTimeLine()->currentFrame();
+    TimeValue time(getGui()->getApp()->getTimeLine()->currentFrame());
 
 
 

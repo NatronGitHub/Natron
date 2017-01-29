@@ -53,7 +53,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Image.h"
 #include "Engine/Node.h"
 #include "Engine/KnobTypes.h"
-#include "Engine/ImageParams.h"
 #include "Engine/MergingEnum.h"
 #include "Engine/Interpolation.h"
 #include "Engine/Project.h"
@@ -84,7 +83,7 @@ struct RotoDrawableItemPrivate
 public:
 
 
-    typedef std::map<AbortableRenderInfoWPtr, RotoDrawableItemPtr> RenderClonesMap;
+    typedef std::map<TreeRenderWPtr, RotoDrawableItemPtr> RenderClonesMap;
 
     // For each render, a map of the clones
     mutable QMutex renderClonesMutex;
@@ -494,7 +493,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
             op = eMergeCopy;
         }
 
-        compOp->setDefaultValueFromLabel(Merge::getOperatorString(op));
+        compOp->setDefaultValueFromID(Merge::getOperatorString(op));
 
         // Make sure it is not serialized
         compOp->setCurrentDefaultValueAsInitialValue();
@@ -585,6 +584,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
     // This needs to be done because the hash needs to be recomputed if the Solo state changes for instance?
     addHashListener(rotoPaintEffect);
 
+
     if (isStroke) {
         if (type == eRotoStrokeTypeSmear) {
             KnobDoublePtr spacingKnob = isStroke->getBrushSpacingKnob();
@@ -638,7 +638,7 @@ RotoDrawableItem::activateNodes()
 bool
 RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
                         ValueChangedReasonEnum reason,
-                        double time,
+                        TimeValue time,
                         ViewSetSpec view)
 {
     KnobItemsTablePtr model = getModel();
@@ -651,7 +651,6 @@ RotoDrawableItem::onKnobValueChanged(const KnobIPtr& knob,
     }
 
     RotoPaintPtr rotoPaintEffect = toRotoPaint(node->getEffectInstance());
-
 
     // Any knob except transform center should break the multi-stroke into a new stroke
     if ( (reason == eValueChangedReasonUserEdited) && (knob->getName() != kRotoBrushCenterParam) && (knob->getName() != kRotoDrawableItemCenterParam)) {
@@ -792,23 +791,9 @@ RotoDrawableItem::refreshNodesConnections()
         if (mergeAInputChoice_i == 0) {
             mergeInputAUpstreamNode = upstreamNode;
         } else {
-            std::string inputAName = mergeAKnob->getActiveEntryText();
-            // For reveal & clone, the user can select a RotoPaint node's input.
-            // Find an input of the RotoPaint node with the given input label
-            int maxInputs = rotoPaintNode->getMaxInputCount();
-            for (int i = 0; i < maxInputs; ++i) {
-                EffectInstancePtr input = rotoPaintNode->getInput(i);
-                if (!input) {
-                    continue;
-                }
-                NodePtr inputNode = input->getNode();
-                if (inputNode->getLabel() == inputAName) {
-
-                    mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(i);
-                    assert(mergeInputAUpstreamNode);
-                    break;
-                }
-            }
+            ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+            int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+            mergeInputAUpstreamNode = rotoPaintNode->getInternalInputNode(inputNb);
         }
 
         mergeInputB = upstreamNode;
@@ -845,7 +830,7 @@ RotoDrawableItem::refreshNodesConnections()
 
             // If there's a time-offset, use it prior to the effect.
             KnobChoicePtr timeOffsetModeKnob = _imp->timeOffsetMode.lock();
-            double timeOffsetMode_i = 0;
+            int timeOffsetMode_i = 0;
             if (timeOffsetModeKnob) {
                 timeOffsetMode_i = timeOffsetModeKnob->getValue();
             }
@@ -885,23 +870,13 @@ RotoDrawableItem::refreshNodesConnections()
             if (reveal_i == 0) {
                 mergeAUpstreamInput = upstreamNode;
             } else {
-                std::string inputAName = mergeAKnob->getActiveEntryText();
                 // For reveal & clone, the user can select a RotoPaint node's input.
                 // Find an input of the RotoPaint node with the given input label
-                int maxInputs = rotoPaintNode->getMaxInputCount();
-                for (int i = 0; i < maxInputs; ++i) {
-                    EffectInstancePtr input = rotoPaintNode->getInput(i);
-                    if (!input) {
-                        continue;
-                    }
-                    NodePtr inputNode = input->getNode();
-                    if (inputNode->getLabel() == inputAName) {
 
-                        mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(i);;
-                        assert(mergeAUpstreamInput);
-                        break;
-                    }
-                }
+                ChoiceOption inputAName = mergeAKnob->getActiveEntry();
+                int inputNb = QString::fromUtf8(inputAName.id.c_str()).toInt();
+                mergeAUpstreamInput = rotoPaintNode->getInternalInputNode(inputNb);
+
             }
         }
 
@@ -976,24 +951,10 @@ RotoDrawableItem::refreshNodesConnections()
         int maskInput_i = knob->getValue();
         NodePtr maskInputNode;
         if (maskInput_i > 0) {
-            std::string maskInputName;
-            maskInputName = knob->getActiveEntryText();
 
-            // Find an input of the RotoPaint node with the given input label
-            int maxInputs = rotoPaintNode->getMaxInputCount();
-            for (int i = LAYERED_COMP_FIRST_MASK_INPUT_INDEX; i < maxInputs; ++i) {
-                EffectInstancePtr input = rotoPaintNode->getInput(i);
-                if (!input) {
-                    continue;
-                }
-                NodePtr inputNode = input->getNode();
-                if (inputNode->getLabel() == maskInputName) {
-
-                    maskInputNode = rotoPaintNode->getInternalInputNode(i);;
-                    assert(maskInputNode);
-                    break;
-                }
-            }
+            ChoiceOption maskInputName = knob->getActiveEntry();
+            int inputNb = QString::fromUtf8(maskInputName.id.c_str()).toInt();
+            maskInputNode = rotoPaintNode->getInternalInputNode(inputNb);
         }
         //Connect the merge node mask to the mask node
         _imp->mergeNode->swapInput(maskInputNode, 2);
@@ -1026,7 +987,7 @@ RotoDrawableItem::resetNodesThreadSafety()
 
 
 bool
-RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
+RotoDrawableItem::isActivated(TimeValue time, ViewIdx view) const
 {
     if ( !isGloballyActivatedRecursive() ) {
         return false;
@@ -1060,7 +1021,7 @@ RotoDrawableItem::isActivated(double time, ViewGetSpec view) const
 }
 
 std::vector<RangeD>
-RotoDrawableItem::getActivatedRanges(ViewGetSpec view) const
+RotoDrawableItem::getActivatedRanges(ViewIdx view) const
 {
     std::vector<RangeD> ret;
     RotoPaintItemLifeTimeTypeEnum lifetime = (RotoPaintItemLifeTimeTypeEnum)_imp->lifeTime.lock()->getValue();
@@ -1237,7 +1198,7 @@ RotoDrawableItem::getBrushVisiblePortionKnob() const
 
 
 void
-RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
+RotoDrawableItem::setKeyframeOnAllTransformParameters(TimeValue time)
 {
     KnobDoublePtr translate = _imp->translate.lock();
     if (translate) {
@@ -1268,8 +1229,8 @@ RotoDrawableItem::setKeyframeOnAllTransformParameters(double time)
 
 
 void
-RotoDrawableItem::getTransformAtTime(double time,
-                                     ViewGetSpec view,
+RotoDrawableItem::getTransformAtTime(TimeValue time,
+                                     ViewIdx view,
                                      Transform::Matrix3x3* matrix) const
 {
     KnobDoublePtr translate = _imp->translate.lock();
@@ -1310,7 +1271,7 @@ RotoDrawableItem::getTransformAtTime(double time,
 
 void
 RotoDrawableItem::setExtraMatrix(bool setKeyframe,
-                                 double time,
+                                 TimeValue time,
                                  ViewSetSpec view,
                                  const Transform::Matrix3x3& mat)
 {
@@ -1340,7 +1301,7 @@ RotoDrawableItem::resetTransformCenter()
     if (!centerKnob) {
         return;
     }
-    double time = getApp()->getTimeLine()->currentFrame();
+    TimeValue time(getApp()->getTimeLine()->currentFrame());
     RectD bbox =  getBoundingBox(time, ViewIdx(0));
 
 
@@ -1396,33 +1357,33 @@ RotoDrawableItem::onItemInsertedInModel()
 }
 
 RotoDrawableItemPtr
-RotoDrawableItem::getOrCreateCachedDrawable(const AbortableRenderInfoPtr& renderID)
+RotoDrawableItem::getOrCreateCachedDrawable(const TreeRenderPtr& render)
 {
     assert(isRenderCloneNeeded());
     assert(!isRenderClone());
 
     QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(renderID);
+    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
         return found->second;
     }
 
     RotoDrawableItemPtr ret = createRenderCopy();
     assert(ret);
-    _imp->renderClones[renderID] = ret;
+    _imp->renderClones[render] = ret;
     return ret;
 
 }
 
 
 RotoDrawableItemPtr
-RotoDrawableItem::getCachedDrawable(const AbortableRenderInfoPtr& renderID) const
+RotoDrawableItem::getCachedDrawable(const TreeRenderPtr& render) const
 {
     assert(isRenderCloneNeeded());
     assert(!isRenderClone());
 
     QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(renderID);
+    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
         return found->second;
     }
@@ -1430,19 +1391,19 @@ RotoDrawableItem::getCachedDrawable(const AbortableRenderInfoPtr& renderID) cons
 }
 
 void
-RotoDrawableItem::removeCachedDrawable(const AbortableRenderInfoPtr& renderID) const
+RotoDrawableItem::removeCachedDrawable(const TreeRenderPtr& render) const
 {
     QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(renderID);
+    RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(render);
     if (found != _imp->renderClones.end()) {
-        _imp->renderClones.erase(renderID);
+        _imp->renderClones.erase(render);
     }
 }
 
 
 void
-RotoDrawableItem::getMotionBlurSettings(const double time,
-                                        ViewGetSpec view,
+RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
+                                        ViewIdx view,
                                         RangeD* range,
                                         int* divisions) const
 {
@@ -1514,7 +1475,7 @@ RotoDrawableItem::getMotionBlurSettings(const double time,
 }
 
 RectD
-CompNodeItem::getBoundingBox(double /*time*/, ViewGetSpec /*view*/) const
+CompNodeItem::getBoundingBox(TimeValue /*time*/, ViewIdx /*view*/) const
 {
     // Not useful since we don't render any mask
     return RectD();
@@ -1577,11 +1538,12 @@ RotoDrawableItem::initializeKnobs()
         KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoCompOperatorParamLabel));
         param->setHintToolTip( tr(kRotoCompOperatorHint) );
         param->setName(kRotoCompOperatorParam);
-        std::vector<std::string> operators;
-        std::vector<std::string> tooltips;
-        Merge::getOperatorStrings(&operators, &tooltips);
-        param->populateChoices(operators, tooltips);
-        param->setDefaultValueFromLabel( Merge::getOperatorString(eMergeOver) );
+
+
+        std::vector<ChoiceOption> operators;
+        Merge::getOperatorStrings(&operators);
+        param->populateChoices(operators);
+        param->setDefaultValueFromID( Merge::getOperatorString(eMergeOver) );
         _imp->compOperator = param;
     }
 

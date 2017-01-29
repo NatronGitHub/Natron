@@ -25,16 +25,17 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
+#include "Global/Macros.h"
+
 #include <map>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
 
-
-#include "Engine/EngineFwd.h"
 #include "Engine/KnobTypes.h"
 
+#include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -53,19 +54,11 @@ public:
 
     ~RenderValuesCache();
 
-    void setCachedNodeMetadatas(const NodeMetadata& data);
-
-    const NodeMetadata& getCachedMetadatas() const;
-
-    bool getCachedInput(int inputNb, NodePtr* node) const;
-
-    void setCachedInput(int inputNb, const NodePtr& node);
+    template <typename T>
+    bool getCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, T* value) const;
 
     template <typename T>
-    bool getCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, double time, DimIdx dimension, ViewIdx view, T* value) const;
-
-    template <typename T>
-    void setCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, double time, DimIdx dimension, ViewIdx view, const T& value);
+    void setCachedKnobValue(const boost::shared_ptr<Knob<T> >& knob, TimeValue time, DimIdx dimension, ViewIdx view, const T& value);
 
     CurvePtr getOrCreateCachedParametricKnobCurve(const KnobParametricPtr& knob, const CurvePtr& curve, DimIdx dimension) const;
 

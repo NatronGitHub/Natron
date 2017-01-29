@@ -81,7 +81,7 @@ BezierCP::getKeyframeTimes(std::set<double>* keys) const
 }
 
 bool
-BezierCP::getPositionAtTime(double time,
+BezierCP::getPositionAtTime(TimeValue time,
                             double* x,
                             double* y) const
 {
@@ -116,7 +116,7 @@ BezierCP::getPositionAtTime(double time,
 }
 
 void
-BezierCP::setPositionAtTime(double time,
+BezierCP::setPositionAtTime(TimeValue time,
                             double x,
                             double y)
 {
@@ -161,7 +161,7 @@ BezierCP::setRightBezierStaticPosition(double x,
 }
 
 bool
-BezierCP::getLeftBezierPointAtTime(double time,
+BezierCP::getLeftBezierPointAtTime(TimeValue time,
                                    double* x,
                                    double* y) const
 {
@@ -197,7 +197,7 @@ BezierCP::getLeftBezierPointAtTime(double time,
 } // BezierCP::getLeftBezierPointAtTime
 
 bool
-BezierCP::getRightBezierPointAtTime(double time,
+BezierCP::getRightBezierPointAtTime(TimeValue time,
                                     double *x,
                                     double *y) const
 {
@@ -233,7 +233,7 @@ BezierCP::getRightBezierPointAtTime(double time,
 } // BezierCP::getRightBezierPointAtTime
 
 void
-BezierCP::setLeftBezierPointAtTime(double time,
+BezierCP::setLeftBezierPointAtTime(TimeValue time,
                                    double x,
                                    double y)
 {
@@ -253,7 +253,7 @@ BezierCP::setLeftBezierPointAtTime(double time,
 }
 
 void
-BezierCP::setRightBezierPointAtTime(double time,
+BezierCP::setRightBezierPointAtTime(TimeValue time,
                                     double x,
                                     double y)
 {
@@ -271,7 +271,7 @@ BezierCP::setRightBezierPointAtTime(double time,
 }
 
 void
-BezierCP::removeKeyframe(double time)
+BezierCP::removeKeyframe(TimeValue time)
 {
 
     QMutexLocker l(&_imp->lock);
@@ -312,7 +312,7 @@ BezierCP::setKeyFrameInterpolation(KeyframeTypeEnum interp,
 
 
 int
-BezierCP::getControlPointsCount(ViewGetSpec view) const
+BezierCP::getControlPointsCount(ViewIdx view) const
 {
     BezierPtr b = _imp->holder.lock();
 
@@ -332,8 +332,8 @@ BezierCP::getBezier() const
 }
 
 int
-BezierCP::isNearbyTangent(double time,
-                          ViewGetSpec view,
+BezierCP::isNearbyTangent(TimeValue time,
+                          ViewIdx view,
                           double x,
                           double y,
                           double acceptance) const
@@ -397,8 +397,8 @@ cuspTangent(double x,
 }
 
 static void
-smoothTangent(double time,
-              ViewGetSpec view,
+smoothTangent(TimeValue time,
+              ViewIdx view,
               bool left,
               const BezierCP* p,
               const Transform::Matrix3x3& transform,
@@ -510,7 +510,7 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 
 bool
-BezierCP::cuspPoint(double time,
+BezierCP::cuspPoint(TimeValue time,
                     bool autoKeying,
                     bool rippleEdit,
                     const std::pair<double, double>& pixelScale)
@@ -540,8 +540,8 @@ BezierCP::cuspPoint(double time,
         std::set<double> times;
         getKeyframeTimes(&times);
         for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
-            setLeftBezierPointAtTime(*it, newLeftX, newLeftY);
-            setRightBezierPointAtTime(*it, newRightX, newRightY);
+            setLeftBezierPointAtTime(TimeValue(*it), newLeftX, newLeftY);
+            setRightBezierPointAtTime(TimeValue(*it), newRightX, newRightY);
         }
     }
 
@@ -549,8 +549,8 @@ BezierCP::cuspPoint(double time,
 }
 
 bool
-BezierCP::smoothPoint(double time,
-                      ViewGetSpec view,
+BezierCP::smoothPoint(TimeValue time,
+                      ViewIdx view,
                       bool autoKeying,
                       bool rippleEdit,
                       const std::pair<double, double>& pixelScale)
@@ -592,8 +592,8 @@ BezierCP::smoothPoint(double time,
         std::set<double> times;
         getKeyframeTimes(&times);
         for (std::set<double>::iterator it = times.begin(); it != times.end(); ++it) {
-            setLeftBezierPointAtTime(*it, left.x, left.y);
-            setRightBezierPointAtTime(*it, right.x, right.y);
+            setLeftBezierPointAtTime(TimeValue(*it), left.x, left.y);
+            setRightBezierPointAtTime(TimeValue(*it), right.x, right.y);
         }
     }
 
@@ -658,7 +658,7 @@ BezierCP::copyControlPoint(const BezierCP & other)
 }
 
 bool
-BezierCP::equalsAtTime(double time,
+BezierCP::equalsAtTime(TimeValue time,
                        const BezierCP & other) const
 {
     double x, y, leftX, leftY, rightX, rightY;

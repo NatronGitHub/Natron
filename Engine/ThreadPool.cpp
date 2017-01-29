@@ -32,8 +32,8 @@
 #include <QtCore/QThread>
 #include <QtCore/QThreadPool>
 
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/Node.h"
+#include "Engine/TreeRender.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -42,22 +42,17 @@ struct AbortableThreadPrivate
 {
     QThread* thread;
     std::string threadName;
-    mutable QMutex abortInfoMutex;
-    bool isRenderResponseToUserInteraction;
-    AbortableRenderInfoWPtr abortInfo;
-    EffectInstanceWPtr treeRoot;
-    bool abortInfoValid;
+    mutable QMutex renderMutex;
+    TreeRenderWPtr currentRender;
+
     std::string currentActionName;
     NodeWPtr currentActionNode;
 
     AbortableThreadPrivate(QThread* thread)
         : thread(thread)
         , threadName()
-        , abortInfoMutex()
-        , isRenderResponseToUserInteraction(false)
-        , abortInfo()
-        , treeRoot()
-        , abortInfoValid(false)
+        , renderMutex()
+        , currentRender()
         , currentActionName()
         , currentActionNode()
     {
@@ -95,7 +90,7 @@ AbortableThread::setCurrentActionInfos(const std::string& actionName,
 {
     assert(QThread::currentThread() == _imp->thread);
 
-    QMutexLocker k(&_imp->abortInfoMutex);
+    QMutexLocker k(&_imp->renderMutex);
     _imp->currentActionName = actionName;
     _imp->currentActionNode = node;
 }
@@ -104,7 +99,7 @@ void
 AbortableThread::getCurrentActionInfos(std::string* actionName,
                                        NodePtr* node) const
 {
-    QMutexLocker k(&_imp->abortInfoMutex);
+    QMutexLocker k(&_imp->renderMutex);
 
     *actionName = _imp->currentActionName;
     *node = _imp->currentActionNode.lock();
@@ -122,56 +117,34 @@ AbortableThread::getThread() const
     return _imp->thread;
 }
 
-void
-AbortableThread::setAbortInfo(bool isRenderResponseToUserInteraction,
-                              const AbortableRenderInfoPtr& abortInfo,
-                              const EffectInstancePtr& treeRoot)
-{
-    {
-        QMutexLocker k(&_imp->abortInfoMutex);
-        _imp->isRenderResponseToUserInteraction = isRenderResponseToUserInteraction;
-        _imp->abortInfo = abortInfo;
-        _imp->treeRoot = treeRoot;
-        _imp->abortInfoValid = true;
-    }
-    if (abortInfo) {
-        abortInfo->registerThreadForRender(this);
-    }
-}
 
 void
-AbortableThread::clearAbortInfo()
+AbortableThread::setCurrentRender(const TreeRenderPtr& render)
 {
-    AbortableRenderInfoPtr abortInfo;
+    TreeRenderPtr curRender;
     {
-        QMutexLocker k(&_imp->abortInfoMutex);
-        abortInfo = _imp->abortInfo.lock();
-        _imp->abortInfo.reset();
-        _imp->treeRoot.reset();
-        _imp->abortInfoValid = false;
+        QMutexLocker k(&_imp->renderMutex);
+        curRender = _imp->currentRender.lock();
+        _imp->currentRender = render;
     }
-
-    if (abortInfo) {
-        abortInfo->unregisterThreadForRender(this);
+    if (render) {
+        render->registerThreadForRender(this);
+    } else {
+        if (curRender) {
+            curRender->unregisterThreadForRender(this);
+        }
     }
 }
 
-bool
-AbortableThread::getAbortInfo(bool* isRenderResponseToUserInteraction,
-                              AbortableRenderInfoPtr* abortInfo,
-                              EffectInstancePtr* treeRoot) const
+
+TreeRenderPtr
+AbortableThread::getCurrentRender() const
 {
-    QMutexLocker k(&_imp->abortInfoMutex);
-
-    if (!_imp->abortInfoValid) {
-        return false;
-    }
-    *isRenderResponseToUserInteraction = _imp->isRenderResponseToUserInteraction;
-    *abortInfo = _imp->abortInfo.lock();
-    *treeRoot = _imp->treeRoot.lock();
-
-    return true;
+    QMutexLocker k(&_imp->renderMutex);
+    return _imp->currentRender.lock();
 }
+
+
 
 // We patched Qt to be able to derive QThreadPool to control the threads that are spawned to improve performances
 // of the EffectInstance::aborted() function

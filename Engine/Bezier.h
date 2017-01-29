@@ -44,12 +44,13 @@ CLANG_DIAG_ON(deprecated-declarations)
 
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/ViewIdx.h"
+
 #include "Engine/EngineFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define ROTO_BEZIER_EVAL_ITERATIVE
 
-NATRON_NAMESPACE_ENTER;
 
 
 /**
@@ -161,11 +162,11 @@ public:
      * This function is used to build-up the curve as opposed to addControlPointAfterIndex which is there to
      * edit an already fully shaped spline.
      **/
-    BezierCPPtr addControlPoint(double x, double y, double time, ViewSetSpec view);
+    BezierCPPtr addControlPoint(double x, double y, TimeValue time, ViewSetSpec view);
 
 private:
 
-    BezierCPPtr addControlPointInternal(double x, double y, double time, ViewIdx view);
+    BezierCPPtr addControlPointInternal(double x, double y, TimeValue time, ViewIdx view);
 
 public:
 
@@ -188,7 +189,7 @@ public:
     /**
      * @brief Returns the number of control points of the bezier
      **/
-    int getControlPointsCount(ViewGetSpec view) const;
+    int getControlPointsCount(ViewIdx view) const;
 
     /**
      * @brief Given the (x,y) coordinates of a point, this function returns whether a point lies on
@@ -196,14 +197,14 @@ public:
      * @returns The index of the starting control point (P0) of the bezier segment on which the given
      * point lies. If the point doesn't belong to any bezier segment of this curve then it will return -1.
      **/
-    int isPointOnCurve(double x, double y, double acceptance, double time, ViewGetSpec view, double *t, bool* feather) const;
+    int isPointOnCurve(double x, double y, double acceptance, TimeValue time, ViewIdx view, double *t, bool* feather) const;
 
     /**
      * @brief Set whether the curve is finished or not. A finished curve will have an arc between the first
      * and the last control point.
      **/
     void setCurveFinished(bool finished, ViewSetSpec view);
-    bool isCurveFinished(ViewGetSpec view) const;
+    bool isCurveFinished(ViewIdx view) const;
 
 
     /**
@@ -225,7 +226,7 @@ public:
      * This function asserts that  auto-keying is  enabled.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void movePointByIndex(int index, double time, ViewSetSpec view, double dx, double dy);
+    void movePointByIndex(int index, TimeValue time, ViewSetSpec view, double dx, double dy);
 
     /**
      * @brief Set the control point at the given index to x,y.
@@ -234,22 +235,22 @@ public:
      * This function asserts that  auto-keying is  enabled.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void setPointByIndex(int index, double time, ViewSetSpec view, double x, double y);
+    void setPointByIndex(int index, TimeValue time, ViewSetSpec view, double x, double y);
 
     /**
      * @brief Moves the feather point at the given index if any by the given dx and dy.
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void moveFeatherByIndex(int index, double time, ViewSetSpec view, double dx, double dy);
+    void moveFeatherByIndex(int index, TimeValue time, ViewSetSpec view, double dx, double dy);
 
 private:
 
-    void movePointByIndexInternal(int index, double time, ViewSetSpec view, double dx, double dy, bool onlyFeather);
-    void setPointByIndexInternal(int index, double time, ViewSetSpec view, double dx, double dy);
+    void movePointByIndexInternal(int index, TimeValue time, ViewSetSpec view, double dx, double dy, bool onlyFeather);
+    void setPointByIndexInternal(int index, TimeValue time, ViewSetSpec view, double dx, double dy);
 
-    void movePointByIndexInternalForView(int index, double time, ViewIdx view, double dx, double dy, bool onlyFeather);
-    void setPointByIndexInternalForView(int index, double time, ViewIdx view, double dx, double dy);
+    void movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view, double dx, double dy, bool onlyFeather);
+    void setPointByIndexInternalForView(int index, TimeValue time, ViewIdx view, double dx, double dy);
 
 public:
 
@@ -260,7 +261,7 @@ public:
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void moveLeftBezierPoint(int index, double time, ViewSetSpec view, double dx, double dy);
+    void moveLeftBezierPoint(int index, TimeValue time, ViewSetSpec view, double dx, double dy);
 
     /**
      * @brief Moves the right bezier point of the control point at the given index by the given deltas
@@ -268,14 +269,14 @@ public:
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void moveRightBezierPoint(int index, double time, ViewSetSpec view, double dx, double dy);
+    void moveRightBezierPoint(int index, TimeValue time, ViewSetSpec view, double dx, double dy);
 
 private:
 
     void moveBezierPointInternal(BezierCP* cpParam,
                                  BezierCP* fpParam,
                                  int index,
-                                 double time,
+                                 TimeValue time,
                                  ViewSetSpec view,
                                  double lx, double ly, double rx, double ry,
                                  double flx, double fly, double frx, double fry,
@@ -286,7 +287,7 @@ private:
     void moveBezierPointInternalForView(BezierCP* cpParam,
                                  BezierCP* fpParam,
                                  int index,
-                                 double time,
+                                 TimeValue time,
                                  ViewIdx view,
                                  double lx, double ly, double rx, double ry,
                                  double flx, double fly, double frx, double fry,
@@ -300,11 +301,11 @@ public:
     /**
      * @brief Transforms the given point at the given time by the given matrix.
      **/
-    void transformPoint(const BezierCPPtr & point, double time, ViewSetSpec view, Transform::Matrix3x3* matrix);
+    void transformPoint(const BezierCPPtr & point, TimeValue time, ViewSetSpec view, Transform::Matrix3x3* matrix);
 
 private:
 
-    void transformPointInternal(const BezierCPPtr & point, double time, ViewIdx view, Transform::Matrix3x3* matrix);
+    void transformPointInternal(const BezierCPPtr & point, TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix);
 
 public:
     
@@ -315,7 +316,7 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      * This function will also set the point of the feather point at the given x,y.
      **/
-    void setLeftBezierPoint(int index, double time, ViewSetSpec view, double x, double y);
+    void setLeftBezierPoint(int index, TimeValue time, ViewSetSpec view, double x, double y);
 
     /**
      * @brief Provided for convenience. It set the right bezier point of the control point at the given index to
@@ -324,19 +325,19 @@ public:
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      * This function will also set the point of the feather point at the given x,y.
      **/
-    void setRightBezierPoint(int index, double time, ViewSetSpec view, double x, double y);
+    void setRightBezierPoint(int index, TimeValue time, ViewSetSpec view, double x, double y);
 
 
     /**
      * @brief This function is a combinaison of setPosition + setLeftBezierPoint / setRightBeziePoint
      **/
-    void setPointAtIndex(bool feather, int index, double time, ViewSetSpec view, double x, double y, double lx, double ly, double rx, double ry);
+    void setPointAtIndex(bool feather, int index, TimeValue time, ViewSetSpec view, double x, double y, double lx, double ly, double rx, double ry);
 
 private:
 
-    void setPointAtIndexInternal(bool setLeft, bool setRight, bool setPoint, bool feather, bool featherAndCp, int index, double time, ViewSetSpec view, double x, double y, double lx, double ly, double rx, double ry);
+    void setPointAtIndexInternal(bool setLeft, bool setRight, bool setPoint, bool feather, bool featherAndCp, int index, TimeValue time, ViewSetSpec view, double x, double y, double lx, double ly, double rx, double ry);
 
-    void setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoint, bool feather, bool featherAndCp, int index, double time, ViewIdx view, double x, double y, double lx, double ly, double rx, double ry);
+    void setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoint, bool feather, bool featherAndCp, int index, TimeValue time, ViewIdx view, double x, double y, double lx, double ly, double rx, double ry);
 
 public:
 
@@ -346,7 +347,7 @@ public:
      **/
     void movePointLeftAndRightIndex(BezierCP & cp,
                                     BezierCP & fp,
-                                    double time,
+                                    TimeValue time,
                                     ViewSetSpec view,
                                     double lx, double ly, double rx, double ry,
                                     double flx, double fly, double frx, double fry,
@@ -375,7 +376,7 @@ public:
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void smoothPointAtIndex(int index, double time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
+    void smoothPointAtIndex(int index, TimeValue time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
 
     /**
      * @brief Cusps the curvature of the bezier at the given index by reducing the tangents.
@@ -383,20 +384,20 @@ public:
      * If auto keying is enabled and there's no keyframe at the current time, a new keyframe will be added.
      * If ripple edit is enabled, the point will be moved at the same location at all keyframes.
      **/
-    void cuspPointAtIndex(int index, double time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
+    void cuspPointAtIndex(int index, TimeValue time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
 
 
 private:
 
-    void smoothOrCuspPointAtIndex(bool isSmooth, int index, double time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
+    void smoothOrCuspPointAtIndex(bool isSmooth, int index, TimeValue time, ViewSetSpec view, const std::pair<double, double>& pixelScale);
 
-    void smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, double time, ViewIdx view, const std::pair<double, double>& pixelScale);
+    void smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, TimeValue time, ViewIdx view, const std::pair<double, double>& pixelScale);
 
 public:
 
 
 
-    static void deCastelJau(const std::list<BezierCPPtr >& cps, double time, unsigned int mipMapLevel,
+    static void deCastelJau(const std::list<BezierCPPtr >& cps, TimeValue time, const RenderScale &scale,
                             bool finished,
                             int nBPointsPerSegment,
                             const Transform::Matrix3x3& transform,
@@ -412,9 +413,9 @@ public:
      * @brief Evaluates the spline at the given time and returns the list of all the points on the curve.
      * @param nbPointsPerSegment controls how many points are used to draw one Bezier segment
      **/
-    void evaluateAtTime_DeCasteljau(double time,
-                                    ViewGetSpec view,
-                                    unsigned int mipMapLevel,
+    void evaluateAtTime_DeCasteljau(TimeValue time,
+                                    ViewIdx view,
+                                    const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -423,9 +424,9 @@ public:
                                     std::vector<std::vector<ParametricPoint> >* points,
                                     RectD* bbox) const;
 
-    void evaluateAtTime_DeCasteljau(double time,
-                                    ViewGetSpec view,
-                                    unsigned int mipMapLevel,
+    void evaluateAtTime_DeCasteljau(TimeValue time,
+                                    ViewIdx view,
+                                    const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                     int nbPointsPerSegment,
 #else
@@ -436,9 +437,9 @@ public:
 
 private:
 
-    void evaluateAtTime_DeCasteljau_internal(double time,
-                                             ViewGetSpec view,
-                                             unsigned int mipMapLevel,
+    void evaluateAtTime_DeCasteljau_internal(TimeValue time,
+                                             ViewIdx view,
+                                             const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                              int nbPointsPerSegment,
 #else
@@ -453,9 +454,9 @@ public:
     /**
      * @brief Same as evaluateAtTime_DeCasteljau but nbPointsPerSegment is approximated automatically
      **/
-    void evaluateAtTime_DeCasteljau_autoNbPoints(double time,
-                                                 ViewGetSpec view,
-                                                 unsigned int mipMapLevel,
+    void evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
+                                                 ViewIdx view,
+                                                 const RenderScale &scale,
                                                  std::vector<std::vector<ParametricPoint> >* points,
                                                  RectD* bbox) const;
 
@@ -463,9 +464,9 @@ public:
      * @brief Evaluates the bezier formed by the feather points. Segments which are equal to the control points of the bezier
      * will not be drawn.
      **/
-    void evaluateFeatherPointsAtTime_DeCasteljau(double time,
-                                                 ViewGetSpec view,
-                                                 unsigned int mipMapLevel,
+    void evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
+                                                 ViewIdx view,
+                                                 const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
 #else
@@ -475,9 +476,9 @@ public:
                                                  std::vector<std::vector<ParametricPoint>  >* points,
                                                  RectD* bbox) const;
 
-    void evaluateFeatherPointsAtTime_DeCasteljau(double time,
-                                                 ViewGetSpec view,
-                                                 unsigned int mipMapLevel,
+    void evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
+                                                 ViewIdx view,
+                                                 const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                  int nbPointsPerSegment,
 #else
@@ -489,9 +490,9 @@ public:
 
 private:
 
-    void evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
-                                                          ViewGetSpec view,
-                                                          unsigned int mipMapLevel,
+    void evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
+                                                          ViewIdx view,
+                                                          const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                           int nbPointsPerSegment,
 #else
@@ -507,31 +508,31 @@ public:
     /**
      * @brief Returns the bounding box of the bezier.
      **/
-    virtual RectD getBoundingBox(double time,ViewGetSpec view) const OVERRIDE;
+    virtual RectD getBoundingBox(TimeValue time,ViewIdx view) const OVERRIDE;
     
     static void bezierSegmentListBboxUpdate(const std::list<BezierCPPtr > & points,
                                             bool finished,
                                             bool isOpenBezier,
-                                            double time,
-                                            unsigned int mipMapLevel,
+                                            TimeValue time,
+                                            const RenderScale &scale,
                                             const Transform::Matrix3x3& transform,
                                             RectD* bbox);
 
     /**
      * @brief Returns the control points of the bezier curve. This can only ever be called on the main thread.
      **/
-    std::list< BezierCPPtr >  getControlPoints(ViewGetSpec view) const;
+    std::list< BezierCPPtr >  getControlPoints(ViewIdx view) const;
 
 protected:
 
-    std::list< BezierCPPtr >  getControlPoints_internal(ViewGetSpec view);
+    std::list< BezierCPPtr >  getControlPoints_internal(ViewIdx view);
 
 public:
 
     /**
      * @brief Returns the feather points of the bezier curve. This can only ever be called on the main thread.
      **/
-    std::list< BezierCPPtr > getFeatherPoints(ViewGetSpec view) const;
+    std::list< BezierCPPtr > getFeatherPoints(ViewIdx view) const;
 
     enum ControlPointSelectionPrefEnum
     {
@@ -545,32 +546,32 @@ public:
      * The first member is the actual point nearby, and the second the counter part (i.e: either the feather point
      * if the first is a control point, or the other way around).
      **/
-    std::pair<BezierCPPtr, BezierCPPtr >isNearbyControlPoint(double x, double y, double acceptance, double time, ViewGetSpec view, ControlPointSelectionPrefEnum pref, int* index) const;
+    std::pair<BezierCPPtr, BezierCPPtr >isNearbyControlPoint(double x, double y, double acceptance, TimeValue time, ViewIdx view, ControlPointSelectionPrefEnum pref, int* index) const;
 
     /**
      * @brief Given the control point in parameter, return its index in the curve's control points list.
      * If no such control point could be found, -1 is returned.
      **/
-    int getControlPointIndex(const BezierCPPtr & cp, ViewGetSpec view) const;
-    int getControlPointIndex(const BezierCP* cp, ViewGetSpec view) const;
+    int getControlPointIndex(const BezierCPPtr & cp, ViewIdx view) const;
+    int getControlPointIndex(const BezierCP* cp, ViewIdx view) const;
 
     /**
      * @brief Given the feather point in parameter, return its index in the curve's feather points list.
      * If no such feather point could be found, -1 is returned.
      **/
-    int getFeatherPointIndex(const BezierCPPtr & fp, ViewGetSpec view) const;
+    int getFeatherPointIndex(const BezierCPPtr & fp, ViewIdx view) const;
 
     /**
      * @brief Returns the control point at the given index if any, NULL otherwise.
      **/
-    BezierCPPtr getControlPointAtIndex(int index, ViewGetSpec view) const;
+    BezierCPPtr getControlPointAtIndex(int index, ViewIdx view) const;
 
     /**
      * @brief Returns the feather point at the given index if any, NULL otherwise.
      **/
-    BezierCPPtr getFeatherPointAtIndex(int index, ViewGetSpec view) const;
-    BezierCPPtr getFeatherPointForControlPoint(const BezierCPPtr & cp, ViewGetSpec view) const;
-    BezierCPPtr getControlPointForFeatherPoint(const BezierCPPtr & fp, ViewGetSpec view) const;
+    BezierCPPtr getFeatherPointAtIndex(int index, ViewIdx view) const;
+    BezierCPPtr getFeatherPointForControlPoint(const BezierCPPtr & cp, ViewIdx view) const;
+    BezierCPPtr getControlPointForFeatherPoint(const BezierCPPtr & fp, ViewIdx view) const;
 
     /**
      * @brief Returns all the control points/feather points within the rectangle
@@ -581,10 +582,10 @@ public:
      * mode == 1: Add only the cp within the rect and their respective feather points counter parts
      * mode == 2: Add only the fp within the rect and their repsective control points counter parts
      **/
-    std::list< std::pair<BezierCPPtr, BezierCPPtr > > controlPointsWithinRect(double time, ViewGetSpec view, double l, double r, double b, double t, double acceptance, int mode) const;
+    std::list< std::pair<BezierCPPtr, BezierCPPtr > > controlPointsWithinRect(TimeValue time, ViewIdx view, double l, double r, double b, double t, double acceptance, int mode) const;
 
-    static void leftDerivativeAtPoint(double time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
-    static void rightDerivativeAtPoint(double time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
+    static void leftDerivativeAtPoint(TimeValue time, const BezierCP & p, const BezierCP & prev, const Transform::Matrix3x3& transform, double *dx, double *dy);
+    static void rightDerivativeAtPoint(TimeValue time, const BezierCP & p, const BezierCP & next, const Transform::Matrix3x3& transform, double *dx, double *dy);
 
     /**
      * @brief Computes the location of the feather extent relative to the current feather point position and
@@ -600,7 +601,7 @@ public:
     static Point expandToFeatherDistance(const Point & cp,         //< the point
                                          Point* fp,         //< the feather point
                                          double featherDistance,         //< feather distance
-                                         double time,         //< time
+                                         TimeValue time,         //< time
                                          bool clockWise,         //< is the bezier  clockwise oriented or not
                                          const Transform::Matrix3x3& transform,
                                          std::list<BezierCPPtr >::const_iterator prevFp,         //< iterator pointing to the feather before curFp
@@ -613,13 +614,13 @@ public:
     };
 
 
-    bool isFeatherPolygonClockwiseOriented(double time, ViewGetSpec view) const;
+    bool isFeatherPolygonClockwiseOriented(TimeValue time, ViewIdx view) const;
 
     /**
      * @brief Refresh the polygon orientation for a specific keyframe or for all keyframes. Auto polygon orientation must be set to true
      * so make sure setAutoOrientationComputation(true) has been called before.
      **/
-    void refreshPolygonOrientation(double time, ViewSetSpec view);
+    void refreshPolygonOrientation(TimeValue time, ViewSetSpec view);
     void refreshPolygonOrientation(ViewSetSpec view);
     void refreshPolygonOrientationForView(ViewIdx view);
 
@@ -640,13 +641,13 @@ public:
     
 private:
 
-    virtual void onTransformSet(double time, ViewSetSpec view) OVERRIDE FINAL;
+    virtual void onTransformSet(TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
 
-    bool isFeatherPolygonClockwiseOrientedInternal(double time, ViewGetSpec view) const;
+    bool isFeatherPolygonClockwiseOrientedInternal(TimeValue time, ViewIdx view) const;
 
-    void computePolygonOrientation(double time, ViewSetSpec view, bool isStatic) const;
+    void computePolygonOrientation(TimeValue time, ViewSetSpec view, bool isStatic) const;
 
-    void computePolygonOrientationForView(double time, ViewIdx view, bool isStatic) const;
+    void computePolygonOrientationForView(TimeValue time, ViewIdx view, bool isStatic) const;
 
     void evaluateCurveModified();
 
@@ -673,19 +674,19 @@ public:
     virtual void fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase & obj) OVERRIDE;
 
 
-    virtual void appendToHash(double time, ViewIdx view, Hash64* hash) OVERRIDE FINAL;
+    virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE FINAL;
 
 
 private:
 
 
-    virtual void onKeyFrameSet(double time, ViewSetSpec view) OVERRIDE FINAL;
+    virtual void onKeyFrameSet(TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
 
-    virtual void onKeyFrameRemoved(double time, ViewSetSpec view) OVERRIDE FINAL;
+    virtual void onKeyFrameRemoved(TimeValue time, ViewSetSpec view) OVERRIDE FINAL;
 
-    void onKeyFrameSetForView(double time, ViewIdx view);
+    void onKeyFrameSetForView(TimeValue time, ViewIdx view);
 
-    void onKeyFrameRemovedForView(double time, ViewIdx view);
+    void onKeyFrameRemovedForView(TimeValue time, ViewIdx view);
 
     virtual void initializeKnobs() OVERRIDE;
 

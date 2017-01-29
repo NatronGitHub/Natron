@@ -118,12 +118,6 @@ public:
      **/
     void connectSlotsToViewerCache();
 
-    /**
-     * @brief Since the ViewerCache is global to the application, we don't want
-     * a main window (an AppInstance) draw some cached line because another instance is running some playback or rendering something.
-     **/
-    void disconnectSlotsFromViewerCache();
-
     bool isFrameRangeEdited() const;
 
     void setFrameRangeEdited(bool edited);
@@ -134,25 +128,16 @@ public:
 
 public Q_SLOTS:
 
+
     void recenterOnBounds();
 
     void centerOn(SequenceTime left, SequenceTime right, int margin = 5);
 
     void onFrameChanged(SequenceTime, int);
 
-    void onCachedFrameAdded(SequenceTime time);
-    void onCachedFrameRemoved(SequenceTime time, int storage);
-    void onCachedFrameStorageChanged(SequenceTime time, int oldStorage, int newStorage);
-    void onMemoryCacheCleared();
-    void onDiskCacheCleared();
-
-    void clearCachedFrames();
-
-    void onKeyframesIndicatorsChanged();
-
     void onProjectFrameRangeChanged(int, int);
 
-    void onKeyframeChangesUpdateTimerTimeout();
+
 
 private:
 
@@ -171,6 +156,7 @@ private:
 
 Q_SIGNALS:
 
+    
     void boundariesChanged(SequenceTime, SequenceTime);
 
 private:

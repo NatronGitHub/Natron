@@ -44,7 +44,7 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 struct StringKeyFrame
 {
     std::string value;
-    double time;
+    TimeValue time;
 };
 
 struct StringKeyFrame_compare_time
@@ -124,7 +124,7 @@ StringAnimationManager::setCustomInterpolation(customParamInterpolationV1Entry_t
 }
 
 bool
-StringAnimationManager::customInterpolation(double time,
+StringAnimationManager::customInterpolation(TimeValue time,
                                             std::string* ret) const
 {
     QMutexLocker l(&_imp->keyframesMutex);
@@ -208,7 +208,7 @@ StringAnimationManager::customInterpolation(double time,
 } // customInterpolation
 
 void
-StringAnimationManager::insertKeyFrame(double time,
+StringAnimationManager::insertKeyFrame(TimeValue time,
                                        const std::string & v,
                                        double* index)
 {
@@ -227,7 +227,7 @@ StringAnimationManager::insertKeyFrame(double time,
 }
 
 void
-StringAnimationManager::removeKeyFrame(double time)
+StringAnimationManager::removeKeyFrame(TimeValue time)
 {
     QMutexLocker l(&_imp->keyframesMutex);
  
@@ -245,7 +245,7 @@ void
 StringAnimationManager::removeKeyframes(const std::list<double>& keysRemoved)
 {
     for (std::list<double>::const_iterator it = keysRemoved.begin(); it != keysRemoved.end(); ++it) {
-        removeKeyFrame(*it);
+        removeKeyFrame(TimeValue(*it));
     }
 }
 
@@ -316,14 +316,14 @@ StringAnimationManager::clone(const StringAnimationManager & other,
     if (hasChanged) {
         _imp->keyframes.clear();
         for (Keyframes::const_iterator it = other._imp->keyframes.begin(); it != other._imp->keyframes.end(); ++it) {
-            double time = it->time;
+            TimeValue time = it->time;
             if ( range && ( (time < range->min) || (time > range->max) ) ) {
                 // We ignore a keyframe, then consider the curve has changed
                 hasChanged = true;
                 continue;
             }
             StringKeyFrame k;
-            k.time = time + offset;
+            k.time = TimeValue(time + offset);
             k.value = it->value;
             _imp->keyframes.insert(k);
 
@@ -344,7 +344,7 @@ StringAnimationManager::load(const std::map<double, std::string > & keyframes)
     for (std::map<double, std::string>::const_iterator it = keyframes.begin(); it != keyframes.end(); ++it) {
         
         StringKeyFrame k;
-        k.time = it->first;
+        k.time = TimeValue(it->first);
         k.value = it->second;
         std::pair<Keyframes::iterator, bool> ret = _imp->keyframes.insert(k);
         assert(ret.second);

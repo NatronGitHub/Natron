@@ -12,7 +12,7 @@ Description
 
 Read Misc image format.
 
-Powered by ImageMagick 6.9.6-6 Q32 x86\_64 2017-01-11 http://www.imagemagick.org
+Powered by ImageMagick 6.9.7-4 Q32 x86\_64 2017-01-17 http://www.imagemagick.org
 
 ImageMagick (R) is Copyright 1999-2015 ImageMagick Studio LLC, a non-profit organization dedicated to making software imaging solutions freely available.
 
@@ -43,7 +43,7 @@ Controls
 +================================================+===========+=================+=================================================================================================================================================================================================+
 | File / ``filename``                            | N/A       |                 | The input image sequence/video stream file(s).                                                                                                                                                  |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| First Frame / ``firstFrame``                   | Integer   | 1               | The first frame this sequence/video should start at. This cannot be less than the first frame of the sequence and cannot be greater than the last frame of the sequence.                        |
+| First Frame / ``firstFrame``                   | Integer   | 0               | The first frame this sequence/video should start at. This cannot be less than the first frame of the sequence and cannot be greater than the last frame of the sequence.                        |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Before / ``before``                            | Choice    | Hold            | | What to do before the first frame of the sequence.                                                                                                                                            |
 |                                                |           |                 | | **Hold**: While before the sequence, load the first frame.                                                                                                                                    |
@@ -52,7 +52,7 @@ Controls
 |                                                |           |                 | | **Black**: Render a black image                                                                                                                                                               |
 |                                                |           |                 | | **Error**: Report an error                                                                                                                                                                    |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Last Frame / ``lastFrame``                     | Integer   | 1               | The frame this sequence/video should end at. This cannot be lesser than the first frame of the sequence and cannot be greater than the last frame of the sequence.                              |
+| Last Frame / ``lastFrame``                     | Integer   | 0               | The frame this sequence/video should end at. This cannot be lesser than the first frame of the sequence and cannot be greater than the last frame of the sequence.                              |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | After / ``after``                              | Choice    | Hold            | | What to do after the last frame of the sequence.                                                                                                                                              |
 |                                                |           |                 | | **Hold**: While before the sequence, load the first frame.                                                                                                                                    |
@@ -70,7 +70,7 @@ Controls
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Frame Mode / ``frameMode``                     | Choice    | Starting Time   |                                                                                                                                                                                                 |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
-| Starting Time / ``startingTime``               | Integer   | 1               | At what time (on the timeline) should this sequence/video start.                                                                                                                                |
+| Starting Time / ``startingTime``               | Integer   | 0               | At what time (on the timeline) should this sequence/video start.                                                                                                                                |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Time Offset / ``timeOffset``                   | Integer   | 0               | Offset applied to the sequence in time units (i.e. frames).                                                                                                                                     |
 +------------------------------------------------+-----------+-----------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

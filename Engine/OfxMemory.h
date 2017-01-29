@@ -30,6 +30,8 @@
 #include <ofxImageEffect.h>
 #include <ofxhMemory.h>
 
+#include <QMutex>
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -37,6 +39,8 @@ NATRON_NAMESPACE_ENTER;
 class OfxMemory
     : public OFX::Host::Memory::Instance
 {
+    mutable QMutex _lock;
+    int _lockedCount;
     PluginMemoryPtr _memory;
 
 public:

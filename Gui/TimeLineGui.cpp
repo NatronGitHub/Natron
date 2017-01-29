@@ -53,6 +53,7 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 #include "Gui/AnimationModuleEditor.h"
 #include "Gui/Gui.h"
+#include "Gui/CachedFramesThread.h"
 #include "Gui/GuiAppInstance.h"
 #include "Gui/GuiApplicationManager.h"
 #include "Gui/GuiDefines.h"
@@ -90,29 +91,6 @@ struct TimeLineZoomContext
     double zoomFactor; /// the zoom factor applied to the current image
 };
 
-struct CachedFrame
-{
-    SequenceTime time;
-    StorageModeEnum mode;
-
-    CachedFrame(SequenceTime t,
-                StorageModeEnum m)
-        : time(t)
-        , mode(m)
-    {
-    }
-};
-
-struct CachedFrame_compare_time
-{
-    bool operator() (const CachedFrame & lhs,
-                     const CachedFrame & rhs) const
-    {
-        return lhs.time < rhs.time;
-    }
-};
-
-typedef std::set<CachedFrame, CachedFrame_compare_time> CachedFrames;
 
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
@@ -135,16 +113,11 @@ struct TimelineGuiPrivate
     TextRenderer textRenderer;
     QFont font;
     bool firstPaint;
-    CachedFrames cachedFrames;
     mutable QMutex boundariesMutex;
     SequenceTime leftBoundary, rightBoundary;
     mutable QMutex frameRangeEditedMutex;
     bool isFrameRangeEdited;
     bool seekingTimeline;
-
-    // Use a timer to refresh the timeline on a timed basis rather than for each change
-    // so that we limit the amount of redraws
-    QTimer keyframeChangesUpdateTimer;
 
     TimelineGuiPrivate(TimeLineGui *qq,
                        const ViewerNodePtr& viewer,
@@ -164,14 +137,12 @@ struct TimelineGuiPrivate
         , textRenderer()
         , font(appFont, appFontSize)
         , firstPaint(true)
-        , cachedFrames()
         , boundariesMutex()
         , leftBoundary(0)
         , rightBoundary(0)
         , frameRangeEditedMutex()
         , isFrameRangeEdited(false)
         , seekingTimeline(false)
-        , keyframeChangesUpdateTimer()
     {
     }
 
@@ -194,12 +165,7 @@ struct TimelineGuiPrivate
         }
     }
 
-    void startKeyframeChangesTimer()
-    {
-        if (!keyframeChangesUpdateTimer.isActive()) {
-            keyframeChangesUpdateTimer.start(200);
-        }
-    }
+
 };
 
 TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
@@ -212,9 +178,6 @@ TimeLineGui::TimeLineGui(const ViewerNodePtr& viewer,
     setTimeline(timeline);
     setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
     setMouseTracking(true);
-
-    _imp->keyframeChangesUpdateTimer.setSingleShot(true);
-    connect(&_imp->keyframeChangesUpdateTimer, SIGNAL(timeout()), this, SLOT(onKeyframeChangesUpdateTimerTimeout()));
 }
 
 TimeLineGui::~TimeLineGui()
@@ -351,14 +314,14 @@ TimeLineGui::paintGL()
 
 
         /// change the backgroud color of the portion of the timeline where images are lying
-        double firstFrame, lastFrame;
+        TimeValue firstFrame, lastFrame;
         if ( !_imp->viewerTab->isFileDialogViewer() ) {
-            _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
+            _imp->gui->getApp()->getProject()->getFrameRange(&firstFrame, &lastFrame);
         } else {
             int f, l;
             _imp->viewerTab->getTimelineBounds(&f, &l);
-            firstFrame = (double)f;
-            lastFrame = (double)l;
+            firstFrame = TimeValue(f);
+            lastFrame = TimeValue(l);
         }
         QPointF firstFrameWidgetPos = toWidgetCoordinates(firstFrame, 0);
         QPointF lastFrameWidgetPos = toWidgetCoordinates(lastFrame, 0);
@@ -415,10 +378,6 @@ TimeLineGui::paintGL()
 
         double cachedR, cachedG, cachedB;
         settings->getCachedFrameColor(&cachedR, &cachedG, &cachedB);
-
-        double dcR, dcG, dcB;
-        settings->getDiskCachedColor(&dcR, &dcG, &dcB);
-
 
         GL_GPU::Color4f(txtR / 2., txtG / 2., txtB / 2., 1.);
         GL_GPU::Begin(GL_LINES);
@@ -654,15 +613,15 @@ TimeLineGui::paintGL()
         GL_GPU::LineWidth(2);
         glCheckError(GL_GPU);
         GL_GPU::Begin(GL_LINES);
-        for (CachedFrames::const_iterator i = _imp->cachedFrames.begin(); i != _imp->cachedFrames.end(); ++i) {
-            if ( ( i->time >= btmLeft.x() ) && ( i->time <= topRight.x() ) ) {
-                if (i->mode == eStorageModeRAM) {
-                    GL_GPU::Color4f(cachedR, cachedG, cachedB, 1.);
-                } else if (i->mode == eStorageModeDisk) {
-                    GL_GPU::Color4f(dcR, dcG, dcB, 1.);
-                }
-                GL_GPU::Vertex2f(i->time, cachedLineYPos);
-                GL_GPU::Vertex2f(i->time + 1, cachedLineYPos);
+
+        std::list<TimeValue> cachedFrames;
+        _imp->viewerTab->getTimeLineCachedFrames(&cachedFrames);
+        for (std::list<TimeValue>::const_iterator i = cachedFrames.begin(); i != cachedFrames.end(); ++i) {
+            if ( ( *i >= btmLeft.x() ) && ( *i <= topRight.x() ) ) {
+                GL_GPU::Color4f(cachedR, cachedG, cachedB, 1.);
+
+                GL_GPU::Vertex2f((int)*i, cachedLineYPos);
+                GL_GPU::Vertex2f((int)*i + 1, cachedLineYPos);
             }
         }
         GL_GPU::End();
@@ -776,7 +735,7 @@ void
 TimeLineGui::seek(SequenceTime time)
 {
     if ( time != _imp->timeline->currentFrame() ) {
-        ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
+        ViewerNodePtr viewer = _imp->viewer.lock();
         _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
         _imp->seekingTimeline = true;
         _imp->timeline->onFrameChanged(time);
@@ -845,7 +804,7 @@ TimeLineGui::mouseMoveEvent(QMouseEvent* e)
         update();
     } else if ( (_imp->state == eTimelineStateDraggingCursor) && !onEditingFinishedOnly ) {
         if ( tseq != _imp->timeline->currentFrame() ) {
-            ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
+            ViewerNodePtr viewer = _imp->viewer.lock();
             _imp->gui->setDraftRenderEnabled(true);
             _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
             _imp->seekingTimeline = true;
@@ -926,8 +885,8 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             std::swap(leftBound, rightBound);
         } else if (leftBound == rightBound) {
             if ( !_imp->viewerTab->isFileDialogViewer() ) {
-                double firstFrame, lastFrame;
-                _imp->gui->getApp()->getFrameRange(&firstFrame, &lastFrame);
+                TimeValue firstFrame, lastFrame;
+                _imp->gui->getApp()->getProject()->getFrameRange(&firstFrame, &lastFrame);
                 leftBound = std::floor(firstFrame + 0.5);
                 rightBound = std::floor(lastFrame + 0.5);
             } else {
@@ -958,12 +917,12 @@ TimeLineGui::mouseReleaseEvent(QMouseEvent* e)
             double t = toTimeLine( e->x() );
             SequenceTime tseq = std::floor(t + 0.5);
             if ( ( tseq != _imp->timeline->currentFrame() ) ) {
-                ViewerInstancePtr viewer = _imp->viewer.lock()->getInternalViewerNode();
+                ViewerNodePtr viewer = _imp->viewer.lock();
                 _imp->gui->getApp()->setLastViewerUsingTimeline( viewer->getNode() );
                 _imp->timeline->onFrameChanged(tseq);
             }
         } else if (autoProxyEnabled && wasScrubbing) {
-            _imp->gui->getApp()->renderAllViewers(true);
+            _imp->gui->getApp()->renderAllViewers();
         }
     }
 
@@ -1147,45 +1106,19 @@ TimeLineGui::toWidgetCoordinates(double x,
 }
 
 void
-TimeLineGui::onKeyframesIndicatorsChanged()
+TimeLineGui::onProjectFrameRangeChanged(int left,
+                                        int right)
 {
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::onKeyframeChangesUpdateTimerTimeout()
-{
+    assert(_imp->viewerTab);
+    if ( _imp->viewerTab->isFileDialogViewer() ) {
+        return;
+    }
+    if ( !isFrameRangeEdited() ) {
+        setBoundariesInternal(left, right, true);
+        setFrameRangeEdited(false);
+        centerOn(left, right);
+    }
     update();
-}
-
-void
-TimeLineGui::connectSlotsToViewerCache()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::connect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
-    QObject::connect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
-    QObject::connect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
-                      SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
-    QObject::connect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
-    QObject::connect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
-}
-
-void
-TimeLineGui::disconnectSlotsFromViewerCache()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    boost::shared_ptr<CacheSignalEmitter> emitter = appPTR->getOrActivateViewerCacheSignalEmitter();
-    QObject::disconnect( emitter.get(), SIGNAL(addedEntry(SequenceTime)), this, SLOT(onCachedFrameAdded(SequenceTime)) );
-    QObject::disconnect( emitter.get(), SIGNAL(removedEntry(SequenceTime,int)), this, SLOT(onCachedFrameRemoved(SequenceTime,int)) );
-    QObject::disconnect( emitter.get(), SIGNAL(entryStorageChanged(SequenceTime,int,int)), this,
-                         SLOT(onCachedFrameStorageChanged(SequenceTime,int,int)) );
-    QObject::disconnect( emitter.get(), SIGNAL(clearedDiskPortion()), this, SLOT(onDiskCacheCleared()) );
-    QObject::disconnect( emitter.get(), SIGNAL(clearedInMemoryPortion()), this, SLOT(onMemoryCacheCleared()) );
 }
 
 bool
@@ -1202,90 +1135,6 @@ TimeLineGui::setFrameRangeEdited(bool edited)
     QMutexLocker k(&_imp->frameRangeEditedMutex);
 
     _imp->isFrameRangeEdited = edited;
-}
-
-void
-TimeLineGui::onCachedFrameAdded(SequenceTime time)
-{
-    _imp->cachedFrames.insert( CachedFrame(time, eStorageModeRAM) );
-}
-
-void
-TimeLineGui::onCachedFrameRemoved(SequenceTime time,
-                                  int /*storage*/)
-{
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->time == time) {
-            _imp->cachedFrames.erase(it);
-            break;
-        }
-    }
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::onCachedFrameStorageChanged(SequenceTime time,
-                                         int /*oldStorage*/,
-                                         int newStorage)
-{
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->time == time) {
-            _imp->cachedFrames.erase(it);
-            _imp->cachedFrames.insert( CachedFrame(time, (StorageModeEnum)newStorage) );
-            break;
-        }
-    }
-}
-
-void
-TimeLineGui::onMemoryCacheCleared()
-{
-    CachedFrames copy;
-
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->mode == eStorageModeDisk) {
-            copy.insert(*it);
-        }
-    }
-    _imp->cachedFrames = copy;
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::onDiskCacheCleared()
-{
-    CachedFrames copy;
-
-    for (CachedFrames::iterator it = _imp->cachedFrames.begin(); it != _imp->cachedFrames.end(); ++it) {
-        if (it->mode == eStorageModeRAM) {
-            copy.insert(*it);
-        }
-    }
-    _imp->cachedFrames = copy;
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::clearCachedFrames()
-{
-    _imp->cachedFrames.clear();
-    _imp->startKeyframeChangesTimer();
-}
-
-void
-TimeLineGui::onProjectFrameRangeChanged(int left,
-                                        int right)
-{
-    assert(_imp->viewerTab);
-    if ( _imp->viewerTab->isFileDialogViewer() ) {
-        return;
-    }
-    if ( !isFrameRangeEdited() ) {
-        setBoundariesInternal(left, right, true);
-        setFrameRangeEdited(false);
-        centerOn(left, right);
-    }
-    update();
 }
 
 NATRON_NAMESPACE_EXIT;

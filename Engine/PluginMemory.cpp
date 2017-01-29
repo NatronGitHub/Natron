@@ -31,82 +31,60 @@
 CLANG_DIAG_OFF(deprecated)
 #include <QtCore/QMutex>
 CLANG_DIAG_ON(deprecated)
-#include "Engine/EffectInstance.h"
-#include "Engine/CacheEntry.h"
-
+#include "Engine/AppManager.h"
+#include "Engine/Cache.h"
+#include "Engine/RamBuffer.h"
 NATRON_NAMESPACE_ENTER;
 
 struct PluginMemory::Implementation
 {
     Implementation(const EffectInstancePtr& effect_)
-        : data()
-        , locked(0)
-        , mutex()
-        , effect(effect_)
-        , unregisterOnExit(true)
+    : data()
+    , mutex()
+    , effect(effect_)
     {
     }
 
     RamBuffer<char> data;
-    int locked;
     QMutex mutex;
     EffectInstanceWPtr effect;
-    bool unregisterOnExit;
 };
 
 PluginMemory::PluginMemory(const EffectInstancePtr& effect)
-    : _imp( new Implementation(effect) )
+: ImageStorageBase()
+, _imp( new Implementation(effect) )
 {
 }
 
 PluginMemory::~PluginMemory()
 {
-    if (_imp->unregisterOnExit) {
-        EffectInstancePtr e = _imp->effect.lock();
 
-        if (e) {
-            e->removePluginMemoryPointer(this);
-        }
-    }
+}
+
+std::size_t
+PluginMemory::getBufferSize() const
+{
+    return _imp->data.size();
 }
 
 void
-PluginMemory::setUnregisterOnDestructor(bool unregister)
+PluginMemory::allocateMemoryImpl(const AllocateMemoryArgs& args)
 {
+    const PluginMemAllocateMemoryArgs* thisArgs = dynamic_cast<const PluginMemAllocateMemoryArgs*>(&args);
+    assert(thisArgs);
+
     QMutexLocker l(&_imp->mutex);
-    _imp->unregisterOnExit = unregister;
-}
-
-bool
-PluginMemory::alloc(size_t nBytes)
-{
-    QMutexLocker l(&_imp->mutex);
-
-    if (_imp->locked) {
-        return false;
-    } else {
-        _imp->data.resize(nBytes);
-        EffectInstancePtr e = _imp->effect.lock();
-        if (e) {
-            e->registerPluginMemory( _imp->data.size() );
-        }
-
-        return true;
-    }
+    _imp->data.resize(thisArgs->_nBytes);
 }
 
 void
-PluginMemory::freeMem()
+PluginMemory::deallocateMemoryImpl()
 {
     QMutexLocker l(&_imp->mutex);
-    EffectInstancePtr e = _imp->effect.lock();
-
-    if (e) {
-        e->unregisterPluginMemory( _imp->data.size() );
-    }
     _imp->data.clear();
-    _imp->locked = 0;
+
 }
+
 
 void*
 PluginMemory::getPtr()
@@ -116,26 +94,6 @@ PluginMemory::getPtr()
     assert( _imp->data.size() == 0 || ( _imp->data.size() > 0 && _imp->data.getData() ) );
 
     return (void*)( _imp->data.getData() );
-}
-
-void
-PluginMemory::lock()
-{
-    QMutexLocker l(&_imp->mutex);
-
-    ++_imp->locked;
-}
-
-void
-PluginMemory::unlock()
-{
-    QMutexLocker l(&_imp->mutex);
-
-    // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxImageEffectSuiteV1_imageMemoryUnlock
-    // "Also note, if you unlock a completely unlocked handle, it has no effect (ie: the lock count can't be negative)."
-    if (_imp->locked > 0) {
-        --_imp->locked;
-    }
 }
 
 NATRON_NAMESPACE_EXIT;

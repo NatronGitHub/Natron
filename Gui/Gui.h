@@ -25,8 +25,9 @@
 #include <Python.h>
 // ***** END PYTHON BLOCK *****
 
-#include <set>
 #include "Global/Macros.h"
+
+#include <set>
 
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/noncopyable.hpp>
@@ -45,20 +46,20 @@ CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/ScriptObject.h"
 #include "Engine/ViewIdx.h"
-#include "Engine/EngineFwd.h"
 #include "Engine/SerializableWindow.h"
 #include "Engine/TimeLineKeys.h"
+#include "Engine/TimeValue.h"
 
 #ifdef __NATRON_WIN32__
 #include "Gui/FileTypeMainWindow_win.h"
 #endif
 #include "Gui/RegisteredTabs.h"
+
 #include "Gui/GuiFwd.h"
 
+NATRON_NAMESPACE_ENTER;
 
 #define kMainSplitterObjectName "ToolbarSplitter"
-
-NATRON_NAMESPACE_ENTER;
 
 struct GuiPrivate;
 
@@ -306,12 +307,12 @@ public:
     void deselectAllNodes() const;
 
     void onRenderStarted(const QString & sequenceName,
-                         int firstFrame, int lastFrame, int frameStep,
+                         TimeValue firstFrame, TimeValue lastFrame, TimeValue frameStep,
                          bool canPause,
-                         const OutputEffectInstancePtr& writer,
+                         const NodePtr& writer,
                          const ProcessHandlerPtr & process);
 
-    void onRenderRestarted(const OutputEffectInstancePtr& writer,
+    void onRenderRestarted(const NodePtr& writer,
                            const ProcessHandlerPtr & process);
 
     NodeGraph* getNodeGraph() const;
@@ -380,17 +381,11 @@ public:
 
     static bool getPresetIcon(const QString& presetFilePath, const QString& presetIconFile, int pixSize, QPixmap* pixmap);
 
-    void connectViewersToViewerCache();
-
-    void disconnectViewersFromViewerCache();
-
     void checkNumberOfNonFloatingPanes();
 
     AppInstancePtr openProject(const std::string& filename) WARN_UNUSED_RETURN;
 
     bool isGUIFrozen() const;
-
-    void addShortcut(BoundAction* action);
 
     const QString& getLastLoadProjectDirectory() const;
     const QString& getLastSaveProjectDirectory() const;
@@ -410,9 +405,9 @@ public:
 
     void redrawAllViewers();
 
-    void renderAllViewers(bool canAbort);
+    void renderAllViewers();
 
-    void abortAllViewers();
+    void abortAllViewers(bool autoRestartPlayback);
 
     void toggleAutoHideGraphInputs();
 
@@ -545,14 +540,18 @@ Q_SIGNALS:
 
     void s_showLogOnMainThread();
 
+    void mustRefreshViewersAndKnobsLater();
+
 public Q_SLOTS:
+
+    void onMustRefreshViewersAndKnobsLaterReceived();
 
     void onMustRefreshTimelineGuiKeyframesLaterReceived();
 
     void onShowLogOnMainThreadReceived();
 
     ///Called whenever the time changes on the timeline
-    void renderViewersAndRefreshKnobsAfterTimelineTimeChange(SequenceTime time, int reason);
+    void onTimelineTimeChanged(SequenceTime time, int reason);
 
     void onTimelineTimeAboutToChange();
 
@@ -627,7 +626,7 @@ public Q_SLOTS:
 
     void onNodeNameChanged(const QString& oldLabel, const QString & newLabel);
 
-    void onViewerImageChanged(int texIndex, bool hasImageBackend);
+    void onViewerImageChanged(int texIndex);
 
     NodePtr createReader();
     NodePtr createWriter();

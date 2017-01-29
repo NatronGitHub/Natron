@@ -35,11 +35,11 @@
 #endif
 
 #include "Engine/PyParameter.h"
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
 NATRON_PYTHON_NAMESPACE_ENTER;
-
 
 class ItemBase
 {
@@ -85,7 +85,7 @@ public:
 protected:
 
     bool getViewSetSpecFromViewName(const QString& viewName, ViewSetSpec* view) const;
-    bool getViewGetSpecFromViewName(const QString& viewName, ViewGetSpec* view) const;
+    bool getViewIdxFromViewName(const QString& viewName, ViewIdx* view) const;
 
 };
 

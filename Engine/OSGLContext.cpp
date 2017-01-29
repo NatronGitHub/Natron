@@ -46,7 +46,6 @@
 #endif
 
 #include "Engine/AppManager.h"
-#include "Engine/AbortableRenderInfo.h"
 #include "Engine/GPUContextPool.h"
 
 #include "Global/GLIncludes.h"
@@ -960,6 +959,11 @@ OSGLContextAttacher::create(const OSGLContextPtr& c, int width, int height, int 
     OSGLContextAttacherPtr curAttacher = appPTR->getGPUContextPool()->getThreadLocalContext();
     if (curAttacher) {
         if (curAttacher->getContext() == c) {
+            curAttacher->_width = width;
+            curAttacher->_height = height;
+            curAttacher->_rowWidth = rowWidth;
+            curAttacher->_buffer = buffer;
+            curAttacher->_c->setContextCurrentInternal(curAttacher->_width, curAttacher->_height, curAttacher->_rowWidth, curAttacher->_buffer);
             return curAttacher;
         } else {
             curAttacher->dettach();

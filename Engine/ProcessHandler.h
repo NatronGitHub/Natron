@@ -85,7 +85,7 @@ class ProcessHandler
     Q_OBJECT
 
     QProcess* _process; //< the process executing the render
-    OutputEffectInstancePtr _writer; //< pointer to the writer that will render in the bg process
+    NodePtr _writer; //< pointer to the writer that will render in the bg process
     QLocalServer* _ipcServer; //< the server for IPC with the background process
     QLocalSocket* _bgProcessOutputSocket; //< the socket where data is output by the process
 
@@ -104,13 +104,13 @@ public:
      * The process will render using the effect specified by writer.
      **/
     ProcessHandler(const QString & projectPath,
-                   const OutputEffectInstancePtr& writer);
+                   const NodePtr& writer);
 
     virtual ~ProcessHandler();
 
     const QString & getProcessLog() const;
     
-    OutputEffectInstancePtr getWriter() const
+    NodePtr getWriter() const
     {
         return _writer;
     }

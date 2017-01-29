@@ -60,11 +60,7 @@ OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
-    if (n) {
-        ProjectPtr project = n->getApp()->getProject();
-        QObject::connect( project.get(), SIGNAL(projectViewsChanged()), this, SLOT(onProjectViewsChanged()) );
-    }
+
 }
 
 OneViewNode::~OneViewNode()
@@ -80,11 +76,9 @@ OneViewNode::getInputLabel (int /*inputNb*/) const
 
 void
 OneViewNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImageComponents>* comps)
+                                   std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -108,19 +102,24 @@ OneViewNode::initializeKnobs()
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
-    std::string currentView = viewKnob->getActiveEntryText();
-    viewKnob->populateChoices(views);
+
+    std::vector<ChoiceOption> options(views.size());
+    for (std::size_t i = 0; i < views.size(); ++i) {
+        options[i].id = views[i];
+    }
+    viewKnob->populateChoices(options);
 
 
     _imp->viewKnob = viewKnob;
 }
 
-bool
-OneViewNode::isIdentity(double time,
+ActionRetCodeEnum
+OneViewNode::isIdentity(TimeValue time,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
                         ViewIdx /*view*/,
-                        double* inputTime,
+                        const TreeRenderNodeArgsPtr& /*render*/,
+                        TimeValue* inputTime,
                         ViewIdx* inputView,
                         int* inputNb)
 {
@@ -131,15 +130,17 @@ OneViewNode::isIdentity(double time,
     *inputNb = 0;
     *inputTime = time;
 
-    return true;
+    return eActionStatusOK;
 }
 
-FramesNeededMap
-OneViewNode::getFramesNeeded(double time,
-                             ViewIdx /*view*/)
+ActionRetCodeEnum
+OneViewNode::getFramesNeeded(TimeValue time,
+                             ViewIdx /*view*/,
+                             const TreeRenderNodeArgsPtr& /*render*/,
+                             FramesNeededMap* ret)
 {
-    FramesNeededMap ret;
-    FrameRangesMap& rangeMap = ret[0];
+
+    FrameRangesMap& rangeMap = (*ret)[0];
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
     int view_i = viewKnob->getValue();
     std::vector<RangeD>& ranges = rangeMap[ViewIdx(view_i)];
@@ -147,33 +148,34 @@ OneViewNode::getFramesNeeded(double time,
     ranges.resize(1);
     ranges[0].min = ranges[0].max = time;
 
-    return ret;
+    return eActionStatusOK;
 }
 
 void
-OneViewNode::onProjectViewsChanged()
+OneViewNode::onMetadataChanged(const NodeMetadata& /*metadata*/)
 {
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
     KnobChoicePtr viewKnob = _imp->viewKnob.lock();
-    std::string currentView = viewKnob->getActiveEntryText();
 
-    viewKnob->populateChoices(views);
+    ChoiceOption currentView = viewKnob->getActiveEntry();
+
+    std::vector<ChoiceOption> options(views.size());
+    for (std::size_t i = 0; i < views.size(); ++i) {
+        options[i].id = views[i];
+    }
+    viewKnob->populateChoices(options);
 
     bool foundView = false;
     for (std::size_t i = 0; i < views.size(); ++i) {
-        if (views[i] == currentView) {
+        if (views[i] == currentView.id) {
             foundView = true;
-            viewKnob->setValue(i);
             break;
         }
     }
     if (!foundView) {
         viewKnob->setValue(0);
     }
-}
+} // onMetadataChanged
+
 
 NATRON_NAMESPACE_EXIT;
-
-NATRON_NAMESPACE_USING;
-
-#include "moc_OneViewNode.cpp"

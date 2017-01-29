@@ -714,10 +714,10 @@ AnimationModuleViewPrivate::drawDopeSheetKeyframes(QTreeWidgetItem* treeItem, co
 
     for (KeyFrameWithStringSet::const_iterator it = dimViewKeys.begin(); it != dimViewKeys.end(); ++it) {
 
-        const double keyTime = it->key.getTime();
+        const TimeValue keyTime = it->key.getTime();
         RectD zoomKfRect = getKeyFrameBoundingRectCanonical(dopeSheetZoomContext, keyTime, rowCenterYCanonical);
 
-        bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, dimension, view, keyTime);
+        bool isKeyFrameSelected = selectModel->isKeyframeSelected(item, dimension, view, TimeValue(keyTime));
         bool drawSelected = isKeyFrameSelected;
         if (!drawSelected) {
             // If not selected but within the selection rectangle, draw also selected

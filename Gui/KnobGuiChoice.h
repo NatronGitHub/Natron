@@ -45,7 +45,7 @@ CLANG_DIAG_ON(uninitialized)
 #include "Global/GlobalDefines.h"
 
 #include "Engine/Knob.h"
-#include "Engine/ImageComponents.h"
+#include "Engine/ImagePlaneDesc.h"
 #include "Engine/EngineFwd.h"
 
 #include "Gui/KnobGuiWidgets.h"
@@ -124,7 +124,7 @@ public Q_SLOTS:
 
     void onEntriesPopulated();
 
-    void onEntryAppended(const QString& entry, const QString& help);
+    void onEntryAppended();
 
     void onEntriesReset();
 
@@ -134,6 +134,7 @@ public Q_SLOTS:
 private:
 
     QString getPixmapPathFromFilePath(const QString& filePath) const;
+
 
     virtual void createWidget(QHBoxLayout* layout) OVERRIDE FINAL;
     virtual void setWidgetsVisible(bool visible) OVERRIDE FINAL;

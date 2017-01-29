@@ -44,11 +44,12 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Node.h"
-#include "Engine/OutputEffectInstance.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/OutputSchedulerThread.h"
 #include "Engine/KnobTypes.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Project.h"
+#include "Engine/RenderQueue.h"
 #include "Engine/Settings.h"
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
@@ -150,7 +151,6 @@ PrecompNode::PrecompNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new PrecompNodePrivate(this) )
 {
-    setSupportsRenderScaleMaybe(eSupportsYes);
 }
 
 PrecompNode::~PrecompNode()
@@ -178,11 +178,9 @@ PrecompNode::getOutputNode() const
 
 void
 PrecompNode::addAcceptedComponents(int /*inputNb*/,
-                                   std::list<ImageComponents>* comps)
+                                   std::bitset<4>* supported)
 {
-    comps->push_back( ImageComponents::getRGBAComponents() );
-    comps->push_back( ImageComponents::getRGBComponents() );
-    comps->push_back( ImageComponents::getAlphaComponents() );
+    (*supported)[0] = (*supported)[1] = (*supported)[2] = (*supported)[3] = 1;
 }
 
 void
@@ -251,8 +249,8 @@ PrecompNode::initializeKnobs()
                                     "hit the \"Render\" button.").toStdString() );
     writeChoice->setAnimationEnabled(false);
     {
-        std::vector<std::string> choices;
-        choices.push_back("None");
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("None", "", ""));
         writeChoice->populateChoices(choices);
     }
     renderGroup->addKnob(writeChoice);
@@ -282,19 +280,14 @@ PrecompNode::initializeKnobs()
     error->setHintToolTip( tr("Indicates the behavior when an image is missing from the render of the pre-comp project").toStdString() );
     error->setAnimationEnabled(false);
     {
-        std::vector<std::string> choices, helps;
-        choices.push_back("Load Previous");
-        helps.push_back( tr("Loads the previous frame in the sequence.").toStdString() );
-        choices.push_back("Load Next");
-        helps.push_back( tr("Loads the next frame in the sequence.").toStdString() );
-        choices.push_back("Load Nearest");
-        helps.push_back( tr("Loads the nearest frame in the sequence.").toStdString() );
-        choices.push_back("Error");
-        helps.push_back( tr("Fails to render.").toStdString() );
-        choices.push_back("Black");
-        helps.push_back( tr("Black Image.").toStdString() );
+        std::vector<ChoiceOption> choices;
+        choices.push_back(ChoiceOption("Load Previous", "", tr("Loads the previous frame in the sequence.").toStdString() ));
+        choices.push_back(ChoiceOption("Load Next", "", tr("Loads the next frame in the sequence.").toStdString()));
+        choices.push_back(ChoiceOption("Load Nearest", "", tr("Loads the nearest frame in the sequence.").toStdString()));
+        choices.push_back(ChoiceOption("Error", "", tr("Fails to render.").toStdString()));
+        choices.push_back(ChoiceOption("Black", "", tr("Black Image.").toStdString()));
 
-        error->populateChoices(choices, helps);
+        error->populateChoices(choices);
     }
     error->setDefaultValue(3);
     renderGroup->addKnob(error);
@@ -331,7 +324,7 @@ bool
 PrecompNode::knobChanged(const KnobIPtr& k,
                          ValueChangedReasonEnum reason,
                          ViewSetSpec /*view*/,
-                         double /*time*/)
+                         TimeValue /*time*/)
 {
     bool ret = true;
 
@@ -442,8 +435,8 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
     if (!param) {
         return;
     }
-    std::vector<std::string> choices;
-    choices.push_back("None");
+    std::vector<ChoiceOption> choices;
+    choices.push_back(ChoiceOption("None","",""));
 
     NodesList nodes;
     app.lock()->getProject()->getNodes_recursive(nodes, true);
@@ -468,7 +461,8 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
             (*it)->setPrecompNode(precomp);
         }
         if ( (*it)->getEffectInstance()->isWriter() ) {
-            choices.push_back( (*it)->getFullyQualifiedName() );
+            choices.push_back( ChoiceOption((*it)->getFullyQualifiedName(), "", "") );
+
         }
     }
 
@@ -484,16 +478,16 @@ PrecompNodePrivate::populateWriteNodesChoice(bool setPartOfPrecomp,
 NodePtr
 PrecompNodePrivate::getWriteNodeFromPreComp() const
 {
-    std::string userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntryText();
+    ChoiceOption userChoiceNodeName =  writeNodesKnob.lock()->getActiveEntry();
 
-    if (userChoiceNodeName == "None") {
+    if (userChoiceNodeName.id == "None") {
         return NodePtr();
     }
-    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName);
+    NodePtr writeNode = app.lock()->getProject()->getNodeByFullySpecifiedName(userChoiceNodeName.id);
     if (!writeNode) {
         std::stringstream ss;
         ss << tr("Could not find a node named %1 in the pre-comp project")
-            .arg( QString::fromUtf8( userChoiceNodeName.c_str() ) ).toStdString();
+            .arg( QString::fromUtf8( userChoiceNodeName.id.c_str() ) ).toStdString();
         Dialogs::errorDialog( tr("Pre-Comp").toStdString(), ss.str() );
 
         return NodePtr();
@@ -620,8 +614,7 @@ PrecompNodePrivate::refreshOutputNode()
     thisNode->getOutputsConnectedToThisNode(&outputs);
 
     for (std::map<NodePtr, int>::iterator it = outputs.begin(); it != outputs.end(); ++it) {
-        NodePtr inputNode = it->first->getInput(it->second);
-        it->first->onInputChanged(it->second, inputNode, inputNode);
+        it->first->onInputChanged(it->second);
     }
 }
 
@@ -655,11 +648,10 @@ PrecompNodePrivate::refreshReadNodeInput()
     }
     //Remove all images from the cache associated to the reader since we know they are no longer valid.
     //This is a blocking call so that we are sure there's no old image laying around in the cache after this call
-    readNode->removeAllImagesFromCache();
-    readNode->purgeAllInstancesCaches();
+    readNode->getEffectInstance()->purgeCaches_public();
 
     //Force the reader to reload the sequence/video
-    fileNameKnob->evaluateValueChange(DimSpec::all(), _publicInterface->getApp()->getTimeLine()->currentFrame(), ViewSetSpec::all(), eValueChangedReasonUserEdited);
+    fileNameKnob->evaluateValueChange(DimSpec::all(), TimeValue(_publicInterface->getApp()->getTimeLine()->currentFrame()), ViewSetSpec::all(), eValueChangedReasonUserEdited);
 }
 
 void
@@ -672,22 +664,24 @@ PrecompNodePrivate::launchPreRender()
 
         return;
     }
-    AppInstance::RenderWork w(toOutputEffectInstance( output->getEffectInstance() ),
-                              firstFrameKnob.lock()->getValue(),
-                              lastFrameKnob.lock()->getValue(),
-                              1,
+    std::string workLabel = tr("Rendering %1").arg(QString::fromUtf8(projectFileNameKnob.lock()->getValue().c_str())).toStdString();
+    RenderQueue::RenderWork w(output,
+                              workLabel,
+                              TimeValue(firstFrameKnob.lock()->getValue()),
+                              TimeValue(lastFrameKnob.lock()->getValue()),
+                              TimeValue(1),
                               false);
 
-    if (w.writer) {
-        RenderEnginePtr engine = w.writer->getRenderEngine();
+    if (w.treeRoot) {
+        RenderEnginePtr engine = w.treeRoot->getRenderEngine();
         if (engine) {
             QObject::connect( engine.get(), SIGNAL(renderFinished(int)), _publicInterface, SLOT(onPreRenderFinished()) );
         }
     }
 
-    std::list<AppInstance::RenderWork> works;
+    std::list<RenderQueue::RenderWork> works;
     works.push_back(w);
-    _publicInterface->getApp()->renderWritersNonBlocking(works);
+    _publicInterface->getApp()->getRenderQueue()->renderNonBlocking(works);
 }
 
 void
@@ -698,10 +692,10 @@ PrecompNode::onPreRenderFinished()
     if (!output) {
         return;
     }
-    OutputEffectInstancePtr writer = toOutputEffectInstance( output->getEffectInstance() );
+    EffectInstancePtr writer = output->getEffectInstance();
     assert(writer);
     if (writer) {
-        RenderEnginePtr engine = writer->getRenderEngine();
+        RenderEnginePtr engine = writer->getNode()->getRenderEngine();
         if (engine) {
             QObject::disconnect( engine.get(), SIGNAL(renderFinished(int)), this, SLOT(onPreRenderFinished()) );
         }

@@ -624,7 +624,7 @@ KnobHelper::validateExpression(const std::string& expression,
         }
 
         std::stringstream ss;
-        ss << funcExecScript << '(' << getCurrentTime() << ", \"" <<  viewName << "\")\n";
+        ss << funcExecScript << '(' << getCurrentTime_TLS() << ", \"" <<  viewName << "\")\n";
         if ( !NATRON_PYTHON_NAMESPACE::interpretPythonScript(ss.str(), &error, 0) ) {
             throw std::runtime_error(error);
         }
@@ -695,7 +695,7 @@ KnobHelper::checkInvalidExpressions()
     }
     bool isInvalid = false;
     for (std::size_t i = 0; i < exprToReapply.size(); ++i) {
-        setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].hasRet, true /*clearResults*/, false /*throwOnFailure*/);
+        setExpressionInternal(exprToReapply[i].dimension, exprToReapply[i].view, exprToReapply[i].expr, exprToReapply[i].hasRet, false /*throwOnFailure*/);
         std::string err;
         if ( !isExpressionValid(exprToReapply[i].dimension, exprToReapply[i].view, &err) ) {
             isInvalid = true;
@@ -706,7 +706,7 @@ KnobHelper::checkInvalidExpressions()
 
 bool
 KnobHelper::isExpressionValid(DimIdx dimension,
-                              ViewGetSpec view,
+                              ViewIdx view,
                               std::string* error) const
 {
     if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
@@ -792,7 +792,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
                     setExpressionInvalidInternal(DimIdx(i), *it, valid, error);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 setExpressionInvalidInternal(DimIdx(i), view_i, valid, error);
             }
         }
@@ -805,7 +805,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
                 setExpressionInvalidInternal(DimIdx(dimension), *it, valid, error);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             setExpressionInvalidInternal(DimIdx(dimension), view_i, valid, error);
         }
     }
@@ -817,7 +817,6 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
                                   ViewIdx view,
                                   const std::string& expression,
                                   bool hasRetVariable,
-                                  bool clearResults,
                                   bool failIfInvalid)
 {
 #ifdef NATRON_RUN_WITHOUT_PYTHON
@@ -829,7 +828,7 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     PythonGILLocker pgl;
 
     ///Clear previous expr
-    clearExpression(dimension, ViewSetSpec(view), clearResults);
+    clearExpression(dimension, ViewSetSpec(view));
 
     if ( expression.empty() ) {
         return;
@@ -884,7 +883,6 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
                                 ViewSetSpec view,
                                 const std::string& expression,
                                 bool hasRetVariable,
-                                bool clearResults,
                                 bool failIfInvalid)
 {
     // setExpressionInternal may call evaluateValueChange if it calls clearExpression, hence bracket changes
@@ -895,11 +893,11 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         for (int i = 0; i < _imp->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                    setExpressionInternal(DimIdx(i), *it, expression, hasRetVariable, clearResults, failIfInvalid);
+                    setExpressionInternal(DimIdx(i), *it, expression, hasRetVariable, failIfInvalid);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-                setExpressionInternal(DimIdx(i), view_i, expression, hasRetVariable, clearResults, failIfInvalid);
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+                setExpressionInternal(DimIdx(i), view_i, expression, hasRetVariable, failIfInvalid);
             }
         }
     } else {
@@ -908,15 +906,15 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
         }
         if (view.isAll()) {
             for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
-                setExpressionInternal(DimIdx(dimension), *it, expression, hasRetVariable, clearResults, failIfInvalid);
+                setExpressionInternal(DimIdx(dimension), *it, expression, hasRetVariable, failIfInvalid);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
-            setExpressionInternal(DimIdx(dimension), view_i, expression, hasRetVariable, clearResults, failIfInvalid);
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
+            setExpressionInternal(DimIdx(dimension), view_i, expression, hasRetVariable, failIfInvalid);
         }
     }
 
-    evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+    evaluateValueChange(dimension, getHolder()->getCurrentTime_TLS(), view, eValueChangedReasonUserEdited);
     endChanges();
 } // setExpressionCommon
 
@@ -932,7 +930,7 @@ KnobHelper::replaceNodeNameInExpressionInternal(DimIdx dimension,
         return;
     }
 
-    std::string hasExpr = getExpression(dimension);
+    std::string hasExpr = getExpression(dimension, view);
     if ( hasExpr.empty() ) {
         return;
     }
@@ -971,7 +969,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                     replaceNodeNameInExpressionInternal(DimIdx(i), *it, oldName, newName);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 replaceNodeNameInExpressionInternal(DimIdx(i), view_i, oldName, newName);
             }
         }
@@ -984,7 +982,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
                 replaceNodeNameInExpressionInternal(DimIdx(dimension), *it, oldName, newName);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             replaceNodeNameInExpressionInternal(DimIdx(dimension), view_i, oldName, newName);
         }
     }
@@ -994,7 +992,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
 } // replaceNodeNameInExpression
 
 bool
-KnobHelper::isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) const
+KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
         throw std::invalid_argument("KnobHelper::isExpressionUsingRetVariable(): Dimension out of range");
@@ -1010,7 +1008,7 @@ KnobHelper::isExpressionUsingRetVariable(ViewGetSpec view, DimIdx dimension) con
 
 bool
 KnobHelper::getExpressionDependencies(DimIdx dimension,
-                                      ViewGetSpec view,
+                                      ViewIdx view,
                                       KnobDimViewKeySet& dependencies) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
@@ -1079,8 +1077,7 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
 
 void
 KnobHelper::clearExpression(DimSpec dimension,
-                            ViewSetSpec view,
-                            bool clearResults)
+                            ViewSetSpec view)
 {
 
     bool didSomething = false;
@@ -1092,7 +1089,7 @@ KnobHelper::clearExpression(DimSpec dimension,
                     didSomething |= clearExpressionInternal(DimIdx(i), *it);
                 }
             } else {
-                ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+                ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
                 didSomething |= clearExpressionInternal(DimIdx(i), view_i);
             }
         }
@@ -1105,17 +1102,14 @@ KnobHelper::clearExpression(DimSpec dimension,
                 didSomething |= clearExpressionInternal(DimIdx(dimension), *it);
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view.value()));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view.value()));
             didSomething |= clearExpressionInternal(DimIdx(dimension), view_i);
         }
     }
 
-    if (clearResults) {
-        clearExpressionsResults(dimension, view);
-    }
 
     if (didSomething) {
-        evaluateValueChange(dimension, getCurrentTime(), view, eValueChangedReasonUserEdited);
+        evaluateValueChange(dimension, getHolder()->getTimelineCurrentTime(), view, eValueChangedReasonUserEdited);
     }
 
 } // KnobHelper::clearExpression
@@ -1160,7 +1154,7 @@ catchErrors(PyObject* mainModule,
 NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 bool
-KnobHelper::executeExpression(double time,
+KnobHelper::executeExpression(TimeValue time,
                               ViewIdx view,
                               DimIdx dimension,
                               PyObject** ret,
@@ -1218,7 +1212,7 @@ KnobHelper::executeExpression(double time,
 } // executeExpression
 
 std::string
-KnobHelper::getExpression(DimIdx dimension, ViewGetSpec view) const
+KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
 {
     if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
         throw std::invalid_argument("Knob::getExpression: Dimension out of range");

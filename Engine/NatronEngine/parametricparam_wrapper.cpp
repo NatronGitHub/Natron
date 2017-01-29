@@ -119,8 +119,8 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
 
             if (!PyErr_Occurred()) {
                 // addControlPoint(int,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
-                NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2, cppArg3));
-                pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+                bool cppResult = cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2, cppArg3);
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
             }
             break;
         }
@@ -152,8 +152,8 @@ static PyObject* Sbk_ParametricParamFunc_addControlPoint(PyObject* self, PyObjec
 
             if (!PyErr_Occurred()) {
                 // addControlPoint(int,double,double,double,double,NATRON_NAMESPACE::KeyframeTypeEnum)
-                NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5));
-                pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+                bool cppResult = cppSelf->addControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5);
+                pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
             }
             break;
         }
@@ -199,8 +199,8 @@ static PyObject* Sbk_ParametricParamFunc_deleteAllControlPoints(PyObject* self, 
 
         if (!PyErr_Occurred()) {
             // deleteAllControlPoints(int)
-            NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->deleteAllControlPoints(cppArg0));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            bool cppResult = cppSelf->deleteAllControlPoints(cppArg0);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 
@@ -257,8 +257,8 @@ static PyObject* Sbk_ParametricParamFunc_deleteControlPoint(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // deleteControlPoint(int,int)
-            NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->deleteControlPoint(cppArg0, cppArg1));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            bool cppResult = cppSelf->deleteControlPoint(cppArg0, cppArg1);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 
@@ -416,9 +416,9 @@ static PyObject* Sbk_ParametricParamFunc_getNthControlPoint(PyObject* self, PyOb
             // Begin code injection
 
             double key,value,left,right;
-            NATRON_NAMESPACE::StatusEnum cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value, &left, &right);
+            bool cppResult = cppSelf->getNthControlPoint(cppArg0, cppArg1,&key,&value, &left, &right);
             pyResult = PyTuple_New(5);
-            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult));
+            PyTuple_SET_ITEM(pyResult, 0, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult));
             PyTuple_SET_ITEM(pyResult, 1, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &key));
             PyTuple_SET_ITEM(pyResult, 2, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &value));
             PyTuple_SET_ITEM(pyResult, 3, Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<double>(), &left));
@@ -638,8 +638,8 @@ static PyObject* Sbk_ParametricParamFunc_setNthControlPoint(PyObject* self, PyOb
 
         if (!PyErr_Occurred()) {
             // setNthControlPoint(int,int,double,double,double,double)
-            NATRON_NAMESPACE::StatusEnum cppResult = NATRON_NAMESPACE::StatusEnum(cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5));
-            pyResult = Shiboken::Conversions::copyToPython(SBK_CONVERTER(SbkNatronEngineTypes[SBK_NATRON_NAMESPACE_STATUSENUM_IDX]), &cppResult);
+            bool cppResult = cppSelf->setNthControlPoint(cppArg0, cppArg1, cppArg2, cppArg3, cppArg4, cppArg5);
+            pyResult = Shiboken::Conversions::copyToPython(Shiboken::Conversions::PrimitiveTypeConverter<bool>(), &cppResult);
         }
     }
 

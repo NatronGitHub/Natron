@@ -30,6 +30,8 @@
 #include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
 #include <stdexcept>
 
+#include <QThread>
+
 #if QT_VERSION >= 0x050000
 #include <QtWidgets/QMenu>
 #include <QtWidgets/QToolButton>
@@ -55,9 +57,12 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/Lut.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGuiI.h"
+#include "Engine/Image.h"
 #include "Engine/Project.h"
 #include "Engine/OfxOverlayInteract.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/NodeMetadata.h"
+#include "Engine/OutputSchedulerThread.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h" // for gettimeofday
@@ -195,10 +200,7 @@ ViewerGL::resizeGL(int w,
     if (!viewerNode) {
         return;
     }
-    ViewerInstancePtr viewer = viewerNode->getInternalViewerNode();
-    if (!viewer) {
-        return;
-    }
+
 
     bool isLoadingProject = _imp->viewerTab->getGui() && _imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject();
     bool canResize = _imp->viewerTab->getGui() && !_imp->viewerTab->getGui()->getApp()->getProject()->isLoadingProject() &&  !_imp->viewerTab->getGui()->getApp()->getActiveRotoDrawingStroke();
@@ -206,9 +208,9 @@ ViewerGL::resizeGL(int w,
     if (!zoomSinceLastFit && canResize) {
         fitImageToFormat();
     }
-    if ( viewer->getUiContext() && !isLoadingProject  &&
+    if ( viewerNode->getUiContext() && !isLoadingProject  &&
          ( ( oldWidth != w) || ( oldHeight != h) ) ) {
-        viewer->renderCurrentFrame(true);
+        viewerNode->getNode()->getRenderEngine()->renderCurrentFrame();
 
         if ( !_imp->persistentMessages.empty() ) {
             updatePersistentMessageToWidth(w - 20);
@@ -325,15 +327,8 @@ ViewerGL::paintGL()
             // don't even bind the shader on 8-bits gamma-compressed textures
             ViewerCompositingOperatorEnum compOperator = viewerNode->getCurrentOperator();
 
-            ///Determine whether we need to draw each texture or not
-            ViewerInstancePtr internalViewer = viewerNode->getInternalViewerNode();
-            if (!internalViewer || !internalViewer->getNode()) {
-                return;
-            }
-
             aInputNode = viewerNode->getCurrentAInput();
             bInputNode = viewerNode->getCurrentBInput();
-
 
             bool drawTexture[2];
             drawTexture[0] = _imp->displayTextures[0].isVisible;
@@ -471,9 +466,8 @@ ViewerGL::paintGL()
             } // switch
 
             for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
-                const TextureRect &r = _imp->partialUpdateTextures[i].texture->getTextureRect();
-                RectI texRect(r.x1, r.y1, r.x2, r.y2);
-                const double par = r.par;
+                const RectI &texRect = _imp->partialUpdateTextures[i].texture->getBounds();
+                const double par = _imp->displayTextures[0].pixelAspectRatio;
                 RectD canonicalTexRect;
                 texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
 
@@ -648,7 +642,7 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
         /*
            Draw the overlays corresponding to the image displayed on the viewer, not the current timeline's time
          */
-        double time = getCurrentlyDisplayedTime();
+        TimeValue time = getCurrentlyDisplayedTime();
         _imp->viewerTab->drawOverlays( time, RenderScale(scale) );
 
         glCheckErrorIgnoreOSXBug(GL_GPU);
@@ -886,10 +880,21 @@ ViewerGL::getPboID(int index)
     }
 }
 
-ViewerInstancePtr
-ViewerGL::getInternalViewerNode() const
+RangeD
+ViewerGL::getFrameRange() const
 {
-    return getInternalNode()->getInternalViewerNode();
+    int first, last;
+    getViewerTab()->getTimelineBounds(&first, &last);
+    RangeD ret;
+    ret.min = first;
+    ret.max = last;
+    return ret;
+}
+
+ViewerNodePtr
+ViewerGL::getViewerNode() const
+{
+    return getInternalNode();
 }
 
 /**
@@ -905,150 +910,32 @@ ViewerGL::getZoomFactor() const
 }
 
 ///imageRoD is in PIXEL COORDINATES
-RectI
-ViewerGL::getImageRectangleDisplayed(const RectI & imageRoDPixel, // in pixel coordinates
-                                     const double par,
-                                     unsigned int mipMapLevel)
+RectD
+ViewerGL::getImageRectangleDisplayed() const
 {
-    // MT-SAFE
+
     RectD visibleArea;
-    RectI ret;
+
+    {
+        QMutexLocker l(&_imp->zoomCtxMutex);
+        QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
+        QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
+        visibleArea.x1 =  topLeft.x();
+        visibleArea.y2 =  topLeft.y();
+        visibleArea.x2 = bottomRight.x();
+        visibleArea.y1 = bottomRight.y();
+    }
+
+
     ViewerNodePtr viewerNode = getInternalNode();
-    if (viewerNode->isFullFrameProcessingEnabled()) {
-        ret = imageRoDPixel;
-    } else {
-        {
-            QMutexLocker l(&_imp->zoomCtxMutex);
-            QPointF topLeft =  _imp->zoomCtx.toZoomCoordinates(0, 0);
-            visibleArea.x1 =  topLeft.x();
-            visibleArea.y2 =  topLeft.y();
-            QPointF bottomRight = _imp->zoomCtx.toZoomCoordinates(width() - 1, height() - 1);
-            visibleArea.x2 = bottomRight.x();
-            visibleArea.y1 = bottomRight.y();
-        }
-
-        if (mipMapLevel != 0) {
-            // for the viewer, we need the smallest enclosing rectangle at the mipmap level, in order to avoid black borders
-            visibleArea.toPixelEnclosing(mipMapLevel, par, &ret);
-        } else {
-            ret.x1 = std::floor(visibleArea.x1 / par);
-            ret.x2 = std::ceil(visibleArea.x2 / par);
-            ret.y1 = std::floor(visibleArea.y1);
-            ret.y2 = std::ceil(visibleArea.y2);
-        }
-
-        ///If the roi doesn't intersect the image's Region of Definition just return an empty rectangle
-        if ( !ret.intersect(imageRoDPixel, &ret) ) {
-            ret.clear();
-        }
-
-    }
-
-    ///to clip against the user roi however clip it against the mipmaplevel of the zoomFactor+proxy
-
-    RectD userRoI = viewerNode->getUserRoI();
     bool userRoiEnabled = viewerNode->isUserRoIEnabled();
-
     if (userRoiEnabled) {
-        RectI userRoIpixel;
-
-        ///If the user roi is enabled, we want to render the smallest enclosing rectangle in order to avoid black borders.
-        userRoI.toPixelEnclosing(mipMapLevel, par, &userRoIpixel);
-
-        ///If the user roi doesn't intersect the actually visible portion on the viewer, return an empty rectangle.
-        if ( !ret.intersect(userRoIpixel, &ret) ) {
-            ret.clear();
-        }
+        RectD userRoI = viewerNode->getUserRoI();
+        visibleArea.intersect(userRoI, &visibleArea);
     }
 
-    return ret;
+    return visibleArea;
 } // ViewerGL::getImageRectangleDisplayed
-
-RectI
-ViewerGL::getExactImageRectangleDisplayed(int texIndex,
-                                          const RectD & rod,
-                                          const double par,
-                                          unsigned int mipMapLevel)
-{
-
-    bool clipToFormat = getInternalNode()->isClipToFormatEnabled();
-    RectD clippedRod;
-
-    if (clipToFormat) {
-        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
-    } else {
-        clippedRod = rod;
-    }
-
-    RectI bounds;
-    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
-    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
-
-    return roi;
-}
-
-RectI
-ViewerGL::getImageRectangleDisplayedRoundedToTileSize(int texIndex,
-                                                      const RectD & rod,
-                                                      const double par,
-                                                      unsigned int mipMapLevel,
-                                                      std::vector<RectI>* tiles,
-                                                      std::vector<RectI>* tilesRounded,
-                                                      int *viewerTileSize,
-                                                      RectI* roiNotRounded)
-{
-    bool clipToFormat = getInternalNode()->isClipToFormatEnabled();
-    RectD clippedRod;
-
-    if (clipToFormat) {
-        rod.intersect(_imp->displayTextures[texIndex].format, &clippedRod);
-    } else {
-        clippedRod = rod;
-    }
-
-    RectI bounds;
-    clippedRod.toPixelEnclosing(mipMapLevel, par, &bounds);
-    RectI roi = getImageRectangleDisplayed(bounds, par, mipMapLevel);
-
-    ////Texrect is the coordinates of the 4 corners of the texture in the bounds with the current zoom
-    ////factor taken into account.
-    RectI texRect;
-    int tileSize = std::pow( 2., (double)appPTR->getCurrentSettings()->getViewerTilesPowerOf2() );
-    texRect.x1 = std::floor( ( (double)roi.x1 ) / tileSize ) * (double)tileSize;
-    texRect.y1 = std::floor( ( (double)roi.y1 ) / tileSize ) * (double)tileSize;
-    texRect.x2 = std::ceil( ( (double)roi.x2 ) / tileSize ) * (double)tileSize;
-    texRect.y2 = std::ceil( ( (double)roi.y2 ) / tileSize ) * (double)tileSize;
-
-    // Make sure the bounds of the area to render in the texture lies in the bounds
-    if (roiNotRounded) {
-        *roiNotRounded = roi;
-    }
-    if (tilesRounded) {
-        for (int y = texRect.y1; y < texRect.y2; y += tileSize) {
-            int y2 = std::min(y + tileSize, texRect.y2);
-            for (int x = texRect.x1; x < texRect.x2; x += tileSize) {
-                tilesRounded->resize(tilesRounded->size() + 1);
-                RectI& tile = tilesRounded->back();
-                tile.x1 = x;
-                tile.x2 = std::min(x + tileSize, texRect.x2);
-                tile.y1 = y;
-                tile.y2 = y2;
-
-                if (tiles) {
-                    RectI tileRectRounded;
-                    tile.intersect(bounds, &tileRectRounded);
-                    tiles->push_back(tileRectRounded);
-                }
-                assert( texRect.contains(tile) );
-            }
-        }
-    }
-
-    if (viewerTileSize) {
-        *viewerTileSize = tileSize;
-    }
-    return texRect;
-}
 
 int
 ViewerGL::isExtensionSupported(const char *extension)
@@ -1081,39 +968,6 @@ ViewerGL::isExtensionSupported(const char *extension)
     return 0;
 }
 
-void
-ViewerGL::initShaderGLSL()
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-
-    if (!_imp->shaderLoaded) {
-        _imp->shaderBlack.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
-            qDebug() << qPrintable( _imp->shaderBlack->log() );
-        }
-        if ( !_imp->shaderBlack->addShaderFromSourceCode(QGLShader::Fragment, blackFrag) ) {
-            qDebug() << qPrintable( _imp->shaderBlack->log() );
-        }
-        if ( !_imp->shaderBlack->link() ) {
-            qDebug() << qPrintable( _imp->shaderBlack->log() );
-        }
-
-        _imp->shaderRGB.reset( new QGLShaderProgram( context() ) );
-        if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Vertex, vertRGB) ) {
-            qDebug() << qPrintable( _imp->shaderRGB->log() );
-        }
-        if ( !_imp->shaderRGB->addShaderFromSourceCode(QGLShader::Fragment, fragRGB) ) {
-            qDebug() << qPrintable( _imp->shaderRGB->log() );
-        }
-
-        if ( !_imp->shaderRGB->link() ) {
-            qDebug() << qPrintable( _imp->shaderRGB->log() );
-        }
-        _imp->shaderLoaded = true;
-    }
-}
 
 void
 ViewerGL::clearPartialUpdateTextures()
@@ -1140,55 +994,164 @@ ViewerGL::isViewerUIVisible() const
 }
 
 void
-ViewerGL::refreshFormatFromMetadata()
+ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata) 
 {
-    ViewerInstancePtr internalViewerNode = getInternalNode()->getInternalViewerNode();
-    if (!internalViewerNode) {
-        return;
+
+    RectI inputFormat = metadata.getOutputFormat();
+
+    double inputPar = metadata.getPixelAspectRatio(-1);
+
+    {
+        RectD inputCanonicalFormat;
+        inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
+        getViewerTab()->setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, inputNb);
     }
 
-    Format format;
-    getViewerTab()->getGui()->getApp()->getProject()->getProjectDefaultFormat(&format);
-    RectD canonicalFormat = format.toCanonicalFormat();
-
-    for (int i = 0; i < 2; ++i) {
-
-        EffectInstancePtr input = internalViewerNode->getInput(i);
-        if (!input) {
-            getViewerTab()->setInfoBarAndViewerResolution(format, canonicalFormat, format.getPixelAspectRatio(), i);
-        } else {
-            RectI inputFormat = input->getOutputFormat();
-            RectD inputCanonicalFormat;
-            double inputPar = input->getAspectRatio(-1);
-            inputFormat.toCanonical_noClipping(0, inputPar, &inputCanonicalFormat);
-            if (!inputCanonicalFormat.isNull()) {
-                getViewerTab()->setInfoBarAndViewerResolution(inputFormat, inputCanonicalFormat, inputPar, i);
-            }
-
-        }
-        
-    }
-
+    _imp->displayTextures[inputNb].premult = metadata.getOutputPremult();
+    ImagePlaneDesc upstreamLayer = ImagePlaneDesc::mapNCompsToColorPlane(metadata.getColorPlaneNComps(0));
+    getViewerTab()->setImageFormat(inputNb, upstreamLayer, metadata.getBitDepth(0));
 }
 
 void
-ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
-                                        const boost::shared_ptr<Texture>& texture,
-                                        const ImagePtr& image,
-                                        int time,
-                                        const RectD& rod,
-                                        double par,
-                                        ImageBitDepthEnum depth,
-                                        unsigned int mipMapLevel,
-                                        ImagePremultiplicationEnum premult,
-                                        double /*gain*/,
-                                        double /*gamma*/,
-                                        double offset,
-                                        int lut,
-                                        bool recenterViewer,
-                                        const Point& viewportCenter,
-                                        bool isPartialRect)
+ViewerGL::clearLastRenderedImage()
 {
+    for (int i = 0; i < 2; ++i) {
+        _imp->displayTextures[i].image.reset();
+    }
+}
+
+void
+ViewerGL::getViewerProcessHashStored(std::map<TimeValue, ImageTileKeyPtr>* hashes) const
+{
+    QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
+    *hashes = _imp->uploadedTexturesViewerHash;
+}
+
+
+void
+ViewerGL::removeViewerProcessHashAtTime(TimeValue time)
+{
+    QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
+    std::map<TimeValue, ImageTileKeyPtr>::iterator found = _imp->uploadedTexturesViewerHash.find(time);
+    if (found != _imp->uploadedTexturesViewerHash.end()) {
+        _imp->uploadedTexturesViewerHash.erase(found);
+    }
+}
+
+
+void
+ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
+                                     int textureIndex,
+                                     bool isPartialRect,
+                                     TimeValue time,
+                                     const RectD& originalCanonicalRoi,
+                                     const RectD& rod,
+                                     bool recenterViewer,
+                                     const Point& viewportCenter,
+                                     const ImageTileKeyPtr& viewerProcessNodeTileKey)
+{
+    // always running in the main thread
+    assert( qApp && qApp->thread() == QThread::currentThread() );
+    makeCurrent();
+
+    glCheckError(GL_GPU);
+
+    GLint currentBoundPBO = 0;
+    GL_GPU::GetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
+    glCheckError(GL_GPU);
+
+    // We use 2 PBOs to make use of asynchronous data uploading
+    GLuint pboId = getPboID(_imp->updateViewerPboIndex);
+
+    assert(textureIndex == 0 || textureIndex == 1);
+
+    // Only RGBA images at this point can be provided
+    assert(!image || image->getLayer().getNumComponents() == 4);
+
+    // The bitdepth of the texture
+    ImageBitDepthEnum bitdepth = eImageBitDepthFloat;
+    if (image) {
+        bitdepth = image->getBitDepth();
+    }
+
+    // Other formats are not supported yet
+    assert(bitdepth == eImageBitDepthByte || bitdepth == eImageBitDepthFloat);
+
+    Image::CPUTileData imageData;
+    if (image) {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
+
+    // Insert the hash in the frame/hash map so we can update the timeline's cache bar
+    if (!isPartialRect && textureIndex == 0 && viewerProcessNodeTileKey) {
+        QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
+        _imp->uploadedTexturesViewerHash[time] = viewerProcessNodeTileKey;
+    }
+    
+
+    GLTexturePtr tex;
+    if (isPartialRect) {
+
+        assert(image);
+
+        // For small partial updates overlays, we make new textures
+        int format, internalFormat, glType;
+
+        if (bitdepth == eImageBitDepthFloat) {
+            Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+        } else {
+            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+        }
+        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+
+        TextureInfo info;
+        info.texture = tex;
+        info.mipMapLevel = image ? image->getMipMapLevel() : 0;
+        info.premult = _imp->displayTextures[0].premult;
+        info.pixelAspectRatio = _imp->displayTextures[0].pixelAspectRatio;
+        info.time = time;
+        info.isPartialImage = true;
+        info.originalCanonicalRoi = originalCanonicalRoi;
+        info.isVisible = true;
+        _imp->partialUpdateTextures.push_back(info);
+
+        // Update time otherwise overlays won't refresh since we are not updating the displayTextures
+        _imp->displayTextures[0].time = time;
+        _imp->displayTextures[1].time = time;
+    } else {
+
+        _imp->displayTextures[textureIndex].image = image;
+        _imp->displayTextures[textureIndex].originalCanonicalRoi = originalCanonicalRoi;
+        // re-use the existing texture if possible
+        if (!image) {
+            _imp->displayTextures[textureIndex].isVisible = false;
+        } else {
+            tex = _imp->displayTextures[textureIndex].texture;
+            if (tex->type() != bitdepth) {
+                int format, internalFormat, glType;
+
+                if (bitdepth == eImageBitDepthFloat) {
+                    Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+                } else {
+                    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+                }
+                _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+            }
+
+            tex->ensureTextureHasSize(imageData.tileBounds, 0);
+
+            _imp->displayTextures[textureIndex].isVisible = true;
+            _imp->displayTextures[textureIndex].mipMapLevel = image ? image->getMipMapLevel() : 0;
+            _imp->displayTextures[textureIndex].time = time;
+        }
+        setRegionOfDefinition(rod, _imp->displayTextures[textureIndex].pixelAspectRatio, textureIndex);
+
+        Q_EMIT imageChanged(textureIndex);
+    }
+
     if (recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
         double curCenterX = ( _imp->zoomCtx.left() + _imp->zoomCtx.right() ) / 2.;
@@ -1196,130 +1159,8 @@ ViewerGL::endTransferBufferFromRAMToGPU(int textureIndex,
         _imp->zoomCtx.translate(viewportCenter.x - curCenterX, viewportCenter.y - curCenterY);
     }
 
-    if (isPartialRect) {
-        TextureInfo info;
-        info.texture = boost::dynamic_pointer_cast<Texture>(texture);
-        info.offset = offset;
-        info.mipMapLevel = mipMapLevel;
-        info.premult = premult;
-        info.time = time;
-        info.memoryHeldByLastRenderedImages = 0;
-        info.isPartialImage = true;
-        info.isVisible = true;
-        _imp->partialUpdateTextures.push_back(info);
-        // Update time otherwise overlays won't refresh
-        _imp->displayTextures[0].time = time;
-        _imp->displayTextures[1].time = time;
-    } else {
-        ViewerNodePtr internalNode = getInternalNode();
-        _imp->displayTextures[textureIndex].isVisible = true;
-        _imp->displayTextures[textureIndex].offset = offset;
-        _imp->displayTextures[textureIndex].mipMapLevel = mipMapLevel;
-        _imp->displayingImageLut = (ViewerColorSpaceEnum)lut;
-        _imp->displayTextures[textureIndex].premult = premult;
-        _imp->displayTextures[textureIndex].time = time;
-
-        if (_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages > 0) {
-            internalNode->unregisterPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
-        }
-
-
-        if (image) {
-            _imp->viewerTab->setImageFormat(textureIndex, image->getComponents(), depth);
-            {
-                QMutexLocker k(&_imp->lastRenderedImageMutex);
-                _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] = image;
-            }
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages = 0;
-            _imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages += image->size();
-
-            internalNode->registerPluginMemory(_imp->displayTextures[textureIndex].memoryHeldByLastRenderedImages);
-            Q_EMIT imageChanged(textureIndex, true);
-        } else {
-            if ( !_imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel] ) {
-                Q_EMIT imageChanged(textureIndex, false);
-            } else {
-                Q_EMIT imageChanged(textureIndex, true);
-            }
-        }
-        setRegionOfDefinition(rod, par, textureIndex);
-    }
-} // ViewerGL::endTransferBufferFromRAMToGPU
-
-void
-ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
-                                     size_t bytesCount,
-                                     const RectI &roiRoundedToTileSize,
-                                     const RectI& roi,
-                                     const TextureRect & tileRect,
-                                     int textureIndex,
-                                     bool isPartialRect,
-                                     bool isFirstTile,
-                                     boost::shared_ptr<Texture>* texture)
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    assert( QGLContext::currentContext() == context() );
-    GLenum e = GL_GPU::GetError();
-    Q_UNUSED(e);
-
-    GLint currentBoundPBO = 0;
-    GL_GPU::GetIntegerv(GL_PIXEL_UNPACK_BUFFER_BINDING_ARB, &currentBoundPBO);
-    GLenum err = GL_GPU::GetError();
-    if ( (err != GL_NO_ERROR) || (currentBoundPBO != 0) ) {
-        qDebug() << "(ViewerGL::allocateAndMapPBO): Another PBO is currently mapped, glMap failed.";
-    }
-
-    // We use 2 PBOs to make use of asynchronous data uploading
-    GLuint pboId = getPboID(_imp->updateViewerPboIndex);
-
-    // The bitdepth of the texture
-    ImageBitDepthEnum bd = getBitDepth();
-    Texture::DataTypeEnum dataType;
-    if (bd == eImageBitDepthByte) {
-        dataType = Texture::eDataTypeByte;
-    } else {
-        //do 32bit fp textures either way, don't bother with half float. We might support it further on.
-        dataType = Texture::eDataTypeFloat;
-    }
-    assert(textureIndex == 0 || textureIndex == 1);
-
-    GLTexturePtr tex;
-    TextureRect textureRectangle;
-    if (isPartialRect) {
-        // For small partial updates overlays, we make new textures
-        int format, internalFormat, glType;
-
-        if (dataType == Texture::eDataTypeFloat) {
-            Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
-        } else {
-            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        }
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType, true) );
-        textureRectangle = tileRect;
-    } else {
-        // re-use the existing texture if possible
-        tex = _imp->displayTextures[textureIndex].texture;
-        if (tex->type() != dataType) {
-            int format, internalFormat, glType;
-
-            if (dataType == Texture::eDataTypeFloat) {
-                Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
-            } else {
-                Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-            }
-            _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, dataType, format, internalFormat, glType, true) );
-        }
-        textureRectangle.set(roiRoundedToTileSize);
-        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.set(roi);
-        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.closestPo2 = tileRect.closestPo2;
-        _imp->displayTextures[textureIndex].roiNotRoundedToTileSize.par = tileRect.par;
-        textureRectangle.par = tileRect.par;
-        textureRectangle.closestPo2 = tileRect.closestPo2;
-        if (isFirstTile) {
-            tex->ensureTextureHasSize(textureRectangle, 0);
-        }
+    if (!image) {
+        return;
     }
 
     // bind PBO to update texture source
@@ -1332,16 +1173,17 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
+    std::size_t bytesCount = imageData.tileBounds.area() * imageData.nComps * getSizeOfForBitDepth(imageData.bitDepth);
+
     GL_GPU::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
     // map the buffer object into client's memory
     GLvoid *ret = GL_GPU::MapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, GL_WRITE_ONLY_ARB);
     glCheckError(GL_GPU);
     assert(ret);
-    assert(ramBuffer);
     if (ret) {
         // update data directly on the mapped buffer
-        std::memcpy(ret, (void*)ramBuffer, bytesCount);
+        std::memcpy(ret, imageData.ptrs[0], bytesCount);
         GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);
@@ -1351,35 +1193,20 @@ ViewerGL::transferBufferFromRAMtoGPU(const unsigned char* ramBuffer,
     // copy pixels from PBO to texture object
     // using glBindTexture followed by glTexSubImage2D.
     // Use offset instead of pointer (last parameter is 0).
-    tex->fillOrAllocateTexture(textureRectangle, tileRect, true, 0);
+    tex->fillOrAllocateTexture(imageData.tileBounds, 0, 0);
 
     // restore previously bound PBO
     GL_GPU::BindBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB, currentBoundPBO);
     //glBindTexture(GL_TEXTURE_2D, 0); // why should we bind texture 0?
     glCheckError(GL_GPU);
 
-    *texture = tex;
-
     _imp->updateViewerPboIndex = (_imp->updateViewerPboIndex + 1) % 2;
+
+
+
+
 } // ViewerGL::transferBufferFromRAMtoGPU
 
-void
-ViewerGL::clearLastRenderedImage()
-{
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    ViewerNodePtr internalNode = getInternalNode();
-
-    for (int i = 0; i < 2; ++i) {
-        for (U32 j = 0; j < _imp->displayTextures[i].lastRenderedTiles.size(); ++j) {
-            _imp->displayTextures[i].lastRenderedTiles[j].reset();
-        }
-        if (_imp->displayTextures[i].memoryHeldByLastRenderedImages > 0) {
-            internalNode->unregisterPluginMemory(_imp->displayTextures[i].memoryHeldByLastRenderedImages);
-            _imp->displayTextures[i].memoryHeldByLastRenderedImages = 0;
-        }
-    }
-}
 
 void
 ViewerGL::disconnectInputTexture(int textureIndex, bool clearRoD)
@@ -1478,7 +1305,7 @@ ViewerGL::mousePressEvent(QMouseEvent* e)
         overlayEnabled) {
         unsigned int mipMapLevel = getCurrentRenderScale();
         double scale = 1. / (1 << mipMapLevel);
-        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, currentTimeForEvent(e) );
+        overlaysCaught = _imp->viewerTab->notifyOverlaysPenDown( RenderScale(scale), _imp->pointerTypeOnPress, QMouseEventLocalPos(e), zoomPos, _imp->pressureOnPress, TimeValue(currentTimeForEvent(e)) );
         if (overlaysCaught) {
             mustRedraw = true;
         }
@@ -1591,7 +1418,7 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
     }
     unsigned int mipMapLevel = getCurrentRenderScale();
     double scale = 1. / (1 << mipMapLevel);
-    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, currentTimeForEvent(e), _imp->pressureOnRelease) ) {
+    if ( _imp->viewerTab->notifyOverlaysPenUp(RenderScale(scale), QMouseEventLocalPos(e), zoomPos, _imp->pressureOnRelease, TimeValue(currentTimeForEvent(e))) ) {
         mustRedraw = true;
     }
     if (mustRedraw) {
@@ -1600,14 +1427,14 @@ ViewerGL::mouseReleaseEvent(QMouseEvent* e)
 
     if (_imp->renderOnPenUp) {
         _imp->renderOnPenUp = false;
-        getInternalNode()->renderCurrentFrame(true);
+        getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
     }
 } // ViewerGL::mouseReleaseEvent
 
 void
 ViewerGL::mouseMoveEvent(QMouseEvent* e)
 {
-    if ( !penMotionInternal(e->x(), e->y(), /*pressure=*/ 1., currentTimeForEvent(e), e) ) {
+    if ( !penMotionInternal(e->x(), e->y(), /*pressure=*/ 1., TimeValue(currentTimeForEvent(e)), e) ) {
         //e->ignore(); //< calling e->ignore() is the same as calling the base implementation of QWidget::mouseMoveEvent(e)
         TabWidget* tab = _imp->viewerTab ? _imp->viewerTab->getParentPane() : 0;
         if (tab) {
@@ -1646,7 +1473,7 @@ ViewerGL::tabletEvent(QTabletEvent* e)
         break;
     }
     case QEvent::TabletMove: {
-        if ( !penMotionInternal(e->x(), e->y(), e->pressure(), currentTimeForEvent(e), e) ) {
+        if ( !penMotionInternal(e->x(), e->y(), e->pressure(), TimeValue(currentTimeForEvent(e)), e) ) {
             QGLWidget::tabletEvent(e);
         } else {
             e->accept();
@@ -1662,7 +1489,7 @@ bool
 ViewerGL::penMotionInternal(int x,
                             int y,
                             double pressure,
-                            double timestamp,
+                            TimeValue timestamp,
                             QInputEvent* e)
 {
     Q_UNUSED(e);
@@ -1771,7 +1598,7 @@ ViewerGL::penMotionInternal(int x,
         }
 
         //_imp->oldClick = newClick; // don't update oldClick! this is the zoom center
-        _imp->viewerTab->getInternalNode()->renderCurrentFrame(true);
+        getInternalNode()->getNode()->getRenderEngine()->renderCurrentFrame();
 
         //  else {
         mustRedraw = true;
@@ -2017,25 +1844,45 @@ ViewerGL::setParametricParamsPickerColor(const OfxRGBAColourD& color, bool setCo
     }
 }
 
+
+int
+ViewerGL::getMipMapLevelFromZoomFactor() const
+{
+    double zoomFactor = getZoomFactor();
+    double closestPowerOf2 = zoomFactor >= 1 ? 1 : std::pow( 2, -std::ceil(std::log(zoomFactor) / M_LN2) );
+    return std::log(closestPowerOf2) / M_LN2;
+}
+
 bool
 ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
 {
 
     ViewerNodePtr viewerNode = getInternalNode();
-    ViewerInstancePtr instance = viewerNode->getInternalViewerNode();
-    assert(instance);
-    unsigned int mipMapLevel = (unsigned int)std::max((int)instance->getMipMapLevelFromZoomFactor(), (int)viewerNode->getProxyModeKnobMipMapLevel());
-    int closestPo2 = 1 << mipMapLevel;
-    if (closestPo2 != _imp->displayTextures[texIndex].texture->getTextureRect().closestPo2) {
+
+    unsigned int mipMapLevel;
+    {
+        int downscale_i = viewerNode->getDownscaleMipMapLevelKnobIndex();
+        if (downscale_i == 0) {
+            mipMapLevel = getMipMapLevelFromZoomFactor();
+        } else {
+            mipMapLevel = downscale_i;
+        }
+    }
+
+    if (_imp->displayTextures[texIndex].mipMapLevel != mipMapLevel) {
         return false;
     }
-    RectI roiNotRounded;
-    RectI roi = getImageRectangleDisplayedRoundedToTileSize(texIndex, _imp->displayTextures[texIndex].rod, _imp->displayTextures[texIndex].texture->getTextureRect().par, mipMapLevel, 0, 0, 0, &roiNotRounded);
-    const RectI& currentTexRoi = _imp->displayTextures[texIndex].texture->getTextureRect();
-    if (!currentTexRoi.contains(roi)) {
+
+    RectD roiCanonical = getImageRectangleDisplayed();
+    roiCanonical.intersect(_imp->displayTextures[texIndex].rod, &roiCanonical);
+
+    RectI roiPixel;
+    roiCanonical.toPixelEnclosing(mipMapLevel, _imp->displayTextures[texIndex].pixelAspectRatio, &roiPixel);
+
+    const RectI& texBounds = _imp->displayTextures[texIndex].texture->getBounds();
+    if (!texBounds.contains(roiPixel)) {
         return false;
     }
-    _imp->displayTextures[texIndex].roiNotRoundedToTileSize.set(roiNotRounded);
 
     return true;
 }
@@ -2046,11 +1893,11 @@ ViewerGL::checkIfViewPortRoIValidOrRender()
     for (int i = 0; i < 2; ++i) {
         if ( !checkIfViewPortRoIValidOrRenderForInput(i) ) {
             if ( !getViewerTab()->getGui()->getApp()->getProject()->isLoadingProject() ) {
-                ViewerInstancePtr viewer = getInternalNode()->getInternalViewerNode();
+                ViewerNodePtr viewer = getInternalNode();
                 assert(viewer);
                 if (viewer) {
-                    viewer->getRenderEngine()->abortRenderingAutoRestart();
-                    viewer->renderCurrentFrame(true);
+                    viewer->getNode()->getRenderEngine()->abortRenderingAutoRestart();
+                    viewer->getNode()->getRenderEngine()->renderCurrentFrame();
                 }
             }
             break;
@@ -2148,12 +1995,6 @@ ViewerGL::wheelEvent(QWheelEvent* e)
 
     checkIfViewPortRoIValidOrRender();
 
-
-    ///Clear green cached line so the user doesn't expect to see things in the cache
-    ///since we're changing the zoom factor
-    if (oldMipMapLevel != newMipMapLevel) {
-        _imp->viewerTab->clearTimelineCacheLine();
-    }
     update();
 } // ViewerGL::wheelEvent
 
@@ -2198,11 +2039,6 @@ ViewerGL::zoomViewport(double newZoomFactor)
         double centerY = ( _imp->zoomCtx.top() + _imp->zoomCtx.bottom() ) / 2.;
         _imp->zoomCtx.zoom(centerX, centerY, scale);
         _imp->zoomOrPannedSinceLastFit = true;
-    }
-    ///Clear green cached line so the user doesn't expect to see things in the cache
-    ///since we're changing the zoom factor
-    if (newMipMapLevel != oldMipMapLevel) {
-        _imp->viewerTab->clearTimelineCacheLine();
     }
 
     checkIfViewPortRoIValidOrRender();
@@ -2259,12 +2095,6 @@ ViewerGL::fitImageToFormat()
     ViewerNodePtr viewerNode = getInternalNode();
     if ( viewerNode->isViewersSynchroEnabled() ) {
         _imp->viewerTab->synchronizeOtherViewersProjection();
-    }
-
-    if (newMipMapLevel != oldMipMapLevel) {
-        ///Clear green cached line so the user doesn't expect to see things in the cache
-        ///since we're changing the zoom factor
-        _imp->viewerTab->clearTimelineCacheLine();
     }
 
     checkIfViewPortRoIValidOrRender();
@@ -2340,6 +2170,7 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
     RectI pixelRoD;
     rod.toPixelEnclosing(0, par, &pixelRoD);
 
+    _imp->displayTextures[textureIndex].pixelAspectRatio = par;
     _imp->displayTextures[textureIndex].rod = rod;
     if ( _imp->infoViewer[textureIndex] && !_imp->viewerTab->getGui()->isGUIFrozen() ) {
         _imp->infoViewer[textureIndex]->setDataWindow(pixelRoD);
@@ -2458,12 +2289,6 @@ ViewerGL::resizeEvent(QResizeEvent* e)
   // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     QGLWidget::resizeEvent(e);
-}
-
-ImageBitDepthEnum
-ViewerGL::getBitDepth() const
-{
-    return appPTR->getCurrentSettings()->getViewersBitDepth();
 }
 
 bool
@@ -2806,7 +2631,7 @@ ViewerGL::pickColorInternal(double x,
         imgPos = _imp->zoomCtx.toZoomCoordinates(x, y);
     }
 
-    ViewIdx currentView = getInternalNode()->getCurrentView();
+    ViewIdx currentView = getInternalNode()->getCurrentView_TLS();
 
     _imp->lastPickerPos = imgPos;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
@@ -2985,7 +2810,7 @@ ViewerGL::updateRectangleColorPickerInternal()
     QPointF btmRight = _imp->pickerRect.bottomRight();
     RectD rect;
 
-    ViewIdx currentView = getInternalNode()->getCurrentView();
+    ViewIdx currentView = getInternalNode()->getCurrentView_TLS();
 
     rect.set_left( std::min( topLeft.x(), btmRight.x() ) );
     rect.set_right( std::max( topLeft.x(), btmRight.x() ) );
@@ -3053,11 +2878,11 @@ ViewerGL::getTextureColorAt(int x,
     *b = 0;
     *a = 0;
 
-    Texture::DataTypeEnum type;
+    ImageBitDepthEnum bitDepth;
     if (_imp->displayTextures[0].texture) {
-        type = _imp->displayTextures[0].texture->type();
+        bitDepth = _imp->displayTextures[0].texture->type();
     } else if (_imp->displayTextures[1].texture) {
-        type = _imp->displayTextures[1].texture->type();
+        bitDepth = _imp->displayTextures[1].texture->type();
     } else {
         return;
     }
@@ -3068,7 +2893,7 @@ ViewerGL::getTextureColorAt(int x,
         pos = _imp->zoomCtx.toWidgetCoordinates(x, y);
     }
 
-    if (type == Texture::eDataTypeByte) {
+    if (bitDepth == eImageBitDepthByte) {
         U32 pixel;
         GL_GPU::ReadBuffer(GL_FRONT);
         GL_GPU::ReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixel);
@@ -3082,7 +2907,7 @@ ViewerGL::getTextureColorAt(int x,
         *b = (double)blue / 255.;
         *a = (double)alpha / 255.;
         glCheckError(GL_GPU);
-    } else if (type == Texture::eDataTypeFloat) {
+    } else if (bitDepth == eImageBitDepthFloat) {
         GLfloat pixel[4];
         GL_GPU::ReadPixels(pos.x(), height() - pos.y(), 1, 1, GL_RGBA, GL_FLOAT, pixel);
         *r = (double)pixel[0];
@@ -3164,83 +2989,6 @@ ViewerGL::restoreOpenGLContext()
     GL_GPU::PopAttrib();
 }
 
-void
-ViewerGL::clearLastRenderedTexture()
-{
-    {
-        QMutexLocker l(&_imp->lastRenderedImageMutex);
-        U64 toUnRegister = 0;
-        for (int i = 0; i < 2; ++i) {
-            for (U32 j = 0; j < _imp->displayTextures[i].lastRenderedTiles.size(); ++j) {
-                _imp->displayTextures[i].lastRenderedTiles[j].reset();
-            }
-            toUnRegister += _imp->displayTextures[i].memoryHeldByLastRenderedImages;
-        }
-        if (toUnRegister > 0) {
-            getInternalNode()->unregisterPluginMemory(toUnRegister);
-        }
-    }
-}
-
-ImagePtr
-ViewerGL::getLastRenderedImage(int textureIndex) const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if ( !getInternalNode()->getNode()->isActivated() ) {
-        return ImagePtr();
-    }
-    QMutexLocker l(&_imp->lastRenderedImageMutex);
-    for (U32 i = 0; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
-        ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
-        if (mipmap) {
-            return mipmap;
-        }
-    }
-
-    return ImagePtr();
-}
-
-ImagePtr
-ViewerGL::getLastRenderedImageByMipMapLevel(int textureIndex,
-                                            unsigned int mipMapLevel) const
-{
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
-    if ( !getInternalNode()->getNode()->isActivated() ) {
-        return ImagePtr();
-    }
-
-    QMutexLocker l(&_imp->lastRenderedImageMutex);
-    assert(_imp->displayTextures[textureIndex].lastRenderedTiles.size() > mipMapLevel);
-
-    ImagePtr mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[mipMapLevel];
-    if (mipmap) {
-        return mipmap;
-    }
-
-    //Find an image at higher scale
-    if (mipMapLevel > 0) {
-        for (int i = (int)mipMapLevel - 1; i >= 0; --i) {
-            mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
-            if (mipmap) {
-                return mipmap;
-            }
-        }
-    }
-
-    //Find an image at lower scale
-    for (U32 i = mipMapLevel + 1; i < _imp->displayTextures[textureIndex].lastRenderedTiles.size(); ++i) {
-        mipmap = _imp->displayTextures[textureIndex].lastRenderedTiles[i];
-        if (mipmap) {
-            return mipmap;
-        }
-    }
-
-    return ImagePtr();
-}
 
 #ifndef M_LN2
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
@@ -3271,7 +3019,7 @@ ViewerGL::getCurrentRenderScale() const
 template <typename PIX, int maxValue>
 static
 bool
-getColorAtInternal(const ImagePtr& image,
+getColorAtSinglePixel(const Image::CPUTileData& image,
                    int x,
                    int y,             // in pixel coordinates
                    bool forceLinear,
@@ -3282,60 +3030,56 @@ getColorAtInternal(const ImagePtr& image,
                    float* b,
                    float* a)
 {
-    if ( image->getBounds().contains(x, y) ) {
-        Image::ReadAccess racc( image.get() );
-        const PIX* pix = (const PIX*)racc.pixelAt(x, y);
-
-        if (!pix) {
-            return false;
-        }
-
-        int nComps = image->getComponents().getNumComponents();
-        if (nComps >= 4) {
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = pix[3] / (float)maxValue;
-        } else if (nComps == 3) {
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = pix[2] / (float)maxValue;
-            *a = 1.;
-        } else if (nComps == 2) {
-            *r = pix[0] / (float)maxValue;
-            *g = pix[1] / (float)maxValue;
-            *b = 1.;
-            *a = 1.;
-        } else {
-            *r = *g = *b = *a = pix[0] / (float)maxValue;
-        }
-
-
-        ///convert to linear
-        if (srcColorSpace) {
-            *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
-            *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
-            *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
-        }
-
-        if (!forceLinear && dstColorSpace) {
-            ///convert to dst color space
-            float from[3];
-            from[0] = *r;
-            from[1] = *g;
-            from[2] = *b;
-            float to[3];
-            dstColorSpace->to_float_planar(to, from, 3);
-            *r = to[0];
-            *g = to[1];
-            *b = to[2];
-        }
-
-        return true;
+    if ( !image.tileBounds.contains(x, y) ) {
+        return false;
     }
 
 
-    return false;
+    int pixelStride;
+    const PIX* pix[4];
+    Image::getChannelPointers<PIX>((const PIX**)image.ptrs, x, y, image.tileBounds, image.nComps, (PIX**)pix, &pixelStride);
+
+    if (image.nComps >= 4) {
+        *r = *pix[0] / (float)maxValue;
+        *g = *pix[1] / (float)maxValue;
+        *b = *pix[2] / (float)maxValue;
+        *a = *pix[3] / (float)maxValue;
+    } else if (image.nComps == 3) {
+        *r = *pix[0] / (float)maxValue;
+        *g = *pix[1] / (float)maxValue;
+        *b = *pix[2] / (float)maxValue;
+        *a = 1.;
+    } else if (image.nComps == 2) {
+        *r = *pix[0] / (float)maxValue;
+        *g = *pix[1] / (float)maxValue;
+        *b = 1.;
+        *a = 1.;
+    } else {
+        *r = *g = *b = *a = *pix[0] / (float)maxValue;
+    }
+
+    // Convert to linear
+    if (srcColorSpace) {
+        *r = srcColorSpace->fromColorSpaceFloatToLinearFloat(*r);
+        *g = srcColorSpace->fromColorSpaceFloatToLinearFloat(*g);
+        *b = srcColorSpace->fromColorSpaceFloatToLinearFloat(*b);
+    }
+
+    if (!forceLinear && dstColorSpace) {
+        ///convert to dst color space
+        float from[3];
+        from[0] = *r;
+        from[1] = *g;
+        from[2] = *b;
+        float to[3];
+        dstColorSpace->to_float_planar(to, from, 3);
+        *r = to[0];
+        *g = to[1];
+        *b = to[2];
+    }
+
+    return true;
+
 } // getColorAtInternal
 
 bool
@@ -3355,32 +3099,13 @@ ViewerGL::getColorAt(double x,
     assert(textureIndex == 0 || textureIndex == 1);
 
 
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
 
-
+    ImagePtr image = _imp->displayTextures[textureIndex].image;
     if (!image) {
         return false;
-        ///Don't do this as this is 8bit data
-        /*double colorGPU[4];
-           getTextureColorAt(x, y, &colorGPU[0], &colorGPU[1], &colorGPU[2], &colorGPU[3]);
-         * a = colorGPU[3];
-           if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-            const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
-
-         * r = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[0]);
-         * g = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[1]);
-         * b = srcColorSpace->fromColorSpaceFloatToLinearFloat(colorGPU[2]);
-           } else {
-         * r = colorGPU[0];
-         * g = colorGPU[1];
-         * b = colorGPU[2];
-           }
-           return true;*/
     }
 
-    ImageBitDepthEnum depth = image->getBitDepth();
-    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
+    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
     if ( (srcCS == _imp->displayingImageLut)
@@ -3389,7 +3114,7 @@ ViewerGL::getColorAt(double x,
         srcColorSpace = 0;
         dstColorSpace = 0;
     } else {
-        if ( image->getComponents().isColorPlane() ) {
+        if ( image->getLayer().isColorPlane() ) {
             srcColorSpace = ViewerInstance::lutFromColorspace(srcCS);
             dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
         } else {
@@ -3397,171 +3122,194 @@ ViewerGL::getColorAt(double x,
         }
     }
 
-    const double par = image->getPixelAspectRatio();
-    double scale = 1. / ( 1 << image->getMipMapLevel() );
+
+    assert(image->getBufferFormat() != eImageBufferLayoutMonoChannelTiled);
+    assert(image->getStorageMode() != eStorageModeGLTex);
+
+
+    Image::CPUTileData imageData;
+    {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
+    *imgMmlevel = image->getMipMapLevel();
+    double scale = 1. / ( 1 << *imgMmlevel );
+    double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
 
     ///Convert to pixel coords
     int xPixel = std::floor(x  * scale / par);
     int yPixel = std::floor(y * scale);
     bool gotval;
-    switch (depth) {
-    case eImageBitDepthByte:
-        gotval = getColorAtInternal<unsigned char, 255>(image,
-                                                        xPixel, yPixel,
-                                                        forceLinear,
-                                                        srcColorSpace,
-                                                        dstColorSpace,
-                                                        r, g, b, a);
-        break;
-    case eImageBitDepthShort:
-        gotval = getColorAtInternal<unsigned short, 65535>(image,
-                                                           xPixel, yPixel,
-                                                           forceLinear,
-                                                           srcColorSpace,
-                                                           dstColorSpace,
-                                                           r, g, b, a);
-        break;
-    case eImageBitDepthFloat:
-        gotval = getColorAtInternal<float, 1>(image,
-                                              xPixel, yPixel,
-                                              forceLinear,
-                                              srcColorSpace,
-                                              dstColorSpace,
-                                              r, g, b, a);
-        break;
-    default:
-        gotval = false;
-        break;
+    switch (image->getBitDepth()) {
+        case eImageBitDepthByte:
+            gotval = getColorAtSinglePixel<unsigned char, 255>(imageData,
+                                                               xPixel, yPixel,
+                                                               forceLinear,
+                                                               srcColorSpace,
+                                                               dstColorSpace,
+                                                               r, g, b, a);
+            break;
+        case eImageBitDepthShort:
+            gotval = getColorAtSinglePixel<unsigned short, 65535>(imageData,
+                                                                  xPixel, yPixel,
+                                                                  forceLinear,
+                                                                  srcColorSpace,
+                                                                  dstColorSpace,
+                                                                  r, g, b, a);
+            break;
+        case eImageBitDepthFloat:
+            gotval = getColorAtSinglePixel<float, 1>(imageData,
+                                                     xPixel, yPixel,
+                                                     forceLinear,
+                                                     srcColorSpace,
+                                                     dstColorSpace,
+                                                     r, g, b, a);
+            break;
+        default:
+            gotval = false;
+            break;
     }
-    *imgMmlevel = image->getMipMapLevel();
 
     return gotval;
 } // getColorAt
 
+template <typename PIX, int maxValue, int srcNComps>
+static
 bool
-ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinates
+getColorAtRectForSrcNComps(const Image::CPUTileData& image,
+                           const RectI& roi,
+                           bool forceLinear,
+                           const Color::Lut* srcColorSpace,
+                           const Color::Lut* dstColorSpace,
+                           double pixelSums[4])
+{
+
+    memset(pixelSums, 0, sizeof(double) * 4);
+
+    U64 area = roi.area();
+
+    int pixelStride;
+    const PIX* pix[4];
+    Image::getChannelPointers<PIX, srcNComps>((const PIX**)image.ptrs, roi.x1, roi.y1, image.tileBounds, (PIX**)pix, &pixelStride);
+
+
+    for (int y = roi.y1; y < roi.y2; ++y) {
+
+        for (int x = roi.x1; x < roi.x2; ++x) {
+
+            float tmpPix[4] = {0., 0., 0., 0.};
+            if (srcNComps == 1) {
+                tmpPix[3] = Image::convertPixelDepth<PIX, float>(*pix[0]);
+            } else {
+                for (int c = 0; c < srcNComps; ++c) {
+                    tmpPix[c] = Image::convertPixelDepth<PIX, float>(*pix[c]);
+                }
+            }
+
+            // Convert to linear
+            if (srcColorSpace && srcNComps > 1) {
+                int nCompsToConvert = std::min(3, srcNComps);
+                for (int c = 0; c < nCompsToConvert; ++c) {
+                    tmpPix[c] = srcColorSpace->fromColorSpaceFloatToLinearFloat(tmpPix[c]);
+                }
+            }
+
+            if (!forceLinear && dstColorSpace) {
+                ///convert to dst color space
+                float from[3];
+                memcpy(from, tmpPix, sizeof(float) * 3);
+                dstColorSpace->to_float_planar(tmpPix, from, 3);
+            }
+
+
+            for (int c = 0; c < 4; ++c) {
+                pixelSums[c] += tmpPix[c];
+                if (pix[c]) {
+                    pix[c] += pixelStride;
+                }
+            }
+        } // for each pixels along the line
+
+        // Remove what was done on previous iteration and move to next line
+        for (int c = 0; c < srcNComps; ++c) {
+            pix[c] += ((image.tileBounds.width() - roi.width()) * pixelStride);
+        }
+
+    } // for each scan-line
+
+    if (area > 0) {
+        for (int c = 0; c < 4; ++c) {
+            pixelSums[c] /= area;
+        }
+    }
+    return true;
+
+
+} // getColorAtRectForSrcNComps
+
+template <typename PIX, int maxValue>
+static
+bool
+getColorAtRectForDepth(const Image::CPUTileData& image,
+                       const RectI& roi,
+                       bool forceLinear,
+                       const Color::Lut* srcColorSpace,
+                       const Color::Lut* dstColorSpace,
+                       double pixelSums[4])
+{
+    switch (image.nComps) {
+        case 1:
+            getColorAtRectForSrcNComps<PIX, maxValue, 1>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case 2:
+            getColorAtRectForSrcNComps<PIX, maxValue, 2>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case 3:
+            getColorAtRectForSrcNComps<PIX, maxValue, 3>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case 4:
+            getColorAtRectForSrcNComps<PIX, maxValue, 4>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        default:
+            return false;
+            break;
+    }
+} // getColorAtRectForDepth
+
+
+bool
+ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
                          bool forceLinear,
                          int textureIndex,
                          float* r,
                          float* g,
                          float* b,
                          float* a,
-                         unsigned int* imgMm)
+                         unsigned int* imgMmlevel)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
     assert(r && g && b && a);
     assert(textureIndex == 0 || textureIndex == 1);
 
-    unsigned int mipMapLevel = (unsigned int)getMipMapLevelCombinedToZoomFactor();
-    ImagePtr image = getLastRenderedImageByMipMapLevel(textureIndex, mipMapLevel);
 
-    if (image) {
-        mipMapLevel = image->getMipMapLevel();
-        *imgMm = mipMapLevel;
-    }
 
-    ///Convert to pixel coords
-    RectI rectPixel;
-    rectPixel.set_left(  int( std::floor( rect.left() ) ) >> mipMapLevel);
-    rectPixel.set_right( int( std::floor( rect.right() ) ) >> mipMapLevel);
-    rectPixel.set_bottom(int( std::floor( rect.bottom() ) ) >> mipMapLevel);
-    rectPixel.set_top(   int( std::floor( rect.top() ) ) >> mipMapLevel);
-    assert( rect.bottom() <= rect.top() && rect.left() <= rect.right() );
-    assert( rectPixel.bottom() <= rectPixel.top() && rectPixel.left() <= rectPixel.right() );
-    double rSum = 0.;
-    double gSum = 0.;
-    double bSum = 0.;
-    double aSum = 0.;
+    ImagePtr image = _imp->displayTextures[textureIndex].image;
     if (!image) {
         return false;
-        //don't do this as this is 8 bit
-        /*
-           Texture::DataTypeEnum type;
-           if (_imp->displayTextures[0]) {
-            type = _imp->displayTextures[0]->type();
-           } else if (_imp->displayTextures[1]) {
-            type = _imp->displayTextures[1]->type();
-           } else {
-            return false;
-           }
-
-           if ( (type == Texture::eDataTypeByte) ) {
-            std::vector<U32> pixels(rectPixel.width() * rectPixel.height());
-            GL_GPU::ReadBuffer(GL_FRONT);
-            GL_GPU::ReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
-                         GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, &pixels.front());
-            double rF,gF,bF,aF;
-            for (U32 i = 0 ; i < pixels.size(); ++i) {
-                U8 red = 0, green = 0, blue = 0, alpha = 0;
-                blue |= pixels[i];
-                green |= (pixels[i] >> 8);
-                red |= (pixels[i] >> 16);
-                alpha |= (pixels[i] >> 24);
-                rF = (double)red / 255.;
-                gF = (double)green / 255.;
-                bF = (double)blue / 255.;
-                aF = (double)alpha / 255.;
-
-                aSum += aF;
-                if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-                    const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
-
-                    rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
-                    gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
-                    bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
-                } else {
-                    rSum += rF;
-                    gSum += gF;
-                    bSum += bF;
-                }
-
-            }
-
-            glCheckError(GL_GPU);
-           } else if ( (type == Texture::eDataTypeFloat)) {
-            std::vector<float> pixels(rectPixel.width() * rectPixel.height() * 4);
-            GL_GPU::ReadPixels(rectPixel.left(), rectPixel.right(), rectPixel.width(), rectPixel.height(),
-                         GL_RGBA, GL_FLOAT, &pixels.front());
-
-            int rowSize = rectPixel.width() * 4;
-            for (int y = 0; y < rectPixel.height(); ++y) {
-                for (int x = 0; x < rectPixel.width(); ++x) {
-                    double rF = pixels[y * rowSize + (4 * x)];
-                    double gF = pixels[y * rowSize + (4 * x) + 1];
-                    double bF = pixels[y * rowSize + (4 * x) + 2];
-                    double aF = pixels[y * rowSize + (4 * x) + 3];
-
-                    aSum += aF;
-                    if ( forceLinear && (_imp->displayingImageLut != eViewerColorSpaceLinear) ) {
-                        const Color::Lut* srcColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
-
-                        rSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(rF);
-                        gSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(gF);
-                        bSum += srcColorSpace->fromColorSpaceFloatToLinearFloat(bF);
-                    } else {
-                        rSum += rF;
-                        gSum += gF;
-                        bSum += bF;
-                    }
-                }
-            }
-
-
-            glCheckError(GL_GPU);
-           }
-
-         * r = rSum / rectPixel.area();
-         * g = gSum / rectPixel.area();
-         * b = bSum / rectPixel.area();
-         * a = aSum / rectPixel.area();
-
-           return true;*/
     }
 
 
-    ImageBitDepthEnum depth = image->getBitDepth();
-    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(depth);
+    Image::CPUTileData imageData;
+    {
+        Image::Tile tile;
+        image->getTileAt(0, &tile);
+        image->getCPUTileData(tile, &imageData);
+    }
+
+    ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
     if ( (srcCS == _imp->displayingImageLut) && ( (_imp->displayingImageLut == eViewerColorSpaceLinear) || !forceLinear ) ) {
@@ -3573,72 +3321,44 @@ ViewerGL::getColorAtRect(const RectD &rect, // rectangle in canonical coordinate
         dstColorSpace = ViewerInstance::lutFromColorspace(_imp->displayingImageLut);
     }
 
-    unsigned long area = 0;
-    for (int yPixel = rectPixel.bottom(); yPixel < rectPixel.top(); ++yPixel) {
-        for (int xPixel = rectPixel.left(); xPixel < rectPixel.right(); ++xPixel) {
-            float rPix, gPix, bPix, aPix;
-            bool gotval = false;
-            switch (depth) {
-            case eImageBitDepthByte:
-                gotval = getColorAtInternal<unsigned char, 255>(image,
-                                                                xPixel, yPixel,
-                                                                forceLinear,
-                                                                srcColorSpace,
-                                                                dstColorSpace,
-                                                                &rPix, &gPix, &bPix, &aPix);
-                break;
-            case eImageBitDepthShort:
-                gotval = getColorAtInternal<unsigned short, 65535>(image,
-                                                                   xPixel, yPixel,
-                                                                   forceLinear,
-                                                                   srcColorSpace,
-                                                                   dstColorSpace,
-                                                                   &rPix, &gPix, &bPix, &aPix);
-                break;
-            case eImageBitDepthHalf:
-                break;
-            case eImageBitDepthFloat:
-                gotval = getColorAtInternal<float, 1>(image,
-                                                      xPixel, yPixel,
-                                                      forceLinear,
-                                                      srcColorSpace,
-                                                      dstColorSpace,
-                                                      &rPix, &gPix, &bPix, &aPix);
-                break;
-            case eImageBitDepthNone:
-                break;
-            }
-            if (gotval) {
-                rSum += rPix;
-                gSum += gPix;
-                bSum += bPix;
-                aSum += aPix;
-                ++area;
-            }
-        }
+    *imgMmlevel = image->getMipMapLevel();
+    double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
+
+
+    RectI roiPixels;
+    roi.toPixelEnclosing(*imgMmlevel, par, &roiPixels);
+
+    double pixelSums[4];
+    switch (image->getBitDepth()) {
+        case eImageBitDepthByte:
+            getColorAtRectForDepth<unsigned char, 255>(imageData, roiPixels, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case eImageBitDepthShort:
+            getColorAtRectForDepth<unsigned short, 65535>(imageData, roiPixels, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case eImageBitDepthFloat:
+            getColorAtRectForDepth<float, 1>(imageData, roiPixels, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
+            break;
+        case eImageBitDepthHalf:
+        case eImageBitDepthNone:
+            break;
     }
 
-    if (area > 0) {
-        *r = rSum / area;
-        *g = gSum / area;
-        *b = bSum / area;
-        *a = aSum / area;
 
-        return true;
-    }
+
+
 
     return false;
 } // getColorAtRect
 
-int
+TimeValue
 ViewerGL::getCurrentlyDisplayedTime() const
 {
-    QMutexLocker k(&_imp->lastRenderedImageMutex);
 
     if (_imp->displayTextures[0].isVisible) {
         return _imp->displayTextures[0].time;
     } else {
-        return _imp->viewerTab->getTimeLine()->currentFrame();
+        return TimeValue(_imp->viewerTab->getTimeLine()->currentFrame());
     }
 }
 

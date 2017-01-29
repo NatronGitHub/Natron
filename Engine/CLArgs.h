@@ -39,6 +39,7 @@ CLANG_DIAG_ON(deprecated)
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 #include <boost/scoped_ptr.hpp>
 #endif
+
 #include "Engine/EngineFwd.h"
 
 NATRON_NAMESPACE_ENTER;
@@ -114,6 +115,8 @@ public:
     bool isBackgroundMode() const;
 
     bool isInterpreterMode() const;
+
+    bool isCacheClearRequestedOnLaunch() const;
 
     /*
      * @brief Has a Natron project or Python script been passed to the command line ?

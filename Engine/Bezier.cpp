@@ -32,6 +32,8 @@
 #include <cassert>
 #include <stdexcept>
 
+#include <QtCore/QThread>
+#include <QCoreApplication>
 #include <QtCore/QLineF>
 #include <QtCore/QDebug>
 
@@ -49,7 +51,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Interpolation.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Image.h"
-#include "Engine/ImageParams.h"
 #include "Engine/Hash64.h"
 #include "Engine/Settings.h"
 #include "Engine/KnobTypes.h"
@@ -200,7 +201,7 @@ struct BezierPrivate
     BezierCPs::const_iterator findControlPointNearby(double x,
                                                      double y,
                                                      double acceptance,
-                                                     double time,
+                                                     TimeValue time,
                                                      const BezierShape& shape,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const;
@@ -208,7 +209,7 @@ struct BezierPrivate
     BezierCPs::const_iterator findFeatherPointNearby(double x,
                                                      double y,
                                                      double acceptance,
-                                                     double time,
+                                                     TimeValue time,
                                                      const BezierShape& shape,
                                                      const Transform::Matrix3x3& transform,
                                                      int* index) const;
@@ -333,7 +334,7 @@ BezierCPs::const_iterator
 BezierPrivate::findControlPointNearby(double x,
                                       double y,
                                       double acceptance,
-                                      double time,
+                                      TimeValue time,
                                       const BezierShape& shape,
                                       const Transform::Matrix3x3& transform,
                                       int* index) const
@@ -360,7 +361,7 @@ BezierCPs::const_iterator
 BezierPrivate::findFeatherPointNearby(double x,
                                       double y,
                                       double acceptance,
-                                      double time,
+                                      TimeValue time,
                                       const BezierShape& shape,
                                       const Transform::Matrix3x3& transform,
                                       int* index) const
@@ -621,8 +622,8 @@ Bezier::bezierPointBboxUpdate(const Point & p0,
 static void
 bezierSegmentBboxUpdate(const BezierCP & first,
                         const BezierCP & last,
-                        double time,
-                        unsigned int mipMapLevel,
+                        TimeValue time,
+                        const RenderScale &scale,
                         const Transform::Matrix3x3& transform,
                         RectD* bbox,
                         bool *bboxSet) ///< input/output
@@ -658,20 +659,18 @@ bezierSegmentBboxUpdate(const BezierCP & first,
     p2.y = p2M.y / p2M.z;
     p3.y = p3M.y / p3M.z;
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
-        p0.x /= pot;
-        p0.y /= pot;
+    p0.x *= scale.x;
+    p0.y *= scale.y;
 
-        p1.x /= pot;
-        p1.y /= pot;
+    p1.x *= scale.x;
+    p1.y *= scale.y;
 
-        p2.x /= pot;
-        p2.y /= pot;
+    p2.x *= scale.x;
+    p2.y *= scale.y;
 
-        p3.x /= pot;
-        p3.y /= pot;
-    }
+    p3.x *= scale.x;
+    p3.y *= scale.y;
+
     Bezier::bezierPointBboxUpdate(p0, p1, p2, p3, bbox, bboxSet);
 }
 
@@ -679,8 +678,8 @@ void
 Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
                                     bool finished,
                                     bool isOpenBezier,
-                                    double time,
-                                    unsigned int mipMapLevel,
+                                    TimeValue time,
+                                    const RenderScale &scale,
                                     const Transform::Matrix3x3& transform,
                                     RectD* bbox) ///< input/output
 {
@@ -713,7 +712,7 @@ Bezier::bezierSegmentListBboxUpdate(const BezierCPs & points,
             }
             next = points.begin();
         }
-        bezierSegmentBboxUpdate(*(*it), *(*next), time, mipMapLevel, transform, bbox, &bboxSet);
+        bezierSegmentBboxUpdate(*(*it), *(*next), time, scale, transform, bbox, &bboxSet);
 
         // increment for next iteration
         if ( next != points.end() ) {
@@ -999,8 +998,8 @@ recursiveBezier(const Point& p0, const Point& p1, const Point& p2, const Point& 
 static void
 bezierSegmentEval(const BezierCP & first,
                   const BezierCP & last,
-                  double time,
-                  unsigned int mipMapLevel,
+                  TimeValue time,
+                  const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                   int nbPointsPerSegment,
 #else
@@ -1035,21 +1034,18 @@ bezierSegmentEval(const BezierCP & first,
     p2.x = p2M.x / p2M.z; p2.y = p2M.y / p2M.z;
     p3.x = p3M.x / p3M.z; p3.y = p3M.y / p3M.z;
 
+    p0.x *= scale.x;
+    p0.y *= scale.y;
 
-    if (mipMapLevel > 0) {
-        int pot = 1 << mipMapLevel;
-        p0.x /= pot;
-        p0.y /= pot;
+    p1.x *= scale.x;
+    p1.y *= scale.y;
 
-        p1.x /= pot;
-        p1.y /= pot;
+    p2.x *= scale.x;
+    p2.y *= scale.y;
 
-        p2.x /= pot;
-        p2.y /= pot;
+    p3.x *= scale.x;
+    p3.y *= scale.y;
 
-        p3.x /= pot;
-        p3.y /= pot;
-    }
 
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
     if (nbPointsPerSegment == -1) {
@@ -1098,7 +1094,7 @@ static bool
 bezierSegmentMeetsPoint(const BezierCP & first,
                         const BezierCP & last,
                         const Transform::Matrix3x3& transform,
-                        double time,
+                        TimeValue time,
                         double x,
                         double y,
                         double distance,
@@ -1165,7 +1161,7 @@ bezierSegmentMeetsPoint(const BezierCP & first,
 } // bezierSegmentMeetsPoint
 
 static bool
-isPointCloseTo(double time,
+isPointCloseTo(TimeValue time,
                const BezierCP & p,
                double x,
                double y,
@@ -1185,7 +1181,7 @@ isPointCloseTo(double time,
 }
 
 static bool
-bezierSegmenEqual(double time,
+bezierSegmenEqual(TimeValue time,
                   const BezierCP & p0,
                   const BezierCP & p1,
                   const BezierCP & s0,
@@ -1275,13 +1271,13 @@ Bezier::copyItem(const KnobTableItem& other)
 } // copyItem
 
 BezierCPPtr
-Bezier::addControlPointInternal(double x, double y, double time, ViewIdx view)
+Bezier::addControlPointInternal(double x, double y, TimeValue time, ViewIdx view)
 {
     if ( isCurveFinished(view) ) {
         return BezierCPPtr();
     }
 
-    double keyframeTime;
+    TimeValue keyframeTime;
     ///if the curve is empty make a new keyframe at the current timeline's time
     ///otherwise re-use the time at which the keyframe was set on the first control point
     BezierCPPtr p;
@@ -1304,7 +1300,7 @@ Bezier::addControlPointInternal(double x, double y, double time, ViewIdx view)
             if (!getMasterKeyframe(0, view, &k)) {
                 AppInstancePtr app = getApp();
                 assert(app);
-                keyframeTime = app->getTimeLine()->currentFrame();;
+                keyframeTime = TimeValue(app->getTimeLine()->currentFrame());
             } else {
                 keyframeTime = k.getTime();
             }
@@ -1346,7 +1342,7 @@ Bezier::addControlPointInternal(double x, double y, double time, ViewIdx view)
 BezierCPPtr
 Bezier::addControlPoint(double x,
                         double y,
-                        double time,
+                        TimeValue time,
                         ViewSetSpec view)
 {
     BezierCPPtr ret;
@@ -1356,7 +1352,7 @@ Bezier::addControlPoint(double x,
             ret = addControlPointInternal(x, y, time, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         ret = addControlPointInternal(x, y, time, view_i);
     }
     evaluateCurveModified();
@@ -1454,16 +1450,16 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
 
         for (std::set<double>::iterator it = existingKeyframes.begin(); it != existingKeyframes.end(); ++it) {
             Point p0, p1, p2, p3;
-            (*prev)->getPositionAtTime(*it, &p0.x, &p0.y);
-            (*prev)->getRightBezierPointAtTime( *it, &p1.x, &p1.y);
-            (*next)->getPositionAtTime(*it, &p3.x, &p3.y);
-            (*next)->getLeftBezierPointAtTime(*it, &p2.x, &p2.y);
+            (*prev)->getPositionAtTime(TimeValue(*it), &p0.x, &p0.y);
+            (*prev)->getRightBezierPointAtTime( TimeValue(*it), &p1.x, &p1.y);
+            (*next)->getPositionAtTime(TimeValue(*it), &p3.x, &p3.y);
+            (*next)->getLeftBezierPointAtTime(TimeValue(*it), &p2.x, &p2.y);
 
             Point p0f;
             Point p1f;
             if (useFeatherPoints() && prevF != shape->featherPoints.end() && *prevF) {
-                (*prevF)->getPositionAtTime(*it, &p0f.x, &p0f.y);
-                (*prevF)->getRightBezierPointAtTime(*it, &p1f.x, &p1f.y);
+                (*prevF)->getPositionAtTime(TimeValue(*it), &p0f.x, &p0f.y);
+                (*prevF)->getRightBezierPointAtTime(TimeValue(*it), &p1f.x, &p1f.y);
             } else {
                 p0f = p0;
                 p1f = p1;
@@ -1471,8 +1467,8 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
             Point p2f;
             Point p3f;
             if (useFeatherPoints() && nextF != shape->featherPoints.end() && *nextF) {
-                (*nextF)->getPositionAtTime(*it, &p3f.x, &p3f.y);
-                (*nextF)->getLeftBezierPointAtTime(*it, &p2f.x, &p2f.y);
+                (*nextF)->getPositionAtTime(TimeValue(*it), &p3f.x, &p3f.y);
+                (*nextF)->getLeftBezierPointAtTime(TimeValue(*it), &p2f.x, &p2f.y);
             } else {
                 p2f = p2;
                 p3f = p3;
@@ -1487,28 +1483,28 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
             bezierFullPoint(p0f, p1f, p2f, p3f, t, &p0p1f, &p1p2f, &p2p3f, &p0p1_p1p2f, &p1p2_p2p3f, &destf);
 
             //update prev and next inner control points
-            (*prev)->setRightBezierPointAtTime(*it, p0p1.x, p0p1.y);
-            (*next)->setLeftBezierPointAtTime(*it, p2p3.x, p2p3.y);
+            (*prev)->setRightBezierPointAtTime(TimeValue(*it), p0p1.x, p0p1.y);
+            (*next)->setLeftBezierPointAtTime(TimeValue(*it), p2p3.x, p2p3.y);
 
             if ( useFeatherPoints() ) {
                 if (prevF != shape->featherPoints.end() && *prevF) {
-                    (*prevF)->setRightBezierPointAtTime(*it, p0p1f.x, p0p1f.y);
+                    (*prevF)->setRightBezierPointAtTime(TimeValue(*it), p0p1f.x, p0p1f.y);
                 }
                 if (nextF != shape->featherPoints.end() && *nextF) {
-                    (*nextF)->setLeftBezierPointAtTime(*it, p2p3f.x, p2p3f.y);
+                    (*nextF)->setLeftBezierPointAtTime(TimeValue(*it), p2p3f.x, p2p3f.y);
                 }
             }
 
 
-            p->setPositionAtTime(*it, dest.x, dest.y);
+            p->setPositionAtTime(TimeValue(*it), dest.x, dest.y);
             ///The left control point of p is p0p1_p1p2 and the right control point is p1p2_p2p3
-            p->setLeftBezierPointAtTime(*it, p0p1_p1p2.x, p0p1_p1p2.y);
-            p->setRightBezierPointAtTime(*it, p1p2_p2p3.x, p1p2_p2p3.y);
+            p->setLeftBezierPointAtTime(TimeValue(*it), p0p1_p1p2.x, p0p1_p1p2.y);
+            p->setRightBezierPointAtTime(TimeValue(*it), p1p2_p2p3.x, p1p2_p2p3.y);
 
             if ( useFeatherPoints() ) {
-                fp->setPositionAtTime(*it, destf.x, destf.y);
-                fp->setLeftBezierPointAtTime(*it, p0p1_p1p2f.x, p0p1_p1p2f.y);
-                fp->setRightBezierPointAtTime(*it, p1p2_p2p3f.x, p1p2_p2p3f.y);
+                fp->setPositionAtTime(TimeValue(*it), destf.x, destf.y);
+                fp->setLeftBezierPointAtTime(TimeValue(*it), p0p1_p1p2f.x, p0p1_p1p2f.y);
+                fp->setRightBezierPointAtTime(TimeValue(*it), p1p2_p2p3f.x, p1p2_p2p3f.y);
             }
         }
 
@@ -1516,10 +1512,10 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
         if ( existingKeyframes.empty() ) {
             Point p0, p1, p2, p3;
 
-            (*prev)->getPositionAtTime(0, &p0.x, &p0.y);
-            (*prev)->getRightBezierPointAtTime(0, &p1.x, &p1.y);
-            (*next)->getPositionAtTime(0, &p3.x, &p3.y);
-            (*next)->getLeftBezierPointAtTime(0, &p2.x, &p2.y);
+            (*prev)->getPositionAtTime(TimeValue(0), &p0.x, &p0.y);
+            (*prev)->getRightBezierPointAtTime(TimeValue(0), &p1.x, &p1.y);
+            (*next)->getPositionAtTime(TimeValue(0), &p3.x, &p3.y);
+            (*next)->getLeftBezierPointAtTime(TimeValue(0), &p2.x, &p2.y);
 
 
             Point dest;
@@ -1572,7 +1568,7 @@ Bezier::addControlPointAfterIndexInternal(int index, double t, ViewIdx view)
         ///If auto-keying is enabled, set a new keyframe
         AppInstancePtr app = getApp();
         assert(app);
-        int currentTime = app->getTimeLine()->currentFrame();
+        TimeValue currentTime = TimeValue(app->getTimeLine()->currentFrame());
         if ( !hasMasterKeyframeAtTime(currentTime, view) && isAutoKeyingEnabled() ) {
             setKeyFrame(currentTime, view, 0);
         }
@@ -1595,7 +1591,7 @@ Bezier::addControlPointAfterIndex(int index,
             ret = addControlPointAfterIndexInternal(index, t, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         ret = addControlPointAfterIndexInternal(index, t, view_i);
     }
     evaluateCurveModified();
@@ -1605,7 +1601,7 @@ Bezier::addControlPointAfterIndex(int index,
 } // addControlPointAfterIndex
 
 int
-Bezier::getControlPointsCount(ViewGetSpec view) const
+Bezier::getControlPointsCount(ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     QMutexLocker k(&_imp->itemMutex);
@@ -1620,8 +1616,8 @@ int
 Bezier::isPointOnCurve(double x,
                        double y,
                        double distance,
-                       double time,
-                       ViewGetSpec view,
+                       TimeValue time,
+                       ViewIdx view,
                        double *t,
                        bool* feather) const
 {
@@ -1728,7 +1724,7 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
                 shape->finished = finished;
             }
         } else {
-            ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+            ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
             QMutexLocker l(&_imp->itemMutex);
             BezierShape* shape = _imp->getViewShape(view_i);
             if (!shape) {
@@ -1741,12 +1737,12 @@ Bezier::setCurveFinished(bool finished, ViewSetSpec view)
     }
     
     resetTransformCenter();
-    refreshPolygonOrientation(false, view);
+    refreshPolygonOrientation(getCurrentTime_TLS(), view);
     evaluateCurveModified();
 }
 
 bool
-Bezier::isCurveFinished(ViewGetSpec view) const
+Bezier::isCurveFinished(ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     QMutexLocker l(&_imp->itemMutex);
@@ -1794,16 +1790,16 @@ Bezier::removeControlPointByIndex(int index, ViewSetSpec view)
             removeControlPointByIndexInternal(index, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         removeControlPointByIndexInternal(index, view_i);
     }
 
-    refreshPolygonOrientation(false, view);
+    refreshPolygonOrientation(getCurrentTime_TLS(), view);
     evaluateCurveModified();
 }
 
 void
-Bezier::movePointByIndexInternalForView(int index, double time, ViewIdx view, double dx, double dy, bool onlyFeather)
+Bezier::movePointByIndexInternalForView(int index, TimeValue time, ViewIdx view, double dx, double dy, bool onlyFeather)
 {
     bool rippleEdit = isRippleEditEnabled();
     bool autoKeying = isAutoKeyingEnabled();
@@ -1914,9 +1910,9 @@ Bezier::movePointByIndexInternalForView(int index, double time, ViewIdx view, do
                 }
                 if (!onlyFeather) {
                     assert(cp);
-                    cp->getPositionAtTime(*it2, &p.x, &p.y);
-                    cp->getLeftBezierPointAtTime(*it2,  &left.x, &left.y);
-                    cp->getRightBezierPointAtTime(*it2,  &right.x, &right.y);
+                    cp->getPositionAtTime(TimeValue(*it2), &p.x, &p.y);
+                    cp->getLeftBezierPointAtTime(TimeValue(*it2),  &left.x, &left.y);
+                    cp->getRightBezierPointAtTime(TimeValue(*it2),  &right.x, &right.y);
 
                     p = Transform::matApply(trans, p);
                     left = Transform::matApply(trans, left);
@@ -1934,15 +1930,15 @@ Bezier::movePointByIndexInternalForView(int index, double time, ViewIdx view, do
                     left = Transform::matApply(invTrans, left);
 
 
-                    cp->setPositionAtTime(*it2, p.x, p.y );
-                    cp->setLeftBezierPointAtTime(*it2, left.x, left.y);
-                    cp->setRightBezierPointAtTime(*it2, right.x, right.y);
+                    cp->setPositionAtTime(TimeValue(*it2), p.x, p.y );
+                    cp->setLeftBezierPointAtTime(TimeValue(*it2), left.x, left.y);
+                    cp->setRightBezierPointAtTime(TimeValue(*it2), right.x, right.y);
                 }
                 if (moveFeather && useFeather) {
                     assert(fp);
-                    fp->getPositionAtTime(*it2, &pF.x, &pF.y);
-                    fp->getLeftBezierPointAtTime(*it2,  &leftF.x, &leftF.y);
-                    fp->getRightBezierPointAtTime(*it2, &rightF.x, &rightF.y);
+                    fp->getPositionAtTime(TimeValue(*it2), &pF.x, &pF.y);
+                    fp->getLeftBezierPointAtTime(TimeValue(*it2),  &leftF.x, &leftF.y);
+                    fp->getRightBezierPointAtTime(TimeValue(*it2), &rightF.x, &rightF.y);
 
                     pF = Transform::matApply(trans, pF);
                     rightF = Transform::matApply(trans, rightF);
@@ -1960,9 +1956,9 @@ Bezier::movePointByIndexInternalForView(int index, double time, ViewIdx view, do
                     leftF = Transform::matApply(invTrans, leftF);
                     
                     
-                    fp->setPositionAtTime(*it2, pF.x, pF.y);
-                    fp->setLeftBezierPointAtTime(*it2, leftF.x, leftF.y);
-                    fp->setRightBezierPointAtTime(*it2, rightF.x, rightF.y);
+                    fp->setPositionAtTime(TimeValue(*it2), pF.x, pF.y);
+                    fp->setLeftBezierPointAtTime(TimeValue(*it2), leftF.x, leftF.y);
+                    fp->setRightBezierPointAtTime(TimeValue(*it2), rightF.x, rightF.y);
                 }
             }
         }
@@ -1972,7 +1968,7 @@ Bezier::movePointByIndexInternalForView(int index, double time, ViewIdx view, do
 
 void
 Bezier::movePointByIndexInternal(int index,
-                                 double time,
+                                 TimeValue time,
                                  ViewSetSpec view,
                                  double dx,
                                  double dy,
@@ -1987,7 +1983,7 @@ Bezier::movePointByIndexInternal(int index,
             movePointByIndexInternalForView(index, time, *it, dx, dy, onlyFeather);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         movePointByIndexInternalForView(index, time, view_i, dx, dy, onlyFeather);
     }
     refreshPolygonOrientation(time, view);
@@ -2000,7 +1996,7 @@ Bezier::movePointByIndexInternal(int index,
 
 
 void
-Bezier::setPointByIndexInternalForView(int index, double time, ViewIdx view, double x, double y)
+Bezier::setPointByIndexInternalForView(int index, TimeValue time, ViewIdx view, double x, double y)
 {
     Transform::Matrix3x3 trans, invTrans;
     getTransformAtTime(time, view, &trans);
@@ -2039,7 +2035,7 @@ Bezier::setPointByIndexInternalForView(int index, double time, ViewIdx view, dou
 }
 
 void
-Bezier::setPointByIndexInternal(int index, double time, ViewSetSpec view, double dx, double dy)
+Bezier::setPointByIndexInternal(int index, TimeValue time, ViewSetSpec view, double dx, double dy)
 {
     if (view.isAll()) {
         std::list<ViewIdx> views = getViewsList();
@@ -2047,7 +2043,7 @@ Bezier::setPointByIndexInternal(int index, double time, ViewSetSpec view, double
             setPointByIndexInternalForView(index, time, *it, dx, dy);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         setPointByIndexInternalForView(index, time, view_i, dx, dy);
     }
     refreshPolygonOrientation(time, view);
@@ -2060,7 +2056,7 @@ Bezier::setPointByIndexInternal(int index, double time, ViewSetSpec view, double
 
 void
 Bezier::movePointByIndex(int index,
-                         double time,
+                         TimeValue time,
                          ViewSetSpec view,
                          double dx,
                          double dy)
@@ -2070,7 +2066,7 @@ Bezier::movePointByIndex(int index,
 
 void
 Bezier::setPointByIndex(int index,
-                        double time,
+                        TimeValue time,
                         ViewSetSpec view,
                         double x,
                         double y)
@@ -2080,7 +2076,7 @@ Bezier::setPointByIndex(int index,
 
 void
 Bezier::moveFeatherByIndex(int index,
-                           double time,
+                           TimeValue time,
                            ViewSetSpec view,
                            double dx,
                            double dy)
@@ -2092,7 +2088,7 @@ void
 Bezier::moveBezierPointInternalForView(BezierCP* cpParam,
                                        BezierCP* fpParam,
                                        int index,
-                                       double time,
+                                       TimeValue time,
                                        ViewIdx view,
                                        double lx, double ly, double rx, double ry,
                                        double flx, double fly, double frx, double fry,
@@ -2249,33 +2245,33 @@ Bezier::moveBezierPointInternalForView(BezierCP* cpParam,
 
                 if (isLeft || moveBoth) {
                     if (moveControlPoint) {
-                        (cp)->getLeftBezierPointAtTime(*it2, &left.x, &left.y);
+                        (cp)->getLeftBezierPointAtTime(TimeValue(*it2), &left.x, &left.y);
                         left = Transform::matApply(trans, left);
                         left.x += lx; left.y += ly;
                         left = Transform::matApply(invTrans, left);
-                        (cp)->setLeftBezierPointAtTime(*it2, left.x, left.y);
+                        (cp)->setLeftBezierPointAtTime(TimeValue(*it2), left.x, left.y);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (fp)->getLeftBezierPointAtTime(*it2,  &leftF.x, &leftF.y);
+                        (fp)->getLeftBezierPointAtTime(TimeValue(*it2),  &leftF.x, &leftF.y);
                         leftF = Transform::matApply(trans, leftF);
                         leftF.x += flx; leftF.y += fly;
                         leftF = Transform::matApply(invTrans, leftF);
-                        (fp)->setLeftBezierPointAtTime(*it2, leftF.x, leftF.y);
+                        (fp)->setLeftBezierPointAtTime(TimeValue(*it2), leftF.x, leftF.y);
                     }
                 } else {
                     if (moveControlPoint) {
-                        (cp)->getRightBezierPointAtTime(*it2,  &right.x, &right.y);
+                        (cp)->getRightBezierPointAtTime(TimeValue(*it2),  &right.x, &right.y);
                         right = Transform::matApply(trans, right);
                         right.x += rx; right.y += ry;
                         right = Transform::matApply(invTrans, right);
-                        (cp)->setRightBezierPointAtTime(*it2, right.x, right.y);
+                        (cp)->setRightBezierPointAtTime(TimeValue(*it2), right.x, right.y);
                     }
                     if ( moveFeather && useFeatherPoints() ) {
-                        (cp)->getRightBezierPointAtTime(*it2, &rightF.x, &rightF.y);
+                        (cp)->getRightBezierPointAtTime(TimeValue(*it2), &rightF.x, &rightF.y);
                         rightF = Transform::matApply(trans, rightF);
                         rightF.x += frx; rightF.y += fry;
                         rightF = Transform::matApply(invTrans, rightF);
-                        (cp)->setRightBezierPointAtTime(*it2, rightF.x, rightF.y);
+                        (cp)->setRightBezierPointAtTime(TimeValue(*it2), rightF.x, rightF.y);
                     }
                 }
             }
@@ -2288,7 +2284,7 @@ void
 Bezier::moveBezierPointInternal(BezierCP* cpParam,
                                 BezierCP* fpParam,
                                 int index,
-                                double time,
+                                TimeValue time,
                                 ViewSetSpec view,
                                 double lx,
                                 double ly,
@@ -2310,7 +2306,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
             moveBezierPointInternalForView(cpParam, fpParam, index, time, *it, lx, ly, rx, ry, flx, fly, frx, fry, isLeft, moveBoth, onlyFeather);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         moveBezierPointInternalForView(cpParam, fpParam, index, time, view_i, lx, ly, rx, ry, flx, fly, frx, fry, isLeft, moveBoth, onlyFeather);
     }
 
@@ -2324,7 +2320,7 @@ Bezier::moveBezierPointInternal(BezierCP* cpParam,
 
 void
 Bezier::moveLeftBezierPoint(int index,
-                            double time,
+                            TimeValue time,
                             ViewSetSpec view,
                             double dx,
                             double dy)
@@ -2334,7 +2330,7 @@ Bezier::moveLeftBezierPoint(int index,
 
 void
 Bezier::moveRightBezierPoint(int index,
-                             double time,
+                             TimeValue time,
                              ViewSetSpec view,
                              double dx,
                              double dy)
@@ -2345,7 +2341,7 @@ Bezier::moveRightBezierPoint(int index,
 void
 Bezier::movePointLeftAndRightIndex(BezierCP & cp,
                                    BezierCP & fp,
-                                   double time,
+                                   TimeValue time,
                                    ViewSetSpec view,
                                    double lx,
                                    double ly,
@@ -2361,7 +2357,7 @@ Bezier::movePointLeftAndRightIndex(BezierCP & cp,
 }
 
 void
-Bezier::setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoint, bool feather, bool featherAndCp, int index, double time, ViewIdx view, double x, double y, double lx, double ly, double rx, double ry)
+Bezier::setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoint, bool feather, bool featherAndCp, int index, TimeValue time, ViewIdx view, double x, double y, double lx, double ly, double rx, double ry)
 {
     bool autoKeying = isAutoKeyingEnabled();
     bool rippleEdit = isRippleEditEnabled();
@@ -2420,21 +2416,21 @@ Bezier::setPointAtIndexInternalForView(bool setLeft, bool setRight, bool setPoin
             getMasterKeyFrameTimes(view, &keyframes);
             for (std::set<double>::iterator it2 = keyframes.begin(); it2 != keyframes.end(); ++it2) {
                 if (setPoint) {
-                    (*fp)->setPositionAtTime(*it2, x, y);
+                    (*fp)->setPositionAtTime(TimeValue(*it2), x, y);
                     if (featherAndCp) {
-                        (*cp)->setPositionAtTime(*it2, x, y);
+                        (*cp)->setPositionAtTime(TimeValue(*it2), x, y);
                     }
                 }
                 if (setLeft) {
-                    (*fp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                    (*fp)->setLeftBezierPointAtTime(TimeValue(*it2), lx, ly);
                     if (featherAndCp) {
-                        (*cp)->setLeftBezierPointAtTime(*it2, lx, ly);
+                        (*cp)->setLeftBezierPointAtTime(TimeValue(*it2), lx, ly);
                     }
                 }
                 if (setRight) {
-                    (*fp)->setRightBezierPointAtTime(*it2, rx, ry);
+                    (*fp)->setRightBezierPointAtTime(TimeValue(*it2), rx, ry);
                     if (featherAndCp) {
-                        (*cp)->setRightBezierPointAtTime(*it2, rx, ry);
+                        (*cp)->setRightBezierPointAtTime(TimeValue(*it2), rx, ry);
                     }
                 }
             }
@@ -2450,7 +2446,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
                                 bool feather,
                                 bool featherAndCp,
                                 int index,
-                                double time,
+                                TimeValue time,
                                 ViewSetSpec view,
                                 double x,
                                 double y,
@@ -2466,7 +2462,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
             setPointAtIndexInternalForView(setLeft, setRight, setPoint, feather, featherAndCp, index, time, *it, x, y, lx, ly, rx, ry);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         setPointAtIndexInternalForView(setLeft, setRight, setPoint, feather, featherAndCp, index, time, view_i, x, y, lx, ly, rx, ry);
     }
 
@@ -2480,7 +2476,7 @@ Bezier::setPointAtIndexInternal(bool setLeft,
 
 void
 Bezier::setLeftBezierPoint(int index,
-                           double time,
+                           TimeValue time,
                            ViewSetSpec view,
                            double x,
                            double y)
@@ -2490,7 +2486,7 @@ Bezier::setLeftBezierPoint(int index,
 
 void
 Bezier::setRightBezierPoint(int index,
-                            double time,
+                            TimeValue time,
                             ViewSetSpec view,
                             double x,
                             double y)
@@ -2501,7 +2497,7 @@ Bezier::setRightBezierPoint(int index,
 void
 Bezier::setPointAtIndex(bool feather,
                         int index,
-                        double time,
+                        TimeValue time,
                         ViewSetSpec view,
                         double x,
                         double y,
@@ -2514,13 +2510,13 @@ Bezier::setPointAtIndex(bool feather,
 }
 
 void
-Bezier::onTransformSet(double time, ViewSetSpec view)
+Bezier::onTransformSet(TimeValue time, ViewSetSpec view)
 {
     refreshPolygonOrientation(time, view);
 }
 
 void
-Bezier::transformPointInternal(const BezierCPPtr & point, double time, ViewIdx view, Transform::Matrix3x3* matrix)
+Bezier::transformPointInternal(const BezierCPPtr & point, TimeValue time, ViewIdx view, Transform::Matrix3x3* matrix)
 {
     bool autoKeying = isAutoKeyingEnabled();
     bool keySet = false;
@@ -2564,7 +2560,7 @@ Bezier::transformPointInternal(const BezierCPPtr & point, double time, ViewIdx v
 
 void
 Bezier::transformPoint(const BezierCPPtr & point,
-                       double time,
+                       TimeValue time,
                        ViewSetSpec view,
                        Transform::Matrix3x3* matrix)
 {
@@ -2575,7 +2571,7 @@ Bezier::transformPoint(const BezierCPPtr & point,
             transformPointInternal(point, time, *it, matrix);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         transformPointInternal(point, time, view_i, matrix);
     }
 
@@ -2618,7 +2614,7 @@ Bezier::removeFeatherAtIndex(int index, ViewSetSpec view)
             removeFeatherAtIndexForView(index, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         removeFeatherAtIndexForView(index, view_i);
     }
 
@@ -2628,7 +2624,7 @@ Bezier::removeFeatherAtIndex(int index, ViewSetSpec view)
 
 
 void
-Bezier::smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, double time, ViewIdx view, const std::pair<double, double>& pixelScale)
+Bezier::smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, TimeValue time, ViewIdx view, const std::pair<double, double>& pixelScale)
 {
     bool autoKeying = isAutoKeyingEnabled();
     bool rippleEdit = isRippleEditEnabled();
@@ -2673,7 +2669,7 @@ Bezier::smoothOrCuspPointAtIndexInternal(bool isSmooth, int index, double time, 
 void
 Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
                                  int index,
-                                 double time,
+                                 TimeValue time,
                                  ViewSetSpec view,
                                  const std::pair<double, double>& pixelScale)
 {
@@ -2683,7 +2679,7 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
             smoothOrCuspPointAtIndexInternal(isSmooth, index, time, *it, pixelScale);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         smoothOrCuspPointAtIndexInternal(isSmooth, index, time, view_i, pixelScale);
     }
 
@@ -2698,7 +2694,7 @@ Bezier::smoothOrCuspPointAtIndex(bool isSmooth,
 
 void
 Bezier::smoothPointAtIndex(int index,
-                           double time,
+                           TimeValue time,
                            ViewSetSpec view,
                            const std::pair<double, double>& pixelScale)
 {
@@ -2707,7 +2703,7 @@ Bezier::smoothPointAtIndex(int index,
 
 void
 Bezier::cuspPointAtIndex(int index,
-                         double time,
+                         TimeValue time,
                          ViewSetSpec view,
                          const std::pair<double, double>& pixelScale)
 {
@@ -2716,7 +2712,7 @@ Bezier::cuspPointAtIndex(int index,
 
 
 void
-Bezier::onKeyFrameSetForView(double time, ViewIdx view)
+Bezier::onKeyFrameSetForView(TimeValue time, ViewIdx view)
 {
     {
         QMutexLocker l(&_imp->itemMutex);
@@ -2762,7 +2758,7 @@ Bezier::onKeyFrameSetForView(double time, ViewIdx view)
 } // onKeyFrameSetForView
 
 void
-Bezier::onKeyFrameRemovedForView(double time, ViewIdx view)
+Bezier::onKeyFrameRemovedForView(TimeValue time, ViewIdx view)
 {
     {
         QMutexLocker l(&_imp->itemMutex);
@@ -2794,7 +2790,7 @@ Bezier::onKeyFrameRemovedForView(double time, ViewIdx view)
 } // onKeyFrameRemovedForView
 
 void
-Bezier::onKeyFrameSet(double time, ViewSetSpec view)
+Bezier::onKeyFrameSet(TimeValue time, ViewSetSpec view)
 {
 
     if (view.isAll()) {
@@ -2803,14 +2799,14 @@ Bezier::onKeyFrameSet(double time, ViewSetSpec view)
             onKeyFrameSetForView(time, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         onKeyFrameSetForView(time, view_i);
     }
 
 } // onKeyFrameSet
 
 void
-Bezier::onKeyFrameRemoved(double time, ViewSetSpec view)
+Bezier::onKeyFrameRemoved(TimeValue time, ViewSetSpec view)
 {
 
     if (view.isAll()) {
@@ -2819,7 +2815,7 @@ Bezier::onKeyFrameRemoved(double time, ViewSetSpec view)
             onKeyFrameRemovedForView(time, *it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         onKeyFrameRemovedForView(time, view_i);
     }
 
@@ -2829,8 +2825,8 @@ Bezier::onKeyFrameRemoved(double time, ViewSetSpec view)
 
 void
 Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
-                    double time,
-                    unsigned int mipMapLevel,
+                    TimeValue time,
+                    const RenderScale &scale,
                     bool finished,
                     int nBPointsPerSegment,
                     const Transform::Matrix3x3& transform,
@@ -2859,11 +2855,11 @@ Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
         bool segbboxSet = false;
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time,  mipMapLevel, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, &segmentPoints, bbox ? &segbbox : 0, &segbboxSet);
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  mipMapLevel, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
+            bezierSegmentEval(*(*it), *(*next), time,  scale, nBPointsPerSegment, transform, pointsSingleList, bbox ? &segbbox : 0, &segbboxSet);
         }
 
         if (bbox) {
@@ -2883,9 +2879,9 @@ Bezier::deCastelJau(const std::list<BezierCPPtr >& cps,
 } // deCastelJau
 
 void
-Bezier::evaluateAtTime_DeCasteljau(double time,
-                                   ViewGetSpec view,
-                                   unsigned int mipMapLevel,
+Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
+                                   ViewIdx view,
+                                   const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2894,7 +2890,7 @@ Bezier::evaluateAtTime_DeCasteljau(double time,
                                    std::vector<std::vector< ParametricPoint> >* points,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2904,9 +2900,9 @@ Bezier::evaluateAtTime_DeCasteljau(double time,
 }
 
 void
-Bezier::evaluateAtTime_DeCasteljau(double time,
-                                   ViewGetSpec view,
-                                   unsigned int mipMapLevel,
+Bezier::evaluateAtTime_DeCasteljau(TimeValue time,
+                                   ViewIdx view,
+                                   const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                    int nbPointsPerSegment,
 #else
@@ -2915,7 +2911,7 @@ Bezier::evaluateAtTime_DeCasteljau(double time,
                                    std::vector<ParametricPoint >* pointsSingleList,
                                    RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                         nbPointsPerSegment,
 #else
@@ -2925,9 +2921,9 @@ Bezier::evaluateAtTime_DeCasteljau(double time,
 }
 
 void
-Bezier::evaluateAtTime_DeCasteljau_internal(double time,
-                                            ViewGetSpec view,
-                                            unsigned int mipMapLevel,
+Bezier::evaluateAtTime_DeCasteljau_internal(TimeValue time,
+                                            ViewIdx view,
+                                            const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                             int nbPointsPerSegment,
 #else
@@ -2947,7 +2943,7 @@ Bezier::evaluateAtTime_DeCasteljau_internal(double time,
     if (!shape) {
         return;
     }
-    deCastelJau(shape->points, time, mipMapLevel, shape->finished,
+    deCastelJau(shape->points, time, scale, shape->finished,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                 nbPointsPerSegment,
 #else
@@ -2957,13 +2953,13 @@ Bezier::evaluateAtTime_DeCasteljau_internal(double time,
 }
 
 void
-Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(double time,
-                                                ViewGetSpec view,
-                                                unsigned int mipMapLevel,
+Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(TimeValue time,
+                                                ViewIdx view,
+                                                const RenderScale &scale,
                                                 std::vector<std::vector<ParametricPoint> >* points,
                                                 RectD* bbox) const
 {
-    evaluateAtTime_DeCasteljau(time, view, mipMapLevel,
+    evaluateAtTime_DeCasteljau(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                -1,
 #else
@@ -2973,9 +2969,9 @@ Bezier::evaluateAtTime_DeCasteljau_autoNbPoints(double time,
 }
 
 void
-Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
-                                                ViewGetSpec view,
-                                                unsigned int mipMapLevel,
+Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
+                                                ViewIdx view,
+                                                const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -2985,7 +2981,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
                                                 std::vector<ParametricPoint >* points,
                                                 RectD* bbox) const
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -2995,9 +2991,9 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
 }
 
 void
-Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
-                                                         ViewGetSpec view,
-                                                         unsigned int mipMapLevel,
+Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(TimeValue time,
+                                                         ViewIdx view,
+                                                         const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                          int nbPointsPerSegment,
 #else
@@ -3051,7 +3047,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
         }
         if (points) {
             std::vector<ParametricPoint> segmentPoints;
-            bezierSegmentEval(*(*it), *(*next), time, mipMapLevel,
+            bezierSegmentEval(*(*it), *(*next), time, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -3061,7 +3057,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
             points->push_back(segmentPoints);
         } else {
             assert(pointsSingleList);
-            bezierSegmentEval(*(*it), *(*next), time,  mipMapLevel,
+            bezierSegmentEval(*(*it), *(*next), time,  scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                               nbPointsPerSegment,
 #else
@@ -3085,9 +3081,9 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau_internal(double time,
 }
 
 void
-Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
-                                                ViewGetSpec view,
-                                                unsigned int mipMapLevel,
+Bezier::evaluateFeatherPointsAtTime_DeCasteljau(TimeValue time,
+                                                ViewIdx view,
+                                                const RenderScale &scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                 int nbPointsPerSegment,
 #else
@@ -3097,7 +3093,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
                                                 std::vector<std::vector<ParametricPoint> >* points, ///< output
                                                 RectD* bbox) const ///< output
 {
-    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, mipMapLevel,
+    evaluateFeatherPointsAtTime_DeCasteljau_internal(time, view, scale,
 #ifdef ROTO_BEZIER_EVAL_ITERATIVE
                                                      nbPointsPerSegment,
 #else
@@ -3107,7 +3103,7 @@ Bezier::evaluateFeatherPointsAtTime_DeCasteljau(double time,
 } // Bezier::evaluateFeatherPointsAtTime_DeCasteljau
 
 RectD
-Bezier::getBoundingBox(double time, ViewGetSpec view) const
+Bezier::getBoundingBox(TimeValue time, ViewIdx view) const
 {
 
     RotoPaintPtr rotoPaintNode;
@@ -3131,12 +3127,12 @@ Bezier::getBoundingBox(double time, ViewGetSpec view) const
     }
 
 
-    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, 0 /*mipMapLevel*/, transform, &pointsBbox);
+    bezierSegmentListBboxUpdate(shape->points, shape->finished, _imp->isOpenBezier, time, RenderScale(1.), transform, &pointsBbox);
 
 
     if (useFeatherPoints() && !_imp->isOpenBezier) {
         RectD featherPointsBbox;
-        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time,  0 /*mipMapLevel*/, transform, &featherPointsBbox);
+        bezierSegmentListBboxUpdate( shape->featherPoints, shape->finished, _imp->isOpenBezier, time,  RenderScale(1.), transform, &featherPointsBbox);
         pointsBbox.merge(featherPointsBbox);
         if (shape->featherPoints.size() > 1) {
             // EDIT: Partial fix, just pad the BBOX by the feather distance. This might not be accurate but gives at least something
@@ -3167,7 +3163,7 @@ Bezier::getBoundingBox(double time, ViewGetSpec view) const
 } // Bezier::getBoundingBox
 
 std::list< BezierCPPtr >
-Bezier::getControlPoints(ViewGetSpec view) const
+Bezier::getControlPoints(ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     QMutexLocker l(&_imp->itemMutex);
@@ -3184,7 +3180,7 @@ Bezier::getControlPoints(ViewGetSpec view) const
 
 
 std::list< BezierCPPtr >
-Bezier::getFeatherPoints(ViewGetSpec view) const
+Bezier::getFeatherPoints(ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     QMutexLocker l(&_imp->itemMutex);
@@ -3201,8 +3197,8 @@ std::pair<BezierCPPtr, BezierCPPtr >
 Bezier::isNearbyControlPoint(double x,
                              double y,
                              double acceptance,
-                             double time,
-                             ViewGetSpec view,
+                             TimeValue time,
+                             ViewIdx view,
                              ControlPointSelectionPrefEnum pref,
                              int* index) const
 {
@@ -3273,13 +3269,13 @@ Bezier::isNearbyControlPoint(double x,
 } // isNearbyControlPoint
 
 int
-Bezier::getControlPointIndex(const BezierCPPtr & cp, ViewGetSpec view) const
+Bezier::getControlPointIndex(const BezierCPPtr & cp, ViewIdx view) const
 {
     return getControlPointIndex( cp.get() , view);
 }
 
 int
-Bezier::getControlPointIndex(const BezierCP* cp, ViewGetSpec view) const
+Bezier::getControlPointIndex(const BezierCP* cp, ViewIdx view) const
 {
     ///only called on the main-thread
     assert(cp);
@@ -3301,7 +3297,7 @@ Bezier::getControlPointIndex(const BezierCP* cp, ViewGetSpec view) const
 }
 
 int
-Bezier::getFeatherPointIndex(const BezierCPPtr & fp, ViewGetSpec view) const
+Bezier::getFeatherPointIndex(const BezierCPPtr & fp, ViewIdx view) const
 {
     ///only called on the main-thread
     QMutexLocker l(&_imp->itemMutex);
@@ -3323,7 +3319,7 @@ Bezier::getFeatherPointIndex(const BezierCPPtr & fp, ViewGetSpec view) const
 }
 
 BezierCPPtr
-Bezier::getControlPointAtIndex(int index, ViewGetSpec view) const
+Bezier::getControlPointAtIndex(int index, ViewIdx view) const
 {
     QMutexLocker l(&_imp->itemMutex);
     ViewIdx view_i = getViewIdxFromGetSpec(view);
@@ -3345,7 +3341,7 @@ Bezier::getControlPointAtIndex(int index, ViewGetSpec view) const
 }
 
 BezierCPPtr
-Bezier::getFeatherPointAtIndex(int index, ViewGetSpec view) const
+Bezier::getFeatherPointAtIndex(int index, ViewIdx view) const
 {
     QMutexLocker l(&_imp->itemMutex);
     ViewIdx view_i = getViewIdxFromGetSpec(view);
@@ -3365,8 +3361,8 @@ Bezier::getFeatherPointAtIndex(int index, ViewGetSpec view) const
 }
 
 std::list< std::pair<BezierCPPtr, BezierCPPtr > >
-Bezier::controlPointsWithinRect(double time,
-                                ViewGetSpec view,
+Bezier::controlPointsWithinRect(TimeValue time,
+                                ViewIdx view,
                                 double l,
                                 double r,
                                 double b,
@@ -3432,7 +3428,7 @@ Bezier::controlPointsWithinRect(double time,
 } // controlPointsWithinRect
 
 BezierCPPtr
-Bezier::getFeatherPointForControlPoint(const BezierCPPtr & cp, ViewGetSpec view) const
+Bezier::getFeatherPointForControlPoint(const BezierCPPtr & cp, ViewIdx view) const
 {
     assert( !cp->isFeatherPoint() );
     int index = getControlPointIndex(cp, view);
@@ -3442,7 +3438,7 @@ Bezier::getFeatherPointForControlPoint(const BezierCPPtr & cp, ViewGetSpec view)
 }
 
 BezierCPPtr
-Bezier::getControlPointForFeatherPoint(const BezierCPPtr & fp, ViewGetSpec view) const
+Bezier::getControlPointForFeatherPoint(const BezierCPPtr & fp, ViewIdx view) const
 {
     assert( fp->isFeatherPoint() );
     int index = getFeatherPointIndex(fp, view);
@@ -3455,7 +3451,7 @@ Bezier::getControlPointForFeatherPoint(const BezierCPPtr & fp, ViewGetSpec view)
 }
 
 void
-Bezier::leftDerivativeAtPoint(double time,
+Bezier::leftDerivativeAtPoint(TimeValue time,
                               const BezierCP & p,
                               const BezierCP & prev,
                               const Transform::Matrix3x3& transform,
@@ -3509,7 +3505,7 @@ Bezier::leftDerivativeAtPoint(double time,
 }
 
 void
-Bezier::rightDerivativeAtPoint(double time,
+Bezier::rightDerivativeAtPoint(TimeValue time,
                                const BezierCP & p,
                                const BezierCP & next,
                                const Transform::Matrix3x3& transform,
@@ -3659,7 +3655,7 @@ Bezier::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObjectBase
 
     }
     evaluateCurveModified();
-    refreshPolygonOrientation(false, ViewSetSpec::all());
+    refreshPolygonOrientation(getCurrentTime_TLS(), ViewSetSpec::all());
     RotoDrawableItem::fromSerialization(obj);
 }
 
@@ -3697,7 +3693,7 @@ Bezier::point_line_intersection(const Point &p1,
 }
 
 bool
-Bezier::isFeatherPolygonClockwiseOrientedInternal(double time, ViewGetSpec view) const
+Bezier::isFeatherPolygonClockwiseOrientedInternal(TimeValue time, ViewIdx view) const
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     QMutexLocker k(&_imp->itemMutex);
@@ -3726,7 +3722,7 @@ Bezier::isFeatherPolygonClockwiseOrientedInternal(double time, ViewGetSpec view)
 }
 
 bool
-Bezier::isFeatherPolygonClockwiseOriented(double time, ViewGetSpec view) const
+Bezier::isFeatherPolygonClockwiseOriented(TimeValue time, ViewIdx view) const
 {
     return isFeatherPolygonClockwiseOrientedInternal(time, view);
 }
@@ -3739,7 +3735,7 @@ Bezier::setAutoOrientationComputation(bool autoCompute)
 }
 
 void
-Bezier::refreshPolygonOrientation(double time, ViewSetSpec view)
+Bezier::refreshPolygonOrientation(TimeValue time, ViewSetSpec view)
 {
    
     QMutexLocker k(&_imp->itemMutex);
@@ -3757,10 +3753,10 @@ Bezier::refreshPolygonOrientationForView(ViewIdx view)
 
     QMutexLocker k(&_imp->itemMutex);
     if ( kfs.empty() ) {
-        computePolygonOrientation(0, view, true);
+        computePolygonOrientation(TimeValue(0), view, true);
     } else {
         for (std::set<double>::iterator it = kfs.begin(); it != kfs.end(); ++it) {
-            computePolygonOrientation(*it, view, false);
+            computePolygonOrientation(TimeValue(*it), view, false);
         }
     }
 
@@ -3781,7 +3777,7 @@ Bezier::refreshPolygonOrientation(ViewSetSpec view)
             refreshPolygonOrientationForView(*it);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         refreshPolygonOrientationForView(view_i);
     }
     
@@ -3799,7 +3795,7 @@ Bezier::refreshPolygonOrientation(ViewSetSpec view)
    should follow this orientation.
  */
 void
-Bezier::computePolygonOrientationForView(double time, ViewIdx view, bool isStatic) const
+Bezier::computePolygonOrientationForView(TimeValue time, ViewIdx view, bool isStatic) const
 {
     //Private - should already be locked
     assert( !_imp->itemMutex.tryLock() );
@@ -3858,7 +3854,7 @@ Bezier::computePolygonOrientationForView(double time, ViewIdx view, bool isStati
 } // computePolygonOrientationForView
 
 void
-Bezier::computePolygonOrientation(double time,
+Bezier::computePolygonOrientation(TimeValue time,
                                   ViewSetSpec view,
                                   bool isStatic) const
 {
@@ -3868,7 +3864,7 @@ Bezier::computePolygonOrientation(double time,
             computePolygonOrientationForView(time, *it, isStatic);
         }
     } else {
-        ViewIdx view_i = getViewIdxFromGetSpec(ViewGetSpec(view));
+        ViewIdx view_i = getViewIdxFromGetSpec(ViewIdx(view));
         computePolygonOrientationForView(time, view_i, isStatic);
     }
 
@@ -3889,7 +3885,7 @@ Point
 Bezier::expandToFeatherDistance(const Point & cp, //< the point
                                 Point* fp, //< the feather point
                                 double featherDistance, //< feather distance
-                                double time, //< time
+                                TimeValue time, //< time
                                 bool clockWise, //< is the bezier  clockwise oriented or not
                                 const Transform::Matrix3x3& transform,
                                 BezierCPs::const_iterator prevFp, //< iterator pointing to the feather before curFp
@@ -3947,28 +3943,31 @@ Bezier::expandToFeatherDistance(const Point & cp, //< the point
 } // expandToFeatherDistance
 
 void
-Bezier::appendToHash(double time, ViewIdx view, Hash64* hash)
+Bezier::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
-    std::list<BezierCPPtr> cps = getControlPoints(view);
-    std::list<BezierCPPtr> fps = getFeatherPoints(view);
+    if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
+        return;
+    }
+    std::list<BezierCPPtr> cps = getControlPoints(args.view);
+    std::list<BezierCPPtr> fps = getFeatherPoints(args.view);
     assert(cps.size() == fps.size() || fps.empty());
 
     if (!cps.empty()) {
 
         if (!_imp->isOpenBezier) {
-            hash->append(isCurveFinished(view));
+            hash->append(isCurveFinished(args.view));
         }
 
         std::list<BezierCPPtr>::const_iterator fIt = fps.begin();
         for (std::list<BezierCPPtr>::const_iterator it = cps.begin(); it!=cps.end(); ++it, ++fIt) {
             double x, y, lx, ly, rx, ry;
-            (*it)->getPositionAtTime(time, &x, &y);
-            (*it)->getLeftBezierPointAtTime(time, &lx, &ly);
-            (*it)->getRightBezierPointAtTime(time, &rx, &ry);
+            (*it)->getPositionAtTime(args.time, &x, &y);
+            (*it)->getLeftBezierPointAtTime(args.time, &lx, &ly);
+            (*it)->getRightBezierPointAtTime(args.time, &rx, &ry);
             double fx, fy, flx, fly, frx, fry;
-            (*fIt)->getPositionAtTime(time, &fx, &fy);
-            (*fIt)->getLeftBezierPointAtTime(time, &flx, &fly);
-            (*fIt)->getRightBezierPointAtTime(time, &frx, &fry);
+            (*fIt)->getPositionAtTime(args.time, &fx, &fy);
+            (*fIt)->getLeftBezierPointAtTime(args.time, &flx, &fly);
+            (*fIt)->getRightBezierPointAtTime(args.time, &frx, &fry);
 
             hash->append(x);
             hash->append(y);
@@ -3988,7 +3987,7 @@ Bezier::appendToHash(double time, ViewIdx view, Hash64* hash)
             }
         }
     }
-    RotoDrawableItem::appendToHash(time, view, hash);
+    RotoDrawableItem::appendToHash(args, hash);
 } // appendToHash
 
 std::string
