@@ -1714,7 +1714,12 @@ AppManager::getAllNonOFXPluginsPaths() const
     }
 
     QString envvar( QString::fromUtf8( qgetenv(NATRON_PATH_ENV_VAR) ) );
-    QStringList splitDirs = envvar.split( QChar::fromLatin1(';') );
+# ifdef __NATRON_WIN32__
+    const QChar pathSep = QChar::fromLatin1(';');
+# else
+    const QChar pathSep = QChar::fromLatin1(':');
+# endif
+    QStringList splitDirs = envvar.split(pathSep);
     std::list<std::string> userSearchPaths;
     _imp->_settings->getPythonGroupsSearchPaths(&userSearchPaths);
 
@@ -3116,9 +3121,9 @@ AppManager::initPython()
 #     endif
     } else {
 #     ifdef __NATRON_WIN32__
-        QChar pathSep = QChar::fromLatin1(';');
+        const QChar pathSep = QChar::fromLatin1(';');
 #     else
-        QChar pathSep = QChar::fromLatin1(':');
+        const QChar pathSep = QChar::fromLatin1(':');
 #     endif
         QString toPrependStr = toPrepend.join(pathSep);
         if (pythonPath.isEmpty()) {
