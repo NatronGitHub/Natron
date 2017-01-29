@@ -136,10 +136,17 @@ The last command above will take a while, since it builds from sources, and shou
 
     brew install ilmbase openexr freetype fontconfig ffmpeg opencolorio openimageio seexpr
 
+To install the openfx-arena set of plugin, you also need the following:
+
+    brew install librsvg poppler librevenge libcdr libzip
+    brew uninstall imagemagick
+    brew install imagemagick --with-hdri --with-librsvg --with-quantum-depth-32 --with-pango
+
+
 also set the correct value for the pkg-config path (you can also put
 this in your .bash_profile):
 
-    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig
+    export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:/opt/X11/lib/pkgconfig:/usr/local/opt/cairo/lib/pkgconfig:/usr/local/opt/icu4c/lib/pkgconfig
 
 ### Installing manually (outside of MacPorts or homebrew) a patched Qt to avoid stack overflows
 
