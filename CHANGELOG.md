@@ -31,6 +31,12 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.2.3
+
+- add proper quality options to WriteFFmpeg, including CRF-based encoding for libx264.
+- fix bug in the recent files menu.
+
+
 ## Version 2.2.2
 
 This is a bug-fix release
