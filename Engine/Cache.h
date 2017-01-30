@@ -71,6 +71,11 @@
 // The name of the directory containing all buckets on disk
 #define NATRON_CACHE_DIRECTORY_NAME "Cache"
 
+
+// After this amount of milliseconds, if a thread is not able to read a pending entry it will take it over and compute it, to ensure
+// the entry was not left abandonned by a dead process.
+#define NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS 10000
+
 NATRON_NAMESPACE_ENTER;
 
 
@@ -90,7 +95,7 @@ struct CacheReportInfo
 
 
 struct CacheBucket;
-
+class SharedMemoryReader;
 /**
  * @brief Small RAII style class used to lock an entry corresponding to a hash key to ensure
  * only a single thread can work on it at once.
@@ -149,8 +154,12 @@ public:
      * the status will become eCacheEntryStatusCached and the entry passed to the constructor is ready.
      * If the status can still not be found in the cache and no other threads is computing it, the status
      * will become eCacheEntryStatusMustCompute and it is expected that this thread computes the entry in turn.
+     *
+     * @param timeout If set to INT_MAX, the process will wait forever until the entry becomes available.
+     * Otherwise this process will wait up to "timeout" milliseconds for the pending entry. After that, if it still
+     * is not available, it will takeover the entry and return a status of eCacheEntryStatusMustCompute.
      **/
-    CacheEntryStatusEnum waitForPendingEntry();
+    CacheEntryStatusEnum waitForPendingEntry(std::size_t timeout = NATRON_CACHE_TAKEOVER_LOCKED_ENTRY_TIMER_MS);
 
 
     /**
@@ -161,7 +170,9 @@ public:
 
 private:
 
-    void lookupAndSetStatus(bool takeEntryLock);
+    bool lookupAndSetStatusInternal(bool hasWriteRights, std::size_t timeSpentWaitingForPendingEntryMS, std::size_t timeout);
+
+    void lookupAndSetStatus(boost::scoped_ptr<SharedMemoryReader>& shmAccess, std::size_t timeSpentWaitingForPendingEntryMS, std::size_t timeout);
 
     boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };

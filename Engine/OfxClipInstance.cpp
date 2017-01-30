@@ -151,6 +151,23 @@ OfxClipInstance::getIsMask() const
     return _imp->mask;
 }
 
+const std::string&
+OfxClipInstance::getPixelDepth() const
+{
+    EffectInstancePtr effect = getEffectHolder();
+
+    if (!effect) {
+        return natronsDepthToOfxDepth(eImageBitDepthFloat);
+    } else {
+
+        TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
+        int inputNb = getInputNb();
+
+        ImageBitDepthEnum depth = effect->getBitDepth(render, inputNb);
+        return natronsDepthToOfxDepth(depth);
+    }
+}
+
 const std::string &
 OfxClipInstance::getUnmappedBitDepth() const
 {

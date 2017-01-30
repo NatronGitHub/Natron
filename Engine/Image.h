@@ -578,6 +578,12 @@ public:
     CacheAccessModeEnum getCachePolicy() const;
 
     /**
+     * @brief If this image has cache write access, invalidates the tiles to the cache.
+     * They will not be inserted in the cache.
+     **/
+    void discardTiles();
+
+    /**
      * @brief If this image has cache write access, push the tiles to the cache.
      * This will only push the tiles that are marked eCacheEntryStatusMustCompute.
      * making them available to other threads waiting for it (and waking them up).

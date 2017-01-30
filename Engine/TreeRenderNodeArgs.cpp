@@ -1040,7 +1040,7 @@ TreeRenderNodeArgs::roiVisitFunctor(TimeValue time,
 
 struct PreRenderFrame
 {
-    EffectInstancePtr inputNode, caller;
+    EffectInstancePtr caller;
     int inputNb;
     boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
 };
@@ -1063,14 +1063,14 @@ preRenderFrameFunctor(const PreRenderFrame& args)
     PreRenderResult results;
     results.renderArgs = args.renderArgs;
     results.inputNb = args.inputNb;
-
+    EffectInstancePtr inputNode = args.caller->getInput(args.inputNb);
     // Call renderRoI on the input: not that in output the planes may not be used directly by the caller effect:
     // The image backend may not be the backend used by this image, or the memory layout (coplanar, RGBA packed etc..)
     // or the components may not be expected by the caller effect.
     // We keep the unmapped input image pointer around so that the image does not get destroyed (if it is no longer cached).
     //
     // The mapping of the image to a format appropriate for the caller effect is done in EffectInstance::getImagePlanes
-    results.stat = args.inputNode->renderRoI(*args.renderArgs, &results.results);
+    results.stat = inputNode->renderRoI(*args.renderArgs, &results.results);
     return results;
 }
 
