@@ -119,7 +119,7 @@ configure.args-append \
 
 default_variants    +opencolorio +openjpeg +qt4 +freetype
 
-variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype description {Natron version} {
+variant natron conflicts ffmpeg requires opencolorio openjpeg qt4 freetype field3d description {Natron version} {
     if {${configure.cxx_stdlib} eq "libstdc++"} {
         # configure with GCC 4.9 for proper GCC intrinsics support
         configure.compiler macports-gcc-4.9
@@ -186,8 +186,6 @@ variant freetype description {Use FreeType.} {
     depends_lib-append port:freetype
 }
 
-variant natron require field3d description {Compile a version to be included in Natron} {
-}
 #configure.args   --enable-bsdtar=shared --enable-bsdcpio=shared \
 #                 --without-lzmadec --without-lzma
 #use_autoreconf	yes

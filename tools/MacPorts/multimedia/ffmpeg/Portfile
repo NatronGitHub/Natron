@@ -384,9 +384,11 @@ if {[variant_isset high10]} {
 variant gpl2 description {Enable GPL code, license will be GPL-2+} {
     configure.args-append   --enable-gpl \
                             --enable-postproc \
+                            --enable-libx265 \
                             --enable-libx264 \
                             --enable-libxvid
     depends_lib-append      port:XviD \
+                            port:x265 \
                             port:x264
 
     license                 GPL-2+
