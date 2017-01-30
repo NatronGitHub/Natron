@@ -578,8 +578,8 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
     layerKnob->populateChoices(layerOptions);
     alphaChannelKnob->populateChoices(channelOptions);
 
-    // If the old layer choice does no longer exist, fallback on color-plane
-    if (!layerKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
+    // If the old layer choice does no longer exist or it is "-", fallback on color-plane
+    if (layerKnob->getValue() == 0 || !layerKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
         if (foundColorPlaneIndex != -1) {
             layerKnob->setValue(foundColorPlaneIndex);
         } else {

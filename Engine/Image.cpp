@@ -77,6 +77,12 @@ Image::~Image()
 }
 
 void
+Image::discardTiles()
+{
+    _imp->cachePolicy = eCacheAccessModeNone;
+}
+
+void
 Image::pushTilesToCacheIfNotAborted()
 {
    
@@ -259,8 +265,8 @@ Image::initializeStorage(const Image::InitStorageArgs& args)
         case eImageBufferLayoutMonoChannelTiled: {
             // The size of a tile depends on the bitdepth
             Cache::getTileSizePx(args.bitdepth, &tileSizeX, &tileSizeY);
-            nTilesHeight = std::ceil(_imp->bounds.height() / tileSizeY) * tileSizeY;
-            nTilesWidth = std::ceil(_imp->bounds.width() / tileSizeX) * tileSizeX;
+            nTilesHeight = std::ceil((double)_imp->bounds.height() / tileSizeY);
+            nTilesWidth = std::ceil((double)_imp->bounds.width() / tileSizeX);
         }   break;
         case eImageBufferLayoutRGBACoplanarFullRect:
         case eImageBufferLayoutRGBAPackedFullRect:

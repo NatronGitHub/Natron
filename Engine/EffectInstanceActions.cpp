@@ -1243,7 +1243,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         ViewIdx identityView;
         identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView);
 
-        if (inputIdentityNb == -1) {
+        if (inputIdentityNb != -1) {
             // This effect is identity
             EffectInstancePtr identityInputNode = getInput(inputIdentityNb);
             if (!identityInputNode) {
@@ -1844,11 +1844,12 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     }
 
     (*results)->setFrameRangeResults(range);
-    cacheAccess->insertInCache();
 
     if (render) {
         render->setFrameRangeResults(*results);
     }
+    cacheAccess->insertInCache();
+
     return eActionStatusOK;
     
 } // getFrameRange_public
@@ -2167,6 +2168,8 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         _imp->checkMetadata(*metadata);
     }
 
+    cacheAccess->insertInCache();
+
 
     // For a Reader, try to add the output format to the project formats.
     if (isReader()) {
@@ -2176,7 +2179,6 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         getApp()->getProject()->setOrAddProjectFormat(format, true);
     }
 
-    cacheAccess->insertInCache();
 
     return eActionStatusOK;
 } // getTimeInvariantMetaDatas_public

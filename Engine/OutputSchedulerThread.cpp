@@ -32,8 +32,12 @@
 #include <stdexcept>
 #include <sstream> // stringstream
 
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
+// /usr/local/include/boost/bind/arg.hpp:37:9: warning: unused typedef 'boost_static_assert_typedef_37' [-Wunused-local-typedef]
+#include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/clamp.hpp>
+GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 #include <QtCore/QMetaType>
 #include <QtCore/QMutex>
@@ -2149,7 +2153,7 @@ public:
 public:
 
 
-    static void createRenderViewerObject(const RenderViewerProcessFunctorArgsPtr& inArgs)
+    static void createRenderViewerObject(RenderViewerProcessFunctorArgs* inArgs)
     {
         TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
         args->treeRoot = inArgs->viewerProcessNode;
@@ -2271,16 +2275,16 @@ public:
         return mipMapLevel;
     } // getViewerMipMapLevel
 
-    static void createRenderViewerObjectForAllInputs(const ViewerNodePtr& viewer,
+    static void createRenderViewerProcessArgs(const ViewerNodePtr& viewer,
+                                                     int viewerProcess_i,
                                                      TimeValue time,
                                                      ViewIdx view,
                                                      bool isPlayback,
                                                      const RenderStatsPtr& stats,
                                                      const RectD* roiParam,
-                                                     std::vector<RenderViewerProcessFunctorArgsPtr>* outArgs)
+                                                     ViewerRenderBufferedFrame* bufferedFrame,
+                                                     RenderViewerProcessFunctorArgs* outArgs)
     {
-
-        outArgs->resize(2);
 
         bool fullFrameProcessing = viewer->isFullFrameProcessingEnabled();
         bool draftModeEnabled = viewer->getApp()->isDraftRenderEnabled();
@@ -2294,23 +2298,43 @@ public:
             roi = viewer->getUiContext()->getImageRectangleDisplayed();
         }
 
-        for (int i = 0; i < 2; ++i) {
-            (*outArgs)[i].reset(new RenderViewerProcessFunctorArgs());
-            (*outArgs)[i]->isPlayback = isPlayback;
-            (*outArgs)[i]->isDraftModeEnabled = draftModeEnabled;
-            (*outArgs)[i]->viewerMipMapLevel = mipMapLevel;
-            (*outArgs)[i]->byPassCache = byPassCache;
-            (*outArgs)[i]->roi = roi;
-            (*outArgs)[i]->stats = stats;
-            (*outArgs)[i]->time = time;
-            (*outArgs)[i]->view = view;
-            (*outArgs)[i]->viewerProcessNode = viewer->getViewerProcessNode(i)->getNode();
-            createRenderViewerObject((*outArgs)[i]);
+        (outArgs)->isPlayback = isPlayback;
+        (outArgs)->isDraftModeEnabled = draftModeEnabled;
+        (outArgs)->viewerMipMapLevel = mipMapLevel;
+        (outArgs)->byPassCache = byPassCache;
+        (outArgs)->roi = roi;
+        (outArgs)->stats = stats;
+        (outArgs)->time = time;
+        (outArgs)->view = view;
+        (outArgs)->viewerProcessNode = viewer->getViewerProcessNode(viewerProcess_i)->getNode();
+        createRenderViewerObject(outArgs);
+        bufferedFrame->canonicalRoi[viewerProcess_i] = roi;
+
+    }
+
+private:
+
+    void createAndLaunchRenderInThread(const RenderViewerProcessFunctorArgsPtr& processArgs, int viewerProcess_i, TimeValue time, const RenderStatsPtr& stats, ViewerRenderBufferedFrame* bufferedFrame)
+    {
+
+        createRenderViewerProcessArgs(_viewer, viewerProcess_i, time, bufferedFrame->view, true /*isPlayback*/, stats, 0 /*roiParam*/,  bufferedFrame, processArgs.get());
+
+        // Register the render so that it can be aborted in abortRenders()
+        {
+            QMutexLocker k(&renderObjectsMutex);
+
+            if (processArgs->renderObject) {
+                renderObjects.push_back(processArgs->renderObject);
+            }
 
         }
+
+        launchRenderFunctor(processArgs);
+
+        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
+        bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
+
     }
-    
-private:
 
     virtual void renderFrame(TimeValue time,
                              const std::vector<ViewIdx>& viewsToRender,
@@ -2335,50 +2359,35 @@ private:
             bufferObject->stats = stats;
             bufferObject->isPartialRect = false;
 
-            // Render both viewer processes arguments
-            std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-            createRenderViewerObjectForAllInputs(_viewer, time, viewsToRender[i], true /*isPlayback*/, stats, 0 /*roiParam*/,  &processArgs);
-
-            for (int d = 0; d < 2; ++d) {
-                bufferObject->canonicalRoi[i] = processArgs[i]->renderObject->getCanonicalRoI();
-                bufferObject->viewerProcessImageKey[i] = processArgs[i]->viewerProcessImageTileKey;
+            std::vector<RenderViewerProcessFunctorArgsPtr> processArgs(2);
+            for (int i = 0; i < 2; ++i) {
+                processArgs[i].reset(new RenderViewerProcessFunctorArgs);
             }
 
-            assert(processArgs.size() == 2);
-
-            // Register the renders so that they can be aborted in abortRenders()
-            {
-                QMutexLocker k(&renderObjectsMutex);
-                for (int i = 0; i < 2; ++i) {
-                    if (processArgs[i]->renderObject) {
-                        renderObjects.push_back(processArgs[i]->renderObject);
-                    }
-                }
-            }
-
-            // If the input is the same as the input A, then do not render the tree B
-            bool canRenderTreeB;
-            {
-                NodePtr bInput = _viewer->getCurrentBInput();
-                canRenderTreeB = bInput == _viewer->getCurrentAInput();
-            }
+            bool viewerBEqualsViewerA = _viewer->getCurrentAInput() == _viewer->getCurrentBInput();
 
             // Launch the 2nd viewer process in a separate thread
             QFuture<void> processBFuture;
-            if (canRenderTreeB && processArgs[1]) {
-                processBFuture = QtConcurrent::run(&launchRenderFunctor, processArgs[1]);
+            if (!viewerBEqualsViewerA) {
+                processBFuture = QtConcurrent::run(this,
+                                                   &ViewerRenderFrameRunnable::createAndLaunchRenderInThread,
+                                                   processArgs[1],
+                                                   1,
+                                                   time,
+                                                   stats,
+                                                   bufferObject.get());
             }
 
             // Launch the 1st viewer process in this thread
-            if (processArgs[0]) {
-                launchRenderFunctor(processArgs[0]);
-            }
+            createAndLaunchRenderInThread(processArgs[0], 0, time, stats, bufferObject.get());
 
             // Wait for the 2nd viewer process
-            if (canRenderTreeB) {
+            if (!viewerBEqualsViewerA) {
                 processBFuture.waitForFinished();
             } else {
-                processArgs[1] = processArgs[0];
+                bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
+                processArgs[0] = processArgs[1];
             }
 
             // Check for failures
@@ -2389,11 +2398,6 @@ private:
                     _imp->scheduler->notifyRenderFailure(processArgs[i]->retCode, std::string());
                     break;
                 }
-            }
-
-
-            for (int i = 0; i < 2; ++i) {
-                bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
             }
 
             frameContainer->frames.push_back(bufferObject);
@@ -3047,7 +3051,7 @@ public:
 struct TreeRenderAndAge
 {
     // One render for each viewer process node
-    TreeRenderPtr render[2];
+    std::list<TreeRenderPtr> renders;
     U64 age;
 };
 
@@ -3170,6 +3174,40 @@ public:
     {
     }
 
+    void createAndLaunchRenderInThread(const ViewerNodePtr &viewer, const RenderViewerProcessFunctorArgsPtr& processArgs, int viewerProcess_i, TimeValue time, const RenderStatsPtr& stats, const RectD* roiParam, ViewerRenderBufferedFrame* bufferedFrame)
+    {
+
+        ViewerRenderFrameRunnable::createRenderViewerProcessArgs(viewer, viewerProcess_i, time, bufferedFrame->view, false /*isPlayback*/, stats, roiParam,  bufferedFrame, processArgs.get());
+
+        // Register the current renders and their age on the scheduler so that they can be aborted
+        {
+            QMutexLocker k(&_args->scheduler->renderAgeMutex);
+            TreeRenderAndAge curRender;
+            curRender.age = _args->age;
+
+            {
+                TreeRenderSetOrderedByAge::iterator foundAge = _args->scheduler->currentRenders.find(curRender);
+                if (foundAge != _args->scheduler->currentRenders.end()) {
+                    curRender = *foundAge;
+                    _args->scheduler->currentRenders.erase(foundAge);
+                }
+            }
+            assert(processArgs->renderObject);
+            curRender.renders.push_back(processArgs->renderObject);
+            std::pair<TreeRenderSetOrderedByAge::iterator, bool> ok = _args->scheduler->currentRenders.insert(curRender);
+            assert(ok.second);
+            (void)ok;
+
+        }
+
+        ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
+
+        bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
+        bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
+        
+    }
+
+
     void computeViewsForRoI(const ViewerNodePtr &viewer, const RectD* roiParam, const ViewerRenderBufferedFrameContainerPtr& framesContainer)
     {
 
@@ -3190,51 +3228,37 @@ public:
             bufferObject->isPartialRect = roiParam != 0;
 
 
-            std::vector<RenderViewerProcessFunctorArgsPtr> processArgs;
-            ViewerRenderFrameRunnable::createRenderViewerObjectForAllInputs(viewer, _args->time, view, false/*isPlayback*/, stats, roiParam, &processArgs);
-            assert(processArgs.size() == 2);
-
-            for (int d = 0; d < 2; ++d) {
-                bufferObject->canonicalRoi[i] = processArgs[i]->renderObject->getCanonicalRoI();
-                bufferObject->viewerProcessImageKey[i] = processArgs[i]->viewerProcessImageTileKey;
-            }
-
-            // Register the current renders and their age on the scheduler so that they can be aborted
-            {
-                QMutexLocker k(&_args->scheduler->renderAgeMutex);
-                TreeRenderAndAge curRender;
-                curRender.age = _args->age;
-                for (int i = 0; i < 2; ++i) {
-                    curRender.render[i] = processArgs[i]->renderObject;
-                }
-                _args->scheduler->currentRenders.insert(curRender);
-            }
-
-            // If the input is the same as the input A, then do not render the tree B
-            bool canRenderTreeB;
-            {
-                NodePtr bInput = viewer->getCurrentBInput();
-                canRenderTreeB = bInput == viewer->getCurrentAInput();
-            }
-            // Render 1 tree in a separate thread and the other one in this thread
-            QFuture<void> processBFuture;
-            if (canRenderTreeB && processArgs[1]->renderObject) {
-                processBFuture = QtConcurrent::run(&ViewerRenderFrameRunnable::launchRenderFunctor, processArgs[1]);
-            }
-            if (processArgs[0]) {
-                ViewerRenderFrameRunnable::launchRenderFunctor(processArgs[0]);
-            }
-
-            if (canRenderTreeB && processArgs[1]->renderObject) {
-                processBFuture.waitForFinished();
-            }
-            if (!canRenderTreeB) {
-                processArgs[1] = processArgs[0];
-            }
-
-
+            std::vector<RenderViewerProcessFunctorArgsPtr> processArgs(2);
             for (int i = 0; i < 2; ++i) {
-                bufferObject->viewerProcessImages[i] = processArgs[i]->outputImage;
+                processArgs[i].reset(new RenderViewerProcessFunctorArgs);
+            }
+
+            bool viewerBEqualsViewerA = viewer->getCurrentAInput() == viewer->getCurrentBInput();
+
+            // Launch the 2nd viewer process in a separate thread
+            QFuture<void> processBFuture ;
+            if (!viewerBEqualsViewerA) {
+                processBFuture = QtConcurrent::run(boost::bind(&RenderCurrentFrameFunctorRunnable::createAndLaunchRenderInThread,
+                                                               this,
+                                                               viewer,
+                                                               processArgs[1],
+                                                               1,
+                                                               _args->time,
+                                                               stats,
+                                                               roiParam,
+                                                               bufferObject.get()));
+            }
+
+            // Launch the 1st viewer process in this thread
+            createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, roiParam, bufferObject.get());
+
+            // Wait for the 2nd viewer process
+            if (!viewerBEqualsViewerA) {
+                processBFuture.waitForFinished();
+            } else {
+                bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
+                processArgs[0] = processArgs[1];
             }
 
             framesContainer->frames.push_back(bufferObject);
@@ -3528,9 +3552,10 @@ ViewerCurrentFrameRequestScheduler::onAbortRequested(bool keepOldestRender)
     }
 
     for (; it != _imp->currentRenders.end(); ++it) {
-        for (int i = 0; i < 2; ++i) {
-            it->render[i]->setRenderAborted();
+        for (std::list<TreeRenderPtr>::const_iterator it2 = it->renders.begin(); it2 != it->renders.end(); ++it2) {
+            (*it2)->setRenderAborted();
         }
+
     }
 
 }

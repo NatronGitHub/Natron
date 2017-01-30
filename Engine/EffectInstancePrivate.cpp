@@ -447,6 +447,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
         actionArgs.time = args->time;
         actionArgs.view = args->view;
         actionArgs.glContextAttacher = glContext;
+        actionArgs.renderArgs = args->renderArgs;
     }
 
     std::list< std::list<std::pair<ImagePlaneDesc, ImagePtr> > > planesLists;
@@ -467,7 +468,10 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
         planesLists.push_back(tmp);
     }
 
-    OSGLContextPtr openGLContext = glContext->getContext();
+    OSGLContextPtr openGLContext;
+    if (glContext) {
+        openGLContext = glContext->getContext();
+    }
 
     for (std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
 

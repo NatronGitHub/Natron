@@ -272,7 +272,7 @@ GetFramesNeededResults::toMemorySegment(ExternalSegmentType* segment, const std:
 
         FrameRangesMap_ExternalSegment extFrameRangeMap(alloc_inst);
 
-        for (FrameRangesMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it) {
+        for (FrameRangesMap::const_iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 
             RangeDVector_ExternalSegment extRangeVec(alloc_inst);
             for (std::size_t i = 0; i < it2->second.size(); ++i) {

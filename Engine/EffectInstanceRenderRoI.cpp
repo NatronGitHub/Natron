@@ -1059,6 +1059,12 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     return renderRetCode;
 } // EffectInstance::Implementation::::renderRoILaunchInternalRender
 
+static void invalidateCachedPlanesToRender(const EffectInstance::ImagePlanesToRenderPtr& planes)
+{
+    for (std::map<ImagePlaneDesc, PlaneToRender>::const_iterator it = planes->planes.begin(); it != planes->planes.end(); ++it) {
+        it->second.cacheImage->discardTiles();
+    }
+}
 
 ActionRetCodeEnum
 EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
@@ -1287,6 +1293,7 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
         ActionRetCodeEnum upstreamRetCode = args.renderArgs->preRenderInputImages(args.time, args.view, inputLayersNeeded);
 
         if (isFailureRetCode(upstreamRetCode)) {
+            invalidateCachedPlanesToRender(planesToRender);
             return upstreamRetCode;
         }
     }
@@ -1310,11 +1317,17 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     if (renderRetCode == eActionStatusOutOfMemory && planesToRender->backendType == eRenderBackendTypeOpenGL) {
         if (args.renderArgs->getCurrentRenderOpenGLSupport() != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
+            invalidateCachedPlanesToRender(planesToRender);
             return eActionStatusFailed;
         }
         boost::scoped_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
         newArgs->allowGPURendering = false;
         return renderRoI(*newArgs, results);
+    }
+
+    if (renderRetCode != eActionStatusOK) {
+        invalidateCachedPlanesToRender(planesToRender);
+        return renderRetCode;
     }
 
     // If the node did not support render scale and the mipmap level rendered was different than what was requested, downcale the image.

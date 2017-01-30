@@ -340,7 +340,8 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
 
     NodePtr node = getNode();
 
-    std::list<NodeWPtr> outputs = node->getOutputs();
+    std::list<NodeWPtr> outputs;
+    node->getOutputs_mt_safe(outputs);
     std::size_t nOutputNodes = outputs.size();
 
     if (nOutputNodes == 0) {

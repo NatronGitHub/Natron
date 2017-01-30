@@ -3261,20 +3261,15 @@ getColorAtRectForDepth(const Image::CPUTileData& image,
 {
     switch (image.nComps) {
         case 1:
-            getColorAtRectForSrcNComps<PIX, maxValue, 1>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
-            break;
+            return getColorAtRectForSrcNComps<PIX, maxValue, 1>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
         case 2:
-            getColorAtRectForSrcNComps<PIX, maxValue, 2>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
-            break;
+            return getColorAtRectForSrcNComps<PIX, maxValue, 2>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
         case 3:
-            getColorAtRectForSrcNComps<PIX, maxValue, 3>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
-            break;
+            return getColorAtRectForSrcNComps<PIX, maxValue, 3>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
         case 4:
-            getColorAtRectForSrcNComps<PIX, maxValue, 4>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
-            break;
+            return getColorAtRectForSrcNComps<PIX, maxValue, 4>(image, roi, forceLinear, srcColorSpace, dstColorSpace, pixelSums);
         default:
             return false;
-            break;
     }
 } // getColorAtRectForDepth
 
