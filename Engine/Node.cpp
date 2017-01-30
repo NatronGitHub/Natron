@@ -7055,6 +7055,32 @@ Node::getPluginDescription() const
         }
     }
 
+    // if this is a Read or Write plugin, return the description from the embedded plugin
+    std::string pluginID = getPluginID();
+    if (pluginID == PLUGINID_NATRON_READ ||
+        pluginID == PLUGINID_NATRON_WRITE) {
+        EffectInstPtr effectInstance = getEffectInstance();
+        if ( effectInstance && effectInstance->isReader() ) {
+            ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+
+            if (isReadNode) {
+                NodePtr subnode = isReadNode->getEmbeddedReader();
+                if (subnode) {
+                    return subnode->getPluginDescription();
+                }
+            }
+        } else if ( effectInstance && effectInstance->isWriter() ) {
+            WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+            if (isWriteNode) {
+                NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                if (subnode) {
+                    return subnode->getPluginDescription();
+                }
+            }
+        }
+    }
+
     return _imp->effect->getPluginDescription();
 }
 

@@ -49,9 +49,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Plugin.h"
-#include "Engine/ViewIdx.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
+#include "Engine/ViewIdx.h"
+#include "Engine/WriteNode.h"
 
 #include "Gui/Button.h"
 #include "Gui/CurveGui.h"
@@ -90,7 +92,7 @@ using std::make_pair;
 
 NATRON_NAMESPACE_ENTER;
 
-
+// called by NodeSettingsPanel::NodeSettingsPanel()
 DockablePanel::DockablePanel(Gui* gui,
                              KnobHolder* holder,
                              QVBoxLayout* container,
@@ -117,15 +119,53 @@ DockablePanel::DockablePanel(Gui* gui,
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::NoFocus);
 
+    NodePtr node;
+    NodePtr nodeForDocumentation;
     EffectInstance* isEffect = dynamic_cast<EffectInstance*>(holder);
     QString pluginLabelVersioned;
     if (isEffect) {
         if ( dynamic_cast<GroupOutput*>(isEffect) ) {
             headerMode = eHeaderModeReadOnlyName;
         }
+        // if this is a Read or Write plugin, get the info from the embedded plugin
+        NodePtr node = isEffect->getNode();
+        nodeForDocumentation = node;
+        if (node) {
+            const std::string pluginID = isEffect->getPluginID();
+            if (pluginID == PLUGINID_NATRON_READ ||
+                pluginID == PLUGINID_NATRON_WRITE) {
+                EffectInstPtr effectInstance = node->getEffectInstance();
+                if ( effectInstance && effectInstance->isReader() ) {
+                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-        const Plugin* plugin = isEffect->getNode()->getPlugin();
-        pluginLabelVersioned = tr("%1 version %2.%3").arg( plugin->getPluginLabel() ).arg( plugin->getMajorVersion() ).arg( plugin->getMinorVersion() );
+                    if (isReadNode) {
+                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                        if (subnode) {
+                            nodeForDocumentation = subnode;
+                        }
+                    }
+                } else if ( effectInstance && effectInstance->isWriter() ) {
+                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                    if (isWriteNode) {
+                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                        if (subnode) {
+                            nodeForDocumentation = subnode;
+                        }
+                    }
+                }
+            }
+
+            const Plugin* plugin = nodeForDocumentation->getPlugin();
+            if (plugin) {
+                _imp->_helpToolTip = QString::fromUtf8( node->getPluginDescription().c_str() );
+                _imp->_pluginLabel = plugin->getPluginLabel();
+                _imp->_pluginID = plugin->getPluginID();
+                _imp->_pluginVersionMajor = plugin->getMajorVersion();
+                _imp->_pluginVersionMinor = plugin->getMinorVersion();
+                pluginLabelVersioned = tr("%1 version %2.%3").arg(_imp->_pluginLabel).arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
+            }
+        }
     }
     MultiInstancePanel* isMultiInstance = dynamic_cast<MultiInstancePanel*>(holder);
     if (isMultiInstance) {
@@ -156,7 +196,7 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
 
-            std::string iconFilePath = isEffect->getNode()->getPluginIconFilePath();
+            std::string iconFilePath = nodeForDocumentation->getPluginIconFilePath();
             if ( !iconFilePath.empty() ) {
                 QPixmap ic;
                 if ( ic.load( QString::fromUtf8( iconFilePath.c_str() ) ) ) {
@@ -199,12 +239,6 @@ DockablePanel::DockablePanel(Gui* gui,
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET, iconSize, &pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp), QString(), _imp->_headerWidget);
-
-            const Plugin* plugin = isEffect->getNode()->getPlugin();
-            assert(plugin);
-            _imp->_pluginID = plugin->getPluginID();
-            _imp->_pluginVersionMajor = plugin->getMajorVersion();
-            _imp->_pluginVersionMinor = plugin->getMinorVersion();
 
             _imp->_helpButton->setToolTip( helpString() );
             _imp->_helpButton->setFixedSize(mediumBSize);
@@ -257,8 +291,8 @@ DockablePanel::DockablePanel(Gui* gui,
         QObject::connect( _imp->_cross, SIGNAL(clicked()), this, SLOT(closePanel()) );
 
 
-        if (isEffect) {
-            boost::shared_ptr<NodeGuiI> gui_i = isEffect->getNode()->getNodeGui();
+        if (node) {
+            boost::shared_ptr<NodeGuiI> gui_i = node->getNodeGui();
             assert(gui_i);
             double r, g, b;
             gui_i->getColor(&r, &g, &b);
@@ -279,13 +313,13 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_colorButton->setFocusPolicy(Qt::NoFocus);
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
 
-            if ( isEffect && !isEffect->getNode()->isMultiInstance() ) {
+            if ( node && !node->isMultiInstance() ) {
                 ///Show timeline keyframe markers to be consistent with the fact that the panel is opened by default
-                isEffect->getNode()->showKeyframesOnTimeline(true);
+                node->showKeyframesOnTimeline(true);
             }
 
 
-            if ( isEffect && isEffect->getNode()->hasOverlay() ) {
+            if ( node && node->hasOverlay() ) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
                 _imp->_overlayColor.setRgbF(1., 1., 1.);
@@ -343,7 +377,7 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
             if (isEffect) {
                 onNodeScriptChanged( QString::fromUtf8( isEffect->getScriptName().c_str() ) );
-                QObject::connect( isEffect->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
+                QObject::connect( node.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
             }
             _imp->_nameLineEdit->setText(initialName);
             QObject::connect( _imp->_nameLineEdit, SIGNAL(editingFinished()), this, SLOT(onLineEditNameEditingFinished()) );
@@ -560,8 +594,11 @@ DockablePanel::onPageIndexChanged(int index)
         if (it->second->tab == curTab) {
             setCurrentPage(it->second);
             EffectInstance* isEffect = dynamic_cast<EffectInstance*>(_imp->_holder);
-            if ( isEffect && isEffect->getNode()->hasOverlay() ) {
-                isEffect->getApp()->redrawAllViewers();
+            if (isEffect) {
+                NodePtr node = isEffect->getNode();
+                if (node && node->hasOverlay() ) {
+                    isEffect->getApp()->redrawAllViewers();
+                }
             }
         }
     }
@@ -715,7 +752,9 @@ DockablePanel::onLineEditNameEditingFinished()
     if (panel) {
         node = panel->getNode();
         assert(node);
-        oldName = QString::fromUtf8( node->getNode()->getLabel().c_str() );
+        if (node) {
+            oldName = QString::fromUtf8( node->getNode()->getLabel().c_str() );
+        }
     }
 
     if (oldName == newName) {
@@ -764,11 +803,20 @@ DockablePanel::onKnobsInitialized()
 
     NodeSettingsPanel* isNodePanel = dynamic_cast<NodeSettingsPanel*>(this);
     if (isNodePanel) {
-        boost::shared_ptr<NodeCollection> collec = isNodePanel->getNode()->getNode()->getGroup();
-        NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collec.get() );
-        if (isGroup) {
-            if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
-                setEnabled(false);
+        NodeGuiPtr nodeGui = isNodePanel->getNode();
+        NodePtr node;
+        assert(nodeGui);
+        if (nodeGui) {
+            node = nodeGui->getNode();
+        }
+        assert(node);
+        if (node) {
+            boost::shared_ptr<NodeCollection> collec = node->getGroup();
+            NodeGroup* isGroup = dynamic_cast<NodeGroup*>( collec.get() );
+            if (isGroup) {
+                if ( !isGroup->getNode()->hasPyPlugBeenEdited() ) {
+                    setEnabled(false);
+                }
             }
         }
     }
@@ -897,12 +945,10 @@ DockablePanel::showHelp()
 
     if (iseffect) {
         NodePtr node = iseffect->getNode();
-        std::string pluginLabel = node->getPluginLabel();
-        std::string pluginID = node->getPluginID();
         int serverPort = appPTR->getDocumentationServerPort();
-        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + QString::fromUtf8(pluginID.c_str());
+        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + _imp->_pluginID;
 #ifdef NATRON_DOCUMENTATION_ONLINE
-        QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + QString::fromUtf8(pluginID.c_str()) + QString::fromUtf8(".html");
+        QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + _imp->_pluginID + QString::fromUtf8(".html");
         int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
         if ( (serverPort == 0) && (docSource == 0) ) {
             docSource = 1;
@@ -915,7 +961,7 @@ DockablePanel::showHelp()
                 QDesktopServices::openUrl( QUrl(remoteUrl) );
                 break;
             case 2:
-                Dialogs::informationDialog(pluginLabel, helpString().toStdString(), true);
+                Dialogs::informationDialog(_imp->_pluginLabel.toStdString(), helpString().toStdString(), true);
                 break;
         }
 #else

@@ -105,6 +105,7 @@ struct DockablePanelPrivate
     bool _isClosed; //< accessed by serialization thread too
     QString _helpToolTip;
     QString _pluginID;
+    QString _pluginLabel;
     unsigned _pluginVersionMajor, _pluginVersionMinor;
     bool _pagesEnabled;
     TrackerPanel* _trackerPanel;
