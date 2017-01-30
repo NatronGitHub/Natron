@@ -83,6 +83,8 @@ public:
     bool getIsOptional() const;
     bool getIsMask() const;
 
+    virtual const std::string& getPixelDepth() const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
     /// Get the Raw Unmapped Pixel Depth from the host
     ///
     /// \returns
