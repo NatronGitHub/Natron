@@ -818,7 +818,7 @@ Image::getRestToRender(bool *hasPendingResults) const
     }
 
     for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        bool hasChannelNotCached = true;
+        bool hasChannelNotCached = false;
         for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
 
             if (!_imp->tiles[i].perChannelTile[c].entryLocker) {
