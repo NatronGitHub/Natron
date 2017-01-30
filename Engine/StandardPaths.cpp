@@ -124,7 +124,13 @@ load(const wchar_t *libraryName,
 
     if (!onlySystemDirectory) {
         const QString PATH( QLatin1String( qgetenv("PATH").constData() ) );
-        searchOrder << PATH.split(QLatin1Char(';'), QString::SkipEmptyParts);
+#     ifdef __NATRON_WIN32__
+        const QChar pathSep = QChar::fromLatin1(';');
+#     else
+        // This code is windows-only anyway, but this is here for consistency with other parts of the source
+        const QChar pathSep = QChar::fromLatin1(':');
+#     endif
+        searchOrder << PATH.split(pathSep, QString::SkipEmptyParts);
     }
     QString fileName = QString::fromWCharArray(libraryName);
     fileName.append( QLatin1String(".dll") );
