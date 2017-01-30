@@ -746,7 +746,7 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
         RAMImageStoragePtr fromIsRAMBuffer = toRAMImageStorage(tile.perChannelTile[i].buffer);
         CacheImageTileStoragePtr fromIsMMAPBuffer = toCacheImageTileStorage(tile.perChannelTile[i].buffer);
 
-        if (!fromIsMMAPBuffer || !fromIsRAMBuffer) {
+        if (!fromIsMMAPBuffer && !fromIsRAMBuffer) {
             continue;
         }
         if (i == 0) {
@@ -774,8 +774,7 @@ Image::getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileDat
                 data->ptrs[0] = fromIsMMAPBuffer->getData();
                 data->tileBounds = fromIsMMAPBuffer->getBounds();
                 data->bitDepth = fromIsMMAPBuffer->getBitDepth();
-                // MMAP based storage only support mono channel images
-                data->nComps = 1;
+                data->nComps = tile.perChannelTile.size();
             }
         } else {
             int channelIndex = tile.perChannelTile[i].channelIndex;
@@ -822,13 +821,13 @@ Image::getRestToRender(bool *hasPendingResults) const
         bool hasChannelNotCached = true;
         for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
 
-            CacheEntryLocker::CacheEntryStatusEnum status = CacheEntryLocker::eCacheEntryStatusMustCompute;
-            if (_imp->tiles[i].perChannelTile[c].entryLocker) {
-                status = _imp->tiles[i].perChannelTile[c].entryLocker->getStatus();
+            if (!_imp->tiles[i].perChannelTile[c].entryLocker) {
+                continue;
+
             }
+            CacheEntryLocker::CacheEntryStatusEnum status = _imp->tiles[i].perChannelTile[c].entryLocker->getStatus();
             if (status != CacheEntryLocker::eCacheEntryStatusCached) {
                 hasChannelNotCached = true;
-                break;
             }
             if (status == CacheEntryLocker::eCacheEntryStatusComputationPending) {
                 *hasPendingResults = true;

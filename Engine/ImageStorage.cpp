@@ -43,13 +43,11 @@ struct ImageStorageBasePrivate
 {
     bool allocated;
     QMutex allocatedLock;
-    RectI bounds;
     ImageBitDepthEnum bitdepth;
 
     ImageStorageBasePrivate()
     : allocated(false)
     , allocatedLock()
-    , bounds()
     , bitdepth()
     {
 
@@ -88,6 +86,7 @@ ImageStorageBase::allocateMemory(const AllocateMemoryArgs& args)
         return;
     }
 
+    _imp->bitdepth = args.bitDepth;
     allocateMemoryImpl(args);
 
     CachePtr cache = appPTR->getCache();
@@ -240,6 +239,7 @@ RAMImageStorage::allocateMemoryImpl(const AllocateMemoryArgs& args)
     _imp->numComps = ramArgs->numComponents;
     _imp->externalBufferSize = ramArgs->externalBufferSize;
     _imp->externalBufferFreeFunc = ramArgs->externalBufferFreeFunc;
+    _imp->bounds = ramArgs->bounds;
 
     assert(!_imp->externalBuffer || _imp->externalBufferFreeFunc);
 

@@ -1156,7 +1156,7 @@ static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
 {
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
     try {
-        args->ofxFunc(threadIndex, threadMax, customArg);
+        args->ofxFunc(threadIndex, threadMax, args->customArg);
         return eActionStatusOK;
     } catch (...) {
         return eActionStatusFailed;

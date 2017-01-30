@@ -111,16 +111,16 @@ ImagePrivate::getTilesCoordinates(const RectI& pixelCoordinates) const
 
     // Round the pixel coords to the tile size
     RectI roundedPixelCoords;
-    roundedPixelCoords.x1 = std::max(bounds.x1, (int)std::floor( ( (double)pixelCoordinates.x1 ) / tileSizeX ) * tileSizeX);
-    roundedPixelCoords.y1 = std::max(bounds.y1, (int)std::floor( ( (double)pixelCoordinates.y1 ) / tileSizeY ) * tileSizeY);
-    roundedPixelCoords.x2 = std::min(bounds.x2, (int)std::ceil( ( (double)pixelCoordinates.x2 ) / tileSizeX ) * tileSizeX);
-    roundedPixelCoords.y2 = std::min(bounds.y2, (int)std::ceil( ( (double)pixelCoordinates.y2 ) / tileSizeY ) * tileSizeY);
+    roundedPixelCoords.x1 = (int)std::floor( ( (double)pixelCoordinates.x1 ) / tileSizeX ) * tileSizeX;
+    roundedPixelCoords.y1 = (int)std::floor( ( (double)pixelCoordinates.y1 ) / tileSizeY ) * tileSizeY;
+    roundedPixelCoords.x2 = (int)std::ceil( ( (double)pixelCoordinates.x2 ) / tileSizeX ) * tileSizeX;
+    roundedPixelCoords.y2 = (int)std::ceil( ( (double)pixelCoordinates.y2 ) / tileSizeY ) * tileSizeY;
 
     // Ensure the tiles are aligned
     assert(((roundedPixelCoords.x1 - bounds.x1) % tileSizeX) == 0);
-    assert(((roundedPixelCoords.y1 - bounds.y1) / tileSizeY) == 0);
-    assert(((roundedPixelCoords.x2 - bounds.x1) / tileSizeX) == 0);
-    assert(((roundedPixelCoords.y2 - bounds.y1) / tileSizeY) == 0);
+    assert(((roundedPixelCoords.y1 - bounds.y1) % tileSizeY) == 0);
+    assert(((roundedPixelCoords.x2 - bounds.x1) % tileSizeX) == 0);
+    assert(((roundedPixelCoords.y2 - bounds.y1) % tileSizeY) == 0);
 
     RectI tilesRect;
     tilesRect.x1 = (roundedPixelCoords.x1 - bounds.x1) / tileSizeX;
@@ -222,6 +222,74 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
     return ImagePtr();
 } // checkIfCopyToTempImageIsNeeded
 
+class CopyUntiledToTileProcessor : public MultiThreadProcessorBase
+{
+
+    std::vector<int> _tileIndices;
+    ImagePrivate* _imp;
+    StorageModeEnum _toStorage;
+    ImageBufferLayoutEnum _toBufferFormat;
+    ImagePrivate* _fromImage;
+    StorageModeEnum _fromStorage;
+    ImageBufferLayoutEnum _fromBufferFormat;
+    const Image::CopyPixelsArgs* _originalArgs;
+
+public:
+
+    CopyUntiledToTileProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    : MultiThreadProcessorBase(renderArgs)
+    {
+
+    }
+
+    virtual ~CopyUntiledToTileProcessor()
+    {
+
+    }
+
+    void setData(const Image::CopyPixelsArgs& args, ImagePrivate* imp, StorageModeEnum toStorage, ImageBufferLayoutEnum toBufferFormat, ImagePrivate* fromImage, ImageBufferLayoutEnum fromBufferFormat, StorageModeEnum fromStorage, const std::vector<int>& tileIndices)
+    {
+        _tileIndices = tileIndices;
+        _imp = imp;
+        _toStorage = toStorage;
+        _toBufferFormat= toBufferFormat;
+        _fromImage = fromImage;
+        _originalArgs = &args;
+        _fromStorage = fromStorage;
+        _fromBufferFormat = fromBufferFormat;
+    }
+
+    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return MultiThreadProcessorBase::launchThreads(nCPUs);
+    }
+
+    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
+                                                  unsigned int nThreads,
+                                                  const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        // Each threads get a rectangular portion but full scan-lines
+        int fromIndex, toIndex;
+        ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tileIndices.size(), &fromIndex, &toIndex);
+
+        if ( (toIndex - fromIndex) <= 0 ) {
+            return eActionStatusOK;
+        }
+
+        Image::CopyPixelsArgs argsCpy = *_originalArgs;
+
+        for (int i = fromIndex; i < toIndex; ++i) {
+            // This is the tile to write to
+            const Image::Tile& thisTile = _imp->tiles[_tileIndices[i]];
+
+            thisTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
+
+            ImagePrivate::copyRectangle(_fromImage->tiles[0], _fromStorage, _fromBufferFormat, thisTile, _toStorage, _toBufferFormat, argsCpy, renderArgs);
+        }
+        return eActionStatusOK;
+    }
+};
+
 void
 ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args)
 {
@@ -239,23 +307,37 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
     const StorageModeEnum toStorage = tiles[0].perChannelTile[0].buffer->getStorageMode();
 
-    Image::CopyPixelsArgs argsCpy = args;
 
+
+
+    std::vector<int> tileIndices;
     // Copy each tile individually
     for (int ty = tilesRect.y1; ty < tilesRect.y2; ++ty) {
         for (int tx = tilesRect.x1; tx < tilesRect.x2; ++tx) {
             int tile_i = tx + ty * nTilesPerLine;
             assert(tile_i >= 0 && tile_i < (int)tiles.size());
+            tileIndices.push_back(tile_i);
+        } // for all tiles horizontally
+    } // for all tiles vertically
+
+
+    if ((fromStorage == eStorageModeRAM || fromStorage == eStorageModeDisk) &&
+        (toStorage == eStorageModeRAM || toStorage == eStorageModeDisk)) {
+        CopyUntiledToTileProcessor processor(renderArgs);
+        processor.setData(args, this, toStorage, bufferFormat, fromImage._imp.get(), fromImage._imp->bufferFormat, fromStorage, tileIndices);
+        ActionRetCodeEnum stat = processor.launchThreads();
+        (void)stat;
+    } else {
+        for (std::size_t i = 0; i < tileIndices.size(); ++i) {
+            Image::CopyPixelsArgs argsCpy = args;
 
             // This is the tile to write to
-            const Image::Tile& thisTile = tiles[tile_i];
-
+            const Image::Tile& thisTile = tiles[tileIndices[i]];
             thisTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
             ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderArgs);
-
-        } // for all tiles horizontally
-    } // for all tiles vertically
+        }
+    }
     
 } // copyUntiledImageToTiledImage
 

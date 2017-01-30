@@ -922,9 +922,7 @@ EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderR
         }
 
         // The render went OK: push the cache images tiles to the cache
-        std::map<ImagePlaneDesc, PlaneToRender> planes = planesToRender->planes;
-        planesToRender->planes.clear();
-        for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planes.begin(); it != planes.end(); ++it) {
+        for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
             if (it->second.cacheImage->getCachePolicy() != eCacheAccessModeNone) {
 
                 // Destroy the temporary image if there was any.
@@ -1525,10 +1523,10 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     if (callBeginSequenceRender) {
 
         ActionRetCodeEnum stat = endSequenceRender_public(args.time,
-                                     args.time,
-                                     1 /*frameStep*/,
-                                     !appPTR->isBackground() /*interactive*/,
-                                     renderMappedScale,
+                                                          args.time,
+                                                          1 /*frameStep*/,
+                                                          !appPTR->isBackground() /*interactive*/,
+                                                          renderMappedScale,
                                                           isPlayback,
                                                           !isPlayback,
                                                           args.renderArgs->getParentRender()->isDraftRender(),
@@ -1542,7 +1540,7 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
         
     }
     return eActionStatusOK;
-
+    
 } // renderRoIInternal
 
 NATRON_NAMESPACE_EXIT;

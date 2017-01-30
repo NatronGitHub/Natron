@@ -134,9 +134,9 @@ protected:
      * @brief function that will be called in each thread.
      * ID is from 0..nThreads-1 nThreads are the number of threads it is being run over */
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                           unsigned int nThreads,
-                                           const TreeRenderNodeArgsPtr& renderArgs) = 0;
-
+                                                  unsigned int nThreads,
+                                                  const TreeRenderNodeArgsPtr& renderArgs) = 0;
+    
     /** @brief Call this to kick off multi threading
      *  @param nCPUs The number of threads to use at most to process this function
      *  If nCPUs is 0, the maximum allowable number of CPUs will be used.
