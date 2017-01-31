@@ -128,7 +128,7 @@ DockablePanel::DockablePanel(Gui* gui,
             headerMode = eHeaderModeReadOnlyName;
         }
         // if this is a Read or Write plugin, get the info from the embedded plugin
-        NodePtr node = isEffect->getNode();
+        node = isEffect->getNode();
         nodeForDocumentation = node;
         if (node) {
             const std::string pluginID = isEffect->getPluginID();
