@@ -1250,6 +1250,11 @@ Node::setPersistentMessage(MessageTypeEnum type,
 bool
 Node::hasPersistentMessage() const
 {
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->hasPersistentMessage();
+    }
+
     QMutexLocker k(&_imp->persistentMessageMutex);
 
     return !_imp->persistentMessage.isEmpty();
@@ -1260,6 +1265,11 @@ Node::getPersistentMessage(QString* message,
                            int* type,
                            bool prefixLabelAndType) const
 {
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->getPersistentMessage(message, type, prefixLabelAndType);
+    }
+
     QMutexLocker k(&_imp->persistentMessageMutex);
 
     *type = _imp->persistentMessageType;
@@ -1297,6 +1307,13 @@ Node::clearPersistentMessageRecursive(std::list<NodePtr>& markedNodes)
 void
 Node::clearPersistentMessageInternal()
 {
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        ioContainer->clearPersistentMessageInternal();
+
+        return;
+    }
+
     bool changed;
     {
         QMutexLocker k(&_imp->persistentMessageMutex);

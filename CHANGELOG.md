@@ -34,7 +34,10 @@ Natron multiple times on the same computer, the different processes will share t
 ## Version 2.2.3
 
 - add proper quality options to WriteFFmpeg, including CRF-based encoding for libx264.
-- fix bug in the recent files menu.
+- the online documentation for Read and Write now show the documentation of the underlying plugin.
+- fix bug in the recent files menu #1560
+- fix reading of transparent PNG #1567
+- fix clearing error message for readers/writers.
 
 
 ## Version 2.2.2

@@ -201,13 +201,17 @@ OfxImageEffectInstance::setPersistentMessage(const char* type,
     assert(type);
     assert(format);
     std::string message = string_format(format, args);
+    boost::shared_ptr<OfxEffectInstance> effect = _ofxEffectInstance.lock();
+    assert(effect);
 
-    if (std::strcmp(type, kOfxMessageError) == 0) {
-        _ofxEffectInstance.lock()->setPersistentMessage(eMessageTypeError, message);
-    } else if (std::strcmp(type, kOfxMessageWarning) == 0) {
-        _ofxEffectInstance.lock()->setPersistentMessage(eMessageTypeWarning, message);
-    } else if (std::strcmp(type, kOfxMessageMessage) == 0) {
-        _ofxEffectInstance.lock()->setPersistentMessage(eMessageTypeInfo, message);
+    if (effect) {
+        if (std::strcmp(type, kOfxMessageError) == 0) {
+            effect->setPersistentMessage(eMessageTypeError, message);
+        } else if (std::strcmp(type, kOfxMessageWarning) == 0) {
+            effect->setPersistentMessage(eMessageTypeWarning, message);
+        } else if (std::strcmp(type, kOfxMessageMessage) == 0) {
+            effect->setPersistentMessage(eMessageTypeInfo, message);
+        }
     }
 
     return kOfxStatOK;
