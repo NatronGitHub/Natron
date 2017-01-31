@@ -158,7 +158,7 @@ DockablePanel::DockablePanel(Gui* gui,
 
             const Plugin* plugin = nodeForDocumentation->getPlugin();
             if (plugin) {
-                _imp->_helpToolTip = QString::fromUtf8( node->getPluginDescription().c_str() );
+                _imp->_helpToolTip = QString::fromUtf8( nodeForDocumentation->getPluginDescription().c_str() );
                 _imp->_pluginLabel = plugin->getPluginLabel();
                 _imp->_pluginID = plugin->getPluginID();
                 _imp->_pluginVersionMajor = plugin->getMajorVersion();
