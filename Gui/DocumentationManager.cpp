@@ -180,8 +180,8 @@ DocumentationManager::handler(QHttpRequest *req,
      */
     {
         const std::string id = pluginID.toStdString();
-        if (ReadNode::isBundledReader(id, false) ||
-            WriteNode::isBundledWriter(id, false) ||
+        if (ReadNode::isBundledReader(id) ||
+            WriteNode::isBundledWriter(id) ||
             pluginID.startsWith( QString::fromUtf8("fr.inria.openfx.OCIO") ) ||
             //pluginID.startsWith( QString::fromUtf8("fr.inria.openfx.Read") ) ||
             //pluginID.startsWith( QString::fromUtf8("fr.inria.openfx.Write") ) ||
