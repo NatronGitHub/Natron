@@ -44,11 +44,13 @@ struct ImageStorageBasePrivate
     bool allocated;
     QMutex allocatedLock;
     ImageBitDepthEnum bitdepth;
+    boost::shared_ptr<AllocateMemoryArgs> allocArgs;
 
     ImageStorageBasePrivate()
     : allocated(false)
     , allocatedLock()
     , bitdepth()
+    , allocArgs()
     {
 
     }
@@ -77,6 +79,41 @@ ImageStorageBase::isAllocated() const
 {
     QMutexLocker k(&_imp->allocatedLock);
     return _imp->allocated;
+}
+
+void
+ImageStorageBase::setAllocateMemoryArgs(const boost::shared_ptr<AllocateMemoryArgs>& args)
+{
+    QMutexLocker k(&_imp->allocatedLock);
+    if (_imp->allocated) {
+        return;
+    }
+    _imp->allocArgs = args;
+}
+
+
+bool
+ImageStorageBase::hasAllocateMemoryArgs() const
+{
+    QMutexLocker k(&_imp->allocatedLock);
+    return _imp->allocArgs;
+}
+
+void
+ImageStorageBase::allocateMemoryFromSetArgs()
+{
+    boost::shared_ptr<AllocateMemoryArgs> args;
+    {
+        QMutexLocker k(&_imp->allocatedLock);
+        if (!_imp->allocArgs) {
+            return;
+        }
+        args = _imp->allocArgs;
+        if (_imp->allocated) {
+            return;
+        }
+    }
+    allocateMemory(*args);
 }
 
 void
@@ -457,6 +494,15 @@ void
 CacheImageTileStorage::fromMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, const void* tileDataPtr)
 {
     CacheEntryBase::fromMemorySegment(segment, objectNamesPrefix, tileDataPtr);
+
+    // The memory might not have been pre-allocated, but at least AllocateMemoryArgs should have been set if the
+    // delayAllocation flag was set in Image::InitStorageArgs
+    if (!isAllocated()) {
+        assert(hasAllocateMemoryArgs());
+
+        // This may throw a std::bad_alloc
+        allocateMemoryFromSetArgs();
+    }
     assert(tileDataPtr && _imp->localBuffer);
     memcpy(_imp->localBuffer->getData(), tileDataPtr, NATRON_TILE_SIZE_BYTES);
 }

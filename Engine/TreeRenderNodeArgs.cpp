@@ -251,6 +251,7 @@ FrameViewRequest::getPreRenderedInputs(int inputNb,
 
     PreRenderedDataMap::const_iterator foundData = _imp->inputImages.find(key);
     if (foundData == _imp->inputImages.end()) {
+        *planesLeftToRendered = layers;
         return;
     }
 
@@ -271,10 +272,10 @@ FrameViewRequest::getPreRenderedInputs(int inputNb,
         if (foundImage != foundData->second.planes.end()) {
             if (foundImage->second->getBounds().contains(roi)) {
                 planes->insert(*foundImage);
+                continue;
             }
-        } else {
-            planesLeftToRendered->push_back(*it);
         }
+        planesLeftToRendered->push_back(*it);
     }
 
     if (foundData->second.distortion) {

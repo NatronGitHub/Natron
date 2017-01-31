@@ -216,12 +216,18 @@ public:
         // Default - NULL
         ImageStorageBasePtr externalBuffer;
 
+        // If set to true, the image bufferd will not be allocated after the call to the create() function.
+        // To allocate the memory buffers, call ensureBuffersAllocated(). Note that cached tiles will be allocated anyway.
+        //
+        // Default - false
+        bool delayAllocation;
+
         InitStorageArgs();
     };
 
 private:
 
-    void initializeStorage(const InitStorageArgs& args);
+    void init(const InitStorageArgs& args);
 
 public:
 
@@ -235,6 +241,12 @@ public:
       * @brief Releases the storage used by this image and if needed push the pixels to the cache.
      **/
     virtual ~Image();
+
+    /**
+     * @brief Must be called after Image::create if delayAllocation=true was passed to InitStorageArgs to allocate memory buffers.
+     * Note that this function may throw a std::bad_alloc if a buffer allocation fails.
+     **/
+    void ensureBuffersAllocated();
 
     /**
      * @brief Returns the internal buffer formating
@@ -438,9 +450,16 @@ public:
 
     /**
      * @brief Utility function to retrieve pointers to the RGBA buffers as well as the pixel stride (in the PIX type).
-     * @param ptrs In input, if in a packed RGBA format, only the first pointer has been set and others are NULL. If co-planar
-     * each pointer points to the appropriate channel or NULL if it does not exist.
-     * @param dataSizeOf The number of bytes
+     * @param ptrs In input, the pixel pointers to their origin depending on the buffer layout.
+     *  - eImageBufferLayoutMonoChannelTiled: The 4 pointers point to a different buffer.
+     *  - eImageBufferLayoutRGBACoplanarFullRect: The 4 pointers are set and are each separated by a plane .stride
+     *  - eImageBufferLayoutRGBAPackedFullRect: Only the first pointer is set, pointing to the RGBA buffer.
+     * @param x The x coordinate where to return channel pointers
+     * @param y The y coordinate where to return channel pointers
+     * @param bounds The bounds of the buffers pointed to by ptrs
+     * @param outPtrs Pointers in output to the RGBA buffers at the (x,y) pixel
+     * @param pixelStride The number of steps to increment to a pointer in outPtrs to go to the next pixel. 
+     * This is in PIX unit.
      **/
     template <typename PIX, int nComps>
     static inline void getChannelPointers(const PIX* ptrs[4],
@@ -449,36 +468,48 @@ public:
                                           PIX* outPtrs[4],
                                           int* pixelStride)
     {
+        assert(nComps >= 0 && nComps <= 4);
         const int dataSizeOf = sizeof(PIX);
-        memset(outPtrs, 0, dataSizeOf * 4);
+        memset(outPtrs, 0, sizeof(PIX*) * 4);
         {
-            // If co-planar and number of components greater than 1, then ptrs[1] should be set,
+            // If eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect,
+            // then ptrs[1] should be set.
             // In this case the pixel stride is always 1.
-            // If nComps >1 and !ptrs[1] then we are in a packed format buffer.
-            int redNComps = nComps;
-            if (nComps != 1 && ptrs[1]) {
-                redNComps = 1;
+            int nCompsForBuffer = nComps;
+            if (nComps > 1 && ptrs[1]) {
+                nCompsForBuffer = 1;
             }
-            *pixelStride = redNComps;
-            outPtrs[0] = (PIX*)pixelAtStatic(x, y, bounds, redNComps, dataSizeOf, (unsigned char*)ptrs[0]);
+
+
+            *pixelStride = nCompsForBuffer;
+            outPtrs[0] = (PIX*)pixelAtStatic(x, y, bounds, nCompsForBuffer, dataSizeOf, (unsigned char*)ptrs[0]);
         }
         if (nComps > 1) {
             if (ptrs[1]) {
+                // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                // pixel stride is 1
                 outPtrs[1] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[1]);
             } else {
+                // We are in eImageBufferLayoutRGBAPackedFullRect layout
                 outPtrs[1] = outPtrs[0] + 1;
             }
             if (nComps > 2) {
                 if (ptrs[2]) {
+                    // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                    // pixel stride is 1
                     outPtrs[2] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[2]);
                 } else {
+                    // We are in eImageBufferLayoutRGBAPackedFullRect layout
                     outPtrs[2] = outPtrs[1] + 1;
                 }
             }
             if (nComps > 3) {
                 if (ptrs[3]) {
+                    // We are in eImageBufferLayoutMonoChannelTiled or eImageBufferLayoutRGBACoplanarFullRect layout
+                    // pixel stride is 1
                     outPtrs[3] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[3]);
                 } else {
+                    // We are in eImageBufferLayoutRGBAPackedFullRect layout
                     outPtrs[3] = outPtrs[2] + 1;
                 }
             }

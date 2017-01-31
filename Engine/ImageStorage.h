@@ -98,6 +98,26 @@ public:
     bool isAllocated() const;
 
     /**
+     * @brief Set arguments to be passed to allocateMemory() later on.
+     * Once allocateMemoryFromSetArgs the arguments will be removed.
+     * After this function, hasAllocateMemoryArgs() returns true but
+     * isAllocated() returns false.
+     * This function does nothing if isAllocated() already returns true.
+     **/
+    void setAllocateMemoryArgs(const boost::shared_ptr<AllocateMemoryArgs>& args);
+
+    /**
+     * @brief True if setAllocateMemoryArgs was called but not yet allocateMemoryFromSetArgs
+     **/
+    bool hasAllocateMemoryArgs() const;
+
+    /**
+     * @brief If allocate args were set by setAllocateMemoryArgs, allocates the memory using them.
+     * If not set or isAllocated() already returns true, nothing happens.
+     **/
+    void allocateMemoryFromSetArgs();
+
+    /**
      * @brief Returns the internal storage that your entry uses
      **/
     virtual StorageModeEnum getStorageMode() const = 0;

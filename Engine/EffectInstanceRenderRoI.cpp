@@ -636,6 +636,7 @@ EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(
                                                                                 CacheAccessModeEnum cacheAccess,
                                                                                 const RectI& roi,
                                                                                 const OSGLContextAttacherPtr& glContextLocker,
+                                                                                bool delayAllocation,
                                                                                 std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
     // Compute the rectangle portion (renderWindow) left to render.
@@ -751,6 +752,11 @@ EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(
                 }
                 tmpImgInitArgs.bitdepth = outputBitDepth;
                 tmpImgInitArgs.layer = it->first;
+                // Do not allocate the image buffers yet since we initialize the image BEFORE recursing on input nodes.
+                // We need to create the image before because it does the cache look-up itself, and we don't want to recurse if
+                // there's something cached.
+                // Instead we allocate the necessary image buffers AFTER the recursion on input nodes returns.
+                tmpImgInitArgs.delayAllocation = delayAllocation;
 
             }
             it->second.tmpImage = Image::create(tmpImgInitArgs);
@@ -789,6 +795,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
         hashArgs.view = args.view;
         hashArgs.render = args.renderArgs;
         nodeFrameViewHash = _publicInterface->computeHash(hashArgs);
+        requestPassData->setHash(nodeFrameViewHash);
     }
 
     // The bitdepth of the image
@@ -880,6 +887,12 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
             initArgs.bufferFormat = cacheBufferLayout;
             initArgs.bitdepth = outputBitDepth;
             initArgs.layer = *it;
+
+            // Do not allocate the image buffers yet since we initialize the image BEFORE recursing on input nodes.
+            // We need to create the image before because it does the cache look-up itself, and we don't want to recurse if
+            // there's something cached.
+            // Instead we allocate the necessary image buffers AFTER the recursion on input nodes returns.
+            initArgs.delayAllocation = true;
         }
         
         PlaneToRender &plane = planesToRender->planes[*it];
@@ -893,7 +906,7 @@ EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & 
 
     } // for each requested plane
 
-    checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glContextLocker, outputPlanes);
+    checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glContextLocker, true /*delayAllocation*/, outputPlanes);
 
 } // fetchOrCreateOutputPlanes
 
@@ -908,6 +921,13 @@ EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderR
                                                                    const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
                                                                    std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
 {
+
+    for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
+        it->second.cacheImage->ensureBuffersAllocated();
+        if (it->second.tmpImage != it->second.cacheImage) {
+            it->second.tmpImage->ensureBuffersAllocated();
+        }
+    }
 
     while (!planesToRender->planes.empty()) {
 
@@ -936,7 +956,7 @@ EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderR
                 it->second.cacheImage->waitForPendingTiles();
             }
         }
-        checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glRenderContext, outputPlanes);
+        checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glRenderContext, false /*delayAllocation*/, outputPlanes);
 
     } // while there is still planes to render
     
@@ -1026,13 +1046,13 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
         }
     }
     if (renderRetCode == eActionStatusOK) {
-        
+
         renderRetCode = renderInstance->renderForClone(glRenderContext,
-                                                          args,
-                                                          renderMappedScale,
-                                                          planesToRender,
-                                                          processChannels,
-                                                          neededInputLayers);
+                                                       args,
+                                                       renderMappedScale,
+                                                       planesToRender,
+                                                       processChannels,
+                                                       neededInputLayers);
 
         if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
             planesToRender->backendType == eRenderBackendTypeOSMesa) {
@@ -1429,6 +1449,8 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
             inArgs.currentView = args.view;
             inArgs.inputTime = inArgs.currentTime;
             inArgs.inputView = inArgs.currentView;
+            inArgs.inputMipMapLevel = (renderMappedScale.x == 1 && renderMappedScale.y == 1) ? 0 : args.mipMapLevel;
+            inArgs.inputProxyScale = args.proxyScale;
             inArgs.currentScale = renderMappedScale;
             {
 

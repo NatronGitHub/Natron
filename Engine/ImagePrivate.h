@@ -90,6 +90,8 @@ struct ImagePrivate
 
     void initFromExternalBuffer(const Image::InitStorageArgs& args);
 
+    void initTileAndFetchFromCache(const Image::InitStorageArgs& args, int tx, int ty, int nTilesWidth, int tileSizeX, int tileSizeY);
+
     /**
      * @brief Called in the destructor to insert tiles that were processed in the cache.
      **/

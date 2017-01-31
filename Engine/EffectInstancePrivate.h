@@ -165,6 +165,7 @@ public:
                                                          CacheAccessModeEnum cacheAccess,
                                                          const RectI& roi,
                                                          const OSGLContextAttacherPtr& glContextLocker,
+                                                         bool delayAllocation,
                                                          std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
     void computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow);

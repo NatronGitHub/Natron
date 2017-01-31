@@ -50,6 +50,8 @@
 #include "Engine/GPUContextPool.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/Transform.h"
+#include "Engine/TreeRender.h"
+#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/Project.h"
 #include "Engine/ViewIdx.h"
@@ -821,6 +823,8 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         inArgs->currentTime = currentActionTime;
         inArgs->currentView = currentActionView;
         inArgs->currentScale = currentActionScale;
+        inArgs->inputProxyScale = renderArgs->getParentRender()->getProxyScale();
+        inArgs->inputMipMapLevel = renderArgs->getParentRender()->getMipMapLevel();
         RenderBackendTypeEnum backend = retTexture ? eRenderBackendTypeOpenGL : eRenderBackendTypeCPU;
         inArgs->renderBackend = &backend;
         inArgs->renderArgs = renderArgs;

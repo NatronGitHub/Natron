@@ -317,6 +317,8 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     renderArgs->renderArgs = args->renderArgs;
     renderArgs->inputTime = rectToRender.identityTime;
     renderArgs->inputView = rectToRender.identityView;
+    renderArgs->inputMipMapLevel = (renderMappedScale.x == 1 && renderMappedScale.y == 1) ? 0 : args->mipMapLevel;
+    renderArgs->inputProxyScale = args->proxyScale;
     renderArgs->inputNb = rectToRender.identityInputNumber;
 
     std::list<ImagePlaneDesc> components;
@@ -572,6 +574,8 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             inArgs.currentView = args->view;
             inArgs.inputTime = inArgs.currentTime;
             inArgs.inputView = inArgs.currentView;
+            inArgs.inputMipMapLevel = (renderMappedScale.x == 1 && renderMappedScale.y == 1) ? 0 : args->mipMapLevel;
+            inArgs.inputProxyScale = args->proxyScale;
             inArgs.currentScale = renderMappedScale;
             inArgs.renderBackend = &planesToRender->backendType;
             inArgs.renderArgs = args->renderArgs;

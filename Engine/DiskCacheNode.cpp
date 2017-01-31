@@ -248,15 +248,9 @@ DiskCacheNode::render(const RenderActionArgs& args)
         std::list<ImagePlaneDesc> layersToFetch;
         layersToFetch.push_back(it->first);
 
-        GetImageInArgs inArgs;
+        GetImageInArgs inArgs(args);
         inArgs.inputNb = 0;
-        inArgs.inputTime = args.time;
-        inArgs.inputView = args.view;
-        inArgs.currentTime = args.time;
-        inArgs.currentView = args.view;
-        inArgs.currentScale = args.renderScale;
         inArgs.layers = &layersToFetch;
-        inArgs.renderBackend = &args.backendType;
         GetImageOutArgs outArgs;
         if (!getImagePlanes(inArgs, &outArgs)) {
             return eActionStatusInputDisconnected;

@@ -126,6 +126,7 @@ class AbortableRenderInfo;
 class AbortableThread;
 class AbstractOfxEffectInstance;
 class AfterQuitProcessingI;
+class AllocateMemoryArgs;
 class AnimatingObjectI;
 class AnimatingKnobStringHelper;
 class AppInstance;

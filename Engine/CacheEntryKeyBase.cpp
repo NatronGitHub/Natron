@@ -26,7 +26,7 @@
 #include "CacheEntryKeyBase.h"
 
 #include <QMutex>
-
+#include <QDebug>
 #include "Engine/Hash64.h"
 
 namespace bip = boost::interprocess;
@@ -125,8 +125,8 @@ CacheEntryKeyBase::toMemorySegment(ExternalSegmentType* segment, const std::stri
 
     // Write a hash as a magic number: the hash should be the last item wrote to the external memory segment.
     // When reading, if the hash could be recovered correctly, we know that the entry is valid.
-    assert(_imp->hashComputed);
-    objectPointers->push_back(writeNamedSharedObject(_imp->hash, objectNamesPrefix + "magic", segment));
+    U64 hash = getHash();
+    objectPointers->push_back(writeNamedSharedObject(hash, objectNamesPrefix + "magic", segment));
 }
 
 
@@ -385,7 +385,9 @@ ImageTileKey::fromMemorySegment(ExternalSegmentType* segment, const std::string&
     _imp->data.mipMapLevel = data->mipMapLevel;
     _imp->data.draftMode = data->draftMode;
     _imp->data.bitdepth = data->bitdepth;
+    _imp->layerChannel.clear();
     _imp->layerChannel.append(layersChannels->c_str());
+
 
     CacheEntryKeyBase::fromMemorySegment(segment, objectNamesPrefix);
 }

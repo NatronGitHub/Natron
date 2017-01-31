@@ -1765,7 +1765,12 @@ EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
         if (input) {
             //if (!isInputOptional(i))
             GetFrameRangeResultsPtr inputResults;
-            ActionRetCodeEnum stat = input->getFrameRange_public(render, &inputResults);
+
+            TreeRenderNodeArgsPtr inputRender;
+            if (render) {
+                inputRender = render->getInputRenderArgs(i);
+            }
+            ActionRetCodeEnum stat = input->getFrameRange_public(inputRender, &inputResults);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1833,7 +1838,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
         EffectActionArgsSetter_RAII actionArgsTls(tls,TimeValue(0), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
+                                                  , /*canBeCalledRecursively*/ true
 #endif
                                                   );
 

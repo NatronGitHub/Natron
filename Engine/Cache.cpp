@@ -1233,7 +1233,7 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry,
     for (ExternalSegmentTypeHandleList::const_iterator it = cacheEntry->entryDataPointerList.begin(); it != cacheEntry->entryDataPointerList.end(); ++it) {
         void* bufPtr = tocFileManager->get_address_from_handle(*it);
         if (bufPtr) {
-            tocFileManager->deallocate(bufPtr);
+            tocFileManager->destroy_ptr(bufPtr);
         }
     }
     cacheEntry->entryDataPointerList.clear();
@@ -1286,7 +1286,7 @@ CacheBucket::deallocateCacheEntryImpl(MemorySegmentEntryHeader* cacheEntry,
             // Remove this entry's node from the list
             disconnectLinkedListNode(cacheEntry->lruIterator);
 
-            tocFileManager->deallocate(cacheEntry->lruIterator.get());
+            tocFileManager->destroy_ptr(cacheEntry->lruIterator.get());
         }
         cacheEntry->lruIterator = 0;
     }
@@ -1658,7 +1658,7 @@ CacheEntryLocker::insertInCache()
                 createLockNoTimeout<bip::scoped_lock<bip::interprocess_mutex> >(lruWriteLock, &_imp->bucket->ipc->lruListMutex);
 
 
-                cacheEntry->lruIterator = static_cast<LRUListNode*>(_imp->bucket->tocFileManager->allocate(sizeof(LRUListNode)));
+                cacheEntry->lruIterator = _imp->bucket->tocFileManager->construct<LRUListNode>(bip::anonymous_instance)();
                 cacheEntry->lruIterator->prev = 0;
                 cacheEntry->lruIterator->next = 0;
                 cacheEntry->lruIterator->hash = _imp->processLocalEntry->getHashKey();

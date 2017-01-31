@@ -119,6 +119,7 @@ private:
     ~LutManager();
 
     //each lut with a ref count mapped against their name
+    mutable QMutex lutsMutex;
     typedef std::map<std::string, const Lut * > LutsMap;
     LutsMap luts;
 };

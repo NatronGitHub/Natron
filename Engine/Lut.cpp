@@ -140,6 +140,7 @@ LutManager::getLut(const std::string & name,
                    fromColorSpaceFunctionV1 fromFunc,
                    toColorSpaceFunctionV1 toFunc)
 {
+    QMutexLocker k(&LutManager::m_instance.lutsMutex);
     LutsMap::iterator found = LutManager::m_instance.luts.find(name);
 
     if ( found != LutManager::m_instance.luts.end() ) {

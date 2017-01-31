@@ -157,7 +157,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
     int srcDataSizeOf = sizeof(SRCPIX);
 
 
-    for (int y = 0; y < renderWindow.height(); ++y) {
+    for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
 
         if (renderArgs && renderArgs->isRenderAborted()) {
             return;
@@ -174,18 +174,39 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
             int dstPixelStride;
             Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, renderWindow.x1, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
-            std::size_t nBytesToCopy = renderWindow.width() * nComp * srcDataSizeOf;
-            if (nComp == 1 || !srcPixelPtrs[1]) {
-                // In packed RGBA mode or single channel coplanar a single call to memcpy is needed per scan-line
-                memcpy(dstPixelPtrs[0], srcPixelPtrs[0], nBytesToCopy);
+
+            // If the pixel stride is the same, use memcpy
+            if (srcPixelStride == dstPixelStride) {
+                if (srcPixelStride == 1) {
+                    std::size_t nBytesToCopy = renderWindow.width() * srcDataSizeOf;
+                    // Ok we are in coplanar mode, copy each channel individually
+                    for (int c = 0; c < 4; ++c) {
+                        if (srcPixelPtrs[c] && dstPixelPtrs[c]) {
+                            memcpy(dstPixelPtrs[c], srcPixelPtrs[c], nBytesToCopy);
+                        }
+                    }
+                } else {
+                    std::size_t nBytesToCopy = renderWindow.width() * nComp * srcDataSizeOf;
+
+                    // In packed RGBA mode or single channel coplanar a single call to memcpy is needed per scan-line
+                    memcpy(dstPixelPtrs[0], srcPixelPtrs[0], nBytesToCopy);
+                }
             } else {
-                // Ok we are in coplanar mode, copy each channel individually
+                // Different strides, copy manually
                 for (int c = 0; c < 4; ++c) {
                     if (srcPixelPtrs[c] && dstPixelPtrs[c]) {
-                        memcpy(dstPixelPtrs[c], srcPixelPtrs[c], nBytesToCopy);
+                        const SRCPIX* src_pix = srcPixelPtrs[c];
+                        DSTPIX* dst_pix = dstPixelPtrs[c];
+                        for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
+                            // They are of the same bitdepth since srcMaxValue == dstMaxValue was checked above
+                            *dst_pix = (DSTPIX)*src_pix;
+                            src_pix += srcPixelStride;
+                            dst_pix += dstPixelStride;
+                        }
                     }
                 }
             }
+
         } else {
             // Start of the line for error diffusion
             // coverity[dont_call]
@@ -201,8 +222,8 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
             const SRCPIX* srcPixelStart[4];
             DSTPIX* dstPixelStart[4];
-            memcpy(srcPixelStart, srcPixelPtrs, sizeof(SRCPIX) * 4);
-            memcpy(dstPixelStart, dstPixelPtrs, sizeof(DSTPIX) * 4);
+            memcpy(srcPixelStart, srcPixelPtrs, sizeof(SRCPIX*) * 4);
+            memcpy(dstPixelStart, dstPixelPtrs, sizeof(DSTPIX*) * 4);
             
 
             for (int backward = 0; backward < 2; ++backward) {
@@ -212,7 +233,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                     0x80, 0x80, 0x80
                 };
 
-                while ( x != end && x >= 0 && x < renderWindow.width() ) {
+                while (x != end) {
                     for (int k = 0; k < nComp; ++k) {
 
                         if (!dstPixelPtrs[k]) {
@@ -341,8 +362,8 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
 
         const SRCPIX* srcPixelStart[4];
         DSTPIX* dstPixelStart[4];
-        memcpy(srcPixelStart, srcPixelPtrs, sizeof(SRCPIX) * 4);
-        memcpy(dstPixelStart, dstPixelPtrs, sizeof(DSTPIX) * 4);
+        memcpy(srcPixelStart, srcPixelPtrs, sizeof(SRCPIX*) * 4);
+        memcpy(dstPixelStart, dstPixelPtrs, sizeof(DSTPIX*) * 4);
 
 
         // We do twice the loop, once from starting point to end and once from starting point - 1 to real start
