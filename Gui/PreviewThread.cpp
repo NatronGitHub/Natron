@@ -94,7 +94,7 @@ PreviewThread::appendToQueue(const NodeGuiPtr& node,
 }
 
 GenericSchedulerThread::ThreadStateEnum
-PreviewThread::threadLoopOnce(const GenericThreadStartArgs& inArgs)
+PreviewThread::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
     boost::shared_ptr<ComputePreviewRequest> args = boost::dynamic_pointer_cast<ComputePreviewRequest>(inArgs);
 

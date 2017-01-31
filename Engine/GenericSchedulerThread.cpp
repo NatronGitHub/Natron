@@ -81,7 +81,7 @@ struct GenericSchedulerThreadPrivate
     mutable QMutex threadStateMutex;
 
     // The tasks queue, protected by enqueuedTasksMutex
-    std::list<ThreadStartArgsPtr> enqueuedTasks, queuedTaskWhileProcessingAbort;
+    std::list<GenericThreadStartArgsPtr> enqueuedTasks, queuedTaskWhileProcessingAbort;
     mutable QMutex enqueuedTasksMutex;
 
     // true when the main-thread is calling executeOnMainThread
@@ -178,7 +178,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        ThreadStartArgsPtr stubArgs( new GenericThreadStartArgs(true) );
+        GenericThreadStartArgsPtr stubArgs( new GenericThreadStartArgs(true) );
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 
@@ -410,7 +410,7 @@ GenericSchedulerThread::waitForAbortToCompleteQueued_main_thread()
 }
 
 bool
-GenericSchedulerThread::startTask(const ThreadStartArgsPtr& inArgs)
+GenericSchedulerThread::startTask(const GenericThreadStartArgsPtr& inArgs)
 {
     {
         QMutexLocker quitLocker(&_imp->mustQuitMutex);
@@ -459,7 +459,7 @@ GenericSchedulerThread::run()
         TaskQueueBehaviorEnum behavior = tasksQueueBehaviour();
         ThreadStateEnum state = eThreadStateActive;
         {
-            ThreadStartArgsPtr args;
+            GenericThreadStartArgsPtr args;
             {
                 QMutexLocker k(&_imp->enqueuedTasksMutex);
                 switch (behavior) {
@@ -474,8 +474,8 @@ GenericSchedulerThread::run()
                         if ( !_imp->enqueuedTasks.empty() ) {
                             args = _imp->enqueuedTasks.back();
                             _imp->enqueuedTasks.pop_back();
-                            std::list<ThreadStartArgsPtr> unskippableTasks;
-                            for (std::list<ThreadStartArgsPtr>::iterator it = _imp->enqueuedTasks.begin(); it != _imp->enqueuedTasks.end(); ++it) {
+                            std::list<GenericThreadStartArgsPtr> unskippableTasks;
+                            for (std::list<GenericThreadStartArgsPtr>::iterator it = _imp->enqueuedTasks.begin(); it != _imp->enqueuedTasks.end(); ++it) {
                                 if (!(*it)->isSkippable()) {
                                     unskippableTasks.push_back(*it);
                                 }
@@ -496,7 +496,7 @@ GenericSchedulerThread::run()
                 // Do the work!
                 state = threadLoopOnce(args);
             }
-        }  // ThreadStartArgsPtr args;
+        }  // GenericThreadStartArgsPtr args;
         
         // The implementation might call resolveState from threadLoopOnce. If not, it will return eThreadStateActive by default so make
         // sure resolveState was called at least once

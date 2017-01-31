@@ -364,7 +364,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void startRender();
 
@@ -490,7 +490,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
 };
 
@@ -520,7 +520,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 

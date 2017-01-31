@@ -745,7 +745,7 @@ OutputSchedulerThread::stopRender()
 } // OutputSchedulerThread::stopRender
 
 GenericSchedulerThread::ThreadStateEnum
-OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgs &inArgs)
+OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 {
     OutputSchedulerThreadStartArgsPtr args = boost::dynamic_pointer_cast<OutputSchedulerThreadStartArgs>(inArgs);
 
@@ -3338,7 +3338,7 @@ ViewerCurrentFrameRequestScheduler::tasksQueueBehaviour() const
 }
 
 GenericSchedulerThread::ThreadStateEnum
-ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgs &inArgs)
+ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgsPtr &inArgs)
 {
     ThreadStateEnum state = eThreadStateActive;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> args = boost::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
@@ -3665,7 +3665,7 @@ ViewerCurrentFrameRequestRendererBackup::tasksQueueBehaviour() const
 
 
 GenericSchedulerThread::ThreadStateEnum
-ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const GenericThreadStartArgs& inArgs)
+ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
 {
     boost::shared_ptr<CurrentFrameFunctorArgs> args = boost::dynamic_pointer_cast<CurrentFrameFunctorArgs>(inArgs);
 
