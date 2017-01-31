@@ -49,9 +49,11 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 #include "Engine/NodeGroup.h"
 #include "Engine/NodeGuiI.h"
 #include "Engine/Plugin.h"
-#include "Engine/ViewIdx.h"
+#include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Utils.h" // convertFromPlainText
+#include "Engine/ViewIdx.h"
+#include "Engine/WriteNode.h"
 
 #include "Global/StrUtils.h"
 
@@ -95,7 +97,7 @@ using std::make_pair;
 
 NATRON_NAMESPACE_ENTER;
 
-
+// called by NodeSettingsPanel::NodeSettingsPanel()
 DockablePanel::DockablePanel(Gui* gui,
                              const KnobHolderPtr& holder,
                              QVBoxLayout* container,
@@ -120,17 +122,54 @@ DockablePanel::DockablePanel(Gui* gui,
     setFrameShape(QFrame::Box);
     setFocusPolicy(Qt::NoFocus);
 
+    NodePtr node;
+    NodePtr nodeForDocumentation;
     EffectInstancePtr isEffect = toEffectInstance(holder);
     QString pluginLabelVersioned;
     if (isEffect) {
         if ( toGroupOutput(isEffect) ) {
             headerMode = eHeaderModeReadOnlyName;
         }
+        // if this is a Read or Write plugin, get the info from the embedded plugin
+        NodePtr node = isEffect->getNode();
+        nodeForDocumentation = node;
+        if (node) {
+            const std::string pluginID = isEffect->getPluginID();
+            if (pluginID == PLUGINID_NATRON_READ ||
+                pluginID == PLUGINID_NATRON_WRITE) {
+                EffectInstPtr effectInstance = node->getEffectInstance();
+                if ( effectInstance && effectInstance->isReader() ) {
+                    ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
-        PluginPtr plugin = isEffect->getNode()->getPlugin();
-        _imp->_pluginVersionMajor = plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
-        _imp->_pluginVersionMinor = plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
-        pluginLabelVersioned = tr("%1 version %2.%3").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
+                    if (isReadNode) {
+                        NodePtr subnode = isReadNode->getEmbeddedReader();
+                        if (subnode) {
+                            nodeForDocumentation = subnode;
+                        }
+                    }
+                } else if ( effectInstance && effectInstance->isWriter() ) {
+                    WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+                    if (isWriteNode) {
+                        NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                        if (subnode) {
+                            nodeForDocumentation = subnode;
+                        }
+                    }
+                }
+            }
+
+            const PluginPtr plugin = nodeForDocumentation->getPlugin();
+            if (plugin) {
+                _imp->_helpToolTip = QString::fromUtf8( node->getPluginDescription().c_str() );
+                _imp->_pluginLabel = plugin->getPluginLabel();
+                _imp->_pluginID = plugin->getPluginID();
+                _imp->_pluginVersionMajor = plugin->getMajorVersion();
+                _imp->_pluginVersionMinor = plugin->getMinorVersion();
+                pluginLabelVersioned = tr("%1 version %2.%3").arg(_imp->_pluginLabel).arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
+            }
+        }
+    }
     }
 
 
@@ -154,7 +193,7 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_iconLabel->setToolTip(pluginLabelVersioned);
             _imp->_headerLayout->addWidget(_imp->_iconLabel);
 
-            PluginPtr plugin = isEffect->getNode()->getPlugin();
+            PluginPtr plugin = nodeForDocumentation->getPlugin();
             assert(plugin);
 
             QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
@@ -205,10 +244,6 @@ DockablePanel::DockablePanel(Gui* gui,
             QPixmap pixHelp;
             appPTR->getIcon(NATRON_PIXMAP_HELP_WIDGET, iconSize, &pixHelp);
             _imp->_helpButton = new Button(QIcon(pixHelp), QString(), _imp->_headerWidget);
-
-
-            _imp->_pluginID = QString::fromUtf8(plugin->getPluginID().c_str());
-
             _imp->_helpButton->setToolTip( helpString() );
             _imp->_helpButton->setFixedSize(mediumBSize);
             _imp->_helpButton->setIconSize(smallIconSize);
@@ -260,8 +295,8 @@ DockablePanel::DockablePanel(Gui* gui,
         QObject::connect( _imp->_cross, SIGNAL(clicked()), this, SLOT(closePanel()) );
 
 
-        if (isEffect) {
-            NodeGuiIPtr gui_i = isEffect->getNode()->getNodeGui();
+        if (node) {
+            NodeGuiIPtr gui_i = node->getNodeGui();
             assert(gui_i);
             double r, g, b;
             isEffect->getNode()->getColor(&r, &g, &b);
@@ -283,7 +318,7 @@ DockablePanel::DockablePanel(Gui* gui,
             QObject::connect( _imp->_colorButton, SIGNAL(clicked()), this, SLOT(onColorButtonClicked()) );
 
 
-            if (isEffect->getNode()->hasOverlay()) {
+            if ( node && node->hasOverlay() ) {
                 QPixmap pixOverlay;
                 appPTR->getIcon(NATRON_PIXMAP_OVERLAY, iconSize, &pixOverlay);
                 _imp->_overlayButton = new OverlayColorButton(this, QIcon(pixOverlay), _imp->_headerWidget);
@@ -340,7 +375,7 @@ DockablePanel::DockablePanel(Gui* gui,
             _imp->_nameLineEdit = new LineEdit(_imp->_headerWidget);
             if (isEffect) {
                 onNodeScriptChanged( QString::fromUtf8( isEffect->getScriptName().c_str() ) );
-                QObject::connect( isEffect->getNode().get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
+                QObject::connect( node.get(), SIGNAL(scriptNameChanged(QString)), this, SLOT(onNodeScriptChanged(QString)) );
             }
             _imp->_nameLineEdit->setText(initialName);
             QObject::connect( _imp->_nameLineEdit, SIGNAL(editingFinished()), this, SLOT(onLineEditNameEditingFinished()) );
@@ -555,8 +590,11 @@ DockablePanel::onPageIndexChanged(int index)
         if (it->second->tab == curTab) {
             setCurrentPage(it->second);
             EffectInstancePtr isEffect = toEffectInstance(_imp->_holder.lock());
-            if ( isEffect && isEffect->getNode()->hasOverlay() ) {
-                isEffect->getApp()->redrawAllViewers();
+            if (isEffect) {
+                NodePtr node = isEffect->getNode();
+                if (node && node->hasOverlay() ) {
+                    isEffect->getApp()->redrawAllViewers();
+                }
             }
         }
     }
@@ -701,7 +739,9 @@ DockablePanel::onLineEditNameEditingFinished()
     if (panel) {
         node = panel->getNodeGui();
         assert(node);
-        oldName = QString::fromUtf8( node->getNode()->getLabel().c_str() );
+        if (node) {
+            oldName = QString::fromUtf8( node->getNode()->getLabel().c_str() );
+        }
     }
 
     if (oldName == newName) {
@@ -841,12 +881,10 @@ DockablePanel::showHelp()
 
     if (iseffect) {
         NodePtr node = iseffect->getNode();
-        std::string pluginLabel = node->getPluginLabel();
-        std::string pluginID = node->getPluginID();
         int serverPort = appPTR->getDocumentationServerPort();
-        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + QString::fromUtf8(pluginID.c_str());
+        QString localUrl = QString::fromUtf8("http://localhost:") + QString::number(serverPort) + QString::fromUtf8("/_plugin.html?id=") + _imp->_pluginID;
 #ifdef NATRON_DOCUMENTATION_ONLINE
-        QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + QString::fromUtf8(pluginID.c_str()) + QString::fromUtf8(".html");
+        QString remoteUrl = QString::fromUtf8(NATRON_DOCUMENTATION_ONLINE) + QString::fromUtf8("/plugins/") + _imp->_pluginID + QString::fromUtf8(".html");
         int docSource = appPTR->getCurrentSettings()->getDocumentationSource();
         if ( (serverPort == 0) && (docSource == 0) ) {
             docSource = 1;
@@ -859,7 +897,7 @@ DockablePanel::showHelp()
                 QDesktopServices::openUrl( QUrl(remoteUrl) );
                 break;
             case 2:
-                Dialogs::informationDialog(pluginLabel, helpString().toStdString(), true);
+                Dialogs::informationDialog(_imp->_pluginLabel.toStdString(), helpString().toStdString(), true);
                 break;
         }
 #else
