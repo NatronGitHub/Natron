@@ -7299,6 +7299,12 @@ Node::setPersistentMessage(MessageTypeEnum type,
 bool
 Node::hasPersistentMessage() const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->hasPersistentMessage();
+    }
+#endif
     QMutexLocker k(&_imp->persistentMessageMutex);
 
     return !_imp->persistentMessage.isEmpty();
@@ -7309,6 +7315,12 @@ Node::getPersistentMessage(QString* message,
                            int* type,
                            bool prefixLabelAndType) const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->getPersistentMessage(message, type, prefixLabelAndType);
+    }
+#endif
     QMutexLocker k(&_imp->persistentMessageMutex);
 
     *type = _imp->persistentMessageType;
@@ -7346,6 +7358,14 @@ Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
 void
 Node::clearPersistentMessageInternal()
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        ioContainer->clearPersistentMessageInternal();
+
+        return;
+    }
+#endif
     bool changed;
     {
         QMutexLocker k(&_imp->persistentMessageMutex);
