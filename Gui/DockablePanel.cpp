@@ -134,10 +134,10 @@ DockablePanel::DockablePanel(Gui* gui,
         NodePtr node = isEffect->getNode();
         nodeForDocumentation = node;
         if (node) {
-            const std::string pluginID = isEffect->getPluginID();
+            const std::string pluginID = node->getPlugin()->getPluginID();
             if (pluginID == PLUGINID_NATRON_READ ||
                 pluginID == PLUGINID_NATRON_WRITE) {
-                EffectInstPtr effectInstance = node->getEffectInstance();
+                EffectInstancePtr effectInstance = node->getEffectInstance();
                 if ( effectInstance && effectInstance->isReader() ) {
                     ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
 
@@ -161,15 +161,14 @@ DockablePanel::DockablePanel(Gui* gui,
 
             const PluginPtr plugin = nodeForDocumentation->getPlugin();
             if (plugin) {
-                _imp->_helpToolTip = QString::fromUtf8( node->getPluginDescription().c_str() );
-                _imp->_pluginLabel = plugin->getPluginLabel();
-                _imp->_pluginID = plugin->getPluginID();
+                _imp->_helpToolTip = QString::fromUtf8( nodeForDocumentation->getPluginDescription().c_str() );
+                _imp->_pluginLabel = QString::fromUtf8( plugin->getPluginLabel().c_str() );
+                _imp->_pluginID = QString::fromUtf8( plugin->getPluginID().c_str() );
                 _imp->_pluginVersionMajor = plugin->getMajorVersion();
                 _imp->_pluginVersionMinor = plugin->getMinorVersion();
                 pluginLabelVersioned = tr("%1 version %2.%3").arg(_imp->_pluginLabel).arg(_imp->_pluginVersionMajor).arg(_imp->_pluginVersionMinor);
             }
         }
-    }
     }
 
 
