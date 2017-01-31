@@ -84,7 +84,7 @@ public:
     }
 };
 
-typedef boost::shared_ptr<GenericThreadStartArgs> ThreadStartArgsPtr;
+typedef boost::shared_ptr<GenericThreadStartArgs> GenericThreadStartArgs;
 typedef boost::shared_ptr<GenericThreadExecOnMainThreadArgs> ExecOnMTArgsPtr;
 
 /**
@@ -214,7 +214,7 @@ public:
      * The task is what will be passed to threadLoopOnce().
      * @returns true if the task could be enqueued, false otherwise.
      **/
-    bool startTask(const ThreadStartArgsPtr& inArgs);
+    bool startTask(const GenericThreadStartArgs& inArgs);
 
     /**
      * @brief Blocks the calling thread until
@@ -307,7 +307,7 @@ protected:
      * @return The state of the thread. By default should be eThreadStateActive. If threadLoopOnce might be long, you can periodically check
      * resolveState() to figure out if the user aborted the computation or not, in which case you need to return the value it returned.
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) = 0;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) = 0;
 
     /**
      * @brief To be implemented if your implementation of threadLoopOnce() wants to use requestExecutionOnMainThread.

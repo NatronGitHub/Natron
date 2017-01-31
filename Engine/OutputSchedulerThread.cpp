@@ -504,7 +504,7 @@ OutputSchedulerThread::startTasksFromLastStartedFrame()
     bool canContinue;
 
     {
-        boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
+        OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
 
         PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
 
@@ -537,7 +537,7 @@ OutputSchedulerThread::startTasks(TimeValue startingFrame)
     // Tasks are started on the scheduler thread
     assert(QThread::currentThread() == this);
 
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
+    OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
 
     PlaybackModeEnum pMode = _imp->engine->getPlaybackMode();
     if (args->firstFrame == args->lastFrame) {
@@ -611,7 +611,7 @@ OutputSchedulerThread::startRender()
     RenderDirectionEnum direction;
 
     {
-        boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
+        OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
 
         firstFrame = args->firstFrame;
         lastFrame = args->lastFrame;
@@ -692,7 +692,7 @@ OutputSchedulerThread::stopRender()
 
         {
             QMutexLocker k(&_imp->lastRunArgsMutex);
-            boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
+            OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
             firstFrame = args->firstFrame;
             lastFrame = args->lastFrame;
             frameStep = args->frameStep;
@@ -745,9 +745,9 @@ OutputSchedulerThread::stopRender()
 } // OutputSchedulerThread::stopRender
 
 GenericSchedulerThread::ThreadStateEnum
-OutputSchedulerThread::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
+OutputSchedulerThread::threadLoopOnce(const GenericThreadStartArgs &inArgs)
 {
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = boost::dynamic_pointer_cast<OutputSchedulerThreadStartArgs>(inArgs);
+    OutputSchedulerThreadStartArgsPtr args = boost::dynamic_pointer_cast<OutputSchedulerThreadStartArgs>(inArgs);
 
     assert(args);
     _imp->runArgs = args;
@@ -1008,7 +1008,7 @@ OutputSchedulerThread::notifyFrameRendered(const BufferedFrameContainerPtr& fram
     }
 
     bool isBackground = appPTR->isBackground();
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> runArgs = _imp->runArgs.lock();
+    OutputSchedulerThreadStartArgsPtr runArgs = _imp->runArgs.lock();
     assert(runArgs);
 
     // If FFA all parallel renders call render on the Writer in their own thread,
@@ -1324,7 +1324,7 @@ OutputSchedulerThreadPrivate::launchNextSequentialRender()
         _publicInterface->timelineGoTo(args.lastFrame);
     }
 
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> threadArgs( new OutputSchedulerThreadStartArgs(args.blocking, args.useStats, args.firstFrame, args.lastFrame, args.frameStep, args.viewsToRender, args.direction) );
+    OutputSchedulerThreadStartArgsPtr threadArgs( new OutputSchedulerThreadStartArgs(args.blocking, args.useStats, args.firstFrame, args.lastFrame, args.frameStep, args.viewsToRender, args.direction) );
 
     {
         QMutexLocker k(&renderFinishedMutex);
@@ -1394,7 +1394,7 @@ void
 OutputSchedulerThread::notifyRenderFailure(ActionRetCodeEnum stat, const std::string& errorMessage)
 {
     ///Abort all ongoing rendering
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = _imp->runArgs.lock();
+    OutputSchedulerThreadStartArgsPtr args = _imp->runArgs.lock();
 
     assert(args);
 
@@ -1417,7 +1417,7 @@ OutputSchedulerThread::notifyRenderFailure(ActionRetCodeEnum stat, const std::st
     }
 }
 
-boost::shared_ptr<OutputSchedulerThreadStartArgs>
+OutputSchedulerThreadStartArgsPtr
 OutputSchedulerThread::getCurrentRunArgs() const
 {
     return _imp->runArgs.lock();
@@ -1847,7 +1847,7 @@ void
 DefaultScheduler::getFrameRangeToRender(TimeValue& first,
                                         TimeValue& last) const
 {
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = getCurrentRunArgs();
+    OutputSchedulerThreadStartArgsPtr args = getCurrentRunArgs();
 
     first = args->firstFrame;
     last = args->lastFrame;
@@ -1872,7 +1872,7 @@ DefaultScheduler::getSchedulingPolicy() const
 void
 DefaultScheduler::aboutToStartRender()
 {
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> args = getCurrentRunArgs();
+    OutputSchedulerThreadStartArgsPtr args = getCurrentRunArgs();
     NodePtr outputNode = getOutputNode();
 
     {
@@ -3338,7 +3338,7 @@ ViewerCurrentFrameRequestScheduler::tasksQueueBehaviour() const
 }
 
 GenericSchedulerThread::ThreadStateEnum
-ViewerCurrentFrameRequestScheduler::threadLoopOnce(const ThreadStartArgsPtr &inArgs)
+ViewerCurrentFrameRequestScheduler::threadLoopOnce(const GenericThreadStartArgs &inArgs)
 {
     ThreadStateEnum state = eThreadStateActive;
     boost::shared_ptr<ViewerCurrentFrameRequestSchedulerStartArgs> args = boost::dynamic_pointer_cast<ViewerCurrentFrameRequestSchedulerStartArgs>(inArgs);
@@ -3665,7 +3665,7 @@ ViewerCurrentFrameRequestRendererBackup::tasksQueueBehaviour() const
 
 
 GenericSchedulerThread::ThreadStateEnum
-ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const ThreadStartArgsPtr& inArgs)
+ViewerCurrentFrameRequestRendererBackup::threadLoopOnce(const GenericThreadStartArgs& inArgs)
 {
     boost::shared_ptr<CurrentFrameFunctorArgs> args = boost::dynamic_pointer_cast<CurrentFrameFunctorArgs>(inArgs);
 

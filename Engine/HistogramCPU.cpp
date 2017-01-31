@@ -108,13 +108,15 @@ struct FinishedHistogram
     }
 };
 
+typedef boost::shared_ptr<FinishedHistogram> FinishedHistogramPtr;
+
 struct HistogramCPUPrivate
 {
     QWaitCondition requestCond;
     QMutex requestMutex;
     std::list<HistogramRequest> requests;
     QMutex producedMutex;
-    std::list<boost::shared_ptr<FinishedHistogram> > produced;
+    std::list<FinishedHistogramPtr> produced;
     QWaitCondition mustQuitCond;
     QMutex mustQuitMutex;
     bool mustQuit;
@@ -213,7 +215,7 @@ HistogramCPU::getMostRecentlyProducedHistogram(std::vector<float>* histogram1,
         return false;
     }
 
-    boost::shared_ptr<FinishedHistogram> h = _imp->produced.back();
+    FinishedHistogramPtr h = _imp->produced.back();
 
     *histogram1 = h->histogram1;
     *histogram2 = h->histogram2;
@@ -364,7 +366,7 @@ static void
 computeHistogramStatic(const HistogramRequest & request,
                        const Image::CPUTileData& imageData,
                        const RectI& roi,
-                       boost::shared_ptr<FinishedHistogram> ret,
+                       FinishedHistogramPtr ret,
                        int histogramIndex)
 {
     const int upscale = 5;
@@ -519,7 +521,7 @@ HistogramCPU::run()
             continue;
         }
         
-        boost::shared_ptr<FinishedHistogram> ret(new FinishedHistogram);
+        FinishedHistogramPtr ret(new FinishedHistogram);
         ret->binsCount = request.binsCount;
         ret->mode = request.mode;
         ret->vmin = request.vmin;

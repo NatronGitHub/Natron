@@ -95,7 +95,7 @@ private:
         return eTaskQueueBehaviorSkipToMostRecent;
     }
 
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     friend class IsTrackingFlagSetter_RAII;
     boost::scoped_ptr<TrackSchedulerPrivate> _imp;

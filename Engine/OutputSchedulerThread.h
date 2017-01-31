@@ -149,6 +149,8 @@ public:
     }
 };
 
+typedef boost::shared_ptr<OutputSchedulerThreadStartArgs> OutputSchedulerThreadStartArgsPtr;
+
 /**
  * @brief The scheduler that will control the render threads and order the output if needed
  **/
@@ -233,7 +235,7 @@ public:
      * @brief Returns the thread render arguments as set in the livingRunArgs
      * This can only be called on the scheduler thread (this)
      **/
-    boost::shared_ptr<OutputSchedulerThreadStartArgs> getCurrentRunArgs() const;
+    OutputSchedulerThreadStartArgsPtr getCurrentRunArgs() const;
 
     void getLastRunArgs(RenderDirectionEnum* direction, std::vector<ViewIdx>* viewsToRender) const;
 
@@ -362,7 +364,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     void startRender();
 
@@ -488,7 +490,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
 };
 
@@ -518,7 +520,7 @@ private:
     /**
      * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
      **/
-    virtual ThreadStateEnum threadLoopOnce(const ThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgs& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
 };
 
 

@@ -178,7 +178,7 @@ GenericSchedulerThread::quitThread(bool allowRestarts)
     {
         QMutexLocker k(&_imp->enqueuedTasksMutex);
         _imp->enqueuedTasks.clear();
-        boost::shared_ptr<GenericThreadStartArgs> stubArgs( new GenericThreadStartArgs(true) );
+        ThreadStartArgsPtr stubArgs( new GenericThreadStartArgs(true) );
         _imp->enqueuedTasks.push_back(stubArgs);
     }
 
