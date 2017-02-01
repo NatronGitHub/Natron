@@ -4,6 +4,13 @@
 
 # History
 
+## Version 2.2.4
+
+- Write: remove Python page, add Info page
+- ReadFFmpeg: fix "Image Info..." button (which calls ffprobe) when file path is relative to a project variable
+- fix high-resolution application icons
+
+
 ## Version 2.2.3
 
 - add proper quality options to WriteFFmpeg, including CRF-based encoding for libx264.
@@ -14,6 +21,7 @@
 - disable MXF writing (too many constraints, use an external transcoder)
 - fix MKV writing
 
+
 ## Version 2.2.2
 
 This is a bug-fix release
@@ -22,6 +30,7 @@ This is a bug-fix release
 - EdgeBlur now has an optional Matte input used to compute the edges #1553
 - fix reading image sequences that do not have frame number 1 in them #1556
 - better/simpler GUI and documentation for the file dialog.
+
 
 ## Version 2.2.1
 
@@ -34,6 +43,7 @@ This is a bug-fix release.
 
 - STMap: was broken in 2.2, fix it.
 - WritePNG: fix writing 16 bit PNG
+
 
 ## Version 2.2
 
@@ -75,6 +85,7 @@ This is a bug-fix release.
 - RotoMerge: a merge plugin that takes an external mask as the alpha for the A input.
 - WriteFFmpeg: DNxHD codec now supports DNxHR HQ, DNxHR SQ and DNxHR LB profiles.
 
+
 ## Version 2.1.9
 
 - Read/Write: Do not automatically set parameters when changing the filename (#1492). Creating a new Reader/Writer still sets those automatically.
@@ -96,6 +107,7 @@ This is a bug-fix release.
 - Grade & Gamma: fix behaviour when gamma=0
 - Shadertoy: support iChannelResolution
 
+
 ## Version 2.1.8
 
 - Fix a bug where several images with file names that contain two numbers would be be considered as a sequence even if both numbers differed.
@@ -114,6 +126,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - (beta feature) EdgeDetect: Perform edge detection by computing the image gradient magnitude.
 - (beta feature) EdgeBlur: Blur the image where there are edges in the alpha/matte channel.
 
+
 ## Version 2.1.7
 
 - Fix a bug where PyPlugs would not load if the PYTHONPATH environment variable was set
@@ -121,6 +134,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 ### Plugins
 
 - (beta feature) SlitScan: Per-pixel retiming.
+
 
 ## Version 2.1.6
 
@@ -132,6 +146,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - ErodeBlur: fix the "Crop To Format" parameter (which did not work)
 - (beta feature) HueCorrect: Apply hue-dependent color adjustments using lookup curves.
 - (beta feature) HueKeyer: Compute a key depending on hue value.
+
 
 ## Version 2.1.5
 
@@ -161,6 +176,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - (beta feature) Sharpen & Soften: new plugins.
 - (beta feature) EdgeExtend: Fill a matte (i.e. a non-opaque color image with an alpha channel) by extending the edges of the matte.
 
+
 ## Version 2.1.4
 
 - Windows: Fix a bug where the UI would freeze for a long time when reading files over a network share
@@ -169,6 +185,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - Fix creation of SeNoise node
 - Fix a bug where the data-window would not be read correctly with auto-crop EXR image sequences
 - Fix a bug where the group expand/fold feature would not work correctly
+
 
 ## Version 2.1.3
 
@@ -191,6 +208,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - (beta feature) Quantize: Reduce the number of color levels with posterization or dithering
 - ImageStatistics: can now extract the pixels with the maximum and minimum luminance, as well as their values
 
+
 ## Version 2.1.2
 
 - Viewer: A new button can now force full-frame rendering instead of the visible portion. This may be useful to remove borders artifacts when panning/zooming during playback
@@ -203,6 +221,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - Fix a bug where the .lock file of a project would not go away even if closing Natron correctly
 - Fix a bug where expressions would not work in some circumstances
 
+
 ## Version 2.1.1
 
 - Fix a bug where enabling GPU rendering from the settings would not be taken into account correctly by the ShaderToy node
@@ -212,6 +231,7 @@ which were conflicting with the timeline shortcuts. (#1408)
 - Fix a bug where the writing of the OpenFX plug-ins loading cache was not thread-safe. Multiple Natron processes on a same node of a render farm could corrupt the cache thus failing some renders because plug-ins could not load.
 - The Dilate/Erode nodes now have the Alpha checkbox checked by default and also have a parameter to expand the bounding box
 - The Auto-Turbo mode is now also enabled when writing out on disk
+
 
 ## Version 2.1.0
 
@@ -227,10 +247,12 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - (beta feature) ReadCDR is a new reader plugin that supports CorelDRAW(R) documents.
 - (beta feature) ReadPDF is a new reader plugin that supports PDF documents.
 
+
 ## Version 2.0.5
 
 - Viewer: The number keys now always switch input A when not shifted, and B when shifted, even on keyboards where numbers should be shifted (such as French AZERTY).
 - Viewer: Reworked the wipe modes. added Onion Skin and stack modes.
+
 
 ## Version 2.0.3
 
@@ -241,6 +263,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Fixed a bug where the gui could stop giving feedback when rendering
 - CTRL + left mouse button click can now be used on sliders to reset to their default value
 - Fixed Python call to the onProjectSave callback which would not work
+
 
 ## Version 2.0.2
 
@@ -264,6 +287,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Fix a bug where rendering in a separate process would always fail on Windows.
 - WriteFFMPEG: fix a bug with multi-threading that was introduced with enhancements in 2.0.1 for certain codecs that do not support it
 
+
 ## Version 2.0.1
 
 - Major performance improvement for ReadFFMPEG and WriteFFMPEG
@@ -273,6 +297,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - Roto: fix a bug where animating any parameter would crash Natron
 - Python: add ability to query the *active project* (i.e: the top level window) with the NatronEngine.natron.getActiveInstance() function
 - Python: fix issue where the argument of *saveProject(filename)* would be ignored 
+
 
 ## Version 2.0 - stable 
 
@@ -299,6 +324,7 @@ You may contribute to this user guide, follow (these)[http://natron.readthedocs.
 - A new demo project from Francois Grassard is available at [downloads.natron.fr](http://downloads.natron.fr/Examples/Natron2_BayMaxProject.zip).
 It contains a fully-featured project demonstrating the use of a complex node-graph including usage of PyPlugs.
 
+
 ## Version 2.0 - RC4
 
 - Write nodes now have a Frame Increment parameter which allows to skip frames while rendering.
@@ -308,6 +334,7 @@ It contains a fully-featured project demonstrating the use of a complex node-gra
 - RotoPaint: enhancements in the rendering algorithm 
 - Color, Double and Integer parameters can now have an expression entered directly in a SpinBox for convenience
 - NodeGraph: optimize for speed when the scene contains a lot of nodes and add auto-scrolling when reaching the border of the view
+
 
 ## Version 2.0 - RC3
 
@@ -355,6 +382,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 - Better support for multi-view workflows
 - Various performance and stability enhancements across the board 
 
+
 ## Version 1.2.1
 
 – New GodRays and DirBlur nodes.
@@ -363,6 +391,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 – FIxed a bug where a crash could occur with the Merge node with mix = 0
 – Fixed a bug where ReadFFMPEG would sometimes decode incorrectly files with bit depth higher than 8
 – Miscellaneous stability fixes
+
 
 ## Version 1.2.0
 
@@ -389,6 +418,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
   clever approach in the next version. The only way for now is to use
   a Switch node.
 
+
 ## Version 1.1.0
 
 - Fix stability of the software as a whole. This build has been reported to be robust to several hours of work.
@@ -407,6 +437,7 @@ The pass-through input will also be indicated with a plain arrow whereas all oth
 - Playback: The behaviour when using multiple viewers is now much more logical: all viewers are kept in sync and follow the frame range of the viewer that started the playback. The frame range is now per viewer.
 - The frame range is now a property of the project: Each time a Reader node the frame range of the project is unioned with the frame range of the sequence read (unless the Lock range parameter is checked). New viewers that have their frame range untouched will use the project frame range by default.
 - New nodes: Add, Multiply, Gamma, ColorConvert, SharpenInvDiff, SharpenShock
+
 
 ## Version 1.0.0
 
@@ -452,6 +483,7 @@ to avoid creating new beziers by mistake
 - Nodegraph: zooming is now done under the mouse cursor
 - Readers: when a file changes externally, don't reload it automatically, instead a warning is displayed on the viewer and it is up to the user to reload it with the button created specifically
 for the occasion. The warning notification can be disabled in the preferences of Natron. The tooltip of the field with the filename now indicates the last modification date of the file.
+
 
 ## Version 1.0.0RC3
 
@@ -505,6 +537,7 @@ scroll the items by pressing the up/down arrows. Checkbox can now also have focu
 - Fixed a bug where changing the number of panels in the property bin wouldn't have any effect
 - Fixed a bug where CImg channels parameter wouldn't be saved into the project
 - The ColorLookUp node’s curve editor now properly gets keyboard focus
+
 
 ## Version 1.0.0RC2
 
@@ -657,6 +690,7 @@ Natron 0.96 "Beta"
 - Linux builds now offer a complete installer and maintenance tools allowing to install/uninstall/update the software easily (thanks to Ole Andre)
 - Linux 32 bit platforms are now also officially supported.
 
+
 ## Version 0.95
 
 - This was shortly after 0.94 but we needed to deploy various fixes to the major bugs that were mainly impairing usability of the software on Linux distributions.
@@ -674,6 +708,7 @@ Natron 0.96 "Beta"
 - Fixed a bug in the Transform interact that would arise when the user would be zoomed in
 - Fixed a bug where the background renderer would crash
 - Improved performance in the refreshing of the graphical user interface of the parameters, it should increase the performances of Natron across the board.
+
 
 ## Version 0.94
 
