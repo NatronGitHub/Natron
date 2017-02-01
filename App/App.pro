@@ -48,7 +48,7 @@ macx {
   # use a custom Info.plist template
   QMAKE_INFO_PLIST = NatronInfo.plist
   # Set the application icon
-  ICON = ../Gui/Resources/Images/natronIcon256_osx.icns
+  ICON = ../Gui/Resources/Images/natronIcon.icns
   # replace com.yourcompany with something more meaningful
   QMAKE_TARGET_BUNDLE_PREFIX = fr.inria
   QMAKE_PKGINFO_TYPEINFO = Ntrn
