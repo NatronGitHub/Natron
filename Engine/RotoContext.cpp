@@ -136,7 +136,7 @@ RotoContext::setWhileCreatingPaintStrokeOnMergeNodes(bool b)
 NodePtr
 RotoContext::getRotoPaintBottomMergeNode() const
 {
-    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder();
+    std::list<boost::shared_ptr<RotoDrawableItem> > items = getCurvesByRenderOrder(false /*onlyActiveItems*/);
 
     if ( items.empty() ) {
         return NodePtr();

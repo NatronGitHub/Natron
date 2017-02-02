@@ -14,6 +14,17 @@ This plugin implements `Shadertoy 0.8.7 <https://www.shadertoy.com/changelog>`__
 
 This help only covers the parts of GLSL ES that are relevant for Shadertoy. For the complete specification please have a look at `GLSL ES specification <http://www.khronos.org/registry/gles/specs/2.0/GLSL_ES_Specification_1.0.17.pdf>`__ or pages 3 and 4 of the `OpenGL ES 2.0 quick reference card <https://www.khronos.org/opengles/sdk/docs/reference_cards/OpenGL-ES-2_0-Reference-card.pdf>`__. See also the `Shadertoy/GLSL tutorial <https://www.shadertoy.com/view/Md23DV>`__.
 
+Image shaders
+~~~~~~~~~~~~~
+
+Image shaders implement the ``mainImage()`` function in order to generate the procedural images by computing a color for each pixel. This function is expected to be called once per pixel, and it is responsability of the host application to provide the right inputs to it and get the output color from it and assign it to the screen pixel. The prototype is:
+
+``void mainImage( out vec4 fragColor, in vec2 fragCoord );``
+
+where ``fragCoord`` contains the pixel coordinates for which the shader needs to compute a color. The coordinates are in pixel units, ranging from 0.5 to resolution-0.5, over the rendering surface, where the resolution is passed to the shader through the ``iResolution`` uniform (see below).
+
+The resulting color is gathered in ``fragColor`` as a four component vector.
+
 Language:
 ~~~~~~~~~
 
@@ -206,6 +217,15 @@ OpenFX extensions to Shadertoy
 -  The following comment line placed in the shader gives a label and help string to input 1 (the comment must be the only thing on the line): ``// iChannel1: Noise (A noise texture to be used for random number calculations. The texture should not be frame-varying.)``
 -  This one also sets the filter and wrap parameters: ``// iChannel0: Source (Source image.), filter=linear, wrap=clamp``
 -  And this one sets the output bouding box (possible values are Default, Union, Intersection, and iChannel0 to iChannel3): ``// BBox: iChannel0``
+
+Default textures and videos
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default shadertoy textures and videos are avalaible from the `Shadertoy <http://www.shadertoy.com>`__ web site. In order to mimic the behavior of each shader, download the corresponding textures or videos and connect them to the proper input.
+
+-  Textures: `tex00 <https://www.shadertoy.com/presets/tex00.jpg>`__, `tex01 <https://www.shadertoy.com/presets/tex01.jpg>`__, `tex02 <https://www.shadertoy.com/presets/tex02.jpg>`__, `tex03 <https://www.shadertoy.com/presets/tex03.jpg>`__, `tex04 <https://www.shadertoy.com/presets/tex04.jpg>`__, `tex05 <https://www.shadertoy.com/presets/tex05.jpg>`__, `tex06 <https://www.shadertoy.com/presets/tex06.jpg>`__, `tex07 <https://www.shadertoy.com/presets/tex07.jpg>`__, `tex08 <https://www.shadertoy.com/presets/tex08.jpg>`__, `tex09 <https://www.shadertoy.com/presets/tex09.jpg>`__, `tex10 <https://www.shadertoy.com/presets/tex10.png>`__, `tex11 <https://www.shadertoy.com/presets/tex11.png>`__, `tex12 <https://www.shadertoy.com/presets/tex12.png>`__, `tex14 <https://www.shadertoy.com/presets/tex14.png>`__, `tex15 <https://www.shadertoy.com/presets/tex15.png>`__, `tex16 <https://www.shadertoy.com/presets/tex16.png>`__, `tex17 <https://www.shadertoy.com/presets/tex17.jpg>`__, `tex18 <https://www.shadertoy.com/presets/tex18.jpg>`__, `tex19 <https://www.shadertoy.com/presets/tex19.png>`__, `tex20 <https://www.shadertoy.com/presets/tex20.jpg>`__, `tex21 <https://www.shadertoy.com/presets/tex21.png>`__.
+-  Videos: `vid00 <https://www.shadertoy.com/presets/vid00.ogv>`__, `vid01 <https://www.shadertoy.com/presets/vid01.webm>`__, `vid02 <https://www.shadertoy.com/presets/vid02.ogv>`__, `vid03 <https://www.shadertoy.com/presets/vid03.webm>`__.
+-  Cubemaps: `cube00\_0 <https://www.shadertoy.com/presets/cube00_0.jpg>`__, `cube01\_0 <https://www.shadertoy.com/presets/cube01_0.png>`__, `cube02\_0 <https://www.shadertoy.com/presets/cube02_0.jpg>`__, `cube03\_0 <https://www.shadertoy.com/presets/cube03_0.png>`__, `cube04\_0 <https://www.shadertoy.com/presets/cube04_0.png>`__, `cube05 <https://www.shadertoy.com/presets/cube05_0.png>`__
 
 Inputs
 ------
@@ -677,4 +697,6 @@ Controls
 | CPU Driver / ``cpuDriver``                     | Choice    | llvmpipe                                                                                            | Driver for CPU rendering. May be "softpipe" (slower, has GL\_EXT\_texture\_filter\_anisotropic GL\_ARB\_texture\_query\_lod GL\_ARB\_pipeline\_statistics\_query) or "llvmpipe" (faster, has GL\_ARB\_buffer\_storage GL\_EXT\_polygon\_offset\_clamp).                                                                       |
 +------------------------------------------------+-----------+-----------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | Renderer Info... / ``rendererInfo``            | Button    |                                                                                                     | Retrieve information about the current OpenGL renderer.                                                                                                                                                                                                                                                                       |
++------------------------------------------------+-----------+-----------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| Help... / ``helpButton``                       | Button    |                                                                                                     | Display help about using Shadertoy.                                                                                                                                                                                                                                                                                           |
 +------------------------------------------------+-----------+-----------------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+

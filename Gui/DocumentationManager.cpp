@@ -120,16 +120,20 @@ DocumentationManager::handler(QHttpRequest *req,
 
     // override static docs
     // plugin pages are generated only if they don't exist
-    QString staticPage, dynamicPage;
+    QString staticPage, dynamicPage, pluginID;
     bool isStatic = false;
     if ( page.startsWith( QString::fromUtf8("/plugins/") ) ) {
         isStatic = true;
+        pluginID = page;
+        pluginID.replace( QString::fromUtf8(".html"), QString() ).replace( QString::fromUtf8("/plugins/"), QString() );
         staticPage = page;
         dynamicPage = page;
-        dynamicPage.replace( QString::fromUtf8(".html"), QString::fromUtf8("") ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
+        dynamicPage.replace( QString::fromUtf8(".html"), QString() ).replace( QString::fromUtf8("/plugins/"), QString::fromUtf8("/_plugin.html?id=") );
     }
     if ( page.startsWith( QString::fromUtf8("/_plugin.html?id=") ) ) {
         isStatic = false;
+        pluginID = page;
+        pluginID.replace( QString::fromUtf8("/_plugin.html?id="), QString() );
         staticPage = page;
         staticPage.replace( QString::fromUtf8("/_plugin.html?id="), QString::fromUtf8("/plugins/") );
         staticPage += QString::fromUtf8(".html");
@@ -144,6 +148,48 @@ DocumentationManager::handler(QHttpRequest *req,
         isStatic = false;
         staticPage = QString::fromUtf8("/_prefs.html");
         dynamicPage = page;
+    }
+    // if this is one of the plugins that depend on the ocioConfigFile, the static page should not be used.
+    // to get the list of plugins:
+    // (cd Documentation/source/plugins; fgrep -l ocioConfigFile *.rst)
+    // as of Natron 2.2:
+    /*
+     fr.inria.built-in.Read.rst
+     fr.inria.built-in.Write.rst
+     fr.inria.openfx.OCIOColorSpace.rst
+     fr.inria.openfx.OCIODisplay.rst
+     fr.inria.openfx.OCIOLogConvert.rst
+     fr.inria.openfx.OCIOLookTransform.rst
+     fr.inria.openfx.OpenRaster.rst
+     fr.inria.openfx.ReadCDR.rst
+     fr.inria.openfx.ReadFFmpeg.rst
+     fr.inria.openfx.ReadKrita.rst
+     fr.inria.openfx.ReadMisc.rst
+     fr.inria.openfx.ReadOIIO.rst
+     fr.inria.openfx.ReadPDF.rst
+     fr.inria.openfx.ReadPFM.rst
+     fr.inria.openfx.ReadPNG.rst
+     fr.inria.openfx.WriteFFmpeg.rst
+     fr.inria.openfx.WriteOIIO.rst
+     fr.inria.openfx.WritePFM.rst
+     fr.inria.openfx.WritePNG.rst
+     net.fxarena.openfx.ReadPSD.rst
+     net.fxarena.openfx.ReadSVG.rst
+     */
+    {
+        const std::string id = pluginID.toStdString();
+        if (ReadNode::isBundledReader(id, false) ||
+            WriteNode::isBundledWriter(id, false) ||
+            pluginID.startsWith( QString::fromUtf8("fr.inria.openfx.OCIO") ) ||
+            //pluginID.startsWith( QString::fromUtf8("fr.inria.openfx.Read") ) ||
+            //pluginID.startsWith( QString::fromUtf8("fr.inria.openfx.Write") ) ||
+            //pluginID.startsWith( QString::fromUtf8("net.fxarena.openfx.Read") ) ||
+            //pluginID.startsWith( QString::fromUtf8("net.fxarena.openfx.Write") ) ||
+            id == PLUGINID_NATRON_READ ||
+            id == PLUGINID_NATRON_WRITE) {
+            // use the dynamic version, to get the right colorspace options
+            staticPage.clear();
+        }
     }
     if ( !staticPage.isEmpty() ) {
         QFileInfo staticFileInfo = docDir + staticPage;

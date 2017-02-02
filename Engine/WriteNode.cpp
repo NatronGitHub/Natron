@@ -494,6 +494,7 @@ WriteNodePrivate::destroyWriteNode()
 
     //This will remove the GUI of non generic parameters
     _publicInterface->recreateKnobs(true);
+#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     if (embeddedNode) {
         embeddedNode->destroyNode(true, false);
@@ -855,6 +856,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
+#pragma message WARN("TODO: if Gui, refresh pluginID, version, help tooltip in DockablePanel to reflect embedded node change")
 
     KnobPtr knob = writeNode ? writeNode->getKnobByName(kOfxImageEffectFileParamName) : _publicInterface->getKnobByName(kOfxImageEffectFileParamName);
     if (knob) {

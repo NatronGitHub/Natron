@@ -965,13 +965,15 @@ KnobChoice::setDefaultValueFromID(const std::string & value,
 // 2- exact string match, other index
 // 3- exact string match before the first '\t', other index
 // 4- case-insensistive string match, other index
+// 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
+// 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with PAR=1, where the PAR was removed)
 // returns index if choice was matched, -1 if not matched
 int
 KnobChoice::choiceMatch(const std::string& choice,
                         const std::vector<ChoiceOption>& entries,
                         ChoiceOption* matchedEntry)
 {
-    // first, try exact match
+    // 2- try exact match, other index
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if (entries[i].id == choice) {
             if (matchedEntry) {
@@ -981,7 +983,7 @@ KnobChoice::choiceMatch(const std::string& choice,
         }
     }
 
-    // second, match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
+    // 3- match the part before '\t' with the part before '\t'. This is for value-tab-description options such as in the WriteFFmpeg codec
     std::size_t choicetab = choice.find('\t'); // returns string::npos if no tab was found
     std::string choicemain = choice.substr(0, choicetab); // gives the entire string if no tabs were found
     for (std::size_t i = 0; i < entries.size(); ++i) {
@@ -997,13 +999,43 @@ KnobChoice::choiceMatch(const std::string& choice,
         }
     }
 
-    // third, case-insensitive match
+    // 4- case-insensitive match
     for (std::size_t i = 0; i < entries.size(); ++i) {
         if ( boost::iequals(entries[i].id, choice) ) {
             if (matchedEntry) {
                 *matchedEntry = entries[i];
             }
             return i;
+        }
+    }
+
+    // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
+    std::string choiceparen = choice;
+    std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
+    std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
+    for (std::size_t i = 0; i < entries.size(); ++i) {
+        std::string entryparen = entries[i];
+        std::replace( entryparen.begin(), entryparen.end(), '[', '(');
+        std::replace( entryparen.begin(), entryparen.end(), ']', ')');
+
+        if (choiceparen == entryparen) {
+            if (matchedEntry) {
+                *matchedEntry = entries[i];
+            }
+            return i;
+        }
+    }
+
+    // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
+    if ( boost::algorithm::ends_with(choice, " 1") ) {
+        std::string choicenopar(choice, 0, choice.size()-2);
+        for (std::size_t i = 0; i < entries.size(); ++i) {
+            if (entries[i] == choicenopar) {
+                if (matchedEntry) {
+                    *matchedEntry = entries[i];
+                }
+                return i;
+            }
         }
     }
 

@@ -1015,8 +1015,6 @@ private:
 
     void createInfoPage();
 
-    void createPythonPage();
-
     void createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage);
 
 #ifndef NATRON_ENABLE_IO_META_NODES
