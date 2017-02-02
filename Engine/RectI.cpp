@@ -162,6 +162,14 @@ RectI::toCanonical_noClipping(const RenderScale& thisScale,
     rect->y2 = y2 * inverseScale.y;
 }
 
+void
+RectI::roundToTileSize(int tileSizeX, int tileSizeY)
+{
+    x1 = (int)std::floor((double)x1 / tileSizeX) * tileSizeX;
+    y1 = (int)std::floor((double)y1 / tileSizeY) * tileSizeY;
+    x2 = (int)std::ceil((double)x2 / tileSizeX) * tileSizeX;
+    y2 = (int)std::ceil((double)y2 / tileSizeY) * tileSizeY;
+}
 
 void
 RectI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)

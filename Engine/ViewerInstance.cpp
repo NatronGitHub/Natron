@@ -1340,7 +1340,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     _imp->getChannelOptions(args.renderArgs, args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
 
-    if (args.outputPlanes.size() != 1 || selectedDisplayLayer != args.outputPlanes.begin()->first) {
+    if (args.outputPlanes.size() != 1 || args.outputPlanes.begin()->first.getNumComponents() != 4) {
         setPersistentMessage(eMessageTypeError, tr("Host did not take into account output components").toStdString());
         return eActionStatusFailed;
     }
@@ -1396,7 +1396,7 @@ ViewerInstance::render(const RenderActionArgs& args)
         }
     }
 
-    if (colorImage->getBitDepth() != alphaImage->getBitDepth()) {
+    if (alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
         setPersistentMessage(eMessageTypeError, tr("Host did not take into account requested bit-depth").toStdString());
         return eActionStatusFailed;
     }

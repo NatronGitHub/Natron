@@ -93,147 +93,126 @@ public:
     boost::shared_ptr<TLSHolder<EffectInstanceTLSData> > tlsData;
 
 
+    static RenderScale getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale);
 
     /**
      * @brief Helper function in the implementation of renderRoI to determine from the planes requested
      * what planes can actually be rendered from this node. Pass-through planes are rendered from upstream
      * nodes.
      **/
-    ActionRetCodeEnum determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
-                                             std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
-                                             std::list<ImagePlaneDesc> *planesToRender,
-                                             std::bitset<4>* processChannels,
-                                             std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
+    ActionRetCodeEnum handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
+                                              unsigned int mipMapLevel,
+                                              const RectD& roiCanonical,
+                                              std::map<int, std::list<ImagePlaneDesc> >* neededComp,
+                                              bool *isPassThrough);
 
     /**
      * @brief Helper function in the implementation of renderRoI to handle identity effects
      **/
-    ActionRetCodeEnum handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
-                                          double par,
-                                          const RectD& rod,
-                                          const RenderScale& scale,
-                                          const std::list<ImagePlaneDesc> &requestedComponents,
-                                          const std::map<int, std::list<ImagePlaneDesc> >& neededComps,
-                                          RenderRoIResults* outputPlanes,
-                                          bool *isIdentity);
+    ActionRetCodeEnum handleIdentityEffect(double par,
+                                           const RectD& rod,
+                                           const RenderScale& combinedScale,
+                                           const RectD& canonicalRoi,
+                                           const FrameViewRequestPtr& requestData,
+                                           bool *isIdentity);
 
     /**
      * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distortion etc...)
      **/
-    ActionRetCodeEnum handleConcatenation(const EffectInstance::RenderRoIArgs& args,
-                                         const RenderScale& renderScale,
-                                         RenderRoIResults* results,
-                                         bool *concatenated);
+    ActionRetCodeEnum handleConcatenation(const FrameViewRequestPtr& requestData,
+                                          const FrameViewRequestPtr& requester,
+                                          int inputNbInRequester,
+                                          const RenderScale& renderScale,
+                                          const RectD& canonicalRoi,
+                                          bool *concatenated);
 
 
    
     /**
      * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
      **/
-    ActionRetCodeEnum resolveRenderBackend(const RenderRoIArgs & args,
-                                          const FrameViewRequestPtr& requestPassData,
-                                          const RectI& roi,
-                                          RenderBackendTypeEnum* renderBackend,
-                                          OSGLContextPtr *glRenderContext);
+    ActionRetCodeEnum resolveRenderBackend(const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend);
 
     /**
      * @brief Helper function in the implementation of renderRoI to determine if a render should use the Cache or not.
      * @returns The cache access type, i.e: none, write only or read/write
      **/
-    CacheAccessModeEnum shouldRenderUseCache(const RenderRoIArgs & args,
-                                             const FrameViewRequestPtr& requestPassData);
+    CacheAccessModeEnum shouldRenderUseCache(const FrameViewRequestPtr& requestPassData);
 
-    bool canSplitRenderWindowWithIdentityRectangles(const RenderRoIArgs& args,
+    ActionRetCodeEnum handleUpstreamFramesNeeded(const FrameViewRequestPtr& requestPassData,
+                                                        const RenderScale& combinedScale,
+                                                        unsigned int mipMapLevel,
+                                                        const RectD& roi,
+                                                        const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
+
+
+    bool canSplitRenderWindowWithIdentityRectangles(const FrameViewRequestPtr& requestPassData,
                                                     const RenderScale& renderMappedScale,
                                                     RectD* inputRoDIntersection);
 
-    void fetchOrCreateOutputPlanes(const RenderRoIArgs & args,
-                                   const FrameViewRequestPtr& requestPassData,
-                                   CacheAccessModeEnum cacheAccess,
-                                   const ImagePlanesToRenderPtr &planesToRender,
-                                   const std::list<ImagePlaneDesc>& requestedComponents,
-                                   const RectI& roi,
-                                   const RenderScale& mappedCombinedScale,
-                                   const RenderScale& mappedProxyScale,
-                                   unsigned int mappedMipMapLevel,
-                                   const OSGLContextAttacherPtr& glContextLocker,
-                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
 
+    void fetchCachedTiles(const FrameViewRequestPtr& requestPassData,
+                          const RectI& roiPixels,
+                          unsigned int mappedMipMapLevel);
 
-    void checkPlanesToRenderAndComputeRectanglesToRender(const RenderRoIArgs & args,
-                                                         const ImagePlanesToRenderPtr &planesToRender,
-                                                         CacheAccessModeEnum cacheAccess,
-                                                         const RectI& roi,
-                                                         const OSGLContextAttacherPtr& glContextLocker,
-                                                         bool delayAllocation,
-                                                         std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
-
-    void computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow);
-
-
-    ActionRetCodeEnum launchRenderAndWaitForPendingTiles(const RenderRoIArgs & args,
-                                                         const ImagePlanesToRenderPtr &planesToRender,
-                                                         const OSGLContextAttacherPtr& glRenderContext,
-                                                         CacheAccessModeEnum cacheAccess,
-                                                         const RectI& roi,
-                                                         const RenderScale& renderMappedScale,
-                                                         const std::bitset<4> &processChannels,
-                                                         const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
-                                                         std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
-
-    ActionRetCodeEnum renderRoILaunchInternalRender(const RenderRoIArgs & args,
-                                                    const ImagePlanesToRenderPtr &planesToRender,
-                                                    const OSGLContextAttacherPtr& glRenderContext,
-                                                    const RenderScale& renderMappedScale,
-                                                    const std::bitset<4> &processChannels,
-                                                    const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
-
-
-
-    struct TiledRenderingFunctorArgs
+    struct RectToRender
     {
-        const RenderRoIArgs* args;
-        RenderScale renderMappedScale;
-        ImagePtr mainInputImage;
-        std::bitset<4> processChannels;
-        ImagePlanesToRenderPtr planesToRender;
-        OSGLContextAttacherPtr glContext;
+        // The region in pixels to render
+        RectI rect;
+
+        // If this region is identity, this is the
+        // input time/view on which we should copy the image
+        int identityInputNumber;
+        TimeValue identityTime;
+        ViewIdx identityView;
+
+        // The type of render for this rectangle
+        RenderBackendTypeEnum backendType;
+
+        // The temporary image used to render the rectangle
+        ImagePtr tmpRenderImage;
     };
 
 
-    ActionRetCodeEnum tiledRenderingFunctor(TiledRenderingFunctorArgs & args,
-                                              const RectToRender & specificData,
-                                              QThread* callingThread);
 
+
+    /**
+     * @brief Check if the given request has stuff left to render in the image plane or not.
+     * @param renderRects In output the rectangles left to render (identity or plain render).
+     * @param hasPendingTiles True if some tiles are pending from another render
+     **/
+    void checkRestToRender(const FrameViewRequestPtr& requestData, std::list<RectToRender>* renderRects, bool* hasPendingTiles);
+
+    void checkIdentityRectsToRender(const FrameViewRequestPtr& requestData,
+                                    const RectI & inputsRoDIntersection,
+                                    const std::list<RectI> & rectsToRender,
+                                    const RenderScale & renderMappedScale,
+                                    std::list<RectToRender>* finalRectsToRender);
+
+
+    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData, const RectI& roiPixels, std::list<RectToRender>* renderRects);
+
+    ActionRetCodeEnum launchInternalRender(const FrameViewRequestPtr& requestData, const std::list<RectToRender>& renderRects);
+    
 
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
-                                              const RenderRoIArgs* args,
-                                              RenderScale renderMappedScale,
-                                              std::bitset<4> processChannels,
-                                              const ImagePtr& mainInputImage,
-                                              ImagePlanesToRenderPtr planesToRender,
-                                              OSGLContextAttacherPtr glContext);
+                                            const FrameViewRequestPtr& requestData,
+                                            const ImagePtr& mainInputImage);
 
 
     ActionRetCodeEnum renderHandlerIdentity(const RectToRender & rectToRender,
-                                              const RenderRoIArgs* args,
-                                              const RenderScale &renderMappedScale,
-                                              const ImagePlanesToRenderPtr& planes);
+                                            const RenderScale& combinedScale,
+                                            const FrameViewRequestPtr& requestData);
 
     ActionRetCodeEnum renderHandlerInternal(const EffectInstanceTLSDataPtr& tls,
-                                              const RectToRender & rectToRender,
-                                              const RenderRoIArgs* args,
-                                              const RenderScale& renderMappedScale,
-                                              const OSGLContextAttacherPtr glContext,
-                                              const ImagePlanesToRenderPtr& planes,
-                                              std::bitset<4> processChannels);
+                                            const RectToRender & rectToRender,
+                                            const RenderScale& combinedScale,
+                                            const FrameViewRequestPtr& requestData);
 
     void renderHandlerPostProcess(const RectToRender & rectToRender,
-                                  const RenderRoIArgs* args,
-                                  const RenderScale& renderMappedScale,
-                                  const ImagePlanesToRenderPtr& planes,
-                                  const ImagePtr& mainInputImage,
-                                  std::bitset<4> processChannels);
+                                  const RenderScale& combinedScale,
+                                  const FrameViewRequestPtr& requestData,
+                                  const ImagePtr& mainInputImage);
 
 
     void checkMetadata(NodeMetadata &metadata);

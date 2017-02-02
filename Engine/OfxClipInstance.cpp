@@ -1240,7 +1240,12 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
     assert(internalImage);
 
     unsigned int mipMapLevel = internalImage->getMipMapLevel();
-    RenderScale scale( NATRON_NAMESPACE::Image::getScaleFromMipMapLevel(mipMapLevel) );
+    RenderScale scale = internalImage->getProxyScale();
+    {
+        double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.x *= mipMapScale;
+        scale.y *= mipMapScale;
+    }
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.x, 0);
     ofxImageBase->setDoubleProperty(kOfxImageEffectPropRenderScale, scale.y, 1);
 

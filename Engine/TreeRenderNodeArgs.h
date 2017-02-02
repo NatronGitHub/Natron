@@ -106,9 +106,55 @@ class FrameViewRequest
 {
 public:
 
-    FrameViewRequest(const TreeRenderNodeArgsPtr& render);
+    FrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, const TreeRenderNodeArgsPtr& render);
 
     ~FrameViewRequest();
+
+    /**
+     * @brief Get the frame of the render
+     **/
+    TimeValue getTime() const;
+
+    /**
+     * @brief Get the view of the render
+     **/
+    ViewIdx getView() const;
+
+    /**
+     * @brief Get the mipmap level at which to render
+     **/
+    unsigned int getMipMapLevel() const;
+
+    /**
+     * @brief Get the render mapped mipmap level (i.e: 0 if the node
+     * does not support render scale)
+     **/
+    unsigned int getRenderMappedMipMapLevel() const;
+    void setRenderMappedMipMapLevel(unsigned int mipMapLevel) const;
+
+    /**
+     * @brief Get the plane to render
+     **/
+    const ImagePlaneDesc& getPlaneDesc() const;
+    void setPlaneDesc(const ImagePlaneDesc& plane);
+
+
+    /**
+     * @brief Return the image plane to render
+     **/
+    ImagePtr getImagePlane() const;
+    void setImagePlane(const ImagePtr& image);
+
+    /**
+     * @brief Get the cache policy for this frame/view
+     **/
+    CacheAccessModeEnum getCachePolicy() const;
+    void setCachePolicy(CacheAccessModeEnum policy);
+
+    /**
+     * @brief Return the render args passed to the ctor
+     **/
+    TreeRenderNodeArgsPtr getRenderArgs() const;
 
     /**
      * @brief When an input image of this request is rendered, we hold a pointer to it in this object
@@ -139,23 +185,33 @@ public:
      **/
     void clearPreRenderedInputs();
 
-
+    /**
+     * @brief Add a new dependency to this frame/view. This frame/view will not be able to render until all dependencies will be rendered.
+     **/
+    void addDependency(const FrameViewRequestPtr& other);
 
     /**
-     * @brief Increments the number of requests on this particular time/view for the node.
-     * Requests were made by the given effectRequesting in its getFramesNeeded action.
+     * @brief Remove a dependency previously added by addDependency. This should be called once the "other" frame/view 
+     * is done rendering.
      **/
-    void incrementFramesNeededVisitsCount(const EffectInstancePtr& effectRequesting);
+    void removeDependency(const FrameViewRequestPtr& other);
 
     /**
-     * @brief How many times this image was requested from downstream nodes by getFramesNeeded
+     * @brief Get the number of dependencies left to render for this frame/view.
+     * If this returns 0, then this frame/view can be rendered.
      **/
-    int getFramesNeededVisitsCount() const;
+    int getNumDependencies() const;
 
     /**
-     * @brief Returns true if the given effect requested this frame via its getFramesNeeded action
+     * @brief Add the "other" frame/view as a listener of this frame/view. This means
+     * that this frame/view is in the dependencies list of the "other" frame/view.
      **/
-    bool wasFrameViewRequestedByEffect(const EffectInstancePtr& effectRequesting) const;
+    void addListener(const FrameViewRequestPtr& other);
+
+    /**
+     * @brief Returns all frame/view requests that have this frame/view as a dependency.
+     **/
+    std::list<FrameViewRequestPtr> getListeners() const;
 
     /**
      * @brief  When true, a subsequent render of this frame/view will not be allowed to read the cache
@@ -235,6 +291,12 @@ public:
      **/
     void setDistortionResults(const DistortionFunction2DPtr& results);
 
+    /**
+     * @brief The distorsion stack of upstream distorsion effects
+     **/
+    Distortion2DStackPtr getDistorsionStack() const;
+    void setDistorsionStack(const Distortion2DStackPtr& stack);
+
 private:
 
     boost::scoped_ptr<FrameViewRequestPrivate> _imp;
@@ -279,6 +341,7 @@ public:
      * @brief Get the view of the render
      **/
     ViewIdx getView() const;
+
 
     /**
      * @brief Convenience function for getParentRender()->isRenderAborted()
@@ -383,7 +446,7 @@ public:
     bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
 
     /**
-     * @brief Returns a previously requested frame/view request from roiVisitFunctor. This contains most actions
+     * @brief Returns a previously requested frame/view request from requestRender. This contains most actions
      * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
      * The time passed in parameter should always be rounded for effects that are not continuous.
      **/
@@ -393,27 +456,22 @@ public:
      * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
      * @returns True if it was created, false otherwise
      **/
-    bool getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, FrameViewRequestPtr* request);
+    bool getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, FrameViewRequestPtr* request);
 
     /**
-     * @brief Add the given canonicalRenderWindow to the rectangles requested to image at the given time and view.
-     * The final render will be made on the union of all render windows passed to this function for the given time and view.
+     * @brief Requests a render at the given time/view for the given render window (in canonical coordinates) for this node.
+     * This function will recurse upstream on all dependencies and build a list of things to render in order.
      **/
-    ActionRetCodeEnum roiVisitFunctor(TimeValue time,
-                                      ViewIdx view,
-                                      const RectD & canonicalRenderWindow,
-                                      const EffectInstancePtr& caller);
-
-
-    /**
-     * @brief Recurse on inputs of the current node using the results of getFramesNeeded
-     * and call renderRoI.
-     **/
-    ActionRetCodeEnum preRenderInputImages(TimeValue time,
-                                           ViewIdx view,
-                                           const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
-
-
+    ActionRetCodeEnum requestRender(TimeValue time,
+                                    ViewIdx view,
+                                    unsigned int mipMapLevel,
+                                    const ImagePlaneDesc& plane,
+                                    const RectD & canonicalRenderWindow,
+                                    const FrameViewRequestPtr& requester,
+                                    FrameViewRequestPtr* createdRequest);
+    
+    
+    
 private:
 
     boost::scoped_ptr<TreeRenderNodeArgsPrivate> _imp;

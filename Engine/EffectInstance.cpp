@@ -725,12 +725,7 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
         return false;
     }
 
-    RenderScale inputCombinedScale = inArgs.inputProxyScale;
-    {
-        double mipMapScale = Image::getScaleFromMipMapLevel(inArgs.inputMipMapLevel);
-        inputCombinedScale.x *= mipMapScale;
-        inputCombinedScale.y *= mipMapScale;
-    }
+    RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
 
     // Clip the RoI to the input effect RoD
     {

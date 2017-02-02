@@ -469,6 +469,7 @@ typedef boost::weak_ptr<CompNodeItem> CompNodeItemWPtr;
 typedef boost::weak_ptr<Cache> CacheWPtr;
 typedef boost::weak_ptr<Curve> CurveWPtr;
 typedef boost::weak_ptr<EffectInstance> EffectInstanceWPtr;
+typedef boost::weak_ptr<FrameViewRequest> FrameViewRequestWPtr;
 typedef boost::weak_ptr<HashableObject> HashableObjectWPtr;
 typedef boost::weak_ptr<OSGLContext> OSGLContextWPtr;
 typedef boost::weak_ptr<Image> ImageWPtr;

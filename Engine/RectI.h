@@ -428,6 +428,8 @@ public:
         y2 += dy;
     }
 
+    void roundToTileSize(int tileSizeX, int tileSizeY);
+
 #ifdef DEBUG
     void debug() const
     {

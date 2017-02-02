@@ -152,7 +152,7 @@ public:
     /**
      * @brief Get the proxy scale of the render
      **/
-    RenderScale getProxyScale() const;
+    const RenderScale& getProxyScale() const;
 
     /**
      * @brief Get the mipmaplevel of the render
@@ -162,7 +162,7 @@ public:
     /**
      * @brief Get proxy scale + mipmap scale combined
      **/
-    RenderScale getProxyMipMapScale() const;
+    const RenderScale& getProxyMipMapScale() const;
 
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer

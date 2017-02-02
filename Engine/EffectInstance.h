@@ -218,8 +218,8 @@ public:
         // The view to render
         ViewIdx view;
 
-        // The rectangle to render (in pixel coordinates)
-        RectI roi;
+        // The rectangle to render (in canonical coordinates)
+        RectD roiCanonical;
 
         // The proxy scale at which to render
         RenderScale proxyScale;
@@ -1190,73 +1190,27 @@ public:
     }
 
 
-    struct RenderRoIResults
-    {
-        // For each component requested, the image plane rendered
-        std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
-
-        // If this effect can apply distortion, this is the stack of distortions upstream to apply
-        Distortion2DStackPtr distortionStack;
-    };
+    
+    /**
+     * @brief Visits this node as a pre-pass to the actual render.
+     * This function does the following operations:
+     * - Check if the node is identity, if so it recurses on the identity input
+     * - Check if this node can render any requested plane to render if not recurses on pass-through input
+     * - Check if this node has a transform, if so recurses on the distorsion input
+     * - Check if the image is cached
+     **/
+    ActionRetCodeEnum requestRender(const FrameViewRequestPtr& requestData,
+                                    const RectD& roiCanonical,
+                                    int inputNbInRequester,
+                                    const FrameViewRequestPtr& requester);
 
     /**
-     * @brief Renders the image planes at the given time,scale and for the given view & render window.
-     * This returns a list of all planes requested in the args.
-     * @param args See the definition of the class for comments on each argument.
-     * The return code indicates whether the render succeeded or failed. Note that this function may succeed
-     * and return 0 plane if the RoI does not intersect the RoD of the effect.
+     * @brief Function that actually render the planes given by planesToRender. In output, the planes field in the results struct
+     * will be filled with the actual image planes pointers.
+     * This function must be called after preRender and the planesToRender argument must be the object returned by preRender.
      **/
-    ActionRetCodeEnum renderRoI(const RenderRoIArgs & args, RenderRoIResults* results) WARN_UNUSED_RETURN;
+    ActionRetCodeEnum launchRender(const FrameViewRequestPtr& requestData);
 
-
-    
-    struct RectToRender
-    {
-        int identityInputNumber;
-        RectI rect;
-        TimeValue identityTime;
-        ViewIdx identityView;
-    };
-
-    struct ImagePlanesToRender
-    {
-        // The list of rectangles to pass to the render action.
-        // identity rectangles will not have render called but directly
-        // copy the identity input image
-        std::list<RectToRender> rectsToRender;
-
-
-        // The planes to render. Fully cached planes are not in this list
-        std::map<ImagePlaneDesc, PlaneToRender> planes;
-
-        // The render device (CPU, OpenGL...)
-        RenderBackendTypeEnum backendType;
-
-        // For OpenGL this is the effect context dependent data
-        EffectOpenGLContextDataPtr glContextData;
-
-
-        ImagePlanesToRender()
-        : rectsToRender()
-        , planes()
-        , backendType(eRenderBackendTypeCPU)
-        , glContextData()
-        {
-        }
-    };
-
-    typedef boost::shared_ptr<ImagePlanesToRender> ImagePlanesToRenderPtr;
-    
-private:
-
-    void optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
-                               const RectI & inputsRoDIntersection,
-                               const std::list<RectI> & rectsToRender,
-                               const TimeValue time,
-                               const ViewIdx view,
-                               const RenderScale & renderMappedScale,
-                               std::list<EffectInstance::RectToRender>* finalRectsToRender);
-    
     
 public:
 
@@ -1808,12 +1762,8 @@ private:
     /**
      * @brief Launch the render action for a given render clone
      **/
-    ActionRetCodeEnum renderForClone(const OSGLContextAttacherPtr& glContext,
-                                     const RenderRoIArgs& args,
-                                     const RenderScale& renderMappedScale,
-                                     const ImagePlanesToRenderPtr & planes,
-                                     const std::bitset<4> processChannels,
-                                     const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
+    ActionRetCodeEnum renderForClone(const RenderRoIArgs& args,
+                                     const ImagePlanesToRenderPtr & planes;
 
 
 

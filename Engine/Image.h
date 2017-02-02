@@ -225,9 +225,6 @@ public:
         InitStorageArgs();
     };
 
-private:
-
-    void init(const InitStorageArgs& args);
 
 public:
 
@@ -596,7 +593,7 @@ public:
      * @brief Returns the tile at the given tileIndex.
      * An untiled image has a single tile at index 0.
      **/
-    bool getTileAt(int tileIndex, Tile* tile) const;
+    bool getTileAt(int tx, int ty, Tile* tile) const;
 
     /**
      * @brief Returns the number of tiles

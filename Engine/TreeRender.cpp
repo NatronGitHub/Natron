@@ -315,7 +315,7 @@ TreeRender::getView() const
     return _imp->view;
 }
 
-RenderScale
+const RenderScale&
 TreeRender::getProxyScale() const
 {
     return _imp->proxyScale;
@@ -327,7 +327,7 @@ TreeRender::getMipMapLevel() const
     return _imp->mipMapLevel;
 }
 
-RenderScale
+const RenderScale&
 TreeRender::getProxyMipMapScale() const
 {
     return _imp->proxyMipMapScale;
@@ -678,7 +678,7 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     // Cycle through the tree to make sure all nodes render once with the appropriate RoI
     {
         
-        ActionRetCodeEnum stat = rootNodeArgs->roiVisitFunctor(time, view, canonicalRoI, effectToRender);
+        ActionRetCodeEnum stat = rootNodeArgs->requestRender(time, view, canonicalRoI, effectToRender);
         
         if (isFailureRetCode(stat)) {
             state = stat;

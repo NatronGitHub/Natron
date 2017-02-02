@@ -24,27 +24,37 @@
 
 
 #include "ImagePrivate.h"
+#include <QDebug>
 
 NATRON_NAMESPACE_ENTER;
 
 void
-ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int tx, int ty, int nTilesWidth, int tileSizeX, int tileSizeY)
+ImagePrivate::initTileAndFetchFromCache(int tx, int ty, int tileSizeX, int tileSizeY)
 {
     CachePtr cache = appPTR->getCache();
 
-    int tile_i = nTilesWidth * ty + tx;
-    Image::Tile& tile = tiles[tile_i];
+    TileCoord coord = {tx, ty};
 
-    const std::string& planeID = args.layer.getPlaneID();
+    // This tile was already initialized.
+    {
+        TileMap::const_iterator found = tiles.find(coord);
+        if (found != tiles.end()) {
+            assert(found->second.perChannelTile.size() > 0);
+            return;
+        }
+    }
+    Image::Tile& tile = tiles[coord];
+
+    const std::string& planeID = layer.getPlaneID();
 
     // How many buffer should we make for a tile
     // A mono channel image should have one per channel
     std::vector<int> channelIndices;
-    switch (args.bufferFormat) {
+    switch (bufferFormat) {
         case eImageBufferLayoutMonoChannelTiled: {
 
-            for (int nc = 0; nc < args.layer.getNumComponents(); ++nc) {
-                if (args.components[nc]) {
+            for (int nc = 0; nc < layer.getNumComponents(); ++nc) {
+                if (enabledChannels[nc]) {
                     channelIndices.push_back(nc);
                 }
             }
@@ -56,23 +66,23 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
     }
 
 
-    switch (args.bufferFormat) {
+    switch (bufferFormat) {
         case eImageBufferLayoutMonoChannelTiled:
             assert(tileSizeX != 0 && tileSizeY != 0);
             // The tile bounds may not necessarily be a square if we are on the edge.
-            tile.tileBounds.x1 = args.bounds.x1 + (tx * tileSizeX);
-            tile.tileBounds.y1 = args.bounds.y1 + (ty * tileSizeY);
-            tile.tileBounds.x2 = std::min(tile.tileBounds.x1 + tileSizeX, args.bounds.x2);
-            tile.tileBounds.y2 = std::min(tile.tileBounds.y1 + tileSizeY, args.bounds.y2);
+            tile.tileBounds.x1 = std::max(tx, originalBounds.x1);
+            tile.tileBounds.y1 = std::max(ty, originalBounds.y1);
+            tile.tileBounds.x2 = std::min(tx + tileSizeX, originalBounds.x2);
+            tile.tileBounds.y2 = std::min(ty + tileSizeY, originalBounds.y2);
             break;
         case eImageBufferLayoutRGBACoplanarFullRect:
         case eImageBufferLayoutRGBAPackedFullRect:
             // Single tile that covers the entire image
-            tile.tileBounds = args.bounds;
+            tile.tileBounds = originalBounds;
             break;
     }
 
-
+    assert(channelIndices.size() > 0);
     tile.perChannelTile.resize(channelIndices.size());
 
     for (std::size_t c = 0; c < channelIndices.size(); ++c) {
@@ -81,9 +91,9 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
         thisChannelTile.channelIndex = channelIndices[c];
 
         std::string channelName;
-        switch (args.bufferFormat) {
+        switch (bufferFormat) {
             case eImageBufferLayoutMonoChannelTiled: {
-                const std::vector<std::string>& compNames = args.layer.getChannels();
+                const std::vector<std::string>& compNames = layer.getChannels();
                 assert(thisChannelTile.channelIndex >= 0 && thisChannelTile.channelIndex < (int)compNames.size());
                 channelName = planeID + "." + compNames[thisChannelTile.channelIndex];
             }   break;
@@ -102,33 +112,33 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
         CacheImageTileStoragePtr cachedBuffer;
         {
             // Allocate a new entry
-            switch (args.storage) {
+            switch (storage) {
                 case eStorageModeDisk: {
                     cachedBuffer.reset(new CacheImageTileStorage(cache));
                     thisChannelTile.buffer = cachedBuffer;
                     boost::shared_ptr<AllocateMemoryArgs> a(new AllocateMemoryArgs());
-                    a->bitDepth = args.bitdepth;
+                    a->bitDepth = bitdepth;
                     allocArgs = a;
                 }   break;
                 case eStorageModeGLTex: {
                     GLImageStoragePtr buffer(new GLImageStorage());
                     thisChannelTile.buffer = buffer;
                     boost::shared_ptr<GLAllocateMemoryArgs> a(new GLAllocateMemoryArgs());
-                    a->textureTarget = args.textureTarget;
-                    a->glContext = args.glContext;
+                    a->textureTarget = textureTarget;
+                    a->glContext = glContext;
                     a->bounds = tile.tileBounds;
-                    a->bitDepth = args.bitdepth;
+                    a->bitDepth = bitdepth;
                     allocArgs = a;
                 }   break;
                 case eStorageModeRAM: {
                     RAMImageStoragePtr buffer(new RAMImageStorage());
                     thisChannelTile.buffer = buffer;
                     boost::shared_ptr<RAMAllocateMemoryArgs> a(new RAMAllocateMemoryArgs());
-                    a->bitDepth = args.bitdepth;
+                    a->bitDepth = bitdepth;
                     a->bounds = tile.tileBounds;
 
                     if (thisChannelTile.channelIndex == -1) {
-                        a->numComponents = (std::size_t)args.layer.getNumComponents();
+                        a->numComponents = (std::size_t)layer.getNumComponents();
                     } else {
                         a->numComponents = 1;
                     }
@@ -141,7 +151,7 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
             }
             assert(allocArgs && thisChannelTile.buffer);
 
-            if (!args.delayAllocation) {
+            if (tilesAllocated) {
                 // Allocate the memory for the tile.
                 // This may throw a std::bad_alloc
                 thisChannelTile.buffer->allocateMemory(*allocArgs);
@@ -154,14 +164,14 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
         // This is the key for the tile at the requested draft/mipmap level
         ImageTileKeyPtr requestedScaleKey;
         if (cachePolicy != eCacheAccessModeNone) {
-            requestedScaleKey.reset(new ImageTileKey(args.nodeTimeInvariantHash,
-                                                     args.time,
-                                                     args.view,
+            requestedScaleKey.reset(new ImageTileKey(nodeHash,
+                                                     time,
+                                                     view,
                                                      channelName,
-                                                     args.proxyScale,
-                                                     args.mipMapLevel,
-                                                     args.isDraft,
-                                                     args.bitdepth,
+                                                     proxyScale,
+                                                     mipMapLevel,
+                                                     isDraftImage,
+                                                     bitdepth,
                                                      tx,
                                                      ty));
             cachedBuffer->setKey(requestedScaleKey);
@@ -184,12 +194,12 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
             // since downscaling is handled by OpenGL itself
             int nMipMapLookups;
             unsigned firstLookupLevel;
-            if (args.storage != eStorageModeRAM && args.storage != eStorageModeDisk) {
+            if (storage != eStorageModeRAM && storage != eStorageModeDisk) {
                 nMipMapLookups = 1;
                 firstLookupLevel = 0;
             } else {
-                nMipMapLookups = (args.mipMapLevel != 0) ? 2 : 1;
-                firstLookupLevel = args.mipMapLevel;
+                nMipMapLookups = (mipMapLevel != 0) ? 2 : 1;
+                firstLookupLevel = mipMapLevel;
             }
 
             // Retain the pointer give by the Cache::get function for the key we are interested in.
@@ -201,20 +211,20 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
                 const unsigned int lookupLevel = mipmap_i == 0 ? firstLookupLevel : 0;
 
                 // Only look for a draft tile in the cache if the image allows draft
-                const int nDraftLookups = args.isDraft ? 2 : 1;
+                const int nDraftLookups = isDraftImage ? 2 : 1;
 
                 for (int draft_i = 0; draft_i < nDraftLookups; ++draft_i) {
 
                     const bool useDraft = (const bool)draft_i;
 
-                    ImageTileKeyPtr keyToReadCache(new ImageTileKey(args.nodeTimeInvariantHash,
-                                                                    args.time,
-                                                                    args.view,
+                    ImageTileKeyPtr keyToReadCache(new ImageTileKey(nodeHash,
+                                                                    time,
+                                                                    view,
                                                                     channelName,
-                                                                    args.proxyScale,
+                                                                    proxyScale,
                                                                     lookupLevel,
                                                                     useDraft,
-                                                                    args.bitdepth,
+                                                                    bitdepth,
                                                                     tx,
                                                                     ty));
 
@@ -224,7 +234,7 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
                     // Store the entry locker pointer
                     thisChannelTile.entryLocker = cache->get(cachedBuffer);
 
-                    if (useDraft == args.isDraft && lookupLevel == args.mipMapLevel) {
+                    if (useDraft == isDraftImage && lookupLevel == mipMapLevel) {
                         assert(requestedScaleKey->getHash() == keyToReadCache->getHash());
                         requestedScaleLocker = thisChannelTile.entryLocker;
                     }
@@ -237,7 +247,7 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
                 } // for each draft mode to check
                 if (isCached) {
 
-                    if (args.storage == eStorageModeRAM || args.storage == eStorageModeDisk) {
+                    if (storage == eStorageModeRAM || storage == eStorageModeDisk) {
                         // If the image fetched is at a upper scale, we must downscale
                         if (lookupLevel != firstLookupLevel) {
                             assert(firstLookupLevel > lookupLevel);
@@ -253,24 +263,25 @@ ImagePrivate::initTileAndFetchFromCache(const Image::InitStorageArgs& args, int 
                                 tmpArgs.renderArgs = renderArgs;
                                 tmpArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
                                 tmpArgs.layer = channelIndices.size() > 1 ? ImagePlaneDesc::getAlphaComponents() : layer;
-                                tmpArgs.bitdepth = args.bitdepth;
-                                tmpArgs.proxyScale = args.proxyScale;
-                                tmpArgs.mipMapLevel = args.mipMapLevel;
+                                tmpArgs.bitdepth = bitdepth;
+                                tmpArgs.proxyScale = proxyScale;
+                                tmpArgs.mipMapLevel = mipMapLevel;
                                 tmpArgs.externalBuffer = thisChannelTile.buffer;
-                                tmpArgs.nodeTimeInvariantHash = args.nodeTimeInvariantHash;
-                                tmpArgs.time = args.time;
-                                tmpArgs.view = args.view;
+                                tmpArgs.storage = thisChannelTile.buffer->getStorageMode();
+                                tmpArgs.nodeTimeInvariantHash = nodeHash;
+                                tmpArgs.time = time;
+                                tmpArgs.view = view;
                                 fullScaleImage = Image::create(tmpArgs);
                             }
 
                             ImagePtr downscaledImage = fullScaleImage->downscaleMipMap(tile.tileBounds, downscaleLevels);
 
                             assert(downscaledImage->_imp->tiles.size() == 1);
-                            assert(downscaledImage->_imp->tiles[0].perChannelTile.size() == 1);
+                            assert(downscaledImage->_imp->tiles.begin()->second.perChannelTile.size() == 1);
 
                             // Since we downscaled a single tile of the same size and same number of components and same bitdepth
                             // as this tile, we can just copy the pointer
-                            thisChannelTile.buffer = downscaledImage->_imp->tiles[0].perChannelTile[0].buffer;
+                            thisChannelTile.buffer = downscaledImage->_imp->tiles.begin()->second.perChannelTile[0].buffer;
 
                         } // must downscale
                     }
@@ -303,10 +314,12 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
         throw std::bad_alloc();
     }
 
-    tiles[0].perChannelTile.resize(1);
-    tiles[0].tileBounds = args.bounds;
+    TileCoord coord = {0,0};
+    Image::Tile &tile = tiles[coord];
+    tile.perChannelTile.resize(1);
+    tile.tileBounds = args.bounds;
 
-    Image::MonoChannelTile& perChannelTile = tiles[0].perChannelTile[0];
+    Image::MonoChannelTile& perChannelTile = tile.perChannelTile[0];
 
     GLImageStoragePtr isGLBuffer = toGLImageStorage(args.externalBuffer);
     CacheImageTileStoragePtr isMMAPBuffer = toCacheImageTileStorage(args.externalBuffer);
@@ -349,16 +362,6 @@ ImagePrivate::initFromExternalBuffer(const Image::InitStorageArgs& args)
 
 } // initFromExternalBuffer
 
-int
-ImagePrivate::getNTilesPerLine() const
-{
-    if (tiles.empty()) {
-        return 0;
-    }
-    int tileSizeX = tiles[0].tileBounds.width();
-    return bounds.width() / tileSizeX;
-}
-
 
 void
 ImagePrivate::insertTilesInCache()
@@ -371,8 +374,9 @@ ImagePrivate::insertTilesInCache()
 
     bool renderAborted = renderArgs->isRenderAborted();
 
-    for (std::size_t tile_i = 0; tile_i < tiles.size(); ++tile_i) {
-        Image::Tile& tile = tiles[tile_i];
+    for (TileMap::iterator it = tiles.begin(); it != tiles.end(); ++it) {
+
+        Image::Tile& tile = it->second;
 
         for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
 
@@ -392,34 +396,6 @@ ImagePrivate::insertTilesInCache()
     } // for each tile
 } // insertTilesInCache
 
-const Image::Tile*
-ImagePrivate::getTile(int x, int y) const
-{
-    if (!bounds.contains(x, y)) {
-        // Out of bounds
-        return 0;
-    }
-    if (tiles.size() == 1) {
-        // Single tiled image
-        return &tiles[0];
-    }
-
-    int tileSizeX = tiles[0].tileBounds.width();
-    int tileSizeY = tiles[0].tileBounds.height();
-
-    // Tiles must be aligned
-    assert(bounds.width() % tileSizeX == 0);
-    assert(bounds.height() % tileSizeY == 0);
-
-    int nTilesPerLine = bounds.width() / tileSizeX;
-    int tileX = std::floor((double)(x - bounds.x1) / tileSizeX);
-    int tileY = std::floor((double)(y - bounds.y1) / tileSizeY);
-
-    int tile_i = tileY * nTilesPerLine + tileX;
-    assert(tile_i >= 0 && tile_i < (int)tiles.size());
-    return &tiles[tile_i];
-    
-} // getTile
 
 RectI
 ImagePrivate::getTilesCoordinates(const RectI& pixelCoordinates) const
@@ -427,28 +403,19 @@ ImagePrivate::getTilesCoordinates(const RectI& pixelCoordinates) const
     if (tiles.empty()) {
         return RectI();
     }
-    int tileSizeX = tiles[0].tileBounds.width();
-    int tileSizeY = tiles[0].tileBounds.height();
 
-    // Round the pixel coords to the tile size
-    RectI roundedPixelCoords;
-    roundedPixelCoords.x1 = (int)std::floor( ( (double)pixelCoordinates.x1 ) / tileSizeX ) * tileSizeX;
-    roundedPixelCoords.y1 = (int)std::floor( ( (double)pixelCoordinates.y1 ) / tileSizeY ) * tileSizeY;
-    roundedPixelCoords.x2 = (int)std::ceil( ( (double)pixelCoordinates.x2 ) / tileSizeX ) * tileSizeX;
-    roundedPixelCoords.y2 = (int)std::ceil( ( (double)pixelCoordinates.y2 ) / tileSizeY ) * tileSizeY;
+    RectI ret = pixelCoordinates;
+    ret = pixelCoordinates;
 
-    // Ensure the tiles are aligned
-    assert(((roundedPixelCoords.x1 - bounds.x1) % tileSizeX) == 0);
-    assert(((roundedPixelCoords.y1 - bounds.y1) % tileSizeY) == 0);
-    assert(((roundedPixelCoords.x2 - bounds.x1) % tileSizeX) == 0);
-    assert(((roundedPixelCoords.y2 - bounds.y1) % tileSizeY) == 0);
+    // Get the tile size from the first tile
+    const Image::Tile& firstTile = tiles.begin()->second;
 
-    RectI tilesRect;
-    tilesRect.x1 = (roundedPixelCoords.x1 - bounds.x1) / tileSizeX;
-    tilesRect.y1 = (roundedPixelCoords.y1 - bounds.y1) / tileSizeY;
-    tilesRect.x2 = (roundedPixelCoords.x2 - bounds.x1) / tileSizeX;
-    tilesRect.y2 = (roundedPixelCoords.y2 - bounds.y1) / tileSizeY;
-    return tilesRect;
+    // Round to the tile size
+    ret.roundToTileSize(firstTile.tileBounds.width(), firstTile.tileBounds.height());
+
+    // Intersect to the bounds rounded to tile size.
+    ret.intersect(boundsRoundedToTile, &ret);
+    return ret;
 } // getTilesCoordinates
 
 
@@ -482,8 +449,8 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         // the image to CPU
         if (toImage.getStorageMode() == eStorageModeGLTex) {
 
-            GLImageStoragePtr isGlEntry = toGLImageStorage(toImage._imp->tiles[0].perChannelTile[0].buffer);
-            GLImageStoragePtr otherIsGlEntry = toGLImageStorage(fromImage._imp->tiles[0].perChannelTile[0].buffer);
+            GLImageStoragePtr isGlEntry = toGLImageStorage(toImage._imp->tiles.begin()->second.perChannelTile[0].buffer);
+            GLImageStoragePtr otherIsGlEntry = toGLImageStorage(fromImage._imp->tiles.begin()->second.perChannelTile[0].buffer);
             assert(isGlEntry && otherIsGlEntry);
             if (isGlEntry->getOpenGLContext() != otherIsGlEntry->getOpenGLContext()) {
                 ImagePtr tmpImage;
@@ -546,7 +513,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
 class CopyUntiledToTileProcessor : public MultiThreadProcessorBase
 {
 
-    std::vector<int> _tileIndices;
+    std::vector<TileCoord> _tileIndices;
     ImagePrivate* _imp;
     StorageModeEnum _toStorage;
     ImageBufferLayoutEnum _toBufferFormat;
@@ -568,7 +535,7 @@ public:
 
     }
 
-    void setData(const Image::CopyPixelsArgs* args, ImagePrivate* imp, StorageModeEnum toStorage, ImageBufferLayoutEnum toBufferFormat, ImagePrivate* fromImage, ImageBufferLayoutEnum fromBufferFormat, StorageModeEnum fromStorage, const std::vector<int>& tileIndices)
+    void setData(const Image::CopyPixelsArgs* args, ImagePrivate* imp, StorageModeEnum toStorage, ImageBufferLayoutEnum toBufferFormat, ImagePrivate* fromImage, ImageBufferLayoutEnum fromBufferFormat, StorageModeEnum fromStorage, const std::vector<TileCoord>& tileIndices)
     {
         _tileIndices = tileIndices;
         _imp = imp;
@@ -601,11 +568,17 @@ public:
 
         for (int i = fromIndex; i < toIndex; ++i) {
             // This is the tile to write to
-            const Image::Tile& thisTile = _imp->tiles[_tileIndices[i]];
+
+            TileMap::const_iterator foundTile = _imp->tiles.find(_tileIndices[i]);
+            assert(foundTile != _imp->tiles.end());
+            if (foundTile == _imp->tiles.end()) {
+                return eActionStatusFailed;
+            }
+            const Image::Tile& thisTile = foundTile->second;
 
             thisTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(_fromImage->tiles[0], _fromStorage, _fromBufferFormat, thisTile, _toStorage, _toBufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(_fromImage->tiles.begin()->second, _fromStorage, _fromBufferFormat, thisTile, _toStorage, _toBufferFormat, argsCpy, renderArgs);
         }
         return eActionStatusOK;
     }
@@ -615,29 +588,34 @@ void
 ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::CopyPixelsArgs& args)
 {
     assert(bufferFormat == eImageBufferLayoutMonoChannelTiled);
-    assert(bounds.contains(args.roi) && fromImage._imp->bounds.contains(args.roi));
+    assert(originalBounds.contains(args.roi) && fromImage._imp->originalBounds.contains(args.roi));
 
     // If this image is tiled, the other image must not be tiled
     assert(fromImage._imp->bufferFormat != eImageBufferLayoutMonoChannelTiled);
 
-    assert(fromImage._imp->tiles[0].perChannelTile[0].channelIndex == -1);
+    assert(fromImage._imp->tiles.begin()->second.perChannelTile[0].channelIndex == -1);
 
-    const int nTilesPerLine = getNTilesPerLine();
     const RectI tilesRect = getTilesCoordinates(args.roi);
+    if (tilesRect.isNull()) {
+        return;
+    }
 
+    const Image::Tile& firstTile = tiles.begin()->second;
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
-    const StorageModeEnum toStorage = tiles[0].perChannelTile[0].buffer->getStorageMode();
+    const StorageModeEnum toStorage = firstTile.perChannelTile[0].buffer->getStorageMode();
 
 
+    int tileSizeX,tileSizeY;
+    Cache::getTileSizePx(firstTile.perChannelTile[0].buffer->getBitDepth(), &tileSizeX, &tileSizeY);
+    assert(tilesRect.width() % tileSizeX == 0 && tilesRect.height() % tileSizeY == 0);
 
 
-    std::vector<int> tileIndices;
+    std::vector<TileCoord> tileIndices;
     // Copy each tile individually
-    for (int ty = tilesRect.y1; ty < tilesRect.y2; ++ty) {
-        for (int tx = tilesRect.x1; tx < tilesRect.x2; ++tx) {
-            int tile_i = tx + ty * nTilesPerLine;
-            assert(tile_i >= 0 && tile_i < (int)tiles.size());
-            tileIndices.push_back(tile_i);
+    for (int ty = tilesRect.y1; ty < tilesRect.y2; ty += tileSizeY) {
+        for (int tx = tilesRect.x1; tx < tilesRect.x2; tx += tileSizeX) {
+            TileCoord c = {tx, ty};
+            tileIndices.push_back(c);
         } // for all tiles horizontally
     } // for all tiles vertically
 
@@ -656,7 +634,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
             const Image::Tile& thisTile = tiles[tileIndices[i]];
             thisTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderArgs);
         }
     }
     
@@ -666,7 +644,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
 class CopyTiledToUntiledProcessor : public MultiThreadProcessorBase
 {
 
-    std::vector<int> _tileIndices;
+    std::vector<TileCoord> _tileIndices;
     ImagePrivate* _imp;
     StorageModeEnum _toStorage;
     ImageBufferLayoutEnum _toBufferFormat;
@@ -688,7 +666,7 @@ public:
 
     }
 
-    void setData(const Image::CopyPixelsArgs* args, ImagePrivate* imp, StorageModeEnum toStorage, ImageBufferLayoutEnum toBufferFormat, ImagePrivate* fromImage, ImageBufferLayoutEnum fromBufferFormat, StorageModeEnum fromStorage, const std::vector<int>& tileIndices)
+    void setData(const Image::CopyPixelsArgs* args, ImagePrivate* imp, StorageModeEnum toStorage, ImageBufferLayoutEnum toBufferFormat, ImagePrivate* fromImage, ImageBufferLayoutEnum fromBufferFormat, StorageModeEnum fromStorage, const std::vector<TileCoord>& tileIndices)
     {
         _tileIndices = tileIndices;
         _imp = imp;
@@ -721,11 +699,15 @@ public:
 
         for (int i = fromIndex; i < toIndex; ++i) {
             // This is the tile to write to
-            const Image::Tile& fromTile = _fromImage->tiles[_tileIndices[i]];
-
+            TileMap::const_iterator foundTile = _fromImage->tiles.find(_tileIndices[i]);
+            assert(foundTile != _imp->tiles.end());
+            if (foundTile == _imp->tiles.end()) {
+                return eActionStatusFailed;
+            }
+            const Image::Tile& fromTile = foundTile->second;
             fromTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromTile, _fromStorage, _fromBufferFormat, _imp->tiles[0], _toStorage, _toBufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(fromTile, _fromStorage, _fromBufferFormat, _imp->tiles.begin()->second, _toStorage, _toBufferFormat, argsCpy, renderArgs);
 
         }
         return eActionStatusOK;
@@ -737,24 +719,31 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
 {
     // The input image may or may not be tiled, but we surely are not.
     assert(bufferFormat != eImageBufferLayoutMonoChannelTiled);
-    assert(bounds.contains(args.roi) && fromImage._imp->bounds.contains(args.roi));
-    assert(tiles[0].perChannelTile.size() == 1 && tiles[0].perChannelTile[0].channelIndex == -1);
-    assert(tiles[0].perChannelTile[0].channelIndex == -1);
+    assert(originalBounds.contains(args.roi) && fromImage._imp->originalBounds.contains(args.roi));
+    assert(tiles.begin()->second.perChannelTile.size() == 1 && tiles.begin()->second.perChannelTile[0].channelIndex == -1);
+    assert(tiles.begin()->second.perChannelTile[0].channelIndex == -1);
 
-    const int nTilesPerLine = fromImage._imp->getNTilesPerLine();
     const RectI tilesRect = fromImage._imp->getTilesCoordinates(args.roi);
+    if (tilesRect.isNull()) {
+        return;
+    }
 
+    const Image::Tile& firstTile = tiles.begin()->second;
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
-    const StorageModeEnum toStorage = tiles[0].perChannelTile[0].buffer->getStorageMode();
+    const StorageModeEnum toStorage = firstTile.perChannelTile[0].buffer->getStorageMode();
     Image::CopyPixelsArgs argsCpy = args;
 
-    std::vector<int> tileIndices;
+    int tileSizeX,tileSizeY;
+    Cache::getTileSizePx(firstTile.perChannelTile[0].buffer->getBitDepth(), &tileSizeX, &tileSizeY);
+    assert(tilesRect.width() % tileSizeX == 0 && tilesRect.height() % tileSizeY == 0);
+
+
+    std::vector<TileCoord> tileIndices;
     // Copy each tile individually
-    for (int ty = tilesRect.y1; ty < tilesRect.y2; ++ty) {
-        for (int tx = tilesRect.x1; tx < tilesRect.x2; ++tx) {
-            int tile_i = tx + ty * nTilesPerLine;
-            assert(tile_i >= 0 && tile_i < (int)fromImage._imp->tiles.size());
-            tileIndices.push_back(tile_i);
+    for (int ty = tilesRect.y1; ty < tilesRect.y2; ty += tileSizeY) {
+        for (int tx = tilesRect.x1; tx < tilesRect.x2; tx += tileSizeX) {
+            TileCoord c = {tx, ty};
+            tileIndices.push_back(c);
         } // for all tiles horizontally
     } // for all tiles vertically
 
@@ -773,7 +762,7 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
             const Image::Tile& fromTile = fromImage._imp->tiles[tileIndices[i]];
             fromTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles[0], toStorage, bufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, argsCpy, renderArgs);
         }
     }
 
@@ -784,15 +773,15 @@ ImagePrivate::copyUntiledImageToUntiledImage(const Image& fromImage, const Image
 {
     // The input image may or may not be tiled, but we surely are not.
     assert(bufferFormat != eImageBufferLayoutMonoChannelTiled);
-    assert(bounds.contains(args.roi) && fromImage._imp->bounds.contains(args.roi));
+    assert(originalBounds.contains(args.roi) && fromImage._imp->originalBounds.contains(args.roi));
     assert(fromImage._imp->tiles.size() == 1 && tiles.size() == 1);
-    assert(tiles[0].perChannelTile.size() == 1 && tiles[0].perChannelTile[0].channelIndex == -1);
-    assert(fromImage._imp->tiles[0].perChannelTile.size() == 1 && fromImage._imp->tiles[0].perChannelTile[0].channelIndex == -1);
+    assert(tiles.begin()->second.perChannelTile.size() == 1 && tiles.begin()->second.perChannelTile[0].channelIndex == -1);
+    assert(fromImage._imp->tiles.begin()->second.perChannelTile.size() == 1 && fromImage._imp->tiles.begin()->second.perChannelTile[0].channelIndex == -1);
 
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
-    const StorageModeEnum toStorage = tiles[0].perChannelTile[0].buffer->getStorageMode();
+    const StorageModeEnum toStorage = tiles.begin()->second.perChannelTile[0].buffer->getStorageMode();
 
-    ImagePrivate::copyRectangle(fromImage._imp->tiles[0], fromStorage, fromImage._imp->bufferFormat, tiles[0], toStorage, bufferFormat, args, renderArgs);
+    ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, args, renderArgs);
 
 } // copyUntiledImageToUntiledImage
 
@@ -816,7 +805,7 @@ halveImageForInternal(const void* srcPtrs[4],
     const int srcRowElementsCount = srcBounds.width() * srcPixelStride;
 
 
-    for (int y = 0; y < dstBounds.height(); ++y) {
+    for (int y = dstBounds.y1; y < dstBounds.y2; ++y) {
 
         // The current dst row, at y, covers the src rows y*2 (thisRow) and y*2+1 (nextRow).
         const int srcy = y * 2;
@@ -828,7 +817,7 @@ halveImageForInternal(const void* srcPtrs[4],
         const int sumH = (int)pickNextRow + (int)pickThisRow;
         assert(sumH == 1 || sumH == 2);
 
-        for (int x = 0; x < dstBounds.width(); ++x) {
+        for (int x = dstBounds.x1; x < dstBounds.x2; ++x) {
 
             // The current dst col, at y, covers the src cols x*2 (thisCol) and x*2+1 (nextCol).
             const int srcx = x * 2;

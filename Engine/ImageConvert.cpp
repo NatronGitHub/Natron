@@ -246,7 +246,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                             sourcePixel = 0;
                         }
 #                 ifdef DEBUG
-                        assert(sourcePixel == sourcePixel); // check for NaN
+                     //   assert(sourcePixel == sourcePixel); // check for NaN
 #                 endif
                         DSTPIX pix;
                         if ( (k == 3) || (!srcLut && !dstLut) ) {

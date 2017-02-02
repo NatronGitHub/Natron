@@ -109,6 +109,7 @@ ImageStorageBase::allocateMemoryFromSetArgs()
             return;
         }
         args = _imp->allocArgs;
+        _imp->allocArgs.reset();
         if (_imp->allocated) {
             return;
         }

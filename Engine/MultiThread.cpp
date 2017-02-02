@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated-register)
@@ -74,11 +75,47 @@ struct MultiThreadPrivate
 {
 
     PerThreadMultiThreadDataMap threadsData;
+    mutable QReadWriteLock threadsDataMutex;
 
     MultiThreadPrivate()
     : threadsData()
+    , threadsDataMutex()
     {
 
+    }
+
+    void pushThreadIndex(QThread* thread, unsigned int index)
+    {
+        QWriteLocker k(&threadsDataMutex);
+        MultiThreadThreadData& data = threadsData[thread];
+        data.indices.push_back(index);
+    }
+    void popThreadIndex(QThread* thread)
+    {
+        QWriteLocker k(&threadsDataMutex);
+        PerThreadMultiThreadDataMap::iterator foundThread = threadsData.find(thread);
+        assert(foundThread != threadsData.end());
+        if (foundThread != threadsData.end()) {
+            assert(!foundThread->second.indices.empty());
+            foundThread->second.indices.pop_back();
+            if (foundThread->second.indices.empty()) {
+                threadsData.erase(foundThread);
+            }
+        }
+    }
+
+    bool getThreadIndex(QThread* thread, unsigned int* index) const
+    {
+        QReadLocker k(&threadsDataMutex);
+        PerThreadMultiThreadDataMap::const_iterator foundThread = threadsData.find(thread);
+        if (foundThread == threadsData.end()) {
+            return false;
+        }
+        if (foundThread->second.indices.empty()) {
+            return false;
+        }
+        *index = foundThread->second.indices.back();
+        return true;
     }
 };
 
@@ -102,8 +139,7 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
 
     QThread* spawnedThread = QThread::currentThread();
 
-    MultiThreadThreadData& spawnedThreadData = imp->threadsData[spawnedThread];
-    spawnedThreadData.indices.push_back(threadIndex);
+    imp->pushThreadIndex(spawnedThread, threadIndex);
 
     // If we launched the functor in a new thread,
     // this thread doesn't have any TLS set.
@@ -125,7 +161,7 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
     }
 
     // Reset back the index otherwise it could mess up the indices if the same thread is re-used
-    spawnedThreadData.indices.pop_back();
+    imp->popThreadIndex(spawnedThread);
 
     // If we used TLS on this thread, clean it up.
     if (spawnedThread != spawnerThread) {
@@ -168,9 +204,7 @@ private:
     {
         assert(_threadIndex < _threadMax);
 
-        MultiThreadThreadData& spawnedThreadData = _imp->threadsData[this];
-        spawnedThreadData.indices.push_back(_threadIndex);
-
+        _imp->pushThreadIndex(this, _threadIndex);
 
         // This thread doesn't have any TLS set.
         // However some functions in the OpenFX API might require it.
@@ -190,7 +224,7 @@ private:
         }
 
         // Reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        spawnedThreadData.indices.pop_back();
+        _imp->popThreadIndex(this);
 
         // If we used TLS on this thread, clean it up.
         appPTR->getAppTLS()->cleanupTLSForThread();
@@ -393,15 +427,9 @@ MultiThread::getCurrentThreadIndex(unsigned int *threadIndex)
 
     // Get the global multi-thread handler data
     MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
-
-    PerThreadMultiThreadDataMap::const_iterator foundThread = imp->threadsData.find(thisThread);
-    if (foundThread == imp->threadsData.end()) {
+    if (!imp->getThreadIndex(thisThread, threadIndex)) {
         return eActionStatusFailed;
     }
-    if (foundThread->second.indices.empty()) {
-        return eActionStatusFailed;
-    }
-    *threadIndex = foundThread->second.indices.back();
     return eActionStatusOK;
 }
 

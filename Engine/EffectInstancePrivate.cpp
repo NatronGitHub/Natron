@@ -69,29 +69,35 @@ EffectInstance::Implementation::Implementation(const Implementation& other)
 
 }
 
+RenderScale
+EffectInstance::Implementation::getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale)
+{
+    RenderScale ret = proxyScale;
+    double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
+    ret.x *= mipMapScale;
+    ret.y *= mipMapScale;
+    return ret;
+}
 
 ActionRetCodeEnum
-EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
-                                                     const FrameViewRequestPtr& requestPassData,
-                                                     const RectI& roi,
-                                                     RenderBackendTypeEnum* renderBackend,
-                                                     OSGLContextPtr *glRenderContext)
+EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend)
 {
     // Default to CPU
     *renderBackend = eRenderBackendTypeCPU;
 
-    TreeRenderPtr render = args.renderArgs->getParentRender();
+    TreeRenderNodeArgsPtr renderArgs = requestPassData->getRenderArgs();
+    TreeRenderPtr render = renderArgs->getParentRender();
     OSGLContextPtr glGpuContext = render->getGPUOpenGLContext();
     OSGLContextPtr glCpuContext = render->getCPUOpenGLContext();
 
-    bool canDoOpenGLRendering = (args.renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNeeded ||
-                                 args.renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportYes)
-    && args.allowGPURendering && glGpuContext;
+    bool canDoOpenGLRendering = (renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNeeded ||
+                                 renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportYes);
 
+    
     if (canDoOpenGLRendering) {
 
         // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-        if (args.renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
+        if (renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
 
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             _publicInterface->setPersistentMessage(eMessageTypeError, message.toStdString());
@@ -102,7 +108,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
         *renderBackend = eRenderBackendTypeOpenGL;
 
         // If the plug-in knows how to render on CPU, check if we should actually render on CPU instead.
-        if (args.renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportYes) {
+        if (renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportYes) {
 
             // User want to force caching of this node but we cannot cache OpenGL renders, so fallback on CPU.
             if ( _publicInterface->getNode()->isForceCachingEnabled() ) {
@@ -111,7 +117,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
 
             // If this image is requested multiple times , do not render it on OpenGL since we do not use the cache.
             if (*renderBackend == eRenderBackendTypeOpenGL) {
-                if (requestPassData->getFramesNeededVisitsCount() > 1) {
+                if (requestPassData->getListeners().size() > 1) {
                     *renderBackend = eRenderBackendTypeCPU;
                 }
             }
@@ -126,19 +132,15 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
             }
         }
 
-    }
+    } // canDoOpenGLRendering
 
-
-    if (*renderBackend == eRenderBackendTypeOpenGL) {
-        *glRenderContext = glGpuContext;
-    } else {
+    if (*renderBackend != eRenderBackendTypeOpenGL) {
 
         // If implementation of the render is OpenGL but it can support OSMesa, fallback on OSMesa
-        bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa() && glCpuContext;
+        bool supportsOSMesa = _publicInterface->canCPUImplementationSupportOSMesa();
         if (supportsOSMesa) {
-            if ( (roi.width() < (*glRenderContext)->getMaxOpenGLWidth()) &&
-                ( roi.height() < (*glRenderContext)->getMaxOpenGLHeight()) ) {
-                *glRenderContext = glCpuContext;
+            if ( (roi.width() < (glCpuContext)->getMaxOpenGLWidth()) &&
+                ( roi.height() < (glCpuContext)->getMaxOpenGLHeight()) ) {
                 *renderBackend = eRenderBackendTypeOSMesa;
             }
         }
@@ -148,8 +150,7 @@ EffectInstance::Implementation::resolveRenderBackend(const RenderRoIArgs & args,
 } // resolveRenderBackend
 
 CacheAccessModeEnum
-EffectInstance::Implementation::shouldRenderUseCache(const RenderRoIArgs & args,
-                                                     const FrameViewRequestPtr& requestPassData)
+EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& requestPassData)
 {
     bool retSet = false;
     CacheAccessModeEnum ret = eCacheAccessModeNone;
@@ -160,9 +161,10 @@ EffectInstance::Implementation::shouldRenderUseCache(const RenderRoIArgs & args,
         ret = eCacheAccessModeNone;
     }
 
+    TreeRenderNodeArgsPtr renderArgs = requestPassData->getRenderArgs();
 
     if (!retSet) {
-        NodePtr treeRoot = args.renderArgs->getParentRender()->getTreeRoot();
+        NodePtr treeRoot = renderArgs->getParentRender()->getTreeRoot();
         if (treeRoot->getEffectInstance().get() == _publicInterface)  {
             // Always cache the root node because a subsequent render may ask for it
             ret = eCacheAccessModeReadWrite;
@@ -171,10 +173,10 @@ EffectInstance::Implementation::shouldRenderUseCache(const RenderRoIArgs & args,
     }
 
     if (!retSet) {
-        const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying(args.renderArgs);
-        const int requestsCount = requestPassData->getFramesNeededVisitsCount();
+        const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying(renderArgs);
+        const int requestsCount = requestPassData->getListeners().size();
 
-        bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, args.renderArgs, requestsCount);
+        bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, renderArgs, requestsCount);
         if (useCache) {
             ret = eCacheAccessModeReadWrite;
         } else {
@@ -216,11 +218,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
 
     ActionRetCodeEnum ret = tiledRenderingFunctor(specificData,
                                                   args.args,
-                                                  args.renderMappedScale,
-                                                  args.processChannels,
                                                   args.mainInputImage,
-                                                  args.planesToRender,
-                                                  args.glContext);
+                                                  args.planesToRender);
 
     //Exit of the host frame threading thread
     if (callingThread != curThread) {
@@ -235,11 +234,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(EffectInstance::Implementa
 ActionRetCodeEnum
 EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectToRender,
                                                       const RenderRoIArgs* args,
-                                                      RenderScale renderMappedScale,
-                                                      std::bitset<4> processChannels,
                                                       const ImagePtr& mainInputImage,
-                                                      ImagePlanesToRenderPtr planesToRender,
-                                                      OSGLContextAttacherPtr glContext)
+                                                      const ImagePlanesToRenderPtr& planesToRender)
 {
 
 
@@ -259,27 +255,26 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
     // If using OpenGL, bind the frame buffer
     if (planesToRender->backendType == eRenderBackendTypeOpenGL) {
-        assert(glContext);
+        assert(planesToRender->glContext);
 
-        glContext->attach();
-
-        GLuint fboID = glContext->getContext()->getOrCreateFBOId();
+        GLuint fboID = planesToRender->glContext->getOrCreateFBOId();
         GL_GPU::BindFramebuffer(GL_FRAMEBUFFER, fboID);
         glCheckError(GL_GPU);
     }
 
-
+    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(planesToRender->mappedMipMapLevel, args->proxyScale);
+    
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
     if (rectToRender.identityInputNumber != -1) {
-        stat = renderHandlerIdentity(rectToRender, args, renderMappedScale, planesToRender);
+        stat = renderHandlerIdentity(rectToRender, combinedScale, args, planesToRender);
     } else {
-        stat = renderHandlerInternal(tls, rectToRender, args, renderMappedScale, glContext, planesToRender, processChannels);
+        stat = renderHandlerInternal(tls, rectToRender, combinedScale, args, planesToRender);
         if (isFailureRetCode(stat)) {
             return stat;
         }
         // Apply post-processing
-        renderHandlerPostProcess(rectToRender, args, renderMappedScale, planesToRender, mainInputImage, processChannels);
+        renderHandlerPostProcess(rectToRender, args, combinedScale, planesToRender, mainInputImage);
     }
 
 
@@ -302,8 +297,8 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectToRender,
+                                                      const RenderScale& combinedScale,
                                                       const RenderRoIArgs* args,
-                                                      const RenderScale &renderMappedScale,
                                                       const ImagePlanesToRenderPtr& planesToRender)
 {
 
@@ -312,12 +307,12 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     boost::scoped_ptr<EffectInstance::GetImageInArgs> renderArgs( new EffectInstance::GetImageInArgs() );
     renderArgs->currentTime = args->time;
     renderArgs->currentView = args->view;
-    renderArgs->currentScale = renderMappedScale;
+    renderArgs->currentScale = combinedScale;
     renderArgs->renderBackend = &planesToRender->backendType;
     renderArgs->renderArgs = args->renderArgs;
     renderArgs->inputTime = rectToRender.identityTime;
     renderArgs->inputView = rectToRender.identityView;
-    renderArgs->inputMipMapLevel = (renderMappedScale.x == 1 && renderMappedScale.y == 1) ? 0 : args->mipMapLevel;
+    renderArgs->inputMipMapLevel = planesToRender->mappedMipMapLevel;
     renderArgs->inputProxyScale = args->proxyScale;
     renderArgs->inputNb = rectToRender.identityInputNumber;
 
@@ -385,7 +380,7 @@ static void setupGLForRender(const ImagePtr& image,
         assert(image->getBufferFormat() == eImageBufferLayoutRGBAPackedFullRect);
 
         Image::Tile tile;
-        bool ok = image->getTileAt(0, &tile);
+        bool ok = image->getTileAt(0, 0, &tile);
         assert(ok);
         (void)ok;
         Image::CPUTileData tileData;
@@ -432,23 +427,21 @@ static void finishGLRender()
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDataPtr& tls,
                                                       const RectToRender & rectToRender,
+                                                      const RenderScale& combinedScale,
                                                       const RenderRoIArgs* args,
-                                                      const RenderScale& renderMappedScale,
-                                                      const OSGLContextAttacherPtr glContext,
-                                                      const ImagePlanesToRenderPtr& planesToRender,
-                                                      std::bitset<4> processChannels)
+                                                      const ImagePlanesToRenderPtr& planesToRender)
 {
 
 
     RenderActionArgs actionArgs;
     {
-        actionArgs.processChannels = processChannels;
-        actionArgs.renderScale = renderMappedScale;
+        actionArgs.processChannels = planesToRender->processChannels;
+        actionArgs.renderScale = combinedScale;
         actionArgs.backendType = planesToRender->backendType;
         actionArgs.roi = rectToRender.rect;
         actionArgs.time = args->time;
         actionArgs.view = args->view;
-        actionArgs.glContextAttacher = glContext;
+        actionArgs.glContextAttacher = planesToRender->glContext;
         actionArgs.renderArgs = args->renderArgs;
     }
 
@@ -470,11 +463,6 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
         planesLists.push_back(tmp);
     }
 
-    OSGLContextPtr openGLContext;
-    if (glContext) {
-        openGLContext = glContext->getContext();
-    }
-
     for (std::list<std::list<std::pair<ImagePlaneDesc, ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it) {
 
         actionArgs.outputPlanes = *it;
@@ -488,10 +476,10 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
             // Effects that render multiple planes at once are NOT supported by the OpenGL render suite
             // We only bind to the framebuffer color attachment 0 the "main" output image plane
             assert(actionArgs.outputPlanes.size() == 1);
-            if (openGLContext->isGPUContext()) {
-                setupGLForRender<GL_GPU>(mainImagePlane, openGLContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
+            if (planesToRender->glContext->isGPUContext()) {
+                setupGLForRender<GL_GPU>(mainImagePlane, planesToRender->glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
             } else {
-                setupGLForRender<GL_CPU>(mainImagePlane, openGLContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
+                setupGLForRender<GL_CPU>(mainImagePlane, planesToRender->glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
             }
         }
         ActionRetCodeEnum stat;
@@ -510,7 +498,7 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
 
         if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
             planesToRender->backendType == eRenderBackendTypeOSMesa) {
-            if (openGLContext) {
+            if (planesToRender->glContext) {
                 GLImageStoragePtr glEntry = mainImagePlane->getGLImageStorage();
                 assert(glEntry);
                 GL_GPU::BindTexture(glEntry->getGLTextureTarget(), 0);
@@ -533,10 +521,9 @@ EffectInstance::Implementation::renderHandlerInternal(const EffectInstanceTLSDat
 void
 EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & rectToRender,
                                                          const RenderRoIArgs* args,
-                                                         const RenderScale& renderMappedScale,
+                                                         const RenderScale& combinedScale,
                                                          const ImagePlanesToRenderPtr& planesToRender,
-                                                         const ImagePtr& mainInputImage,
-                                                         std::bitset<4> processChannels)
+                                                         const ImagePtr& mainInputImage)
 {
 
 
@@ -574,9 +561,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             inArgs.currentView = args->view;
             inArgs.inputTime = inArgs.currentTime;
             inArgs.inputView = inArgs.currentView;
-            inArgs.inputMipMapLevel = (renderMappedScale.x == 1 && renderMappedScale.y == 1) ? 0 : args->mipMapLevel;
+            inArgs.inputMipMapLevel = planesToRender->mappedMipMapLevel;
             inArgs.inputProxyScale = args->proxyScale;
-            inArgs.currentScale = renderMappedScale;
+            inArgs.currentScale = combinedScale;
             inArgs.renderBackend = &planesToRender->backendType;
             inArgs.renderArgs = args->renderArgs;
             GetImageOutArgs outArgs;
@@ -627,7 +614,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
         }
 
         if (mainInputImage) {
-            it->second.tmpImage->copyUnProcessedChannels(rectToRender.rect, processChannels, mainInputImage);
+            it->second.tmpImage->copyUnProcessedChannels(rectToRender.rect, planesToRender->processChannels, mainInputImage);
         }
 
 

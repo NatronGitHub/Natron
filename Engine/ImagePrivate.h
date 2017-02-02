@@ -27,6 +27,8 @@
 
 #include "Global/Macros.h"
 
+#include <map>
+#include <QMutex>
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
@@ -46,13 +48,41 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct TileCoord
+{
+    int tx,ty;
+};
+
+struct TileCoord_Compare
+{
+    bool operator() (const TileCoord& lhs, const TileCoord& rhs)
+    {
+        if (lhs.ty < rhs.ty) {
+            return true;
+        } else if (lhs.ty > rhs.ty) {
+            return false;
+        } else {
+            return lhs.tx < rhs.tx;
+        }
+    }
+};
+
+// Each tile with the coordinates of its lower left corner
+// Each tile is aligned relative to (0,0):
+// an image must at least contain a single tile with coordinates (0,0).
+typedef std::map<TileCoord, Image::Tile, TileCoord_Compare> TileMap;
+
 struct ImagePrivate
 {
     // The rectangle where data are defined
-    RectI bounds;
+    RectI originalBounds;
+
+    // The actual rectangle of data. It might be slightly bigger than original bounds:
+    // this is the original bounds rounded to the tile size.
+    RectI boundsRoundedToTile;
 
     // Each individual tile storage
-    std::vector<Image::Tile> tiles;
+    TileMap tiles;
 
     // The layer represented by this image
     ImagePlaneDesc layer;
@@ -74,9 +104,36 @@ struct ImagePrivate
     // their render aborted.
     TreeRenderNodeArgsPtr renderArgs;
 
+    // The channels enabled
+    std::bitset<4> enabledChannels;
+
+    // The bitdepth of the image
+    ImageBitDepthEnum bitdepth;
+
+    // The image storage type
+    StorageModeEnum storage;
+
+    // Protects tilesAllocated
+    QMutex tilesAllocatedMutex;
+
+    // If true, tiles are assumed to be allocated, otherwise only cached tiles hold memory
+    bool tilesAllocated;
+
+    // The OpenGl context used is the image is stored in a texture
+    OSGLContextPtr glContext;
+
+    // The texture target if the image is stored in a texture
+    U32 textureTarget;
+
+    // The following values are passed to the ImageTileKey
+    U64 nodeHash;
+    TimeValue time;
+    ViewIdx view;
+    bool isDraftImage;
 
     ImagePrivate()
-    : bounds()
+    : originalBounds()
+    , boundsRoundedToTile()
     , tiles()
     , layer()
     , proxyScale(1.)
@@ -84,28 +141,33 @@ struct ImagePrivate
     , cachePolicy(eCacheAccessModeNone)
     , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
     , renderArgs()
+    , enabledChannels()
+    , bitdepth(eImageBitDepthNone)
+    , storage(eStorageModeNone)
+    , tilesAllocatedMutex()
+    , tilesAllocated(false)
+    , glContext()
+    , textureTarget(0)
+    , nodeHash(0)
+    , time(0)
+    , view(0)
+    , isDraftImage(false)
     {
 
     }
 
+    void init(const Image::InitStorageArgs& args);
+
+    void initTiles(int tileSizeX, int tileSizeY);
+
     void initFromExternalBuffer(const Image::InitStorageArgs& args);
 
-    void initTileAndFetchFromCache(const Image::InitStorageArgs& args, int tx, int ty, int nTilesWidth, int tileSizeX, int tileSizeY);
+    void initTileAndFetchFromCache(int tx, int ty, int tileSizeX, int tileSizeY);
 
     /**
      * @brief Called in the destructor to insert tiles that were processed in the cache.
      **/
     void insertTilesInCache();
-
-    /**
-     * @brief Returns the tile corresponding to the pixel at position x,y or null if out of bounds
-     **/
-    const Image::Tile* getTile(int x, int y) const;
-
-    /**
-     * @brief Returns the number of tiles that fit in 1 line of the image
-     **/
-    int getNTilesPerLine() const;
 
     /**
      * @brief Returns a rectangle of tiles coordinates that span the given rectangle of pixel coordinates
