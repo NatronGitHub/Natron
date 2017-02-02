@@ -10,6 +10,11 @@
 - ReadFFmpeg: fix "Image Info..." button (which calls ffprobe) when file path is relative to a project variable
 - fix high-resolution application icons
 
+### Plugins
+
+- Readers and writers now only get the colorspace from the filename if it is before the extension and preceded by a delimiter
+- BilateralGuided: bug fix
+
 
 ## Version 2.2.3
 
