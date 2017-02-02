@@ -53,12 +53,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170123
+    version         20170131
     set dist_branch 3.7
-    set dist_date   20170123
-    set dist_hash   gca3a4f
-    checksums       rmd160 21e02e231ddf26baee272a9677dd3f87ac8daf3b \
-                    sha256 f199a7db77376bf7047b504562f4a82b1f68dcb0caf22cd0af68014950fbb5b3
+    set dist_date   20170131
+    set dist_hash   g5eb3c
+    checksums       rmd160 783c3de3d0d752e4978bf4e23c8b1cc2c92495a6 \
+                    sha256 ffede2b7e72e5bcbce7b7e273ed6f2432723bb8dc2ddd35bf0ff2664def02a61
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -211,7 +211,7 @@ variant gui description {Build Qt-based cmake-gui} {
 
     # when building the GUI with Qt, CMake uses C++11. So, make sure
     # the compiler used is c++11 compliant.
-    
+
     if {${configure.cxx_stdlib} eq "libstdc++"} {
 
         # *clang* when using libstdc++ do not seem to support C++11;
