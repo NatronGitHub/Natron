@@ -14,12 +14,12 @@ PortGroup       compiler_blacklist_versions 1.0
 epoch        	 1
 
 fetch.type              git
-github.setup     OpenImageIO oiio 1.7.10 tags/Release-
+github.setup     OpenImageIO oiio 1.7.11 tags/Release-
 #github.version      ${version}-dist
 #github.tarball_from downloads
 
 name             openimageio
-revision         1
+#revision         1
 categories       graphics
 platforms           darwin
 license          BSD
@@ -90,8 +90,6 @@ patch.pre_args	-p1
 patchfiles \
     oiio-1.5.23-checkmaxmem.patch \
     oiio-1.5.23-invalidatespec.patch \
-    oiio-1.6.18-fix_read_tiles_prefix_bytes.patch \
-    oiio-1.7.10-noexifdebug.patch \
     oiio-1.7.10-c99math.patch \
     oiio-1.7.10-nothreads.patch
 
