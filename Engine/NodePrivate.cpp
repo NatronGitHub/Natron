@@ -118,7 +118,7 @@ NodePrivate::NodePrivate(Node* publicInterface,
 , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
 , currentCanDistort(false)
 , currentDeprecatedTransformSupport(false)
-, lastRenderedImageMutex()
+, accumBufferMutex()
 , lastRenderedImage()
 , isBeingDestroyedMutex()
 , isBeingDestroyed(false)

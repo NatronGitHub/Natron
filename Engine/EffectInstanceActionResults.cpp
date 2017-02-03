@@ -449,6 +449,28 @@ GetComponentsResults::create(const GetComponentsKeyPtr& key)
 
 }
 
+const std::map<int, std::list<ImagePlaneDesc> >&
+GetComponentsResults::getNeededInputPlanes() const
+{
+    return _neededInputLayers;
+}
+
+const std::list<ImagePlaneDesc>&
+GetComponentsResults::getProducedPlanes() const
+{
+    return _producedLayers;
+}
+
+std::bitset<4>
+GetComponentsResults::getProcessChannels() const
+{
+    std::bitset<4> ret;
+    ret[0] = _data.doR;
+    ret[1] = _data.doG;
+    ret[2] = _data.doB;
+    ret[3] = _data.doA;
+    return ret;
+}
 
 void
 GetComponentsResults::getResults(std::map<int, std::list<ImagePlaneDesc> >* neededInputLayers,
@@ -460,17 +482,33 @@ GetComponentsResults::getResults(std::map<int, std::list<ImagePlaneDesc> >* need
                                  std::bitset<4> *processChannels,
                                  bool *processAllLayers) const
 {
-    *neededInputLayers = _neededInputLayers;
-    *producedLayers = _producedLayers;
-    *passThroughPlanes = _passThroughPlanes;
-    *passThroughInputNb = _data.passThroughInputNb;
-    *passThroughTime = _data.passThroughTime;
-    *passThroughView = _data.passThroughView;
-    (*processChannels)[0] = _data.doR;
-    (*processChannels)[1] = _data.doG;
-    (*processChannels)[2] = _data.doB;
-    (*processChannels)[3] = _data.doA;
-    *processAllLayers = _data.processAllLayers;
+    if (neededInputLayers) {
+        *neededInputLayers = _neededInputLayers;
+    }
+    if (producedLayers) {
+        *producedLayers = _producedLayers;
+    }
+    if (passThroughPlanes) {
+        *passThroughPlanes = _passThroughPlanes;
+    }
+    if (passThroughInputNb) {
+        *passThroughInputNb = _data.passThroughInputNb;
+    }
+    if (passThroughTime) {
+        *passThroughTime = _data.passThroughTime;
+    }
+    if (passThroughView) {
+        *passThroughView = _data.passThroughView;
+    }
+    if (processChannels) {
+        (*processChannels)[0] = _data.doR;
+        (*processChannels)[1] = _data.doG;
+        (*processChannels)[2] = _data.doB;
+        (*processChannels)[3] = _data.doA;
+    }
+    if (processAllLayers) {
+        *processAllLayers = _data.processAllLayers;
+    }
 }
 
 void

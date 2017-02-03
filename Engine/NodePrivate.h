@@ -404,8 +404,8 @@ public:
 
     // During painting we keep track of the image that was rendered
     // at the previous step so that we can accumulate the renders
-    mutable QMutex lastRenderedImageMutex;
-    ImagePtr lastRenderedImage;
+    mutable QMutex accumBufferMutex;
+    ImagePtr accumBuffer;
 
     // Protects isBeingDestroyed
     mutable QMutex isBeingDestroyedMutex;

@@ -252,11 +252,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     if (args.render) {
         switch (args.hashType) {
             case HashableObject::eComputeHashTypeTimeViewVariant: {
-                FrameViewRequestPtr fvRequest;
-                bool created = args.render->getOrCreateFrameViewRequest(args.time, args.view, &fvRequest);
-                (void)created;
-                assert(fvRequest);
-                fvRequest->setHash(hashValue);
+                args.render->setFrameViewHash(args.time, args.view, hashValue);
             }   break;
             case HashableObject::eComputeHashTypeTimeViewInvariant:
                 args.render->setTimeViewInvariantHash(hashValue);
@@ -465,51 +461,8 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 bool
 EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
                                       TimeValue inputTime,
-                                      RectD* roiCanonical,
-                                      RenderRoITypeEnum* type)
+                                      RectD* roiCanonical)
 {
-
-    *type = eRenderRoITypeKnownFrame;
-
-    TreeRenderNodeArgsPtr inputRenderArgs = inArgs.renderArgs->getInputRenderArgs(inArgs.inputNb);
-    assert(inputRenderArgs);
-    if (!inputRenderArgs) {
-        // Serious bug, all inputs should always have a render object.
-        return false;
-    }
-
-    // Is there a request that was filed with getFramesNeeded on this input at the given time/view ?
-    FrameViewRequestPtr requestPass;
-    bool createdRequestPass = inputRenderArgs->getOrCreateFrameViewRequest(inputTime, inArgs.inputView, &requestPass);
-    bool frameWasRequestedWithGetFramesNeeded = false;
-    if (!createdRequestPass) {
-        EffectInstancePtr thisShared = shared_from_this();
-        frameWasRequestedWithGetFramesNeeded = requestPass->wasFrameViewRequestedByEffect(thisShared);
-    }
-
-
-    if (frameWasRequestedWithGetFramesNeeded) {
-        // The frame was requested by getFramesNeeded: the RoI contains at least the RoI of this effect and maybe
-        // also the RoI from other branches requesting this frame/view, thus we may have a chance to render the effect
-        // a single time.
-        *roiCanonical = requestPass->getCurrentRoI();
-        return true;
-    }
-
-
-
-    // This node did not request anything on the input in getFramesNeeded action: it did a raw call to fetchImage without advertising us.
-    //
-    // Either the user passed an optional bounds parameter or we have to compute the RoI using getRegionsOfInterest.
-    // We must call getRegionOfInterest on the time and view of the current action of this effect.
-
-#ifdef DEBUG
-    qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "at time" << inArgs.inputTime << "and view" << inArgs.inputView <<
-    ": The frame was not requested properly in the getFramesNeeded action. This is a bug either in this plug-in or a plug-in downstream (which should also have this warning displayed)";
-#endif
-
-    *type = eRenderRoITypeUnknownFrame;
-
 
 
     // Use the provided image bounds if any
@@ -518,14 +471,46 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return true;
     }
 
+    if (!inArgs.requestData) {
+        // We are not in a render, let the ctor of TreeRender ask for the RoD
+        return false;
+    }
+
+    TreeRenderNodeArgsPtr inputRenderArgs = inArgs.requestData->getRenderArgs()->getInputRenderArgs(inArgs.inputNb);
+    assert(inputRenderArgs);
+    if (!inputRenderArgs) {
+        // Serious bug, all inputs should always have a render object.
+        return false;
+    }
+
+    // Is there a request that was filed with getFramesNeeded on this input at the given time/view ?
+    {
+        FrameViewRequestPtr inputRequestPass = inputRenderArgs->getFrameViewRequest(inputTime, inArgs.inputView);
+        if (inputRequestPass) {
+            *roiCanonical = inputRequestPass->getCurrentRoI();
+            return true;
+        }
+    }
+    
+    
+    // This node did not request anything on the input in getFramesNeeded action: it did a raw call to fetchImage without advertising us.
+    //
+    // Either the user passed an optional bounds parameter or we have to compute the RoI using getRegionsOfInterest.
+    // We must call getRegionOfInterest on the time and view of the current action of this effect.
+
+    RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), inArgs.requestData->getRenderArgs()->getParentRender()->getProxyScale());
+
+
     // We have to retrieve the time and view of the current action in the TLS since it was not passed in parameter.
     RectD thisEffectRenderWindowCanonical;
 
     {
-
         EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
         assert(tls);
-
+        RectI thisEffectRenderWindowPixels;
+        RenderScale actionScale;
+        bool gotRenderActionTLSData = tls->getCurrentRenderActionArgs(0, 0, &actionScale, &thisEffectRenderWindowPixels, 0);
+        assert(!gotRenderActionTLSData || (actionScale.x == currentScale.x && actionScale.y  == currentScale.y));
 
         // To call getRegionsOfInterest we need to pass a render window, but
         // we don't know this effect current render window.
@@ -535,7 +520,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         {
 
             GetRegionOfDefinitionResultsPtr results;
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(inArgs.currentTime, inArgs.currentScale, inArgs.currentView, inArgs.renderArgs, &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(inArgs.requestData->getTime(), currentScale, inArgs.requestData->getView(), inArgs.requestData->getRenderArgs(), &results);
             if (isFailureRetCode(stat)) {
 #ifdef DEBUG
                 qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because getRegionOfDefinition failed";
@@ -551,22 +536,20 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
             }
         }
 
-        RectI thisEffectRenderWindowPixels;
-        bool gotRenderActionTLSData = tls->getCurrentRenderActionArgs(0, 0, 0, &thisEffectRenderWindowPixels, 0);
         if (gotRenderActionTLSData) {
-            double thisEffectOutputPar = getAspectRatio(inArgs.renderArgs, -1);
-            thisEffectRenderWindowPixels.toCanonical(inArgs.currentScale, thisEffectOutputPar, thisEffectRoD, &thisEffectRenderWindowCanonical);
+            double thisEffectOutputPar = getAspectRatio(inArgs.requestData->getRenderArgs(), -1);
+            thisEffectRenderWindowPixels.toCanonical(currentScale, thisEffectOutputPar, thisEffectRoD, &thisEffectRenderWindowCanonical);
         } else {
             thisEffectRenderWindowCanonical = thisEffectRoD;
-
         }
     }
+
 
 
     // Get the roi for the current render window
 
     RoIMap inputRoisMap;
-    ActionRetCodeEnum stat = getRegionsOfInterest_public(inArgs.currentTime, inArgs.currentScale, thisEffectRenderWindowCanonical, inArgs.currentView, inArgs.renderArgs, &inputRoisMap);
+    ActionRetCodeEnum stat = getRegionsOfInterest_public(inArgs.requestData->getTime(), currentScale, thisEffectRenderWindowCanonical, inArgs.requestData->getView(), inArgs.requestData->getRenderArgs(), &inputRoisMap);
     if (isFailureRetCode(stat)) {
 #ifdef DEBUG
         qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because getRegionsOfInterest failed";
@@ -589,36 +572,41 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 , inputView(0)
 , inputProxyScale(1.)
 , inputMipMapLevel(0)
-, currentScale(1.)
-, currentTime(0)
-, currentView(0)
 , optionalBounds(0)
-, layers(0)
+, plane(0)
 , renderBackend(0)
-, renderArgs()
+, requestData()
+, draftMode(false)
+, playback(false)
+, byPassCache(false)
 {
 
 }
 
-EffectInstance::GetImageInArgs::GetImageInArgs(const RenderActionArgs& args)
+EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& requestPass, const RenderBackendTypeEnum* backend)
 : inputNb(0)
-, inputTime(args.time)
-, inputView(args.view)
-, inputProxyScale(args.renderArgs->getParentRender()->getProxyScale())
-, inputMipMapLevel(args.renderArgs->getParentRender()->getMipMapLevel())
-, currentScale(args.renderScale)
-, currentTime(args.time)
-, currentView(args.view)
+, inputTime(requestPass->getTime())
+, inputView(requestPass->getView())
+, inputProxyScale(1.)
+, inputMipMapLevel(requestPass->getRenderMappedMipMapLevel())
 , optionalBounds(0)
-, layers(0)
-, renderBackend(&args.backendType)
-, renderArgs(args.renderArgs)
+, plane(0)
+, renderBackend(backend)
+, requestData(requestPass)
+, draftMode(false)
+, playback(false)
+, byPassCache(false)
 {
-
+    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
+    TreeRenderPtr render = renderArgs->getParentRender();
+    inputProxyScale = render->getProxyScale();
+    draftMode = render->isDraftRender();
+    playback = render->isPlayback();
+    byPassCache = render->isByPassCacheEnabled();
 }
 
 bool
-EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
+EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs)
 {
     if (inArgs.inputTime != inArgs.inputTime) {
         // time is NaN
@@ -633,298 +621,138 @@ EffectInstance::getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* ou
 
     if (!inputEffect) {
         // Disconnected input
-        // No need to display a warning, the effect can perfectly call this function even if it did not check isConnected() before
-        //qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inputNb << "failing because the input is not connected";
         return false;
     }
 
-    // If this effect is not continuous, no need to ask for a floating point time upstream
-    TimeValue inputTime = inArgs.inputTime;
-    {
-        int roundedTime = std::floor(inputTime + 0.5);
-        if (roundedTime != inputTime && !inputEffect->canRenderContinuously(inArgs.renderArgs)) {
-            inputTime = TimeValue(roundedTime);
-        }
-    }
-
-    std::list<ImagePlaneDesc> componentsToRender;
-    if (inArgs.layers) {
-        componentsToRender = *inArgs.layers;
-    } else {
-        GetComponentsResultsPtr results;
-        ActionRetCodeEnum stat = getLayersProducedAndNeeded_public(inArgs.currentTime, inArgs.currentView, inArgs.renderArgs, &results);
-        if (isFailureRetCode(stat)) {
-#ifdef DEBUG
-            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the get components action failed";
-#endif
-            return false;
-        }
-        assert(results);
-
-        std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
-        std::list<ImagePlaneDesc> producedLayers, availableLayers;
-        int passThroughInputNb;
-        TimeValue passThroughTime;
-        ViewIdx passThroughView;
-        std::bitset<4> processChannels;
-        bool processAll;
-        results->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-
-        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundInput = neededInputLayers.find(inArgs.inputNb);
-        if (foundInput == neededInputLayers.end()) {
-#ifdef DEBUG
-            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the get components action did not specify any componentns to fetch";
-#endif
-            return false;
-        }
-        componentsToRender = foundInput->second;
-    }
-
-
-    if (!inArgs.renderArgs) {
-
-        // We were not during a render, create one and render the tree upstream.
-        TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
-        rargs->time = inputTime;
-        rargs->view = inArgs.inputView;
-        rargs->treeRoot = inputEffect->getNode();
-        rargs->canonicalRoI = inArgs.optionalBounds;
-        rargs->proxyScale = inArgs.inputProxyScale;
-        rargs->mipMapLevel = inArgs.inputMipMapLevel;
-        rargs->layers = &componentsToRender;
-        rargs->draftMode = false;
-        rargs->playback = false;
-        rargs->byPassCache = false;
-
-        TreeRenderPtr renderObject = TreeRender::create(rargs);
-        ActionRetCodeEnum status = renderObject->launchRender(&outArgs->imagePlanes);
-        if (isFailureRetCode(status) || outArgs->imagePlanes.empty()) {
-            return false;
-        }
-        return true;
-    }
-
-    assert(inArgs.renderArgs);
-    TreeRenderNodeArgsPtr inputRenderArgs = inArgs.renderArgs->getInputRenderArgs(inArgs.inputNb);
-    assert(inputRenderArgs);
-
-    // Ok now we are during a render. The effect may be in any action called on a render thread:
-    // getDistortion, render, getRegionOfDefinition...
-    //
-    // Determine if the frame is "known" (i.e: it was requested from getFramesNeeded) or not.
-    //
-    // For a known frame we know the exact final RoI to ask for on the effect and we can guarantee
-    // that the effect will be rendered once. We cache the resulting image only during the render of this node
-    // frame, then we can throw it away.
-    //
-    // For an unknown frame, we don't know if the frame will be asked for another time hence we lock
-    // it in the cache throughout the lifetime of the render.
+    // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
     RectD roiCanonical;
-    RenderRoITypeEnum renderType;
-    if (!resolveRoIForGetImage(inArgs, inputTime, &roiCanonical, &renderType)) {
+    bool gotRoI = resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical);
+
+    // Launch a render to recover the image.
+    // It should be very fast if the image was already rendered.
+    TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+    rargs->time = inArgs.inputTime;
+    rargs->view = inArgs.inputView;
+    rargs->treeRoot = inputEffect->getNode();
+    rargs->canonicalRoI = gotRoI ? &roiCanonical : 0;
+    rargs->proxyScale = inArgs.inputProxyScale;
+    rargs->mipMapLevel = inArgs.inputMipMapLevel;
+    rargs->plane = inArgs.plane;
+    rargs->draftMode = inArgs.draftMode;
+    rargs->playback = inArgs.playback;
+    rargs->byPassCache = inArgs.byPassCache;
+
+    TreeRenderPtr renderObject = TreeRender::create(rargs);
+    FrameViewRequestPtr outputRequest;
+    ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
+    if (isFailureRetCode(status)) {
         return false;
     }
 
+    // Copy in output the distortion stack
+    outArgs->distortionStack = outputRequest->getDistorsionStack();
+
+
+    TreeRenderNodeArgsPtr renderArgs;
+    if (inArgs.requestData) {
+        renderArgs = inArgs.requestData->getRenderArgs();
+    }
+
+
+    // Get the RoI in pixel coordinates of the effect we rendered
     RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
-
-    // Clip the RoI to the input effect RoD
-    {
-        GetRegionOfDefinitionResultsPtr rodResults;
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inputTime, inputCombinedScale, inArgs.inputView, inputRenderArgs, &rodResults);
-        if (isFailureRetCode(stat)) {
-            return false;
-        }
-        const RectD& inputRod = rodResults->getRoD();
-
-        // If the plug-in RoD is null, there's nothing to render.
-        if (inputRod.isNull()) {
-            return false;
-        }
-
-        // Intersect the RoI to the input RoD
-        if (!roiCanonical.intersect(inputRod, &roiCanonical)) {
-            return false;
-        }
-
-    }
+    double inputPar = getAspectRatio(renderArgs, inArgs.inputNb);
+    outputRequest->getCurrentRoI().toPixelEnclosing(inputCombinedScale, inputPar, &outArgs->roiPixel);
 
 
-    if (roiCanonical.isNull()) {
-        // No RoI
-#ifdef DEBUG
-        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the region to render on the input is empty";
-#endif
-        return false;
-    }
-
-
-
-    // Retrieve an image with the format given by this node preferences
-    const double par = getAspectRatio(inArgs.renderArgs, inArgs.inputNb);
-
-    // Convert the roi to pixel coordinates
-    RectI pixelRoI;
-    roiCanonical.toPixelEnclosing(inputCombinedScale, par, &pixelRoI);
-
-
-    // Get the request of this effect current action
-    FrameViewRequestPtr thisFrameViewRequest = inArgs.renderArgs->getFrameViewRequest(inArgs.currentTime, inArgs.currentView);
-    // We have to have a request because we were called in an action that was part of a render. If it crashes here this is a bug
-    assert(thisFrameViewRequest);
-    if (!thisFrameViewRequest) {
-        return false;
-    }
-
-
-
-    std::map<ImagePlaneDesc, ImagePtr> inputRenderedPlanes;
-
-
-    // Look for any pre-rendered result for this frame-view. If not rendered already then call renderRoI
-    // renderRoI may find stuff in the cache and not render anyway
-    {
-        std::list<ImagePlaneDesc> planesLeftToRender;
-        thisFrameViewRequest->getPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, pixelRoI, componentsToRender, &inputRenderedPlanes, &planesLeftToRender, &outArgs->distortionStack);
-        componentsToRender = planesLeftToRender;
-    }
-    
-    if (!componentsToRender.empty()) {
-
-        EffectInstancePtr thisShared = shared_from_this();
-        RenderRoIResults inputRenderResults;
-        boost::scoped_ptr<RenderRoIArgs> rargs(new RenderRoIArgs(inputTime,
-                                                                 inArgs.inputView,
-                                                                 pixelRoI,
-                                                                 inArgs.inputProxyScale,
-                                                                 inArgs.inputMipMapLevel,
-                                                                 componentsToRender,
-                                                                 inputRenderArgs));
-        if (renderType == eRenderRoITypeUnknownFrame) {
-            // Disable GPU rendering for an unknown frame since we don't know how long it should stay around.
-            rargs->allowGPURendering = false;
-        }
-        rargs->canReturnDeprecatedTransform3x3 = inArgs.renderArgs->getCurrentTransformationSupport_deprecated();
-        rargs->canReturnDistortionFunc = inArgs.renderArgs->getCurrentDistortSupport();
-
-        ActionRetCodeEnum retCode = inputEffect->renderRoI(*rargs, &inputRenderResults);
-
-        if (isFailureRetCode(retCode) || inputRenderResults.outputPlanes.empty()) {
-            return false;
-        }
-
-        inputRenderedPlanes.insert(inputRenderResults.outputPlanes.begin(), inputRenderResults.outputPlanes.end());
-        outArgs->distortionStack = inputRenderResults.distortionStack;
-
-    }
-
-
-    // Return in output the region that was asked to the input
-    outArgs->roiPixel = pixelRoI;
-
+    // Map the output image to the plug-in preferred format
     ImageBufferLayoutEnum thisEffectSupportedImageLayout = getPreferredBufferLayout();
 
     const bool supportsMultiPlane = isMultiPlanar();
 
-    for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = inputRenderedPlanes.begin(); it != inputRenderedPlanes.end(); ++it) {
+    // The output image unmapped
+    outArgs->image = outputRequest->getImagePlane();
 
-        if ( !pixelRoI.intersects( it->second->getBounds() ) ) {
-            // The RoI requested does not intersect with the bounds of the input image computed, return a NULL image.
-#ifdef DEBUG
-            qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the RoI requested does not intersect the bounds of the input image fetched. This is a bug, please investigate!";
-#endif
-            return ImagePtr();
+    bool mustConvertImage = false;
+    StorageModeEnum storage = outArgs->image->getStorageMode();
+    StorageModeEnum preferredStorage = storage;
+    if (inArgs.renderBackend) {
+        switch (*inArgs.renderBackend) {
+            case eRenderBackendTypeOpenGL: {
+                preferredStorage = eStorageModeGLTex;
+                if (storage != eStorageModeGLTex) {
+                    mustConvertImage = true;
+                }
+            }   break;
+            case eRenderBackendTypeCPU:
+            case eRenderBackendTypeOSMesa:
+                preferredStorage = eStorageModeRAM;
+                if (storage == eStorageModeGLTex) {
+                    mustConvertImage = true;
+                }
+                break;
         }
-
-        assert(it->second->getProxyScale().x == inArgs.inputProxyScale.x && it->second->getProxyScale().y == inArgs.inputProxyScale.y);
-        assert(it->second->getMipMapLevel() == inArgs.inputMipMapLevel);
+    }
 
 
-        bool mustConvertImage = false;
-        StorageModeEnum storage = it->second->getStorageMode();
-        StorageModeEnum preferredStorage = storage;
-        if (inArgs.renderBackend) {
-            switch (*inArgs.renderBackend) {
-                case eRenderBackendTypeOpenGL: {
-                    preferredStorage = eStorageModeGLTex;
-                    if (storage != eStorageModeGLTex) {
-                        mustConvertImage = true;
-                    }
-                }   break;
-                case eRenderBackendTypeCPU:
-                case eRenderBackendTypeOSMesa:
-                    preferredStorage = eStorageModeRAM;
-                    if (storage == eStorageModeGLTex) {
-                        mustConvertImage = true;
-                    }
-                    break;
-            }
-        }
+    ImageBufferLayoutEnum imageLayout = outArgs->image->getBufferFormat();
+    if (imageLayout != thisEffectSupportedImageLayout) {
+        mustConvertImage = true;
+    }
 
-        ImageBufferLayoutEnum imageLayout = it->second->getBufferFormat();
-        if (imageLayout != thisEffectSupportedImageLayout) {
+
+    ImagePlaneDesc preferredLayer = outArgs->image->getLayer();
+
+    // If this node does not support multi-plane or the image is the color plane,
+    // map it to this node preferred color plane
+    if (!supportsMultiPlane || outArgs->image->getLayer().isColorPlane()) {
+        ImagePlaneDesc plane, pairedPlane;
+        getMetadataComponents(renderArgs, inArgs.inputNb, &plane, &pairedPlane);
+        if (outArgs->image->getLayer() != plane) {
             mustConvertImage = true;
+            preferredLayer = plane;
         }
+    }
+    ImageBitDepthEnum thisBitDepth = getBitDepth(renderArgs, inArgs.inputNb);
+    // Map bit-depth
+    if (thisBitDepth != outArgs->image->getBitDepth()) {
+        mustConvertImage = true;
+    }
 
-        ImagePlaneDesc preferredLayer = it->second->getLayer();
+    ImagePtr convertedImage = outArgs->image;
+    if (mustConvertImage) {
 
-        // If this node does not support multi-plane or the image is the color plane,
-        // map it to this node preferred color plane
-        if (it->second->getLayer().isColorPlane() || !supportsMultiPlane) {
-            ImagePlaneDesc plane, pairedPlane;
-            getMetadataComponents(inArgs.renderArgs, inArgs.inputNb, &plane, &pairedPlane);
-            if (it->second->getLayer() != plane) {
-                mustConvertImage = true;
-                preferredLayer = plane;
+        Image::InitStorageArgs initArgs;
+        {
+            initArgs.bounds = outArgs->image->getBounds();
+            initArgs.proxyScale = outArgs->image->getProxyScale();
+            initArgs.mipMapLevel = outArgs->image->getMipMapLevel();
+            initArgs.layer = preferredLayer;
+            initArgs.bitdepth = thisBitDepth;
+            initArgs.bufferFormat = thisEffectSupportedImageLayout;
+            initArgs.storage = preferredStorage;
+            initArgs.renderArgs = renderArgs;
+            if (renderArgs) {
+                initArgs.glContext = renderArgs->getParentRender()->getGPUOpenGLContext();
             }
         }
-        ImageBitDepthEnum thisBitDepth = getBitDepth(inArgs.renderArgs, inArgs.inputNb);
-        // Map bit-depth
-        if (thisBitDepth != it->second->getBitDepth()) {
-            mustConvertImage = true;
+
+        convertedImage = Image::create(initArgs);
+
+        Image::CopyPixelsArgs copyArgs;
+        {
+            copyArgs.roi = initArgs.bounds;
+            copyArgs.conversionChannel = channelForMask;
+            copyArgs.srcColorspace = getApp()->getDefaultColorSpaceForBitDepth(outArgs->image->getBitDepth());
+            copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
+            copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
         }
+        convertedImage->copyPixels(*outArgs->image, copyArgs);
+        outArgs->image = convertedImage;
+    } // mustConvertImage
 
-        ImagePtr convertedImage = it->second;
-        if (mustConvertImage) {
-
-            Image::InitStorageArgs initArgs;
-            {
-                initArgs.bounds = pixelRoI;
-                initArgs.proxyScale = it->second->getProxyScale();
-                initArgs.mipMapLevel = it->second->getMipMapLevel();
-                initArgs.layer = preferredLayer;
-                initArgs.bitdepth = thisBitDepth;
-                initArgs.bufferFormat = thisEffectSupportedImageLayout;
-                initArgs.storage = preferredStorage;
-                initArgs.renderArgs = inArgs.renderArgs;
-                initArgs.glContext = inArgs.renderArgs->getParentRender()->getGPUOpenGLContext();
-            }
-            
-            convertedImage = Image::create(initArgs);
-
-            Image::CopyPixelsArgs copyArgs;
-            {
-                copyArgs.roi = initArgs.bounds;
-                copyArgs.conversionChannel = channelForMask;
-                copyArgs.srcColorspace = getApp()->getDefaultColorSpaceForBitDepth(it->second->getBitDepth());
-                copyArgs.dstColorspace = getApp()->getDefaultColorSpaceForBitDepth(thisBitDepth);
-                copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
-            }
-            convertedImage->copyPixels(*it->second, copyArgs);
-
-        } // mustConvertImage
-
-        outArgs->imagePlanes[preferredLayer] = convertedImage;
-
-    } // for each plane requested
-
-    // Hold a pointer to the rendered results until this effect render is finished: subsequent calls to getImagePlanes for this frame/view
-    // should return these pointers immediately.
-    // This will overwrite previous pointers if there was any since we converted the images.
-    thisFrameViewRequest->appendPreRenderedInputs(inArgs.inputNb, inputTime, inArgs.inputView, outArgs->imagePlanes, outArgs->distortionStack);
-    
-    assert(!outArgs->imagePlanes.empty());
     return true;
-} // getImagePlanes
+} // getImagePlane
 
 TimeValue
 EffectInstance::getCurrentTime_TLS() const

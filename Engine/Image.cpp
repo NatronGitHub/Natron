@@ -604,38 +604,45 @@ Image::getCachePolicy() const
     return _imp->cachePolicy;
 }
 
-std::list<RectI>
-Image::getRestToRender(bool *hasPendingResults) const
+void
+Image::getRestToRender(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
 {
 
-    std::list<RectI> ret;
-    if (_imp->cachePolicy != eCacheAccessModeReadWrite) {
-        return std::list<RectI>();
-    }
 
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+
+        TileState &state = (*tileStatus)[it->first];
         bool hasChannelNotCached = false;
+        bool hasChannelPending = false;
         for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
 
-            if (!it->second.perChannelTile[c].entryLocker) {
-                continue;
-
+            CacheEntryLocker::CacheEntryStatusEnum status;
+            if (it->second.perChannelTile[c].entryLocker) {
+                status = it->second.perChannelTile[c].entryLocker->getStatus();
+            } else {
+                status = CacheEntryLocker::eCacheEntryStatusMustCompute;
             }
-            CacheEntryLocker::CacheEntryStatusEnum status = it->second.perChannelTile[c].entryLocker->getStatus();
-            if (status != CacheEntryLocker::eCacheEntryStatusCached) {
+
+            if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
                 hasChannelNotCached = true;
             }
             if (status == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-                *hasPendingResults = true;
+                hasChannelPending = true;
             }
         }
-        if (hasChannelNotCached) {
-            if (!it->second.tileBounds.isNull()) {
-                ret.push_back(it->second.tileBounds);
-            }
+        state.status = eTileStatusNotRendered;
+         if (!hasChannelNotCached && hasChannelPending) {
+            state.status = eTileStatusPending;
+        } else if (!hasChannelPending && !hasChannelNotCached) {
+            state.status = eTileStatusRendered;
         }
+        if (state.status == eTileStatusPending) {
+            *hasPendingResults = true;
+        } else if (state.status == eTileStatusNotRendered) {
+            *hasUnRenderedTile = true;
+        }
+        state.bounds = it->second.tileBounds;
     }
-    return ret;
 } // getRestToRender
 
 bool

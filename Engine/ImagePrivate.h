@@ -48,29 +48,12 @@
 
 NATRON_NAMESPACE_ENTER;
 
-struct TileCoord
-{
-    int tx,ty;
-};
-
-struct TileCoord_Compare
-{
-    bool operator() (const TileCoord& lhs, const TileCoord& rhs)
-    {
-        if (lhs.ty < rhs.ty) {
-            return true;
-        } else if (lhs.ty > rhs.ty) {
-            return false;
-        } else {
-            return lhs.tx < rhs.tx;
-        }
-    }
-};
 
 // Each tile with the coordinates of its lower left corner
 // Each tile is aligned relative to (0,0):
 // an image must at least contain a single tile with coordinates (0,0).
 typedef std::map<TileCoord, Image::Tile, TileCoord_Compare> TileMap;
+
 
 struct ImagePrivate
 {

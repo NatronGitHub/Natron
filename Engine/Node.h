@@ -1057,8 +1057,8 @@ public:
      * @brief For plug-ins that accumulate (for now just RotoShapeRenderNode), this is a pointer
      * to the last rendered image.
      **/
-    void setLastRenderedImage(const ImagePtr& lastRenderedImage);
-    ImagePtr getLastRenderedImage() const;
+    void setAccumBuffer(const ImagePtr& lastRenderedImage);
+    ImagePtr getAccumBuffer() const;
 
     struct KnobLink
     {

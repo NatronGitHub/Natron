@@ -252,7 +252,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
         inArgs.inputNb = 0;
         inArgs.layers = &layersToFetch;
         GetImageOutArgs outArgs;
-        if (!getImagePlanes(inArgs, &outArgs)) {
+        if (!getImagePlane(inArgs, &outArgs)) {
             return eActionStatusInputDisconnected;
         }
 

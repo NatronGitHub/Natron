@@ -39,9 +39,9 @@
 NATRON_NAMESPACE_ENTER;
 
 /// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
-std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
+std::list<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 {
-    std::vector<RectI> ret;
+    std::list<RectI> ret;
 
     if ( isNull() ) {
         return ret;

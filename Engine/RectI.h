@@ -437,7 +437,7 @@ public:
     }
 
 #endif
-    std::vector<RectI> splitIntoSmallerRects(int splitsCount) const;
+    std::list<RectI> splitIntoSmallerRects(int splitsCount) const;
     static RectI fromOfxRectI(const OfxRectI & r)
     {
         RectI ret(r.x1, r.y1, r.x2, r.y2);

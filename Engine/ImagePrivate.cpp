@@ -172,8 +172,7 @@ ImagePrivate::initTileAndFetchFromCache(int tx, int ty, int tileSizeX, int tileS
                                                      mipMapLevel,
                                                      isDraftImage,
                                                      bitdepth,
-                                                     tx,
-                                                     ty));
+                                                     tile.tileBounds));
             cachedBuffer->setKey(requestedScaleKey);
         }
 
@@ -225,8 +224,7 @@ ImagePrivate::initTileAndFetchFromCache(int tx, int ty, int tileSizeX, int tileS
                                                                     lookupLevel,
                                                                     useDraft,
                                                                     bitdepth,
-                                                                    tx,
-                                                                    ty));
+                                                                    tile.tileBounds));
 
                     assert(cachedBuffer);
                     cachedBuffer->setKey(keyToReadCache);

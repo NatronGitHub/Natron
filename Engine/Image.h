@@ -48,6 +48,26 @@
 
 NATRON_NAMESPACE_ENTER;
 
+
+struct TileCoord
+{
+    int tx,ty;
+};
+
+struct TileCoord_Compare
+{
+    bool operator() (const TileCoord& lhs, const TileCoord& rhs)
+    {
+        if (lhs.ty < rhs.ty) {
+            return true;
+        } else if (lhs.ty > rhs.ty) {
+            return false;
+        } else {
+            return lhs.tx < rhs.tx;
+        }
+    }
+};
+
 /**
  * @brief An image in Natron is a view one or multiple buffers that may be cached.
  * An image may have the following forms: tiled, single rectangle, packed buffer or mono-channel...
@@ -626,13 +646,26 @@ public:
      **/
     bool waitForPendingTiles();
 
+    enum TileStatusEnum
+    {
+        eTileStatusRendered,
+        eTileStatusNotRendered,
+        eTileStatusPending
+    };
+    struct TileState
+    {
+        RectI bounds;
+        TileStatusEnum status;
+    };
+
+    typedef std::map<TileCoord, TileState, TileCoord_Compare> TileStateMap;
+
     /**
      * @brief If this image is cached, this will return what portion of the image is left to render.
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
      **/
-    std::list<RectI> getRestToRender(bool *hasPendingResults) const;
-
+    void getRestToRender(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
 
     /**
      * @brief Fills the image with the given colour. If the image components

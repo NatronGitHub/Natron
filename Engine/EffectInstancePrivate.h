@@ -51,6 +51,36 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct RectToRender
+{
+    // The region in pixels to render
+    RectI rect;
+
+    // If this region is identity, this is the
+    // input time/view on which we should copy the image
+    int identityInputNumber;
+    TimeValue identityTime;
+    ViewIdx identityView;
+
+    // The type of render for this rectangle
+    RenderBackendTypeEnum backendType;
+
+    // The temporary image used to render the rectangle for
+    // each plane.
+    std::map<ImagePlaneDesc, ImagePtr> tmpRenderPlanes;
+
+    RectToRender()
+    : rect()
+    , identityInputNumber(-1)
+    , identityTime(0)
+    , identityView(0)
+    , backendType(eRenderBackendTypeCPU)
+    , tmpRenderPlanes()
+    {
+
+    }
+};
+
 class EffectInstance::Implementation
 {
     Q_DECLARE_TR_FUNCTIONS(EffectInstance)
@@ -151,27 +181,11 @@ public:
                                                     RectD* inputRoDIntersection);
 
 
-    void fetchCachedTiles(const FrameViewRequestPtr& requestPassData,
-                          const RectI& roiPixels,
-                          unsigned int mappedMipMapLevel);
-
-    struct RectToRender
-    {
-        // The region in pixels to render
-        RectI rect;
-
-        // If this region is identity, this is the
-        // input time/view on which we should copy the image
-        int identityInputNumber;
-        TimeValue identityTime;
-        ViewIdx identityView;
-
-        // The type of render for this rectangle
-        RenderBackendTypeEnum backendType;
-
-        // The temporary image used to render the rectangle
-        ImagePtr tmpRenderImage;
-    };
+    ImagePtr fetchCachedTiles(const FrameViewRequestPtr& requestPassData,
+                              const RectI& roiPixels,
+                              unsigned int mappedMipMapLevel,
+                              const ImagePlaneDesc& plane,
+                              bool delayAllocation);
 
 
 
@@ -181,38 +195,62 @@ public:
      * @param renderRects In output the rectangles left to render (identity or plain render).
      * @param hasPendingTiles True if some tiles are pending from another render
      **/
-    void checkRestToRender(const FrameViewRequestPtr& requestData, std::list<RectToRender>* renderRects, bool* hasPendingTiles);
-
-    void checkIdentityRectsToRender(const FrameViewRequestPtr& requestData,
-                                    const RectI & inputsRoDIntersection,
-                                    const std::list<RectI> & rectsToRender,
-                                    const RenderScale & renderMappedScale,
-                                    std::list<RectToRender>* finalRectsToRender);
+    void checkRestToRender(const FrameViewRequestPtr& requestData,
+                           const RectI& renderMappedRoI,
+                           const RenderScale& renderMappedScale,
+                           std::list<RectToRender>* renderRects,
+                           bool* hasPendingTiles);
 
 
-    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData, const RectI& roiPixels, std::list<RectToRender>* renderRects);
+    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
+                                                                 const RectI& roiPixels,
+                                                                 unsigned int mipMapLevel,
+                                                                 const RenderScale& combinedScale,
+                                                                 std::map<ImagePlaneDesc, ImagePtr> *producedPlanes,
+                                                                 std::list<RectToRender>* renderRects);
 
-    ActionRetCodeEnum launchInternalRender(const FrameViewRequestPtr& requestData, const std::list<RectToRender>& renderRects);
-    
+    ActionRetCodeEnum launchInternalRender(const FrameViewRequestPtr& requestData,
+                                           const RenderScale& combinedScale,
+                                           const std::list<RectToRender>& renderRects,
+                                           const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+
+
+    ActionRetCodeEnum renderForClone(const FrameViewRequestPtr& requestData,
+                                     const OSGLContextPtr& glContext,
+                                     const EffectOpenGLContextDataPtr& glContextData,
+                                     const RenderScale& combinedScale,
+                                     const std::list<RectToRender>& renderRects,
+                                     const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+
+    struct TiledRenderingFunctorArgs
+    {
+        FrameViewRequestPtr requestData;
+        OSGLContextPtr glContext;
+        EffectOpenGLContextDataPtr glContextData;
+        std::map<ImagePlaneDesc, ImagePtr> producedImagePlanes;
+    };
+
+    ActionRetCodeEnum tiledRenderingFunctorInSeparateThread(const RectToRender & rectToRender,
+                                                            const TiledRenderingFunctorArgs& args,
+                                                            QThread* spawnerThread);
+
 
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
-                                            const FrameViewRequestPtr& requestData,
-                                            const ImagePtr& mainInputImage);
+                                            const TiledRenderingFunctorArgs& args);
 
 
     ActionRetCodeEnum renderHandlerIdentity(const RectToRender & rectToRender,
                                             const RenderScale& combinedScale,
-                                            const FrameViewRequestPtr& requestData);
+                                            const TiledRenderingFunctorArgs& args);
 
-    ActionRetCodeEnum renderHandlerInternal(const EffectInstanceTLSDataPtr& tls,
+    ActionRetCodeEnum renderHandlerPlugin(const EffectInstanceTLSDataPtr& tls,
                                             const RectToRender & rectToRender,
                                             const RenderScale& combinedScale,
-                                            const FrameViewRequestPtr& requestData);
+                                            const TiledRenderingFunctorArgs& args);
 
     void renderHandlerPostProcess(const RectToRender & rectToRender,
                                   const RenderScale& combinedScale,
-                                  const FrameViewRequestPtr& requestData,
-                                  const ImagePtr& mainInputImage);
+                                  const TiledRenderingFunctorArgs& args);
 
 
     void checkMetadata(NodeMetadata &metadata);

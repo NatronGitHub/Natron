@@ -886,32 +886,32 @@ void
 Node::clearLastRenderedImage()
 {
     {
-        QMutexLocker k(&_imp->lastRenderedImageMutex);
-        _imp->lastRenderedImage.reset();
+        QMutexLocker k(&_imp->accumBufferMutex);
+        _imp->accumBuffer.reset();
     }
     _imp->effect->clearLastRenderedImage();
 }
 
 void
-Node::setLastRenderedImage(const ImagePtr& lastRenderedImage)
+Node::setAccumBuffer(const ImagePtr& accumBuffer)
 {
-    ImagePtr curLastRenderedImage;
+    ImagePtr curAccumBuffer;
     {
-        QMutexLocker k(&_imp->lastRenderedImageMutex);
-        curLastRenderedImage = _imp->lastRenderedImage;
-        _imp->lastRenderedImage = lastRenderedImage;
+        QMutexLocker k(&_imp->accumBufferMutex);
+        curAccumBuffer = _imp->accumBuffer;
+        _imp->accumBuffer = accumBuffer;
     }
     // Ensure it is not destroyed while under the mutex, this could lead to a deadlock if the OpenGL context
     // switches during the texture destruction.
-    curLastRenderedImage.reset();
+    curAccumBuffer.reset();
 }
 
 ImagePtr
-Node::getLastRenderedImage() const
+Node::getAccumBuffer() const
 {
     {
-        QMutexLocker k(&_imp->lastRenderedImageMutex);
-        return _imp->lastRenderedImage;
+        QMutexLocker k(&_imp->accumBufferMutex);
+        return _imp->accumBuffer;
     }
 }
 

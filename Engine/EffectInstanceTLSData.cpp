@@ -207,26 +207,11 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
     return true;
 }
 
-void
-EffectInstanceTLSData::updateCurrentRenderActionOutputPlanes(const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes)
-{
-    QMutexLocker k(&_imp->lock);
-    if (_imp->actionsArgsStack.empty()) {
-        return;
-    }
-    const GenericActionTLSArgsPtr& curAction = _imp->actionsArgsStack.back();
-    RenderActionTLSData* args = dynamic_cast<RenderActionTLSData*>(curAction.get());
-    if (!args) {
-        return;
-    }
-    args->outputPlanes = outputPlanes;
-}
-
 
 bool
 EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
                                                   RectI* renderWindowPixel,
-                                                  std::map<ImagePlaneDesc, PlaneToRender>* outputPlanes) const
+                                                  std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {

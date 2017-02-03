@@ -1365,7 +1365,7 @@ ViewerInstance::render(const RenderActionArgs& args)
         GetImageInArgs inArgs(args);
         inArgs.inputNb = 0;
         inArgs.layers = &layersToFetch;
-        bool ok = getImagePlanes(inArgs, &outArgs);
+        bool ok = getImagePlane(inArgs, &outArgs);
         if (!ok) {
             return eActionStatusFailed;
         }

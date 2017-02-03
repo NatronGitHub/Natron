@@ -832,7 +832,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
         inArgs->inputView = inputView;
         inArgs->inputNb = inputNb;
     }
-    bool ok = effect->getImagePlanes(*inArgs, &outArgs);
+    bool ok = effect->getImagePlane(*inArgs, &outArgs);
     if (!ok || outArgs.imagePlanes.empty() || outArgs.roiPixel.isNull()) {
         return false;
     }

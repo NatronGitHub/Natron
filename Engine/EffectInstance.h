@@ -170,14 +170,14 @@ public:
         std::list<std::pair<ImagePlaneDesc, ImagePtr > > outputPlanes;
 
         // The render args for this node.
-        TreeRenderNodeArgsPtr renderArgs;
+        FrameViewRequestPtr requestData;
 
         // Should render use OpenGL or CPU
         RenderBackendTypeEnum backendType;
 
         // The OpenGL context to used to render if backend type is set to eRenderBackendTypeOpenGL
         // or eRenderBackendTypeOSMesa
-        OSGLContextAttacherPtr glContextAttacher;
+        OSGLContextPtr glContext;
 
         // The effect data attached to the current OpenGL context. These are the data that were returned by
         // attachOpenGLContext.
@@ -186,96 +186,6 @@ public:
         // The RGBA channels to process. This can optimize render times for un-needed channels.
         std::bitset<4> processChannels;
         
-    };
-
-
-    enum RenderRoITypeEnum
-    {
-        // The frame view was only requested via getFramesNeeded by a node downstream the usual way.
-        // In this case we know exactly how many times a frame is requested and can correctly union
-        // all region of interests to do a single render pass.
-        // In this case we just have to lock the image in the cache until all downstream nodes have rendered
-        // their image.
-        eRenderRoITypeKnownFrame,
-
-        // If the plug-in called getImage without advertising first that it would need the image from
-        // getFramesNeeded, then this frame is considered "unknown":
-        // We don't know if it's going to be requested again by another branch of the tree and we don't know
-        // if the RoI so far is going to enclose all requests.
-        // This flag indicates that we MUST lock the image in the cache through the whole render of the frame.
-        eRenderRoITypeUnknownFrame
-    };
-
-
-    struct RenderRoIArgs
-    {
-        // Developper note: the fields were reordered to optimize packing.
-        // see http://www.catb.org/esr/structure-packing/
-
-        // The time at which to render
-        TimeValue time;
-
-        // The view to render
-        ViewIdx view;
-
-        // The rectangle to render (in canonical coordinates)
-        RectD roiCanonical;
-
-        // The proxy scale at which to render
-        RenderScale proxyScale;
-
-        // The mipmap level at which to render
-        unsigned int mipMapLevel;
-
-        // The image planes to render
-        std::list<ImagePlaneDesc> components;
-        TreeRenderNodeArgsPtr renderArgs;
-
-        // Set to false if you don't want the node to render using the GPU at all
-        // This is useful if the previous render failed because GPU memory was maxed out
-        bool allowGPURendering;
-
-        // True if this render is allowed to return a Matrix 3x3 instead of rendering.
-        // In this case it should return the pass-through input's image and the transformation matrix.
-        bool canReturnDeprecatedTransform3x3;
-
-        // True if this render is allowed to return a distortion function instead of rendering.
-        // In this case it should return the pass-through input's image and the distortion function.
-        bool canReturnDistortionFunc;
-
-        RenderRoIArgs()
-        : time(0)
-        , view(0)
-        , roi()
-        , proxyScale(1.)
-        , mipMapLevel(0)
-        , components()
-        , renderArgs()
-        , allowGPURendering(true)
-        , canReturnDeprecatedTransform3x3(false)
-        , canReturnDistortionFunc(false)
-        {
-        }
-
-        RenderRoIArgs(TimeValue time_,
-                      ViewIdx view_,
-                      const RectI & roi_,
-                      const RenderScale& proxyScale_,
-                      unsigned int mipMapLevel_,
-                      const std::list<ImagePlaneDesc> & components_,
-                      const TreeRenderNodeArgsPtr& renderArgs )
-        : time(time_)
-        , view(view_)
-        , roi(roi_)
-        , proxyScale(proxyScale_)
-        , mipMapLevel(mipMapLevel_)
-        , components(components_)
-        , renderArgs(renderArgs)
-        , allowGPURendering(true)
-        , canReturnDeprecatedTransform3x3(false)
-        , canReturnDistortionFunc(false)
-        {
-        }
     };
 
 
@@ -333,29 +243,17 @@ public:
         // - Must be set
         unsigned int inputMipMapLevel;
 
-        // The current action scale
-        // - Must be set
-        RenderScale currentScale;
-
-        // The current action time
-        // - Must be set
-        TimeValue currentTime;
-
-        // The current action view
-        // - Must be set
-        ViewIdx currentView;
-
         // When calling getImage while not during a render, these are the bounds to render in canonical coordinates.
         // If not specified, this will ask to render the full region of definition.
         //
         // Default - NULL
         const RectD* optionalBounds;
 
-        // If set this is the layers to fetch, otherwise we use the result of
+        // If set this is the plane to fetch, otherwise we use the result of
         // the getClipComponents action
         //
         // Default - NULL
-        const std::list<ImagePlaneDesc>* layers;
+        const ImagePlaneDesc* plane;
 
         // The backend that should be used to return the image. E.G: the input may compute a OpenGL texture but the effect pulling
         // the image may not support OpenGL. In this case setting storage to eRenderBackendTypeCPU would convert the OpenGL texture to
@@ -364,21 +262,38 @@ public:
         // Default - NULL
         const RenderBackendTypeEnum* renderBackend;
 
-        // A pointer to the render args of this node. MUST BE SET
+        // A pointer to the request data of the frame requesting the image
         //
         // Default - NULL
-        TreeRenderNodeArgsPtr renderArgs;
+        FrameViewRequestPtr requestData;
+
+        // True if the render should be draft (i.e: low res) because user is anyway
+        // scrubbing timeline or a slider
+        //
+        // Default - false
+        bool draftMode;
+
+        // Is this render triggered by a playback or render on disk ?
+        //
+        // Default - false
+        bool playback;
+
+        // Make sure each node in the tree gets rendered at least once
+        //
+        // Default - false
+        bool byPassCache;
+
 
         GetImageInArgs();
 
         // Initialize the inArgs with the current render action args
-        GetImageInArgs(const RenderActionArgs& args);
+        GetImageInArgs(const FrameViewRequestPtr& requestPass, const RenderBackendTypeEnum* backend);
     };
 
     struct GetImageOutArgs
     {
-        // For each plane requested the associated image.
-        std::map<ImagePlaneDesc, ImagePtr> imagePlanes;
+        // The resulting image plane
+        ImagePtr image;
 
         // The roi of the input effect effect on the image. This may be useful e.g to limit the bounds accessed by the plug-in
         RectI roiPixel;
@@ -409,15 +324,12 @@ public:
      * as getCanDistort().
      *
      **/
-    bool getImagePlanes(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
+    bool getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
 
 private:
-
     bool resolveRoIForGetImage(const GetImageInArgs& inArgs,
                                TimeValue inputTime,
-                               RectD* roiCanonical,
-                               RenderRoITypeEnum* type);
-
+                               RectD* roiCanonical);
 public:
 
     //////////////////////////////////////////////////////////////////////
@@ -759,10 +671,6 @@ public:
                                             const TreeRenderNodeArgsPtr& render,
                                             GetRegionOfDefinitionResultsPtr* results) WARN_UNUSED_RETURN;
 
-    ActionRetCodeEnum getRegionOfDefinitionFromCache(TimeValue time,
-                                              const RenderScale & scale,
-                                              ViewIdx view,
-                                              RectD* rod) WARN_UNUSED_RETURN;
 
     void calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
 
@@ -1211,7 +1119,10 @@ public:
      **/
     ActionRetCodeEnum launchRender(const FrameViewRequestPtr& requestData);
 
-    
+private:
+
+    ActionRetCodeEnum launchRenderInternal(const FrameViewRequestPtr& requestData);
+
 public:
 
 
@@ -1320,7 +1231,7 @@ public:
 
 
     /**
-     * @brief Deprecated: Returns whether the given input can have 3x3 tranformation matrices attached when calling getImagePlanes
+     * @brief Deprecated: Returns whether the given input can have 3x3 tranformation matrices attached when calling getImagePlane
      * getInputCanReceiveDistortion() should be preferred
      **/
     virtual bool getInputCanReceiveTransform(int /*inputNb*/) const
@@ -1759,11 +1670,6 @@ private:
 
 
 
-    /**
-     * @brief Launch the render action for a given render clone
-     **/
-    ActionRetCodeEnum renderForClone(const RenderRoIArgs& args,
-                                     const ImagePlanesToRenderPtr & planes;
 
 
 

@@ -106,7 +106,35 @@ class FrameViewRequest
 {
 public:
 
-    FrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, const TreeRenderNodeArgsPtr& render);
+    /**
+     * @brief Status code returned by the notifyRenderStarted() function.
+     **/
+    enum FrameViewRequestStatusEnum
+    {
+        // The launchRender() function was never called for this object:
+        // The caller is expected to render the frame
+        eFrameViewRequestStatusNotRendered,
+
+        // This object is pass-through: launchRender() should
+        // return immediately
+        eFrameViewRequestStatusPassThrough,
+
+        // The frame is being rendered by another thread, the caller
+        // is expected to call waitForPendingResults() until
+        // results become available.
+        eFrameViewRequestStatusPending,
+
+        // The frame has been rendered: the caller can just return
+        // immediately from launchRender()
+        eFrameViewRequestStatusRendered,
+    };
+
+    FrameViewRequest(TimeValue time,
+                     ViewIdx view,
+                     unsigned int mipMapLevel,
+                     const ImagePlaneDesc& plane,
+                     U64 timeViewHash,
+                     const TreeRenderNodeArgsPtr& render);
 
     ~FrameViewRequest();
 
@@ -124,6 +152,32 @@ public:
      * @brief Get the mipmap level at which to render
      **/
     unsigned int getMipMapLevel() const;
+
+    /**
+     * @brief Called in requestRender to initialize the status of this object.
+     **/
+    void initStatus(FrameViewRequestStatusEnum status);
+
+    /**
+     * @brief Called on startup of launchRender() function to 
+     * determine what next to do.
+     * @see FrameViewRequestStatusEnum for what to do given the status.
+     **/
+    FrameViewRequestStatusEnum notifyRenderStarted();
+
+    /**
+     * @brief Called when launchRender() ends when it was rendering a frame.
+     * This is only needed if the status returned by notifyRenderStarted() is 
+     * eFrameViewRequestStatusNotRendered.
+     **/
+    void notifyRenderFinished(ActionRetCodeEnum stat);
+
+    /**
+     * @brief This should be called right after notifyRenderStarted() if the value
+     * returned was eFrameViewRequestStatusPending. After this function the launchRender
+     * function can just return
+     **/
+    ActionRetCodeEnum waitForPendingResults();
 
     /**
      * @brief Get the render mapped mipmap level (i.e: 0 if the node
@@ -234,32 +288,7 @@ public:
     /**
      * @brief Returns the hash for this frame view
      **/
-    bool getHash(U64* hash) const;
-
-    /**
-     * @brief Set the hash for this frame view
-     **/
-    void setHash(U64 hash);
-
-    /**
-     * @brief Returns the identity action results for this frame/view
-     **/
-    IsIdentityResultsPtr getIdentityResults() const;
-
-    /**
-     * @brief Set the identity action results for this frame/view
-     **/
-    void setIdentityResults(const IsIdentityResultsPtr& results);
-
-    /**
-     * @brief Returns the get region of definition action results for this frame/view
-     **/
-    GetRegionOfDefinitionResultsPtr getRegionOfDefinitionResults() const;
-
-    /**
-     * @brief Set the get region of definition action results for this frame/view
-     **/
-    void setRegionOfDefinitionResults(const GetRegionOfDefinitionResultsPtr& results);
+    U64 getHash() const;
 
     /**
      * @brief Returns the frames needed action results for this frame/view
@@ -436,14 +465,10 @@ public:
     bool getTimeInvariantMetadataHash(U64* hash) const;
 
     /**
-     * @brief Convenience function, same as getFrameViewRequest(time,view)->finalRoi
-     **/
-    bool getFrameViewCanonicalRoI(TimeValue time, ViewIdx view, RectD* roi) const;
-
-    /**
-     * @brief Convenience function, same as getFrameViewRequest(time,view)->frameViewHash
+     * @brief Get the time/view variant hash
      **/
     bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
+    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
 
     /**
      * @brief Returns a previously requested frame/view request from requestRender. This contains most actions
@@ -456,7 +481,11 @@ public:
      * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
      * @returns True if it was created, false otherwise
      **/
-    bool getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, FrameViewRequestPtr* request);
+    bool getOrCreateFrameViewRequest(TimeValue time,
+                                     ViewIdx view,
+                                     unsigned int mipMapLevel,
+                                     const ImagePlaneDesc& plane,
+                                     FrameViewRequestPtr* request);
 
     /**
      * @brief Requests a render at the given time/view for the given render window (in canonical coordinates) for this node.
@@ -467,6 +496,7 @@ public:
                                     unsigned int mipMapLevel,
                                     const ImagePlaneDesc& plane,
                                     const RectD & canonicalRenderWindow,
+                                    int inputNbInRequester,
                                     const FrameViewRequestPtr& requester,
                                     FrameViewRequestPtr* createdRequest);
     

@@ -158,8 +158,8 @@ struct ImageTileKeyShmData
     unsigned int mipMapLevel;
     bool draftMode;
     ImageBitDepthEnum bitdepth;
-    int tileX;
-    int tileY;
+    RectI tileBounds;
+    
 
     ImageTileKeyShmData()
     : nodeTimeInvariantHash(0)
@@ -169,8 +169,7 @@ struct ImageTileKeyShmData
     , mipMapLevel(0)
     , draftMode(false)
     , bitdepth(eImageBitDepthNone)
-    , tileX(0)
-    , tileY(0)
+    , tileBounds()
     {
 
     }
@@ -199,8 +198,7 @@ ImageTileKey::ImageTileKey(U64 nodeTimeInvariantHash,
                            unsigned int mipMapLevel,
                            bool draftMode,
                            ImageBitDepthEnum bitdepth,
-                           int tileX,
-                           int tileY)
+                           const RectI& tileBounds)
 : CacheEntryKeyBase()
 , _imp(new ImageTileKeyPrivate())
 {
@@ -212,8 +210,7 @@ ImageTileKey::ImageTileKey(U64 nodeTimeInvariantHash,
     _imp->data.mipMapLevel = mipMapLevel;
     _imp->data.draftMode = draftMode;
     _imp->data.bitdepth = bitdepth;
-    _imp->data.tileX = tileX;
-    _imp->data.tileY = tileY;
+    _imp->data.tileBounds = tileBounds;
 }
 
 ImageTileKey::ImageTileKey()
@@ -264,8 +261,10 @@ ImageTileKey::appendToHash(Hash64* hash) const
     hash->append(_imp->data.mipMapLevel);
     hash->append(_imp->data.draftMode);
     hash->append((int)_imp->data.bitdepth);
-    hash->append(_imp->data.tileX);
-    hash->append(_imp->data.tileY);
+    hash->append(_imp->data.tileBounds.x1);
+    hash->append(_imp->data.tileBounds.x2);
+    hash->append(_imp->data.tileBounds.y1);
+    hash->append(_imp->data.tileBounds.y2);
 }
 
 std::string
@@ -274,19 +273,14 @@ ImageTileKey::getLayerChannel() const
     return _imp->layerChannel;
 }
 
-int
-ImageTileKey::getTileX() const
+const RectI&
+ImageTileKey::getTileBounds() const
 {
-    return _imp->data.tileX;
+    return _imp->data.tileBounds;
 }
 
-int
-ImageTileKey::getTileY() const
-{
-    return _imp->data.tileY;
-}
 
-RenderScale
+const RenderScale &
 ImageTileKey::getProxyScale() const
 {
     return _imp->data.proxyScale;
@@ -320,10 +314,8 @@ ImageTileKey::getMetadataSize() const
     ret += (_imp->layerChannel.size() + 1) * sizeof(char);
     ret += sizeof(_imp->data.time);
     ret += sizeof(_imp->data.view);
-    ret += sizeof(_imp->data.tileX);
-    ret += sizeof(_imp->data.tileY);
-    ret += sizeof(_imp->data.proxyScale.x);
-    ret += sizeof(_imp->data.proxyScale.y);
+    ret += sizeof(_imp->data.tileBounds);
+    ret += sizeof(_imp->data.proxyScale);
     ret += sizeof(_imp->data.mipMapLevel);
     ret += sizeof(_imp->data.draftMode);
     ret += sizeof(_imp->data.bitdepth);
@@ -352,8 +344,7 @@ ImageTileKey::toMemorySegment(ExternalSegmentType* segment, const std::string& o
     data->nodeTimeInvariantHash = _imp->data.nodeTimeInvariantHash;
     data->time = _imp->data.time;
     data->view = _imp->data.view;
-    data->tileX = _imp->data.tileX;
-    data->tileY = _imp->data.tileY;
+    data->tileBounds = _imp->data.tileBounds;
     data->proxyScale = _imp->data.proxyScale;
     data->mipMapLevel = _imp->data.mipMapLevel;
     data->draftMode = _imp->data.draftMode;
@@ -379,8 +370,7 @@ ImageTileKey::fromMemorySegment(ExternalSegmentType* segment, const std::string&
     _imp->data.nodeTimeInvariantHash = data->nodeTimeInvariantHash;
     _imp->data.time = data->time;
     _imp->data.view = data->view;
-    _imp->data.tileX = data->tileX;
-    _imp->data.tileY = data->tileY;
+    _imp->data.tileBounds = data->tileBounds;
     _imp->data.proxyScale = data->proxyScale;
     _imp->data.mipMapLevel = data->mipMapLevel;
     _imp->data.draftMode = data->draftMode;

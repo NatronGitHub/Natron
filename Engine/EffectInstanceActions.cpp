@@ -164,7 +164,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         }
 
         // Natron adds for all non multi-planar effects a default layer selector to emulate
-        // multi-plane even if the plug-in is not aware of it. When calling getImagePlanes(), the
+        // multi-plane even if the plug-in is not aware of it. When calling getImagePlane(), the
         // plug-in will receive this user-selected plane, mapped to the number of components indicated
         // by the plug-in in getTimeInvariantMetadatas
         ImagePlaneDesc layer;
@@ -308,15 +308,15 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         mergeLayersList(metadataPlanes, layersProduced);
     }
 
-    // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
-    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
-    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) ||
-        ( passThrough == ePassThroughRenderAllRequestedPlanes) ) {
 
+    // If the plug-in does not block upstream planes, recurse up-stream on the pass-through input to get available components.
+    std::list<ImagePlaneDesc> upstreamAvailableLayers;
+    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) || (passThrough == ePassThroughRenderAllRequestedPlanes) ) {
+        
         assert(*passThroughInputNb != -1);
 
 
-        std::list<ImagePlaneDesc> upstreamAvailableLayers;
         ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
         if (!isFailureRetCode(stat)) {
 
@@ -326,11 +326,29 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
             *passThroughPlanes = upstreamAvailableLayers;
         }
-
-
-
     } // if pass-through for planes
 
+    // For masks, if the plug-in defaults to the color plane, use the user selected plane instead
+    {
+        int maxInputs = getMaxInputCount();
+        for (int i = 0; i < maxInputs; ++i) {
+            if (!isInputMask(i)) {
+                continue;
+            }
+            std::list<ImagePlaneDesc>& maskPlanesNeeded = (*inputLayersNeeded)[i];
+            if (!maskPlanesNeeded.empty()) {
+                if (!maskPlanesNeeded.front().isColorPlane()) {
+                    continue;
+                }
+            }
+            ImagePlaneDesc maskComp;
+            int channelMask = getNode()->getMaskChannel(i, upstreamAvailableLayers, &maskComp);
+            if (channelMask >= 0 && maskComp.getNumComponents() > 0) {
+                maskPlanesNeeded.clear();
+                maskPlanesNeeded.push_back(maskComp);
+            }
+        }
+    }
 
 
     for (int i = 0; i < 4; ++i) {
@@ -439,40 +457,20 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
         }
     }
 
-
-    // Get the render local args
-    FrameViewRequestPtr fvRequest;
-    if (render) {
-
-        // Ensure the render object corresponds to this node.
-        assert(render->getNode() == getNode());
-
-        // We may not have created a request object for this frame/view yet. Create it.
-        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
-        (void)created;
-    }
-
     U64 hash = 0;
-
-    if (fvRequest) {
-        GetComponentsResultsPtr cached = fvRequest->getComponentsResults();
-        if (cached) {
-            *results = cached;
-            return eActionStatusOK;
-        }
-        fvRequest->getHash(&hash);
-    }
-
-
     // Get a hash to cache the results
-    if (hash == 0) {
+    if (!render || !render->getFrameViewHash(time, view, &hash)) {
         ComputeHashArgs hashArgs;
         hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
+        if (render) {
+            render->setFrameViewHash(time, view, hash);
+        }
     }
+
 
     assert(hash != 0);
 
@@ -536,9 +534,6 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
 
     (*results)->setResults(inputLayersNeeded, outputLayersProduced, passThroughPlanes, passThroughInputNb, passThroughTime, passThroughView, processChannels, processAllRequested);
 
-    if (fvRequest) {
-        fvRequest->setComponentsNeededResults(*results);
-    }
     cacheAccess->insertInCache();
 
     return eActionStatusOK;
@@ -823,8 +818,8 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
 
     bool isDeprecatedTransformSupportEnabled;
     bool distortSupported;
+
     // Get the render local args
-    FrameViewRequestPtr fvRequest;
     if (render) {
 
         isDeprecatedTransformSupportEnabled = render->getCurrentTransformationSupport_deprecated();
@@ -834,22 +829,11 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         // Ensure the render object corresponds to this node.
         assert(render->getNode() == getNode());
 
-        // We may not have created a request object for this frame/view yet. Create it.
-        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
-        (void)created;
     } else {
         isDeprecatedTransformSupportEnabled = getNode()->getCurrentCanTransform();
         distortSupported = getNode()->getCurrentCanDistort();
     }
 
-
-    if (fvRequest) {
-        DistortionFunction2DPtr cachedDisto = fvRequest->getDistortionResults();
-        if (cachedDisto) {
-            *outDisto = cachedDisto;
-            return eActionStatusOK;
-        }
-    }
 
     // If the effect is identity, do not call the getDistortion action, instead just return an identity
     // identity time and view.
@@ -900,10 +884,6 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
             Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, mappedScale.x, mappedScale.y, false);
             *(*outDisto)->transformMatrix = Transform::matMul(Transform::matMul(pixelToCanonical, *(*outDisto)->transformMatrix), canonicalToPixel);
         }
-    }
-
-    if (fvRequest) {
-        fvRequest->setDistortionResults(*outDisto);
     }
     
     return eActionStatusOK;
@@ -961,36 +941,21 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
-    // Get the render local args
-    FrameViewRequestPtr fvRequest;
-    if (render) {
-
-        // Ensure the render object corresponds to this node.
-        assert(render->getNode() == getNode());
-
-        // We may not have created a request object for this frame/view yet. Create it.
-        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
-        (void)created;
-    }
 
     U64 hash = 0;
-    if (fvRequest) {
-        *results = fvRequest->getIdentityResults();
-        if (*results) {
-            return eActionStatusOK;
-        }
-        fvRequest->getHash(&hash);
-    }
-
     // Get a hash to cache the results
-    if (useIdentityCache && hash == 0) {
+    if (useIdentityCache && (!render || !render->getFrameViewHash(time, view, &hash))) {
         ComputeHashArgs hashArgs;
         hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
+        if (render) {
+            render->setFrameViewHash(time, view, hash);
+        }
     }
+
 
     IsIdentityKeyPtr cacheKey;
     {
@@ -1085,62 +1050,12 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         (*results)->setIdentityData(-1, time, view);
     }
 
-    if (fvRequest) {
-        fvRequest->setIdentityResults((*results));
-    }
     if (cacheAccess) {
         cacheAccess->insertInCache();
     }
     return eActionStatusOK;
 } // isIdentity_public
 
-ActionRetCodeEnum
-EffectInstance::getRegionOfDefinitionFromCache(TimeValue inArgsTime,
-                                               const RenderScale & scale,
-                                               ViewIdx view,
-                                               RectD* results)
-{
-    TimeValue time = inArgsTime;
-
-    // Get the hash of the node
-    U64 hash = 0;
-    {
-        FindHashArgs findArgs;
-        findArgs.time = time;
-        findArgs.view = view;
-        findArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-        bool gotHash = findCachedHash(findArgs, &hash);
-
-        if (!gotHash) {
-            return eActionStatusFailed;
-        }
-    }
-    assert(hash != 0);
-
-    GetRegionOfDefinitionKeyPtr cacheKey;
-
-    {
-
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, TreeRenderNodeArgsPtr(), &timeKey, &viewKey);
-        cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, scale, getNode()->getPluginID()));
-    }
-
-    GetRegionOfDefinitionResultsPtr ret = GetRegionOfDefinitionResults::create(cacheKey);
-
-    CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(ret);
-
-    CacheEntryLocker::CacheEntryStatusEnum cacheStatus = cacheAccess->getStatus();
-    if (cacheStatus == CacheEntryLocker::eCacheEntryStatusCached) {
-        *results = ret->getRoD();
-        return eActionStatusOK;
-    } else {
-        return eActionStatusFailed;
-    }
-
-    return eActionStatusOK;
-} // getRegionOfDefinitionFromCache
 
 ActionRetCodeEnum
 EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
@@ -1160,39 +1075,23 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
-    // Get the render local args
-    FrameViewRequestPtr fvRequest;
-    if (render) {
-
-        // Ensure the render object corresponds to this node.
-        assert(render->getNode() == getNode());
-
-        // We may not have created a request object for this frame/view yet. Create it.
-        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
-        (void)created;
-    }
-    U64 hash = 0;
-
-    if (fvRequest) {
-        *results = fvRequest->getRegionOfDefinitionResults();
-        if (*results) {
-            return eActionStatusOK;
-        }
-        fvRequest->getHash(&hash);
-    }
 
     // When drawing a paint-stroke, never use the getRegionOfDefinition cache because the RoD changes at each render step
     // but the hash does not (so that each draw step can re-use the same image.)
     bool useCache = !getNode()->isDuringPaintStrokeCreation();
 
+    U64 hash = 0;
     // Get a hash to cache the results
-    if (useCache && hash == 0) {
+    if (useCache && (!render || !render->getFrameViewHash(time, view, &hash))) {
         ComputeHashArgs hashArgs;
         hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
+        if (render) {
+            render->setFrameViewHash(time, view, hash);
+        }
     }
 
     GetRegionOfDefinitionKeyPtr cacheKey;
@@ -1300,9 +1199,6 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         } // inputIdentityNb == -1
     }
 
-    if (fvRequest) {
-        fvRequest->setRegionOfDefinitionResults(*results);
-    }
     if (cacheAccess) {
         cacheAccess->insertInCache();
     }
@@ -1596,26 +1492,20 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         }
     }
 
-    // Get the render local args
-    FrameViewRequestPtr fvRequest;
-    if (render) {
 
-        // Ensure the render object corresponds to this node.
-        assert(render->getNode() == getNode());
-
-        // We may not have created a request object for this frame/view yet. Create it.
-        bool created = render->getOrCreateFrameViewRequest(time, view, &fvRequest);
-        (void)created;
-    }
-    U64 hashValue = 0;
-    if (fvRequest) {
-        *results = fvRequest->getFramesNeededResults();
-        fvRequest->getHash(&hashValue);
-        if (*results) {
-            return eActionStatusOK;
+    U64 hash = 0;
+    // Get a hash to cache the results
+    if (!render || !render->getFrameViewHash(time, view, &hash)) {
+        ComputeHashArgs hashArgs;
+        hashArgs.render = render;
+        hashArgs.time = time;
+        hashArgs.view = view;
+        hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+        hash = computeHash(hashArgs);
+        if (render) {
+            render->setFrameViewHash(time, view, hash);
         }
     }
-
     NodePtr thisNode = getNode();
 
     GetFramesNeededKeyPtr cacheKey;
@@ -1623,7 +1513,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
         TimeValue timeKey;
         ViewIdx viewKey;
         getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
-        cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
+        cacheKey.reset(new GetFramesNeededKey(hash, timeKey, viewKey, getNode()->getPluginID()));
     }
     *results = GetFramesNeededResults::create(cacheKey);
 
@@ -1632,7 +1522,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     // Only use the cache if we got a hash.
     // We cannot compute the hash here because the hash itself requires the result of this function.
     // The results of this function is cached externally instead
-    bool isHashCached = hashValue != 0;
+    bool isHashCached = hash != 0;
     if (isHashCached) {
 
 
@@ -1728,10 +1618,6 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     
 
     (*results)->setFramesNeeded(framesNeeded);
-    
-    if (fvRequest) {
-        fvRequest->setFramesNeededResults(*results);
-    }
 
     if (cacheAccess) {
         cacheAccess->insertInCache();

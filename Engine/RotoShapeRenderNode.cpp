@@ -455,7 +455,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 GetImageOutArgs outArgs;
                 GetImageInArgs inArgs(args);
                 inArgs.inputNb = 0;
-                if (!getImagePlanes(inArgs, &outArgs)) {
+                if (!getImagePlane(inArgs, &outArgs)) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
                     return eActionStatusFailed;
                 }

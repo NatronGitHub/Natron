@@ -140,6 +140,18 @@ struct FrameViewRequestPrivate
     // The caching policy for this frame/view
     CacheAccessModeEnum cachingPolicy;
 
+    // Protects status
+    mutable QMutex statusMutex;
+
+    // Used when the status is pending
+    QWaitCondition statusPendingCond;
+
+    // The status of the frame/view
+    FrameViewRequest::FrameViewRequestStatusEnum status;
+
+    // The retCode of the launchRender function
+    ActionRetCodeEnum retCode;
+
     // The output image
     ImagePtr image;
 
@@ -164,12 +176,6 @@ struct FrameViewRequestPrivate
     // The pre-rendered input images
     PreRenderedDataMap inputImages;
 
-    // The RoD of the effect at this frame/view
-    GetRegionOfDefinitionResultsPtr rod;
-
-    // Identity data at this frame/view
-    IsIdentityResultsPtr identityData;
-
     // The needed components at this frame/view
     GetComponentsResultsPtr neededComps;
 
@@ -182,11 +188,13 @@ struct FrameViewRequestPrivate
     // True if cache write is allowed but not cache read
     bool byPassCache;
 
-    // True if the frameViewHash at least is valid
-    bool hashValid;
 
-
-    FrameViewRequestPrivate(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, const TreeRenderNodeArgsPtr& renderArgs)
+    FrameViewRequestPrivate(TimeValue time,
+                            ViewIdx view,
+                            unsigned int mipMapLevel,
+                            const ImagePlaneDesc& plane,
+                            U64 timeViewHash,
+                            const TreeRenderNodeArgsPtr& renderArgs)
     : lock()
     , renderArgs(renderArgs)
     , time(time)
@@ -195,27 +203,33 @@ struct FrameViewRequestPrivate
     , renderMappedMipMapLevel(mipMapLevel)
     , plane(plane)
     , cachingPolicy(eCacheAccessModeReadWrite)
+    , statusMutex()
+    , statusPendingCond()
+    , status(FrameViewRequest::eFrameViewRequestStatusNotRendered)
+    , retCode(eActionStatusOK)
     , image()
     , finalRoi()
     , dependencies()
     , listeners()
     , frameViewsNeeded()
-    , frameViewHash(0)
+    , frameViewHash(timeViewHash)
     , inputImages()
-    , rod()
-    , identityData()
     , neededComps()
     , distortion()
     , distortionStack()
     , byPassCache()
-    , hashValid(false)
     {
         
     }
 };
 
-FrameViewRequest::FrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, const TreeRenderNodeArgsPtr& renderArgs)
-: _imp(new FrameViewRequestPrivate(time, view, mipMapLevel, plane, renderArgs))
+FrameViewRequest::FrameViewRequest(TimeValue time,
+                                   ViewIdx view,
+                                   unsigned int mipMapLevel,
+                                   const ImagePlaneDesc& plane,
+                                   U64 timeViewHash,
+                                   const TreeRenderNodeArgsPtr& renderArgs)
+: _imp(new FrameViewRequestPrivate(time, view, mipMapLevel, plane, timeViewHash, renderArgs))
 {
 
     assert(renderArgs);
@@ -300,6 +314,62 @@ FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
 {
     _imp->cachingPolicy = policy;
 }
+
+void
+FrameViewRequest::initStatus(FrameViewRequestStatusEnum status)
+{
+    QMutexLocker k(&_imp->statusMutex);
+    _imp->status = status;
+}
+
+FrameViewRequest::FrameViewRequestStatusEnum
+FrameViewRequest::notifyRenderStarted()
+{
+    QMutexLocker k(&_imp->statusMutex);
+    if (_imp->status == FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        _imp->status = FrameViewRequest::eFrameViewRequestStatusPending;
+        return FrameViewRequest::eFrameViewRequestStatusNotRendered;
+    }
+    return _imp->status;
+}
+
+
+void
+FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
+{
+    QMutexLocker k(&_imp->statusMutex);
+    _imp->retCode = stat;
+
+    // Wake-up all other threads stuck in waitForPendingResults()
+    _imp->statusPendingCond.wakeAll();
+}
+
+
+ActionRetCodeEnum
+FrameViewRequest::waitForPendingResults()
+{
+    // If this thread is a threadpool thread, it may wait for a while that results gets available.
+    // Release the thread to the thread pool so that it may use this thread for other runnables
+    // and reserve it back when done waiting.
+    bool hasReleasedThread = false;
+    if (isRunningInThreadPoolThread()) {
+        QThreadPool::globalInstance()->releaseThread();
+        hasReleasedThread = true;
+    }
+    ActionRetCodeEnum ret;
+    {
+        QMutexLocker k(&_imp->statusMutex);
+        while (_imp->status == FrameViewRequest::eFrameViewRequestStatusPending) {
+            _imp->statusPendingCond.wait(&_imp->statusMutex);
+        }
+        ret = _imp->retCode;
+    }
+    if (hasReleasedThread) {
+        QThreadPool::globalInstance()->reserveThread();
+    }
+
+    return ret;
+} // waitForPendingResults
 
 void
 FrameViewRequest::appendPreRenderedInputs(int inputNb,
@@ -471,54 +541,13 @@ FrameViewRequest::checkIfByPassCacheEnabledAndTurnoff() const
 
 
 
-bool
-FrameViewRequest::getHash(U64* hash) const
+U64
+FrameViewRequest::getHash() const
 {
     QMutexLocker k(&_imp->lock);
-    if (!_imp->hashValid) {
-        return false;
-    }
-    *hash = _imp->frameViewHash;
-    return true;
+    return _imp->frameViewHash;
 }
 
-void
-FrameViewRequest::setHash(U64 hash)
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->frameViewHash = hash;
-    _imp->hashValid = true;
-}
-
-
-IsIdentityResultsPtr
-FrameViewRequest::getIdentityResults() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->identityData;
-
-}
-
-void
-FrameViewRequest::setIdentityResults(const IsIdentityResultsPtr& results)
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->identityData = results;
-}
-
-GetRegionOfDefinitionResultsPtr
-FrameViewRequest::getRegionOfDefinitionResults() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->rod;
-}
-
-void
-FrameViewRequest::setRegionOfDefinitionResults(const GetRegionOfDefinitionResultsPtr& rod)
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->rod = rod;
-}
 
 GetFramesNeededResultsPtr
 FrameViewRequest::getFramesNeededResults() const
@@ -660,7 +689,12 @@ struct TreeRenderNodeArgsPrivate
     // This is the hash used to cache time and view invariant stuff
     U64 timeViewInvariantHash;
 
+    // Hash used for metadata (depdending only for parameters that
+    // are metadata dependent)
     U64 metadataTimeInvariantHash;
+
+    // Time/view variant hash
+    FrameViewHashMap timeViewVariantHash;
 
     // The number of times this node has been visited (i.e: the number of times we called renderRoI on it)
     int nVisits;
@@ -694,6 +728,7 @@ struct TreeRenderNodeArgsPrivate
     , currentSequentialPref(node->getCurrentSequentialRenderSupport())
     , timeViewInvariantHash(0)
     , metadataTimeInvariantHash(0)
+    , timeViewVariantHash()
     , nVisits(0)
     , timeViewInvariantHashValid(false)
     , metadataTimeInvariantHashValid(false)
@@ -834,8 +869,19 @@ TreeRenderNodeArgs::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, un
         return false;
     }
 
+    U64 hash;
+    if (!getFrameViewHash(time, view, &hash)) {
+        HashableObject::ComputeHashArgs args;
+        args.time = time;
+        args.view = view;
+        args.render = shared_from_this();
+        args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+        hash = getNode()->getEffectInstance()->computeHash(args);
+        setFrameViewHash(time, view, hash);
+    }
+
     FrameViewRequestPtr& ret = _imp->frames[p];
-    ret.reset(new FrameViewRequest(time, view, mipMapLevel, plane, shared_from_this()));
+    ret.reset(new FrameViewRequest(time, view, mipMapLevel, plane, hash, shared_from_this()));
     *request = ret;
     return true;
 }
@@ -959,30 +1005,24 @@ TreeRenderNodeArgs::setTimeViewInvariantHash(U64 hash)
 }
 
 bool
-TreeRenderNodeArgs::getFrameViewCanonicalRoI(TimeValue time,
-                                           ViewIdx view,
-                                           RectD* roi) const
-{
-    FrameViewRequestConstPtr fv = getFrameViewRequest(time, view);
-
-    if (!fv) {
-        return false;
-    }
-    *roi = fv->getCurrentRoI();
-
-    return true;
-}
-
-bool
 TreeRenderNodeArgs::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const
 {
     FrameViewPair p = {time,view};
-    NodeFrameViewRequestData::const_iterator found = _imp->frames.find(p);
-    if (found == _imp->frames.end()) {
-        return 0;
+    QMutexLocker k(&_imp->lock);
+    FrameViewHashMap::const_iterator found = _imp->timeViewVariantHash.find(p);
+    if (found == _imp->timeViewVariantHash.end()) {
+        return false;
     }
+    *hash = found->second;
+    return true;
+}
 
-    return found->second->getHash(hash);
+void
+TreeRenderNodeArgs::setFrameViewHash(TimeValue time, ViewIdx view, U64 hash)
+{
+    QMutexLocker k(&_imp->lock);
+    FrameViewPair p = {time,view};
+    _imp->timeViewVariantHash[p] = hash;
 }
 
 ActionRetCodeEnum
@@ -991,6 +1031,7 @@ TreeRenderNodeArgs::requestRender(TimeValue time,
                                   unsigned int mipMapLevel,
                                   const ImagePlaneDesc& plane,
                                   const RectD& canonicalRenderWindow,
+                                  int inputNbInRequester,
                                   const FrameViewRequestPtr& requester,
                                   FrameViewRequestPtr* createdRequest)
 {
@@ -1013,200 +1054,22 @@ TreeRenderNodeArgs::requestRender(TimeValue time,
     }
     *createdRequest = thisFrameView;
 
+    // If this render has no dependencies, add it to the things to render
+    if (thisFrameView->getNumDependencies() == 0) {
+        getParentRender()->addDependencyFreeRender(thisFrameView);
+    }
+    getParentRender()->addTaskToRender(thisFrameView);
 
     // Add this frame/view as depdency of the requester
-    requester->addDependency(thisFrameView);
-
-    // Check the proxy scale and that this node can render at the given scale.
-    const RenderScale &scale = getParentRender()->getProxyMipMapScale();
-    {
-        const RenderScale& proxyScale = getParentRender()->getProxyScale();
-        if (proxyScale.x != 1. || proxyScale.y != 1.) {
-            node->setPersistentMessage(eMessageTypeError, node->tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
-            return eActionStatusFailed;
-        }
-
+    if (requester) {
+        requester->addDependency(thisFrameView);
     }
 
-    double par = effect->getAspectRatio(thisShared, -1);
-    EffectInstance::ViewInvarianceLevel viewInvariance = effect->isViewInvariant();
-
-    // Check if identity on the render window
-    int identityInputNb;
-    TimeValue identityTime;
-    ViewIdx identityView;
-    RectI identityRegionPixel;
-    canonicalRenderWindow.toPixelEnclosing(scale, par, &identityRegionPixel);
-
-    {
-        IsIdentityResultsPtr results;
-        ActionRetCodeEnum stat = effect->isIdentity_public(true, time, scale, identityRegionPixel, view, thisShared, &results);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
-        results->getIdentityData(&identityInputNb, &identityTime, &identityView);
-    }
-
-    // Upon first request of this frame/view, set the finalRoI, otherwise union it to the existing RoI.
-
-    {
-        RectD finalRoi = fvRequest->getCurrentRoI();
-        bool finalRoIEmpty = finalRoi.isNull();
-        if (!finalRoIEmpty && finalRoi.contains(canonicalRenderWindow)) {
-            // Do not recurse if the roi did not add anything new to render
-            return eActionStatusOK;
-        }
-        if (finalRoIEmpty) {
-            fvRequest->setCurrentRoI(canonicalRenderWindow);
-        } else {
-            finalRoi.merge(canonicalRenderWindow);
-            fvRequest->setCurrentRoI(finalRoi);
-        }
-    }
-
-    if (identityInputNb == -2) {
-        assert(identityTime != time || viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant);
-        // be safe in release mode otherwise we hit an infinite recursion
-        if ( (identityTime != time) || (viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ) {
-
-            ViewIdx inputView = (view != 0 && viewInvariance == EffectInstance::eViewInvarianceAllViewsInvariant) ? ViewIdx(0) : view;
-            ActionRetCodeEnum stat = requestRender(identityTime,
-                                                     inputView,
-                                                     canonicalRenderWindow,
-                                                     effect);
-
-            return stat;
-        }
-
-        //Should fail on the assert above
-        return eActionStatusFailed;
-    } else if (identityInputNb != -1) {
-        EffectInstancePtr inputEffectIdentity = effect->getInput(identityInputNb);
-        if (inputEffectIdentity) {
-
-
-            NodePtr inputIdentityNode = inputEffectIdentity->getNode();
-
-            TreeRenderNodeArgsPtr inputFrameArgs = getInputRenderArgs(identityInputNb);
-            assert(inputFrameArgs);
-
-            ActionRetCodeEnum stat = inputFrameArgs->requestRender(identityTime,
-                                                              identityView,
-                                                              canonicalRenderWindow,
-                                                              effect);
-            
-            return stat;
-        }
-
-        // Aalways accept if identity has no input, it will produce a black image in the worst case scenario.
-        return eActionStatusInputDisconnected;
-    }
-
-
-
-
-
-    // Get frames needed to recurse upstream.
-    FramesNeededMap framesNeeded;
-    {
-        GetFramesNeededResultsPtr results;
-        ActionRetCodeEnum stat = effect->getFramesNeeded_public(time, view, thisShared, &results);
-        if (isFailureRetCode(stat)) {
-            return stat;
-        }
-        results->getFramesNeeded(&framesNeeded);
-    }
-
-    // Recurse upstream
-    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
-        int inputNb = it->first;
-        assert(inputNb != -1);
-
-        EffectInstancePtr inputEffect = effect->resolveInputEffectForFrameNeeded(inputNb, 0);
-        if (!inputEffect) {
-            continue;
-        }
-        NodePtr inputNode = inputEffect->getNode();
-        assert(inputNode);
-
-
-        TreeRenderNodeArgsPtr inputRenderArgs = getInputRenderArgs(inputNb);
-
-        RoIMap::const_iterator foundInputRoI = inputsRoi.find(inputNb);
-        if ( foundInputRoI == inputsRoi.end() ) {
-            continue;
-        }
-        if ( foundInputRoI->second.isInfinite() ) {
-            effect->setPersistentMessage( eMessageTypeError, effect->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( node->getScriptName_mt_safe().c_str() ) ).toStdString() );
-
-            return eActionStatusFailed;
-        }
-        if ( foundInputRoI->second.isNull() ) {
-            continue;
-        }
-        RectD roi = foundInputRoI->second;
-
-        // For all views requested in input
-        for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
-
-            // For all ranges in this view
-            for (U32 range = 0; range < viewIt->second.size(); ++range) {
-
-                // For all frames in the range
-                for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
-
-                    ActionRetCodeEnum stat = inputRenderArgs->requestRender(TimeValue(f),
-                                                                       viewIt->first,
-                                                                       roi,
-                                                                       effect);
-
-                    if (isFailureRetCode(stat)) {
-                        return stat;
-                    }
-                }
-
-            }
-        }
-    }
-
+    effect->requestRender(thisFrameView, canonicalRenderWindow, inputNbInRequester, requester);
 
     return eActionStatusOK;
 } // requestRender
 
-struct PreRenderFrame
-{
-    EffectInstancePtr caller;
-    int inputNb;
-    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-};
 
-struct PreRenderResult
-{
-    EffectInstance::RenderRoIResults results;
-    int inputNb;
-    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderArgs;
-    ActionRetCodeEnum stat;
-};
-
-static
-PreRenderResult
-preRenderFrameFunctor(const PreRenderFrame& args)
-{
-    // Notify the node that we're going to render something with the input
-    EffectInstance::NotifyInputNRenderingStarted_RAII inputNIsRendering_RAII(args.caller->getNode().get(), args.inputNb);
-
-    PreRenderResult results;
-    results.renderArgs = args.renderArgs;
-    results.inputNb = args.inputNb;
-    EffectInstancePtr inputNode = args.caller->getInput(args.inputNb);
-    // Call renderRoI on the input: not that in output the planes may not be used directly by the caller effect:
-    // The image backend may not be the backend used by this image, or the memory layout (coplanar, RGBA packed etc..)
-    // or the components may not be expected by the caller effect.
-    // We keep the unmapped input image pointer around so that the image does not get destroyed (if it is no longer cached).
-    //
-    // The mapping of the image to a format appropriate for the caller effect is done in EffectInstance::getImagePlanes
-    results.stat = inputNode->renderRoI(*args.renderArgs, &results.results);
-    return results;
-}
 
 NATRON_NAMESPACE_EXIT;
