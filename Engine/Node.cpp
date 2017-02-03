@@ -3588,6 +3588,59 @@ Node::createNodePage(const boost::shared_ptr<KnobPage>& settingsPage)
         _imp->nodeRemovalCallback = onNodeDeleted;
         settingsPage->addKnob(onNodeDeleted);
     }
+    if (_imp->effect->isWriter()
+#ifdef NATRON_ENABLE_IO_META_NODES
+        && !getIOContainer()
+#endif
+        ) {
+        boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render"), 1, false);
+
+        beforeFrameRender->setName("beforeFrameRender");
+        beforeFrameRender->setAnimationEnabled(false);
+        beforeFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called before rendering "
+                                              "any frame.\n "
+                                              "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                              "- frame: the frame to be rendered\n"
+                                              "- thisNode: points to the writer node\n"
+                                              "- app: points to the current application instance") );
+        settingsPage->addKnob(beforeFrameRender);
+        _imp->beforeFrameRender = beforeFrameRender;
+
+        boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render"), 1, false);
+        beforeRender->setName("beforeRender");
+        beforeRender->setAnimationEnabled(false);
+        beforeRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
+                                         "starting rendering.\n "
+                                         "The signature of the callback is: callback(thisNode, app) where:\n"
+                                         "- thisNode: points to the writer node\n"
+                                         "- app: points to the current application instance") );
+        settingsPage->addKnob(beforeRender);
+        _imp->beforeRender = beforeRender;
+
+        boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render"), 1, false);
+        afterFrameRender->setName("afterFrameRender");
+        afterFrameRender->setAnimationEnabled(false);
+        afterFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
+                                             "any frame.\n "
+                                             "The signature of the callback is: callback(frame, thisNode, app) where:\n"
+                                             "- frame: the frame that has been rendered\n"
+                                             "- thisNode: points to the writer node\n"
+                                             "- app: points to the current application instance") );
+        settingsPage->addKnob(afterFrameRender);
+        _imp->afterFrameRender = afterFrameRender;
+
+        boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render"), 1, false);
+        afterRender->setName("afterRender");
+        afterRender->setAnimationEnabled(false);
+        afterRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
+                                        "is finished.\n "
+                                        "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
+                                        "- aborted: True if the render ended because it was aborted, False upon completion\n"
+                                        "- thisNode: points to the writer node\n"
+                                        "- app: points to the current application instance") );
+        settingsPage->addKnob(afterRender);
+        _imp->afterRender = afterRender;
+    }
 } // Node::createNodePage
 
 void
@@ -3616,59 +3669,6 @@ Node::createInfoPage()
     infoPage->addKnob(refreshInfoButton);
     _imp->refreshInfoButton = refreshInfoButton;
 }
-
-void
-Node::createPythonPage()
-{
-    boost::shared_ptr<KnobPage> pythonPage = AppManager::createKnob<KnobPage>(_imp->effect.get(), tr("Python"), 1, false);
-    boost::shared_ptr<KnobString> beforeFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before frame render"), 1, false);
-
-    beforeFrameRender->setName("beforeFrameRender");
-    beforeFrameRender->setAnimationEnabled(false);
-    beforeFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called before rendering "
-                                          "any frame.\n "
-                                          "The signature of the callback is: callback(frame, thisNode, app) where:\n"
-                                          "- frame: the frame to be rendered\n"
-                                          "- thisNode: points to the writer node\n"
-                                          "- app: points to the current application instance") );
-    pythonPage->addKnob(beforeFrameRender);
-    _imp->beforeFrameRender = beforeFrameRender;
-
-    boost::shared_ptr<KnobString> beforeRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("Before render"), 1, false);
-    beforeRender->setName("beforeRender");
-    beforeRender->setAnimationEnabled(false);
-    beforeRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when "
-                                     "starting rendering.\n "
-                                     "The signature of the callback is: callback(thisNode, app) where:\n"
-                                     "- thisNode: points to the writer node\n"
-                                     "- app: points to the current application instance") );
-    pythonPage->addKnob(beforeRender);
-    _imp->beforeRender = beforeRender;
-
-    boost::shared_ptr<KnobString> afterFrameRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After frame render"), 1, false);
-    afterFrameRender->setName("afterFrameRender");
-    afterFrameRender->setAnimationEnabled(false);
-    afterFrameRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called after rendering "
-                                         "any frame.\n "
-                                         "The signature of the callback is: callback(frame, thisNode, app) where:\n"
-                                         "- frame: the frame that has been rendered\n"
-                                         "- thisNode: points to the writer node\n"
-                                         "- app: points to the current application instance") );
-    pythonPage->addKnob(afterFrameRender);
-    _imp->afterFrameRender = afterFrameRender;
-
-    boost::shared_ptr<KnobString> afterRender =  AppManager::createKnob<KnobString>(_imp->effect.get(), tr("After render"), 1, false);
-    afterRender->setName("afterRender");
-    afterRender->setAnimationEnabled(false);
-    afterRender->setHintToolTip( tr("Add here the name of a Python defined function that will be called once when the rendering "
-                                    "is finished.\n "
-                                    "The signature of the callback is: callback(aborted, thisNode, app) where:\n"
-                                    "- aborted: True if the render ended because it was aborted, False upon completion\n"
-                                    "- thisNode: points to the writer node\n"
-                                    "- app: points to the current application instance") );
-    pythonPage->addKnob(afterRender);
-    _imp->afterRender = afterRender;
-} // Node::createPythonPage
 
 void
 Node::createHostMixKnob(const boost::shared_ptr<KnobPage>& mainPage)
@@ -4107,8 +4107,7 @@ Node::initializeDefaultKnobs(bool loadingSerialization)
         renderButton->setEvaluateOnChange(false);
         _imp->renderButton = renderButton;
         mainPage->addKnob(renderButton);
-
-        createPythonPage();
+        createInfoPage();
     }
 } // Node::initializeDefaultKnobs
 
@@ -7055,6 +7054,32 @@ Node::getPluginDescription() const
         }
     }
 
+    // if this is a Read or Write plugin, return the description from the embedded plugin
+    std::string pluginID = getPluginID();
+    if (pluginID == PLUGINID_NATRON_READ ||
+        pluginID == PLUGINID_NATRON_WRITE) {
+        EffectInstPtr effectInstance = getEffectInstance();
+        if ( effectInstance && effectInstance->isReader() ) {
+            ReadNode* isReadNode = dynamic_cast<ReadNode*>( effectInstance.get() );
+
+            if (isReadNode) {
+                NodePtr subnode = isReadNode->getEmbeddedReader();
+                if (subnode) {
+                    return subnode->getPluginDescription();
+                }
+            }
+        } else if ( effectInstance && effectInstance->isWriter() ) {
+            WriteNode* isWriteNode = dynamic_cast<WriteNode*>( effectInstance.get() );
+
+            if (isWriteNode) {
+                NodePtr subnode = isWriteNode->getEmbeddedWriter();
+                if (subnode) {
+                    return subnode->getPluginDescription();
+                }
+            }
+        }
+    }
+
     return _imp->effect->getPluginDescription();
 }
 
@@ -7273,6 +7298,12 @@ Node::setPersistentMessage(MessageTypeEnum type,
 bool
 Node::hasPersistentMessage() const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->hasPersistentMessage();
+    }
+#endif
     QMutexLocker k(&_imp->persistentMessageMutex);
 
     return !_imp->persistentMessage.isEmpty();
@@ -7283,6 +7314,12 @@ Node::getPersistentMessage(QString* message,
                            int* type,
                            bool prefixLabelAndType) const
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        return ioContainer->getPersistentMessage(message, type, prefixLabelAndType);
+    }
+#endif
     QMutexLocker k(&_imp->persistentMessageMutex);
 
     *type = _imp->persistentMessageType;
@@ -7320,6 +7357,14 @@ Node::clearPersistentMessageRecursive(std::list<Node*>& markedNodes)
 void
 Node::clearPersistentMessageInternal()
 {
+#ifdef NATRON_ENABLE_IO_META_NODES
+    NodePtr ioContainer = getIOContainer();
+    if (ioContainer) {
+        ioContainer->clearPersistentMessageInternal();
+
+        return;
+    }
+#endif
     bool changed;
     {
         QMutexLocker k(&_imp->persistentMessageMutex);
