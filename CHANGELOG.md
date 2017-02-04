@@ -38,6 +38,8 @@ Natron multiple times on the same computer, the different processes will share t
 - fix bug in the recent files menu #1560
 - fix reading of transparent PNG #1567
 - fix clearing error message for readers/writers.
+- disable MXF writing (too many constraints, use an external transcoder)
+- fix MKV writing
 
 
 ## Version 2.2.2

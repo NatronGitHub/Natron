@@ -1135,14 +1135,16 @@ ReadNode::knobChanged(const KnobIPtr& k,
                 showMetasKnob->trigger();
             }
         } else {
-            QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
-            if ( isVideoReader( p->getPluginID() ) && QFile::exists(ffprobePath) ) {
+            if ( isVideoReader( p->getPluginID() ) ) {
+                QString ffprobePath = ReadNodePrivate::getFFProbeBinaryPath();
+                assert( QFile::exists(ffprobePath) );
                 QProcess proc;
                 QStringList ffprobeArgs;
                 ffprobeArgs << QString::fromUtf8("-show_streams");
                 KnobFilePtr fileKnob = _imp->inputFileKnob.lock();
                 assert(fileKnob);
                 std::string filename = fileKnob->getValue();
+                getApp()->getProject()->canonicalizePath(filename); // substitute project variables
                 ffprobeArgs << QString::fromUtf8( filename.c_str() );
                 proc.start(ffprobePath, ffprobeArgs);
                 proc.waitForFinished();

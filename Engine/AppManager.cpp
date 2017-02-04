@@ -30,7 +30,7 @@
 #include <cstddef>
 #include <cassert>
 #include <stdexcept>
-#include <cstring> // for std::memcpy
+#include <cstring> // for std::memcpy, strlen
 #include <sstream> // stringstream
 
 #if defined(Q_OS_LINUX)
@@ -254,7 +254,7 @@ char2wchar(char* arg)
      * mbstowcs which does not count the characters that
      * would result from conversion.  Use an upper bound.
      */
-    size_t argsize = strlen(arg);
+    size_t argsize = std::strlen(arg);
 #else
     size_t argsize = mbstowcs(NULL, arg, 0);
 #endif
@@ -289,7 +289,7 @@ char2wchar(char* arg)
     /* Try conversion with mbrtwoc (C99), and escape non-decodable bytes. */
     /* Overallocate; as multi-byte characters are in the argument, the
      actual output could use less memory. */
-    argsize = strlen(arg) + 1;
+    argsize = std::strlen(arg) + 1;
     res = (wchar_t*)malloc( argsize * sizeof(wchar_t) );
     if (!res) {
         goto oom;

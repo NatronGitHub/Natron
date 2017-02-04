@@ -27,7 +27,7 @@
 
 #include <cassert>
 #include <algorithm> // min, max
-#include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr
+#include <cstring> // for std::memcpy, std::memset, std::strcmp, std::strchr, strlen
 #include <stdexcept>
 
 #include <QThread>
@@ -956,7 +956,7 @@ ViewerGL::isExtensionSupported(const char *extension)
         if (!where) {
             break;
         }
-        terminator = where + strlen(extension);
+        terminator = where + std::strlen(extension);
         if ( (where == start) || (*(where - 1) == ' ') ) {
             if ( (*terminator == ' ') || (*terminator == '\0') ) {
                 return 1;
