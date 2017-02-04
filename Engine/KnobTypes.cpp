@@ -1274,11 +1274,11 @@ KnobChoice::choiceMatch(const std::string& choiceID,
     }
 
     // 5- paren/bracket-insensitive match (for WriteFFmpeg's format and codecs)
-    std::string choiceparen = choice;
+    std::string choiceparen = choiceID;
     std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
     std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        std::string entryparen = entries[i];
+        std::string entryparen = entries[i].id;
         std::replace( entryparen.begin(), entryparen.end(), '[', '(');
         std::replace( entryparen.begin(), entryparen.end(), ']', ')');
 
@@ -1291,10 +1291,10 @@ KnobChoice::choiceMatch(const std::string& choiceID,
     }
 
     // 6- if the choice ends with " 1" try to match exactly everything before that  (for formats with par=1, where the PAR was removed)
-    if ( boost::algorithm::ends_with(choice, " 1") ) {
-        std::string choicenopar(choice, 0, choice.size()-2);
+    if ( boost::algorithm::ends_with(choiceID, " 1") ) {
+        std::string choicenopar(choiceID, 0, choiceID.size()-2);
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i] == choicenopar) {
+            if (entries[i].id == choicenopar) {
                 if (matchedEntry) {
                     *matchedEntry = entries[i];
                 }
