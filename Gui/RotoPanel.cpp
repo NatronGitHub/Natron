@@ -1424,14 +1424,18 @@ RotoPanel::onRotoItemShapeColorChanged()
     }
 
     if (item) {
-        double time = _imp->context->getTimelineCurrentTime();
+        assert(_imp->context);
+        double time = _imp->context ? _imp->context->getTimelineCurrentTime() : 0.;
         TreeItems::iterator it = _imp->findItem(item);
         if ( it != _imp->items.end() ) {
             QIcon icon;
             double shapeColor[3];
             item->getColor(time, shapeColor);
             makeSolidIcon(shapeColor, icon);
-            it->treeItem->setIcon(COL_COLOR, icon);
+            assert(it->treeItem);
+            if (it->treeItem) {
+                it->treeItem->setIcon(COL_COLOR, icon);
+            }
         }
     }
 }
