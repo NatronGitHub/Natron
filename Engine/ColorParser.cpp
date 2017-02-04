@@ -24,9 +24,10 @@
 
 #include "ColorParser.h"
 
-#include <cstring>
-#include <QByteArray>
-#include <QtAlgorithms>
+#include <cstring> // strlen
+
+#include <QtCore/QByteArray>
+#include <QtCore/QtAlgorithms>
 #include <QtCore/QString>
 
 // This code is taken from qcolor_p.cpp
@@ -253,7 +254,7 @@ getHexRGBInternal(const char *name, int* r, int *g, int* b)
     if(name[0] != '#')
         return false;
     name++;
-    int len = strlen(name);
+    int len = std::strlen(name);
     if (len == 12) {
         *r = hex2int(name);
         *g = hex2int(name + 4);

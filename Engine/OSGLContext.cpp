@@ -26,6 +26,7 @@
 
 #include <stdexcept>
 #include <sstream> // stringstream
+#include <cstring> // strlen
 
 #include <QtCore/QDebug>
 #include <QtCore/QMutex>
@@ -638,7 +639,7 @@ OSGLContext::stringInExtensionString(const char* string,
             return false;
         }
 
-        terminator = where + strlen(string);
+        terminator = where + std::strlen(string);
         if ( (where == start) || (*(where - 1) == ' ') ) {
             if ( (*terminator == ' ') || (*terminator == '\0') ) {
                 break;
