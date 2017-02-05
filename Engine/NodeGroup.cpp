@@ -2535,7 +2535,7 @@ exportKnobLinks(int indentLevel,
                 throw std::logic_error("exportKnobLinks");
             }
             QString aliasName;
-            if ( aliasHolder == groupNode->getEffectInstance().get() ) {
+            if ( groupNode && aliasHolder == groupNode->getEffectInstance().get() ) {
                 aliasName = groupName;
             } else {
                 aliasName = groupName + QString::fromUtf8( aliasHolder->getNode()->getScriptName_mt_safe().c_str() );
@@ -2573,7 +2573,7 @@ exportKnobLinks(int indentLevel,
                         throw std::logic_error("exportKnobLinks");
                     }
                     QString masterName;
-                    if ( masterHolder == groupNode->getEffectInstance().get() ) {
+                    if ( groupNode && masterHolder == groupNode->getEffectInstance().get() ) {
                         masterName = groupName;
                     } else {
                         masterName = groupName + QString::fromUtf8( masterHolder->getNode()->getScriptName_mt_safe().c_str() );
