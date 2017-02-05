@@ -1726,12 +1726,21 @@ OfxClipInstance::invalidateClipTLS()
     ClipDataTLSPtr tls = _imp->tlsData->getTLSData();
 
     assert(tls);
+    if (!tls) {
+        return;
+    }
     assert( !tls->view.empty() );
-    tls->view.pop_back();
+    if ( !tls->view.empty() ) {
+        tls->view.pop_back();
+    }
     assert( !tls->mipMapLevel.empty() );
-    tls->mipMapLevel.pop_back();
+    if ( !tls->mipMapLevel.empty() ) {
+        tls->mipMapLevel.pop_back();
+    }
     assert( !tls->renderData.empty() );
-    tls->renderData.pop_back();
+    if ( !tls->renderData.empty() ) {
+        tls->renderData.pop_back();
+    }
 }
 
 const std::string &

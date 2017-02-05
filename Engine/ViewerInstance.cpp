@@ -1591,22 +1591,23 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         }*/
 
         const bool viewerRenderRoiOnly = !useTextureCache;
-        ViewerColorSpaceEnum srcColorSpace = getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() );
+        ViewerColorSpaceEnum srcColorSpace = colorImage ? getApp()->getDefaultColorSpaceForBitDepth( colorImage->getBitDepth() ) : eViewerColorSpaceSRGB;
 
-        if ( ( (inArgs.channels == eDisplayChannelsA) && ( (alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)colorImage->getComponentsCount() ) ) ) ||
-            ( ( inArgs.channels == eDisplayChannelsMatte) && ( ( alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)alphaImage->getComponentsCount() ) ) ) ) {
+        if ( ( (inArgs.channels == eDisplayChannelsA) && ( !colorImage || (alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)colorImage->getComponentsCount() ) ) ) ||
+            ( ( inArgs.channels == eDisplayChannelsMatte) && ( !alphaImage || ( alphaChannelIndex < 0) || ( alphaChannelIndex >= (int)alphaImage->getComponentsCount() ) ) ) ) {
             return eViewerRenderRetCodeBlack;
         }
 
 
-        assert( ( inArgs.channels != eDisplayChannelsMatte && alphaChannelIndex < (int)colorImage->getComponentsCount() ) ||
-               ( inArgs.channels == eDisplayChannelsMatte && ( ( alphaImage && alphaChannelIndex < (int)alphaImage->getComponentsCount() ) || !alphaImage ) ) );
+        assert( ( inArgs.channels != eDisplayChannelsMatte && ( !colorImage || alphaChannelIndex < (int)colorImage->getComponentsCount() ) ) ||
+               ( inArgs.channels == eDisplayChannelsMatte && ( !alphaImage || alphaChannelIndex < (int)alphaImage->getComponentsCount() ) ) );
 
 
         //Make sure the viewer does not render something outside the bounds
         RectI viewerRenderRoI;
-        splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
-
+        if (colorImage) {
+            splitRoi[rectIndex].intersect(colorImage->getBounds(), &viewerRenderRoI);
+        }
 
         boost::shared_ptr<UpdateViewerParams> updateParams;
         if (!inArgs.isDoingPartialUpdates) {
@@ -1951,7 +1952,7 @@ ViewerInstance::renderViewer_internal(ViewIdx view,
         } // if (singleThreaded)
 
 
-        if ( stats && stats->isInDepthProfilingEnabled() ) {
+        if ( colorImage && stats && stats->isInDepthProfilingEnabled() ) {
             stats->addRenderInfosForNode( getNode(), NodePtr(), colorImage->getComponents().getComponentsGlobalName(), viewerRenderRoI, viewerRenderTimeRecorder->getTimeSinceCreation() );
         }
     } // for (std::vector<RectI>::iterator rect = splitRoi.begin(); rect != splitRoi.end(), ++rect) {

@@ -14,6 +14,7 @@
 
 - Readers and writers now only get the colorspace from the filename if it is before the extension and preceded by a delimiter
 - BilateralGuided: bug fix
+- Natron can now use plugins compiled with the DaVinci Resolve OpenFX SDK (which assumes that the host is Resolve), such as the Paul Dore plugins (see https://github.com/baldavenger/).
 
 
 ## Version 2.2.3
