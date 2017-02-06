@@ -323,10 +323,16 @@ protected: // derives from EffectInstance, parent of TrackerNode and WriteNode
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     NodeGroup(const NodePtr &node);
 
+    NodeGroup(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new NodeGroup(node) );
+    }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new NodeGroup(mainInstance, render) );
     }
 
     static PluginPtr createPlugin();

@@ -56,7 +56,7 @@ TrackerNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_TRANSFORM);
-    PluginPtr ret = Plugin::create((void*)TrackerNode::create, PLUGINID_NATRON_TRACKER, "Tracker", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)TrackerNode::create,  (void*)TrackerNode::createRenderClone, PLUGINID_NATRON_TRACKER, "Tracker", 1, 0, grouping);
 
     QString desc = tr(
                       "Track one or more 2D point(s) using LibMV from the Blender open-source software.\n\n"

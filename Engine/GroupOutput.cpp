@@ -36,7 +36,7 @@ GroupOutput::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)GroupOutput::create, PLUGINID_NATRON_OUTPUT, "Output", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)GroupOutput::create, (vod*)GroupOutput::createRenderClone, PLUGINID_NATRON_OUTPUT, "Output", 1, 0, grouping);
 
     QString desc =  tr("This node can only be used within a Group. There can only be 1 Output node in the group. It defines the output of the group.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());

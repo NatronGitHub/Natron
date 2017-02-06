@@ -56,6 +56,13 @@ NATRON_NAMESPACE_ENTER;
 #define kNatronPluginPropCreateFunc "NatronPluginPropCreateFunc"
 
 /**
+ * @brief x1 pointer property indicating the function used to create a render instance of the plug-in.
+ * Default value - NULL
+ * Must be set
+ **/
+#define kNatronPluginPropCreateRenderCloneFunc "NatronPluginPropCreateRenderCloneFunc"
+
+/**
  * @brief x1 std::string property indicating the ID of the plug-in
  * Default value - Empty
  * Must be set
@@ -328,6 +335,7 @@ private:
 public:
 
     static PluginPtr create(void* createEffectFunc,
+                            void* createCloneFunc,
                             const std::string &pluginID,
                             const std::string &pluginLabel,
                             unsigned int majorVersion,

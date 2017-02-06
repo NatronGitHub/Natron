@@ -55,7 +55,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/KnobFile.h"
 #include "Engine/Hash64.h"
 #include "Engine/Node.h"
-#include "Engine/RenderValuesCache.h"
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/Transform.h"
@@ -66,33 +65,97 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER;
 
-//using std::make_pair;
-//using std::pair;
-
-/******************************KnobInt**************************************/
-KnobInt::KnobInt(const KnobHolderPtr& holder,
-                 const std::string &label,
-                 int dimension,
-                 bool declaredByPlugin)
-    : KnobIntBase(holder, label, dimension, declaredByPlugin)
-    , _increments(dimension, 1)
-    , _disableSlider(false)
-    , _isRectangle(false)
-    , _isValueCenteredInSpinbox(false)
-    , _isShortcutKnob(false)
+struct KnobIntPrivate
 {
+    std::vector<int> increments;
+    bool disableSlider;
+    bool isRectangle;
+    bool isValueCenteredInSpinbox;
+    bool isShortcutKnob;
+
+    KnobIntPrivate(int dimension)
+    : increments(dimension, 1)
+    , disableSlider(false)
+    , isRectangle(false)
+    , isValueCenteredInSpinbox(false)
+    , isShortcutKnob(false)
+    {
+
+    }
+};
+
+KnobInt::KnobInt(const KnobHolderPtr& holder,
+                 const std::string &name,
+                 int dimension)
+: KnobIntBase(holder, name, dimension)
+, _imp(new KnobIntPrivate(dimension))
+{
+}
+
+
+KnobInt::KnobInt(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
+: KnobIntBase(holder, mainKnob)
+, _imp(toKnobInt(mainKnob)->_imp)
+{
+
+}
+
+KnobInt::~KnobInt()
+{
+    
 }
 
 void
 KnobInt::disableSlider()
 {
-    _disableSlider = true;
+    _imp->disableSlider = true;
 }
 
 bool
 KnobInt::isSliderDisabled() const
 {
-    return _disableSlider;
+    return _imp->disableSlider;
+}
+
+void
+KnobInt::setAsRectangle()
+{
+    if (getNDimensions() == 4) {
+        _imp->isRectangle = true;
+        disableSlider();
+    }
+}
+
+bool
+KnobInt::isRectangle() const
+{
+    return _imp->isRectangle;
+}
+
+void
+KnobInt::setValueCenteredInSpinBox(bool enabled)
+{
+    _imp->isValueCenteredInSpinbox = enabled;
+}
+
+bool
+KnobInt::isValueCenteredInSpinBox() const
+{
+    return _imp->isValueCenteredInSpinbox;
+}
+
+// For 2D int parameters, the UI will have a keybind recorder
+// and the first dimension stores the symbol and the 2nd the modifiers
+void
+KnobInt::setAsShortcutKnob(bool isShortcutKnob)
+{
+    _imp->isShortcutKnob = isShortcutKnob;
+}
+
+bool
+KnobInt::isShortcutKnob() const
+{
+    return _imp->isShortcutKnob;
 }
 
 void
@@ -105,31 +168,31 @@ KnobInt::setIncrement(int incr,
         return;
     }
 
-    if ( index >= (int)_increments.size() ) {
+    if ( index >= (int)_imp->increments.size() ) {
         throw std::runtime_error("KnobInt::setIncrement , dimension out of range");
     }
-    _increments[index] = incr;
-    Q_EMIT incrementChanged(_increments[index], index);
+    _imp->increments[index] = incr;
+    Q_EMIT incrementChanged(_imp->increments[index], index);
 }
 
 void
 KnobInt::setIncrement(const std::vector<int> &incr)
 {
     assert( (int)incr.size() == getNDimensions() );
-    _increments = incr;
-    for (U32 i = 0; i < _increments.size(); ++i) {
-        if (_increments[i] <= 0) {
+    _imp->increments = incr;
+    for (U32 i = 0; i < _imp->increments.size(); ++i) {
+        if (_imp->increments[i] <= 0) {
             qDebug() << "Attempting to set the increment of an int param to a value lesser or equal to 0";
             continue;
         }
-        Q_EMIT incrementChanged(_increments[i], DimIdx(i));
+        Q_EMIT incrementChanged(_imp->increments[i], DimIdx(i));
     }
 }
 
 const std::vector<int> &
 KnobInt::getIncrements() const
 {
-    return _increments;
+    return _imp->increments;
 }
 
 bool
@@ -151,14 +214,18 @@ KnobInt::typeName() const
     return typeNameStatic();
 }
 
-/******************************KnobBool**************************************/
 
 KnobBool::KnobBool(const KnobHolderPtr& holder,
-                   const std::string &label,
-                   int dimension,
-                   bool declaredByPlugin)
-    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
+                   const std::string &name,
+                   int dimension)
+    : KnobBoolBase(holder, name, dimension)
 {
+}
+
+KnobBool::KnobBool(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
+: KnobBoolBase(holder, mainKnob)
+{
+
 }
 
 bool
@@ -180,23 +247,62 @@ KnobBool::typeName() const
     return typeNameStatic();
 }
 
-/******************************KnobDouble**************************************/
+
+struct KnobDoublePrivate
+{
+    bool spatial;
+    bool isRectangle;
+    std::vector<double>  increments;
+    std::vector<int> decimals;
+    bool disableSlider;
+
+    /// to support ofx deprecated normalizd params:
+    /// the first and second dimensions of the double param( hence a pair ) have a normalized state.
+    /// BY default they have eValueIsNormalizedNone
+    /// if the double type is one of
+    /// - kOfxParamDoubleTypeNormalisedX - normalised size wrt to the project's X dimension (1D only),
+    /// - kOfxParamDoubleTypeNormalisedXAbsolute - normalised absolute position on the X axis (1D only)
+    /// - kOfxParamDoubleTypeNormalisedY - normalised size wrt to the project's Y dimension(1D only),
+    /// - kOfxParamDoubleTypeNormalisedYAbsolute - normalised absolute position on the Y axis (1D only)
+    /// - kOfxParamDoubleTypeNormalisedXY - normalised to the project's X and Y size (2D only),
+    /// - kOfxParamDoubleTypeNormalisedXYAbsolute - normalised to the projects X and Y size, and is an absolute position on the image plane,
+    std::vector<ValueIsNormalizedEnum> valueIsNormalized;
+
+    ///For double params respecting the kOfxParamCoordinatesNormalised
+    ///This tells us that only the default value is stored normalized.
+    ///This SHOULD NOT bet set for old deprecated < OpenFX 1.2 normalized parameters.
+    bool defaultValuesAreNormalized;
+    bool hasHostOverlayHandle;
+
+
+    KnobDoublePrivate(int dimension)
+    : spatial(false)
+    , isRectangle(false)
+    , increments(dimension, 1)
+    , decimals(dimension, 2)
+    , disableSlider(false)
+    , valueIsNormalized(dimension, eValueIsNormalizedNone)
+    , defaultValuesAreNormalized(false)
+    , hasHostOverlayHandle(false)
+    {
+        
+    }
+};
 
 
 KnobDouble::KnobDouble(const KnobHolderPtr& holder,
-                       const std::string &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _spatial(false)
-    , _isRectangle(false)
-    , _increments(dimension, 1)
-    , _decimals(dimension, 2)
-    , _disableSlider(false)
-    , _valueIsNormalized(dimension, eValueIsNormalizedNone)
-    , _defaultValuesAreNormalized(false)
-    , _hasHostOverlayHandle(false)
+                       const std::string &name,
+                       int dimension)
+: KnobDoubleBase(holder, name, dimension)
+, _imp(new KnobDoublePrivate(dimension))
 {
+}
+
+KnobDouble::KnobDouble(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
+: KnobDoubleBase(holder, mainKnob)
+, _imp(toKnobDouble(mainKnob)->_imp)
+{
+
 }
 
 void
@@ -220,26 +326,26 @@ KnobDouble::setHasHostOverlayHandle(bool handle)
         } else {
             effect->getNode()->removePositionHostOverlay( shared_from_this() );
         }
-        _hasHostOverlayHandle = handle;
+        _imp->hasHostOverlayHandle = handle;
     }
 }
 
 bool
 KnobDouble::getHasHostOverlayHandle() const
 {
-    return _hasHostOverlayHandle;
+    return _imp->hasHostOverlayHandle;
 }
 
 void
 KnobDouble::disableSlider()
 {
-    _disableSlider = true;
+    _imp->disableSlider = true;
 }
 
 bool
 KnobDouble::isSliderDisabled() const
 {
-    return _disableSlider;
+    return _imp->disableSlider;
 }
 
 bool
@@ -248,27 +354,60 @@ KnobDouble::canAnimate() const
     return true;
 }
 
+bool
+KnobDouble::getIsSpatial() const
+{
+    return _imp->spatial;
+}
+
+void
+KnobDouble::setAsRectangle()
+{
+    if (getNDimensions() == 4) {
+        _imp->isRectangle = true;
+    }
+}
+
+bool
+KnobDouble::isRectangle() const
+{
+    return _imp->isRectangle;
+}
+
+bool
+KnobDouble::getDefaultValuesAreNormalized() const
+{
+    return _imp->defaultValuesAreNormalized;
+}
+
+ValueIsNormalizedEnum
+KnobDouble::getValueIsNormalized(DimIdx dimension) const
+{
+    assert(dimension >= 0 && dimension < (int)_imp->valueIsNormalized.size());
+    return _imp->valueIsNormalized[dimension];
+}
+
 void
 KnobDouble::setValueIsNormalized(DimIdx dimension,
                           ValueIsNormalizedEnum state)
 {
-    if (dimension < 0 || dimension >= (int)_valueIsNormalized.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->valueIsNormalized.size()) {
         throw std::invalid_argument("KnobDouble::setValueIsNormalized: dimension out of range");
     }
-    _valueIsNormalized[dimension] = state;
+    _imp->valueIsNormalized[dimension] = state;
 
 }
 
 void
 KnobDouble::setDefaultValuesAreNormalized(bool normalized)
 {
-    _defaultValuesAreNormalized = normalized;
+    _imp->defaultValuesAreNormalized = normalized;
 }
 
 void
 KnobDouble::setSpatial(bool spatial)
 {
-    _spatial = spatial;
+    _imp->spatial = spatial;
 }
 
 
@@ -288,13 +427,13 @@ KnobDouble::typeName() const
 const std::vector<double> &
 KnobDouble::getIncrements() const
 {
-    return _increments;
+    return _imp->increments;
 }
 
 const std::vector<int> &
 KnobDouble::getDecimals() const
 {
-    return _decimals;
+    return _imp->decimals;
 }
 
 void
@@ -306,33 +445,33 @@ KnobDouble::setIncrement(double incr,
 
         return;
     }
-    if ( index >= (int)_increments.size() ) {
+    if ( index >= (int)_imp->increments.size() ) {
         throw std::runtime_error("KnobDouble::setIncrement , dimension out of range");
     }
 
-    _increments[index] = incr;
-    Q_EMIT incrementChanged(_increments[index], index);
+    _imp->increments[index] = incr;
+    Q_EMIT incrementChanged(_imp->increments[index], index);
 }
 
 void
 KnobDouble::setDecimals(int decis,
                         DimIdx index)
 {
-    if ( index >= (int)_decimals.size() ) {
+    if ( index >= (int)_imp->decimals.size() ) {
         throw std::runtime_error("KnobDouble::setDecimals , dimension out of range");
     }
 
-    _decimals[index] = decis;
-    Q_EMIT decimalsChanged(_decimals[index], index);
+    _imp->decimals[index] = decis;
+    Q_EMIT decimalsChanged(_imp->decimals[index], index);
 }
 
 void
 KnobDouble::setIncrement(const std::vector<double> &incr)
 {
     assert( incr.size() == (U32)getNDimensions() );
-    _increments = incr;
+    _imp->increments = incr;
     for (U32 i = 0; i < incr.size(); ++i) {
-        Q_EMIT incrementChanged(_increments[i], DimIdx(i));
+        Q_EMIT incrementChanged(_imp->increments[i], DimIdx(i));
     }
 }
 
@@ -340,7 +479,7 @@ void
 KnobDouble::setDecimals(const std::vector<int> &decis)
 {
     assert( decis.size() == (U32)getNDimensions() );
-    _decimals = decis;
+    _imp->decimals = decis;
     for (U32 i = 0; i < decis.size(); ++i) {
         Q_EMIT decimalsChanged(decis[i], DimIdx(i));
     }
@@ -430,7 +569,7 @@ KnobDouble::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
     assert(doubleData);
 
     double defaultValue = getDefaultValue(dimension);
-    if (_defaultValuesAreNormalized) {
+    if (_imp->defaultValuesAreNormalized) {
         double denormalizedDefaultValue = denormalize(dimension, TimeValue(0), defaultValue);
         QMutexLocker k(&doubleData->valueMutex);
         return doubleData->value != denormalizedDefaultValue;
@@ -441,18 +580,77 @@ KnobDouble::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimen
 }
 
 
-/******************************KnobButton**************************************/
+struct KnobButtonPrivate
+{
+    bool renderButton;
+    bool checkable;
+    bool isToolButtonAction;
+
+    KnobButtonPrivate()
+    : renderButton(false)
+    , checkable(false)
+    , isToolButtonAction(false)
+    {
+
+    }
+
+};
 
 KnobButton::KnobButton(const KnobHolderPtr& holder,
-                       const std::string &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
-    , _renderButton(false)
-    , _checkable(false)
-    , _isToolButtonAction(false)
+                       const std::string &name,
+                       int dimension)
+: KnobBoolBase(holder, name, dimension)
+, _imp(new KnobButtonPrivate())
 {
     //setIsPersistent(false);
+}
+
+KnobButton::KnobButton(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
+: KnobBoolBase(holder, mainKnob)
+, _imp(toKnobButton(mainKnob)->_imp)
+{
+
+}
+
+KnobButton::~KnobButton()
+{
+    
+}
+
+void
+KnobButton::setAsRenderButton()
+{
+    _imp->renderButton = true;
+}
+
+bool
+KnobButton::isRenderButton() const
+{
+    return _imp->renderButton;
+}
+
+void
+KnobButton::setCheckable(bool b)
+{
+    _imp->checkable = b;
+}
+
+bool
+KnobButton::getIsCheckable() const
+{
+    return _imp->checkable;
+}
+
+void
+KnobButton::setAsToolButtonAction(bool b)
+{
+    _imp->isToolButtonAction = b;
+}
+
+bool
+KnobButton::getIsToolButtonAction() const
+{
+    return _imp->isToolButtonAction;
 }
 
 bool
@@ -551,11 +749,16 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
 }
 
 KnobChoice::KnobChoice(const KnobHolderPtr& holder,
-                       const std::string &label,
-                       int nDims,
-                       bool declaredByPlugin)
-: KnobIntBase(holder, label, nDims, declaredByPlugin)
+                       const std::string &name,
+                       int nDims)
+: KnobIntBase(holder, name, nDims)
 {
+}
+
+KnobChoice::KnobChoice(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobIntBase(holder, mainInstance)
+{
+
 }
 
 KnobChoice::~KnobChoice()
@@ -1350,11 +1553,16 @@ KnobChoice::createDimViewData() const
 /******************************KnobSeparator**************************************/
 
 KnobSeparator::KnobSeparator(const KnobHolderPtr& holder,
-                             const std::string &label,
-                             int dimension,
-                             bool declaredByPlugin)
-    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
+                             const std::string &name,
+                             int dimension)
+    : KnobBoolBase(holder, name, dimension)
 {
+}
+
+KnobSeparator::KnobSeparator(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobBoolBase(holder, mainInstance)
+{
+
 }
 
 bool
@@ -1378,24 +1586,39 @@ KnobSeparator::typeName() const
 
 /******************************KnobColor**************************************/
 
-/**
- * @brief A color knob with of variable dimension. Each color is a double ranging in [0. , 1.]
- * In dimension 1 the knob will have a single channel being a gray-scale
- * In dimension 3 the knob will have 3 channel R,G,B
- * In dimension 4 the knob will have R,G,B and A channels.
- **/
+struct KnobColorPrivate
+{
+    bool simplifiedMode;
+
+
+    KnobColorPrivate()
+    : simplifiedMode(false)
+    {
+        
+    }
+};
 
 KnobColor::KnobColor(const KnobHolderPtr& holder,
-                     const std::string &label,
-                     int dimension,
-                     bool declaredByPlugin)
-    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _simplifiedMode(false)
+                     const std::string &name,
+                     int dimension)
+: KnobDoubleBase(holder, name, dimension)
+, _imp(new KnobColorPrivate())
 {
     //dimension greater than 4 is not supported. Dimension 2 doesn't make sense.
     assert(dimension <= 4 && dimension != 2);
 }
 
+KnobColor::KnobColor(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobDoubleBase(holder, mainInstance)
+, _imp(toKnobColor(mainInstance)->_imp)
+{
+
+}
+
+KnobColor::~KnobColor()
+{
+    
+}
 
 bool
 KnobColor::canAnimate() const
@@ -1420,35 +1643,60 @@ KnobColor::typeName() const
 void
 KnobColor::setSimplified(bool simp)
 {
-    _simplifiedMode = simp;
+    _imp->simplifiedMode = simp;
 }
 
 bool
 KnobColor::isSimplified() const
 {
-    return _simplifiedMode;
+    return _imp->simplifiedMode;
 }
 
-/******************************KnobString**************************************/
+struct KnobStringPrivate
+{
 
+    bool multiLine;
+    bool richText;
+    bool customHtmlText;
+    bool isLabel;
+    bool isCustom;
+    int fontSize;
+    bool boldActivated;
+    bool italicActivated;
+    std::string fontFamily;
+    double fontColor[3];
+
+    KnobStringPrivate()
+    : multiLine(false)
+    , richText(false)
+    , customHtmlText(false)
+    , isLabel(false)
+    , isCustom(false)
+    , fontSize()
+    , boldActivated(false)
+    , italicActivated(false)
+    , fontFamily(NATRON_FONT)
+    , fontColor()
+    {
+
+    }
+};
 
 KnobString::KnobString(const KnobHolderPtr& holder,
-                       const std::string &label,
-                       int dimension,
-                       bool declaredByPlugin)
-    : AnimatingKnobStringHelper(holder, label, dimension, declaredByPlugin)
-    , _multiLine(false)
-    , _richText(false)
-    , _customHtmlText(false)
-    , _isLabel(false)
-    , _isCustom(false)
-    , _fontSize(getDefaultFontPointSize())
-    , _boldActivated(false)
-    , _italicActivated(false)
-    , _fontFamily(NATRON_FONT)
-    , _fontColor()
+                       const std::string &name,
+                       int dimension)
+: AnimatingKnobStringHelper(holder, name, dimension)
+, _imp(new KnobStringPrivate())
 {
-    _fontColor[0] = _fontColor[1] = _fontColor[2] = 0.;
+    _imp->fontSize = getDefaultFontPointSize();
+    _imp->fontColor[0] = _imp->fontColor[1] = _imp->fontColor[2] = 0.;
+}
+
+KnobString::KnobString(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: AnimatingKnobStringHelper(holder, mainInstance)
+, _imp(toKnobString(mainInstance)->_imp)
+{
+
 }
 
 KnobString::~KnobString()
@@ -1768,10 +2016,10 @@ QString
 KnobString::decorateStringWithCurrentState(const QString& str)
 {
     QString ret = str;
-    if (!_richText) {
+    if (!_imp->richText) {
         return ret;
     }
-    ret = decorateTextWithFontTag(QString::fromUtf8(_fontFamily.c_str()), _fontSize, _fontColor[0], _fontColor[1], _fontColor[2], _boldActivated, _italicActivated, ret);
+    ret = decorateTextWithFontTag(QString::fromUtf8(_imp->fontFamily.c_str()), _imp->fontSize, _imp->fontColor[0], _imp->fontColor[1], _imp->fontColor[2], _imp->boldActivated, _imp->italicActivated, ret);
     return ret;
 }
 
@@ -1787,60 +2035,209 @@ KnobString::getValueDecorated(TimeValue time, ViewIdx view)
     return decorateStringWithCurrentState(ret);
 }
 
+
+void
+KnobString::setAsMultiLine()
+{
+    _imp->multiLine = true;
+}
+
+void
+KnobString::setUsesRichText(bool useRichText)
+{
+    _imp->richText = useRichText;
+}
+
+bool
+KnobString::isMultiLine() const
+{
+    return _imp->multiLine;
+}
+
+bool
+KnobString::usesRichText() const
+{
+    return _imp->richText;
+}
+
+void
+KnobString::setAsCustomHTMLText(bool custom)
+{
+    _imp->customHtmlText = custom;
+}
+
+bool
+KnobString::isCustomHTMLText() const
+{
+    return _imp->customHtmlText;
+}
+
+
 void
 KnobString::setAsLabel()
 {
     setAnimationEnabled(false); //< labels cannot animate
-    _isLabel = true;
+    _imp->isLabel = true;
 }
+
+bool
+KnobString::isLabel() const
+{
+    return _imp->isLabel;
+}
+
+void
+KnobString::setAsCustom()
+{
+    _imp->isCustom = true;
+}
+
+bool
+KnobString::isCustomKnob() const
+{
+    return _imp->isCustom;
+}
+
+bool
+KnobString::supportsInViewerContext() const
+{
+    return !_imp->multiLine;
+}
+
+int
+KnobString::getFontSize() const
+{
+    return _imp->fontSize;
+}
+
+void
+KnobString::setFontSize(int size)
+{
+    _imp->fontSize = size;
+}
+
+std::string
+KnobString::getFontFamily() const
+{
+    return _imp->fontFamily;
+}
+
+void
+KnobString::setFontFamily(const std::string& family) {
+    _imp->fontFamily = family;
+}
+
+void
+KnobString::getFontColor(double* r, double* g, double* b) const
+{
+    *r = _imp->fontColor[0];
+    *g = _imp->fontColor[1];
+    *b = _imp->fontColor[2];
+}
+
+void
+KnobString::setFontColor(double r, double g, double b)
+{
+    _imp->fontColor[0] = r;
+    _imp->fontColor[1] = g;
+    _imp->fontColor[2] = b;
+}
+
+bool
+KnobString::getItalicActivated() const
+{
+    return _imp->italicActivated;
+}
+
+void
+KnobString::setItalicActivated(bool b) {
+    _imp->italicActivated = b;
+}
+
+bool
+KnobString::getBoldActivated() const
+{
+    return _imp->boldActivated;
+}
+
+void
+KnobString::setBoldActivated(bool b) {
+    _imp->boldActivated = b;
+}
+
 
 /******************************KnobGroup**************************************/
 
-KnobGroup::KnobGroup(const KnobHolderPtr& holder,
-                     const std::string &label,
-                     int dimension,
-                     bool declaredByPlugin)
-    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
-    , _isTab(false)
-    , _isToolButton(false)
-    , _isDialog(false)
+struct KnobGroupPrivate
 {
+    std::vector< KnobIWPtr > children;
+    bool isTab;
+    bool isToolButton;
+    bool isDialog;
+
+    KnobGroupPrivate()
+    : isTab(false)
+    , isToolButton(false)
+    , isDialog(false)
+    {
+
+    }
+
+};
+KnobGroup::KnobGroup(const KnobHolderPtr& holder,
+                     const std::string &name,
+                     int dimension)
+: KnobBoolBase(holder, name, dimension)
+, _imp(new KnobGroupPrivate)
+{
+}
+
+KnobGroup::KnobGroup(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobBoolBase(holder, mainInstance)
+, _imp(toKnobGroup(mainInstance)->_imp)
+{
+
+}
+
+KnobGroup::~KnobGroup()
+{
+
 }
 
 void
 KnobGroup::setAsTab()
 {
-    _isTab = true;
+    _imp->isTab = true;
 }
 
 bool
 KnobGroup::isTab() const
 {
-    return _isTab;
+    return _imp->isTab;
 }
 
 void
 KnobGroup::setAsToolButton(bool b)
 {
-    _isToolButton = b;
+    _imp->isToolButton = b;
 }
 
 bool
 KnobGroup::getIsToolButton() const
 {
-    return _isToolButton;
+    return _imp->isToolButton;
 }
 
 void
 KnobGroup::setAsDialog(bool b)
 {
-    _isDialog = b;
+    _imp->isDialog = b;
 }
 
 bool
 KnobGroup::getIsDialog() const
 {
-    return _isDialog;
+    return _imp->isDialog;
 }
 
 bool
@@ -1869,24 +2266,24 @@ KnobGroup::addKnob(const KnobIPtr& k)
         return;
     }
 
-    for (std::size_t i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
             return;
         }
     }
 
     k->resetParent();
 
-    _children.push_back(k);
+    _imp->children.push_back(k);
     k->setParentKnob( shared_from_this() );
 }
 
 void
 KnobGroup::removeKnob(const KnobIPtr& k)
 {
-    for (std::vector<KnobIWPtr >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::vector<KnobIWPtr >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if (it->lock() == k) {
-            _children.erase(it);
+            _imp->children.erase(it);
 
             return;
         }
@@ -1896,14 +2293,14 @@ KnobGroup::removeKnob(const KnobIPtr& k)
 bool
 KnobGroup::moveOneStepUp(const KnobIPtr& k)
 {
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
+    for (U32 i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
             if (i == 0) {
                 return false;
             }
-            KnobIWPtr tmp = _children[i - 1];
-            _children[i - 1] = _children[i];
-            _children[i] = tmp;
+            KnobIWPtr tmp = _imp->children[i - 1];
+            _imp->children[i - 1] = _imp->children[i];
+            _imp->children[i] = tmp;
 
             return true;
         }
@@ -1914,14 +2311,14 @@ KnobGroup::moveOneStepUp(const KnobIPtr& k)
 bool
 KnobGroup::moveOneStepDown(const KnobIPtr& k)
 {
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
-            if (i == _children.size() - 1) {
+    for (U32 i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
+            if (i == _imp->children.size() - 1) {
                 return false;
             }
-            KnobIWPtr tmp = _children[i + 1];
-            _children[i + 1] = _children[i];
-            _children[i] = tmp;
+            KnobIWPtr tmp = _imp->children[i + 1];
+            _imp->children[i + 1] = _imp->children[i];
+            _imp->children[i] = tmp;
 
             return true;
         }
@@ -1937,20 +2334,20 @@ KnobGroup::insertKnob(int index,
         return;
     }
 
-    for (std::size_t i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
             return;
         }
     }
 
     k->resetParent();
 
-    if ( index >= (int)_children.size() ) {
-        _children.push_back(k);
+    if ( index >= (int)_imp->children.size() ) {
+        _imp->children.push_back(k);
     } else {
-        std::vector<KnobIWPtr >::iterator it = _children.begin();
+        std::vector<KnobIWPtr >::iterator it = _imp->children.begin();
         std::advance(it, index);
-        _children.insert(it, k);
+        _imp->children.insert(it, k);
     }
     k->setParentKnob( shared_from_this() );
 }
@@ -1960,8 +2357,8 @@ KnobGroup::getChildren() const
 {
     std::vector< KnobIPtr > ret;
 
-    for (std::size_t i = 0; i < _children.size(); ++i) {
-        KnobIPtr k = _children[i].lock();
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        KnobIPtr k = _imp->children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -1971,16 +2368,52 @@ KnobGroup::getChildren() const
 }
 
 /******************************PAGE_KNOB**************************************/
+struct KnobPagePrivate
+{
+    bool isToolBar;
+    std::vector< KnobIWPtr > children;
+
+    KnobPagePrivate()
+    : isToolBar(false)
+    , children()
+    {
+
+    }
+};
 
 KnobPage::KnobPage(const KnobHolderPtr& holder,
-                   const std::string &label,
-                   int dimension,
-                   bool declaredByPlugin)
-    : KnobBoolBase(holder, label, dimension, declaredByPlugin)
-    , _isToolBar(false)
+                   const std::string &name,
+                   int dimension)
+: KnobBoolBase(holder, name, dimension)
+, _imp(new KnobPagePrivate())
 {
     setIsPersistent(false);
 }
+
+KnobPage::KnobPage(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobBoolBase(holder, mainInstance)
+, _imp(toKnobPage(mainInstance)->_imp)
+{
+
+}
+
+KnobPage::~KnobPage()
+{
+
+}
+
+void
+KnobPage::setAsToolBar(bool b)
+{
+    _imp->isToolBar = b;
+}
+
+bool
+KnobPage::getIsToolBar() const
+{
+    return _imp->isToolBar;
+}
+
 
 bool
 KnobPage::canAnimate() const
@@ -2006,8 +2439,8 @@ KnobPage::getChildren() const
 {
     std::vector< KnobIPtr > ret;
 
-    for (std::size_t i = 0; i < _children.size(); ++i) {
-        KnobIPtr k = _children[i].lock();
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        KnobIPtr k = _imp->children[i].lock();
         if (k) {
             ret.push_back(k);
         }
@@ -2022,8 +2455,8 @@ KnobPage::addKnob(const KnobIPtr &k)
     if ( !isUserKnob() && k->isUserKnob() ) {
         return;
     }
-    for (std::size_t i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
             return;
         }
     }
@@ -2031,7 +2464,7 @@ KnobPage::addKnob(const KnobIPtr &k)
 
     k->resetParent();
 
-    _children.push_back(k);
+    _imp->children.push_back(k);
     k->setParentKnob( shared_from_this() );
 }
 
@@ -2043,20 +2476,20 @@ KnobPage::insertKnob(int index,
         return;
     }
 
-    for (std::size_t i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
+    for (std::size_t i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
             return;
         }
     }
 
     k->resetParent();
 
-    if ( index >= (int)_children.size() ) {
-        _children.push_back(k);
+    if ( index >= (int)_imp->children.size() ) {
+        _imp->children.push_back(k);
     } else {
-        std::vector<KnobIWPtr >::iterator it = _children.begin();
+        std::vector<KnobIWPtr >::iterator it = _imp->children.begin();
         std::advance(it, index);
-        _children.insert(it, k);
+        _imp->children.insert(it, k);
     }
     k->setParentKnob( shared_from_this() );
 }
@@ -2064,9 +2497,9 @@ KnobPage::insertKnob(int index,
 void
 KnobPage::removeKnob(const KnobIPtr& k)
 {
-    for (std::vector<KnobIWPtr >::iterator it = _children.begin(); it != _children.end(); ++it) {
+    for (std::vector<KnobIWPtr >::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
         if (it->lock() == k) {
-            _children.erase(it);
+            _imp->children.erase(it);
 
             return;
         }
@@ -2076,14 +2509,14 @@ KnobPage::removeKnob(const KnobIPtr& k)
 bool
 KnobPage::moveOneStepUp(const KnobIPtr& k)
 {
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
+    for (U32 i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
             if (i == 0) {
                 return false;
             }
-            KnobIWPtr tmp = _children[i - 1];
-            _children[i - 1] = _children[i];
-            _children[i] = tmp;
+            KnobIWPtr tmp = _imp->children[i - 1];
+            _imp->children[i - 1] = _imp->children[i];
+            _imp->children[i] = tmp;
 
             return true;
         }
@@ -2094,14 +2527,14 @@ KnobPage::moveOneStepUp(const KnobIPtr& k)
 bool
 KnobPage::moveOneStepDown(const KnobIPtr& k)
 {
-    for (U32 i = 0; i < _children.size(); ++i) {
-        if (_children[i].lock() == k) {
-            if (i == _children.size() - 1) {
+    for (U32 i = 0; i < _imp->children.size(); ++i) {
+        if (_imp->children[i].lock() == k) {
+            if (i == _imp->children.size() - 1) {
                 return false;
             }
-            KnobIWPtr tmp = _children[i + 1];
-            _children[i + 1] = _children[i];
-            _children[i] = tmp;
+            KnobIWPtr tmp = _imp->children[i + 1];
+            _imp->children[i + 1] = _imp->children[i];
+            _imp->children[i] = tmp;
 
             return true;
         }
@@ -2130,16 +2563,66 @@ ParametricKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     return hasChanged;
 }
 
-KnobParametric::KnobParametric(const KnobHolderPtr& holder,
-                               const std::string &label,
-                               int dimension,
-                               bool declaredByPlugin)
-    : KnobDoubleBase(holder, label, dimension, declaredByPlugin)
-    , _curvesMutex()
-    , _defaultCurves(dimension)
-    , _curvesColor(dimension)
+struct KnobParametricSharedData
 {
+    mutable QMutex curvesMutex;
+    std::vector< CurvePtr >  defaultCurves;
+    std::vector<RGBAColourD> curvesColor;
+
+
+    KnobParametricSharedData(int dimension)
+    : curvesMutex()
+    , defaultCurves(dimension)
+    , curvesColor(dimension)
+    {
+
+    }
+
+};
+
+// Render local curves
+struct KnobParametricRenderCurves
+{
+    std::vector<CurvePtr> curves;
+};
+
+struct KnobParametricPrivate
+{
+    boost::shared_ptr<KnobParametricSharedData> common;
+
+    boost::scoped_ptr<KnobParametricRenderCurves> renderLocalCurves;
+
+    KnobParametricPrivate()
+    : common()
+    , renderLocalCurves()
+    {
+
+    }
+};
+
+KnobParametric::KnobParametric(const KnobHolderPtr& holder,
+                               const std::string &name,
+                               int dimension)
+: KnobDoubleBase(holder, name, dimension)
+, _imp(new KnobParametricPrivate())
+{
+    _imp->common.reset(new KnobParametricSharedData(dimension));
+
     setCanAutoFoldDimensions(false);
+}
+
+KnobParametric::KnobParametric(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
+: KnobDoubleBase(holder, mainInstance)
+, _imp(new KnobParametricPrivate())
+{
+    _imp->renderLocalCurves.reset(new KnobParametricRenderCurves);
+    _imp->renderLocalCurves->curves.resize(getNDimensions());
+    _imp->common = toKnobParametric(mainInstance)->_imp->common;
+}
+
+KnobParametric::~KnobParametric()
+{
+    
 }
 
 KnobDimViewBasePtr
@@ -2157,8 +2640,8 @@ KnobParametric::populate()
     for (int i = 0; i < getNDimensions(); ++i) {
         RGBAColourD color;
         color.r = color.g = color.b = color.a = 1.;
-        _curvesColor[i] = color;
-        _defaultCurves[i].reset(new Curve(Curve::eCurveTypeParametric));
+        _imp->common->curvesColor[i] = color;
+        _imp->common->defaultCurves[i].reset(new Curve(Curve::eCurveTypeParametric));
     }
 }
 
@@ -2167,11 +2650,11 @@ const std::string KnobParametric::_typeNameStr(kKnobParametricTypeName);
 void
 KnobParametric::setPeriodic(bool periodic)
 {
-    for (std::size_t i = 0; i < _defaultCurves.size(); ++i) {
+    for (std::size_t i = 0; i < _imp->common->defaultCurves.size(); ++i) {
         ParametricKnobDimViewPtr data = toParametricKnobDimView(getDataForDimView(DimIdx(i), ViewIdx(0)));
         assert(data);
         data->parametricCurve->setPeriodic(periodic);
-        _defaultCurves[i]->setPeriodic(periodic);
+        _imp->common->defaultCurves[i]->setPeriodic(periodic);
     }
 }
 
@@ -2198,7 +2681,7 @@ KnobParametric::typeName() const
 CurvePtr
 KnobParametric::getAnimationCurve(ViewIdx idx, DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getAnimationCurve dimension out of range");
     }
     ViewIdx view_i = getViewIdxFromGetSpec(idx);
@@ -2219,10 +2702,10 @@ KnobParametric::setCurveColor(DimIdx dimension,
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
 
-    assert( dimension < (int)_curvesColor.size() );
-    _curvesColor[dimension].r = r;
-    _curvesColor[dimension].g = g;
-    _curvesColor[dimension].b = b;
+    assert( dimension < (int)_imp->common->curvesColor.size() );
+    _imp->common->curvesColor[dimension].r = r;
+    _imp->common->curvesColor[dimension].g = g;
+    _imp->common->curvesColor[dimension].b = b;
 
     Q_EMIT curveColorChanged(dimension);
 }
@@ -2235,13 +2718,13 @@ KnobParametric::getCurveColor(DimIdx dimension,
 {
     ///Mt-safe as it never changes
 
-    if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getCurveColor dimension out of range");
     }
 
-    *r = _curvesColor[dimension].r;
-    *g = _curvesColor[dimension].g;
-    *b = _curvesColor[dimension].b;
+    *r = _imp->common->curvesColor[dimension].r;
+    *g = _imp->common->curvesColor[dimension].g;
+    *b = _imp->common->curvesColor[dimension].b;
 
 }
 
@@ -2253,7 +2736,7 @@ KnobParametric::setParametricRange(double min,
     assert( QThread::currentThread() == qApp->thread() );
     ///Mt-safe as it never changes
 
-    for (std::size_t i = 0; i < _defaultCurves.size(); ++i) {
+    for (std::size_t i = 0; i < _imp->common->defaultCurves.size(); ++i) {
         ParametricKnobDimViewPtr data = toParametricKnobDimView(getDataForDimView(DimIdx(i), ViewIdx(0)));
         assert(data);
         data->parametricCurve->setXRange(min, max);
@@ -2271,18 +2754,27 @@ std::pair<double, double> KnobParametric::getParametricRange() const
 CurvePtr
 KnobParametric::getDefaultParametricCurve(DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getDefaultParametricCurve dimension out of range");
     }
-    return _defaultCurves[dimension];
+    return _imp->common->defaultCurves[dimension];
 
+}
+
+void
+KnobParametric::clearRenderValuesCache()
+{
+    if (_imp->renderLocalCurves) {
+        _imp->renderLocalCurves->curves.clear();
+        _imp->renderLocalCurves->curves.resize(getNDimensions());
+    }
 }
 
 CurvePtr
 KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewIdx view, ParametricKnobDimViewPtr* outData) const
 {
     ///Mt-safe as Curve is MT-safe and the pointer is never deleted
-    if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric::getParametricCurve dimension out of range");
     }
     ViewIdx view_i = getViewIdxFromGetSpec(view);
@@ -2296,10 +2788,14 @@ KnobParametric::getParametricCurveInternal(DimIdx dimension, ViewIdx view, Param
 
     EffectInstancePtr holder = toEffectInstance(getHolder());
     if (holder) {
-        RenderValuesCachePtr cache = holder->getRenderValuesCache_TLS(0, 0);
-        if (cache) {
-            KnobParametricPtr thisShared = boost::const_pointer_cast<KnobParametric>(boost::dynamic_pointer_cast<const KnobParametric>(shared_from_this()));
-            return cache->getOrCreateCachedParametricKnobCurve(thisShared, data->parametricCurve, dimension);
+        if (_imp->renderLocalCurves) {
+            if (_imp->renderLocalCurves->curves[dimension]) {
+                return _imp->renderLocalCurves->curves[dimension];
+            }
+            CurvePtr clone(new Curve());
+            clone->clone(*data->parametricCurve);
+            _imp->renderLocalCurves->curves[dimension] = clone;
+            return clone;
         }
     }
     return data->parametricCurve;
@@ -2337,7 +2833,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
                                 KeyframeTypeEnum interpolation)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( ( dimension >= (int)_defaultCurves.size() ) ||
+    if ( ( dimension >= (int)_imp->common->defaultCurves.size() ) ||
          ( key != key) || // check for NaN
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
@@ -2367,7 +2863,7 @@ KnobParametric::addControlPoint(ValueChangedReasonEnum reason,
                                 KeyframeTypeEnum interpolation)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( ( dimension >= (int)_defaultCurves.size() ) ||
+    if ( ( dimension >= (int)_imp->common->defaultCurves.size() ) ||
          ( key != key) || // check for NaN
          boost::math::isinf(key) ||
          ( value != value) || // check for NaN
@@ -2394,7 +2890,7 @@ KnobParametric::evaluateCurve(DimIdx dimension,
                          double *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
@@ -2411,7 +2907,7 @@ KnobParametric::getNControlPoints(DimIdx dimension,
                                   int *returnValue) const
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
@@ -2431,7 +2927,7 @@ KnobParametric::getNthControlPoint(DimIdx dimension,
                                    double *value) const
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
@@ -2460,7 +2956,7 @@ KnobParametric::getNthControlPoint(DimIdx dimension,
                                    double *rightDerivative) const
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     CurvePtr curve = getParametricCurve(dimension, view);
@@ -2489,7 +2985,7 @@ KnobParametric::setNthControlPointInterpolation(ValueChangedReasonEnum reason,
 {
 
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
@@ -2534,7 +3030,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    double value)
 {
     ///Mt-safe as Curve is MT-safe
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
@@ -2577,7 +3073,7 @@ KnobParametric::setNthControlPoint(ValueChangedReasonEnum reason,
                                    double leftDerivative,
                                    double rightDerivative)
 {
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
@@ -2617,7 +3113,7 @@ KnobParametric::deleteControlPoint(ValueChangedReasonEnum reason,
                                    ViewSetSpec view,
                                    int nthCtl)
 {
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
@@ -2654,7 +3150,7 @@ KnobParametric::deleteAllControlPoints(ValueChangedReasonEnum reason,
                                        DimIdx dimension,
                                        ViewSetSpec view)
 {
-    if ( dimension >= (int)_defaultCurves.size() ) {
+    if ( dimension >= (int)_imp->common->defaultCurves.size() ) {
         return eActionStatusFailed;
     }
     std::list<ViewIdx> views = getViewsList();
@@ -2759,7 +3255,7 @@ KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
                 continue;
             }
 
-            curve->clone(*_defaultCurves[DimIdx(i)]);
+            curve->clone(*_imp->common->defaultCurves[DimIdx(i)]);
             signalCurveChanged(dimension, data);
 
         }
@@ -2770,10 +3266,10 @@ KnobParametric::resetExtraToDefaultValue(DimSpec dimension, ViewSetSpec view)
 void
 KnobParametric::setDefaultCurvesFromCurves()
 {
-    for (std::size_t i = 0; i < _defaultCurves.size(); ++i) {
+    for (std::size_t i = 0; i < _imp->common->defaultCurves.size(); ++i) {
         CurvePtr curve = getParametricCurve(DimIdx(i), ViewIdx(0));
         assert(curve);
-        _defaultCurves[i]->clone(*curve);
+        _imp->common->defaultCurves[i]->clone(*curve);
     }
     computeHasModifications();
 }
@@ -2782,7 +3278,7 @@ bool
 KnobParametric::hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const
 {
 
-    KeyFrameSet defKeys = _defaultCurves[dimension]->getKeyFrames_mt_safe();
+    KeyFrameSet defKeys = _imp->common->defaultCurves[dimension]->getKeyFrames_mt_safe();
     ParametricKnobDimViewPtr parametricData = toParametricKnobDimView(data);
     assert(parametricData);
     assert(parametricData->parametricCurve);
@@ -2809,7 +3305,7 @@ KnobParametric::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     if (args.hashType != HashableObject::eComputeHashTypeTimeViewVariant) {
         return;
     }
-    for (std::size_t i = 0; i < _defaultCurves.size(); ++i) {
+    for (std::size_t i = 0; i < _imp->common->defaultCurves.size(); ++i) {
         // Parametric params are a corner case:
         // The plug-in will try to call getValue at many parametric times, which are unknown.
         // The only way to identify uniquely the curve as a hash is to append all control points
@@ -2826,7 +3322,7 @@ KnobParametric::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 bool
 KnobParametric::cloneCurve(ViewIdx view, DimIdx dimension, const Curve& curve, double offset, const RangeD* range, const StringAnimationManager* /*stringAnimation*/)
 {
-    if (dimension < 0 || dimension >= (int)_defaultCurves.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric: dimension out of range");
     }
     ParametricKnobDimViewPtr data;
@@ -3259,7 +3755,7 @@ KnobParametric::setDoubleValueAtTimeAcrossDimensions(TimeValue time, const std::
         return;
     }
     
-    if (dimensionStartIndex < 0 || dimensionStartIndex + values.size() > _defaultCurves.size()) {
+    if (dimensionStartIndex < 0 || dimensionStartIndex + values.size() > _imp->common->defaultCurves.size()) {
         throw std::invalid_argument("KnobParametric: dimension out of range");
     }
     std::list<ViewIdx> views = getViewsList();
@@ -3327,19 +3823,18 @@ KnobParametric::onLinkChanged()
 
 
 KnobTable::KnobTable(const KnobHolderPtr& holder,
-                     const std::string &label,
-                     int dimension,
-                     bool declaredByPlugin)
-    : KnobStringBase(holder, label, dimension, declaredByPlugin)
+                     const std::string &name,
+                     int dimension)
+    : KnobStringBase(holder, name, dimension)
 {
 }
 
+
 KnobTable::KnobTable(const KnobHolderPtr& holder,
-                     const QString &label,
-                     int dimension,
-                     bool declaredByPlugin)
-    : KnobStringBase(holder, label.toStdString(), dimension, declaredByPlugin)
+          const KnobTablePtr& mainInstance)
+: KnobStringBase(holder, mainInstance)
 {
+
 }
 
 KnobTable::~KnobTable()

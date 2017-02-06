@@ -39,7 +39,6 @@
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
 #include "Engine/Project.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ThreadPool.h"
 
 
@@ -83,7 +82,6 @@ static void removeFromLayersList(const std::list<ImagePlaneDesc>& toRemove,
 ActionRetCodeEnum
 EffectInstance::getLayersProducedAndNeeded(TimeValue time,
                                                ViewIdx view,
-                                               const TreeRenderNodeArgsPtr& render,
                                                std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                std::list<ImagePlaneDesc>* layersProduced,
                                                TimeValue* passThroughTime,
@@ -93,14 +91,13 @@ EffectInstance::getLayersProducedAndNeeded(TimeValue time,
     bool processAllRequested;
     std::bitset<4> processChannels;
     std::list<ImagePlaneDesc> passThroughPlanes;
-    getLayersProducedAndNeeded_default(time, view, render, inputLayersNeeded, layersProduced, &passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
+    getLayersProducedAndNeeded_default(time, view, inputLayersNeeded, layersProduced, &passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, &processAllRequested, &processChannels);
     return eActionStatusReplyDefault;
 } // getComponentsNeededAndProduced
 
 ActionRetCodeEnum
 EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
                                                    ViewIdx view,
-                                                   const TreeRenderNodeArgsPtr& render,
                                                    std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                    std::list<ImagePlaneDesc>* layersProduced,
                                                    std::list<ImagePlaneDesc>* passThroughPlanes,
@@ -119,7 +116,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
         ActionRetCodeEnum stat = eActionStatusOK;
         if (*passThroughInputNb != -1) {
-            stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
+            stat = getAvailableLayers(time, view, *passThroughInputNb, &upstreamAvailableLayers);
         }
         if (isFailureRetCode(stat)) {
             return stat;
@@ -149,7 +146,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         // disparity components or a motion vector components.
         //
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
-        getMetadataComponents(render, -1, &metadataPlane, &metadataPairedPlane);
+        getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
         // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
         // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
         if (metadataPlane.getNumComponents() > 0) {
@@ -186,7 +183,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
                 mergeLayersList(userCreatedLayers, &availableLayersInOutput);
             }
 
-            gotUserSelectedPlane = getNode()->getSelectedLayer(-1, availableLayersInOutput, processChannels, processAllRequested, &layer);
+            gotUserSelectedPlane = getSelectedLayer(-1, availableLayersInOutput, processChannels, processAllRequested, &layer);
         }
 
         // If the user did not select any components or the layer is the color-plane, fallback on
@@ -210,7 +207,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
 
   
         std::list<ImagePlaneDesc> upstreamAvailableLayers;
-        ActionRetCodeEnum stat = getAvailableLayers(time, view, i, render, &upstreamAvailableLayers);
+        ActionRetCodeEnum stat = getAvailableLayers(time, view, i, &upstreamAvailableLayers);
         (void)stat;
 
 
@@ -221,7 +218,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         std::bitset<4> inputProcChannels;
         ImagePlaneDesc layer;
         bool isAll;
-        bool ok = getNode()->getSelectedLayer(i, upstreamAvailableLayers, &inputProcChannels, &isAll, &layer);
+        bool ok = getSelectedLayer(i, upstreamAvailableLayers, &inputProcChannels, &isAll, &layer);
 
         // When color plane or all choice then request the default metadata components
         if (isAll || layer.isColorPlane()) {
@@ -236,7 +233,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
         std::vector<ImagePlaneDesc> clipPrefsAllComps;
         {
             ImagePlaneDesc metadataPlane, metadataPairedPlane;
-            getMetadataComponents(render, i, &metadataPlane, &metadataPairedPlane);
+            getMetadataComponents(i, &metadataPlane, &metadataPairedPlane);
 
             // Some plug-ins, such as The Foundry Furnace set the meta-data to disparity/motion vector, requiring
             // both planes to be computed at once (Forward/Backard for motion vector) (Left/Right for Disparity)
@@ -271,7 +268,6 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
 ActionRetCodeEnum
 EffectInstance::getComponentsNeededInternal(TimeValue time,
                                             ViewIdx view,
-                                            const TreeRenderNodeArgsPtr& render,
                                             std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                             std::list<ImagePlaneDesc>* layersProduced,
                                             std::list<ImagePlaneDesc>* passThroughPlanes,
@@ -283,13 +279,13 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 {
 
     if ( !isMultiPlanar() ) {
-        return getLayersProducedAndNeeded_default(time, view, render, inputLayersNeeded, layersProduced, passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
+        return getLayersProducedAndNeeded_default(time, view, inputLayersNeeded, layersProduced, passThroughPlanes, passThroughTime, passThroughView, passThroughInputNb, processAllRequested, processChannels);
     }
 
 
     // call the getClipComponents action
 
-    ActionRetCodeEnum stat = getLayersProducedAndNeeded(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
+    ActionRetCodeEnum stat = getLayersProducedAndNeeded(time, view, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
     if (isFailureRetCode(stat)) {
         return stat;
     }
@@ -298,7 +294,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
     {
         std::list<ImagePlaneDesc> metadataPlanes;
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
-        getMetadataComponents(render, -1, &metadataPlane, &metadataPairedPlane);
+        getMetadataComponents(-1, &metadataPlane, &metadataPairedPlane);
         if (metadataPairedPlane.getNumComponents() > 0) {
             metadataPlanes.push_back(metadataPairedPlane);
         }
@@ -317,7 +313,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
         assert(*passThroughInputNb != -1);
 
 
-        ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, render, &upstreamAvailableLayers);
+        ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, &upstreamAvailableLayers);
         if (!isFailureRetCode(stat)) {
 
             // upstreamAvailableLayers now contain all available planes in input of this node
@@ -352,7 +348,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
 
     for (int i = 0; i < 4; ++i) {
-        (*processChannels)[i] = getNode()->getProcessChannel(i);
+        (*processChannels)[i] = getProcessChannel(i);
     }
 
     *processAllRequested = false;
@@ -363,7 +359,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
 
 
 ActionRetCodeEnum
-EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render,  std::list<ImagePlaneDesc>* availableLayers)
+EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  std::list<ImagePlaneDesc>* availableLayers)
 {
 
     EffectInstancePtr effect;
@@ -375,7 +371,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
     if (!effect) {
         // If input is diconnected, at least return the metadata plane
         ImagePlaneDesc metadataPlane, metadataPairedPlane;
-        getMetadataComponents(render, inputNb, &metadataPlane, &metadataPairedPlane);
+        getMetadataComponents(inputNb, &metadataPlane, &metadataPairedPlane);
         if (metadataPairedPlane.getNumComponents() > 0) {
             availableLayers->push_back(metadataPairedPlane);
         }
@@ -384,19 +380,11 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
         }
         return eActionStatusInputDisconnected;
     }
-    TreeRenderNodeArgsPtr effectRenderArgs;
-    if (inputNb >= 0) {
-        if (render) {
-            effectRenderArgs = render->getInputRenderArgs(inputNb);
-        }
-    } else {
-        effectRenderArgs = render;
-    }
 
     std::list<ImagePlaneDesc> passThroughLayers;
     {
         GetComponentsResultsPtr actionResults;
-        ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(time, view, effectRenderArgs, &actionResults);
+        ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(time, view, &actionResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -445,30 +433,26 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, co
 } // getAvailableLayers
 
 ActionRetCodeEnum
-EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results)
+EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx view,  GetComponentsResultsPtr* results)
 
 {
     // Round time for non continuous effects
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !canRenderContinuously(render)) {
+        if (roundedTime != time && !canRenderContinuously()) {
             time = TimeValue(roundedTime);
         }
     }
 
     U64 hash = 0;
     // Get a hash to cache the results
-    if (!render || !render->getFrameViewHash(time, view, &hash)) {
+    {
         ComputeHashArgs hashArgs;
-        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
-        if (render) {
-            render->setFrameViewHash(time, view, hash);
-        }
     }
 
 
@@ -481,7 +465,7 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
 
         TimeValue timeKey;
         ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
         cacheKey.reset(new GetComponentsKey(hash, timeKey, viewKey, getNode()->getPluginID()));
     }
 
@@ -516,16 +500,7 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
     std::bitset<4> processChannels;
     bool processAllRequested = false;
     {
-
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
-
-        ActionRetCodeEnum stat = getComponentsNeededInternal(time, view, render, &inputLayersNeeded, &outputLayersProduced, &passThroughPlanes, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
+        ActionRetCodeEnum stat = getComponentsNeededInternal(time, view, &inputLayersNeeded, &outputLayersProduced, &passThroughPlanes, &passThroughTime, &passThroughView, &passThroughInputNb, &processAllRequested, &processChannels);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -543,7 +518,6 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
 
 ActionRetCodeEnum
 EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale,
-                                           const TreeRenderNodeArgsPtr& renderArgs,
                                            const OSGLContextPtr& glContext,
                                            EffectOpenGLContextDataPtr* data)
 {
@@ -554,39 +528,32 @@ EffectInstance::attachOpenGLContext_public(TimeValue time, ViewIdx view, const R
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
     if (concurrentGLRender) {
-        locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
+        locker.reset( new QMutexLocker(&_imp->common->attachedContextsMutex) );
     } else {
-        _imp->attachedContextsMutex.lock();
+        _imp->common->attachedContextsMutex.lock();
     }
 
-    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
-    if ( found != _imp->attachedContexts.end() ) {
+    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator found = _imp->common->attachedContexts.find(glContext);
+    if ( found != _imp->common->attachedContexts.end() ) {
         // The context is already attached
         *data = found->second;
 
         return eActionStatusOK;
     }
 
-    const bool renderScaleSupported = renderArgs ? renderArgs->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const bool renderScaleSupported = getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, mappedScale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
 
-    ActionRetCodeEnum stat = attachOpenGLContext(time, view, mappedScale, renderArgs, glContext, data);
+    ActionRetCodeEnum stat = attachOpenGLContext(time, view, mappedScale, glContext, data);
 
     if (!isFailureRetCode(stat)) {
         if (!concurrentGLRender) {
             (*data)->setHasTakenLock(true);
         }
-        _imp->attachedContexts.insert( std::make_pair(glContext, *data) );
+        _imp->common->attachedContexts.insert( std::make_pair(glContext, *data) );
     } else {
-        _imp->attachedContextsMutex.unlock();
+        _imp->common->attachedContextsMutex.unlock();
     }
 
     // Take the lock until dettach is called for plug-ins that do not support concurrent GL renders
@@ -600,9 +567,9 @@ EffectInstance::dettachAllOpenGLContexts()
 
 
 
-    QMutexLocker locker(&_imp->attachedContextsMutex);
+    QMutexLocker locker(&_imp->common->attachedContextsMutex);
 
-    for (std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator it = _imp->attachedContexts.begin(); it != _imp->attachedContexts.end(); ++it) {
+    for (std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator it = _imp->common->attachedContexts.begin(); it != _imp->common->attachedContexts.end(); ++it) {
         OSGLContextPtr context = it->first.lock();
         if (!context) {
             continue;
@@ -612,58 +579,50 @@ EffectInstance::dettachAllOpenGLContexts()
 
         if (it->second.use_count() == 1) {
             // If no render is using it, dettach the context
-            dettachOpenGLContext(TreeRenderNodeArgsPtr(), context, it->second);
+            dettachOpenGLContext(context, it->second);
         }
     }
-    if ( !_imp->attachedContexts.empty() ) {
+    if ( !_imp->common->attachedContexts.empty() ) {
         OSGLContext::unsetCurrentContextNoRenderInternal(true, 0);
     }
-    _imp->attachedContexts.clear();
+    _imp->common->attachedContexts.clear();
 
 } // dettachAllOpenGLContexts
 
 ActionRetCodeEnum
-EffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/)
+EffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const OSGLContextPtr& /*glContext*/, EffectOpenGLContextDataPtr* /*data*/)
 {
     return eActionStatusReplyDefault;
 }
 
 
 ActionRetCodeEnum
-EffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/)
+EffectInstance::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& /*data*/)
 {
     return eActionStatusReplyDefault;
 }
 
 
 ActionRetCodeEnum
-EffectInstance::dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
+EffectInstance::dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data)
 {
 
     bool concurrentGLRender = supportsConcurrentOpenGLRenders();
     boost::scoped_ptr<QMutexLocker> locker;
     if (concurrentGLRender) {
-        locker.reset( new QMutexLocker(&_imp->attachedContextsMutex) );
+        locker.reset( new QMutexLocker(&_imp->common->attachedContextsMutex) );
     }
 
 
     bool mustUnlock = data->getHasTakenLock();
-    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator found = _imp->attachedContexts.find(glContext);
-    if ( found != _imp->attachedContexts.end() ) {
-        _imp->attachedContexts.erase(found);
+    std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr>::iterator found = _imp->common->attachedContexts.find(glContext);
+    if ( found != _imp->common->attachedContexts.end() ) {
+        _imp->common->attachedContexts.erase(found);
     }
 
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
-
-    ActionRetCodeEnum ret = dettachOpenGLContext(renderArgs, glContext, data);
+    ActionRetCodeEnum ret = dettachOpenGLContext(glContext, data);
     if (mustUnlock) {
-        _imp->attachedContextsMutex.unlock();
+        _imp->common->attachedContextsMutex.unlock();
     }
     
     return ret;
@@ -682,8 +641,7 @@ EffectInstance::beginSequenceRender(double /*first*/,
                                        bool /*draftMode*/,
                                        ViewIdx /*view*/,
                                        RenderBackendTypeEnum /*backendType*/,
-                                       const EffectOpenGLContextDataPtr& /*glContextData*/,
-                                       const TreeRenderNodeArgsPtr& /*render*/)
+                                       const EffectOpenGLContextDataPtr& /*glContextData*/)
 {
     return eActionStatusReplyDefault;
 }
@@ -699,8 +657,7 @@ EffectInstance::endSequenceRender(double /*first*/,
                                      bool /*draftMode*/,
                                      ViewIdx /*view*/,
                                      RenderBackendTypeEnum /*backendType*/,
-                                     const EffectOpenGLContextDataPtr& /*glContextData*/,
-                                     const TreeRenderNodeArgsPtr& /*render*/)
+                                     const EffectOpenGLContextDataPtr& /*glContextData*/)
 {
     return eActionStatusReplyDefault;
 }
@@ -734,25 +691,13 @@ EffectInstance::beginSequenceRender_public(double first,
                                            bool draftMode,
                                            ViewIdx view,
                                            RenderBackendTypeEnum backendType,
-                                           const EffectOpenGLContextDataPtr& glContextData,
-                                           const TreeRenderNodeArgsPtr& render)
+                                           const EffectOpenGLContextDataPtr& glContextData)
 {
 
     REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionBeginSequenceRender, getNode() );
 
-
-
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
-
-
     return beginSequenceRender(first, last, step, interactive, scale,
-                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData, render);
+                               isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData);
 } // beginSequenceRender_public
 
 ActionRetCodeEnum
@@ -766,23 +711,13 @@ EffectInstance::endSequenceRender_public(double first,
                                          bool draftMode,
                                          ViewIdx view,
                                          RenderBackendTypeEnum backendType,
-                                         const EffectOpenGLContextDataPtr& glContextData,
-                                         const TreeRenderNodeArgsPtr& render)
+                                         const EffectOpenGLContextDataPtr& glContextData)
 {
 
 
     REPORT_CURRENT_THREAD_ACTION( kOfxImageEffectActionEndSequenceRender, getNode() );
 
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
-
-
-    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData, render);
+    return endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backendType, glContextData);
 
 } // endSequenceRender_public
 
@@ -790,7 +725,6 @@ ActionRetCodeEnum
 EffectInstance::getDistortion(TimeValue /*time*/,
                                  const RenderScale & /*renderScale*/,
                                  ViewIdx /*view*/,
-                                 const TreeRenderNodeArgsPtr& /*render*/,
                                  DistortionFunction2D* /*distortion*/)
 {
     return eActionStatusReplyDefault;
@@ -800,39 +734,23 @@ ActionRetCodeEnum
 EffectInstance::getDistortion_public(TimeValue inArgsTime,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
-                                     const TreeRenderNodeArgsPtr& render,
                                      DistortionFunction2DPtr* outDisto) {
     assert(outDisto);
 
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !canRenderContinuously(render)) {
+        if (roundedTime != time && !canRenderContinuously()) {
             time = TimeValue(roundedTime);
         }
     }
 
-    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const bool renderScaleSupported = getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? renderScale : RenderScale(1.);
 
 
-    bool isDeprecatedTransformSupportEnabled;
-    bool distortSupported;
-
-    // Get the render local args
-    if (render) {
-
-        isDeprecatedTransformSupportEnabled = render->getCurrentTransformationSupport_deprecated();
-        distortSupported = render->getCurrentDistortSupport();
-        assert(distortSupported || isDeprecatedTransformSupportEnabled);
-
-        // Ensure the render object corresponds to this node.
-        assert(render->getNode() == getNode());
-
-    } else {
-        isDeprecatedTransformSupportEnabled = getNode()->getCurrentCanTransform();
-        distortSupported = getNode()->getCurrentCanDistort();
-    }
+    bool isDeprecatedTransformSupportEnabled = getCurrentCanTransform();
+    bool distortSupported = getCurrentCanDistort();
 
 
     // If the effect is identity, do not call the getDistortion action, instead just return an identity
@@ -845,10 +763,10 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         isIdentity = true;
     } else {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat(render);
+        RectI format = getOutputFormat();
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        isIdentity = isIdentity_public(true, time, scale, format, view, render, &identityResults);
+        isIdentity = isIdentity_public(true, time, scale, format, view, &identityResults);
     }
 
     if (isIdentity) {
@@ -856,17 +774,8 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         (*outDisto)->transformMatrix->setIdentity();
     } else {
 
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, mappedScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
-
         // Call the action
-        ActionRetCodeEnum stat = getDistortion(time, mappedScale, view, render, (*outDisto).get());
+        ActionRetCodeEnum stat = getDistortion(time, mappedScale, view, (*outDisto).get());
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -878,7 +787,7 @@ EffectInstance::getDistortion_public(TimeValue inArgsTime,
         // action, we return a matrix in canonical coordinates.
         if (isDeprecatedTransformSupportEnabled) {
             assert((*outDisto)->transformMatrix);
-            double par = getAspectRatio(render, -1);
+            double par = getAspectRatio(-1);
 
             Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, mappedScale.x, mappedScale.y, false);
             Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, mappedScale.x, mappedScale.y, false);
@@ -895,7 +804,6 @@ EffectInstance::isIdentity(TimeValue /*time*/,
                       const RenderScale & /*scale*/,
                       const RectI & /*roi*/,
                       ViewIdx /*view*/,
-                      const TreeRenderNodeArgsPtr& /*render*/,
                       TimeValue* /*inputTime*/,
                       ViewIdx* /*inputView*/,
                       int* inputNb)
@@ -911,7 +819,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,
-                                  const TreeRenderNodeArgsPtr& render,
                                   IsIdentityResultsPtr* results)
 {
     
@@ -920,7 +827,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         int roundedTime = std::floor(time + 0.5);
 
         // A continuous effect is identity on itself on nearest integer time
-        if (roundedTime != time && !canRenderContinuously(render)) {
+        if (roundedTime != time && !canRenderContinuously()) {
             // We do not cache it because for non continuous effects we only cache stuff at
             // valid frame times
             *results = IsIdentityResults::create(IsIdentityKeyPtr());
@@ -938,22 +845,18 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         return eActionStatusOK;
     }
 
-    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const bool renderScaleSupported = getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
 
     U64 hash = 0;
     // Get a hash to cache the results
-    if (useIdentityCache && (!render || !render->getFrameViewHash(time, view, &hash))) {
+    if (useIdentityCache) {
         ComputeHashArgs hashArgs;
-        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
-        if (render) {
-            render->setFrameViewHash(time, view, hash);
-        }
     }
 
 
@@ -962,7 +865,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
         TimeValue timeKey;
         ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
         cacheKey.reset(new IsIdentityKey(hash, timeKey, viewKey, getNode()->getPluginID()));
     }
 
@@ -991,7 +894,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     bool caught = false;
 
     // Node is disabled or doesn't have any channel to process, be identity on the main input
-    if ((getNode()->isNodeDisabledForFrame(time, view) || !getNode()->hasAtLeastOneChannelToProcess() )) {
+    if ((isNodeDisabledForFrame(time, view) || !getNode()->hasAtLeastOneChannelToProcess() )) {
         (*results)->setIdentityData(getNode()->getPreferredInput(), time, view);
         caught = true;
     }
@@ -999,21 +902,12 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     // Call the isIdentity plug-in action
     if (!caught) {
 
-
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, mappedScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
-
         RectI mappedRenderWindow = renderWindow;
 
         if (mappedScale.x != scale.x || mappedScale.y != scale.y) {
             // map the render window to the appropriate scale
             RectD canonicalRenderWindow;
-            double par = getAspectRatio(render, -1);
+            double par = getAspectRatio(-1);
             renderWindow.toCanonical_noClipping(scale, par, &canonicalRenderWindow);
             canonicalRenderWindow.toPixelEnclosing(mappedScale, par, &mappedRenderWindow);
         }
@@ -1021,7 +915,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         TimeValue identityTime;
         ViewIdx identityView;
         int identityInputNb;
-        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, render, &identityTime, &identityView, &identityInputNb);
+        ActionRetCodeEnum stat = isIdentity(time, mappedScale, mappedRenderWindow, view, &identityTime, &identityView, &identityInputNb);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1029,12 +923,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         // -2 means identity on itself.
         // A sequential effect cannot be identity on itself
         if (identityInputNb == -2) {
-            SequentialPreferenceEnum sequential;
-            if (render) {
-                sequential = render->getCurrentRenderSequentialPreference();
-            } else {
-                sequential = getNode()->getCurrentSequentialRenderSupport();
-            }
+            SequentialPreferenceEnum sequential = getCurrentSequentialRenderSupport();
 
             if (sequential == eSequentialPreferenceOnlySequential) {
                 identityInputNb = -1;
@@ -1061,18 +950,17 @@ ActionRetCodeEnum
 EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
                                              const RenderScale & scale,
                                              ViewIdx view,
-                                             const TreeRenderNodeArgsPtr& render,
                                              GetRegionOfDefinitionResultsPtr* results)
 {
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !canRenderContinuously(render)) {
+        if (roundedTime != time && !canRenderContinuously()) {
             time = TimeValue(roundedTime);
         }
     }
 
-    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const bool renderScaleSupported = getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
 
@@ -1082,23 +970,19 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
     U64 hash = 0;
     // Get a hash to cache the results
-    if (useCache && (!render || !render->getFrameViewHash(time, view, &hash))) {
+    if (useCache) {
         ComputeHashArgs hashArgs;
-        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
-        if (render) {
-            render->setFrameViewHash(time, view, hash);
-        }
     }
 
     GetRegionOfDefinitionKeyPtr cacheKey;
     {
         TimeValue timeKey;
         ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
         cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
     }
 
@@ -1128,10 +1012,10 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat(render);
+        RectI format = getOutputFormat();
         RenderScale scale(1.);
         IsIdentityResultsPtr identityResults;
-        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, render, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(true, time, mappedScale, format, view, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1149,14 +1033,9 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
                 return eActionStatusInputDisconnected;
             }
 
-            // Get the render args for the input
-            TreeRenderNodeArgsPtr inputRenderArgs;
-            if (render) {
-                inputRenderArgs = render->getInputRenderArgs(inputIdentityNb);
-            }
 
             GetRegionOfDefinitionResultsPtr inputResults;
-            ActionRetCodeEnum stat = identityInputNode->getRegionOfDefinition_public(identityTime, mappedScale, identityView, inputRenderArgs, &inputResults);
+            ActionRetCodeEnum stat = identityInputNode->getRegionOfDefinition_public(identityTime, mappedScale, identityView, &inputResults);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1175,23 +1054,14 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
                 }
             }
 
-            EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-
-            EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, mappedScale
-#ifdef DEBUG
-                                                      , /*canSetValue*/ false
-                                                      , /*canBeCalledRecursively*/ true
-#endif
-                                                      );
-
 
             RectD rod;
-            ActionRetCodeEnum stat = getRegionOfDefinition(time, mappedScale, view, render, &rod);
+            ActionRetCodeEnum stat = getRegionOfDefinition(time, mappedScale, view, &rod);
 
             if (isFailureRetCode(stat)) {
                 return stat;
             }
-            ifInfiniteApplyHeuristic(time, mappedScale, view, render, &rod);
+            ifInfiniteApplyHeuristic(time, mappedScale, view, &rod);
 
             (*results)->setRoD(rod);
             
@@ -1209,31 +1079,22 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
 
 void
-EffectInstance::calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view,const TreeRenderNodeArgsPtr& render, RectD *rod)
+EffectInstance::calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view, RectD *rod)
 {
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
 
-
-    return calcDefaultRegionOfDefinition(time, scale, view, render, rod);
+    return calcDefaultRegionOfDefinition(time, scale, view, rod);
 }
 
 void
 EffectInstance::calcDefaultRegionOfDefinition(TimeValue /*time*/,
                                               const RenderScale & scale,
                                               ViewIdx /*view*/,
-                                              const TreeRenderNodeArgsPtr& render,
                                               RectD *rod)
 {
 
     unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
-    RectI format = getOutputFormat(render);
-    double par = getAspectRatio(render, -1);
+    RectI format = getOutputFormat();
+    double par = getAspectRatio(-1);
     format.toCanonical_noClipping(mipMapLevel, par, rod);
 } // calcDefaultRegionOfDefinition
 
@@ -1241,7 +1102,6 @@ ActionRetCodeEnum
 EffectInstance::getRegionOfDefinition(TimeValue time,
                                       const RenderScale & scale,
                                       ViewIdx view,
-                                      const TreeRenderNodeArgsPtr& render,
                                       RectD* rod) //!< rod is in canonical coordinates
 {
     bool firstInput = true;
@@ -1256,13 +1116,8 @@ EffectInstance::getRegionOfDefinition(TimeValue time,
         EffectInstancePtr input = getInput(i);
         if (input) {
             GetRegionOfDefinitionResultsPtr inputResults;
-            TreeRenderNodeArgsPtr inputRenderArgs;
-            if (render) {
-                inputRenderArgs = render->getInputRenderArgs(i);
-                assert(inputRenderArgs);
-            }
 
-            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, renderMappedScale, view, inputRenderArgs, &inputResults);
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, renderMappedScale, view, &inputResults);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1291,7 +1146,6 @@ void
 EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
                                          const RenderScale & scale,
                                          ViewIdx view,
-                                         const TreeRenderNodeArgsPtr& render,
                                          RectD* rod) //!< input/output
 {
     // If the rod is infinite clip it to the format
@@ -1314,16 +1168,16 @@ EffectInstance::ifInfiniteApplyHeuristic(TimeValue time,
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
 
         // initialize with the effect's default RoD, because inputs may not be connected to other effects (e.g. Roto)
-        calcDefaultRegionOfDefinition_public(time, scale, view, render, &inputsUnion);
+        calcDefaultRegionOfDefinition_public(time, scale, view, &inputsUnion);
     }
 
     // If infinite : clip to inputsUnion if not null, otherwise to project default
     RectD canonicalFormat;
 
     if (x1Infinite || y1Infinite || x2Infinite || y2Infinite) {
-        RectI format = getOutputFormat(render);
+        RectI format = getOutputFormat();
         assert(!format.isNull());
-        double par = getAspectRatio(render, -1);
+        double par = getAspectRatio(-1);
         unsigned int mipMapLevel = Image::getLevelFromScale(scale.x);
         format.toCanonical_noClipping(mipMapLevel, par, &canonicalFormat);
     }
@@ -1373,32 +1227,24 @@ EffectInstance::getRegionsOfInterest_public(TimeValue inArgsTime,
                                             const RenderScale & scale,
                                             const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                             ViewIdx view,
-                                            const TreeRenderNodeArgsPtr& render,
                                             RoIMap* ret)
 {
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !canRenderContinuously(render)) {
+        if (roundedTime != time && !canRenderContinuously()) {
             time = TimeValue(roundedTime);
         }
     }
 
-    const bool renderScaleSupported = render ? render->getCurrentRenderScaleSupport() : getNode()->getCurrentSupportRenderScale();
+    const bool renderScaleSupported = getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
     assert(renderWindow.x2 >= renderWindow.x1 && renderWindow.y2 >= renderWindow.y1);
 
 
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, mappedScale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
-
-    return getRegionsOfInterest(time, mappedScale, renderWindow, view, render, ret);
+ 
+    return getRegionsOfInterest(time, mappedScale, renderWindow, view, ret);
 
 } // getRegionsOfInterest_public
 
@@ -1407,16 +1253,9 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
                                      const RenderScale & scale,
                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                      ViewIdx view,
-                                     const TreeRenderNodeArgsPtr& render,
                                      RoIMap* ret)
 {
-    bool tilesSupported;
-
-    if (render) {
-        tilesSupported = render->getCurrentTilesSupport();
-    } else {
-        tilesSupported = getNode()->getCurrentSupportTiles();
-    }
+    bool tilesSupported = getCurrentSupportTiles();
 
     int nInputs = getMaxInputCount();
     for (int i = 0; i < nInputs; ++i) {
@@ -1429,13 +1268,8 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
         } else {
             // Tiles not supported: get the RoD as RoI
             GetRegionOfDefinitionResultsPtr inputResults;
-            // Get the render args for the input
-            TreeRenderNodeArgsPtr inputRenderArgs;
-            if (render) {
-                inputRenderArgs = render->getInputRenderArgs(i);
-            }
 
-            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, scale, view, inputRenderArgs, &inputResults);
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, scale, view, &inputResults);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1452,7 +1286,6 @@ EffectInstance::getRegionsOfInterest(TimeValue time,
 ActionRetCodeEnum
 EffectInstance::getFramesNeeded(TimeValue time,
                                 ViewIdx view,
-                                const TreeRenderNodeArgsPtr& /*render*/,
                                 FramesNeededMap* ret)
 {
     RangeD defaultRange = {time, time};
@@ -1479,7 +1312,6 @@ EffectInstance::getFramesNeeded(TimeValue time,
 ActionRetCodeEnum
 EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
                                        ViewIdx view,
-                                       const TreeRenderNodeArgsPtr& render,
                                        GetFramesNeededResultsPtr* results)
 {
 
@@ -1487,7 +1319,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     TimeValue time = inArgsTime;
     {
         int roundedTime = std::floor(time + 0.5);
-        if (roundedTime != time && !canRenderContinuously(render)) {
+        if (roundedTime != time && !canRenderContinuously()) {
             time = TimeValue(roundedTime);
         }
     }
@@ -1495,16 +1327,12 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
     U64 hash = 0;
     // Get a hash to cache the results
-    if (!render || !render->getFrameViewHash(time, view, &hash)) {
+    {
         ComputeHashArgs hashArgs;
-        hashArgs.render = render;
         hashArgs.time = time;
         hashArgs.view = view;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
         hash = computeHash(hashArgs);
-        if (render) {
-            render->setFrameViewHash(time, view, hash);
-        }
     }
     NodePtr thisNode = getNode();
 
@@ -1512,7 +1340,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     {
         TimeValue timeKey;
         ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
         cacheKey.reset(new GetFramesNeededKey(hash, timeKey, viewKey, getNode()->getPluginID()));
     }
     *results = GetFramesNeededResults::create(cacheKey);
@@ -1555,15 +1383,8 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
             }
         }
 
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
 
-        ActionRetCodeEnum stat = getFramesNeeded(time, view, render, &framesNeeded);
+        ActionRetCodeEnum stat = getFramesNeeded(time, view, &framesNeeded);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1578,9 +1399,9 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     IsIdentityResultsPtr identityResults;
     {
         // If the effect is identity on the format, that means its bound to be identity anywhere and does not depend on the render window.
-        RectI format = getOutputFormat(render);
+        RectI format = getOutputFormat();
         RenderScale scale(1.);
-        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, render, &identityResults);
+        ActionRetCodeEnum stat = isIdentity_public(isHashCached, time, scale, format, view, &identityResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1611,7 +1432,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
         TimeValue timeKey;
         ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, render, &timeKey, &viewKey);
+        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
         cacheKey.reset(new GetFramesNeededKey(0, timeKey, viewKey, getNode()->getPluginID()));
 
     }
@@ -1631,8 +1452,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
 
 ActionRetCodeEnum
-EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
-                              double *first,
+EffectInstance::getFrameRange(double *first,
                               double *last)
 {
     // default is infinite if there are no non optional input clips
@@ -1651,12 +1471,7 @@ EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
         if (input) {
             //if (!isInputOptional(i))
             GetFrameRangeResultsPtr inputResults;
-
-            TreeRenderNodeArgsPtr inputRender;
-            if (render) {
-                inputRender = render->getInputRenderArgs(i);
-            }
-            ActionRetCodeEnum stat = input->getFrameRange_public(inputRender, &inputResults);
+            ActionRetCodeEnum stat = input->getFrameRange_public(&inputResults);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1677,25 +1492,20 @@ EffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render,
 
 
 ActionRetCodeEnum
-EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFrameRangeResultsPtr* results)
+EffectInstance::getFrameRange_public(GetFrameRangeResultsPtr* results)
 {
 
     // Get a hash to cache the results
     U64 hash = 0;
 
-    if (render) {
-        *results = render->getFrameRangeResults();
-        if (*results) {
-            return eActionStatusOK;
-        }
-        render->getTimeViewInvariantHash(&hash);
+    *results = _imp->getFrameRangeResults();
+
+    if (*results) {
+        return eActionStatusOK;
     }
 
-
-    if (hash == 0) {
-
+    {
         ComputeHashArgs hashArgs;
-        hashArgs.render = render;
         hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewInvariant;
         hash = computeHash(hashArgs);
     }
@@ -1720,15 +1530,7 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
     {
 
 
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,TimeValue(0), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
-
-        ActionRetCodeEnum stat = getFrameRange(render, &range.min, &range.max);
+        ActionRetCodeEnum stat = getFrameRange(&range.min, &range.max);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1736,8 +1538,8 @@ EffectInstance::getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFra
 
     (*results)->setFrameRangeResults(range);
 
-    if (render) {
-        render->setFrameRangeResults(*results);
+    if (_imp->renderData) {
+        _imp->setFrameRangeResults(*results);
     }
     cacheAccess->insertInCache();
 
@@ -1788,7 +1590,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     // If the param changed is a button and the node is disabled don't do anything which might
     // trigger an analysis
-    if ( (reason == eValueChangedReasonUserEdited) && toKnobButton(k) && node->getDisabledKnobValue() ) {
+    if ( (reason == eValueChangedReasonUserEdited) && toKnobButton(k) && getDisabledKnobValue() ) {
         return false;
     }
 
@@ -1798,7 +1600,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
         if ( isVideoReader() ) {
             mustCallOnFileNameParameterChanged = true;
         } else {
-            node->onFileNameParameterChanged(k);
+            onFileNameParameterChanged(k);
         }
     }
 
@@ -1806,7 +1608,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     // assert(!(view.isAll() || view.isCurrent())); // not yet implemented
     const ViewIdx viewIdx( (view.isAll()) ? 0 : view );
-    bool wasFormatKnobCaught = node->handleFormatKnob(k);
+    bool wasFormatKnobCaught = handleFormatKnob(k);
     KnobHelperPtr kh = boost::dynamic_pointer_cast<KnobHelper>(k);
     assert(kh);
     if (kh && kh->isDeclaredByPlugin() && !wasFormatKnobCaught) {
@@ -1824,7 +1626,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 
     // for video readers, frame range must be updated after kOfxActionInstanceChanged is called on kOfxImageEffectFileParamName
     if (mustCallOnFileNameParameterChanged) {
-        node->onFileNameParameterChanged(k);
+        onFileNameParameterChanged(k);
     }
 
     if ( kh && ( reason != eValueChangedReasonTimeChanged) ) {
@@ -1841,7 +1643,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     }
     
 
-    ret |= node->onEffectKnobValueChanged(k, reason);
+    ret |= handleDefaultKnobChanged(k, reason);
 
     //Don't call the python callback if the reason is time changed
     if (reason == eValueChangedReasonTimeChanged) {
@@ -1856,7 +1658,7 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     }
 
     ///Refresh the dynamic properties that can be changed during the instanceChanged action
-    node->refreshDynamicProperties();
+    refreshDynamicProperties();
 
     // If there are any render clones, kill them as the plug-in might have changed internally
     clearRenderInstances();
@@ -1867,7 +1669,22 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
 void
 EffectInstance::onMetadataChanged(const NodeMetadata& metadata)
 {
-    getNode()->onNodeMetadatasRefreshedOnMainThread(metadata);
+    assert(QThread::currentThread() == qApp->thread());
+
+    // Refresh warnings
+    refreshMetadaWarnings(metadata);
+
+    // Refresh identity state
+    getNode()->refreshIdentityState();
+
+    // Refresh default layer & mask channel selectors
+    refreshChannelSelectors();
+
+    // Premult might have changed, check for warnings
+    checkForPremultWarningAndCheckboxes();
+
+    // Refresh channel checkbox and layer selectors visibility
+    refreshLayersSelectorsVisibility();
 }
 
 bool
@@ -1876,16 +1693,9 @@ EffectInstance::onMetadataChanged_nonRecursive()
     // Call the onMetadataChanged action
     NodePtr node = getNode();
 
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
-
+    
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(TreeRenderNodeArgsPtr(), &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (!isFailureRetCode(stat)) {
         NodeMetadataPtr metadata = results->getMetadatasResults();
         assert(metadata);
@@ -1952,38 +1762,22 @@ EffectInstance::onInputChanged_public(int inputNo)
 {
 
     REPORT_CURRENT_THREAD_ACTION( kOfxActionInstanceChanged, getNode() );
-
-
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
-
     onInputChanged(inputNo);
 } // onInputChanged_public
 
 ActionRetCodeEnum
-EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& render, GetTimeInvariantMetaDatasResultsPtr* results)
+EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResultsPtr* results)
 {
     // Get a hash to cache the results
     U64 hash = 0;
 
-    if (render) {
-        *results = render->getTimeInvariantMetadataResults();
-        if (*results) {
-            return eActionStatusOK;
-        }
-        render->getTimeInvariantMetadataHash(&hash);
+    *results = _imp->getTimeInvariantMetadataResults();
+    if (*results) {
+        return eActionStatusOK;
     }
 
-
-    if (hash == 0) {
-
+    {
         ComputeHashArgs hashArgs;
-        hashArgs.render = render;
         hashArgs.hashType = HashableObject::eComputeHashTypeOnlyMetadataSlaves;
         hash = computeHash(hashArgs);
     }
@@ -2010,18 +1804,15 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
     // If the node is disabled return the meta-datas of the main input.
     // Don't do that for an identity node: a render may be identity but not the metadatas (e.g: NoOp)
     // A disabled generator still has to return some meta-datas, so let it return the default meta-datas.
-    bool isDisabled = getNode()->getDisabledKnobValue();
+    bool isDisabled = getDisabledKnobValue();
     if (isDisabled) {
         int mainInput = getNode()->getPreferredInput();
         if (mainInput != -1) {
             EffectInstancePtr input = getInput(mainInput);
             if (input) {
-                TreeRenderNodeArgsPtr inputRenderArgs;
-                if (render) {
-                    inputRenderArgs = render->getInputRenderArgs(mainInput);
-                }
+
                 GetTimeInvariantMetaDatasResultsPtr inputResults;
-                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(inputRenderArgs, &inputResults);
+                ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&inputResults);
                 if (isFailureRetCode(stat)) {
                     return stat;
                 }
@@ -2032,7 +1823,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
         }
     }
 
-    ActionRetCodeEnum stat = getDefaultMetadata(render, *metadata);
+    ActionRetCodeEnum stat = getDefaultMetadata(*metadata);
 
     if (isFailureRetCode(stat)) {
         return stat;
@@ -2040,15 +1831,6 @@ EffectInstance::getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& re
 
 
     if (!isDisabled) {
-
-
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
 
         // If the node is disabled, don't call getClipPreferences on the plug-in:
         // we don't want it to change output Format or other metadatas
@@ -2106,7 +1888,7 @@ getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
 } // getUnmappedNumberOfCompsForColorPlane
 
 ActionRetCodeEnum
-EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata &metadata)
+EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 {
     NodePtr node = getNode();
 
@@ -2143,12 +1925,8 @@ EffectInstance::getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMeta
     for (int i = 0; i < nInputs; ++i) {
         const EffectInstancePtr& input = getInput(i);
         if (input) {
-            TreeRenderNodeArgsPtr inputArgs;
-            if (render) {
-                inputArgs = render->getInputRenderArgs(i);
-            }
             GetTimeInvariantMetaDatasResultsPtr results;
-            ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(inputArgs, &results);
+            ActionRetCodeEnum stat = input->getTimeInvariantMetaDatas_public(&results);
             if (!isFailureRetCode(stat)) {
                 inputMetadatas[i] = results->getMetadatasResults();
 
@@ -2415,14 +2193,6 @@ EffectInstance::purgeCaches_public()
 void
 EffectInstance::createInstanceAction_public()
 {
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,  TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
-
 
     createInstanceAction();
 
@@ -2450,15 +2220,6 @@ EffectInstance::drawOverlay_public(TimeValue time,
     } else {
         actualScale = renderScale;
     }
-
-
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                              , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
-#endif
-                                              );
 
     DuringInteractActionSetter_RAII _setter(getNode());
     bool drawHostOverlay = shouldDrawHostOverlay();
@@ -2493,13 +2254,6 @@ EffectInstance::onOverlayPenDown_public(TimeValue time,
 
     bool ret;
     {
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
 
         DuringInteractActionSetter_RAII _setter(getNode());
         bool drawHostOverlay = shouldDrawHostOverlay();
@@ -2542,13 +2296,6 @@ EffectInstance::onOverlayPenDoubleClicked_public(TimeValue time,
 
     bool ret;
     {
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
 
         DuringInteractActionSetter_RAII _setter(getNode());
         bool drawHostOverlay = shouldDrawHostOverlay();
@@ -2590,14 +2337,6 @@ EffectInstance::onOverlayPenMotion_public(TimeValue time,
     } else {
         actualScale = renderScale;
     }
-
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                              , /*canSetValue*/ true
-                                              , /*canBeCalledRecursively*/ true
-#endif
-                                              );
 
     DuringInteractActionSetter_RAII _setter(getNode());
     bool ret;
@@ -2643,13 +2382,6 @@ EffectInstance::onOverlayPenUp_public(TimeValue time,
     bool ret;
     {
 
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         bool drawHostOverlay = shouldDrawHostOverlay();
         if (!shouldPreferPluginOverlayOverHostOverlay()) {
@@ -2692,13 +2424,6 @@ EffectInstance::onOverlayKeyDown_public(TimeValue time,
 
     bool ret;
     {
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayKeyDown(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -2731,14 +2456,6 @@ EffectInstance::onOverlayKeyUp_public(TimeValue time,
 
     bool ret;
     {
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayKeyUp(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -2771,14 +2488,7 @@ EffectInstance::onOverlayKeyRepeat_public(TimeValue time,
 
     bool ret;
     {
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
 
-                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayKeyRepeat(time, actualScale, view, key, modifiers);
         if (!ret && shouldDrawHostOverlay()) {
@@ -2810,14 +2520,7 @@ EffectInstance::onOverlayFocusGained_public(TimeValue time,
     bool ret;
     {
 
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
 
-                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayFocusGained(time, actualScale, view);
         if (shouldDrawHostOverlay()) {
@@ -2851,14 +2554,6 @@ EffectInstance::onOverlayFocusLost_public(TimeValue time,
     bool ret;
     {
 
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ true
-                                                  , /*canBeCalledRecursively*/ true
-#endif
-
-                                                  );
         DuringInteractActionSetter_RAII _setter(getNode());
         ret = onOverlayFocusLost(time, actualScale, view);
         if (shouldDrawHostOverlay()) {

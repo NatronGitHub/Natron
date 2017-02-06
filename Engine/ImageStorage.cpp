@@ -531,19 +531,12 @@ CacheImageTileStorage::getBounds() const
 {
     RectI ret;
 
-    int tileSizeX, tileSizeY;
-    Cache::getTileSizePx(getBitDepth(), &tileSizeX, &tileSizeY);
-    // Recover the bottom left corner from the tile coords
-    {
-        CacheEntryKeyBasePtr key = getKey();
-        ImageTileKey* isImageTile = dynamic_cast<ImageTileKey*>(key.get());
-        if (isImageTile) {
-            ret.x1 = isImageTile->getTileX() * tileSizeX;
-            ret.y1 = isImageTile->getTileY() * tileSizeY;
-        }
+    CacheEntryKeyBasePtr key = getKey();
+    ImageTileKey* isImageTile = dynamic_cast<ImageTileKey*>(key.get());
+    if (isImageTile) {
+        ret = isImageTile->getTileBounds();
     }
-    ret.x2 = ret.x1 + tileSizeX;
-    ret.y2 = ret.y1 + tileSizeY;
+
     return ret;
 }
 

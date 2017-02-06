@@ -29,11 +29,12 @@
 NATRON_NAMESPACE_ENTER;
 
 void
-ImagePrivate::initTileAndFetchFromCache(int tx, int ty, int tileSizeX, int tileSizeY)
+ImagePrivate::initTileAndFetchFromCache(int tx, int ty)
 {
     CachePtr cache = appPTR->getCache();
 
     TileCoord coord = {tx, ty};
+    assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
 
     // This tile was already initialized.
     {

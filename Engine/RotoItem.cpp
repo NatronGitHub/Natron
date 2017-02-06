@@ -115,7 +115,6 @@ struct RotoItemPrivate
     }
 
     // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
     RotoItemPrivate(const RotoItemPrivate& other)
     : activatedKnob(other.activatedKnob)
     , lockedKnob(other.lockedKnob)
@@ -131,9 +130,9 @@ RotoItem::RotoItem(const KnobItemsTablePtr& model)
 {
 }
 
-RotoItem::RotoItem(const RotoItem& other)
+RotoItem::RotoItem(const RotoItemPtr& other)
 : KnobTableItem(other)
-, _imp(new RotoItemPrivate(*other._imp))
+, _imp(new RotoItemPrivate(*other->_imp))
 {
 
 }

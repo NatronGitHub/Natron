@@ -81,9 +81,7 @@ public:
 
     virtual ~KnobTableItem();
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
-    KnobTableItem(const KnobTableItem& other);
+    KnobTableItem(const KnobTableItemPtr& other);
 
     KnobItemsTablePtr getModel() const;
 
@@ -519,7 +517,6 @@ public:
     
     KnobItemsTable(const KnobHolderPtr& originalHolder, KnobItemsTableTypeEnum type);
 
-
     virtual ~KnobItemsTable();
 
     /**
@@ -804,6 +801,7 @@ private:
 
     void endSelection(TableChangeReasonEnum reason);
 
+    friend struct KnobItemsTablePrivate;
     friend class KnobTableItem;
     boost::scoped_ptr<KnobItemsTablePrivate> _imp;
 };

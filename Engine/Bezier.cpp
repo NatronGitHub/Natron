@@ -224,9 +224,9 @@ Bezier::Bezier(const KnobItemsTablePtr& model,
 {
 }
 
-Bezier::Bezier(const Bezier& other)
+Bezier::Bezier(const BezierPtr& other)
 : RotoDrawableItem(other)
-, _imp( new BezierPrivate(*other._imp) )
+, _imp( new BezierPrivate(*other->_imp) )
 {
 
 }
@@ -242,10 +242,10 @@ Bezier::~Bezier()
 {
 }
 
-RotoDrawableItemPtr
-Bezier::createRenderCopy() const
+KnobHolderPtr
+Bezier::createRenderCopy(const TreeRenderPtr& /*render*/) const
 {
-    BezierPtr ret(new Bezier(*this));
+    BezierPtr ret(new Bezier(toBezier(getMainInstance())));
     return ret;
 }
 

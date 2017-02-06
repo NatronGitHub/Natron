@@ -54,7 +54,7 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     StubNode(const NodePtr& n);
-
+    StubNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
 
     static PluginPtr createPlugin();
@@ -66,6 +66,10 @@ public:
         return EffectInstancePtr( new StubNode(node) );
     }
 
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new StubNode(mainInstance, render) );
+    }
 
     virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN;
 

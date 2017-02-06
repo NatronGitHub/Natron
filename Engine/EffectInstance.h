@@ -45,8 +45,8 @@
 #include "Engine/RectD.h"
 #include "Engine/RectI.h"
 #include "Engine/RenderStats.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/EffectInstanceActionResults.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/PluginActionShortcut.h"
 #include "Engine/ViewIdx.h"
 
@@ -123,6 +123,105 @@ NATRON_NAMESPACE_ENTER;
 #define kReaderParamNameOriginalFrameRange "originalFrameRange"
 #define kReaderParamNameFirstFrame "firstFrame"
 #define kReaderParamNameLastFrame "lastFrame"
+
+#define kNodePageParamName "nodePage"
+#define kNodePageParamLabel "Node"
+#define kInfoPageParamName "infoPage"
+#define kInfoPageParamLabel "Info"
+#define kPyPlugPageParamName "pyPlugPage"
+#define kPyPlugPageParamLabel "PyPlug"
+
+#define kDisableNodeKnobName "disableNode"
+#define kLifeTimeNodeKnobName "nodeLifeTime"
+#define kEnableLifeTimeNodeKnobName "enableNodeLifeTime"
+#define kUserLabelKnobName "userTextArea"
+#define kEnableMaskKnobName "enableMask"
+#define kEnableInputKnobName "enableInput"
+#define kMaskChannelKnobName "maskChannel"
+#define kInputChannelKnobName "inputChannel"
+#define kEnablePreviewKnobName "enablePreview"
+#define kOutputChannelsKnobName "channels"
+
+#define kHostMixingKnobName "hostMix"
+#define kHostMixingKnobLabel "Mix"
+#define kHostMixingKnobHint "Mix between the source image at 0 and the full effect at 1"
+
+#define kOfxMaskInvertParamName "maskInvert"
+#define kOfxMixParamName "mix"
+
+#define kReadOIIOAvailableViewsKnobName "availableViews"
+#define kWriteOIIOParamViewsSelector "viewsSelector"
+
+#define kNatronNodeKnobExportPyPlugGroup "exportPyPlugDialog"
+#define kNatronNodeKnobExportPyPlugGroupLabel "Export"
+
+#define kNatronNodeKnobExportPyPlugButton "exportPyPlug"
+#define kNatronNodeKnobExportPyPlugButtonLabel "Export"
+
+#define kNatronNodeKnobConvertToGroupButton "convertToGroup"
+#define kNatronNodeKnobConvertToGroupButtonLabel "Convert to Group"
+
+#define kNatronNodeKnobPyPlugPluginID "pyPlugPluginID"
+#define kNatronNodeKnobPyPlugPluginIDLabel "PyPlug ID"
+#define kNatronNodeKnobPyPlugPluginIDHint "When exporting a group to PyPlug, this will be the plug-in ID of the PyPlug.\n" \
+"Generally, this contains domain and sub-domains names " \
+"such as fr.inria.group.XXX.\n" \
+"If two plug-ins or more happen to have the same ID, they will be " \
+"gathered by version.\n" \
+"If two plug-ins or more have the same ID and version, the first loaded in the" \
+" search-paths will take precedence over the other."
+
+#define kNatronNodeKnobPyPlugPluginLabel "pyPlugPluginLabel"
+#define kNatronNodeKnobPyPlugPluginLabelLabel "PyPlug Label"
+#define kNatronNodeKnobPyPlugPluginLabelHint "When exporting a group to PyPlug, this will be the plug-in label as visible in the GUI of the PyPlug"
+
+#define kNatronNodeKnobPyPlugPluginGrouping "pyPlugPluginGrouping"
+#define kNatronNodeKnobPyPlugPluginGroupingLabel "PyPlug Grouping"
+#define kNatronNodeKnobPyPlugPluginGroupingHint "When exporting a group to PyPlug, this will be the grouping of the PyPlug, that is the menu under which it should be located. For example: \"Color/MyPyPlugs\". Each sub-level must be separated by a '/' character"
+
+#define kNatronNodeKnobPyPlugPluginIconFile "pyPlugPluginIcon"
+#define kNatronNodeKnobPyPlugPluginIconFileLabel "PyPlug Icon"
+#define kNatronNodeKnobPyPlugPluginIconFileHint "When exporting a group to PyPlug, this parameter indicates the filename of a PNG file of the icon to be used for this plug-in. The filename should be relative to the directory containing the PyPlug script"
+
+#define kNatronNodeKnobPyPlugPluginDescription "pyPlugPluginDescription"
+#define kNatronNodeKnobPyPlugPluginDescriptionLabel "PyPlug Description"
+#define kNatronNodeKnobPyPlugPluginDescriptionHint "When exporting a group to PyPlug, this will be the documentation of the PyPlug"
+
+#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown "pyPlugPluginDescriptionIsMarkdown"
+#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownLabel "Markdown"
+#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint "Indicates whether the PyPlug description is encoded in Markdown or not. This is helpful to use rich text capabilities for the documentation"
+
+#define kNatronNodeKnobPyPlugPluginVersion "pyPlugPluginVersion"
+#define kNatronNodeKnobPyPlugPluginVersionLabel "PyPlug Version"
+#define kNatronNodeKnobPyPlugPluginVersionHint "When exporting a group to PyPlug, this will be the version of the PyPlug. This is useful to indicate users it has changed"
+
+#define kNatronNodeKnobPyPlugPluginCallbacksPythonScript "pyPlugCallbacksPythonScript"
+#define kNatronNodeKnobPyPlugPluginCallbacksPythonScriptLabel "Callback(s) Python script"
+#define kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint "When exporting a group to PyPlug, this parameter indicates the filename of a Python script where callbacks used by this PyPlug are defined. The filename should be relative to the directory containing the PyPlug script"
+
+#define kNatronNodeKnobPyPlugPluginShortcut "pyPlugPluginShortcut"
+#define kNatronNodeKnobPyPlugPluginShortcutLabel "PyPlug Shortcut"
+#define kNatronNodeKnobPyPlugPluginShortcutHint "When exporting a group to PyPlug, this will be the keyboard shortcut by default the user can use to create the PyPlug. The user can always change it later on in the Preferences/Shortcut Editor"
+
+#define kNatronNodeKnobExportDialogFilePath "exportFilePath"
+#define kNatronNodeKnobExportDialogFilePathLabel "File"
+#define kNatronNodeKnobExportDialogFilePathHint "The file where to write"
+
+#define kNatronNodeKnobExportDialogOkButton "exportDialogOkButton"
+#define kNatronNodeKnobExportDialogOkButtonLabel "Ok"
+
+#define kNatronNodeKnobExportDialogCancelButton "exportDialogCancelButton"
+#define kNatronNodeKnobExportDialogCancelButtonLabel "Cancel"
+
+#define kNatronNodeKnobKeepInAnimationModuleButton "keepInAnimationModuleButton"
+#define kNatronNodeKnobKeepInAnimationModuleButtonLabel "Keep In Animation Module"
+#define kNatronNodeKnobKeepInAnimationModuleButtonHint "When checked, this node will always be visible in the Animation Module regardless of whether its settings panel is opened or not"
+
+
+#define kNodeParamProcessAllLayers "processAllPlanes"
+#define kNodeParamProcessAllLayersLabel "All Planes"
+#define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
+
 
 struct PlaneToRender
 {
@@ -202,7 +301,7 @@ protected: // derives from KnobHolder, parent of JoinViewsNode, OneViewNode, Pre
     explicit EffectInstance(const NodePtr& node);
 
 protected:
-    EffectInstance(const EffectInstance& other);
+    EffectInstance(const EffectInstancePtr& other, const TreeRenderPtr& render);
 
 public:
 
@@ -339,7 +438,7 @@ public:
     /**
      * @brief Wrapper around getComponentsNeededAndProduced, see getComponentsNeededAndProduced.
      **/
-    ActionRetCodeEnum getLayersProducedAndNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetComponentsResultsPtr* results);
+    ActionRetCodeEnum getLayersProducedAndNeeded_public(TimeValue time, ViewIdx view, GetComponentsResultsPtr* results);
 
     /**
      * @brief Returns the layer availables for the given inputNb. If inputNb is -1, this returns the layers available in output.
@@ -347,7 +446,7 @@ public:
      * layers plus the user created layers at this node.
      * This function calls getLayersProducedAndNeeded_public() internally.
      **/
-    ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, const TreeRenderNodeArgsPtr& render, std::list<ImagePlaneDesc>* availableLayers) ;
+    ActionRetCodeEnum getAvailableLayers(TimeValue time, ViewIdx view, int inputNb, std::list<ImagePlaneDesc>* availableLayers) ;
 
 protected:
 
@@ -361,7 +460,6 @@ protected:
      **/
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                                   ViewIdx view,
-                                                  const TreeRenderNodeArgsPtr& render,
                                                   std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                   std::list<ImagePlaneDesc>* layersProduced,
                                                   TimeValue* passThroughTime,
@@ -376,7 +474,6 @@ private:
      **/
     ActionRetCodeEnum getLayersProducedAndNeeded_default(TimeValue time,
                                                ViewIdx view,
-                                               const TreeRenderNodeArgsPtr& render,
                                                std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                std::list<ImagePlaneDesc>* layersProduced,
                                                 std::list<ImagePlaneDesc>* passThroughPlanes,
@@ -393,7 +490,6 @@ private:
      **/
     ActionRetCodeEnum getComponentsNeededInternal(TimeValue time,
                                                   ViewIdx view,
-                                                  const TreeRenderNodeArgsPtr& render,
                                                   std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                   std::list<ImagePlaneDesc>* layersProduced,
                                                   std::list<ImagePlaneDesc>* passThroughPlanes,
@@ -412,12 +508,12 @@ public:
     /**
      * @brief Wrapper around attachOpenGLContext, see attachOpenGLContext
      **/
-    ActionRetCodeEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+    ActionRetCodeEnum attachOpenGLContext_public(TimeValue time, ViewIdx view, const RenderScale& scale, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
 
     /**
      * @brief Wrapper around dettachOpenGLContext, see dettachOpenGLContext
      **/
-    ActionRetCodeEnum dettachOpenGLContext_public(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+    ActionRetCodeEnum dettachOpenGLContext_public(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
     /**
      * @brief Called for plug-ins that support concurrent OpenGL renders when the effect is about to be destroyed to release all contexts data.
@@ -436,12 +532,12 @@ protected:
      * a call to dettachOpenGLContext before attaching a DIFFERENT context, meaning the plug-in thread-safety is instance safe at most.
      *
      **/
-    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
+    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data);
 
     /**
      * @brief This function must free all OpenGL context related data that were allocated previously in a call to attachOpenGLContext().
      **/
-    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
+    virtual ActionRetCodeEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data);
 
 
 public:
@@ -543,8 +639,7 @@ public:
                                           bool draftMode,
                                           ViewIdx view,
                                           RenderBackendTypeEnum backendType,
-                                          const EffectOpenGLContextDataPtr& glContextData,
-                                          const TreeRenderNodeArgsPtr& render);
+                                          const EffectOpenGLContextDataPtr& glContextData);
 
 
     /**
@@ -557,8 +652,7 @@ public:
                                         bool draftMode,
                                         ViewIdx view,
                                         RenderBackendTypeEnum backendType,
-                                        const EffectOpenGLContextDataPtr& glContextData,
-                                        const TreeRenderNodeArgsPtr& render);
+                                        const EffectOpenGLContextDataPtr& glContextData);
 
 
 
@@ -580,8 +674,7 @@ protected:
                                            bool draftMode,
                                            ViewIdx view,
                                            RenderBackendTypeEnum backendType,
-                                           const EffectOpenGLContextDataPtr& glContextData,
-                                           const TreeRenderNodeArgsPtr& render);
+                                           const EffectOpenGLContextDataPtr& glContextData);
 
     virtual ActionRetCodeEnum endSequenceRender(double first,
                                          double last,
@@ -593,8 +686,7 @@ protected:
                                          bool draftMode,
                                          ViewIdx view,
                                          RenderBackendTypeEnum backendType,
-                                         const EffectOpenGLContextDataPtr& glContextData,
-                                         const TreeRenderNodeArgsPtr& render);
+                                         const EffectOpenGLContextDataPtr& glContextData);
 
     virtual ActionRetCodeEnum render(const RenderActionArgs & /*args*/) WARN_UNUSED_RETURN;
 
@@ -609,7 +701,6 @@ public:
     ActionRetCodeEnum getDistortion_public(TimeValue time,
                                     const RenderScale & renderScale,
                                     ViewIdx view,
-                                    const TreeRenderNodeArgsPtr& render,
                                     DistortionFunction2DPtr* distortion) WARN_UNUSED_RETURN;
 
 
@@ -621,7 +712,6 @@ protected:
     virtual ActionRetCodeEnum getDistortion(TimeValue time,
                                      const RenderScale & renderScale,
                                      ViewIdx view,
-                                     const TreeRenderNodeArgsPtr& render,
                                      DistortionFunction2D* distortion) WARN_UNUSED_RETURN;
     
 public:
@@ -643,7 +733,6 @@ public:
                            const RenderScale & scale,
                            const RectI & renderWindow,
                            ViewIdx view,
-                           const TreeRenderNodeArgsPtr& render,
                            IsIdentityResultsPtr* results) WARN_UNUSED_RETURN;
 protected:
 
@@ -652,7 +741,6 @@ protected:
                                   const RenderScale & scale,
                                   const RectI & roi,
                                   ViewIdx view,
-                                  const TreeRenderNodeArgsPtr& render,
                                   TimeValue* inputTime,
                                   ViewIdx* inputView,
                                   int* inputNb) WARN_UNUSED_RETURN;
@@ -668,11 +756,10 @@ public:
     ActionRetCodeEnum getRegionOfDefinition_public(TimeValue time,
                                             const RenderScale & scale,
                                             ViewIdx view,
-                                            const TreeRenderNodeArgsPtr& render,
                                             GetRegionOfDefinitionResultsPtr* results) WARN_UNUSED_RETURN;
 
 
-    void calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD *rod);
+    void calcDefaultRegionOfDefinition_public(TimeValue time, const RenderScale & scale, ViewIdx view,  RectD *rod);
 
 
     /**
@@ -682,7 +769,6 @@ public:
     void ifInfiniteApplyHeuristic(TimeValue time,
                                   const RenderScale & scale,
                                   ViewIdx view,
-                                  const TreeRenderNodeArgsPtr& render,
                                   RectD* rod); //!< input/output
 
 
@@ -690,10 +776,9 @@ protected:
 
 
     virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view,
-                                             const TreeRenderNodeArgsPtr& render,
                                              RectD* rod) WARN_UNUSED_RETURN;
 
-    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD *rod);
+    virtual void calcDefaultRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD *rod);
 
 public:
 
@@ -708,7 +793,6 @@ public:
                                      const RenderScale & scale,
                                      const RectD & renderWindow,   //!< the region to be rendered in the output image, in Canonical Coordinates
                                      ViewIdx view,
-                                     const TreeRenderNodeArgsPtr& render,
                                      RoIMap* ret);
 
 protected:
@@ -719,7 +803,6 @@ protected:
                                       const RenderScale & scale,
                                       const RectD & renderWindow,
                                       ViewIdx view,
-                                      const TreeRenderNodeArgsPtr& render,
                                       RoIMap* ret);
 
 public:
@@ -731,12 +814,12 @@ public:
      * @param hash If set this will return the hash of the node for the given time view. In a
      * render thread, this hash should be cached away
      **/
-    ActionRetCodeEnum getFramesNeeded_public(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, GetFramesNeededResultsPtr* results);
+    ActionRetCodeEnum getFramesNeeded_public(TimeValue time, ViewIdx view, GetFramesNeededResultsPtr* results);
 
 protected:
 
 
-    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) ;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view,  FramesNeededMap* results) ;
 
 public:
 
@@ -745,13 +828,13 @@ public:
      * By default it merges the frame range of the inputs.
      * In case of failure the plugin should return eStatusFailed.
      **/
-    ActionRetCodeEnum getFrameRange_public(const TreeRenderNodeArgsPtr& render, GetFrameRangeResultsPtr* results);
+    ActionRetCodeEnum getFrameRange_public(GetFrameRangeResultsPtr* results);
 
 
 protected:
 
 
-    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last);
+    virtual ActionRetCodeEnum getFrameRange(double *first, double *last);
 
 public:
 
@@ -853,9 +936,9 @@ public:
      * for clip Preferences, see setDefaultClipPreferences()
      *
      **/
-    ActionRetCodeEnum getTimeInvariantMetaDatas_public(const TreeRenderNodeArgsPtr& render, GetTimeInvariantMetaDatasResultsPtr* results);
+    ActionRetCodeEnum getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResultsPtr* results);
 
-    ActionRetCodeEnum getDefaultMetadata(const TreeRenderNodeArgsPtr& render, NodeMetadata& metadata);
+    ActionRetCodeEnum getDefaultMetadata(NodeMetadata& metadata);
 
 protected:
 
@@ -893,9 +976,11 @@ public:
         return _node.lock();
     }
 
+    virtual U64 computeHash(const ComputeHashArgs& args) OVERRIDE;
+
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
-    void getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, TimeValue* timeOut, ViewIdx* viewOut);
+    void getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, TimeValue* timeOut, ViewIdx* viewOut);
 
 public:
 
@@ -912,10 +997,9 @@ public:
 
     virtual TimeValue getCurrentTime_TLS() const OVERRIDE;
     virtual ViewIdx getCurrentView_TLS() const OVERRIDE;
-    RenderValuesCachePtr getRenderValuesCache_TLS(TimeValue* currentTime, ViewIdx* currentView) const;
-    void setCurrentRender_TLS(const TreeRenderNodeArgsPtr& render);
-    TreeRenderNodeArgsPtr getCurrentRender_TLS() const;
-    EffectInstanceTLSDataPtr getTLSObject() const;
+
+    virtual EffectInstanceTLSDataPtr getTLSObject() const;
+    virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const;
 
     /**
      * @brief Forwarded to the node's name
@@ -1107,8 +1191,11 @@ public:
      * - Check if this node has a transform, if so recurses on the distorsion input
      * - Check if the image is cached
      **/
-    ActionRetCodeEnum requestRender(const FrameViewRequestPtr& requestData,
-                                    const RectD& roiCanonical,
+    ActionRetCodeEnum requestRender(TimeValue time,
+                                    ViewIdx view,
+                                    unsigned int mipMapLevel,
+                                    const ImagePlaneDesc& plane,
+                                    const RectD & roiCanonical,
                                     int inputNbInRequester,
                                     const FrameViewRequestPtr& requester);
 
@@ -1119,9 +1206,52 @@ public:
      **/
     ActionRetCodeEnum launchRender(const FrameViewRequestPtr& requestData);
 
+    /**
+     * @brief Convenience function for getCurrentRender()->isRenderAborted()
+     **/
+    bool isRenderAborted() const;
+
+    /**
+     * @brief Effects are always copied throughout a render
+     **/
+    virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
+    {
+        return true;
+    }
+
+
+    //// Dynamic properties
+    void setRenderThreadSafety(RenderSafetyEnum safety);
+    RenderSafetyEnum getCurrentRenderThreadSafety() const;
+    RenderSafetyEnum getPluginRenderThreadSafety() const;
+    void revertToPluginThreadSafety();
+
+    void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
+    PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport();
+
+    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
+    SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
+
+    void setCurrentCanDistort(bool support);
+    bool getCurrentCanDistort() const;
+
+    void setCurrentCanTransform(bool support);
+    bool getCurrentCanTransform() const;
+
+    void setCurrentSupportTiles(bool support);
+    bool getCurrentSupportTiles() const;
+
+    void setCurrentSupportRenderScale(bool support);
+    bool getCurrentSupportRenderScale() const;
+
+    void refreshDynamicProperties();
+
+
 private:
 
     ActionRetCodeEnum launchRenderInternal(const FrameViewRequestPtr& requestData);
+
+    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
 
 public:
 
@@ -1165,39 +1295,39 @@ public:
     /**
      * @brief Returns the node output format
      **/
-    RectI getOutputFormat(const TreeRenderNodeArgsPtr& render);
+    RectI getOutputFormat();
 
     /**
      * @brief Returns whether the effect is frame-varying (i.e: a Reader with different images in the sequence)
      **/
-    bool isFrameVarying(const TreeRenderNodeArgsPtr& render);
+    bool isFrameVarying();
 
     /**
      * @brief Returns the preferred output frame rate to render with
      **/
-    double getFrameRate(const TreeRenderNodeArgsPtr& render);
+    double getFrameRate();
 
     /**
      * @brief Returns the preferred premultiplication flag for the output image
      **/
-    ImagePremultiplicationEnum getPremult(const TreeRenderNodeArgsPtr& render);
+    ImagePremultiplicationEnum getPremult();
 
     /**
      * @brief If true, the plug-in knows how to render frames at non integer times. If false
      * this is the hint indicating that the plug-ins can only render integer frame times (such as a Reader)
      **/
-    bool canRenderContinuously(const TreeRenderNodeArgsPtr& render);
+    bool canRenderContinuously();
 
     /**
      * @brief Returns the field ordering of images produced by this plug-in
      **/
-    ImageFieldingOrderEnum getFieldingOrder(const TreeRenderNodeArgsPtr& render);
+    ImageFieldingOrderEnum getFieldingOrder();
 
     /**
      * @brief Returns the pixel aspect ratio, depth and components for the given input.
      * If inputNb equals -1 then this function will check the output components.
      **/
-    double getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb);
+    double getAspectRatio(int inputNb);
 
 
     /**
@@ -1205,9 +1335,9 @@ public:
      * If inputNb is -1, it returns the expected components for the color plane in output.
      * For multi-planar effects, they must support all kind of components.
      **/
-    void getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane);
+    void getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane);
 
-    ImageBitDepthEnum getBitDepth(const TreeRenderNodeArgsPtr& render,int inputNb);
+    ImageBitDepthEnum getBitDepth(int inputNb);
 
 
     /**
@@ -1297,14 +1427,14 @@ public:
      * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
      * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
      **/
-    virtual RenderSafetyEnum getCurrentRenderThreadSafety() const WARN_UNUSED_RETURN;
+    virtual RenderSafetyEnum getRenderThreadSafety() const WARN_UNUSED_RETURN;
 
 
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
 
 
 
-    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, const TreeRenderNodeArgsPtr& render, int visitsCount) const;
+    virtual bool shouldCacheOutput(bool isFrameVaryingOrAnimated, int visitsCount) const;
 
 
 
@@ -1475,15 +1605,6 @@ public:
     }
 
 
-
-
-#ifdef DEBUG
-    void checkCanSetValueAndWarn() const;
-#endif
-
-
-
-
 public:
 
     /**
@@ -1607,25 +1728,140 @@ public:
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
 
-protected:
+    KnobDoublePtr getOrCreateHostMixKnob(const KnobPagePtr& mainPage);
+
+    KnobPagePtr getOrCreateMainPage();
+
+    //Returns true if changed
+    bool refreshChannelSelectors();
+
+    void refreshLayersSelectorsVisibility();
+
+    bool getProcessChannel(int channelIndex) const;
+
+    KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
+
+    KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
+
+    KnobBoolPtr getProcessAllLayersKnob() const;
+
+    KnobChoicePtr getOrCreateOpenGLEnabledKnob();
+
+    KnobStringPtr getExtraLabelKnob() const;
+
+    KnobStringPtr getOFXSubLabelKnob() const;
+
+    KnobBoolPtr getDisabledKnob() const;
+
+    bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
+
+    KnobBoolPtr getLifeTimeEnabledKnob() const;
+
+    KnobIntPtr getLifeTimeKnob() const;
+
+    KnobPagePtr getPyPlugPage() const;
+
+    KnobStringPtr getPyPlugIDKnob() const;
+
+    KnobStringPtr getPyPlugLabelKnob() const;
+
+    KnobFilePtr getPyPlugIconKnob() const;
+
+    KnobFilePtr getPyPlugExtScriptKnob() const;
+
+    double getHostMixingValue(TimeValue time, ViewIdx view) const;
+
+    std::string getNodeExtraLabel() const;
 
 
-    /**
-     * @brief Plug-ins that are flagged eRenderSafetyInstanceSafe or lower can implement this function to make a copy
-     * of the effect that will be used to render. The copy should be as fast as possible, meaning any clip or parameter should
-     * share pointers (since internally these classes are thread-safe) and ensure that any private data member is copied.
-     **/
-    virtual EffectInstancePtr createRenderClone() { return EffectInstancePtr(); }
 
+    bool getSelectedLayer(int inputNb,
+                          const std::list<ImagePlaneDesc>& availableLayers,
+                          std::bitset<4> *processChannels,
+                          bool* isAll,
+                          ImagePlaneDesc *layer) const;
+
+    void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
+
+    int getFrameStepKnobValue() const;
+
+    bool handleFormatKnob(const KnobIPtr& knob);
+
+    void onOpenGLEnabledKnobChangedOnProject(bool activated);
+
+    void initializeKnobs(bool loadingSerialization, bool hasGUI);
+
+    void checkForPremultWarningAndCheckboxes();
+
+    bool isForceCachingEnabled() const;
+
+    void setForceCachingEnabled(bool b);
+
+    bool isKeepInAnimationModuleButtonDown() const;
+
+    bool getHideInputsKnobValue() const;
+    
+    void setHideInputsKnobValue(bool hidden);
+
+    bool getDisabledKnobValue() const;
+
+    bool isNodeDisabledForFrame(TimeValue time, ViewIdx view) const;
+
+    void setNodeDisabled(bool disabled);
+
+    void restoreSublabel();
+
+    void computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange);
 
 
 private:
 
-    EffectInstancePtr getOrCreateRenderInstance();
+    void refreshMetadaWarnings(const NodeMetadata &metadata);
+
+    void refreshInfos();
+
+    std::string makeInfoForInput(int inputNumber);
+
+    void onFileNameParameterChanged(const KnobIPtr& fileKnob);
+
+    bool handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
+
+    void findPluginFormatKnobs();
+
+    void initializeDefaultKnobs(bool loadingSerialization, bool hasGUI);
+
+    void findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerialization);
+
+    void findRightClickMenuKnob(const KnobsVec& knobs);
+
+    void createNodePage(const KnobPagePtr& settingsPage);
+
+    void createInfoPage();
+
+    void createPyPlugPage();
+
+    void createPyPlugExportGroup();
+
+    void createPythonPage();
+
+    void findOrCreateChannelEnabled();
+
+    void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);
 
 
-    void releaseRenderInstance(const EffectInstancePtr& instance);
+    void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
+                             const std::vector<std::string>& inputLabels,
+                             const KnobPagePtr& mainPage,
+                             bool addNewLineOnLastMask,
+                             KnobIPtr* lastKnobCreated);
 
+    void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
+
+
+    void createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
+                                const std::vector<std::string>& inputLabels,
+                                const KnobPagePtr& mainPage,
+                                KnobIPtr* lastKnobBeforeAdvancedOption);
 
 
 protected:
@@ -1638,8 +1874,10 @@ protected:
      **/
     virtual void initializeKnobs() OVERRIDE
     {
+
     };
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
 
     virtual void setInteractColourPicker(const OfxRGBAColourD& /*color*/, bool /*setColor*/, bool /*hasColor*/)
@@ -1688,6 +1926,7 @@ private:
  * It is used to build a new instance of an effect. Basically it should just call the constructor.
  **/
 typedef EffectInstancePtr (*EffectBuilder)(const NodePtr&);
+typedef EffectInstancePtr (*EffectRenderCloneBuilder)(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 
 inline EffectInstancePtr
 toEffectInstance(const KnobHolderPtr& effect)

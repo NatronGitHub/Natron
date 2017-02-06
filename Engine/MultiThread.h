@@ -55,10 +55,7 @@ public:
 
      A function of this type is passed to MultiThread::launchThreads to be launched in multiple threads.
      */
-    typedef ActionRetCodeEnum (ThreadFunctor)(unsigned int threadIndex,
-                                       unsigned int threadMax,
-                                       void *customArg,
-                                       const TreeRenderNodeArgsPtr& renderArgs);
+    typedef ActionRetCodeEnum (ThreadFunctor)(unsigned int threadIndex, unsigned int threadMax, void *customArg);
     
     MultiThread();
 
@@ -81,7 +78,7 @@ public:
      * Note that the thread indexes are from 0 to nThreads - 1.
      * http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#OfxMultiThreadSuiteV1_multiThread
      */
-    static ActionRetCodeEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs);
+    static ActionRetCodeEnum launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect);
 
     /**
      * @brief Function which indicates the number of CPUs available for SMP processing
@@ -120,11 +117,11 @@ class MultiThreadProcessorBase
 {
 private:
 
-    TreeRenderNodeArgsPtr _renderArgs;
+    EffectInstancePtr _effect;
 
 public:
 
-    MultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs);
+    MultiThreadProcessorBase(const EffectInstancePtr& renderArgs);
 
     virtual ~MultiThreadProcessorBase();
 
@@ -134,8 +131,7 @@ protected:
      * @brief function that will be called in each thread.
      * ID is from 0..nThreads-1 nThreads are the number of threads it is being run over */
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads,
-                                                  const TreeRenderNodeArgsPtr& renderArgs) = 0;
+                                                  unsigned int nThreads) = 0;
     
     /** @brief Call this to kick off multi threading
      *  @param nCPUs The number of threads to use at most to process this function
@@ -146,10 +142,7 @@ protected:
 private:
 
     // the function passed to launchThread
-    static ActionRetCodeEnum staticMultiThreadFunction(unsigned int threadIndex,
-                                                unsigned int threadMax,
-                                                void *customArg,
-                                                const TreeRenderNodeArgsPtr& renderArgs);
+    static ActionRetCodeEnum staticMultiThreadFunction(unsigned int threadIndex, unsigned int threadMax, void *customArg);
     
 };
 
@@ -159,7 +152,7 @@ class ImageMultiThreadProcessorBase : public MultiThreadProcessorBase
 
 public:
 
-    ImageMultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs);
+    ImageMultiThreadProcessorBase(const EffectInstancePtr& effect);
 
     virtual ~ImageMultiThreadProcessorBase();
 
@@ -189,16 +182,13 @@ protected:
      * Note that this function should use the renderData parameter to check periodically if the render
      * has been aborted.
      **/
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow,
-                                                const TreeRenderNodeArgsPtr& renderArgs) = 0;
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) = 0;
 
 private:
 
 
 
-    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                           unsigned int nThreads,
-                                           const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID, unsigned int nThreads) OVERRIDE FINAL;
 
 
 };

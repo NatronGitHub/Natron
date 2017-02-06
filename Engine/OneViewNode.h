@@ -41,11 +41,16 @@ class OneViewNode
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     OneViewNode(const NodePtr& n);
-
+    OneViewNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new OneViewNode(node) );
+    }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new OneViewNode(mainInstance, render) );
     }
 
     static PluginPtr createPlugin();
@@ -108,12 +113,11 @@ private:
     virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;
-    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, FramesNeededMap* results) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            const TreeRenderNodeArgsPtr& render,
                             TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;

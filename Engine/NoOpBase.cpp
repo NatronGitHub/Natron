@@ -37,6 +37,12 @@ NoOpBase::NoOpBase(const NodePtr& n)
 {
 }
 
+NoOpBase::NoOpBase(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+{
+
+}
+
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
                                 std::bitset<4>* supported)

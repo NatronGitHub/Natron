@@ -434,6 +434,54 @@ public:
 
 };
 
+class NodeCollectionSerialization
+{
+
+private:
+
+    // The list of all nodes in the collection
+    std::list< NodeSerializationPtr > _serializedNodes;
+
+public:
+
+    NodeCollectionSerialization()
+    {
+    }
+
+    virtual ~NodeCollectionSerialization()
+    {
+        _serializedNodes.clear();
+    }
+
+    const std::list< NodeSerializationPtr > & getNodesSerialization() const
+    {
+        return _serializedNodes;
+    }
+
+    void addNodeSerialization(const NodeSerializationPtr& s)
+    {
+        _serializedNodes.push_back(s);
+    }
+
+
+private:
+
+
+    template<class Archive>
+    void serialize(Archive & ar,
+                   const unsigned int /*version*/)
+    {
+        int nodesCount;
+        ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
+
+        for (int i = 0; i < nodesCount; ++i) {
+            NodeSerializationPtr s(new NodeSerialization);
+            ar & ::boost::serialization::make_nvp("item", *s);
+            _serializedNodes.push_back(s);
+        }
+    }
+};
+
 } // namespace Compat
 
 

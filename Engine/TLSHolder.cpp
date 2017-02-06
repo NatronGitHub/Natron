@@ -65,18 +65,6 @@ AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
     }
 }
 
-static void
-copyAbortInfo(QThread* fromThread,
-              QThread* toThread)
-{
-    AbortableThread* fromAbortable = dynamic_cast<AbortableThread*>(fromThread);
-    AbortableThread* toAbortable = dynamic_cast<AbortableThread*>(toThread);
-
-    if (fromAbortable && toAbortable) {
-        TreeRenderPtr render = fromAbortable->getCurrentRender();
-        toAbortable->setCurrentRender(render);
-    }
-}
 
 void
 AppTLS::copyTLS(QThread* fromThread,
@@ -85,8 +73,6 @@ AppTLS::copyTLS(QThread* fromThread,
     if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
-
-    copyAbortInfo(fromThread, toThread);
 
     QReadLocker k(&_objectMutex);
     const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
@@ -107,8 +93,6 @@ AppTLS::softCopy(QThread* fromThread,
         return;
     }
 
-    copyAbortInfo(fromThread, toThread);
-
     QWriteLocker k(&_spawnsMutex);
     _spawns[toThread] = fromThread;
 }
@@ -117,11 +101,7 @@ void
 AppTLS::cleanupTLSForThread()
 {
     QThread* curThread = QThread::currentThread();
-    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
 
-    if (isAbortableThread) {
-        isAbortableThread->setCurrentRender(TreeRenderPtr());
-    }
 
     // Clean-up any thread data on the TLSHolder
 

@@ -42,11 +42,10 @@ NATRON_NAMESPACE_ENTER;
 //using std::pair;
 
 
-/*Class inheriting Knob and KnobGui, must have a function named BuildKnob and BuildKnobGui with the following signature.
-   This function should in turn call a specific class-based static function with the appropriate param.*/
-typedef KnobHelperPtr (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &label, int dimension, bool declaredByPlugin);
 
-/***********************************FACTORY******************************************/
+typedef KnobHelperPtr (*KnobBuilder)(const KnobHolderPtr& holder, const std::string &scriptName, int dimension);
+typedef KnobHelperPtr (*KnobRenderCloneBuilder)(const KnobHolderPtr& holder, const KnobIPtr& mainInstance);
+
 KnobFactory::KnobFactory()
 {
     loadBultinKnobs();
@@ -67,8 +66,8 @@ knobFactoryEntry()
     std::string stub;
     //KnobHelperPtr knob( K::BuildKnob(NULL, stub, 1) );
     std::map<std::string, void (*)()> functions;
-
     functions.insert( std::make_pair("create", ( void (*)() ) (KnobBuilder)K::create) );
+    functions.insert( std::make_pair("createRenderClone", ( void (*)() )K::createRenderClone) );
     LibraryBinary *knobPlugin = new LibraryBinary(functions);
 
     return make_pair(K::typeNameStatic(), knobPlugin);
@@ -95,38 +94,66 @@ KnobFactory::loadBultinKnobs()
 
 KnobIPtr
 KnobFactory::getHolderKnob(const KnobHolderPtr& holder,
-                       const std::string& scriptName) const
+                           const std::string& scriptName) const
 {
     return holder->getKnobByName(scriptName);
 }
 
 KnobHelperPtr KnobFactory::createKnob(const std::string &id,
-                                                      const KnobHolderPtr& holder,
-                                                      const std::string &label,
-                                                      int dimension,
-                                                      bool declaredByPlugin) const
+                                      const KnobHolderPtr& holder,
+                                      const std::string &name,
+                                      int dimension) const
 {
     std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(id);
 
     if ( it == _loadedKnobs.end() ) {
         return KnobHelperPtr();
+    }
+
+    KnobHelperPtr knob;
+
+    KnobHolderPtr mainInstance = holder->getMainInstance();
+    if (mainInstance) {
+        std::pair<bool, KnobRenderCloneBuilder> builderFunc = it->second->findFunction<KnobRenderCloneBuilder>("createRenderClone");
+        if (!builderFunc.first) {
+            return KnobHelperPtr();
+        }
+
+        KnobIPtr mainInstanceKnob = mainInstance->getKnobByName(name);
+        if (!mainInstanceKnob) {
+            KnobHelperPtr();
+        }
+
+        // If the knob does not evaluate on change, do not copy it anyway since the value is irrelevant to the render.
+        if (!mainInstanceKnob->getEvaluateOnChange()) {
+            return toKnobHelper(mainInstanceKnob);
+        }
+
+        KnobRenderCloneBuilder builder = (KnobRenderCloneBuilder)(builderFunc.second);
+        knob = ( builder(holder, mainInstanceKnob) );
+        if (!knob) {
+            KnobHelperPtr();
+        }
     } else {
         std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("create");
         if (!builderFunc.first) {
             return KnobHelperPtr();
         }
+
         KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        KnobHelperPtr knob( builder(holder, label, dimension, declaredByPlugin) );
+        knob = ( builder(holder, name, dimension) );
         if (!knob) {
             KnobHelperPtr();
         }
+        knob->setName(name);
         knob->populate();
-        if (holder) {
-            holder->addKnob(knob);
-        }
-
-        return knob;
     }
+
+    if (holder) {
+        holder->addKnob(knob);
+    }
+
+    return knob;
 }
 
 NATRON_NAMESPACE_EXIT;

@@ -85,7 +85,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/TreeRender.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
@@ -403,8 +402,6 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
     return false;
 } // canSplitRenderWindowWithIdentityRectangles
 
-typedef std::map<TileCoord, RectToRender, TileCoord_Compare> RectsToRenderMap;
-
 void
 EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& requestData, const RectI& renderMappedRoI, const RenderScale& renderMappedScale, std::list<RectToRender>* renderRects, bool* hasPendingTiles)
 {
@@ -414,16 +411,14 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
     TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
 
     // If the image is entirely cached, do not even compute it and insert it in the output planes map
-    std::list<RectI> tilesLeftToRender;
-    if (requestData->getCachePolicy() != eCacheAccessModeNone) {
-        tilesLeftToRender = requestData->getImagePlane()->getRestToRender(hasPendingTiles);
-    } else {
-        tilesLeftToRender = renderMappedRoI.splitIntoSmallerRects(0);
-    }
-    if (tilesLeftToRender.empty()) {
+    Image::TileStateMap tilesState;
+    bool hasUnRenderedTile;
+    ImagePtr cacheImage = requestData->getImagePlane();
+    cacheImage->getRestToRender(&tilesState, &hasUnRenderedTile, hasPendingTiles);
+
+    if (!hasUnRenderedTile) {
         return;
     }
-
 
     // If the effect does not support tiles, render everything again
     if (!renderArgs->getCurrentTilesSupport()) {
@@ -436,123 +431,103 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
         return;
     }
 
-
-    RectsToRenderMap rectsToRender;
     //
-    // If the effect has multiple inputs (such as masks) (e.g: Merge), try to call isIdentity
-    // if the RoDs do not intersect the RoI
+    // If the effect has multiple inputs (such as Source + mask) (e.g: Merge),
+    // if the inputs do not have the same RoD, the plug-in may be identity
+    // outside the intersection of the input RoDs.
+    // We try to call isIdentity on each tile outside the input intersection
+    // so that we may not have to render uninteresting areas.
     //
+    std::list<RectToRender> identityRects;
     {
         RectD inputRodIntersection;
         RectI inputRodIntersectionPixel;
-        if (!canSplitRenderWindowWithIdentityRectangles(requestData, renderMappedScale, &inputRodIntersection)) {
-            for (std::list<RectI>::const_iterator it = tilesLeftToRender.begin(); it != tilesLeftToRender.end(); ++it) {
-                TileCoord c = {it->x1, it->y1};
-                RectToRender& r = rectsToRender[c];
-                r.rect = *it;
-            }
-        } else {
+        if (canSplitRenderWindowWithIdentityRectangles(requestData, renderMappedScale, &inputRodIntersection)) {
+
             double par = _publicInterface->getAspectRatio(requestData->getRenderArgs(), -1);
             inputRodIntersection.toPixelEnclosing(renderMappedScale, par, &inputRodIntersectionPixel);
+            
+            // For each tile, if outside of the input intersections, check if it is identity.
+            // If identity mark as rendered, and add to the RectToRender list.
+            for (Image::TileStateMap::iterator it = tilesState.begin(); it != tilesState.end(); ++it) {
 
-            for (std::list<RectI>::const_iterator it = tilesLeftToRender.begin(); it != tilesLeftToRender.end(); ++it) {
-                TimeValue identityInputTime(requestData->getTime());
-                int identityInputNb = -1;
-                ViewIdx inputIdentityView(requestData->getView());
-                if ( !it->intersects(inputRodIntersectionPixel) ) {
-                    IsIdentityResultsPtr results;
-                    ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, requestData->getTime(), renderMappedScale, *it, requestData->getView(), requestData->getRenderArgs(), &results);
-                    if (isFailureRetCode(stat)) {
-                        identityInputNb = -1;
-                    } else {
-                        results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView);
+
+                if ( !it->second.bounds.intersects(inputRodIntersectionPixel) ) {
+                    TimeValue identityInputTime;
+                    int identityInputNb;
+                    ViewIdx inputIdentityView;
+                    {
+                        IsIdentityResultsPtr results;
+                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, requestData->getTime(), renderMappedScale, it->second.bounds, requestData->getView(), requestData->getRenderArgs(), &results);
+                        if (isFailureRetCode(stat)) {
+                            continue;
+                        } else {
+                            results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView);
+                        }
                     }
-                }
-                TileCoord c = {it->x1, it->y1};
-                RectToRender& r = rectsToRender[c];
-                r.rect = *it;
-                if (identityInputNb >= 0) {
-                    r.identityInputNumber = identityInputNb;
-                    r.identityTime = identityInputTime;
-                    r.identityView = inputIdentityView;
-                    r.rect = *it;
+                    if (identityInputNb >= 0) {
 
-                }
+                        // Mark the tile rendered
+                        it->second.status = Image::eTileStatusRendered;
 
+                        // Add this rectangle to the rects to render list (it will just copy the source image and
+                        // not actually call render on it)
+                        RectToRender r;
+                        r.rect = it->second.bounds;
+                        r.identityInputNumber = identityInputNb;
+                        r.identityTime = identityInputTime;
+                        r.identityView = inputIdentityView;
+                        identityRects.push_back(r);
+                    }
+                } // if outside of inputs intersection
             } // for each tile to render
         } // canSplitRenderWindowWithIdentityRectangles
     }
 
-    if (!renderArgs->getCurrentTilesSupport()) {
-        // If the effect does not support tiles, we must render the RoI which has been set to the pixel RoD.
-        renderWindow = requestData->getImagePlane()->getBounds();
-
-    } else {
-        // The temporary image will have the bounding box of tiles left to render.
-#pragma message WARN("Make it smarter: instead compute ABCD rectangles")
-        RectI restToRenderBoundingBox;
-        {
-            bool bboxSet = false;
-            for (std::list<RectI>::const_iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
-                if (!bboxSet) {
-                    bboxSet = true;
-                    restToRenderBoundingBox = *it;
-                } else {
-                    restToRenderBoundingBox.merge(*it);
-                }
-            }
-        }
-        renderWindow = restToRenderBoundingBox;
+    // Now we try to reduce the unrendered tiles in bigger rectangles so that there's a lot less calls to
+    // the render action.
+    std::list<RectI> reducedRects;
+    {
+        int tileSizeX, tileSizeY;
+        cacheImage->getTileSize(&tileSizeX, &tileSizeY);
+        Image::getMinimalRectsToRenderFromTilesState(tilesState, renderMappedRoI, tileSizeX, tileSizeY, &reducedRects);
     }
-
-
-    if (renderWindow.isNull()) {
+    if (reducedRects.empty()) {
         return;
     }
 
-
-
-    bool didSomething = false;
-
-
-
-    if (!didSomething) {
-
-        if (renderArgs->getCurrentRenderSafety() != eRenderSafetyFullySafeFrame) {
-
-            // Plug-in did not enable host frame threading, it is expected that it handles multi-threading itself
-            // with the multi-thread suite
-
-            RectToRender r;
-            r.rect = renderWindow;
-            r.identityInputNumber = -1;
-            renderRects->push_back(r);
-
-        } else {
-
-            // If plug-in wants host frame threading and there is only 1 rect to render, split it
-            // in the number of available threads in the thread-pool
-
-            const unsigned int nThreads = MultiThread::getNCPUsAvailable();
-
-            std::vector<RectI> splits;
-            if (nThreads > 1) {
-                splits = renderWindow.splitIntoSmallerRects(nThreads);
-            } else {
-                splits.push_back(renderWindow);
-            }
-
-            for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
-                if (!it->isNull()) {
-                    RectToRender r;
-                    r.rect = *it;
-                    r.identityInputNumber = -1;
-                    renderRects->push_back(r);
-                }
+    // If there's an identity rect covered by a rectangle to render, remove it
+    for (std::list<RectToRender>::const_iterator it = identityRects.begin(); it != identityRects.end(); ++it) {
+        bool hasRectContainingIdentityRect = false;
+        for (std::list<RectI>::const_iterator it2 = reducedRects.begin(); it2 != reducedRects.end(); ++it2) {
+            if (it2->contains(it->rect)) {
+                hasRectContainingIdentityRect = true;
+                break;
             }
         }
-    } // !didSomething
+        if (!hasRectContainingIdentityRect) {
+            renderRects->push_back(*it);
+        }
+    }
 
+    // For each reduced rect to render, add it to the final list
+    if (reducedRects.size() == 1 && renderArgs->getCurrentRenderSafety() == eRenderSafetyFullySafeFrame) {
+        RectI mainRenderRect = reducedRects.front();
+
+        // If plug-in wants host frame threading and there is only 1 rect to render, split it
+        // in the number of available threads in the thread-pool
+
+        const unsigned int nThreads = MultiThread::getNCPUsAvailable();
+        reducedRects = mainRenderRect.splitIntoSmallerRects(nThreads);
+    }
+    for (std::list<RectI>::const_iterator it = reducedRects.begin(); it != reducedRects.end(); ++it) {
+        if (!it->isNull()) {
+            RectToRender r;
+            r.rect = *it;
+            renderRects->push_back(r);
+        }
+    }
+    
 } // checkRestToRender
 
 ImagePtr
@@ -729,7 +704,11 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             tmpImgInitArgs.layer = requestData->getPlaneDesc();
 
         }
-        outputTmpImage = Image::create(tmpImgInitArgs);
+        try {
+            outputTmpImage = Image::create(tmpImgInitArgs);
+        } catch (...) {
+            return eActionStatusFailed;
+        }
         requestData->setImagePlane(outputTmpImage);
 
         if (isAccumulating) {
@@ -781,13 +760,17 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
                     tmpImgInitArgs.layer = *it2;
 
                 }
-                tmpImage = Image::create(tmpImgInitArgs);
+                try {
+                    tmpImage = Image::create(tmpImgInitArgs);
+                } catch (...) {
+                    return eActionStatusFailed;
+                }
             }
 
             it->tmpRenderPlanes[*it2] = tmpImage;
         }
     } // for each produced plane
-    
+    return eActionStatusOK;
     
 } // allocateRenderBackendStorageForRenderRects
 
@@ -1054,11 +1037,48 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
 
 
 ActionRetCodeEnum
-EffectInstance::requestRender(const FrameViewRequestPtr& requestData,
-                              const RectD& roiCanonical,
+EffectInstance::requestRender(TimeValue time,
+                              ViewIdx view,
+                              unsigned int mipMapLevel,
+                              const ImagePlaneDesc& plane,
+                              const RectD & roiCanonical,
                               int inputNbInRequester,
                               const FrameViewRequestPtr& requester)
 {
+
+    FrameViewRequestPtr requestData;
+    {
+        FrameViewPair frameView;
+        // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
+        frameView.time = roundImageTimeToEpsilon(time);
+        frameView.view = view;
+
+        // Create the frame/view request object
+        {
+            bool created = getOrCreateFrameViewRequest(frameView.time, frameView.view, mipMapLevel, plane, &requestData);
+            (void)created;
+        }
+        *createdRequest = thisFrameView;
+    }
+
+    // If this render has no dependencies, add it to the things to render
+#pragma message WARN("do this block on all exit points of the func")
+    if (requestData->getNumDependencies() == 0) {
+        getParentRender()->addDependencyFreeRender(requestData);
+    }
+    getParentRender()->addTaskToRender(thisFrameView);
+
+    // Add this frame/view as depdency of the requester
+    if (requester) {
+        requester->addDependency(thisFrameView);
+    }
+
+
+
+    // Set the frame view request on the TLS
+    EffectInstanceTLSDataPtr tls = getTLSObject();
+    assert(tls);
+    FrameViewRequestSetter_RAII tlsSetFrameViewRequest(tls, requestData);
 
 
     // This call cannot be made on a render clone itself.
@@ -1223,7 +1243,7 @@ EffectInstance::requestRender(const FrameViewRequestPtr& requestData,
 
     // Fetch tiles from cache
     // Note that no memory allocation is done here, images are only fetched from the cache.
-    std::list<RectI> tilesLeftToRender;
+    bool hasUnRenderedTile;
     bool hasPendingTiles;
     {
         ImagePtr image = _imp->fetchCachedTiles(requestData, renderMappedRoI, mappedMipMapLevel, requestData->getPlaneDesc(), true);
@@ -1231,11 +1251,13 @@ EffectInstance::requestRender(const FrameViewRequestPtr& requestData,
             return eActionStatusFailed;
         }
         requestData->setImagePlane(image);
-        tilesLeftToRender = image->getRestToRender(&hasPendingTiles);
+
+        Image::TileStateMap tilesState;
+        image->getRestToRender(&tilesState, &hasUnRenderedTile, &hasPendingTiles);
     }
 
     // If there's nothing to render, do not even add the inputs as needed dependencies.
-    if (tilesLeftToRender.empty() && !hasPendingTiles) {
+    if (!hasUnRenderedTile && !hasPendingTiles) {
         requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
     } else {
         requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusNotRendered);
@@ -1259,6 +1281,10 @@ static void invalidateCachedPlanesToRender(const std::map<ImagePlaneDesc, ImageP
 ActionRetCodeEnum
 EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
 {
+    // Set the frame view request on the TLS
+    EffectInstanceTLSDataPtr tls = getTLSObject();
+    assert(tls);
+    FrameViewRequestSetter_RAII tlsSetFrameViewRequest(tls, requestData);
 
     {
         FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted();
@@ -1318,7 +1344,7 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
     ActionRetCodeEnum renderRetCode = eActionStatusOK;
     std::list<RectToRender> renderRects;
     bool hasPendingTiles;
-    _imp->checkRestToRender(requestData, &renderRects, &hasPendingTiles);
+    _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
     while (!renderRects.empty() || hasPendingTiles) {
 
         // There may be no rectangles to render if all rectangles are pending (i.e: this render should wait for another thread
@@ -1346,7 +1372,7 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
             cacheImage->waitForPendingTiles();
         }
 
-        _imp->checkRestToRender(requestData, &renderRects, &hasPendingTiles);
+        _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
     } // while there is still something not rendered
 
     // If using GPU and out of memory retry on CPU if possible

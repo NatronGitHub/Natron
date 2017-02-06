@@ -148,18 +148,18 @@ public:
 
     template <typename TYPE>
     boost::shared_ptr<TYPE>
-    checkIfKnobExistsWithNameOrCreate(const std::string& scriptName,
-                                                             OFX::Host::Param::Instance* param,
-                                                             int dimension)
+    getOrCreateKnob(const std::string& scriptName,
+                    OFX::Host::Param::Instance* param,
+                    int dimension)
     {
         EffectInstancePtr holder = getKnobHolder();
-        return AppManager::checkIfKnobExistsWithNameOrCreate<TYPE>(holder, scriptName, getParamLabel(param), dimension);
+        return AppManager::getOrCreateKnob<TYPE>(holder, scriptName, getParamLabel(param), dimension);
     }
 
 public Q_SLOTS:
 
     /*
-       These are called when the properties are changed on the Natron side
+     These are called when the properties are changed on the Natron side
      */
     void onEvaluateOnChangeChanged(bool evaluate);
     void onSecretChanged();

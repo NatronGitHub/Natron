@@ -198,20 +198,10 @@ public:
     bool isConcatenationEnabled() const;
 
     /**
-     * @brief Returns arguments that are specific to the given node by that remain the same throughout the render of the frame, even if multiple time/view
-     * are rendered.
-     **/
-    TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;
-
-    /**
      * @brief The root node in the tree (i.e: the effect from which we want the results)
      **/
     NodePtr getTreeRoot() const;
 
-    /**
-     * @brief Get the tree root render args
-     **/
-    TreeRenderNodeArgsPtr getTreeRootRenderNode() const;
 
     /**
      * @brief Returns the object used to gather stats for this rende
@@ -246,7 +236,7 @@ Q_SIGNALS:
 private:
 
 
-
+#if 0
     /**
      * @brief Registers the thread as part of this render request. Whenever AbortableThread::setAbortInfo is called, the thread is automatically registered
      * in this class as to be part of this render. This is used to monitor running threads for a specific render and to know if a thread has stalled when
@@ -264,14 +254,13 @@ private:
 
     // To call registerThreadForRender and unregister
     friend class AbortableThread;
+#endif
 
     void addDependencyFreeRender(const FrameViewRequestPtr& render);
 
     void addTaskToRender(const FrameViewRequestPtr& render);
 
-    // For addDependencyFreeRender
-    friend class TreeRenderNodeArgs;
-
+    friend class EffectInstance;
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };
 

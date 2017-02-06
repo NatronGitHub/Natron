@@ -67,6 +67,9 @@ struct ImagePrivate
     // Each individual tile storage
     TileMap tiles;
 
+    // The size in pixels of a tile
+    int tileSizeX, tileSizeY;
+
     // The layer represented by this image
     ImagePlaneDesc layer;
 
@@ -118,6 +121,8 @@ struct ImagePrivate
     : originalBounds()
     , boundsRoundedToTile()
     , tiles()
+    , tileSizeX(0)
+    , tileSizeY(0)
     , layer()
     , proxyScale(1.)
     , mipMapLevel(0)
@@ -141,11 +146,11 @@ struct ImagePrivate
 
     void init(const Image::InitStorageArgs& args);
 
-    void initTiles(int tileSizeX, int tileSizeY);
+    void initTiles();
 
     void initFromExternalBuffer(const Image::InitStorageArgs& args);
 
-    void initTileAndFetchFromCache(int tx, int ty, int tileSizeX, int tileSizeY);
+    void initTileAndFetchFromCache(int tx, int ty);
 
     /**
      * @brief Called in the destructor to insert tiles that were processed in the cache.

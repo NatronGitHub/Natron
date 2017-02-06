@@ -49,7 +49,7 @@ JoinViewsNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
-    PluginPtr ret = Plugin::create((void*)JoinViewsNode::create, PLUGINID_NATRON_JOINVIEWS, "JoinViews", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)JoinViewsNode::create, (void*)JoinViewsNode::createRenderClone, PLUGINID_NATRON_JOINVIEWS, "JoinViews", 1, 0, grouping);
 
     QString desc =  tr("Take in input separate views to make a multiple view stream output. "
                        "The first view from each input is copied to one of the view of the output.");
@@ -64,6 +64,18 @@ JoinViewsNode::JoinViewsNode(const NodePtr& node)
     , _imp( new JoinViewsNodePrivate() )
 {
 
+}
+
+JoinViewsNode::JoinViewsNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp(new JoinViewsNodePrivate())
+{
+    JoinViewsNode* mainNode = dynamic_cast<JoinViewsNode*>(mainInstance.get());
+    assert(mainNode);
+    {
+        QMutexLocker k(&mainNode->_imp->inputsMutex);
+        _imp->inputs = mainNode->_imp->inputs;
+    }
 }
 
 JoinViewsNode::~JoinViewsNode()

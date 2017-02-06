@@ -51,6 +51,7 @@ protected: // derives from EffectInstance, parent of Backdrop, Dot, groupInput, 
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     NoOpBase(const NodePtr& n);
 
+    NoOpBase(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     //static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     //{
@@ -90,7 +91,6 @@ private:
                                   const RenderScale & scale,
                                   const RectI & renderWindow,
                                   ViewIdx view,
-                                  const TreeRenderNodeArgsPtr& render,
                                   TimeValue* inputTime,
                                   ViewIdx* inputView,
                                   int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;

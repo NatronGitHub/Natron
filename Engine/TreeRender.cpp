@@ -120,10 +120,10 @@ struct TreeRenderPrivate
     QAtomicInt aborted;
 
     // Protects threadsForThisRender
-    mutable QMutex threadsMutex;
+    //mutable QMutex threadsMutex;
 
     // A set of threads used in this render
-    ThreadSet threadsForThisRender;
+    //ThreadSet threadsForThisRender;
 
     // Protects dependencyFreeRenders and allRenderTasks
     mutable QMutex dependencyFreeRendersMutex;
@@ -137,12 +137,12 @@ struct TreeRenderPrivate
     std::set<FrameViewRequestPtr> allRenderTasksToProcess;
 
     // protects timerStarted, abortTimeoutTimer and ownerThread
-    mutable QMutex timerMutex;
+    //mutable QMutex timerMutex;
 
     // Used to track when a thread is stuck in an action after abort
-    QTimer* abortTimeoutTimer;
-    QThread* ownerThread;
-    bool timerStarted;
+    //QTimer* abortTimeoutTimer;
+    //QThread* ownerThread;
+    //bool timerStarted;
 
     bool isPlayback;
     bool isDraft;
@@ -170,16 +170,20 @@ struct TreeRenderPrivate
     , openGLContext()
     , cpuOpenGLContext()
     , aborted()
+#if 0
     , threadsMutex()
     , threadsForThisRender()
+#endif
     , dependencyFreeRendersMutex()
     , dependencyFreeRendersEmptyCond()
     , dependencyFreeRenders()
     , allRenderTasksToProcess()
+#if 0
     , timerMutex()
     , abortTimeoutTimer(new QTimer)
     , ownerThread(QThread::currentThread())
     , timerStarted(false)
+#endif
     , isPlayback(false)
     , isDraft(false)
     , byPassCache(false)
@@ -187,10 +191,11 @@ struct TreeRenderPrivate
     , useConcatenations(true)
     {
         aborted.fetchAndStoreAcquire(0);
-
+#if 0
         abortTimeoutTimer->setSingleShot(true);
         QObject::connect( abortTimeoutTimer, SIGNAL(timeout()), publicInterface, SLOT(onAbortTimerTimeout()) );
         QObject::connect( publicInterface, SIGNAL(startTimerInOriginalThread()), publicInterface, SLOT(onStartTimerInOriginalThreadTriggered()) );
+#endif
     }
 
     /**
@@ -210,7 +215,7 @@ struct TreeRenderPrivate
      **/
     TreeRenderNodeArgsPtr buildRenderTreeRecursive(const NodePtr& node, std::set<NodePtr>* visitedNodes);
 
-   
+    void clearTLSRenderArgs();
 };
 
 
@@ -222,10 +227,12 @@ TreeRender::TreeRender()
 
 TreeRender::~TreeRender()
 {
+#if 0
     // post an event to delete the timer in the thread that created it
     if (_imp->abortTimeoutTimer) {
         _imp->abortTimeoutTimer->deleteLater();
     }
+#endif
 }
 
 TreeRenderNodeArgsPtr
@@ -275,6 +282,9 @@ TreeRender::isRenderAborted() const
 void
 TreeRender::setRenderAborted()
 {
+#if 1
+    _imp->aborted.fetchAndAddAcquire(1);
+#else
     int abortedValue = _imp->aborted.fetchAndAddAcquire(1);
 
     if (abortedValue > 0) {
@@ -293,6 +303,7 @@ TreeRender::setRenderAborted()
     } else {
         onStartTimerInOriginalThreadTriggered();
     }
+#endif
 }
 
 bool
@@ -369,6 +380,7 @@ TreeRender::getCanonicalRoI() const
     return _imp->canonicalRoI;
 }
 
+#if 0
 void
 TreeRender::registerThreadForRender(AbortableThread* thread)
 {
@@ -405,17 +417,21 @@ TreeRender::unregisterThreadForRender(AbortableThread* thread)
 
     return ret;
 }
+#endif
 
 void
 TreeRender::onStartTimerInOriginalThreadTriggered()
 {
+#if 0
     assert(QThread::currentThread() == _imp->ownerThread);
     _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
+#endif
 }
 
 void
 TreeRender::onAbortTimerTimeout()
 {
+#if 0
     {
         QMutexLocker k(&_imp->timerMutex);
         assert(QThread::currentThread() == _imp->ownerThread);
@@ -501,6 +517,7 @@ TreeRender::onAbortTimerTimeout()
             }
         }
     }
+#endif
 } // onAbortTimerTimeout
 
 void
@@ -621,9 +638,17 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
     return frameArgs;
 } // buildRenderTreeRecursive
 
+void
+TreeRenderPrivate::clearTLSRenderArgs()
+{
+    for (std::map<NodePtr, TreeRenderNodeArgsPtr>::const_iterator it = perNodeArgs.begin(); it != perNodeArgs.end(); ++it) {
+        it->first->getEffectInstance()->invalidateCurrentRender_TLS();
+    }
+    perNodeArgs.clear();
+}
 
 void
-TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface)
+TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& /*publicInterface*/)
 {
     assert(inArgs->treeRoot);
 
@@ -648,11 +673,13 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     handleNaNs = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
 
 
+#if 0
     // If abortable thread, set abort info on the thread, to make the render abortable faster
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( ownerThread );
     if (isAbortable) {
         isAbortable->setCurrentRender(publicInterface);
     }
+#endif
 
     // Fetch the OpenGL context used for the render. It will not be attached to any render thread yet.
     fetchOpenGLContext(inArgs);
@@ -713,7 +740,7 @@ TreeRender::create(const CtorArgsPtr& inArgs)
     }
 
      if (isFailureRetCode(render->_imp->state)) {
-         appPTR->getAppTLS()->cleanupTLSForThread();
+         render->_imp->clearTLSRenderArgs();
      }
     
     return render;
@@ -735,17 +762,18 @@ TreeRender::addTaskToRender(const FrameViewRequestPtr& render)
 
 class TLSCleanupRAII
 {
+    TreeRenderPrivate* _imp;
 public:
 
-    TLSCleanupRAII()
+    TLSCleanupRAII(TreeRenderPrivate* imp)
+    : _imp(imp)
     {
 
     }
 
     ~TLSCleanupRAII()
     {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-
+        _imp->clearTLSRenderArgs();
     }
 };
 
@@ -812,7 +840,7 @@ ActionRetCodeEnum
 TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
 {
 
-    TLSCleanupRAII tlsCleaner;
+    TLSCleanupRAII tlsCleaner(_imp.get());
 
     if (isFailureRetCode(_imp->state)) {
         return _imp->state;
@@ -844,8 +872,12 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
         numTasksRemaining = _imp->allRenderTasksToProcess.size();
     }
     QThreadPool* threadPool = QThreadPool::globalInstance();
+
+    // While we still have tasks to render loop
     while (numTasksRemaining > 0) {
 
+
+        // Launch all dependency-free tasks in parallel
         QMutexLocker k(&_imp->dependencyFreeRendersMutex);
         while (_imp->dependencyFreeRenders.size() > 0) {
 
@@ -854,6 +886,8 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
 
             threadPool->start(new FrameViewRenderRunnable(_imp.get(), request));
         }
+
+        // Wait until a task is finished: we should be able to launch more tasks afterwards.
         _imp->dependencyFreeRendersEmptyCond.wait(&_imp->dependencyFreeRendersMutex);
 
         // We have been woken-up by a finished task, check if the render is still OK

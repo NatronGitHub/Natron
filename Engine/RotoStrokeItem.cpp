@@ -383,9 +383,9 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
 {
 }
 
-RotoStrokeItem::RotoStrokeItem(const RotoStrokeItem& other)
+RotoStrokeItem::RotoStrokeItem(const RotoStrokeItemPtr& other)
 : RotoDrawableItem(other)
-, _imp(new RotoStrokeItemPrivate(this, other.getBrushType()))
+, _imp(new RotoStrokeItemPrivate(this, other->getBrushType()))
 {
 
 }
@@ -400,8 +400,8 @@ RotoStrokeItem::~RotoStrokeItem()
     }
 }
 
-RotoDrawableItemPtr
-RotoStrokeItem::createRenderCopy() const
+KnobHolderPtr
+RotoStrokeItem::createRenderCopy(const TreeRenderPtr& /*render*/) const
 {
     {
         QMutexLocker k(&_imp->lock);

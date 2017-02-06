@@ -28,6 +28,11 @@
 #include <QDebug>
 #include <QMutex>
 
+#include "Engine/EffectInstance.h"
+#include "Engine/Image.h"
+#include "Engine/TreeRender.h"
+#include "Engine/FrameViewRequest.h"
+
 NATRON_NAMESPACE_ENTER
 
 struct EffectInstanceTLSDataPrivate
@@ -37,34 +42,11 @@ struct EffectInstanceTLSDataPrivate
     // the current action.
     std::list<GenericActionTLSArgsPtr> actionsArgsStack;
 
-    // These are arguments global to the render of frame.
-    // In each render of a frame multiple subsequent render on the effect may occur but these data should remain the same.
-    // Multiple threads may share the same pointer as these datas remain the same.
-    TreeRenderNodeArgsWPtr frameArgs;
-
-    // Even though these data are unique to the holder thread, we need a Mutex when copying one thread data
-    // over another one.
-    // Each data member must be protected by this mutex in getters/setters
-    mutable QMutex lock;
 
     EffectInstanceTLSDataPrivate()
     : actionsArgsStack()
-    , frameArgs()
-    , lock()
     {
 
-    }
-
-    EffectInstanceTLSDataPrivate(const EffectInstanceTLSDataPrivate& other)
-    {
-        // Lock the other thread TLS (mainly for the current action args)
-        QMutexLocker k(&other.lock);
-        for (std::list<GenericActionTLSArgsPtr>::const_iterator it = other.actionsArgsStack.begin(); it!=other.actionsArgsStack.end(); ++it) {
-            actionsArgsStack.push_back((*it)->createCopy());
-        }
-        
-        // Parallel render args do not need to be copied because they are not modified by any thread throughout a render
-        frameArgs = other.frameArgs;
     }
 
 };
@@ -74,10 +56,6 @@ EffectInstanceTLSData::EffectInstanceTLSData()
 {
 }
 
-EffectInstanceTLSData::EffectInstanceTLSData(const EffectInstanceTLSData& other)
-: _imp(new EffectInstanceTLSDataPrivate(*other._imp))
-{
-}
 
 EffectInstanceTLSData::~EffectInstanceTLSData()
 {
@@ -100,7 +78,6 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
     args->canSetValue = canSetValue;
 #endif
 
-    QMutexLocker k(&_imp->lock);
 #ifdef DEBUG
     if (!canBeCalledRecursively && !_imp->actionsArgsStack.empty()) {
         qDebug() << "A non-recursive action was called recursively";
@@ -111,15 +88,17 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
 
 
 void
-EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
-                          const RectI& renderWindowPixel,
-                          const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes)
+EffectInstanceTLSData::pushRenderActionArgs(const FrameViewRequestPtr& requestData, const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
-    args->time = time;
-    args->view = view;
-    args->scale = scale;
-    args->renderWindowPixel = renderWindowPixel;
+    args->time = requestData->getTime();
+    args->view = requestData->getView();
+
+    args->scale = requestData->getRenderClone()->getCurrentRender()->getProxyScale();
+    double mipMapScale = Image::getScaleFromMipMapLevel(requestData->getRenderMappedMipMapLevel());
+    args->scale.x *= mipMapScale;
+    args->scale.y *= mipMapScale;
+    args->requestData = requestData;
     args->outputPlanes = outputPlanes;
 #ifdef DEBUG
     args->canSetValue = false;
@@ -127,7 +106,6 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, Render
         qDebug() << "The render action cannot be caller recursively, this is a bug!";
     }
 #endif
-    QMutexLocker k(&_imp->lock);
     _imp->actionsArgsStack.push_back(args);
 
 }
@@ -135,7 +113,6 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, Render
 void
 EffectInstanceTLSData::popArgs()
 {
-    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return;
     }
@@ -147,7 +124,6 @@ EffectInstanceTLSData::popArgs()
 bool
 EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 {
-    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
@@ -156,25 +132,9 @@ EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 #endif
 
 
-TreeRenderNodeArgsPtr
-EffectInstanceTLSData::getRenderArgs() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->frameArgs.lock();
-}
-
-void
-EffectInstanceTLSData::setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs)
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->frameArgs = renderArgs;
-}
-
-
 void
 EffectInstanceTLSData::ensureLastActionInStackIsNotRender()
 {
-    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return;
     }
@@ -189,7 +149,6 @@ EffectInstanceTLSData::ensureLastActionInStackIsNotRender()
 bool
 EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const
 {
-    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
@@ -209,11 +168,8 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
 
 
 bool
-EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
-                                                  RectI* renderWindowPixel,
-                                                  std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
+EffectInstanceTLSData::getCurrentRenderActionArgs(FrameViewRequestPtr* requestData, std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
 {
-    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
@@ -222,17 +178,8 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
         return false;
     }
 
-    if (time) {
-        *time = args->time;
-    }
-    if (view) {
-        *view = args->view;
-    }
-    if (scale) {
-        *scale = args->scale;
-    }
-    if (renderWindowPixel) {
-        *renderWindowPixel = args->renderWindowPixel;
+    if (requestData) {
+        *requestData = args->requestData;
     }
 
     if (outputPlanes) {

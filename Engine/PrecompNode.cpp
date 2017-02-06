@@ -64,7 +64,7 @@ PrecompNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)PrecompNode::create, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)PrecompNode::create, (void*)PrecompNode::createRenderClone, PLUGINID_NATRON_PRECOMP, "Precomp", 1, 0, grouping);
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
 
     QString desc = tr( "The Precomp node is like a Group node, but references an external Natron project (.ntp) instead.\n"
@@ -151,6 +151,14 @@ PrecompNode::PrecompNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new PrecompNodePrivate(this) )
 {
+}
+
+
+PrecompNode::PrecompNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp(new PrecompNodePrivate(this))
+{
+
 }
 
 PrecompNode::~PrecompNode()

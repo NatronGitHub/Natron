@@ -151,7 +151,6 @@ class TileFetcherProcessor : public MultiThreadProcessorBase
 {
 
     std::vector<TileCoord> _tileIndices;
-    int _tileSizeX, _tileSizeY;
     ImagePrivate* _imp;
 
 public:
@@ -167,17 +166,15 @@ public:
 
     }
 
-    void setData(ImagePrivate* imp,  int tileSizeX, int tileSizeY)
+    void setData(ImagePrivate* imp)
     {
         // Initialize each tile
-        for (int ty = imp->boundsRoundedToTile.y1; ty < imp->boundsRoundedToTile.y2; ty += tileSizeY) {
-            for (int tx = imp->boundsRoundedToTile.x1; tx < imp->boundsRoundedToTile.x2; tx += tileSizeX) {
+        for (int ty = imp->boundsRoundedToTile.y1; ty < imp->boundsRoundedToTile.y2; ty += imp->tileSizeY) {
+            for (int tx = imp->boundsRoundedToTile.x1; tx < imp->boundsRoundedToTile.x2; tx += imp->tileSizeX) {
                 TileCoord c = {tx, ty};
                 _tileIndices.push_back(c);
             }
         }
-        _tileSizeX = tileSizeX;
-        _tileSizeY = tileSizeY;
         _imp = imp;
     }
 
@@ -196,7 +193,7 @@ public:
         for (int i = fromIndex; i < toIndex; ++i) {
             const TileCoord& c = _tileIndices[i];
             try {
-                _imp->initTileAndFetchFromCache(c.tx, c.ty, _tileSizeX, _tileSizeY);
+                _imp->initTileAndFetchFromCache(c.tx, c.ty);
             } catch (...) {
                 return eActionStatusFailed;
             }
@@ -271,7 +268,6 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
 
 
     // For tiled layout, get the number of tiles in X and Y depending on the bounds and the tile zie.
-    int tileSizeX, tileSizeY;
     switch (args.bufferFormat) {
         case eImageBufferLayoutMonoChannelTiled: {
             // The size of a tile depends on the bitdepth
@@ -289,26 +285,26 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     if (args.externalBuffer) {
         initFromExternalBuffer(args);
     } else {
-        initTiles(tileSizeX, tileSizeY);
+        initTiles();
     }
 } // init
 
 void
-ImagePrivate::initTiles(int tileSizeX, int tileSizeY)
+ImagePrivate::initTiles()
 {
     if (tileSizeX == boundsRoundedToTile.width() && tileSizeY == boundsRoundedToTile.height()) {
         // Single tile
-        initTileAndFetchFromCache(0, 0, tileSizeX, tileSizeY);
+        initTileAndFetchFromCache(0, 0);
     } else {
 #ifdef NATRON_IMAGE_SEQUENTIAL_INIT
         for (int ty = imp->boundsRoundedToTile.y1; ty < imp->boundsRoundedToTile.y2; ty += tileSizeY) {
             for (int tx = imp->boundsRoundedToTile.x1; tx < imp->boundsRoundedToTile.x2; tx += tileSizeX) {
-                initTileAndFetchFromCache(tx, ty, tileSizeX, tileSizeY);
+                initTileAndFetchFromCache(tx, ty);
             }
         }
 #else
         TileFetcherProcessor processor(renderArgs);
-        processor.setData(this, tileSizeX, tileSizeY);
+        processor.setData(this);
         ActionRetCodeEnum stat = processor.launchThreads();
         if (stat == eActionStatusFailed) {
             throw std::bad_alloc();
@@ -591,6 +587,13 @@ Image::getCPUTileData(const Image::Tile& tile,
     getCPUTileData(tile, _imp->bufferFormat, data);
 }
 
+void
+Image::getTileSize(int *tileSizeX, int* tileSizeY) const
+{
+    *tileSizeX = _imp->tileSizeX;
+    *tileSizeY = _imp->tileSizeY;
+}
+
 int
 Image::getNumTiles() const
 {
@@ -695,6 +698,316 @@ Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, Rect
 
 } // getABCDRectangles
 
+static void getImageBoundsFromTilesState(const Image::TileStateMap& tiles, int tileSizeX, int tileSizeY,
+                                         RectI& imageBoundsRoundedToTileSize,
+                                         RectI& imageBoundsNotRounded)
+{
+    {
+        Image::TileStateMap::const_iterator bottomLeft = tiles.begin();
+        Image::TileStateMap::const_reverse_iterator topRight = tiles.rbegin();
+        imageBoundsRoundedToTileSize.x1 = bottomLeft->first.tx;
+        imageBoundsRoundedToTileSize.y1 = bottomLeft->first.ty;
+        imageBoundsRoundedToTileSize.x2 = topRight->first.tx + tileSizeX;
+        imageBoundsRoundedToTileSize.y2 = topRight->first.ty + tileSizeY;
+
+        imageBoundsNotRounded.x1 = bottomLeft->second.bounds.x1;
+        imageBoundsNotRounded.y1 = bottomLeft->second.bounds.y1;
+        imageBoundsNotRounded.x2 = topRight->second.bounds.x2;
+        imageBoundsNotRounded.y2 = topRight->second.bounds.y2;
+    }
+
+    assert(imageBoundsRoundedToTileSize.x1 % tileSizeX == 0);
+    assert(imageBoundsRoundedToTileSize.y1 % tileSizeY == 0);
+    assert(imageBoundsRoundedToTileSize.x2 % tileSizeX == 0);
+    assert(imageBoundsRoundedToTileSize.y2 % tileSizeY == 0);
+}
+
+RectI
+Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY)
+{
+
+    if (tiles.empty()) {
+        return RectI();
+    }
+
+    RectI imageBoundsRoundedToTileSize;
+    RectI imageBoundsNotRounded;
+    getImageBoundsFromTilesState(tiles, tileSizeX, tileSizeY, imageBoundsRoundedToTileSize, imageBoundsNotRounded);
+    assert(imageBoundsRoundedToTileSize.contains(roi));
+
+    RectI roiRoundedToTileSize = roi;
+    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+    // Search for rendered lines from bottom to top
+    for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
+
+        bool hasTileUnrenderedOnLine = false;
+        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnLine = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnLine) {
+            roiRoundedToTileSize.y1 += tileSizeY;
+        }
+    }
+
+    // Search for rendered lines from top to bottom
+    for (int y = roiRoundedToTileSize.y2 - 1; y >= roiRoundedToTileSize.y1; y -= tileSizeY) {
+
+        bool hasTileUnrenderedOnLine = false;
+        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnLine = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnLine) {
+            roiRoundedToTileSize.y2 -= tileSizeY;
+        }
+    }
+
+    // Avoid making roiRoundedToTileSize.width() iterations for nothing
+    if (roiRoundedToTileSize.isNull()) {
+        return roiRoundedToTileSize;
+    }
+
+
+    // Search for rendered columns from left to right
+    for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+
+        bool hasTileUnrenderedOnCol = false;
+        for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnCol = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnCol) {
+            roiRoundedToTileSize.x1 += tileSizeX;
+        }
+    }
+
+    // Avoid making roiRoundedToTileSize.width() iterations for nothing
+    if (roiRoundedToTileSize.isNull()) {
+        return roiRoundedToTileSize;
+    }
+
+    // Search for rendered columns from right to left
+    for (int x = roiRoundedToTileSize.x2 - 1; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
+
+        bool hasTileUnrenderedOnCol = false;
+        for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnCol = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnCol) {
+            roiRoundedToTileSize.x2 -= tileSizeX;
+        }
+    }
+
+    // Intersect the result to the actual image bounds (because the tiles are rounded to tile size)
+    RectI ret;
+    roiRoundedToTileSize.intersect(imageBoundsNotRounded, &ret);
+    return ret;
+
+    
+} // getMinimalBboxToRenderFromTilesState
+
+void
+Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender)
+{
+    if (tiles.empty()) {
+        return;
+    }
+
+    RectI roiRoundedToTileSize = roi;
+    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+    RectI bboxM = getMinimalBboxToRenderFromTilesState(tiles, roi, tileSizeX, tileSizeY);
+    if (bboxM.isNull()) {
+        return;
+    }
+
+    // optimization by Fred, Jan 31, 2014
+    //
+    // Now that we have the smallest enclosing bounding box,
+    // let's try to find rectangles for the bottom, the top,
+    // the left and the right part.
+    // This happens quite often, for example when zooming out
+    // (in this case the area to compute is formed of A, B, C and D,
+    // and X is already rendered), or when panning (in this case the area
+    // is just two rectangles, e.g. A and C, and the rectangles B, D and
+    // X are already rendered).
+    // The rectangles A, B, C and D from the following drawing are just
+    // zeroes, and X contains zeroes and ones.
+    //
+    // BBBBBBBBBBBBBB
+    // BBBBBBBBBBBBBB
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // AAAAAAAAAAAAAA
+
+    // First, find if there's an "A" rectangle, and push it to the result
+    //find bottom
+    RectI bboxX = bboxM;
+    RectI bboxA = bboxX;
+    bboxA.y2 = bboxX.y1;
+    for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+        bool hasRenderedTileOnLine = false;
+        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status != eTileStatusNotRendered) {
+                hasRenderedTileOnLine = true;
+                break;
+            }
+        }
+        if (hasRenderedTileOnLine) {
+            break;
+        } else {
+            ++bboxX.y1;
+            bboxA.y2 = bboxX.y1;
+        }
+    }
+    if ( !bboxA.isNull() ) { // empty boxes should not be pushed
+        rectsToRender->push_back(bboxA);
+    }
+
+    // Now, find the "B" rectangle
+    //find top
+    RectI bboxB = bboxX;
+    bboxB.y1 = bboxX.y2;
+
+    for (int y = bboxX.y2 - 1; y >= bboxX.y1; y -= tileSizeY) {
+        bool hasRenderedTileOnLine = false;
+        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status != eTileStatusNotRendered) {
+                hasRenderedTileOnLine = true;
+                break;
+            }
+        }
+        if (hasRenderedTileOnLine) {
+            break;
+        } else {
+            --bboxX.y2;
+            bboxB.y1 = bboxX.y2;
+        }
+    }
+
+    if ( !bboxB.isNull() ) { // empty boxes should not be pushed
+        rectsToRender->push_back(bboxB);
+    }
+
+    //find left
+    RectI bboxC = bboxX;
+    bboxC.x2 = bboxX.x1;
+    if ( bboxX.y1 < bboxX.y2 ) {
+        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+            bool hasRenderedTileOnCol = false;
+            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+                TileCoord c = {x, y};
+                TileStateMap::const_iterator foundTile = tiles.find(c);
+                assert(foundTile != tiles.end());
+                if (foundTile->second.status != eTileStatusNotRendered) {
+                    hasRenderedTileOnCol = true;
+                    break;
+                }
+
+            }
+            if (hasRenderedTileOnCol) {
+                break;
+            } else {
+                ++bboxX.x1;
+                bboxC.x2 = bboxX.x1;
+            }
+        }
+    }
+    if ( !bboxC.isNull() ) { // empty boxes should not be pushed
+        rectsToRender->push_back(bboxC);
+    }
+
+    //find right
+    RectI bboxD = bboxX;
+    bboxD.x1 = bboxX.x2;
+    if ( bboxX.y1 < bboxX.y2 ) {
+        for (int x = bboxX.x2 - 1; x >= bboxX.x1; x -= tileSizeX) {
+            bool hasRenderedTileOnCol = false;
+            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+                TileCoord c = {x, y};
+                TileStateMap::const_iterator foundTile = tiles.find(c);
+                assert(foundTile != tiles.end());
+                if (foundTile->second.status != eTileStatusNotRendered) {
+                    hasRenderedTileOnCol = true;
+                    break;
+                }
+            }
+            if (hasRenderedTileOnCol) {
+                break;
+            } else {
+                --bboxX.x2;
+                bboxD.x1 = bboxX.x2;
+            }
+        }
+    }
+    if ( !bboxD.isNull() ) { // empty boxes should not be pushed
+        rectsToRender->push_back(bboxD);
+    }
+
+    assert( bboxA.bottom() == bboxM.bottom() );
+    assert( bboxA.left() == bboxM.left() );
+    assert( bboxA.right() == bboxM.right() );
+    assert( bboxA.top() == bboxX.bottom() );
+
+    assert( bboxB.top() == bboxM.top() );
+    assert( bboxB.left() == bboxM.left() );
+    assert( bboxB.right() == bboxM.right() );
+    assert( bboxB.bottom() == bboxX.top() );
+
+    assert( bboxC.top() == bboxX.top() );
+    assert( bboxC.left() == bboxM.left() );
+    assert( bboxC.right() == bboxX.left() );
+    assert( bboxC.bottom() == bboxX.bottom() );
+
+    assert( bboxD.top() == bboxX.top() );
+    assert( bboxD.left() == bboxX.right() );
+    assert( bboxD.right() == bboxM.right() );
+    assert( bboxD.bottom() == bboxX.bottom() );
+
+    // get the bounding box of what's left (the X rectangle in the drawing above)
+    bboxX = getMinimalBboxToRenderFromTilesState(tiles, bboxX, tileSizeX, tileSizeY);
+
+    if ( !bboxX.isNull() ) { // empty boxes should not be pushed
+        rectsToRender->push_back(bboxX);
+    }
+
+} // getMinimalRectsToRenderFromTilesState
+
 class FillProcessor : public ImageMultiThreadProcessorBase
 {
     void* _ptrs[4];
@@ -796,12 +1109,9 @@ Image::ensureBounds(const RectI& roi)
     if (_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
 
         _imp->originalBounds = newBounds;
-        // The size of a tile depends on the bitdepth
-        int tileSizeX, tileSizeY;
-        Cache::getTileSizePx(getBitDepth(), &tileSizeX, &tileSizeY);
-        _imp->boundsRoundedToTile.roundToTileSize(tileSizeX, tileSizeY);
-
-        _imp->initTiles(tileSizeX, tileSizeY);
+        _imp->boundsRoundedToTile = newBounds;
+        _imp->boundsRoundedToTile.roundToTileSize(_imp->tileSizeX, _imp->tileSizeY);
+        _imp->initTiles();
     } else {
         ImagePtr tmpImage;
         {

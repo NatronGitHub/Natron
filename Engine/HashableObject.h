@@ -92,14 +92,10 @@ public:
 
         ComputeHashTypeEnum hashType;
 
-        // Pointer to the node render args if any
-        TreeRenderNodeArgsPtr render;
-
         ComputeHashArgs()
         : time(0)
         , view(0)
         , hashType(eComputeHashTypeTimeViewInvariant)
-        , render()
         {
 
         }
@@ -117,7 +113,7 @@ public:
      * : findCachedHash, computeHash_noCache, addHashToCache except that everything
      * is protected under the same mutex for guarenteed atomicity.
      **/
-    U64 computeHash(const ComputeHashArgs& args);
+    virtual U64 computeHash(const ComputeHashArgs& args);
 
     struct FindHashArgs
     {

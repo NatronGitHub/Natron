@@ -50,10 +50,17 @@ private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     Backdrop(const NodePtr& node);
 
+    Backdrop(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new Backdrop(node) );
+    }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new Backdrop(mainInstance, render) );
     }
 
     static PluginPtr createPlugin();

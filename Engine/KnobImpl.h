@@ -92,10 +92,10 @@ void
 KnobDoubleBase::initMinMax()
 {
     for (int i = 0; i < getNDimensions(); ++i) {
-        _minimums[i] = -DBL_MAX;
-        _maximums[i] = DBL_MAX;
-        _displayMins[i] = -DBL_MAX;
-        _displayMaxs[i] = DBL_MAX;
+        _data->minimums[i] = -DBL_MAX;
+        _data->maximums[i] = DBL_MAX;
+        _data->displayMins[i] = -DBL_MAX;
+        _data->displayMaxs[i] = DBL_MAX;
     }
 }
 
@@ -104,28 +104,30 @@ void
 KnobIntBase::initMinMax()
 {
     for (int i = 0; i < getNDimensions(); ++i) {
-        _minimums[i] = INT_MIN;
-        _maximums[i] = INT_MAX;
-        _displayMins[i] = INT_MIN;
-        _displayMaxs[i] = INT_MAX;
+        _data->minimums[i] = INT_MIN;
+        _data->maximums[i] = INT_MAX;
+        _data->displayMins[i] = INT_MIN;
+        _data->displayMaxs[i] = INT_MAX;
     }
 }
 
 template <typename T>
 Knob<T>::Knob(const KnobHolderPtr& holder,
-              const std::string & description,
-              int dimension,
-              bool declaredByPlugin )
-    : KnobHelper(holder, description, dimension, declaredByPlugin)
-    , _defaultValueMutex()
-    , _defaultValues(dimension)
-    , _minMaxMutex(QMutex::Recursive)
-    , _minimums(dimension)
-    , _maximums(dimension)
-    , _displayMins(dimension)
-    , _displayMaxs(dimension)
+              const std::string & name,
+              int dimension)
+    : KnobHelper(holder, name, dimension)
+    , _data(new Data(dimension))
 {
+
     initMinMax();
+}
+
+template <typename T>
+Knob<T>::Knob(const KnobHolderPtr& holder, const KnobIPtr& mainKnob)
+: KnobHelper(holder, mainKnob)
+, _data(boost::dynamic_pointer_cast<Knob<T> >(mainKnob)->_data)
+{
+
 }
 
 template <typename T>
@@ -156,9 +158,9 @@ Knob<T>::refreshCurveMinMaxInternal(ViewIdx view, DimIdx dimension)
         return;
     }
 
-    QMutexLocker k(&_minMaxMutex);
-    curve->setYRange(_minimums[dimension], _maximums[dimension]);
-    curve->setDisplayYRange(_displayMins[dimension], _displayMaxs[dimension]);
+    QMutexLocker k(&_data->minMaxMutex);
+    curve->setYRange(_data->minimums[dimension], _data->maximums[dimension]);
+    curve->setDisplayYRange(_data->displayMins[dimension], _data->displayMaxs[dimension]);
 
 }
 
@@ -167,13 +169,13 @@ void
 Knob<T>::setMinimum(const T& mini, DimSpec dimension)
 {
     {
-        QMutexLocker k(&_minMaxMutex);
+        QMutexLocker k(&_data->minMaxMutex);
         if (dimension.isAll()) {
             for (int i = 0; i < getNDimensions(); ++i) {
-                _minimums[i] = mini;
+                _data->minimums[i] = mini;
             }
         } else {
-            _minimums[dimension] = mini;
+            _data->minimums[dimension] = mini;
         }
     }
     refreshCurveMinMax(ViewSetSpec::all(), dimension);
@@ -185,13 +187,13 @@ void
 Knob<T>::setMaximum(const T& maxi, DimSpec dimension)
 {
     {
-        QMutexLocker k(&_minMaxMutex);
+        QMutexLocker k(&_data->minMaxMutex);
         if (dimension.isAll()) {
             for (int i = 0; i < getNDimensions(); ++i) {
-                _maximums[i] = maxi;
+                _data->maximums[i] = maxi;
             }
         } else {
-            _maximums[dimension] = maxi;
+            _data->maximums[dimension] = maxi;
         }
     }
     refreshCurveMinMax(ViewSetSpec::all(), dimension);
@@ -205,15 +207,15 @@ Knob<T>::setRange(const T& mini,
                  DimSpec dimension)
 {
     {
-        QMutexLocker k(&_minMaxMutex);
+        QMutexLocker k(&_data->minMaxMutex);
         if (dimension.isAll()) {
             for (int i = 0; i < getNDimensions(); ++i) {
-                _minimums[i] = mini;
-                _maximums[i] = maxi;
+                _data->minimums[i] = mini;
+                _data->maximums[i] = maxi;
             }
         } else {
-            _minimums[dimension] = mini;
-            _maximums[dimension] = maxi;
+            _data->minimums[dimension] = mini;
+            _data->maximums[dimension] = maxi;
         }
     }
     refreshCurveMinMax(ViewSetSpec::all(), dimension);
@@ -227,15 +229,15 @@ Knob<T>::setDisplayRange(const T& mini,
                         DimSpec dimension)
 {
     {
-        QMutexLocker k(&_minMaxMutex);
+        QMutexLocker k(&_data->minMaxMutex);
         if (dimension.isAll()) {
             for (int i = 0; i < getNDimensions(); ++i) {
-                _displayMins[i] = mini;
-                _displayMaxs[i] = maxi;
+                _data->displayMins[i] = mini;
+                _data->displayMaxs[i] = maxi;
             }
         } else {
-            _displayMins[dimension] = mini;
-            _displayMaxs[dimension] = maxi;
+            _data->displayMins[dimension] = mini;
+            _data->displayMaxs[dimension] = maxi;
         }
     }
     refreshCurveMinMax(ViewSetSpec::all(), dimension);
@@ -249,9 +251,9 @@ Knob<T>::setRangeAcrossDimensions(const std::vector<T> &minis,
                                 const std::vector<T> &maxis)
 {
     {
-        QMutexLocker k(&_minMaxMutex);
-        _minimums = minis;
-        _maximums = maxis;
+        QMutexLocker k(&_data->minMaxMutex);
+        _data->minimums = minis;
+        _data->maximums = maxis;
     }
     refreshCurveMinMax(ViewSetSpec::all(), DimSpec::all());
     _signalSlotHandler->s_minMaxChanged(DimSpec::all());
@@ -263,9 +265,9 @@ Knob<T>::setDisplayRangeAcrossDimensions(const std::vector<T> &minis,
                                        const std::vector<T> &maxis)
 {
     {
-        QMutexLocker k(&_minMaxMutex);
-        _displayMins = minis;
-        _displayMaxs = maxis;
+        QMutexLocker k(&_data->minMaxMutex);
+        _data->displayMins = minis;
+        _data->displayMaxs = maxis;
     }
     refreshCurveMinMax(ViewSetSpec::all(), DimSpec::all());
     _signalSlotHandler->s_displayMinMaxChanged(DimSpec::all());
@@ -275,64 +277,64 @@ template <typename T>
 const std::vector<T>&
 Knob<T>::getMinimums() const
 {
-    return _minimums;
+    return _data->minimums;
 }
 
 template <typename T>
 const std::vector<T>&
 Knob<T>::getMaximums() const
 {
-    return _maximums;
+    return _data->maximums;
 }
 
 template <typename T>
 const std::vector<T>&
 Knob<T>::getDisplayMinimums() const
 {
-    return _displayMins;
+    return _data->displayMins;
 }
 
 template <typename T>
 const std::vector<T>&
 Knob<T>::getDisplayMaximums() const
 {
-    return _displayMaxs;
+    return _data->displayMaxs;
 }
 
 template <typename T>
 T
 Knob<T>::getMinimum(DimIdx dimension) const
 {
-    QMutexLocker k(&_minMaxMutex);
+    QMutexLocker k(&_data->minMaxMutex);
 
-    return _minimums[dimension];
+    return _data->minimums[dimension];
 }
 
 template <typename T>
 T
 Knob<T>::getMaximum(DimIdx dimension) const
 {
-    QMutexLocker k(&_minMaxMutex);
+    QMutexLocker k(&_data->minMaxMutex);
 
-    return _maximums[dimension];
+    return _data->maximums[dimension];
 }
 
 template <typename T>
 T
 Knob<T>::getDisplayMinimum(DimIdx dimension) const
 {
-    QMutexLocker k(&_minMaxMutex);
+    QMutexLocker k(&_data->minMaxMutex);
 
-    return _displayMins[dimension];
+    return _data->displayMins[dimension];
 }
 
 template <typename T>
 T
 Knob<T>::getDisplayMaximum(DimIdx dimension) const
 {
-    QMutexLocker k(&_minMaxMutex);
+    QMutexLocker k(&_data->minMaxMutex);
 
-    return _displayMaxs[dimension];
+    return _data->displayMaxs[dimension];
 }
 
 template <typename T>
@@ -340,12 +342,12 @@ T
 Knob<T>::clampToMinMax(const T& value,
                        DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_minimums.size()) {
+    if (dimension < 0 || dimension >= (int)_data->minimums.size()) {
         throw std::invalid_argument("Knob::clampToMinMax: dimension out of range");
     }
-    QMutexLocker k(&_minMaxMutex);
+    QMutexLocker k(&_data->minMaxMutex);
 
-    return std::max( (double)_minimums[dimension], std::min( (double)_maximums[dimension], (double)value ) );
+    return std::max( (double)_data->minimums[dimension], std::min( (double)_data->maximums[dimension], (double)value ) );
 }
 
 template <>
@@ -546,24 +548,24 @@ template<typename T>
 T
 Knob<T>::getDefaultValue(DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_defaultValues.size()) {
+    if (dimension < 0 || dimension >= (int)_data->defaultValues.size()) {
         throw std::invalid_argument("Knob::getDefaultValue: Invalid dimension");
     }
-    QMutexLocker l(&_defaultValueMutex);
+    QMutexLocker l(&_data->defaultValueMutex);
 
-    return _defaultValues[dimension].value;
+    return _data->defaultValues[dimension].value;
 }
 
 template<typename T>
 T
 Knob<T>::getInitialDefaultValue(DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_defaultValues.size()) {
+    if (dimension < 0 || dimension >= (int)_data->defaultValues.size()) {
         throw std::invalid_argument("Knob::getInitialDefaultValue: Invalid dimension");
     }
-    QMutexLocker l(&_defaultValueMutex);
+    QMutexLocker l(&_data->defaultValueMutex);
 
-    return _defaultValues[dimension].initialValue;
+    return _data->defaultValues[dimension].initialValue;
 
 }
 
@@ -572,10 +574,10 @@ void
 Knob<T>::setCurrentDefaultValueAsInitialValue()
 {
     int nDims = getNDimensions();
-    QMutexLocker l(&_defaultValueMutex);
+    QMutexLocker l(&_data->defaultValueMutex);
     for (int i = 0; i < nDims; ++i) {
-        _defaultValues[i].initialValue = _defaultValues[i].value;
-        _defaultValues[i].defaultValueSet = true;
+        _data->defaultValues[i].initialValue = _data->defaultValues[i].value;
+        _data->defaultValues[i].defaultValueSet = true;
     }
 }
 
@@ -583,22 +585,22 @@ template<typename T>
 bool
 Knob<T>::hasDefaultValueChanged(DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_defaultValues.size()) {
+    if (dimension < 0 || dimension >= (int)_data->defaultValues.size()) {
         throw std::invalid_argument("Knob::hasDefaultValueChanged: Invalid dimension");
     }
-    QMutexLocker l(&_defaultValueMutex);
-    return _defaultValues[dimension].initialValue != _defaultValues[dimension].value;
+    QMutexLocker l(&_data->defaultValueMutex);
+    return _data->defaultValues[dimension].initialValue != _data->defaultValues[dimension].value;
 }
 
 template<typename T>
 bool
 Knob<T>::isDefaultValueSet(DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_defaultValues.size()) {
+    if (dimension < 0 || dimension >= (int)_data->defaultValues.size()) {
         throw std::invalid_argument("Knob::isDefaultValueSet: Invalid dimension");
     }
-    QMutexLocker l(&_defaultValueMutex);
-    return _defaultValues[dimension].defaultValueSet;
+    QMutexLocker l(&_data->defaultValueMutex);
+    return _data->defaultValues[dimension].defaultValueSet;
 }
 
 
@@ -608,24 +610,24 @@ Knob<T>::setDefaultValue(const T & v,
                          DimSpec dimension)
 {
     {
-        QMutexLocker l(&_defaultValueMutex);
+        QMutexLocker l(&_data->defaultValueMutex);
         if (dimension.isAll()) {
             int nDims = getNDimensions();
             for (int i = 0; i < nDims; ++i) {
-                _defaultValues[i].value = v;
-                if (!_defaultValues[i].defaultValueSet) {
-                    _defaultValues[i].defaultValueSet = true;
-                    _defaultValues[i].initialValue = v;
+                _data->defaultValues[i].value = v;
+                if (!_data->defaultValues[i].defaultValueSet) {
+                    _data->defaultValues[i].defaultValueSet = true;
+                    _data->defaultValues[i].initialValue = v;
                 }
             }
         } else {
-            if (dimension < 0 || dimension >= (int)_defaultValues.size()) {
+            if (dimension < 0 || dimension >= (int)_data->defaultValues.size()) {
                 throw std::invalid_argument("Knob::setDefaultValue: Invalid dimension");
             }
-            _defaultValues[dimension].value = v;
-            if (!_defaultValues[dimension].defaultValueSet) {
-                _defaultValues[dimension].defaultValueSet = true;
-                _defaultValues[dimension].initialValue = v;
+            _data->defaultValues[dimension].value = v;
+            if (!_data->defaultValues[dimension].defaultValueSet) {
+                _data->defaultValues[dimension].defaultValueSet = true;
+                _data->defaultValues[dimension].initialValue = v;
             }
         }
     }
@@ -646,13 +648,13 @@ Knob<T>::setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOff
         throw std::invalid_argument("Knob<T>::setDefaultValuesWithoutApplying: Invalid arguments");
     }
     {
-        QMutexLocker l(&_defaultValueMutex);
+        QMutexLocker l(&_data->defaultValueMutex);
         for (std::size_t i = 0; i < values.size(); ++i) {
             int dimension = i + dimensionStartOffset;
-            _defaultValues[dimension].value = values[i];
-            if (!_defaultValues[dimension].defaultValueSet) {
-                _defaultValues[dimension].defaultValueSet = true;
-                _defaultValues[dimension].initialValue = values[i];
+            _data->defaultValues[dimension].value = values[i];
+            if (!_data->defaultValues[dimension].defaultValueSet) {
+                _data->defaultValues[dimension].defaultValueSet = true;
+                _data->defaultValues[dimension].initialValue = values[i];
             }
 
         }
@@ -669,24 +671,24 @@ Knob<T>::setDefaultValueWithoutApplying(const T& v,
 {
     assert( dimension < getNDimensions() );
     {
-        QMutexLocker l(&_defaultValueMutex);
+        QMutexLocker l(&_data->defaultValueMutex);
         if (dimension.isAll()) {
             int nDims = getNDimensions();
             for (int i = 0; i < nDims; ++i) {
-                _defaultValues[i].value = v;
-                if (!_defaultValues[i].defaultValueSet) {
-                    _defaultValues[i].defaultValueSet = true;
-                    _defaultValues[i].initialValue = v;
+                _data->defaultValues[i].value = v;
+                if (!_data->defaultValues[i].defaultValueSet) {
+                    _data->defaultValues[i].defaultValueSet = true;
+                    _data->defaultValues[i].initialValue = v;
                 }
             }
         } else {
-            if (dimension < 0 || dimension >= (int)_defaultValues.size()) {
+            if (dimension < 0 || dimension >= (int)_data->defaultValues.size()) {
                 throw std::invalid_argument("Knob::setDefaultValueWithoutApplying: Invalid dimension");
             }
-            _defaultValues[dimension].value = v;
-            if (!_defaultValues[dimension].defaultValueSet) {
-                _defaultValues[dimension].defaultValueSet = true;
-                _defaultValues[dimension].initialValue = v;
+            _data->defaultValues[dimension].value = v;
+            if (!_data->defaultValues[dimension].defaultValueSet) {
+                _data->defaultValues[dimension].defaultValueSet = true;
+                _data->defaultValues[dimension].initialValue = v;
             }
         }
 
@@ -707,13 +709,13 @@ Knob<T>::setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx di
         throw std::invalid_argument("Knob<T>::setDefaultValuesWithoutApplying: Invalid arguments");
     }
 
-    QMutexLocker l(&_defaultValueMutex);
+    QMutexLocker l(&_data->defaultValueMutex);
     for (std::size_t i = 0; i < values.size(); ++i) {
         int dimension = i + dimensionStartOffset;
-        _defaultValues[dimension].value = values[i];
-        if (!_defaultValues[dimension].defaultValueSet) {
-            _defaultValues[dimension].defaultValueSet = true;
-            _defaultValues[dimension].initialValue = values[i];
+        _data->defaultValues[dimension].value = values[i];
+        if (!_data->defaultValues[dimension].defaultValueSet) {
+            _data->defaultValues[dimension].defaultValueSet = true;
+            _data->defaultValues[dimension].initialValue = values[i];
         }
 
     }
@@ -829,8 +831,8 @@ Knob<T>::populate()
     for (int i = 0; i < getNDimensions(); ++i) {
         T defValue;
         initDefaultValue<T>(&defValue);
-        _defaultValues[i].value = defValue;
-        _defaultValues[i].defaultValueSet = false;
+        _data->defaultValues[i].value = defValue;
+        _data->defaultValues[i].defaultValueSet = false;
     }
     refreshCurveMinMax(ViewSetSpec::all(), DimSpec::all());
 
@@ -902,8 +904,8 @@ Knob<T>::cloneDefaultValues(const KnobIPtr& other)
 
     std::vector<DefaultValue> otherDef;
     {
-        QMutexLocker l(&otherT->_defaultValueMutex);
-        otherDef = otherT->_defaultValues;
+        QMutexLocker l(&otherT->_data->defaultValueMutex);
+        otherDef = otherT->_data->defaultValues;
     }
     for (int i = 0; i < dims; ++i) {
         if (otherDef[i].defaultValueSet) {

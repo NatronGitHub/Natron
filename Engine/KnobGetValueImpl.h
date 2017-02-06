@@ -31,7 +31,6 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobItemsTable.h"
-#include "Engine/RenderValuesCache.h"
 #include "Engine/TreeRenderNodeArgs.h"
 
 #include "Engine/EngineFwd.h"
@@ -271,9 +270,7 @@ Knob<T>::getValueFromExpression_pod(TimeValue time,
 
 template <typename T>
 T
-Knob<T>::getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
-                          const RenderValuesCachePtr& valuesCache,
-                          TimeValue tlsCurrentTime,
+Knob<T>::getValueInternal(TimeValue tlsCurrentTime,
                           DimIdx dimension,
                           ViewIdx view,
                           bool clamp)
@@ -286,14 +283,22 @@ Knob<T>::getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
         QMutexLocker k(&dataForDimView->valueMutex);
         if (clamp) {
             T ret = clampToMinMax(dataForDimView->value, dimension);
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view, ret);
+            if (_valuesCache) {
+                DimTimeView key;
+                key.time = tlsCurrentTime;
+                key.view = view;
+                key.dimension = dimension;
+                (*_valuesCache)[key] = ret;
             }
             return ret;
         } else {
             const T& ret = dataForDimView->value;
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view, ret);
+            if (_valuesCache) {
+                DimTimeView key;
+                key.time = tlsCurrentTime;
+                key.view = view;
+                key.dimension = dimension;
+                (*_valuesCache)[key] = ret;
             }
             return ret;
         }
@@ -319,14 +324,16 @@ Knob<T>::getValue(DimIdx dimension,
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
 
-    TimeValue tlsCurrentTime(0);
-    ViewIdx tlsCurrentView;
-    RenderValuesCachePtr valuesCache = getHolderRenderValuesCache(&tlsCurrentTime, &tlsCurrentView);
+    TimeValue currentTime = getCurrentTime_TLS();
     // Check if value is already in TLS when rendering
-    if (valuesCache) {
-        T ret;
-        if (valuesCache->getCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, &ret)) {
-            return ret;
+    if (_valuesCache) {
+        DimTimeView key;
+        key.time = currentTime;
+        key.view = view_i;
+        key.dimension = dimension;
+        typename ValuesCacheMap::const_iterator foundCached = _valuesCache->find(key);
+        if (foundCached != _valuesCache->end()) {
+            return foundCached->second;
         }
     }
 
@@ -335,10 +342,13 @@ Knob<T>::getValue(DimIdx dimension,
     std::string hasExpr = getExpression(dimension, view_i);
     if ( !hasExpr.empty() ) {
         T ret;
-        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime_TLS();
-        if ( getValueFromExpression(time, view, dimension, clamp, &ret) ) {
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, tlsCurrentTime, dimension, view_i, ret);
+        if ( getValueFromExpression(currentTime, view, dimension, clamp, &ret) ) {
+            if (_valuesCache) {
+                DimTimeView key;
+                key.time = currentTime;
+                key.view = view_i;
+                key.dimension = dimension;
+                (*_valuesCache)[key] = ret;
             }
             return ret;
         }
@@ -346,11 +356,10 @@ Knob<T>::getValue(DimIdx dimension,
 
     // If animated, call getValueAtTime instead
     if ( isAnimated(dimension, view) ) {
-        TimeValue time = valuesCache ? tlsCurrentTime : getCurrentTime_TLS();
-        return getValueAtTime(time, dimension, view, clamp);
+        return getValueAtTime(currentTime, dimension, view, clamp);
     }
 
-    return getValueInternal(thisShared, valuesCache, tlsCurrentTime, dimension, view_i, clamp);
+    return getValueInternal(currentTime, dimension, view_i, clamp);
 
 } // getValue
 
@@ -490,12 +499,15 @@ Knob<T>::getValueAtTime(TimeValue time,
 
     boost::shared_ptr<Knob<T> > thisShared = boost::dynamic_pointer_cast<Knob<T> >(shared_from_this());
 
-    RenderValuesCachePtr valuesCache = getHolderRenderValuesCache();
     // Check if value is already in TLS when rendering
-    if (valuesCache) {
-        T ret;
-        if (valuesCache->getCachedKnobValue<T>(thisShared, time, dimension, view_i, &ret)) {
-            return ret;
+    if (_valuesCache) {
+        DimTimeView key;
+        key.time = time;
+        key.view = view_i;
+        key.dimension = dimension;
+        typename ValuesCacheMap::const_iterator foundCached = _valuesCache->find(key);
+        if (foundCached != _valuesCache->end()) {
+            return foundCached->second;
         }
     }
 
@@ -503,8 +515,12 @@ Knob<T>::getValueAtTime(TimeValue time,
     if ( !hasExpr.empty() ) {
         T ret;
         if ( getValueFromExpression(time, /*view*/ ViewIdx(0), dimension, clamp, &ret) ) {
-            if (valuesCache) {
-                valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
+            if (_valuesCache) {
+                DimTimeView key;
+                key.time = time;
+                key.view = view_i;
+                key.dimension = dimension;
+                (*_valuesCache)[key] = ret;
             }
             return ret;
         }
@@ -514,15 +530,18 @@ Knob<T>::getValueAtTime(TimeValue time,
 
     T ret;
     if ( getValueFromCurve(time, view_i, dimension, clamp, &ret) ) {
-        if (valuesCache) {
-            valuesCache->setCachedKnobValue<T>(thisShared, time, dimension, view_i, ret);
+        if (_valuesCache) {
+            DimTimeView key;
+            key.time = time;
+            key.view = view_i;
+            key.dimension = dimension;
+            (*_valuesCache)[key] = ret;
         }
-
         return ret;
     }
 
     // If the knob as no keys at this dimension/view, return the underlying value
-    return getValueInternal(thisShared, valuesCache, time, dimension, view_i, clamp);
+    return getValueInternal(time, dimension, view_i, clamp);
 } // getValueAtTime
 
 

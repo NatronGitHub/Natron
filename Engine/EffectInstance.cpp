@@ -74,12 +74,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/RenderStats.h"
 #include "Engine/RotoDrawableItem.h"
 #include "Engine/RotoStrokeItem.h"
-#include "Engine/RenderValuesCache.h"
 #include "Engine/ReadNode.h"
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/Transform.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/ViewIdx.h"
@@ -97,16 +95,32 @@ EffectInstance::EffectInstance(const NodePtr& node)
   
 }
 
-EffectInstance::EffectInstance(const EffectInstance& other)
-    : NamedKnobHolder(other)
-    , _node( other.getNode() )
-    , _imp( new Implementation(*other._imp) )
+EffectInstance::EffectInstance(const EffectInstancePtr& other, const TreeRenderPtr& render)
+    : NamedKnobHolder(other, render)
+    , _node( other->getNode() )
+    , _imp( new Implementation(this, *other->_imp) )
 {
-    _imp->_publicInterface = this;
+    int nInputs = other->getMaxInputCount();
+    _imp->renderData->inputs.resize(nInputs);
+    for (std::size_t i = 0; i < _imp->renderData->inputs.size(); ++i) {
+        _imp->renderData->inputs[i] = other->getInput(i);
+    }
 }
 
 EffectInstance::~EffectInstance()
 {
+}
+
+KnobHolderPtr
+EffectInstance::createRenderCopy(const TreeRenderPtr& render) const
+{
+    EffectRenderCloneBuilder createFunc = (EffectRenderCloneBuilder)getNode()->getPlugin()->getProperty<void*>(kNatronPluginPropCreateRenderCloneFunc);
+    assert(createFunc);
+    if (!createFunc) {
+        throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
+    }
+    EffectInstancePtr clone = createFunc(boost::const_pointer_cast<EffectInstance>(shared_from_this()), render);
+    return clone;
 }
 
 RenderEngine*
@@ -116,9 +130,9 @@ EffectInstance::createRenderEngine()
 }
 
 void
-EffectInstance::getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, TimeValue* timeOut, ViewIdx* viewOut)
+EffectInstance::getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, TimeValue* timeOut, ViewIdx* viewOut)
 {
-    bool frameVarying = isFrameVarying(render);
+    bool frameVarying = isFrameVarying();
 
     // If the node is frame varying, append the time to its hash.
     // Do so as well if it is view varying
@@ -135,6 +149,32 @@ EffectInstance::getTimeViewParametersDependingOnFrameViewVariance(TimeValue time
     } else {
         *viewOut = ViewIdx(0);
     }
+}
+
+U64
+EffectInstance::computeHash(const ComputeHashArgs& args)
+{
+    if (_imp->renderData) {
+        U64 hash;
+        switch (args.hashType) {
+            case HashableObject::eComputeHashTypeTimeViewVariant: {
+                if (_imp->renderData->getFrameViewHash(args.time, args.view, &hash)) {
+                    return hash;
+                }
+            }   break;
+            case HashableObject::eComputeHashTypeTimeViewInvariant: {
+                if (_imp->renderData->getTimeViewInvariantHash(&hash)) {
+                    return hash;
+                }
+            }   break;
+            case HashableObject::eComputeHashTypeOnlyMetadataSlaves: {
+                if (_imp->renderData->getTimeInvariantMetadataHash(&hash)) {
+                    return hash;
+                }
+            }   break;
+        }
+    }
+    return HashableObject::computeHash(args);
 }
 
 void
@@ -164,11 +204,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
             if (!input) {
                 hash->append(0);
             } else {
-                ComputeHashArgs inputArgs = args;
-                if (args.render) {
-                    inputArgs.render = args.render->getInputRenderArgs(i);
-                }
-                U64 inputHash = input->computeHash(inputArgs);
+                U64 inputHash = input->computeHash(args);
                 hash->append(inputHash);
             }
         }
@@ -176,7 +212,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         // We must add the input hash at the frames needed because a node may depend on a value at a different frame
 
 
-        ActionRetCodeEnum stat = getFramesNeeded_public(args.time, args.view, args.render, &framesNeededResults);
+        ActionRetCodeEnum stat = getFramesNeeded_public(args.time, args.view, &framesNeededResults);
 
         FramesNeededMap framesNeeded;
         if (!isFailureRetCode(stat)) {
@@ -189,12 +225,6 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                 continue;
             }
 
-            // If during a render we must also find the render args for the input node
-            TreeRenderNodeArgsPtr inputRenderArgs;
-            if (args.render) {
-                inputRenderArgs = args.render->getInputRenderArgs(it->first);
-            }
-
             // For all views requested in input
             for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
 
@@ -205,9 +235,6 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
                     for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
 
                         ComputeHashArgs inputArgs = args;
-                        if (args.render) {
-                            inputArgs.render = args.render->getInputRenderArgs(it->first);
-                        }
                         inputArgs.time = TimeValue(f);
                         inputArgs.view = viewIt->first;
                         U64 inputHash = inputEffect->computeHash(inputArgs);
@@ -223,7 +250,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
     // Also append the disabled state of the node. This is useful because the knob disabled itself is not enough: if the node is not disabled
     // but inside a disabled group, it is considered disabled but yet has the same hash than when not disabled.
-    bool disabled = node->isNodeDisabledForFrame(args.time, args.view);
+    bool disabled = isNodeDisabledForFrame(args.time, args.view);
     hash->append(disabled);
 
     hash->computeHash();
@@ -237,7 +264,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         {
             TimeValue timeKey;
             ViewIdx viewKey;
-            getTimeViewParametersDependingOnFrameViewVariance(args.time, args.view, args.render, &timeKey, &viewKey);
+            getTimeViewParametersDependingOnFrameViewVariance(args.time, args.view, &timeKey, &viewKey);
             cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
         }
 
@@ -249,16 +276,16 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         }
     }
 
-    if (args.render) {
+    if (_imp->renderData) {
         switch (args.hashType) {
             case HashableObject::eComputeHashTypeTimeViewVariant: {
-                args.render->setFrameViewHash(args.time, args.view, hashValue);
+                _imp->renderData->setFrameViewHash(args.time, args.view, hashValue);
             }   break;
             case HashableObject::eComputeHashTypeTimeViewInvariant:
-                args.render->setTimeViewInvariantHash(hashValue);
+                _imp->renderData->setTimeViewInvariantHash(hashValue);
                 break;
             case HashableObject::eComputeHashTypeOnlyMetadataSlaves:
-                args.render->setTimeInvariantMetadataHash(hashValue);
+                _imp->renderData->setTimeInvariantMetadataHash(hashValue);
                 break;
         }
     }
@@ -304,29 +331,121 @@ EffectInstance::invalidateHashCacheInternal(std::set<HashableObject*>* invalidat
     return invalidateHashCacheImplementation(true /*recurse*/, invalidatedObjects);
 }
 
-
-
-#ifdef DEBUG
 void
-EffectInstance::checkCanSetValueAndWarn() const
+EffectInstance::refreshMetadaWarnings(const NodeMetadata &metadata)
 {
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
+    assert(QThread::currentThread() == qApp->thread());
 
-    if (!tls) {
-        return;
+    int nInputs = getMaxInputCount();
+
+    QString bitDepthWarning = tr("This nodes converts higher bit depths images from its inputs to a lower bitdepth image. As "
+                                 "a result of this process, the quality of the images is degraded. The following conversions are done:\n");
+    bool setBitDepthWarning = false;
+    const bool multipleClipDepths = supportsMultipleClipDepths();
+    const bool multipleClipPARs = supportsMultipleClipPARs();
+    const bool multipleClipFPSs = supportsMultipleClipFPSs();
+    std::vector<EffectInstancePtr> inputs(nInputs);
+    for (int i = 0; i < nInputs; ++i) {
+        inputs[i] = getInput(i);
     }
 
-    if (tls->isDuringActionThatCannotSetValue()) {
-        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
-    }
-}
 
-#endif //DEBUG
+    ImageBitDepthEnum outputDepth = metadata.getBitDepth(-1);
+    double outputPAR = metadata.getPixelAspectRatio(-1);
+    bool outputFrameRateSet = false;
+    double outputFrameRate = metadata.getOutputFrameRate();
+    bool mustWarnFPS = false;
+    bool mustWarnPAR = false;
+
+    int nbConnectedInputs = 0;
+    for (int i = 0; i < nInputs; ++i) {
+        //Check that the bitdepths are all the same if the plug-in doesn't support multiple depths
+        if ( !multipleClipDepths && (metadata.getBitDepth(i) != outputDepth) ) {
+        }
+
+        const double pixelAspect = metadata.getPixelAspectRatio(i);
+
+        if (!multipleClipPARs) {
+            if (pixelAspect != outputPAR) {
+                mustWarnPAR = true;
+            }
+        }
+
+        if (!inputs[i]) {
+            continue;
+        }
+
+        ++nbConnectedInputs;
+
+        const double fps = inputs[i]->getFrameRate();
+
+
+
+        if (!multipleClipFPSs) {
+            if (!outputFrameRateSet) {
+                outputFrameRate = fps;
+                outputFrameRateSet = true;
+            } else if (std::abs(outputFrameRate - fps) > 0.01) {
+                // We have several inputs with different frame rates
+                mustWarnFPS = true;
+            }
+        }
+
+
+        ImageBitDepthEnum inputOutputDepth = inputs[i]->getBitDepth(-1);
+
+        //If the bit-depth conversion will be lossy, warn the user
+        if ( Image::isBitDepthConversionLossy( inputOutputDepth, metadata.getBitDepth(i) ) ) {
+            bitDepthWarning.append( QString::fromUtf8( inputs[i]->getNode()->getLabel_mt_safe().c_str() ) );
+            bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString(inputOutputDepth).c_str() ) + QChar::fromLatin1(')') );
+            bitDepthWarning.append( QString::fromUtf8(" ----> ") );
+            bitDepthWarning.append( QString::fromUtf8( getNode()->getLabel_mt_safe().c_str() ) );
+            bitDepthWarning.append( QString::fromUtf8(" (") + QString::fromUtf8( Image::getDepthString( metadata.getBitDepth(i) ).c_str() ) + QChar::fromLatin1(')') );
+            bitDepthWarning.append( QChar::fromLatin1('\n') );
+            setBitDepthWarning = true;
+        }
+
+
+        if ( !multipleClipPARs && (pixelAspect != outputPAR) ) {
+            qDebug() << getScriptName_mt_safe().c_str() << ": The input " << inputs[i]->getScriptName_mt_safe().c_str()
+            << ") has a pixel aspect ratio (" << metadata.getPixelAspectRatio(i)
+            << ") different than the output clip (" << outputPAR << ") but it doesn't support multiple clips PAR. "
+            << "This should have been handled earlier before connecting the nodes, @see Node::canConnectInput.";
+        }
+    }
+
+    std::map<Node::StreamWarningEnum, QString> warnings;
+    if (setBitDepthWarning) {
+        warnings[Node::eStreamWarningBitdepth] = bitDepthWarning;
+    } else {
+        warnings[Node::eStreamWarningBitdepth] = QString();
+    }
+
+    if (mustWarnFPS && nbConnectedInputs > 1) {
+        QString fpsWarning = tr("One or multiple inputs have a frame rate different of the output. "
+                                "It is not handled correctly by this node. To remove this warning make sure all inputs have "
+                                "the same frame-rate, either by adjusting project settings or the upstream Read node.");
+        warnings[Node::eStreamWarningFrameRate] = fpsWarning;
+    } else {
+        warnings[Node::eStreamWarningFrameRate] = QString();
+    }
+
+    if (mustWarnPAR && nbConnectedInputs > 1) {
+        QString parWarnings = tr("One or multiple input have a pixel aspect ratio different of the output. It is not "
+                                 "handled correctly by this node and may yield unwanted results. Please adjust the "
+                                 "pixel aspect ratios of the inputs so that they match by using a Reformat node.");
+        warnings[Node::eStreamWarningPixelAspectRatio] = parWarnings;
+    } else {
+        warnings[Node::eStreamWarningPixelAspectRatio] = QString();
+    }
+    
+    
+    getNode()->setStreamWarnings(warnings);
+} // refreshMetadaWarnings
 
 
 bool
 EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
-                                  const TreeRenderNodeArgsPtr& render,
                                   int visitsCount) const
 {
     if (visitsCount > 1) {
@@ -344,7 +463,7 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         // outputs == 0, never cache, unless explicitly set or rotopaint internal node
         RotoDrawableItemPtr attachedStroke = node->getAttachedRotoItem();
 
-        return node->isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
+        return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
         ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
 
     } else if (nOutputNodes > 1) {
@@ -366,18 +485,18 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         // Very heavy to compute since many frames are fetched upstream. Cache it.
         return true;
     }
-    if ( !render->getCurrentTilesSupport() ) {
+    if ( !getCurrentSupportTiles() ) {
         // No tiles, image is going to be produced fully, cache it to prevent multiple access
         // with different RoIs
         return true;
     }
-    if ( node->isForceCachingEnabled() ) {
+    if ( isForceCachingEnabled() ) {
         // Users wants it cached
         return true;
     }
 
     NodeGroupPtr parentIsGroup = toNodeGroup( node->getGroup() );
-    if ( parentIsGroup && parentIsGroup->getNode()->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput() == node) ) {
+    if ( parentIsGroup && parentIsGroup->isForceCachingEnabled() && (parentIsGroup->getOutputNodeInput() == node) ) {
         // If the parent node is a group and it has its force caching enabled, cache the output of the Group Output's node input.
         return true;
     }
@@ -433,13 +552,19 @@ EffectInstance::hasOutputConnected() const
 EffectInstancePtr
 EffectInstance::getInput(int n) const
 {
-    NodePtr inputNode = getNode()->getInput(n);
+    if (_imp->renderData) {
+        if (n < 0 || n >= (int)_imp->renderData->inputs.size()) {
+            return EffectInstancePtr();
+        }
+        return _imp->renderData->inputs[n];
+    } else {
+        NodePtr inputNode = getNode()->getInput(n);
+        if (inputNode) {
+            return inputNode->getEffectInstance();
+        }
 
-    if (inputNode) {
-        return inputNode->getEffectInstance();
+        return EffectInstancePtr();
     }
-
-    return EffectInstancePtr();
 }
 
 std::string
@@ -457,6 +582,50 @@ EffectInstance::getInputHint(int /*inputNb*/) const
 {
     return std::string();
 }
+
+
+EffectInstancePtr
+EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb,
+                                                 int* channelForMask)
+{
+    // Check if the input is a mask
+    if (channelForMask) {
+        *channelForMask = -1;
+    }
+    if (isInputMask(inputNb)) {
+
+        // If the mask is disabled, don't even bother
+        if (!isMaskEnabled(inputNb) ) {
+            return EffectInstancePtr();
+        }
+
+        ImagePlaneDesc maskComps;
+
+        std::list<ImagePlaneDesc> upstreamAvailableLayers;
+
+        ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), getCurrentView_TLS(), inputNb, &upstreamAvailableLayers);
+        if (isFailureRetCode(stat)) {
+            return EffectInstancePtr();
+        }
+        int channelForAlphaInput = getNode()->getMaskChannel(inputNb, upstreamAvailableLayers, &maskComps);
+
+
+        if (channelForMask) {
+            *channelForMask = channelForAlphaInput;
+        }
+
+        // No mask or no layer selected for the mask
+        if ((channelForAlphaInput == -1) || (maskComps.getNumComponents() == 0)) {
+            return EffectInstancePtr();
+        }
+
+    }
+
+    return getInput(inputNb);
+    
+} // resolveInputEffectForFrameNeeded
+
+
 
 bool
 EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
@@ -476,16 +645,12 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         return false;
     }
 
-    TreeRenderNodeArgsPtr inputRenderArgs = inArgs.requestData->getRenderArgs()->getInputRenderArgs(inArgs.inputNb);
-    assert(inputRenderArgs);
-    if (!inputRenderArgs) {
-        // Serious bug, all inputs should always have a render object.
-        return false;
-    }
+
 
     // Is there a request that was filed with getFramesNeeded on this input at the given time/view ?
     {
-        FrameViewRequestPtr inputRequestPass = inputRenderArgs->getFrameViewRequest(inputTime, inArgs.inputView);
+        EffectInstancePtr inputEffect = getInput(inArgs.inputNb);
+        FrameViewRequestPtr inputRequestPass = inputEffect->_imp->getFrameViewRequest(inputTime, inArgs.inputView);
         if (inputRequestPass) {
             *roiCanonical = inputRequestPass->getCurrentRoI();
             return true;
@@ -498,62 +663,18 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
     // Either the user passed an optional bounds parameter or we have to compute the RoI using getRegionsOfInterest.
     // We must call getRegionOfInterest on the time and view of the current action of this effect.
 
-    RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), inArgs.requestData->getRenderArgs()->getParentRender()->getProxyScale());
+    RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), getCurrentRender()->getProxyScale());
 
 
     // We have to retrieve the time and view of the current action in the TLS since it was not passed in parameter.
-    RectD thisEffectRenderWindowCanonical;
-
-    {
-        EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
-        assert(tls);
-        RectI thisEffectRenderWindowPixels;
-        RenderScale actionScale;
-        bool gotRenderActionTLSData = tls->getCurrentRenderActionArgs(0, 0, &actionScale, &thisEffectRenderWindowPixels, 0);
-        assert(!gotRenderActionTLSData || (actionScale.x == currentScale.x && actionScale.y  == currentScale.y));
-
-        // To call getRegionsOfInterest we need to pass a render window, but
-        // we don't know this effect current render window.
-        // Either we are in the render action and we can retrieve the render action current render window or we have
-        // to assume the current render window is the full RoD.
-        RectD thisEffectRoD;
-        {
-
-            GetRegionOfDefinitionResultsPtr results;
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(inArgs.requestData->getTime(), currentScale, inArgs.requestData->getView(), inArgs.requestData->getRenderArgs(), &results);
-            if (isFailureRetCode(stat)) {
-#ifdef DEBUG
-                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because getRegionOfDefinition failed";
-#endif
-                return false;
-            }
-            thisEffectRoD = results->getRoD();
-            if (thisEffectRoD.isNull()) {
-#ifdef DEBUG
-                qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because the region of definition of this effect is NULL";
-#endif
-                return false;
-            }
-        }
-
-        if (gotRenderActionTLSData) {
-            double thisEffectOutputPar = getAspectRatio(inArgs.requestData->getRenderArgs(), -1);
-            thisEffectRenderWindowPixels.toCanonical(currentScale, thisEffectOutputPar, thisEffectRoD, &thisEffectRenderWindowCanonical);
-        } else {
-            thisEffectRenderWindowCanonical = thisEffectRoD;
-        }
-    }
-
+    RectD thisEffectRenderWindowCanonical = inArgs.requestData->getCurrentRoI();
 
 
     // Get the roi for the current render window
 
     RoIMap inputRoisMap;
-    ActionRetCodeEnum stat = getRegionsOfInterest_public(inArgs.requestData->getTime(), currentScale, thisEffectRenderWindowCanonical, inArgs.requestData->getView(), inArgs.requestData->getRenderArgs(), &inputRoisMap);
+    ActionRetCodeEnum stat = getRegionsOfInterest_public(inArgs.requestData->getTime(), currentScale, thisEffectRenderWindowCanonical, inArgs.requestData->getView(), &inputRoisMap);
     if (isFailureRetCode(stat)) {
-#ifdef DEBUG
-        qDebug() << QThread::currentThread() << getScriptName_mt_safe().c_str() << "getImage on input" << inArgs.inputNb << "failing because getRegionsOfInterest failed";
-#endif
         return false;
     }
 
@@ -585,10 +706,10 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 
 EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& requestPass, const RenderBackendTypeEnum* backend)
 : inputNb(0)
-, inputTime(requestPass->getTime())
-, inputView(requestPass->getView())
+, inputTime(0)
+, inputView(0)
 , inputProxyScale(1.)
-, inputMipMapLevel(requestPass->getRenderMappedMipMapLevel())
+, inputMipMapLevel(0)
 , optionalBounds(0)
 , plane(0)
 , renderBackend(backend)
@@ -597,12 +718,18 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& reques
 , playback(false)
 , byPassCache(false)
 {
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
-    TreeRenderPtr render = renderArgs->getParentRender();
-    inputProxyScale = render->getProxyScale();
-    draftMode = render->isDraftRender();
-    playback = render->isPlayback();
-    byPassCache = render->isByPassCacheEnabled();
+    if (requestPass) {
+        inputTime = requestPass->getTime();
+        inputView = requestPass->getView();
+        inputMipMapLevel = requestPass->getRenderMappedMipMapLevel();
+        TreeRenderPtr render = requestPass->getRenderClone()->getCurrentRender();
+        inputProxyScale = render->getProxyScale();
+        draftMode = render->isDraftRender();
+        playback = render->isPlayback();
+        byPassCache = render->isByPassCacheEnabled();
+    }
+
+
 }
 
 bool
@@ -653,15 +780,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     outArgs->distortionStack = outputRequest->getDistorsionStack();
 
 
-    TreeRenderNodeArgsPtr renderArgs;
-    if (inArgs.requestData) {
-        renderArgs = inArgs.requestData->getRenderArgs();
-    }
-
-
     // Get the RoI in pixel coordinates of the effect we rendered
     RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
-    double inputPar = getAspectRatio(renderArgs, inArgs.inputNb);
+    double inputPar = getAspectRatio(inArgs.inputNb);
     outputRequest->getCurrentRoI().toPixelEnclosing(inputCombinedScale, inputPar, &outArgs->roiPixel);
 
 
@@ -707,13 +828,13 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // map it to this node preferred color plane
     if (!supportsMultiPlane || outArgs->image->getLayer().isColorPlane()) {
         ImagePlaneDesc plane, pairedPlane;
-        getMetadataComponents(renderArgs, inArgs.inputNb, &plane, &pairedPlane);
+        getMetadataComponents(inArgs.inputNb, &plane, &pairedPlane);
         if (outArgs->image->getLayer() != plane) {
             mustConvertImage = true;
             preferredLayer = plane;
         }
     }
-    ImageBitDepthEnum thisBitDepth = getBitDepth(renderArgs, inArgs.inputNb);
+    ImageBitDepthEnum thisBitDepth = getBitDepth(inArgs.inputNb);
     // Map bit-depth
     if (thisBitDepth != outArgs->image->getBitDepth()) {
         mustConvertImage = true;
@@ -731,10 +852,9 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
             initArgs.bitdepth = thisBitDepth;
             initArgs.bufferFormat = thisEffectSupportedImageLayout;
             initArgs.storage = preferredStorage;
-            initArgs.renderArgs = renderArgs;
-            if (renderArgs) {
-                initArgs.glContext = renderArgs->getParentRender()->getGPUOpenGLContext();
-            }
+            initArgs.renderClone = shared_from_this();
+            initArgs.glContext = getCurrentRender()->getGPUOpenGLContext();
+
         }
 
         convertedImage = Image::create(initArgs);
@@ -757,95 +877,54 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 TimeValue
 EffectInstance::getCurrentTime_TLS() const
 {
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
+    if (!_imp->renderData) {
         return KnobHolder::getCurrentTime_TLS();
     }
 
-    TimeValue ret;
-    if (tls->getCurrentActionArgs(&ret, 0, 0)) {
-        return ret;
-    } else {
-        TreeRenderNodeArgsPtr render = tls->getRenderArgs();
-        if (render) {
-            return render->getTime();
-        } else {
-            return KnobHolder::getCurrentTime_TLS();
-        }
+    if (!_imp->renderData->currentFrameView.empty()) {
+        FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.back().lock();
+        return requestData->getTime();
     }
+
+    return getCurrentRender()->getTime();
 }
 
 ViewIdx
 EffectInstance::getCurrentView_TLS() const
 {
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
+    if (!_imp->renderData) {
         return KnobHolder::getCurrentView_TLS();
     }
 
-    ViewIdx ret;
-    if (tls->getCurrentActionArgs(0, &ret, 0)) {
-        return ret;
-    } else {
-        TreeRenderNodeArgsPtr render = tls->getRenderArgs();
-        if (render) {
-            return render->getView();
-        } else {
-            return KnobHolder::getCurrentView_TLS();
-        }
+    if (!_imp->renderData->currentFrameView.empty()) {
+        FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.back().lock();
+        return requestData->getView();
     }
+
+    return getCurrentRender()->getView();
 }
 
-RenderValuesCachePtr
-EffectInstance::getRenderValuesCache_TLS(TimeValue* currentTime, ViewIdx* currentView) const
+bool
+EffectInstance::isRenderAborted() const
 {
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
-        return RenderValuesCachePtr();
-    }
-
-    const TreeRenderNodeArgsPtr& render = tls->getRenderArgs();
+    TreeRenderPtr render = getCurrentRender();
     if (!render) {
-        return RenderValuesCachePtr();
+        return false;
     }
-    if (currentTime || currentView) {
-        if (!tls->getCurrentActionArgs(currentTime, currentView, 0)) {
-            if (currentTime) {
-                *currentTime = render->getTime();
-            }
-            if (currentView) {
-                *currentView = render->getView();
-            }
+    return render->isRenderAborted();
 
-        }
-    }
-    return render->getRenderValuesCache();
-
-
-}
-
-void
-EffectInstance::setCurrentRender_TLS(const TreeRenderNodeArgsPtr& render)
-{
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getOrCreateTLSData();
-    assert(!tls->getRenderArgs());
-    tls->setRenderArgs(render);
-}
-
-TreeRenderNodeArgsPtr
-EffectInstance::getCurrentRender_TLS() const
-{
-    EffectInstanceTLSDataPtr tls = _imp->tlsData->getTLSData();
-    if (!tls) {
-        return TreeRenderNodeArgsPtr();
-    }
-    return tls->getRenderArgs();
 }
 
 EffectInstanceTLSDataPtr
 EffectInstance::getTLSObject() const
 {
-    return _imp->tlsData->getTLSData();
+    return EffectInstanceTLSDataPtr();
+}
+
+EffectInstanceTLSDataPtr
+EffectInstance::getOrCreateTLSObject() const
+{
+    return EffectInstanceTLSDataPtr();
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
@@ -1052,59 +1131,6 @@ EffectInstance::isDoingInteractAction() const
     return getNode()->isDoingInteractAction();
 }
 
-
-EffectInstancePtr
-EffectInstance::getOrCreateRenderInstance()
-{
-    QMutexLocker k(&_imp->renderClonesMutex);
-    if (!_imp->isDoingInstanceSafeRender) {
-        // The main instance is not rendering, use it
-        _imp->isDoingInstanceSafeRender = true;
-        return shared_from_this();
-    }
-    // Ok get a clone
-    if (!_imp->renderClonesPool.empty()) {
-        EffectInstancePtr ret =  _imp->renderClonesPool.front();
-        _imp->renderClonesPool.pop_front();
-        ret->_imp->isDoingInstanceSafeRender = true;
-        return ret;
-    }
-
-    EffectInstancePtr clone = createRenderClone();
-    if (!clone) {
-        // We have no way but to use this node since the effect does not support render clones
-        _imp->isDoingInstanceSafeRender = true;
-        return shared_from_this();
-    }
-    clone->_imp->isDoingInstanceSafeRender = true;
-    return clone;
-}
-
-void
-EffectInstance::clearRenderInstances()
-{
-    QMutexLocker k(&_imp->renderClonesMutex);
-    _imp->renderClonesPool.clear();
-}
-
-void
-EffectInstance::releaseRenderInstance(const EffectInstancePtr& instance)
-{
-    if (!instance) {
-        return;
-    }
-    QMutexLocker k(&_imp->renderClonesMutex);
-    instance->_imp->isDoingInstanceSafeRender = false;
-    if (instance.get() == this) {
-        return;
-    }
-
-    // Make this instance available again
-    _imp->renderClonesPool.push_back(instance);
-}
-
-
-
 bool
 EffectInstance::getCreateChannelSelectorKnob() const
 {
@@ -1120,7 +1146,7 @@ EffectInstance::isMaskEnabled(int inputNb) const
 }
 
 RenderSafetyEnum
-EffectInstance::getCurrentRenderThreadSafety() const
+EffectInstance::getRenderThreadSafety() const
 {
     return (RenderSafetyEnum)getNode()->getPlugin()->getProperty<int>(kNatronPluginPropRenderSafety);
 }
@@ -1200,10 +1226,10 @@ EffectInstance::refreshExtraStateAfterTimeChanged(bool isPlayback,
 
 
 RectI
-EffectInstance::getOutputFormat(const TreeRenderNodeArgsPtr& render)
+EffectInstance::getOutputFormat()
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return RectI();
     } else {
@@ -1214,10 +1240,10 @@ EffectInstance::getOutputFormat(const TreeRenderNodeArgsPtr& render)
 
 
 bool
-EffectInstance::isFrameVarying(const TreeRenderNodeArgsPtr& render)
+EffectInstance::isFrameVarying()
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return true;
     } else {
@@ -1228,10 +1254,10 @@ EffectInstance::isFrameVarying(const TreeRenderNodeArgsPtr& render)
 
 
 double
-EffectInstance::getFrameRate(const TreeRenderNodeArgsPtr& render)
+EffectInstance::getFrameRate()
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return 24.;
     } else {
@@ -1243,10 +1269,10 @@ EffectInstance::getFrameRate(const TreeRenderNodeArgsPtr& render)
 
 
 ImagePremultiplicationEnum
-EffectInstance::getPremult(const TreeRenderNodeArgsPtr& render)
+EffectInstance::getPremult()
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return eImagePremultiplicationPremultiplied;
     } else {
@@ -1256,10 +1282,10 @@ EffectInstance::getPremult(const TreeRenderNodeArgsPtr& render)
 }
 
 bool
-EffectInstance::canRenderContinuously(const TreeRenderNodeArgsPtr& render)
+EffectInstance::canRenderContinuously()
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return true;
     } else {
@@ -1269,10 +1295,10 @@ EffectInstance::canRenderContinuously(const TreeRenderNodeArgsPtr& render)
 }
 
 ImageFieldingOrderEnum
-EffectInstance::getFieldingOrder(const TreeRenderNodeArgsPtr& render)
+EffectInstance::getFieldingOrder()
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return eImageFieldingOrderNone;
     } else {
@@ -1283,10 +1309,10 @@ EffectInstance::getFieldingOrder(const TreeRenderNodeArgsPtr& render)
 
 
 double
-EffectInstance::getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb)
+EffectInstance::getAspectRatio(int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return 1.;
     } else {
@@ -1296,10 +1322,10 @@ EffectInstance::getAspectRatio(const TreeRenderNodeArgsPtr& render, int inputNb)
 }
 
 void
-EffectInstance::getMetadataComponents(const TreeRenderNodeArgsPtr& render, int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane)
+EffectInstance::getMetadataComponents(int inputNb, ImagePlaneDesc* plane, ImagePlaneDesc* pairedPlane)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         *plane = ImagePlaneDesc::getNoneComponents();
     } else {
@@ -1324,10 +1350,10 @@ EffectInstance::getMetadataComponents(const TreeRenderNodeArgsPtr& render, int i
 }
 
 ImageBitDepthEnum
-EffectInstance::getBitDepth(const TreeRenderNodeArgsPtr& render, int inputNb)
+EffectInstance::getBitDepth(int inputNb)
 {
     GetTimeInvariantMetaDatasResultsPtr results;
-    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(render, &results);
+    ActionRetCodeEnum stat = getTimeInvariantMetaDatas_public(&results);
     if (isFailureRetCode(stat)) {
         return eImageBitDepthFloat;
     } else {
@@ -1367,6 +1393,479 @@ EffectInstance::ifInfiniteclipRectToProjectDefault(RectD* rod) const
 
     return isRodProjectFormat;
 }
+
+void
+EffectInstance::checkForPremultWarningAndCheckboxes()
+{
+    if ( isOutput() || isGenerator() || isReader() ) {
+        return;
+    }
+    KnobBoolPtr chans[4];
+    KnobStringPtr premultWarn = _imp->defKnobs->premultWarning.lock();
+    if (!premultWarn) {
+        return;
+    }
+    NodePtr prefInput = getNode()->getPreferredInputNode();
+
+    if ( !prefInput ) {
+        //No input, do not warn
+        premultWarn->setSecret(true);
+
+        return;
+    }
+    for (int i = 0; i < 4; ++i) {
+        chans[i] = _imp->defKnobs->enabledChan[i].lock();
+
+        //No checkboxes
+        if (!chans[i]) {
+            premultWarn->setSecret(true);
+
+            return;
+        }
+
+        //not RGBA
+        if ( chans[i]->getIsSecret() ) {
+            return;
+        }
+    }
+
+    ImagePremultiplicationEnum premult = getPremult();
+
+    //not premult
+    if (premult != eImagePremultiplicationPremultiplied) {
+        premultWarn->setSecret(true);
+
+        return;
+    }
+
+    bool checked[4];
+    checked[3] = chans[3]->getValue();
+
+    //alpha unchecked
+    if (!checked[3]) {
+        premultWarn->setSecret(true);
+
+        return;
+    }
+    for (int i = 0; i < 3; ++i) {
+        checked[i] = chans[i]->getValue();
+        if (!checked[i]) {
+            premultWarn->setSecret(false);
+
+            return;
+        }
+    }
+
+    //RGB checked
+    premultWarn->setSecret(true);
+} // checkForPremultWarningAndCheckboxes
+
+
+std::string
+EffectInstance::makeInfoForInput(int inputNumber)
+{
+    if ( (inputNumber < -1) || ( inputNumber >= getMaxInputCount() ) ) {
+        return "";
+    }
+    EffectInstancePtr input;
+    if (inputNumber != -1) {
+        input = getInput(inputNumber);
+    } else {
+        input = boost::const_pointer_cast<EffectInstance>(shared_from_this());
+    }
+
+    if (!input) {
+        return "";
+    }
+
+
+    TimeValue time(getApp()->getTimeLine()->currentFrame());
+    std::stringstream ss;
+    { // input name
+        QString inputName;
+        if (inputNumber != -1) {
+            inputName = QString::fromUtf8( getInputLabel(inputNumber).c_str() );
+        } else {
+            inputName = tr("Output");
+        }
+        ss << "<b><font color=\"orange\">" << tr("%1:").arg(inputName).toStdString() << "</font></b><br />";
+    }
+    { // image format
+        ss << "<b>" << tr("Image planes:").toStdString() << "</b> <font color=#c8c8c8>";
+
+        std::list<ImagePlaneDesc> availableLayers;
+        getAvailableLayers(time, ViewIdx(0), inputNumber,  &availableLayers);
+
+        std::list<ImagePlaneDesc>::iterator next = availableLayers.begin();
+        if ( next != availableLayers.end() ) {
+            ++next;
+        }
+        for (std::list<ImagePlaneDesc>::iterator it = availableLayers.begin(); it != availableLayers.end(); ++it) {
+
+            ss << " "  << it->getPlaneID();
+            if ( next != availableLayers.end() ) {
+                ss << ", ";
+                ++next;
+            }
+        }
+        ss << "</font><br />";
+    }
+    {
+        ImageBitDepthEnum depth = getBitDepth(inputNumber);
+        QString depthStr = tr("unknown");
+        switch (depth) {
+            case eImageBitDepthByte:
+                depthStr = tr("8u");
+                break;
+            case eImageBitDepthShort:
+                depthStr = tr("16u");
+                break;
+            case eImageBitDepthFloat:
+                depthStr = tr("32fp");
+                break;
+            case eImageBitDepthHalf:
+                depthStr = tr("16fp");
+            case eImageBitDepthNone:
+                break;
+        }
+        ss << "<b>" << tr("BitDepth:").toStdString() << "</b> <font color=#c8c8c8>" << depthStr.toStdString() << "</font><br />";
+    }
+    { // premult
+        ImagePremultiplicationEnum premult = input->getPremult();
+        QString premultStr = tr("unknown");
+        switch (premult) {
+            case eImagePremultiplicationOpaque:
+                premultStr = tr("opaque");
+                break;
+            case eImagePremultiplicationPremultiplied:
+                premultStr = tr("premultiplied");
+                break;
+            case eImagePremultiplicationUnPremultiplied:
+                premultStr = tr("unpremultiplied");
+                break;
+        }
+        ss << "<b>" << tr("Alpha premultiplication:").toStdString() << "</b> <font color=#c8c8c8>" << premultStr.toStdString() << "</font><br />";
+    }
+    { // par
+        double par = input->getAspectRatio(-1);
+        ss << "<b>" << tr("Pixel aspect ratio:").toStdString() << "</b> <font color=#c8c8c8>" << par << "</font><br />";
+    }
+    { // fps
+        double fps = input->getFrameRate();
+        ss << "<b>" << tr("Frame rate:").toStdString() << "</b> <font color=#c8c8c8>" << tr("%1fps").arg(fps).toStdString() << "</font><br />";
+    }
+    {
+        RangeD range = {1., 1.};
+        {
+            GetFrameRangeResultsPtr results;
+            ActionRetCodeEnum stat = input->getFrameRange_public(&results);
+            if (!isFailureRetCode(stat)) {
+                results->getFrameRangeResults(&range);
+            }
+        }
+        ss << "<b>" << tr("Frame range:").toStdString() << "</b> <font color=#c8c8c8>" << range.min << " - " << range.max << "</font><br />";
+    }
+
+    {
+        GetRegionOfDefinitionResultsPtr results;
+        ActionRetCodeEnum stat = input->getRegionOfDefinition_public(time, RenderScale(1.), ViewIdx(0), &results);
+        if (!isFailureRetCode(stat)) {
+            RectD rod = results->getRoD();
+            ss << "<b>" << tr("Region of Definition (at t=%1):").arg(time).toStdString() << "</b> <font color=#c8c8c8>";
+            ss << tr("left = %1 bottom = %2 right = %3 top = %4").arg(rod.x1).arg(rod.y1).arg(rod.x2).arg(rod.y2).toStdString() << "</font><br />";
+        }
+    }
+
+
+    return ss.str();
+} // makeInfoForInput
+
+void
+EffectInstance::refreshInfos()
+{
+    std::stringstream ssinfo;
+    int maxinputs = getMaxInputCount();
+    for (int i = 0; i < maxinputs; ++i) {
+        std::string inputInfo = makeInfoForInput(i);
+        if ( !inputInfo.empty() ) {
+            ssinfo << inputInfo << "<br />";
+        }
+    }
+    std::string outputInfo = makeInfoForInput(-1);
+    ssinfo << outputInfo << "<br />";
+    ssinfo << "<b>" << tr("Supports tiles:").toStdString() << "</b> <font color=#c8c8c8>";
+    ssinfo << ( getCurrentSupportTiles() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+    {
+        ssinfo << "<b>" << tr("Supports multiresolution:").toStdString() << "</b> <font color=#c8c8c8>";
+        ssinfo << ( supportsMultiResolution() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << "<b>" << tr("Supports renderscale:").toStdString() << "</b> <font color=#c8c8c8>";
+        if (!getCurrentSupportRenderScale()) {
+            ssinfo << tr("No").toStdString();
+        } else {
+            ssinfo << tr("Yes").toStdString();
+        }
+        ssinfo << "</font><br />";
+        ssinfo << "<b>" << tr("Supports multiple clip PARs:").toStdString() << "</b> <font color=#c8c8c8>";
+        ssinfo << ( supportsMultipleClipPARs() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+        ssinfo << "<b>" << tr("Supports multiple clip depths:").toStdString() << "</b> <font color=#c8c8c8>";
+        ssinfo << ( supportsMultipleClipDepths() ? tr("Yes") : tr("No") ).toStdString() << "</font><br />";
+    }
+    ssinfo << "<b>" << tr("Render thread safety:").toStdString() << "</b> <font color=#c8c8c8>";
+    switch ( getCurrentRenderThreadSafety() ) {
+        case eRenderSafetyUnsafe:
+            ssinfo << tr("Unsafe").toStdString();
+            break;
+
+        case eRenderSafetyInstanceSafe:
+            ssinfo << tr("Safe").toStdString();
+            break;
+
+        case eRenderSafetyFullySafe:
+            ssinfo << tr("Fully safe").toStdString();
+            break;
+
+        case eRenderSafetyFullySafeFrame:
+            ssinfo << tr("Fully safe frame").toStdString();
+            break;
+    }
+    ssinfo << "</font><br />";
+    ssinfo << "<b>" << tr("OpenGL Rendering Support:").toStdString() << "</b>: <font color=#c8c8c8>";
+    PluginOpenGLRenderSupport glSupport = getCurrentOpenGLRenderSupport();
+    switch (glSupport) {
+        case ePluginOpenGLRenderSupportNone:
+            ssinfo << tr("No").toStdString();
+            break;
+        case ePluginOpenGLRenderSupportNeeded:
+            ssinfo << tr("Yes but CPU rendering is not supported").toStdString();
+            break;
+        case ePluginOpenGLRenderSupportYes:
+            ssinfo << tr("Yes").toStdString();
+            break;
+        default:
+            break;
+    }
+    ssinfo << "</font>";
+    _imp->defKnobs->nodeInfos.lock()->setValue( ssinfo.str() );
+} // refreshInfos
+
+
+void
+EffectInstance::setRenderThreadSafety(RenderSafetyEnum safety)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentThreadSafety = safety;
+}
+
+RenderSafetyEnum
+EffectInstance::getCurrentRenderThreadSafety() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentThreadSafety;
+    }
+    if ( !getNode()->isMultiThreadingSupportEnabledForPlugin() ) {
+        return eRenderSafetyUnsafe;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentThreadSafety;
+}
+
+void
+EffectInstance::revertToPluginThreadSafety()
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentThreadSafety = _imp->common->pluginSafety;
+}
+
+
+RenderSafetyEnum
+EffectInstance::getPluginRenderThreadSafety() const
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    return _imp->common->pluginSafety;
+}
+
+void
+EffectInstance::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentSupportOpenGLRender = support;
+}
+
+PluginOpenGLRenderSupport
+EffectInstance::getCurrentOpenGLRenderSupport()
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentSupportOpenGLRender;
+    }
+
+    PluginPtr plugin = getNode()->getPlugin();
+    if (plugin) {
+        PluginOpenGLRenderSupport pluginProp = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
+        if (pluginProp != ePluginOpenGLRenderSupportYes) {
+            return pluginProp;
+        }
+    }
+
+    if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
+        return ePluginOpenGLRenderSupportNone;
+    }
+
+    // Ok still turned on, check the value of the opengl support knob in the Node page
+    KnobChoicePtr openglSupportKnob = getOrCreateOpenGLEnabledKnob();
+    if (openglSupportKnob) {
+        int index = openglSupportKnob->getValue();
+        if (index == 1) {
+            return ePluginOpenGLRenderSupportNone;
+        } else if (index == 2 && getApp()->isBackground()) {
+            return ePluginOpenGLRenderSupportNone;
+        }
+    }
+
+    // Descriptor returned that it supported OpenGL, let's see if it turned off/on in the instance the OpenGL rendering
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentSupportOpenGLRender;
+}
+
+void
+EffectInstance::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentSupportSequentialRender = support;
+}
+
+SequentialPreferenceEnum
+EffectInstance::getCurrentSequentialRenderSupport() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentSupportSequentialRender;
+    }
+
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentSupportSequentialRender;
+}
+
+void
+EffectInstance::setCurrentSupportTiles(bool support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentSupportTiles = support;
+}
+
+bool
+EffectInstance::getCurrentSupportTiles() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentSupportTiles;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentSupportTiles;
+}
+
+void
+EffectInstance::setCurrentSupportRenderScale(bool support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentSupportsRenderScale = support;
+}
+
+bool
+EffectInstance::getCurrentSupportRenderScale() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentSupportsRenderScale;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentSupportsRenderScale;
+}
+
+void
+EffectInstance::setCurrentCanDistort(bool support)
+{
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentCanDistort = support;
+}
+
+bool
+EffectInstance::getCurrentCanDistort() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentCanDistort;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    return _imp->common->props.currentCanDistort;
+}
+
+void
+EffectInstance::setCurrentCanTransform(bool support)
+{
+
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+
+    _imp->common->props.currentDeprecatedTransformSupport = support;
+}
+
+bool
+EffectInstance::getCurrentCanTransform() const
+{
+    if (_imp->renderData) {
+        return _imp->renderData->props.currentDeprecatedTransformSupport;
+    }
+    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    
+    return _imp->common->props.currentDeprecatedTransformSupport;
+}
+
+
+void
+EffectInstance::refreshDynamicProperties()
+{
+    PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
+    PluginPtr plugin = getNode()->getPlugin();
+    if (plugin) {
+        pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
+        if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
+            // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
+            pluginGLSupport = getCurrentOpenGLSupport();
+        }
+    }
+
+
+    setCurrentOpenGLRenderSupport(pluginGLSupport);
+    bool tilesSupported = supportsTiles();
+    bool renderScaleSupported = supportsRenderScale();
+    bool multiResSupported = supportsMultiResolution();
+    bool canDistort = getCanDistort();
+    bool currentDeprecatedTransformSupport = getCanTransform();
+
+    _imp->common->pluginSafety = getCurrentRenderThreadSafety();
+
+    if (!tilesSupported && _imp->common->pluginSafety == eRenderSafetyFullySafeFrame) {
+        // an effect which does not support tiles cannot support host frame threading
+        setRenderThreadSafety(eRenderSafetyFullySafe);
+    } else {
+        setRenderThreadSafety(_imp->common->pluginSafety);
+    }
+
+    setCurrentSupportTiles(multiResSupported && tilesSupported);
+    setCurrentSupportRenderScale(renderScaleSupported);
+    setCurrentSequentialRenderSupport( getSequentialPreference() );
+    setCurrentCanDistort(canDistort);
+    setCurrentCanTransform(currentDeprecatedTransformSupport);
+}
+
 
 NATRON_NAMESPACE_EXIT;
 

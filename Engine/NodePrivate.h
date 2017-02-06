@@ -71,41 +71,11 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 
 NATRON_NAMESPACE_ENTER
 
-#define kNodeParamProcessAllLayers "processAllPlanes"
-#define kNodeParamProcessAllLayersLabel "All Planes"
-#define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
-
 
 /*The output node was connected from inputNumber to this...*/
 typedef std::map<NodeWPtr, int > DeactivatedState;
 typedef std::list<Node::KnobLink> KnobLinkList;
 typedef std::vector<NodeWPtr> InputsV;
-
-
-struct ChannelSelector
-{
-
-    KnobChoiceWPtr layer;
-
-
-};
-
-struct MaskSelector
-{
-
-    KnobBoolWPtr enabled;
-    KnobChoiceWPtr channel;
-
-};
-
-
-struct FormatKnob
-{
-    KnobIntWPtr size;
-    KnobDoubleWPtr par;
-    KnobChoiceWPtr formatChoice;
-};
-
 
 struct NodePrivate
 {
@@ -146,21 +116,9 @@ public:
 
     void runAfterItemsSelectionChangedCallback(const std::string& script, const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
-    void createChannelSelector(int inputNb, const std::string & inputName, bool isOutput, const KnobPagePtr& page, KnobIPtr* lastKnobBeforeAdvancedOption);
-
-    void onLayerChanged(bool isOutput);
-
-    void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
-
-    ImagePlaneDesc getSelectedLayerInternal(int inputNb,
-                                             const std::list<ImagePlaneDesc>& availableLayers,
-                                             const ChannelSelector& selector) const;
-
     void refreshDefaultPagesOrder();
 
     void refreshDefaultViewerKnobsOrder();
-
-    void refreshMetadaWarnings(const NodeMetadata &metadata);
 
 
 
@@ -285,53 +243,6 @@ public:
     // When creating a Reader or Writer node, this is a pointer to the meta node that the user actually see.
     NodeWPtr ioContainer;
 
-
-    KnobIntWPtr frameIncrKnob;
-
-    // PyPlug page
-    KnobPageWPtr pyPlugPage;
-    KnobStringWPtr pyPlugIDKnob, pyPlugDescKnob, pyPlugGroupingKnob, pyPlugLabelKnob;
-    KnobFileWPtr pyPlugIconKnob, pyPlugExtPythonScript;
-    KnobBoolWPtr pyPlugDescIsMarkdownKnob;
-    KnobIntWPtr pyPlugVersionKnob;
-    KnobIntWPtr pyPlugShortcutKnob;
-    KnobButtonWPtr pyPlugExportButtonKnob;
-    KnobButtonWPtr pyPlugConvertToGroupButtonKnob;
-
-    KnobGroupWPtr pyPlugExportDialog;
-    KnobFileWPtr pyPlugExportDialogFile;
-    KnobButtonWPtr pyPlugExportDialogOkButton, pyPlugExportDialogCancelButton;
-
-    KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
-    KnobBoolWPtr previewEnabledKnob;
-    KnobBoolWPtr disableNodeKnob;
-    KnobChoiceWPtr openglRenderingEnabledKnob;
-    KnobIntWPtr lifeTimeKnob;
-    KnobBoolWPtr enableLifeTimeKnob;
-    KnobButtonWPtr keepInAnimationModuleKnob;
-    KnobStringWPtr knobChangedCallback;
-    KnobStringWPtr inputChangedCallback;
-    KnobStringWPtr nodeCreatedCallback;
-    KnobStringWPtr nodeRemovalCallback;
-    KnobStringWPtr tableSelectionChangedCallback;
-    KnobPageWPtr infoPage;
-    KnobStringWPtr nodeInfos;
-    KnobButtonWPtr refreshInfoButton;
-    KnobBoolWPtr forceCaching;
-    KnobBoolWPtr hideInputs;
-    KnobStringWPtr beforeFrameRender;
-    KnobStringWPtr beforeRender;
-    KnobStringWPtr afterFrameRender;
-    KnobStringWPtr afterRender;
-    KnobBoolWPtr enabledChan[4];
-    KnobStringWPtr premultWarning;
-    KnobDoubleWPtr mixWithSource;
-    KnobButtonWPtr renderButton; //< render button for writers
-    FormatKnob pluginFormatKnobs;
-    std::map<int, ChannelSelector> channelsSelectors;
-    KnobBoolWPtr processAllLayersKnob;
-    std::map<int, MaskSelector> maskSelectors;
-
     // List of supported bitdepth by the plug-in
     std::list <ImageBitDepthEnum> supportedDepths;
 
@@ -375,32 +286,6 @@ public:
     // If this node is part of a RotoPaint item implementation
     // this is a pointer to the roto item itself
     boost::weak_ptr<RotoDrawableItem> paintStroke;
-
-    // Protects all plug-in properties
-    mutable QMutex pluginsPropMutex;
-
-    // pluginSafety is the render thread safety declared by the plug-in.
-    // The currentThreadSafety is either pointing to the same value as pluginSafety
-    // or a lower value. This is used for example by Natron when painting with
-    // a brush to ensure only 1 render thread is running.
-    RenderSafetyEnum pluginSafety, currentThreadSafety;
-
-    // Does this node currently support tiled rendering
-    bool currentSupportTiles;
-
-    // Does this node currently support render scale
-    bool currentSupportsRenderScale;
-
-    // Does this node currently supports OpenGL render
-    PluginOpenGLRenderSupport currentSupportOpenGLRender;
-
-    // Does this node currently renders sequentially or not
-    SequentialPreferenceEnum currentSupportSequentialRender;
-
-
-    // Does this node can return a distortion function ?
-    bool currentCanDistort;
-    bool currentDeprecatedTransformSupport;
 
     // During painting we keep track of the image that was rendered
     // at the previous step so that we can accumulate the renders

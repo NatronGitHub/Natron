@@ -45,6 +45,7 @@
 #include "Engine/NodeMetadata.h"
 #include "Engine/OSGLContext.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/EffectInstanceTLSData.h"
 
 #include "Engine/EngineFwd.h"
@@ -81,47 +82,298 @@ struct RectToRender
     }
 };
 
-class EffectInstance::Implementation
+struct ChannelSelector
 {
-    Q_DECLARE_TR_FUNCTIONS(EffectInstance)
 
-public:
-    Implementation(EffectInstance* publicInterface);
+    KnobChoiceWPtr layer;
 
-    Implementation(const Implementation& other);
 
-    ~Implementation()
+};
+
+struct MaskSelector
+{
+
+    KnobBoolWPtr enabled;
+    KnobChoiceWPtr channel;
+
+};
+
+
+struct FormatKnob
+{
+    KnobIntWPtr size;
+    KnobDoubleWPtr par;
+    KnobChoiceWPtr formatChoice;
+};
+
+struct DefaultKnobs
+{
+    KnobIntWPtr frameIncrKnob;
+
+    // PyPlug page
+    KnobPageWPtr pyPlugPage;
+    KnobStringWPtr pyPlugIDKnob, pyPlugDescKnob, pyPlugGroupingKnob, pyPlugLabelKnob;
+    KnobFileWPtr pyPlugIconKnob, pyPlugExtPythonScript;
+    KnobBoolWPtr pyPlugDescIsMarkdownKnob;
+    KnobIntWPtr pyPlugVersionKnob;
+    KnobIntWPtr pyPlugShortcutKnob;
+    KnobButtonWPtr pyPlugExportButtonKnob;
+    KnobButtonWPtr pyPlugConvertToGroupButtonKnob;
+
+    KnobGroupWPtr pyPlugExportDialog;
+    KnobFileWPtr pyPlugExportDialogFile;
+    KnobButtonWPtr pyPlugExportDialogOkButton, pyPlugExportDialogCancelButton;
+
+    KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
+    KnobBoolWPtr previewEnabledKnob;
+    KnobBoolWPtr disableNodeKnob;
+    KnobChoiceWPtr openglRenderingEnabledKnob;
+    KnobIntWPtr lifeTimeKnob;
+    KnobBoolWPtr enableLifeTimeKnob;
+    KnobButtonWPtr keepInAnimationModuleKnob;
+    KnobStringWPtr knobChangedCallback;
+    KnobStringWPtr inputChangedCallback;
+    KnobStringWPtr nodeCreatedCallback;
+    KnobStringWPtr nodeRemovalCallback;
+    KnobStringWPtr tableSelectionChangedCallback;
+    KnobPageWPtr infoPage;
+    KnobStringWPtr nodeInfos;
+    KnobButtonWPtr refreshInfoButton;
+    KnobBoolWPtr forceCaching;
+    KnobBoolWPtr hideInputs;
+    KnobStringWPtr beforeFrameRender;
+    KnobStringWPtr beforeRender;
+    KnobStringWPtr afterFrameRender;
+    KnobStringWPtr afterRender;
+    KnobBoolWPtr enabledChan[4];
+    KnobStringWPtr premultWarning;
+    KnobDoubleWPtr mixWithSource;
+    KnobButtonWPtr renderButton; //< render button for writers
+    FormatKnob pluginFormatKnobs;
+    std::map<int, ChannelSelector> channelsSelectors;
+    KnobBoolWPtr processAllLayersKnob;
+    std::map<int, MaskSelector> maskSelectors;
+
+};
+
+struct DynamicProperties
+{
+    // The current render safety
+    RenderSafetyEnum currentThreadSafety;
+
+    // Does this node currently support tiled rendering
+    bool currentSupportTiles;
+
+    // Does this node currently support render scale
+    bool currentSupportsRenderScale;
+
+    // Does this node currently supports OpenGL render
+    PluginOpenGLRenderSupport currentSupportOpenGLRender;
+
+    // Does this node currently renders sequentially or not
+    SequentialPreferenceEnum currentSupportSequentialRender;
+
+    // Does this node can return a distortion function ?
+    bool currentCanDistort;
+    bool currentDeprecatedTransformSupport;
+
+    DynamicProperties()
+    : currentThreadSafety(eRenderSafetyInstanceSafe)
+    , currentSupportTiles(false)
+    , currentSupportsRenderScale(false)
+    , currentSupportOpenGLRender(ePluginOpenGLRenderSupportNone)
+    , currentSupportSequentialRender(eSequentialPreferenceNotSequential)
+    , currentCanDistort(false)
+    , currentDeprecatedTransformSupport(false)
     {
-        
+
     }
+};
 
-    // can not be a smart ptr
-    EffectInstance* _publicInterface;
-
+// Data shared accross all clones
+struct EffectInstanceCommonData
+{
     mutable QMutex attachedContextsMutex;
+
     // A list of context that are currently attached (i.e attachOpenGLContext() has been called on them but not yet dettachOpenGLContext).
     // If a plug-in returns false to supportsConcurrentOpenGLRenders() then whenever trying to attach a context, we take a lock in attachOpenGLContext
     // that is released in dettachOpenGLContext so that there can only be a single attached OpenGL context at any time.
     std::map<OSGLContextWPtr, EffectOpenGLContextDataPtr> attachedContexts;
 
-    // Render clones are very small copies holding just pointers to Knobs that are used to render plug-ins that are only
-    // eRenderSafetyInstanceSafe or lower
-    EffectInstancePtr mainInstance; // pointer to the main-instance if this instance is a clone
 
-    // True if this intance is rendering. Only used if the plug-in is instance thread safe.
-    // Protected by renderClonesMutex
-    bool isDoingInstanceSafeRender;
+    // Protects all plug-in properties
+    mutable QMutex pluginsPropMutex;
 
-    // Protects renderClonesPool
-    mutable QMutex renderClonesMutex;
+    // pluginSafety is the render thread safety declared by the plug-in.
+    // The currentThreadSafety is either pointing to the same value as pluginSafety
+    // or a lower value. This is used for example by Natron when painting with
+    // a brush to ensure only 1 render thread is running.
+    RenderSafetyEnum pluginSafety;
 
-    // List of render clones if the main instance is not multi-thread safe
-    std::list<EffectInstancePtr> renderClonesPool;
+    DynamicProperties props;
 
-    // Thread local storage is requied to ensure Knob values and node inputs do not change during a single render.
-    // In the future we should make copies of EffectInstance but for now this is the only way to deal with it.
-    boost::shared_ptr<TLSHolder<EffectInstanceTLSData> > tlsData;
+    EffectInstanceCommonData()
+    : attachedContextsMutex(QMutex::Recursive)
+    , attachedContexts()
+    , pluginsPropMutex()
+    , pluginSafety(eRenderSafetyInstanceSafe)
+    , props()
+    {
 
+    }
+
+};
+
+// Data specific to a render clone
+struct RenderCloneData
+{
+    mutable QMutex lock;
+
+    // Render-local inputs vector
+    std::vector<EffectInstancePtr> inputs;
+
+    // This is the current frame/view being requested or rendered by the main render thread.
+    std::list<FrameViewRequestWPtr> currentFrameView;
+
+    // Contains data for all frame/view pair that are going to be computed
+    // for this frame/view pair with the overall RoI to avoid rendering several times with this node.
+    NodeFrameViewRequestData frames;
+
+    // The results of the get frame range action for this render
+    GetFrameRangeResultsPtr frameRangeResults;
+
+    // The time invariant metadas for the render
+    GetTimeInvariantMetaDatasResultsPtr metadatasResults;
+
+    // This is the hash used to cache time and view invariant stuff
+    U64 timeViewInvariantHash;
+
+    // Hash used for metadata (depdending only for parameters that
+    // are metadata dependent)
+    U64 metadataTimeInvariantHash;
+
+    // Time/view variant hash
+    FrameViewHashMap timeViewVariantHash;
+
+    // Properties, local to this render
+    DynamicProperties props;
+
+    // True if hash is valid
+    bool timeViewInvariantHashValid;
+
+    bool metadataTimeInvariantHashValid;
+
+    RenderCloneData()
+    : lock()
+    , inputs()
+    , currentFrameView()
+    , frames()
+    , frameRangeResults()
+    , metadatasResults()
+    , timeViewInvariantHash(0)
+    , metadataTimeInvariantHash(0)
+    , timeViewVariantHash()
+    , props()
+    , timeViewInvariantHashValid(false)
+    , metadataTimeInvariantHashValid(false)
+    {
+
+    }
+
+    /**
+     * @brief Get the time/view variant hash
+     **/
+    bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
+    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
+
+
+    /**
+     * @brief Get the time and view invariant hash
+     **/
+    bool getTimeViewInvariantHash(U64* hash) const;
+    void setTimeViewInvariantHash(U64 hash);
+
+
+    /**
+     * @brief Get the time and view invariant hash used for metadatas
+     **/
+    void setTimeInvariantMetadataHash(U64 hash);
+    bool getTimeInvariantMetadataHash(U64* hash) const;
+
+
+    
+
+};
+
+class EffectInstance::Implementation
+{
+    Q_DECLARE_TR_FUNCTIONS(EffectInstance)
+
+public:
+
+
+    // can not be a smart ptr
+    EffectInstance* _publicInterface;
+
+    boost::shared_ptr<EffectInstanceCommonData> common;
+
+    // These are arguments global to the render of frame.
+    // In each render of a frame multiple subsequent render on the effect may occur but these data should remain the same.
+    // Multiple threads may share the same pointer as these datas remain the same.
+    boost::scoped_ptr<RenderCloneData> renderData;
+
+    // Default implementation knobs
+    boost::shared_ptr<DefaultKnobs> defKnobs;
+
+public:
+
+    Implementation(EffectInstance* publicInterface);
+
+    Implementation(EffectInstance* publicInterface, const Implementation& other);
+
+    ~Implementation()
+    {
+
+    }
+
+
+    /**
+     * @brief Returns a previously requested frame/view request from requestRender. This contains most actions
+     * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
+     * The time passed in parameter should always be rounded for effects that are not continuous.
+     **/
+    FrameViewRequestPtr getFrameViewRequest(TimeValue time, ViewIdx view) const;
+
+    /**
+     * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
+     * @returns True if it was created, false otherwise
+     **/
+    bool getOrCreateFrameViewRequest(TimeValue time,
+                                     ViewIdx view,
+                                     unsigned int mipMapLevel,
+                                     const ImagePlaneDesc& plane,
+                                     FrameViewRequestPtr* request);
+
+    /**
+     * @brief Set the results of the getFrameRange action for this render
+     **/
+    void setFrameRangeResults(const GetFrameRangeResultsPtr& range);
+
+    /**
+     * @brief Get the results of the getFrameRange action for this render
+     **/
+    GetFrameRangeResultsPtr getFrameRangeResults() const;
+
+    /**
+     * @brief Set the results of the getMetadata action for this render
+     **/
+    void setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas);
+
+    /**
+     * @brief Get the results of the getFrameRange action for this render
+     **/
+    GetTimeInvariantMetaDatasResultsPtr getTimeInvariantMetadataResults() const;
+    
 
     static RenderScale getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale);
 
@@ -240,21 +492,27 @@ public:
 
 
     ActionRetCodeEnum renderHandlerIdentity(const RectToRender & rectToRender,
-                                            const RenderScale& combinedScale,
                                             const TiledRenderingFunctorArgs& args);
 
-    ActionRetCodeEnum renderHandlerPlugin(const EffectInstanceTLSDataPtr& tls,
-                                            const RectToRender & rectToRender,
-                                            const RenderScale& combinedScale,
-                                            const TiledRenderingFunctorArgs& args);
+    ActionRetCodeEnum renderHandlerPlugin(const RectToRender & rectToRender,
+                                          const RenderScale& combinedScale,
+                                          const TiledRenderingFunctorArgs& args);
 
     void renderHandlerPostProcess(const RectToRender & rectToRender,
-                                  const RenderScale& combinedScale,
                                   const TiledRenderingFunctorArgs& args);
 
 
     void checkMetadata(NodeMetadata &metadata);
 
+    void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
+
+    ImagePlaneDesc getSelectedLayerInternal(int inputNb,
+                                            const std::list<ImagePlaneDesc>& availableLayers,
+                                            const ChannelSelector& selector) const;
+
+    void onLayerChanged(bool isOutput);
+
+    
 };
 
 

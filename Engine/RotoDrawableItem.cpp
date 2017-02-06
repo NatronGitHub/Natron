@@ -83,12 +83,6 @@ struct RotoDrawableItemPrivate
 public:
 
 
-    typedef std::map<TreeRenderWPtr, RotoDrawableItemPtr> RenderClonesMap;
-
-    // For each render, a map of the clones
-    mutable QMutex renderClonesMutex;
-    RenderClonesMap renderClones;
-
     /*
      * The effect node corresponds to the following given the selected tool:
      * Stroke= RotoOFX
@@ -157,9 +151,7 @@ public:
     }
 
     RotoDrawableItemPrivate(const RotoDrawableItemPrivate& other)
-    : renderClonesMutex()
-    , renderClones()
-    , effectNode(other.effectNode)
+    : effectNode(other.effectNode)
     , maskNode(other.maskNode)
     , mergeNode(other.mergeNode)
     , timeOffsetNode(other.timeOffsetNode)
@@ -211,9 +203,9 @@ RotoDrawableItem::RotoDrawableItem(const KnobItemsTablePtr& model)
 }
 
 
-RotoDrawableItem::RotoDrawableItem(const RotoDrawableItem& other)
+RotoDrawableItem::RotoDrawableItem(const RotoDrawableItemPtr& other)
 : RotoItem(other)
-, _imp(new RotoDrawableItemPrivate(*other._imp))
+, _imp(new RotoDrawableItemPrivate(*other->_imp))
 {
 
 }
@@ -244,9 +236,9 @@ RotoDrawableItem::setNodesThreadSafetyForRotopainting()
         return;
     }
     RotoPaintPtr isRotopaint = toRotoPaint(node->getEffectInstance());
-    node->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+    node->getEffectInstance()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->setRenderThreadSafety(eRenderSafetyInstanceSafe);
+        (*it)->getEffectInstance()->setRenderThreadSafety(eRenderSafetyInstanceSafe);
     }
 
 }
@@ -259,9 +251,9 @@ static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode
     node->attachRotoItem(item);
 
     // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
-    KnobChoicePtr glRenderKnob = node->getOrCreateOpenGLEnabledKnob();
+    KnobChoicePtr glRenderKnob = node->getEffectInstance()->getOrCreateOpenGLEnabledKnob();
     if (glRenderKnob) {
-        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getOrCreateOpenGLEnabledKnob();
+        KnobChoicePtr rotoPaintGLRenderKnob = rotopaintNode->getEffectInstance()->getOrCreateOpenGLEnabledKnob();
         assert(rotoPaintGLRenderKnob);
         ignore_result(glRenderKnob->linkTo(rotoPaintGLRenderKnob));
     }
@@ -510,7 +502,7 @@ RotoDrawableItem::createNodes(bool connectNodes)
         if (rotoPaintEffect->getRotoPaintNodeType() == RotoPaint::eRotoPaintTypeComp) {
             rotoPaintMix = _imp->mixKnob.lock();
         } else {
-            rotoPaintMix = rotoPaintEffect->getNode()->getOrCreateHostMixKnob(rotoPaintEffect->getNode()->getOrCreateMainPage());
+            rotoPaintMix = rotoPaintEffect->getOrCreateHostMixKnob(rotoPaintEffect->getOrCreateMainPage());
         }
         KnobIPtr mergeMix = _imp->mergeNode->getKnobByName(kMergeOFXParamMix);
         mergeMix->linkTo(rotoPaintMix);
@@ -967,7 +959,7 @@ void
 RotoDrawableItem::resetNodesThreadSafety()
 {
     for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        (*it)->revertToPluginThreadSafety();
+        (*it)->getEffectInstance()->revertToPluginThreadSafety();
     }
 
     KnobItemsTablePtr model = getModel();
@@ -982,7 +974,7 @@ RotoDrawableItem::resetNodesThreadSafety()
     if (!rotoPaintNode) {
         return;
     }
-    node->revertToPluginThreadSafety();
+    node->getEffectInstance()->revertToPluginThreadSafety();
 }
 
 
@@ -1356,51 +1348,6 @@ RotoDrawableItem::onItemInsertedInModel()
 
 }
 
-RotoDrawableItemPtr
-RotoDrawableItem::getOrCreateCachedDrawable(const TreeRenderPtr& render)
-{
-    assert(isRenderCloneNeeded());
-    assert(!isRenderClone());
-
-    QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(render);
-    if (found != _imp->renderClones.end()) {
-        return found->second;
-    }
-
-    RotoDrawableItemPtr ret = createRenderCopy();
-    assert(ret);
-    _imp->renderClones[render] = ret;
-    return ret;
-
-}
-
-
-RotoDrawableItemPtr
-RotoDrawableItem::getCachedDrawable(const TreeRenderPtr& render) const
-{
-    assert(isRenderCloneNeeded());
-    assert(!isRenderClone());
-
-    QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::const_iterator found = _imp->renderClones.find(render);
-    if (found != _imp->renderClones.end()) {
-        return found->second;
-    }
-    return RotoDrawableItemPtr();
-}
-
-void
-RotoDrawableItem::removeCachedDrawable(const TreeRenderPtr& render) const
-{
-    QMutexLocker k(&_imp->renderClonesMutex);
-    RotoDrawableItemPrivate::RenderClonesMap::iterator found = _imp->renderClones.find(render);
-    if (found != _imp->renderClones.end()) {
-        _imp->renderClones.erase(render);
-    }
-}
-
-
 void
 RotoDrawableItem::getMotionBlurSettings(const TimeValue time,
                                         ViewIdx view,
@@ -1523,7 +1470,8 @@ RotoDrawableItem::initializeKnobs()
 
     // All items that have an overlay need a color knob
     if (type != eRotoStrokeTypeComp) {
-        KnobColorPtr param = AppManager::createKnob<KnobColor>(thisShared, tr(kRotoOverlayColorLabel), 4);
+        KnobColorPtr param = createKnob<KnobColor>(kRotoOverlayColor , 4);
+        param->setLabel(tr(kRotoOverlayColorLabel));
         param->setHintToolTip( tr(kRotoOverlayColorHint) );
         param->setName(kRotoOverlayColor);
         std::vector<double> def(4);
@@ -1535,10 +1483,9 @@ RotoDrawableItem::initializeKnobs()
 
     // All items have a merge node
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoCompOperatorParamLabel));
+        KnobChoicePtr param = createKnob<KnobChoice>(kRotoCompOperatorParam);
+        param->setLabel(tr(kRotoCompOperatorParamLabel));
         param->setHintToolTip( tr(kRotoCompOperatorHint) );
-        param->setName(kRotoCompOperatorParam);
-
 
         std::vector<ChoiceOption> operators;
         Merge::getOperatorStrings(&operators);
@@ -1551,9 +1498,9 @@ RotoDrawableItem::initializeKnobs()
     if (type != eRotoStrokeTypeSolid &&
         type != eRotoStrokeTypeSmear) {
         {
-            KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kRotoInvertedParamLabel), 1);
+            KnobButtonPtr param = createKnob<KnobButton>(kRotoInvertedParam);
             param->setHintToolTip( tr(kRotoInvertedHint) );
-            param->setName(kRotoInvertedParam);
+            param->setLabel(tr(kRotoInvertedParamLabel));
             param->setCheckable(true);
             param->setDefaultValue(false);
             param->setIconLabel("Images/inverted.png", true);
@@ -1599,8 +1546,8 @@ RotoDrawableItem::initializeKnobs()
         // Source control
 
         {
-            KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoDrawableItemMergeAInputParamLabel), 1);
-            param->setName(kRotoDrawableItemMergeAInputParam);
+            KnobChoicePtr param = createKnob<KnobChoice>(kRotoDrawableItemMergeAInputParam);
+            param->setLabel(tr(kRotoDrawableItemMergeAInputParamLabel));
             param->setHintToolTip( tr(type == eRotoStrokeTypeComp ? kRotoDrawableItemMergeAInputParamHint_CompNode : kRotoDrawableItemMergeAInputParamHint_RotoPaint) );
             param->setDefaultValue(0);
             param->setAddNewLine(false);
@@ -1608,8 +1555,8 @@ RotoDrawableItem::initializeKnobs()
         }
 
         {
-            KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kRotoBrushTimeOffsetParamLabel), 1);
-            param->setName(kRotoBrushTimeOffsetParam);
+            KnobIntPtr param = createKnob<KnobInt>(kRotoBrushTimeOffsetParam);
+            param->setLabel(tr(kRotoBrushTimeOffsetParamLabel));
             param->setHintToolTip( tr(type == eRotoStrokeTypeComp ? kRotoBrushTimeOffsetParamHint_Comp : kRotoBrushTimeOffsetParamHint_Clone) );
             _imp->timeOffset = param;
         }
@@ -1617,8 +1564,8 @@ RotoDrawableItem::initializeKnobs()
             _imp->timeOffsetMode = createDuplicateOfTableKnob<KnobChoice>(kRotoBrushTimeOffsetModeParam);
         } else {
             {
-                KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kRotoDrawableItemMergeMaskParamLabel), 1);
-                param->setName(kRotoDrawableItemMergeMaskParam);
+                KnobChoicePtr param = createKnob<KnobChoice>(kRotoDrawableItemMergeMaskParam);
+                param->setLabel(tr(kRotoDrawableItemMergeMaskParamLabel));
                 param->setHintToolTip( tr(kRotoDrawableItemMergeMaskParamHint) );
                 param->setDefaultValue(0);
                 param->setAddNewLine(false);

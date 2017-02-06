@@ -222,7 +222,6 @@ NodeGui::initialize(NodeGraph* dag,
 
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInternalNameChanged(QString,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
-    QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
     QObject::connect( internalNode.get(), SIGNAL(previewImageChanged(TimeValue)), this, SLOT(updatePreviewImage(TimeValue)) );
     QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested(TimeValue)), this, SLOT(forceComputePreview(TimeValue)) );

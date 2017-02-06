@@ -48,7 +48,9 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
+/**
+ * @brief The coordinates in pixel of the bottom left corner of a tile.
+ **/
 struct TileCoord
 {
     int tx,ty;
@@ -56,7 +58,7 @@ struct TileCoord
 
 struct TileCoord_Compare
 {
-    bool operator() (const TileCoord& lhs, const TileCoord& rhs)
+    bool operator() (const TileCoord& lhs, const TileCoord& rhs) const
     {
         if (lhs.ty < rhs.ty) {
             return true;
@@ -177,7 +179,7 @@ public:
         // Also any of the algorithms used by this image (fill, copyUnprocessChannels, etc..)
         // will use this to check if the render has been aborted and cancel early the processing
         // if needed.
-        TreeRenderNodeArgsPtr renderArgs;
+        EffectInstancePtr renderClone;
 
         // Indicates the desired buffer format for the image. This defaults to eImageBufferLayoutRGBAPackedFullRect
         //
@@ -610,6 +612,11 @@ public:
     static void getCPUTileData(const Tile& tile, ImageBufferLayoutEnum layout, CPUTileData* data);
 
     /**
+     * @brief Return the number of pixels covered by a single tile.
+     **/
+    void getTileSize(int *tileSizeX, int* tileSizeY) const;
+
+    /**
      * @brief Returns the tile at the given tileIndex.
      * An untiled image has a single tile at index 0.
      **/
@@ -658,14 +665,48 @@ public:
         TileStatusEnum status;
     };
 
+    // Tiles are orderedby y axis then by x such that the first tile in the map
+    // has its bottom left corner being the bottom left corner of the image and
+    // the last tile in the map has its top right corner being the top right corner
+    // of the image.
     typedef std::map<TileCoord, TileState, TileCoord_Compare> TileStateMap;
 
     /**
-     * @brief If this image is cached, this will return what portion of the image is left to render.
+     * @brief Returns the renderstatus of each tile in the image.
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
      **/
     void getRestToRender(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
+
+    /**
+     * @brief Returns the bounding box of the unrendered portion in the tiles map.
+     * N.B: Tiles with a status of eTileStatusPending are treated as if they were
+     * eTileStatusRendered.
+     **/
+    static RectI getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY);
+
+    /**
+     * @brief Refines a region to render in potentially 4 smaller rectangles. This function makes use of 
+     * getMinimalBboxToRenderFromTilesState to get the smallest enclosing bbox to render.
+     * Then it tries to find rectangles for the bottom, the top,
+     * the left and the right part.
+     * This happens quite often, for example when zooming out
+     * (in this case the area to compute is formed of A, B, C and D,
+     * and X is already rendered), or when panning (in this case the area
+     * is just two rectangles, e.g. A and C, and the rectangles B, D and
+     * X are already rendered).
+     * The rectangles A, B, C and D from the following drawing are just
+     * zeroes, and X contains zeroes and ones.
+     *
+     * BBBBBBBBBBBBBB
+     * BBBBBBBBBBBBBB
+     * CXXXXXXXXXXDDD
+     * CXXXXXXXXXXDDD
+     * CXXXXXXXXXXDDD
+     * CXXXXXXXXXXDDD
+     * AAAAAAAAAAAAAA
+     **/
+    static void getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender);
 
     /**
      * @brief Fills the image with the given colour. If the image components

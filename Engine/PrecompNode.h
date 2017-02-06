@@ -49,11 +49,16 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     PrecompNode(const NodePtr& n);
-
+    PrecompNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new PrecompNode(node) );
+    }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new PrecompNode(mainInstance, render) );
     }
 
     static PluginPtr createPlugin();

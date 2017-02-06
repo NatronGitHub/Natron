@@ -16,8 +16,8 @@
  * along with Natron.  If not, see <http://www.gnu.org/licenses/gpl-2.0.html>
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef PARALLELRENDERARGS_H
-#define PARALLELRENDERARGS_H
+#ifndef NATRON_ENGINE_FRAMEVIEWREQUEST_H
+#define NATRON_ENGINE_FRAMEVIEWREQUEST_H
 
 // ***** BEGIN PYTHON BLOCK *****
 // from <https://docs.python.org/3/c-api/intro.html#include-files>:
@@ -134,7 +134,7 @@ public:
                      unsigned int mipMapLevel,
                      const ImagePlaneDesc& plane,
                      U64 timeViewHash,
-                     const TreeRenderNodeArgsPtr& render);
+                     const EffectInstancePtr& renderClone);
 
     ~FrameViewRequest();
 
@@ -206,9 +206,9 @@ public:
     void setCachePolicy(CacheAccessModeEnum policy);
 
     /**
-     * @brief Return the render args passed to the ctor
+     * @brief Return the render clone passed to the ctor
      **/
-    TreeRenderNodeArgsPtr getRenderArgs() const;
+    EffectInstancePtr getRenderClone() const;
 
     /**
      * @brief When an input image of this request is rendered, we hold a pointer to it in this object
@@ -266,6 +266,7 @@ public:
      * @brief Returns all frame/view requests that have this frame/view as a dependency.
      **/
     std::list<FrameViewRequestPtr> getListeners() const;
+
 
     /**
      * @brief  When true, a subsequent render of this frame/view will not be allowed to read the cache
@@ -335,178 +336,6 @@ private:
 typedef std::map<FrameViewPair, boost::shared_ptr<FrameViewRequest>, FrameView_compare_less> NodeFrameViewRequestData;
 
 
-/**
- * @brief Render-local arguments given to render a frame by the tree.
- * This is different than the FrameViewRequest because it is not local to a
- * renderRoI call but to the rendering of a whole frame.
- * This class is not thread-safe, because every field are set in the thread
- * that created the TreeRender object and then they are no longer changed.
- **/
-struct TreeRenderNodeArgsPrivate;
-class TreeRenderNodeArgs : public boost::enable_shared_from_this<TreeRenderNodeArgs>
-{
-    TreeRenderNodeArgs(const TreeRenderPtr& render, const NodePtr& node);
-
-public:
-
-    static TreeRenderNodeArgsPtr create(const TreeRenderPtr& render, const NodePtr& node);
-
-
-    virtual ~TreeRenderNodeArgs();
-
-    RenderValuesCachePtr getRenderValuesCache() const;
-
-    /**
-     * @brief Returns a pointer to the render object owning this object.
-     **/
-    TreeRenderPtr getParentRender() const;
-
-    /**
-     * @brief Get the frame of the render
-     **/
-    TimeValue getTime() const;
-
-    /**
-     * @brief Get the view of the render
-     **/
-    ViewIdx getView() const;
-
-
-    /**
-     * @brief Convenience function for getParentRender()->isRenderAborted()
-     **/
-    bool isRenderAborted() const;
-
-    /**
-     * @brief Get the node associated to these render args
-     **/
-    NodePtr getNode() const;
-
-    /**
-     * @brief Set the input node render args at the given input number
-     **/
-    void setInputRenderArgs(int inputNb, const TreeRenderNodeArgsPtr& inputRenderArgs);
-
-    /**
-     * @brief Get the input node render args at the given input number
-     **/
-    TreeRenderNodeArgsPtr getInputRenderArgs(int inputNb) const;
-
-    /**
-     * @brief Get the input node corresponding to the given inputnb.
-     * This is guaranteed to remain constant throughout the lifetime of the render
-     * unlike the getInput() method on the Node object.
-     **/
-    NodePtr getInputNode(int inputNb) const;
-
-    /**
-     * @brief Returns the node thread-safety for this render
-     **/
-    RenderSafetyEnum getCurrentRenderSafety() const;
-
-    /**
-     * @brief Returns the node thread-safety for this render
-     **/
-    PluginOpenGLRenderSupport getCurrentRenderOpenGLSupport() const;
-
-    /**
-     * @brief Returns the node thread-safety for this render
-     **/
-    SequentialPreferenceEnum getCurrentRenderSequentialPreference() const;
-
-    /**
-     * @brief Returns the node tile support for this render
-     **/
-    bool getCurrentTilesSupport() const;
-
-    /**
-     * @brief Returns the node render scale support for this render
-     **/
-    bool getCurrentRenderScaleSupport() const;
-
-    /**
-     * @brief Returns the node distortion support for this render
-     **/
-    bool getCurrentDistortSupport() const;
-
-    bool getCurrentTransformationSupport_deprecated() const;
-
-    /**
-     * @brief Set the results of the getFrameRange action for this render
-     **/
-    void setFrameRangeResults(const GetFrameRangeResultsPtr& range);
-
-    /**
-     * @brief Get the results of the getFrameRange action for this render
-     **/
-    GetFrameRangeResultsPtr getFrameRangeResults() const;
-
-    /**
-     * @brief Set the results of the getMetadata action for this render
-     **/
-    void setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas);
-
-    /**
-     * @brief Get the results of the getFrameRange action for this render
-     **/
-    GetTimeInvariantMetaDatasResultsPtr getTimeInvariantMetadataResults() const;
-
-    /**
-     * @brief Get the time and view invariant hash
-     **/
-    bool getTimeViewInvariantHash(U64* hash) const;
-    void setTimeViewInvariantHash(U64 hash);
-
-
-    /**
-     * @brief Get the time and view invariant hash used for metadatas
-     **/
-    void setTimeInvariantMetadataHash(U64 hash);
-    bool getTimeInvariantMetadataHash(U64* hash) const;
-
-    /**
-     * @brief Get the time/view variant hash
-     **/
-    bool getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const;
-    void setFrameViewHash(TimeValue time, ViewIdx view, U64 hash);
-
-    /**
-     * @brief Returns a previously requested frame/view request from requestRender. This contains most actions
-     * results for the frame/view as well as the RoI required to render on the effect for this particular frame/view pair.
-     * The time passed in parameter should always be rounded for effects that are not continuous.
-     **/
-    FrameViewRequestPtr getFrameViewRequest(TimeValue time, ViewIdx view) const;
-
-    /**
-     * @brief Same as getFrameViewRequest excepts that if it does not exist it will create it.
-     * @returns True if it was created, false otherwise
-     **/
-    bool getOrCreateFrameViewRequest(TimeValue time,
-                                     ViewIdx view,
-                                     unsigned int mipMapLevel,
-                                     const ImagePlaneDesc& plane,
-                                     FrameViewRequestPtr* request);
-
-    /**
-     * @brief Requests a render at the given time/view for the given render window (in canonical coordinates) for this node.
-     * This function will recurse upstream on all dependencies and build a list of things to render in order.
-     **/
-    ActionRetCodeEnum requestRender(TimeValue time,
-                                    ViewIdx view,
-                                    unsigned int mipMapLevel,
-                                    const ImagePlaneDesc& plane,
-                                    const RectD & canonicalRenderWindow,
-                                    int inputNbInRequester,
-                                    const FrameViewRequestPtr& requester,
-                                    FrameViewRequestPtr* createdRequest);
-    
-    
-    
-private:
-
-    boost::scoped_ptr<TreeRenderNodeArgsPrivate> _imp;
-};
-
 NATRON_NAMESPACE_EXIT;
 
-#endif // PARALLELRENDERARGS_H
+#endif // NATRON_ENGINE_FRAMEVIEWREQUEST_H

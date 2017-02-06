@@ -175,7 +175,7 @@ public:
 
     AnimatingObjectI();
 
-    AnimatingObjectI(const AnimatingObjectI& other);
+    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other);
 
     virtual ~AnimatingObjectI();
 

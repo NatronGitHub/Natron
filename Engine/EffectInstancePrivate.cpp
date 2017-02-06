@@ -35,7 +35,6 @@
 #include "Engine/OSGLFunctions.h"
 #include "Engine/Timer.h"
 #include "Engine/TreeRender.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/RenderStats.h"
 #include "Engine/RotoStrokeItem.h"
 #include "Engine/ViewIdx.h"
@@ -46,28 +45,174 @@ NATRON_NAMESPACE_ENTER;
 
 EffectInstance::Implementation::Implementation(EffectInstance* publicInterface)
 : _publicInterface(publicInterface)
-, attachedContextsMutex(QMutex::Recursive)
-, attachedContexts()
-, mainInstance()
-, isDoingInstanceSafeRender(false)
-, renderClonesMutex()
-, renderClonesPool()
-, tlsData(new TLSHolder<EffectInstanceTLSData>())
+, common(new EffectInstanceCommonData)
+, renderData()
+, defKnobs(new DefaultKnobs)
 {
 }
 
-EffectInstance::Implementation::Implementation(const Implementation& other)
-: _publicInterface()
-, attachedContextsMutex(QMutex::Recursive)
-, attachedContexts()
-, mainInstance(other._publicInterface->shared_from_this())
-, isDoingInstanceSafeRender(false)
-, renderClonesMutex()
-, renderClonesPool()
-, tlsData(other.tlsData)
+EffectInstance::Implementation::Implementation(EffectInstance* publicInterface, const Implementation& other)
+: _publicInterface(publicInterface)
+, common(other.common)
+, renderData(new RenderCloneData)
+, defKnobs(other.defKnobs)
 {
+    {
+        QMutexLocker k(&common->pluginsPropMutex);
+        renderData->props = common->props;
+    }
+}
+
+
+bool
+RenderCloneData::getTimeViewInvariantHash(U64* hash) const
+{
+    QMutexLocker k(&lock);
+    if (!timeViewInvariantHashValid) {
+        return false;
+    }
+    *hash = timeViewInvariantHash;
+    return true;
+}
+
+void
+RenderCloneData::setTimeInvariantMetadataHash(U64 hash)
+{
+    QMutexLocker k(&lock);
+    metadataTimeInvariantHashValid = true;
+    metadataTimeInvariantHash = hash;
+}
+
+bool
+RenderCloneData::getTimeInvariantMetadataHash(U64* hash) const
+{
+    QMutexLocker k(&lock);
+    if (!metadataTimeInvariantHashValid) {
+        return false;
+    }
+    *hash = metadataTimeInvariantHash;
+    return true;
 
 }
+
+void
+RenderCloneData::setTimeViewInvariantHash(U64 hash)
+{
+    QMutexLocker k(&lock);
+    timeViewInvariantHash = hash;
+    timeViewInvariantHashValid = true;
+}
+
+
+bool
+RenderCloneData::getFrameViewHash(TimeValue time, ViewIdx view, U64* hash) const
+{
+    FrameViewPair p = {time,view};
+    QMutexLocker k(&lock);
+    FrameViewHashMap::const_iterator found = timeViewVariantHash.find(p);
+    if (found == timeViewVariantHash.end()) {
+        return false;
+    }
+    *hash = found->second;
+    return true;
+}
+
+void
+RenderCloneData::setFrameViewHash(TimeValue time, ViewIdx view, U64 hash)
+{
+    QMutexLocker k(&lock);
+    FrameViewPair p = {time,view};
+    timeViewVariantHash[p] = hash;
+}
+
+
+FrameViewRequestPtr
+EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
+                                        ViewIdx view) const
+{
+    // Needs to be locked: frame requests may be added spontaneously by the plug-in
+    QMutexLocker k(&renderData->lock);
+
+    FrameViewPair p = {time,view};
+    NodeFrameViewRequestData::const_iterator found = renderData->frames.find(p);
+    if (found == renderData->frames.end()) {
+        return FrameViewRequestPtr();
+    }
+    return found->second;
+}
+
+bool
+EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, FrameViewRequestPtr* request)
+{
+
+    // Needs to be locked: frame requests may be added spontaneously by the plug-in
+    QMutexLocker k(&renderData->lock);
+
+    FrameViewPair p = {time, view};
+    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
+    if (found != renderData->frames.end()) {
+        *request = found->second;
+        return false;
+    }
+
+    U64 hash;
+    if (!renderData->getFrameViewHash(time, view, &hash)) {
+        HashableObject::ComputeHashArgs args;
+        args.time = time;
+        args.view = view;
+        args.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+        hash = _publicInterface->computeHash(args);
+        renderData->setFrameViewHash(time, view, hash);
+    }
+
+    FrameViewRequestPtr& ret = renderData->frames[p];
+    ret.reset(new FrameViewRequest(time, view, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
+    *request = ret;
+    return true;
+}
+
+
+void
+EffectInstance::Implementation::setFrameRangeResults(const GetFrameRangeResultsPtr& range)
+{
+    if (!renderData) {
+        return ;
+    }
+    QMutexLocker k(&renderData->lock);
+    renderData->frameRangeResults = range;
+}
+
+GetFrameRangeResultsPtr
+EffectInstance::Implementation::getFrameRangeResults() const
+{
+    if (!renderData) {
+        return GetFrameRangeResultsPtr();
+    }
+    QMutexLocker k(&renderData->lock);
+    return renderData->frameRangeResults;
+}
+
+void
+EffectInstance::Implementation::setTimeInvariantMetadataResults(const GetTimeInvariantMetaDatasResultsPtr& metadatas)
+{
+    if (!renderData) {
+        return;
+    }
+    QMutexLocker k(&renderData->lock);
+    renderData->metadatasResults = metadatas;
+}
+
+
+GetTimeInvariantMetaDatasResultsPtr
+EffectInstance::Implementation::getTimeInvariantMetadataResults() const
+{
+    if (!renderData) {
+        return GetTimeInvariantMetaDatasResultsPtr();
+    }
+    QMutexLocker k(&renderData->lock);
+    return renderData->metadatasResults;
+}
+
 
 RenderScale
 EffectInstance::Implementation::getCombinedScale(unsigned int mipMapLevel, const RenderScale& proxyScale)
@@ -85,19 +230,21 @@ EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& 
     // Default to CPU
     *renderBackend = eRenderBackendTypeCPU;
 
-    TreeRenderNodeArgsPtr renderArgs = requestPassData->getRenderArgs();
-    TreeRenderPtr render = renderArgs->getParentRender();
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
     OSGLContextPtr glGpuContext = render->getGPUOpenGLContext();
     OSGLContextPtr glCpuContext = render->getCPUOpenGLContext();
 
-    bool canDoOpenGLRendering = (renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNeeded ||
-                                 renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportYes);
+    bool canDoOpenGLRendering;
+
+    PluginOpenGLRenderSupport openGLSupport = _publicInterface->getCurrentOpenGLSupport();
+    canDoOpenGLRendering = (openGLSupport == ePluginOpenGLRenderSupportNeeded || openGLSupport == ePluginOpenGLRenderSupportYes);
+
 
     
     if (canDoOpenGLRendering) {
 
         // Enable GPU render if the plug-in cannot render another way or if all conditions are met
-        if (renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
+        if (openGLSupport == ePluginOpenGLRenderSupportNeeded && !_publicInterface->getNode()->getPlugin()->isOpenGLEnabled()) {
 
             QString message = tr("OpenGL render is required for  %1 but was disabled in the Preferences for this plug-in, please enable it and restart %2").arg(QString::fromUtf8(_publicInterface->getNode()->getLabel().c_str())).arg(QString::fromUtf8(NATRON_APPLICATION_NAME));
             _publicInterface->setPersistentMessage(eMessageTypeError, message.toStdString());
@@ -108,10 +255,10 @@ EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& 
         *renderBackend = eRenderBackendTypeOpenGL;
 
         // If the plug-in knows how to render on CPU, check if we should actually render on CPU instead.
-        if (renderArgs->getCurrentRenderOpenGLSupport() == ePluginOpenGLRenderSupportYes) {
+        if (openGLSupport == ePluginOpenGLRenderSupportYes) {
 
             // User want to force caching of this node but we cannot cache OpenGL renders, so fallback on CPU.
-            if ( _publicInterface->getNode()->isForceCachingEnabled() ) {
+            if ( _publicInterface->isForceCachingEnabled() ) {
                 *renderBackend = eRenderBackendTypeCPU;
             }
 
@@ -161,10 +308,8 @@ EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& 
         ret = eCacheAccessModeNone;
     }
 
-    TreeRenderNodeArgsPtr renderArgs = requestPassData->getRenderArgs();
-
     if (!retSet) {
-        NodePtr treeRoot = renderArgs->getParentRender()->getTreeRoot();
+        NodePtr treeRoot = _publicInterface->getCurrentRender()->getTreeRoot();
         if (treeRoot->getEffectInstance().get() == _publicInterface)  {
             // Always cache the root node because a subsequent render may ask for it
             ret = eCacheAccessModeReadWrite;
@@ -173,10 +318,10 @@ EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& 
     }
 
     if (!retSet) {
-        const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying(renderArgs);
+        const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
         const int requestsCount = requestPassData->getListeners().size();
 
-        bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated, renderArgs, requestsCount);
+        bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated,  requestsCount);
         if (useCache) {
             ret = eCacheAccessModeReadWrite;
         } else {
@@ -207,11 +352,13 @@ EffectInstance::Implementation::tiledRenderingFunctorInSeparateThread(const Rect
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     QThread* curThread = QThread::currentThread();
 
+    boost::scoped_ptr<FrameViewRequestSetter_RAII> tlsSetFrameViewRequest;
     if (spawnerThread != curThread) {
-        ///We are in the case of host frame threading, see kOfxImageEffectPluginPropHostFrameThreading
-        ///We know that in the renderAction, TLS will be needed, so we do a deep copy of the TLS from the caller thread
-        ///to this thread
-        appPTR->getAppTLS()->copyTLS(spawnerThread, curThread);
+
+        // Set the frame view request on the TLS
+        EffectInstanceTLSDataPtr tls = _publicInterface->getTLSObject();
+        assert(tls);
+        tlsSetFrameViewRequest.reset(new FrameViewRequestSetter_RAII(tls, args.requestData));
     }
 
 
@@ -232,17 +379,11 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
 {
 
 
-    EffectInstanceTLSDataPtr tls = tlsData->getOrCreateTLSData();
-
-    // We may have copied the TLS from a thread that spawned us. The other thread might have already started the render actino:
-    // ensure that we start this thread with a clean state.
-    tls->ensureLastActionInStackIsNotRender();
-
-    TreeRenderNodeArgsPtr renderArgs = args.requestData->getRenderArgs();
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
 
     // Record the time spend to render for this frame/view for this thread
     TimeLapsePtr timeRecorder;
-    RenderStatsPtr stats = renderArgs->getParentRender()->getStatsObject();
+    RenderStatsPtr stats = render->getStatsObject();
     if (stats && stats->isInDepthProfilingEnabled()) {
         timeRecorder.reset(new TimeLapse);
     }
@@ -257,19 +398,19 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         glCheckError(GL_GPU);
     }
 
-    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(args.requestData->getRenderMappedMipMapLevel(), args.requestData->getRenderArgs()->getParentRender()->getProxyScale());
+    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(args.requestData->getRenderMappedMipMapLevel(), render->getProxyScale());
     
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
     if (rectToRender.identityInputNumber != -1) {
-        stat = renderHandlerIdentity(rectToRender, combinedScale, args);
+        stat = renderHandlerIdentity(rectToRender, args);
     } else {
         stat = renderHandlerPlugin(tls, rectToRender, combinedScale, args);
         if (isFailureRetCode(stat)) {
             return stat;
         }
         // Apply post-processing
-        renderHandlerPostProcess(rectToRender, combinedScale, args);
+        renderHandlerPostProcess(rectToRender, args);
     }
 
 
@@ -290,31 +431,25 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     if (timeRecorder) {
         stats->addRenderInfosForNode(_publicInterface->getNode(), timeRecorder->getTimeSinceCreation());
     }
-    return renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
+    return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // tiledRenderingFunctor
 
 
 ActionRetCodeEnum
 EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectToRender,
-                                                      const RenderScale& combinedScale,
                                                       const TiledRenderingFunctorArgs& args)
 {
 
-
-
-    TreeRenderNodeArgsPtr renderArgs = args.requestData->getRenderArgs();
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
 
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
-        inArgs->currentTime = args.requestData->getTime();
-        inArgs->currentView = args.requestData->getView();
-        inArgs->currentScale = combinedScale;
         inArgs->renderBackend = &rectToRender.backendType;
-        inArgs->renderArgs = renderArgs;
+        inArgs->requestData = args.requestData;
         inArgs->inputTime = rectToRender.identityTime;
         inArgs->inputView = rectToRender.identityView;
         inArgs->inputMipMapLevel = args.requestData->getRenderMappedMipMapLevel();
-        inArgs->inputProxyScale = renderArgs->getParentRender()->getProxyScale();
+        inArgs->inputProxyScale = render->getProxyScale();
         inArgs->inputNb = rectToRender.identityInputNumber;
         inArgs->plane = &it->first;
 
@@ -331,7 +466,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         it->second->copyPixels(*inputResults.image, cpyArgs);
     }
 
-    return renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
+    return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // renderHandlerIdentity
 
 template <typename GL>
@@ -415,13 +550,12 @@ static void finishGLRender()
 }
 
 ActionRetCodeEnum
-EffectInstance::Implementation::renderHandlerPlugin(const EffectInstanceTLSDataPtr& tls,
-                                                      const RectToRender & rectToRender,
-                                                      const RenderScale& combinedScale,
-                                                      const TiledRenderingFunctorArgs& args)
+EffectInstance::Implementation::renderHandlerPlugin(const RectToRender & rectToRender,
+                                                    const RenderScale& combinedScale,
+                                                    const TiledRenderingFunctorArgs& args)
 {
 
-    TreeRenderNodeArgsPtr renderArgs = args.requestData->getRenderArgs();
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
     RenderActionArgs actionArgs;
     {
         assert(args.requestData->getComponentsResults());
@@ -471,19 +605,7 @@ EffectInstance::Implementation::renderHandlerPlugin(const EffectInstanceTLSDataP
                 setupGLForRender<GL_CPU>(mainImagePlane, args.glContext, actionArgs.roi, _publicInterface->getNode()->isGLFinishRequiredBeforeRender());
             }
         }
-        ActionRetCodeEnum stat;
-        {
-
-            ///This RAII struct controls the lifetime of the render action arguments
-            RenderActionArgsSetter_RAII actionArgsTls(tls,
-                                                      actionArgs.time,
-                                                      actionArgs.view,
-                                                      actionArgs.renderScale,
-                                                      actionArgs.roi,
-                                                      rectToRender.tmpRenderPlanes);
-
-            stat = _publicInterface->render_public(actionArgs);
-        }
+        ActionRetCodeEnum stat = _publicInterface->render_public(actionArgs);
 
         if (rectToRender.backendType == eRenderBackendTypeOpenGL ||
             rectToRender.backendType == eRenderBackendTypeOSMesa) {
@@ -503,13 +625,12 @@ EffectInstance::Implementation::renderHandlerPlugin(const EffectInstanceTLSDataP
 
     } // for (std::list<std::list<std::pair<ImagePlaneDesc,ImagePtr> > >::iterator it = planesLists.begin(); it != planesLists.end(); ++it)
 
-    return renderArgs->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
+    return render->isRenderAborted() ? eActionStatusAborted : eActionStatusOK;
 } // renderHandlerPlugin
 
 
 void
 EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & rectToRender,
-                                                         const RenderScale& combinedScale,
                                                          const TiledRenderingFunctorArgs& args)
 {
 
@@ -517,7 +638,6 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     // Get the mask image if host masking is needed
     ImagePtr maskImage;
 
-    TreeRenderNodeArgsPtr renderArgs = args.requestData->getRenderArgs();
     assert(args.requestData->getComponentsResults());
     const std::map<int, std::list<ImagePlaneDesc> > &inputPlanesNeeded = args.requestData->getComponentsResults()->getNeededInputPlanes();
     std::bitset<4> processChannels = args.requestData->getComponentsResults()->getProcessChannels();
@@ -538,18 +658,9 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(maskInputNb);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
-                GetImageInArgs inArgs;
+                GetImageInArgs inArgs(args.requestData, &rectToRender.backendType);
                 inArgs.plane = &foundNeededLayers->second.front();
                 inArgs.inputNb = maskInputNb;
-                inArgs.currentTime = args.requestData->getTime();
-                inArgs.currentView = args.requestData->getView();
-                inArgs.inputTime = inArgs.currentTime;
-                inArgs.inputView = inArgs.currentView;
-                inArgs.inputMipMapLevel = args.requestData->getRenderMappedMipMapLevel();
-                inArgs.inputProxyScale = renderArgs->getParentRender()->getProxyScale();
-                inArgs.currentScale = combinedScale;
-                inArgs.renderBackend = &rectToRender.backendType;
-                inArgs.renderArgs = renderArgs;
                 GetImageOutArgs outArgs;
                 if (_publicInterface->getImagePlane(inArgs, &outArgs)) {
                     maskImage = outArgs.image;
@@ -572,11 +683,11 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
     bool useMaskMix = hostMasking;
     double mix = 1.;
     if (_publicInterface->isHostMixingEnabled()) {
-        mix = _publicInterface->getNode()->getHostMixingValue(args.requestData->getTime(), args.requestData->getView());
+        mix = _publicInterface->getHostMixingValue(args.requestData->getTime(), args.requestData->getView());
         useMaskMix = true;
     }
 
-    const bool checkNaNs = renderArgs->getParentRender()->isNaNHandlingEnabled();
+    const bool checkNaNs = _publicInterface->getCurrentRender()->isNaNHandlingEnabled();
 
     // Check for NaNs, copy to output image and mark for rendered
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
@@ -607,7 +718,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(mainInputNb);
 
-            GetImageInArgs inArgs;
+            GetImageInArgs inArgs(args.requestData, &rectToRender.backendType);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
 
@@ -615,19 +726,6 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
                 if (inputLayerIt != foundNeededLayers->second.end()) {
                     inArgs.plane = &foundNeededLayers->second.front();
                     inArgs.inputNb = mainInputNb;
-                    inArgs.currentTime = args.requestData->getTime();
-                    inArgs.currentView = args.requestData->getView();
-                    inArgs.inputTime = inArgs.currentTime;
-                    inArgs.inputView = inArgs.currentView;
-                    inArgs.inputMipMapLevel = args.requestData->getRenderMappedMipMapLevel();
-                    inArgs.inputProxyScale = renderArgs->getParentRender()->getProxyScale();
-                    inArgs.currentScale = combinedScale;
-                    {
-
-                        //inArgs.layers = args.components.front();
-                    }
-                    inArgs.renderBackend = &rectToRender.backendType;
-                    inArgs.renderArgs = renderArgs;
                     GetImageOutArgs outArgs;
                     if (_publicInterface->getImagePlane(inArgs, &outArgs)) {
                         mainInputImage = outArgs.image;

@@ -104,7 +104,7 @@ ReadNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ReadNode::create, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)ReadNode::create, (void*)ReadNode::createRenderClone, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
 
     QString desc = tr("Node used to read images or videos from disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used.");
@@ -298,6 +298,18 @@ ReadNode::ReadNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new ReadNodePrivate(this) )
 {
+}
+
+ReadNode::ReadNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp( new ReadNodePrivate(this) )
+{
+    ReadNode* mainReadNode = dynamic_cast<ReadNode*>(mainInstance.get());
+    assert(mainReadNode);
+    assert(mainReadNode->_imp->embeddedPlugin);
+    KnobHolderPtr clone = mainReadNode->_imp->embeddedPlugin->getEffectInstance()->createRenderClone();
+#pragma message WARN("TODO")
+
 }
 
 ReadNode::~ReadNode()

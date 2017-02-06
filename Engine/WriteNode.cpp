@@ -170,7 +170,7 @@ WriteNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)WriteNode::create, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)WriteNode::create, (void*)WriteNode::createRenderClone, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
 
     QString desc = tr("Node used to write images or videos on disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.");

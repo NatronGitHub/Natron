@@ -532,15 +532,9 @@ Node::isSupportedComponent(int inputNb,
     return supported[comp.getNumComponents()];
 }
 
-
-int
-Node::findClosestSupportedNumberOfComponents(int inputNb,
-                                             int nComps) const
+std::bitset<4>
+Node::getSupportedComponents(int inputNb) const
 {
-    if (nComps < 0 || nComps > 4) {
-        // Natron assumes that a layer must have between 1 and 4 channels.
-        return 0;
-    }
     std::bitset<4> supported;
     {
         QMutexLocker l(&_imp->inputsMutex);
@@ -553,6 +547,18 @@ Node::findClosestSupportedNumberOfComponents(int inputNb,
             supported = _imp->outputComponents;
         }
     }
+    return supported;
+}
+
+int
+Node::findClosestSupportedNumberOfComponents(int inputNb,
+                                             int nComps) const
+{
+    if (nComps < 0 || nComps > 4) {
+        // Natron assumes that a layer must have between 1 and 4 channels.
+        return 0;
+    }
+    std::bitset<4> supported = getSupportedComponents(inputNb);
 
     // Find a greater or equal number of components
     int foundSupportedNComps = -1;
@@ -722,7 +728,7 @@ NodePrivate::onLayerChanged(bool isOutput)
 }
 
 void
-NodePrivate::onMaskSelectorChanged(int inputNb,
+EffectInstance::Implementation::onMaskSelectorChanged(int inputNb,
                                    const MaskSelector& selector)
 {
     KnobChoicePtr channel = selector.channel.lock();

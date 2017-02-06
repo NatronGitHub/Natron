@@ -67,10 +67,8 @@ NATRON_NAMESPACE_ANONYMOUS_EXIT
 
 static KnobItemsTablesMetaTypesRegistration registration;
 
-
-struct KnobItemsTablePrivate
+struct KnobItemsTableCommon
 {
-    KnobHolderWPtr holder;
     KnobItemsTable::KnobItemsTableTypeEnum type;
     KnobItemsTable::TableSelectionModeEnum selectionMode;
     std::vector<ColumnHeader> headers;
@@ -100,9 +98,8 @@ struct KnobItemsTablePrivate
 
     std::string pythonPrefix;
 
-    KnobItemsTablePrivate(const KnobHolderPtr& originalHolder, KnobItemsTable::KnobItemsTableTypeEnum type)
-    : holder(originalHolder)
-    , type(type)
+    KnobItemsTableCommon()
+    : type()
     , selectionMode(KnobItemsTable::eTableSelectionModeExtendedSelection)
     , headers()
     , topLevelItems()
@@ -124,15 +121,30 @@ struct KnobItemsTablePrivate
 
     }
 
+};
+
+struct KnobItemsTablePrivate
+{
+    KnobHolderWPtr holder;
+    boost::shared_ptr<KnobItemsTableCommon> common;
+
+    KnobItemsTablePrivate(const KnobHolderPtr& originalHolder, KnobItemsTable::KnobItemsTableTypeEnum type)
+    : holder(originalHolder)
+    , common(new KnobItemsTableCommon)
+    {
+        common->type = type;
+    }
+
+
     void incrementSelectionCounter()
     {
-        ++beginSelectionCounter;
+        ++common->beginSelectionCounter;
     }
 
     bool decrementSelectionCounter()
     {
-        if (beginSelectionCounter > 0) {
-            --beginSelectionCounter;
+        if (common->beginSelectionCounter > 0) {
+            --common->beginSelectionCounter;
             return true;
         }
         return false;
@@ -141,22 +153,22 @@ struct KnobItemsTablePrivate
     void addToSelectionList(const KnobTableItemPtr& item)
     {
         // If the item is already in items removed from the selection, remove it from the other list
-        std::set<KnobTableItemPtr>::iterator found = itemsRemovedFromSelection.find(item);
-        if (found != itemsRemovedFromSelection.end() ) {
-            itemsRemovedFromSelection.erase(found);
+        std::set<KnobTableItemPtr>::iterator found = common->itemsRemovedFromSelection.find(item);
+        if (found != common->itemsRemovedFromSelection.end() ) {
+            common->itemsRemovedFromSelection.erase(found);
         }
-        newItemsInSelection.insert(item);
+        common->newItemsInSelection.insert(item);
     }
 
     void removeFromSelectionList(const KnobTableItemPtr& item)
     {
         // If the item is already in items added to the selection, remove it from the other list
-        std::set<KnobTableItemPtr>::iterator found = newItemsInSelection.find(item);
-        if (found != newItemsInSelection.end() ) {
-            newItemsInSelection.erase(found);
+        std::set<KnobTableItemPtr>::iterator found = common->newItemsInSelection.find(item);
+        if (found != common->newItemsInSelection.end() ) {
+            common->newItemsInSelection.erase(found);
         }
         
-        itemsRemovedFromSelection.insert(item);
+        common->itemsRemovedFromSelection.insert(item);
         
     }
 
@@ -177,7 +189,7 @@ struct ColumnDesc
 
 typedef std::map<ViewIdx, CurvePtr> PerViewAnimationCurveMap;
 
-struct KnobTableItemPrivate
+struct KnobTableItemCommon
 {
     // If we are in a tree, this is a pointer to the parent.
     // If null, the item is considered to be top-level
@@ -198,10 +210,8 @@ struct KnobTableItemPrivate
     // Locks all members
     mutable QMutex lock;
 
-    // List of keyframe times set by the user
-    PerViewAnimationCurveMap animationCurves;
 
-    KnobTableItemPrivate(const KnobItemsTablePtr& model)
+    KnobTableItemCommon(const KnobItemsTablePtr& model)
     : parent()
     , children()
     , columns()
@@ -210,26 +220,29 @@ struct KnobTableItemPrivate
     , label()
     , iconFilePath()
     , lock()
-    , animationCurves()
     {
 
+    }
+};
+
+struct KnobTableItemPrivate
+{
+
+    boost::shared_ptr<KnobTableItemCommon> common;
+
+    // List of keyframe times set by the user
+    PerViewAnimationCurveMap animationCurves;
+
+    KnobTableItemPrivate(const KnobItemsTablePtr& model)
+    : common(new KnobTableItemCommon(model))
+    {
         CurvePtr c(new Curve);
         c->setYComponentMovable(false);
         animationCurves[ViewIdx(0)] = c;
     }
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
     KnobTableItemPrivate(const KnobTableItemPrivate& other)
-    : parent()
-    , children()
-    , columns(other.columns)
-    , model(other.model)
-    , scriptName(other.scriptName)
-    , label(other.label)
-    , iconFilePath(other.iconFilePath)
-    , lock()
-    , animationCurves()
+    : common(other.common)
     {
         for (PerViewAnimationCurveMap::const_iterator it = other.animationCurves.begin(); it!=other.animationCurves.end(); ++it) {
             CurvePtr c(new Curve);
@@ -254,25 +267,25 @@ KnobItemsTable::~KnobItemsTable()
 void
 KnobItemsTable::setSupportsDragAndDrop(bool supports)
 {
-    _imp->supportsDnD = supports;
+    _imp->common->supportsDnD = supports;
 }
 
 bool
 KnobItemsTable::isDragAndDropSupported() const
 {
-    return _imp->supportsDnD;
+    return _imp->common->supportsDnD;
 }
 
 void
 KnobItemsTable::setDropSupportsExternalSources(bool supports)
 {
-    _imp->dndSupportsExternalSource = supports;
+    _imp->common->dndSupportsExternalSource = supports;
 }
 
 bool
 KnobItemsTable::isDropFromExternalSourceSupported() const
 {
-    return _imp->dndSupportsExternalSource;
+    return _imp->common->dndSupportsExternalSource;
 }
 
 KnobHolderPtr
@@ -299,42 +312,42 @@ KnobItemsTable::getNode() const
 KnobItemsTable::KnobItemsTableTypeEnum
 KnobItemsTable::getType() const
 {
-    return _imp->type;
+    return _imp->common->type;
 }
 
 void
 KnobItemsTable::setIconsPath(const std::string& iconPath)
 {
-    _imp->iconsPath = iconPath;
+    _imp->common->iconsPath = iconPath;
 }
 
 const std::string&
 KnobItemsTable::getIconsPath() const
 {
-    return _imp->iconsPath;
+    return _imp->common->iconsPath;
 }
 
 void
 KnobItemsTable::setRowsHaveUniformHeight(bool uniform)
 {
-    _imp->uniformRowsHeight = uniform;
+    _imp->common->uniformRowsHeight = uniform;
 }
 
 bool
 KnobItemsTable::getRowsHaveUniformHeight() const
 {
-    return _imp->uniformRowsHeight;
+    return _imp->common->uniformRowsHeight;
 }
 
 void
 KnobItemsTable::setColumnText(int col, const std::string& text)
 {
     ColumnHeader* header = 0;
-    if (col < 0 || col >= (int)_imp->headers.size()) {
-        _imp->headers.push_back(ColumnHeader());
-        header = &_imp->headers.back();
+    if (col < 0 || col >= (int)_imp->common->headers.size()) {
+        _imp->common->headers.push_back(ColumnHeader());
+        header = &_imp->common->headers.back();
     } else {
-        header = &_imp->headers[col];
+        header = &_imp->common->headers[col];
     }
     header->text = text;
 }
@@ -342,21 +355,21 @@ KnobItemsTable::setColumnText(int col, const std::string& text)
 std::string
 KnobItemsTable::getColumnText(int col) const
 {
-    if (col < 0 || col >= (int)_imp->headers.size()) {
+    if (col < 0 || col >= (int)_imp->common->headers.size()) {
         return std::string();
     }
-    return _imp->headers[col].text;
+    return _imp->common->headers[col].text;
 }
 
 void
 KnobItemsTable::setColumnIcon(int col, const std::string& iconFilePath)
 {
     ColumnHeader* header = 0;
-    if (col < 0 || col >= (int)_imp->headers.size()) {
-        _imp->headers.push_back(ColumnHeader());
-        header = &_imp->headers.back();
+    if (col < 0 || col >= (int)_imp->common->headers.size()) {
+        _imp->common->headers.push_back(ColumnHeader());
+        header = &_imp->common->headers.back();
     } else {
-        header = &_imp->headers[col];
+        header = &_imp->common->headers[col];
     }
     header->iconFilePath = iconFilePath;
 }
@@ -364,21 +377,21 @@ KnobItemsTable::setColumnIcon(int col, const std::string& iconFilePath)
 std::string
 KnobItemsTable::getColumnIcon(int col) const
 {
-    if (col < 0 || col >= (int)_imp->headers.size()) {
+    if (col < 0 || col >= (int)_imp->common->headers.size()) {
         return std::string();
     }
-    return _imp->headers[col].iconFilePath;
+    return _imp->common->headers[col].iconFilePath;
 }
 
 void
 KnobItemsTable::setColumnTooltip(int col, const std::string& tooltip)
 {
     ColumnHeader* header = 0;
-    if (col < 0 || col >= (int)_imp->headers.size()) {
-        _imp->headers.push_back(ColumnHeader());
-        header = &_imp->headers.back();
+    if (col < 0 || col >= (int)_imp->common->headers.size()) {
+        _imp->common->headers.push_back(ColumnHeader());
+        header = &_imp->common->headers.back();
     } else {
-        header = &_imp->headers[col];
+        header = &_imp->common->headers[col];
     }
     header->tooltip = tooltip;
 }
@@ -386,29 +399,29 @@ KnobItemsTable::setColumnTooltip(int col, const std::string& tooltip)
 std::string
 KnobItemsTable::getColumnTooltip(int col) const
 {
-    if (col < 0 || col >= (int)_imp->headers.size()) {
+    if (col < 0 || col >= (int)_imp->common->headers.size()) {
         return std::string();
     }
-    return _imp->headers[col].tooltip;
+    return _imp->common->headers[col].tooltip;
 
 }
 
 int
 KnobItemsTable::getColumnsCount() const
 {
-    return (int)_imp->headers.size();
+    return (int)_imp->common->headers.size();
 }
 
 void
 KnobItemsTable::setSelectionMode(TableSelectionModeEnum mode)
 {
-    _imp->selectionMode = mode;
+    _imp->common->selectionMode = mode;
 }
 
 KnobItemsTable::TableSelectionModeEnum
 KnobItemsTable::getSelectionMode() const
 {
-    return _imp->selectionMode;
+    return _imp->common->selectionMode;
 }
 
 void
@@ -434,14 +447,14 @@ KnobItemsTable::insertItem(int index, const KnobTableItemPtr& item, const KnobTa
         int insertIndex;
 
         {
-            QMutexLocker k(&_imp->topLevelItemsLock);
-            if (index < 0 || index >= (int)_imp->topLevelItems.size()) {
-                _imp->topLevelItems.push_back(item);
-                insertIndex = _imp->topLevelItems.size() - 1;
+            QMutexLocker k(&_imp->common->topLevelItemsLock);
+            if (index < 0 || index >= (int)_imp->common->topLevelItems.size()) {
+                _imp->common->topLevelItems.push_back(item);
+                insertIndex = _imp->common->topLevelItems.size() - 1;
             } else {
-                std::vector<KnobTableItemPtr>::iterator it = _imp->topLevelItems.begin();
+                std::vector<KnobTableItemPtr>::iterator it = _imp->common->topLevelItems.begin();
                 std::advance(it, index);
-                _imp->topLevelItems.insert(it, item);
+                _imp->common->topLevelItems.insert(it, item);
                 insertIndex = index;
             }
         }
@@ -471,10 +484,10 @@ KnobItemsTable::removeItem(const KnobTableItemPtr& item, TableChangeReasonEnum r
         removed = parent->removeChild(item);
     } else {
         {
-            QMutexLocker k(&_imp->topLevelItemsLock);
-            for (std::vector<KnobTableItemPtr>::iterator it = _imp->topLevelItems.begin(); it != _imp->topLevelItems.end(); ++it) {
+            QMutexLocker k(&_imp->common->topLevelItemsLock);
+            for (std::vector<KnobTableItemPtr>::iterator it = _imp->common->topLevelItems.begin(); it != _imp->common->topLevelItems.end(); ++it) {
                 if (*it == item) {
-                    _imp->topLevelItems.erase(it);
+                    _imp->common->topLevelItems.erase(it);
                     removed = true;
                     break;
                 }
@@ -496,9 +509,9 @@ KnobItemsTable::resetModel(TableChangeReasonEnum reason)
 {
     std::vector<KnobTableItemPtr> topLevelItems;
     {
-        QMutexLocker k(&_imp->topLevelItemsLock);
-        topLevelItems = _imp->topLevelItems;
-        _imp->topLevelItems.clear();
+        QMutexLocker k(&_imp->common->topLevelItemsLock);
+        topLevelItems = _imp->common->topLevelItems;
+        _imp->common->topLevelItems.clear();
     }
     for (std::size_t i = 0; i < topLevelItems.size(); ++i) {
         if (!getPythonPrefix().empty()) {
@@ -514,8 +527,8 @@ KnobItemsTable::resetModel(TableChangeReasonEnum reason)
 std::vector<KnobTableItemPtr>
 KnobItemsTable::getTopLevelItems() const
 {
-    QMutexLocker k(&_imp->topLevelItemsLock);
-    return _imp->topLevelItems;
+    QMutexLocker k(&_imp->common->topLevelItemsLock);
+    return _imp->common->topLevelItems;
 }
 
 static void appendItemRecursive(const KnobTableItemPtr& item, std::vector<KnobTableItemPtr>* allItems)
@@ -531,13 +544,13 @@ static void appendItemRecursive(const KnobTableItemPtr& item, std::vector<KnobTa
 std::vector<KnobTableItemPtr>
 KnobItemsTable::getAllItems() const
 {
-    QMutexLocker k(&_imp->topLevelItemsLock);
-    if (_imp->type == KnobItemsTable::eKnobItemsTableTypeTable) {
-        return _imp->topLevelItems;
+    QMutexLocker k(&_imp->common->topLevelItemsLock);
+    if (_imp->common->type == KnobItemsTable::eKnobItemsTableTypeTable) {
+        return _imp->common->topLevelItems;
     } else {
         std::vector<KnobTableItemPtr> ret;
-        for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
-            appendItemRecursive(_imp->topLevelItems[i], &ret);
+        for (std::size_t i = 0; i < _imp->common->topLevelItems.size(); ++i) {
+            appendItemRecursive(_imp->common->topLevelItems[i], &ret);
         }
         return ret;
     }
@@ -546,18 +559,18 @@ KnobItemsTable::getAllItems() const
 bool
 KnobItemsTable::getNumTopLevelItems() const
 {
-    QMutexLocker k(&_imp->topLevelItemsLock);
-    return (int)_imp->topLevelItems.size();
+    QMutexLocker k(&_imp->common->topLevelItemsLock);
+    return (int)_imp->common->topLevelItems.size();
 }
 
 KnobTableItemPtr
 KnobItemsTable::getTopLevelItem(int index) const
 {
-    QMutexLocker k(&_imp->topLevelItemsLock);
-    if (index < 0 || index >= (int)_imp->topLevelItems.size()) {
+    QMutexLocker k(&_imp->common->topLevelItemsLock);
+    if (index < 0 || index >= (int)_imp->common->topLevelItems.size()) {
         return KnobTableItemPtr();
     }
-    return _imp->topLevelItems[index];
+    return _imp->common->topLevelItems[index];
 }
 
 std::string
@@ -599,10 +612,10 @@ KnobTableItem::KnobTableItem(const KnobItemsTablePtr& model)
 }
 
 
-KnobTableItem::KnobTableItem(const KnobTableItem& other)
+KnobTableItem::KnobTableItem(const KnobTableItemPtr& other)
 : NamedKnobHolder(other)
 , AnimatingObjectI(other)
-, _imp(new KnobTableItemPrivate(*other._imp))
+, _imp(new KnobTableItemPrivate(*other->_imp))
 {
 
 }
@@ -616,7 +629,7 @@ KnobTableItem::~KnobTableItem()
 KnobItemsTablePtr
 KnobTableItem::getModel() const
 {
-    return _imp->model.lock();
+    return _imp->common->model.lock();
 }
 
 void
@@ -633,7 +646,7 @@ KnobTableItem::copyItem(const KnobTableItem& other)
         (*it)->copyKnob(*otherIt);
     }
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         _imp->animationCurves.clear();
         for (PerViewAnimationCurveMap::const_iterator it = other._imp->animationCurves.begin(); it != other._imp->animationCurves.end(); ++it) {
             CurvePtr& c = _imp->animationCurves[it->first];
@@ -689,10 +702,10 @@ KnobTableItem::setLabel(const std::string& label, TableChangeReasonEnum reason)
 {
     bool changed;
     {
-        QMutexLocker k(&_imp->lock);
-        changed = _imp->label != label;
+        QMutexLocker k(&_imp->common->lock);
+        changed = _imp->common->label != label;
         if (changed) {
-            _imp->label = label;
+            _imp->common->label = label;
         }
     }
     if (changed) {
@@ -706,10 +719,10 @@ KnobTableItem::setIconLabelFilePath(const std::string& iconFilePath, TableChange
 {
     bool changed;
     {
-        QMutexLocker k(&_imp->lock);
-        changed = _imp->iconFilePath != iconFilePath;
+        QMutexLocker k(&_imp->common->lock);
+        changed = _imp->common->iconFilePath != iconFilePath;
         if (changed) {
-            _imp->iconFilePath = iconFilePath;
+            _imp->common->iconFilePath = iconFilePath;
         }
     }
     if (changed) {
@@ -721,15 +734,15 @@ KnobTableItem::setIconLabelFilePath(const std::string& iconFilePath, TableChange
 std::string
 KnobTableItem::getIconLabelFilePath() const
 {
-    QMutexLocker k(&_imp->lock);
-    return _imp->iconFilePath;
+    QMutexLocker k(&_imp->common->lock);
+    return _imp->common->iconFilePath;
 }
 
 std::string
 KnobTableItem::getLabel() const
 {
-    QMutexLocker k(&_imp->lock);
-    return _imp->label;
+    QMutexLocker k(&_imp->common->lock);
+    return _imp->common->label;
 }
 
 
@@ -756,8 +769,8 @@ KnobTableItem::setScriptName(const std::string& name)
 
     std::string currentName;
     {
-        QMutexLocker l(&_imp->lock);
-        currentName = _imp->scriptName;
+        QMutexLocker l(&_imp->common->lock);
+        currentName = _imp->common->scriptName;
     }
 
     // Make sure the script-name is Python compliant
@@ -814,8 +827,8 @@ KnobTableItem::setScriptName(const std::string& name)
     }
 
     {
-        QMutexLocker l(&_imp->lock);
-        _imp->scriptName = nameToSet;
+        QMutexLocker l(&_imp->common->lock);
+        _imp->common->scriptName = nameToSet;
     }
 
     model->declareItemAsPythonField(thisShared);
@@ -825,8 +838,8 @@ KnobTableItem::setScriptName(const std::string& name)
 std::string
 KnobTableItem::getScriptName_mt_safe() const
 {
-    QMutexLocker k(&_imp->lock);
-    return _imp->scriptName;
+    QMutexLocker k(&_imp->common->lock);
+    return _imp->common->scriptName;
 }
 
 static void
@@ -860,26 +873,26 @@ KnobTableItem::insertChild(int index, const KnobTableItemPtr& item)
         return;
     }
 
-    assert(_imp->model.lock()->getType() == KnobItemsTable::eKnobItemsTableTypeTree);
+    assert(_imp->common->model.lock()->getType() == KnobItemsTable::eKnobItemsTableTypeTree);
 
     int insertedIndex;
 
     {
-        QMutexLocker k(&_imp->lock);
-        if (index < 0 || index >= (int)_imp->children.size()) {
-            _imp->children.push_back(item);
-            insertedIndex = _imp->children.size() - 1;
+        QMutexLocker k(&_imp->common->lock);
+        if (index < 0 || index >= (int)_imp->common->children.size()) {
+            _imp->common->children.push_back(item);
+            insertedIndex = _imp->common->children.size() - 1;
         } else {
-            std::vector<KnobTableItemPtr>::iterator it = _imp->children.begin();
+            std::vector<KnobTableItemPtr>::iterator it = _imp->common->children.begin();
             std::advance(it, index);
-            _imp->children.insert(it, item);
+            _imp->common->children.insert(it, item);
             insertedIndex = index;
         }
     }
 
     {
-        QMutexLocker k(&item->_imp->lock);
-        item->_imp->parent = toKnobTableItem(shared_from_this());
+        QMutexLocker k(&item->_imp->common->lock);
+        item->_imp->common->parent = toKnobTableItem(shared_from_this());
     }
 
 }
@@ -896,10 +909,10 @@ KnobTableItem::removeChild(const KnobTableItemPtr& item)
         model->removeItemAsPythonField(item);
     }
     {
-        QMutexLocker k(&_imp->lock);
-        for (std::vector<KnobTableItemPtr>::iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+        QMutexLocker k(&_imp->common->lock);
+        for (std::vector<KnobTableItemPtr>::iterator it = _imp->common->children.begin(); it != _imp->common->children.end(); ++it) {
             if (*it == item) {
-                _imp->children.erase(it);
+                _imp->common->children.erase(it);
                 removed = true;
                 break;
             }
@@ -937,8 +950,8 @@ KnobTableItem::ensureItemInitialized()
 KnobTableItemPtr
 KnobTableItem::getParent() const
 {
-    QMutexLocker k(&_imp->lock);
-    return _imp->parent.lock();
+    QMutexLocker k(&_imp->common->lock);
+    return _imp->common->parent.lock();
 }
 
 int
@@ -947,20 +960,20 @@ KnobTableItem::getIndexInParent() const
     KnobTableItemPtr parent = getParent();
     int found = -1;
     if (parent) {
-        QMutexLocker k(&parent->_imp->lock);
-        for (std::size_t i = 0; i < parent->_imp->children.size(); ++i) {
-            if (parent->_imp->children[i].get() == this) {
+        QMutexLocker k(&parent->_imp->common->lock);
+        for (std::size_t i = 0; i < parent->_imp->common->children.size(); ++i) {
+            if (parent->_imp->common->children[i].get() == this) {
                 found = i;
                 break;
             }
         }
 
     } else {
-        KnobItemsTablePtr table = _imp->model.lock();
+        KnobItemsTablePtr table = _imp->common->model.lock();
         assert(table);
-        QMutexLocker k(&table->_imp->topLevelItemsLock);
-        for (std::size_t i = 0; i < table->_imp->topLevelItems.size(); ++i) {
-            if (table->_imp->topLevelItems[i].get() == this) {
+        QMutexLocker k(&table->_imp->common->topLevelItemsLock);
+        for (std::size_t i = 0; i < table->_imp->common->topLevelItems.size(); ++i) {
+            if (table->_imp->common->topLevelItems[i].get() == this) {
                 found = i;
                 break;
             }
@@ -972,24 +985,24 @@ KnobTableItem::getIndexInParent() const
 std::vector<KnobTableItemPtr>
 KnobTableItem::getChildren() const
 {
-    QMutexLocker k(&_imp->lock);
-    return _imp->children;
+    QMutexLocker k(&_imp->common->lock);
+    return _imp->common->children;
 }
 
 KnobTableItemPtr
 KnobTableItem::getChild(int index) const
 {
-    QMutexLocker k(&_imp->lock);
-    if (index < 0 || index >= (int)_imp->children.size()) {
+    QMutexLocker k(&_imp->common->lock);
+    if (index < 0 || index >= (int)_imp->common->children.size()) {
         return KnobTableItemPtr();
     }
-    return _imp->children[index];
+    return _imp->common->children[index];
 }
 
 int
 KnobTableItem::getColumnsCount() const
 {
-    return (int)_imp->columns.size();
+    return (int)_imp->common->columns.size();
 }
 
 void
@@ -1001,13 +1014,13 @@ KnobTableItem::addColumn(const std::string& columnName, DimSpec dimension)
 void
 KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimension)
 {
-    QMutexLocker k(&_imp->lock);
+    QMutexLocker k(&_imp->common->lock);
     ColumnDesc* column = 0;
-    if (col < 0 || col >= (int)_imp->columns.size()) {
-        _imp->columns.push_back(ColumnDesc());
-        column = &_imp->columns.back();
+    if (col < 0 || col >= (int)_imp->common->columns.size()) {
+        _imp->common->columns.push_back(ColumnDesc());
+        column = &_imp->common->columns.back();
     } else {
-        column = &_imp->columns[col];
+        column = &_imp->common->columns[col];
     }
     if (columnName.empty()) {
         return;
@@ -1030,30 +1043,30 @@ KnobTableItem::setColumn(int col, const std::string& columnName, DimSpec dimensi
 KnobIPtr
 KnobTableItem::getColumnKnob(int col, DimSpec *dimensionIndex) const
 {
-    QMutexLocker k(&_imp->lock);
-    if (col < 0 || col >= (int)_imp->columns.size()) {
+    QMutexLocker k(&_imp->common->lock);
+    if (col < 0 || col >= (int)_imp->common->columns.size()) {
         return KnobIPtr();
     }
-    *dimensionIndex = _imp->columns[col].dimensionIndex;
-    return  _imp->columns[col].knob.lock();
+    *dimensionIndex = _imp->common->columns[col].dimensionIndex;
+    return  _imp->common->columns[col].knob.lock();
 }
 
 std::string
 KnobTableItem::getColumnName(int col) const
 {
-    QMutexLocker k(&_imp->lock);
-    if (col < 0 || col >= (int)_imp->columns.size()) {
+    QMutexLocker k(&_imp->common->lock);
+    if (col < 0 || col >= (int)_imp->common->columns.size()) {
         return std::string();
     }
-    return  _imp->columns[col].columnName;
+    return  _imp->common->columns[col].columnName;
 }
 
 int
 KnobTableItem::getLabelColumnIndex() const
 {
-    QMutexLocker k(&_imp->lock);
-    for (std::size_t i = 0; i < _imp->columns.size(); ++i) {
-        if (_imp->columns[i].columnName == kKnobTableItemColumnLabel) {
+    QMutexLocker k(&_imp->common->lock);
+    for (std::size_t i = 0; i < _imp->common->columns.size(); ++i) {
+        if (_imp->common->columns[i].columnName == kKnobTableItemColumnLabel) {
             return i;
         }
     }
@@ -1063,9 +1076,9 @@ KnobTableItem::getLabelColumnIndex() const
 int
 KnobTableItem::getKnobColumnIndex(const KnobIPtr& knob, int dimension) const
 {
-    QMutexLocker k(&_imp->lock);
-    for (std::size_t i = 0; i < _imp->columns.size(); ++i) {
-        if (_imp->columns[i].knob.lock() == knob && (_imp->columns[i].dimensionIndex == -1 || _imp->columns[i].dimensionIndex == dimension)) {
+    QMutexLocker k(&_imp->common->lock);
+    for (std::size_t i = 0; i < _imp->common->columns.size(); ++i) {
+        if (_imp->common->columns[i].knob.lock() == knob && (_imp->common->columns[i].dimensionIndex == -1 || _imp->common->columns[i].dimensionIndex == dimension)) {
             return i;
         }
     }
@@ -1198,9 +1211,9 @@ KnobTableItem::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase*
 
     std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
-        QMutexLocker k(&_imp->lock);
-        serialization->scriptName = _imp->scriptName;
-        serialization->label = _imp->label;
+        QMutexLocker k(&_imp->common->lock);
+        serialization->scriptName = _imp->common->scriptName;
+        serialization->label = _imp->common->label;
 
         for (PerViewAnimationCurveMap::const_iterator it = _imp->animationCurves.begin(); it != _imp->animationCurves.end(); ++it) {
             std::string viewName;
@@ -1286,9 +1299,9 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
     }
     std::vector<std::string> projectViewNames = getApp()->getProject()->getProjectViewNames();
     {
-        QMutexLocker k(&_imp->lock);
-        _imp->label = serialization->label;
-        _imp->scriptName = serialization->scriptName;
+        QMutexLocker k(&_imp->common->lock);
+        _imp->common->label = serialization->label;
+        _imp->common->scriptName = serialization->scriptName;
         for (std::map<std::string, SERIALIZATION_NAMESPACE::CurveSerialization>::const_iterator it = serialization->animationCurves.begin(); it != serialization->animationCurves.end(); ++it) {
             ViewIdx view_i(0);
             getApp()->getProject()->getViewIndex(projectViewNames, it->first, &view_i);
@@ -1309,9 +1322,9 @@ KnobTableItem::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationObj
         foundKnob->fromSerialization(**it);
     }
 
-    assert(_imp->children.empty());
+    assert(_imp->common->children.empty());
 
-    KnobItemsTablePtr model = _imp->model.lock();
+    KnobItemsTablePtr model = _imp->common->model.lock();
     KnobTableItemPtr thisShared = toKnobTableItem(shared_from_this());
     for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->children.begin(); it!=serialization->children.end(); ++it) {
         KnobTableItemPtr child = model->createItemFromSerialization(*it);
@@ -1386,8 +1399,8 @@ KnobTableItem::getChildItemByScriptName(const std::string& scriptName) const
 bool
 KnobItemsTable::isItemSelected(const KnobTableItemPtr& item) const
 {
-    QMutexLocker k(&_imp->selectionLock);
-    for (std::list<KnobTableItemWPtr>::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+    QMutexLocker k(&_imp->common->selectionLock);
+    for (std::list<KnobTableItemWPtr>::const_iterator it = _imp->common->selectedItems.begin(); it != _imp->common->selectedItems.end(); ++it) {
         if (it->lock() == item) {
             return true;
         }
@@ -1399,8 +1412,8 @@ std::list<KnobTableItemPtr>
 KnobItemsTable::getSelectedItems() const
 {
     std::list<KnobTableItemPtr> ret;
-    QMutexLocker k(&_imp->selectionLock);
-    for (std::list<KnobTableItemWPtr>::const_iterator it = _imp->selectedItems.begin(); it != _imp->selectedItems.end(); ++it) {
+    QMutexLocker k(&_imp->common->selectionLock);
+    for (std::list<KnobTableItemWPtr>::const_iterator it = _imp->common->selectedItems.begin(); it != _imp->common->selectedItems.end(); ++it) {
         KnobTableItemPtr i = it->lock();
         if (!i) {
             continue;
@@ -1414,7 +1427,7 @@ KnobItemsTable::getSelectedItems() const
 void
 KnobItemsTable::beginEditSelection()
 {
-    QMutexLocker k(&_imp->selectionLock);
+    QMutexLocker k(&_imp->common->selectionLock);
     _imp->incrementSelectionCounter();
 
 }
@@ -1424,10 +1437,10 @@ KnobItemsTable::endEditSelection(TableChangeReasonEnum reason)
 {
     bool doEnd = false;
     {
-        QMutexLocker k(&_imp->selectionLock);
+        QMutexLocker k(&_imp->common->selectionLock);
         if (_imp->decrementSelectionCounter()) {
 
-            if (_imp->beginSelectionCounter == 0) {
+            if (_imp->common->beginSelectionCounter == 0) {
                 doEnd = true;
             }
         }
@@ -1443,9 +1456,9 @@ KnobItemsTable::addToSelection(const std::list<KnobTableItemPtr >& items, TableC
 {
     bool hasCalledBegin = false;
     {
-        QMutexLocker k(&_imp->selectionLock);
+        QMutexLocker k(&_imp->common->selectionLock);
 
-        if (!_imp->beginSelectionCounter) {
+        if (!_imp->common->beginSelectionCounter) {
             _imp->incrementSelectionCounter();
             hasCalledBegin = true;
         }
@@ -1486,9 +1499,9 @@ KnobItemsTable::removeFromSelection(const std::list<KnobTableItemPtr >& items, T
     bool hasCalledBegin = false;
 
     {
-        QMutexLocker k(&_imp->selectionLock);
+        QMutexLocker k(&_imp->common->selectionLock);
 
-        if (!_imp->beginSelectionCounter) {
+        if (!_imp->common->beginSelectionCounter) {
             _imp->incrementSelectionCounter();
             hasCalledBegin = true;
         }
@@ -1540,8 +1553,8 @@ KnobItemsTable::selectAll(TableChangeReasonEnum reason)
     beginEditSelection();
     std::vector<KnobTableItemPtr> items;
     {
-        QMutexLocker k(&_imp->topLevelItemsLock);
-        items = _imp->topLevelItems;
+        QMutexLocker k(&_imp->common->topLevelItemsLock);
+        items = _imp->common->topLevelItems;
     }
     for (std::vector<KnobTableItemPtr>::iterator it = items.begin(); it != items.end(); ++it) {
         addToSelectionRecursive(*it, reason, this);
@@ -1557,8 +1570,8 @@ KnobItemsTable::findDeepestSelectedItemContainer() const
 
     std::list<KnobTableItemWPtr> selection;
     {
-        QMutexLocker k(&_imp->selectionLock);
-        selection = _imp->selectedItems;
+        QMutexLocker k(&_imp->common->selectionLock);
+        selection = _imp->common->selectedItems;
     }
 
     for (std::list<KnobTableItemWPtr>::const_iterator it = selection.begin(); it != selection.end(); ++it) {
@@ -1582,7 +1595,7 @@ KnobItemsTable::findDeepestSelectedItemContainer() const
 bool
 KnobItemsTable::isPerItemKnobMaster(const KnobIPtr& masterKnob)
 {
-    for (std::list<KnobIWPtr>::const_iterator it = _imp->perItemMasterKnobs.begin(); it!=_imp->perItemMasterKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->common->perItemMasterKnobs.begin(); it!=_imp->common->perItemMasterKnobs.end(); ++it) {
         if (it->lock() == masterKnob) {
             return true;
         }
@@ -1603,7 +1616,7 @@ KnobItemsTable::addPerItemKnobMaster(const KnobIPtr& masterKnob)
     masterKnob->setEnabled(false);
     masterKnob->setIsPersistent(false);
 
-    _imp->perItemMasterKnobs.push_back(masterKnob);
+    _imp->common->perItemMasterKnobs.push_back(masterKnob);
 
     QObject::connect(masterKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onMasterKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), Qt::UniqueConnection);
 }
@@ -1620,14 +1633,14 @@ KnobItemsTable::onMasterKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReasonE
         return;
     }
     if (reason != eValueChangedReasonTimeChanged) {
-        QMutexLocker k(&_imp->selectionLock);
+        QMutexLocker k(&_imp->common->selectionLock);
 
         // We may be in endSelection() when we  copy the masterKnob from the selection. In that case we don't want to recurse
         // again or we would hit an infinite loop.
-        if (_imp->masterKnobUpdatesBlocked > 0) {
+        if (_imp->common->masterKnobUpdatesBlocked > 0) {
             return;
         }
-        for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+        for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->common->selectedItems.begin(); it2!= _imp->common->selectedItems.end(); ++it2) {
             KnobTableItemPtr item = it2->lock();
             if (!item) {
                 continue;
@@ -1659,8 +1672,8 @@ KnobItemsTable::onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReas
     // If a selected item knob changes, update the master knob unless multiple knobs are selected
     // Prevent the onMasterKnobValueChanged() to have any effect so that other items knobs are left
     // untouched.
-    ++_imp->masterKnobUpdatesBlocked;
-    for (std::list<KnobIWPtr>::const_iterator it = _imp->perItemMasterKnobs.begin(); it != _imp->perItemMasterKnobs.end(); ++it) {
+    ++_imp->common->masterKnobUpdatesBlocked;
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->common->perItemMasterKnobs.begin(); it != _imp->common->perItemMasterKnobs.end(); ++it) {
         KnobIPtr masterKnob = it->lock();
         if (!masterKnob) {
             continue;
@@ -1670,7 +1683,7 @@ KnobItemsTable::onSelectionKnobValueChanged(ViewSetSpec,DimSpec,ValueChangedReas
         }
         masterKnob->copyKnob(itemKnob);
     }
-    --_imp->masterKnobUpdatesBlocked;
+    --_imp->common->masterKnobUpdatesBlocked;
 }
 
 void
@@ -1680,24 +1693,24 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
     std::list<KnobTableItemPtr> itemsAdded, itemsRemoved;
     {
         // Avoid recursions
-        QMutexLocker k(&_imp->selectionLock);
-        if (_imp->selectionRecursion > 0) {
-            _imp->itemsRemovedFromSelection.clear();
-            _imp->newItemsInSelection.clear();
+        QMutexLocker k(&_imp->common->selectionLock);
+        if (_imp->common->selectionRecursion > 0) {
+            _imp->common->itemsRemovedFromSelection.clear();
+            _imp->common->newItemsInSelection.clear();
             return;
         }
-        if ( _imp->itemsRemovedFromSelection.empty() && _imp->newItemsInSelection.empty() ) {
+        if ( _imp->common->itemsRemovedFromSelection.empty() && _imp->common->newItemsInSelection.empty() ) {
             return;
         }
 
-        ++_imp->selectionRecursion;
+        ++_imp->common->selectionRecursion;
 
         // Remove from selection and unslave from master knobs
-        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
-            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->itemsRemovedFromSelection.begin(); it != _imp->common->itemsRemovedFromSelection.end(); ++it) {
+            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->common->selectedItems.begin(); it2!= _imp->common->selectedItems.end(); ++it2) {
                 if ( it2->lock() == *it) {
                     itemsRemoved.push_back(*it);
-                    _imp->selectedItems.erase(it2);
+                    _imp->common->selectedItems.erase(it2);
                     break;
                 }
 
@@ -1706,9 +1719,9 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
         }
 
         // Add to selection (if not already selected) and slave to master knobs
-        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
+        for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->newItemsInSelection.begin(); it != _imp->common->newItemsInSelection.end(); ++it) {
             bool found = false;
-            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->common->selectedItems.begin(); it2!= _imp->common->selectedItems.end(); ++it2) {
                 if ( it2->lock() == *it) {
                     found = true;
                     break;
@@ -1716,14 +1729,14 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
             }
             if (!found) {
                 itemsAdded.push_back(*it);
-                _imp->selectedItems.push_back(*it);
+                _imp->common->selectedItems.push_back(*it);
             }
         }
 
 
         // For each master knobs, look in selected items for a knob with the same script-name. If found, then slave the item's
         // knob to the master knob.
-        for (std::list<KnobIWPtr>::iterator it = _imp->perItemMasterKnobs.begin(); it != _imp->perItemMasterKnobs.end(); ++it) {
+        for (std::list<KnobIWPtr>::iterator it = _imp->common->perItemMasterKnobs.begin(); it != _imp->common->perItemMasterKnobs.end(); ++it) {
             KnobIPtr masterKnob = it->lock();
             if (!masterKnob) {
                 continue;
@@ -1731,7 +1744,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
             // Get the number of selected items with the given knob
             int nItemsWithKnob = 0;
-            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->selectedItems.begin(); it2!= _imp->selectedItems.end(); ++it2) {
+            for (std::list<KnobTableItemWPtr>::iterator it2 = _imp->common->selectedItems.begin(); it2!= _imp->common->selectedItems.end(); ++it2) {
                 KnobTableItemPtr item = it2->lock();
                 if (!item) {
                     continue;
@@ -1751,9 +1764,9 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
 
             // We need this otherwise the copyKnob() function would emit the value changed signal of the master knob
             // which would in turn call onMasterKnobValueChanged and recurse.
-            ++_imp->masterKnobUpdatesBlocked;
+            ++_imp->common->masterKnobUpdatesBlocked;
 
-            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->newItemsInSelection.begin(); it != _imp->newItemsInSelection.end(); ++it) {
+            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->newItemsInSelection.begin(); it != _imp->common->newItemsInSelection.end(); ++it) {
                 KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
                 if (!itemKnob) {
                     continue;
@@ -1770,7 +1783,7 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
                 }
             }
 
-            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->itemsRemovedFromSelection.begin(); it != _imp->itemsRemovedFromSelection.end(); ++it) {
+            for (std::set<KnobTableItemPtr>::const_iterator it = _imp->common->itemsRemovedFromSelection.begin(); it != _imp->common->itemsRemovedFromSelection.end(); ++it) {
                 KnobIPtr itemKnob = (*it)->getKnobByName(masterKnob->getName());
                 if (!itemKnob) {
                     continue;
@@ -1783,13 +1796,13 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
                 }
             }
 
-            --_imp->masterKnobUpdatesBlocked;
+            --_imp->common->masterKnobUpdatesBlocked;
 
         } // for all master knobs
 
 
-        _imp->itemsRemovedFromSelection.clear();
-        _imp->newItemsInSelection.clear();
+        _imp->common->itemsRemovedFromSelection.clear();
+        _imp->common->newItemsInSelection.clear();
 
     } //  QMutexLocker k(&_imp->selectionLock);
 
@@ -1801,8 +1814,8 @@ KnobItemsTable::endSelection(TableChangeReasonEnum reason)
         node->runAfterTableItemsSelectionChangedCallback(itemsRemoved, itemsAdded, reason);
     }
 
-    QMutexLocker k(&_imp->selectionLock);
-    --_imp->selectionRecursion;
+    QMutexLocker k(&_imp->common->selectionLock);
+    --_imp->common->selectionRecursion;
 
 } // endSelection
 
@@ -1812,7 +1825,7 @@ KnobItemsTable::declareItemsToPython()
 {
     assert(QThread::currentThread() == qApp->thread());
 
-    _imp->pythonPrefix = getTablePythonPrefix();
+    _imp->common->pythonPrefix = getTablePythonPrefix();
 
     NodePtr node = getNode();
     if (!node) {
@@ -1822,7 +1835,7 @@ KnobItemsTable::declareItemsToPython()
     std::string nodeName = node->getFullyQualifiedName();
     std::string nodeFullName = appID + "." + nodeName;
     std::string err;
-    std::string script = nodeFullName + "." + _imp->pythonPrefix + " = " + nodeFullName + ".getItemsTable()\n";
+    std::string script = nodeFullName + "." + _imp->common->pythonPrefix + " = " + nodeFullName + ".getItemsTable()\n";
     if ( !appPTR->isBackground() ) {
         node->getApp()->printAutoDeclaredVariable(script);
     }
@@ -1842,7 +1855,7 @@ KnobItemsTable::declareItemsToPython()
 const std::string&
 KnobItemsTable::getPythonPrefix() const
 {
-    return _imp->pythonPrefix;
+    return _imp->common->pythonPrefix;
 }
 
 void
@@ -1852,7 +1865,7 @@ KnobItemsTable::removeItemAsPythonField(const KnobTableItemPtr& item)
     if (!node) {
         return;
     }
-    if (_imp->pythonPrefix.empty()) {
+    if (_imp->common->pythonPrefix.empty()) {
         return;
     }
     std::string appID = node->getApp()->getAppIDString();
@@ -1860,7 +1873,7 @@ KnobItemsTable::removeItemAsPythonField(const KnobTableItemPtr& item)
     std::string nodeFullName = appID + "." + nodeName;
     std::string err;
     std::stringstream ss;
-    ss << "del " << nodeFullName << "." << _imp->pythonPrefix << "." << item->getFullyQualifiedName() << "\n";
+    ss << "del " << nodeFullName << "." << _imp->common->pythonPrefix << "." << item->getFullyQualifiedName() << "\n";
     std::string script =  ss.str();
 
     if ( !appPTR->isBackground() ) {
@@ -1880,7 +1893,7 @@ KnobItemsTable::declareItemAsPythonField(const KnobTableItemPtr& item)
     if (!node) {
         return;
     }
-    if (_imp->pythonPrefix.empty()) {
+    if (_imp->common->pythonPrefix.empty()) {
         return;
     }
     std::string appID = node->getApp()->getAppIDString();
@@ -1890,15 +1903,15 @@ KnobItemsTable::declareItemAsPythonField(const KnobTableItemPtr& item)
     std::string itemName = item->getFullyQualifiedName();
     std::stringstream ss;
 
-    ss << nodeFullName << "." << _imp->pythonPrefix << "." << itemName << " = ";
-    ss << nodeFullName << "." << _imp->pythonPrefix << ".getItemByFullyQualifiedScriptName(\"" << itemName + "\")\n";
+    ss << nodeFullName << "." << _imp->common->pythonPrefix << "." << itemName << " = ";
+    ss << nodeFullName << "." << _imp->common->pythonPrefix << ".getItemByFullyQualifiedScriptName(\"" << itemName + "\")\n";
 
 
     // Declare its knobs
     const KnobsVec& knobs = item->getKnobs();
     for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        ss << nodeFullName << "." << _imp->pythonPrefix << "." << itemName << "." << (*it)->getName() << " = ";
-        ss << nodeFullName << "." << _imp->pythonPrefix << "." << itemName << ".getParam(\"" << (*it)->getName() << "\")\n";
+        ss << nodeFullName << "." << _imp->common->pythonPrefix << "." << itemName << "." << (*it)->getName() << " = ";
+        ss << nodeFullName << "." << _imp->common->pythonPrefix << "." << itemName << ".getParam(\"" << (*it)->getName() << "\")\n";
     }
     std::string script = ss.str();
     if ( !appPTR->isBackground() ) {
@@ -1928,7 +1941,7 @@ KnobIPtr
 KnobItemsTable::createMasterKnobDuplicateOnItem(const KnobTableItemPtr& item, const std::string& paramName)
 {
     KnobIPtr masterKnob;
-    for (std::list<KnobIWPtr>::const_iterator it = _imp->perItemMasterKnobs.begin(); it!=_imp->perItemMasterKnobs.end(); ++it) {
+    for (std::list<KnobIWPtr>::const_iterator it = _imp->common->perItemMasterKnobs.begin(); it!=_imp->common->perItemMasterKnobs.end(); ++it) {
         KnobIPtr knob = it->lock();
         if (!knob) {
             continue;
@@ -1967,7 +1980,7 @@ KnobTableItem::splitView(ViewIdx view)
     }
 
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
 
         CurvePtr& foundCurve = _imp->animationCurves[view];
         if (!foundCurve) {
@@ -1987,7 +2000,7 @@ KnobTableItem::unSplitView(ViewIdx view)
         return false;
     }
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         PerViewAnimationCurveMap::iterator foundView = _imp->animationCurves.find(view);
         if (foundView != _imp->animationCurves.end()) {
             _imp->animationCurves.erase(foundView);
@@ -2000,7 +2013,7 @@ KnobTableItem::unSplitView(ViewIdx view)
 ViewIdx
 KnobTableItem::getCurrentView_TLS() const
 {
-    KnobItemsTablePtr m = _imp->model.lock();
+    KnobItemsTablePtr m = _imp->common->model.lock();
     if (!m) {
         return ViewIdx(0);
     }
@@ -2025,7 +2038,7 @@ KnobTableItem::setKeyFrameInternal(TimeValue time,
                                   KeyFrame* newKey)
 {
     // Private - should not lock
-    assert(!_imp->lock.tryLock());
+    assert(!_imp->common->lock.tryLock());
 
     if (newKey) {
         newKey->setTime(time);
@@ -2065,7 +2078,7 @@ KnobTableItem::setKeyFrame(TimeValue time,
 {
     ValueChangedReturnCodeEnum ret;
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         ret = setKeyFrameInternal(time, view, newKey);
     }
     if (ret == eValueChangedReturnCodeKeyframeAdded) {
@@ -2088,7 +2101,7 @@ KnobTableItem::setMultipleKeyFrames(const std::list<double>& keys, ViewSetSpec v
     std::list<double> added,removed;
     KeyFrame key;
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         for (std::list<double>::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
             ValueChangedReturnCodeEnum ret = setKeyFrameInternal(TimeValue(*it), view, newKeys ? &key : 0);
             if (ret == eValueChangedReturnCodeKeyframeAdded) {
@@ -2152,7 +2165,7 @@ KnobTableItem::cloneCurve(ViewIdx view, DimIdx /*dimension*/, const Curve& curve
     std::list<double> keysAdded, keysRemoved;
     bool hasChanged;
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         CurvePtr thisCurve = getAnimationCurve(view, DimIdx(0));
         if (!thisCurve) {
             return false;
@@ -2201,7 +2214,7 @@ KnobTableItem::deleteValuesAtTimeInternal(const std::list<double>& times, ViewId
     std::list<double> keysRemoved, keysAdded;
 
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         try {
             for (std::list<double>::const_iterator it = times.begin(); it != times.end(); ++it) {
                 curve->removeKeyFrameWithTime(TimeValue(*it));
@@ -2240,7 +2253,7 @@ KnobTableItem::warpValuesAtTimeInternal(const std::list<double>& times, ViewIdx 
 
     std::list<double> keysAdded, keysRemoved;
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
         std::vector<KeyFrame> newKeys;
         if ( !curve->transformKeyframesValueAndTime(times, warp, keyframes, &keysAdded, &keysRemoved) ) {
             return false;
@@ -2284,7 +2297,7 @@ KnobTableItem::removeAnimationInternal(ViewIdx view, const CurvePtr& curve)
 {
     std::list<double> keysAdded, keysRemoved;
     {
-        QMutexLocker k(&_imp->lock);
+        QMutexLocker k(&_imp->common->lock);
 
         KeyFrameSet keys = curve->getKeyFrames_mt_safe();
         for (KeyFrameSet::const_iterator it = keys.begin(); it!=keys.end(); ++it) {
@@ -2669,7 +2682,7 @@ KnobItemsTable::fromSerialization(const SERIALIZATION_NAMESPACE::SerializationOb
         return;
     }
 
-    assert(_imp->topLevelItems.empty());
+    assert(_imp->common->topLevelItems.empty());
 
     for (std::list<SERIALIZATION_NAMESPACE::KnobTableItemSerializationPtr>::const_iterator it = serialization->items.begin(); it != serialization->items.end(); ++it) {
         KnobTableItemPtr item = createItemFromSerialization(*it);
@@ -2685,9 +2698,9 @@ KnobTableItem::refreshAfterTimeChange(bool isPlayback, TimeValue time)
     // Since the same  knob may appear across multiple columns, ensure it is refreshed once
     std::set<KnobIPtr> updatedKnobs;
 
-    QMutexLocker k(&_imp->lock);
-    for (std::size_t i = 0; i < _imp->columns.size(); ++i) {
-        KnobIPtr colKnob = _imp->columns[i].knob.lock();
+    QMutexLocker k(&_imp->common->lock);
+    for (std::size_t i = 0; i < _imp->common->columns.size(); ++i) {
+        KnobIPtr colKnob = _imp->common->columns[i].knob.lock();
         if (colKnob) {
             std::pair<std::set<KnobIPtr>::iterator, bool> ok = updatedKnobs.insert(colKnob);
             if (ok.second) {
@@ -2695,7 +2708,7 @@ KnobTableItem::refreshAfterTimeChange(bool isPlayback, TimeValue time)
             }
         }
     }
-    for (std::vector<KnobTableItemPtr>::const_iterator it = _imp->children.begin(); it != _imp->children.end(); ++it) {
+    for (std::vector<KnobTableItemPtr>::const_iterator it = _imp->common->children.begin(); it != _imp->common->children.end(); ++it) {
         (*it)->refreshAfterTimeChange(isPlayback, time);
     }
 }
@@ -2703,9 +2716,9 @@ KnobTableItem::refreshAfterTimeChange(bool isPlayback, TimeValue time)
 void
 KnobItemsTable::refreshAfterTimeChange(bool isPlayback, TimeValue time)
 {
-    QMutexLocker k(&_imp->topLevelItemsLock);
-    for (std::size_t i = 0; i < _imp->topLevelItems.size(); ++i) {
-        _imp->topLevelItems[i]->refreshAfterTimeChange(isPlayback, time);
+    QMutexLocker k(&_imp->common->topLevelItemsLock);
+    for (std::size_t i = 0; i < _imp->common->topLevelItems.size(); ++i) {
+        _imp->common->topLevelItems[i]->refreshAfterTimeChange(isPlayback, time);
     }
 }
 

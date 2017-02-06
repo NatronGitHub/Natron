@@ -82,9 +82,15 @@ private: // derives from EffectInstance
     // TODO: enable_shared_from_this
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     ViewerInstance(const NodePtr& node);
-
+    ViewerInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN;
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new ViewerInstance(mainInstance, render) );
+    }
+
 
     ViewerInstancePtr shared_from_this() {
         return boost::dynamic_pointer_cast<ViewerInstance>(KnobHolder::shared_from_this());
@@ -121,7 +127,7 @@ public:
 
     NodePtr getInputRecursive(int inputIndex) const;
 
-    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
+    void getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
 
     /**
      * @brief A ViewerNode is composed of 2 ViewerProcess nodes but it only has 1 layer and 1 alpha channel choices.
@@ -138,14 +144,12 @@ private:
                                          const RenderScale & scale,
                                          const RectI & roi,
                                          ViewIdx view,
-                                         const TreeRenderNodeArgsPtr& render,
                                          TimeValue* inputTime,
                                          ViewIdx* inputView,
                                          int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
                                           ViewIdx view,
-                                          const TreeRenderNodeArgsPtr& render,
                                           std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                           std::list<ImagePlaneDesc>* layersProduced,
                                           TimeValue* passThroughTime,

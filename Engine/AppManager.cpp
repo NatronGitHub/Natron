@@ -1959,7 +1959,7 @@ AppManager::loadNodesPresets()
                 }
 
 
-                PluginPtr p = Plugin::create(0, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
+                PluginPtr p = Plugin::create(0, 0, pyPlugID, pyPlugLabel, pyPlugVersionMajor, pyPlugVersionMinor, grouping);
                 if (!obj._pluginID.empty()) {
                     p->setProperty<std::string>(kNatronPluginPropPyPlugContainerID, obj._pluginID);
                 }
@@ -2168,7 +2168,7 @@ AppManager::loadPythonGroups()
         std::vector<std::string> grouping;
         boost::split(grouping, pluginGrouping, boost::is_any_of("/"));
 
-        PluginPtr p = Plugin::create(0, pluginID, pluginLabel, version, 0, grouping);
+        PluginPtr p = Plugin::create(0, 0, pluginID, pluginLabel, version, 0, grouping);
         p->setProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath, plugin.toStdString());
         p->setProperty<bool>(kNatronPluginPropPyPlugIsToolset, isToolset);
         p->setProperty<std::string>(kNatronPluginPropDescription, pluginDescription);

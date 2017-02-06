@@ -47,7 +47,7 @@ OneViewNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
-    PluginPtr ret = Plugin::create((void*)OneViewNode::create, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)OneViewNode::create, (void*)OneViewNode::createRenderClone, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
 
     QString desc =  tr("Takes one view from the input");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -59,6 +59,13 @@ OneViewNode::createPlugin()
 OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
+{
+
+}
+
+OneViewNode::OneViewNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp( new OneViewNodePrivate() )
 {
 
 }

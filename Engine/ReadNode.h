@@ -69,12 +69,18 @@ public:
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     ReadNode(const NodePtr& n);
-
+    ReadNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new ReadNode(node) );
     }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new ReadNode(mainInstance, render) );
+    }
+
 
     static PluginPtr createPlugin();
 
@@ -120,49 +126,44 @@ private:
                              ValueChangedReasonEnum reason,
                              ViewSetSpec view,
                              TimeValue time) OVERRIDE FINAL;
-    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
-    virtual ActionRetCodeEnum getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual ActionRetCodeEnum getLayersProducedAndNeeded(TimeValue time,
-                                                ViewIdx view,
-                                                const TreeRenderNodeArgsPtr& render,
-                                                std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
-                                                std::list<ImagePlaneDesc>* layersProduced,
-                                                TimeValue* passThroughTime,
-                                                ViewIdx* passThroughView,
-                                                int* passThroughInputNb) OVERRIDE;
+                                                         ViewIdx view,
+                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
+                                                         std::list<ImagePlaneDesc>* layersProduced,
+                                                         TimeValue* passThroughTime,
+                                                         ViewIdx* passThroughView,
+                                                         int* passThroughInputNb) OVERRIDE;
     virtual ActionRetCodeEnum beginSequenceRender(double first,
-
-                                           double last,
-                                           double step,
-                                           bool interactive,
-                                           const RenderScale & scale,
-                                           bool isSequentialRender,
-                                           bool isRenderResponseToUserInteraction,
-                                           bool draftMode,
-                                           ViewIdx view,
-                                           RenderBackendTypeEnum backend,
-                                           const EffectOpenGLContextDataPtr& glContextData,
-                                           const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                  double last,
+                                                  double step,
+                                                  bool interactive,
+                                                  const RenderScale & scale,
+                                                  bool isSequentialRender,
+                                                  bool isRenderResponseToUserInteraction,
+                                                  bool draftMode,
+                                                  ViewIdx view,
+                                                  RenderBackendTypeEnum backend,
+                                                  const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum endSequenceRender(double first,
-                                         double last,
-                                         double step,
-                                         bool interactive,
-                                         const RenderScale & scale,
-                                         bool isSequentialRender,
-                                         bool isRenderResponseToUserInteraction,
-                                         bool draftMode,
-                                         ViewIdx view,
-                                         RenderBackendTypeEnum backend,
-                                         const EffectOpenGLContextDataPtr& glContextData,
-                                         const TreeRenderNodeArgsPtr& render) OVERRIDE FINAL WARN_UNUSED_RETURN;
+                                                double last,
+                                                double step,
+                                                bool interactive,
+                                                const RenderScale & scale,
+                                                bool isSequentialRender,
+                                                bool isRenderResponseToUserInteraction,
+                                                bool draftMode,
+                                                ViewIdx view,
+                                                RenderBackendTypeEnum backend,
+                                                const EffectOpenGLContextDataPtr& glContextData) OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
     virtual ActionRetCodeEnum getRegionsOfInterest(TimeValue time,
-                                      const RenderScale & scale,
-                                      const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
-                                      ViewIdx view,
-                                      const TreeRenderNodeArgsPtr& render,
+                                                   const RenderScale & scale,
+                                                   const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
+                                                   ViewIdx view,
                                       RoIMap* ret) OVERRIDE FINAL;
-    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getFramesNeeded(TimeValue time, ViewIdx view,  FramesNeededMap* framesNeeded) OVERRIDE WARN_UNUSED_RETURN;
     boost::scoped_ptr<ReadNodePrivate> _imp;
 };
 

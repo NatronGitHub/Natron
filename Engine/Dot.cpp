@@ -34,7 +34,7 @@ Dot::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)Dot::create, PLUGINID_NATRON_DOT, "Dot", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)Dot::create, (void*)Dot::createRenderClone, PLUGINID_NATRON_DOT, "Dot", 1, 0, grouping);
 
     QString desc = tr("Doesn't do anything to the input image, this is used in the node graph to make bends in the links.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());

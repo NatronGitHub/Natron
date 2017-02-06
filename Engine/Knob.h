@@ -47,6 +47,7 @@
 #include "Engine/Cache.h" // CacheEntryLockerPtr - could we put this in EngineFwd.h?
 #include "Engine/DimensionIdx.h"
 #include "Engine/HashableObject.h"
+#include "Engine/KnobFactory.h"
 #include "Engine/KnobGuiI.h"
 #include "Engine/OverlaySupport.h"
 #include "Engine/Variant.h"
@@ -1235,6 +1236,8 @@ public:
                                                       bool applyDefaultValue,
                                                       DimIdx targetDimension) = 0;
 
+    virtual void clearRenderValuesCache() = 0;
+
 public:
 
     virtual bool useHostOverlayHandle() const { return false; }
@@ -1473,10 +1476,13 @@ protected: // derives from KnobI, parent of Knob
      * The dimension parameter indicates how many dimension the knob should have.
      * If declaredByPlugin is false then Natron will never call onKnobValueChanged on the holder.
      **/
-    KnobHelper(const KnobHolderPtr& holder,
-               const std::string &label,
-               int nDims = 1,
-               bool declaredByPlugin = true);
+    KnobHelper(const KnobHolderPtr& holder, const std::string &scriptName, int nDims = 1);
+
+    /**
+     * @brief Creates a knob that is a render clone of the other knob.
+     * Everything non render related is forwarded to otherKnob
+     **/
+    KnobHelper(const KnobHolderPtr& holder, const KnobIPtr& mainKnob);
 
 public:
     virtual ~KnobHelper();
@@ -1868,8 +1874,6 @@ protected:
 
     void refreshCurveMinMax(ViewSetSpec view, DimSpec dimension);
 
-    RenderValuesCachePtr getHolderRenderValuesCache(TimeValue* currentTime = 0, ViewIdx* currentView = 0) const;
-
     virtual void copyValuesFromCurve(DimIdx /*dim*/, ViewIdx /*view*/) {}
 
 
@@ -1902,6 +1906,7 @@ private:
 
     void expressionChanged(DimIdx dimension, ViewIdx view);
 
+    friend struct KnobHelperPrivate;
     boost::scoped_ptr<KnobHelperPrivate> _imp;
 };
 
@@ -1911,6 +1916,34 @@ toKnobHelper(const KnobIPtr& knob)
     return boost::dynamic_pointer_cast<KnobHelper>(knob);
 }
 
+struct DimTimeView
+{
+    TimeValue time;
+    DimIdx dimension;
+    ViewIdx view;
+};
+
+struct ValueDimTimeViewCompareLess
+{
+
+    bool operator() (const DimTimeView& lhs,
+                     const DimTimeView& rhs) const
+    {
+        if (lhs.view < rhs.view) {
+            return true;
+        } else if (lhs.view > rhs.view) {
+            return false;
+        } else {
+            if (lhs.dimension < rhs.dimension) {
+                return true;
+            } else if (lhs.dimension > rhs.dimension) {
+                return false;
+            } else {
+                return lhs.time < rhs.time;
+            }
+        }
+    }
+};
 
 /**
  * @brief A Knob is a parameter, templated by a data type.
@@ -1935,9 +1968,10 @@ protected: // derives from KnobI, parent of KnobInt, KnobBool
      * KnobColor which has 4 doubles (r,g,b,a), hence 4 dimensions.
      **/
     Knob(const KnobHolderPtr& holder,
-         const std::string & label,
-         int nDims = 1,
-         bool declaredByPlugin = true);
+         const std::string & name,
+         int nDims = 1);
+
+    Knob(const KnobHolderPtr& holder, const KnobIPtr& mainKnob);
 
 public:
     virtual ~Knob();
@@ -2272,6 +2306,13 @@ public:
      **/
     virtual bool areDimensionsEqual(ViewIdx view) OVERRIDE FINAL;
 
+    virtual void clearRenderValuesCache() OVERRIDE
+    {
+        if (_valuesCache) {
+            _valuesCache->clear();
+        }
+    }
+
 protected:
 
     virtual void refreshCurveMinMaxInternal(ViewIdx view, DimIdx dimension) OVERRIDE FINAL;
@@ -2282,9 +2323,7 @@ protected:
 
 private:
 
-    T getValueInternal(const boost::shared_ptr<Knob<T> >& thisShared,
-                       const RenderValuesCachePtr& valuesCache,
-                       TimeValue currentTime,
+    T getValueInternal(TimeValue currentTime,
                        DimIdx dimension,
                        ViewIdx view,
                        bool clamp);
@@ -2320,21 +2359,47 @@ private:
     //////////////////////////////////////////////////////////////////////
     /////////////////////////////////// End implementation of KnobI
     //////////////////////////////////////////////////////////////////////
-
-
-    ///Here is all the stuff we couldn't get rid of the template parameter
-    mutable QMutex _defaultValueMutex; //< protects  _defaultValues and _exprRes
-
     struct DefaultValue
     {
         T initialValue,value;
         bool defaultValueSet;
     };
-    std::vector<DefaultValue> _defaultValues;
 
-    // Only for double and int
-    mutable QMutex _minMaxMutex;
-    std::vector<T>  _minimums, _maximums, _displayMins, _displayMaxs;
+    struct Data
+    {
+        ///Here is all the stuff we couldn't get rid of the template parameter
+        mutable QMutex defaultValueMutex; //< protects  _defaultValues and _exprRes
+
+
+        std::vector<DefaultValue> defaultValues;
+
+        // Only for double and int
+        mutable QMutex minMaxMutex;
+        std::vector<T>  minimums, maximums, displayMins, displayMaxs;
+
+        Data(int nDims)
+        : defaultValueMutex()
+        , defaultValues(nDims)
+        , minMaxMutex(QMutex::Recursive)
+        , minimums(nDims)
+        , maximums(nDims)
+        , displayMins(nDims)
+        , displayMaxs(nDims)
+        {
+
+        }
+    };
+
+
+
+    typedef std::map<DimTimeView, T, ValueDimTimeViewCompareLess> ValuesCacheMap;
+
+    // Used only on render clones to cache the result of getValue/getValueAtTime so it stays
+    // consistant throughout a render.
+    boost::scoped_ptr<ValuesCacheMap> _valuesCache;
+
+    // The Data pointer is shared accross the "main" instance and the render clones.
+    boost::shared_ptr<Data> _data;
 
 };
 
@@ -2449,9 +2514,10 @@ class AnimatingKnobStringHelper
 public:
 
     AnimatingKnobStringHelper(const KnobHolderPtr& holder,
-                              const std::string &label,
-                              int nDims,
-                              bool declaredByPlugin = true);
+                              const std::string &name,
+                              int nDims);
+
+    AnimatingKnobStringHelper(const KnobHolderPtr& holder, const KnobIPtr& mainInstance);
 
     virtual ~AnimatingKnobStringHelper();
 
@@ -2530,13 +2596,17 @@ protected: // parent of NamedKnobHolder, Project, Settings
      **/
     KnobHolder(const AppInstancePtr& appInstance);
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
-    KnobHolder(const KnobHolder& other);
+    // The constructor to create a render clone
+    KnobHolder(const KnobHolderPtr& mainInstance, const TreeRenderPtr& render);
 
 public:
 
     virtual ~KnobHolder();
+
+    /**
+     * @brief If this KnobHolder is a render clone, return the "main instance" one.
+     **/
+    KnobHolderPtr getMainInstance() const;
 
     bool isRenderClone() const;
 
@@ -2579,9 +2649,6 @@ public:
     bool moveKnobOneStepUp(const KnobIPtr& knob);
     bool moveKnobOneStepDown(const KnobIPtr& knob);
 
-
-    template<typename K>
-    boost::shared_ptr<K> createKnob(const std::string &label, int nDims = 1) const WARN_UNUSED_RETURN;
     AppInstancePtr getApp() const WARN_UNUSED_RETURN;
     KnobIPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
     KnobIPtr getOtherKnobByName(const std::string & name, const KnobIConstPtr& caller) const WARN_UNUSED_RETURN;
@@ -2709,6 +2776,27 @@ public:
     KnobPagePtr getUserPageKnob() const;
 
     /**
+     * @brief Creates a new knob. If another knob with the same name already exists, its name
+     * will be modified so it is unique. If you don't want the name to be modified you may use
+     * the getOrCreateKnob function instead.
+     **/
+    template <typename K>
+    boost::shared_ptr<K> createKnob(const std::string& name, int dimension = 1)
+    {
+        return appPTR->getKnobFactory().createKnob<K>(shared_from_this(), name, dimension);
+    }
+
+    /**
+     * @brief Same as createKnob() except that it does not create a knob if another knob already
+     * exists with the same name.
+     **/
+    template <typename K>
+    boost::shared_ptr<K> getOrCreateKnob(const std::string& name, int dimension = 1)
+    {
+        return appPTR->getKnobFactory().getOrCreateKnob<K>(shared_from_this(), name, dimension);
+    }
+
+    /**
      * @brief These functions below are dynamic in a sense that they can be called at any time (on the main-thread)
      * to create knobs on the fly. Their gui will be properly created. In order to notify the GUI that new parameters were
      * created, you must call refreshKnobs() that will re-scan for new parameters
@@ -2758,6 +2846,8 @@ public:
 
     virtual TimeValue getCurrentTime_TLS() const;
     virtual ViewIdx getCurrentView_TLS() const;
+
+    TreeRenderPtr getCurrentRender() const;
 
 protected:
 
@@ -2823,6 +2913,15 @@ public:
      **/
     void getUserPages(std::list<KnobPagePtr>& userPages) const;
 
+    /**
+     * @brief Return true if a clone of this knob holder is needed when rendering 
+     **/
+    virtual bool isRenderCloneNeeded() const
+    {
+        return false;
+    }
+
+
 protected:
 
 
@@ -2868,7 +2967,25 @@ protected:
         return false;
     }
 
-private:
+    /**
+     * @brief Create a new clone for rendering.
+     * Can only be called on the main instance!
+     **/
+    KnobHolderPtr createRenderClone(const TreeRenderPtr& render) const;
+
+    /**
+     * @brief Remove a clone previously created with createRenderClone
+     * Can only be called on the main instance!
+     **/
+    void removeRenderClone(const KnobHolderPtr& clone);
+
+    /**
+     * @brief Returns a clone created for the given render
+     * Can only be called on the main instance!
+     **/
+    KnobHolderPtr getRenderClone(const TreeRenderPtr& render) const;
+
+protected:
 
 
     /**
@@ -2876,6 +2993,22 @@ private:
      * KnobFactory.
      **/
     virtual void initializeKnobs() = 0;
+
+    /**
+     * @brief Create a shallow render copy of this holder. 
+     * If this is implemented, also implement isRenderCloneNeeded()
+     **/
+    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const
+    {
+        Q_UNUSED(render);
+        return KnobHolderPtr();
+    }
+
+    /**
+     * @brief Implement to fetch knobs needed during any action called on a render thread.
+     * Derived implementation should call base-class version
+     **/
+    virtual void fetchRenderCloneKnobs();
 };
 
 
@@ -2910,8 +3043,8 @@ protected: // derives from KnobHolder, parent of EffectInstance, TrackMarker, Di
     {
     }
 
-    NamedKnobHolder(const NamedKnobHolder& other)
-    : KnobHolder(other)
+    NamedKnobHolder(const boost::shared_ptr<NamedKnobHolder>& other, const TreeRenderPtr& render)
+    : KnobHolder(other, render)
     {
     }
 
@@ -2924,12 +3057,6 @@ public:
 };
 
 
-template<typename K>
-boost::shared_ptr<K> KnobHolder::createKnob(const std::string &label,
-                                            int nDims) const
-{
-    return AppManager::createKnob<K>(shared_from_this(), label, nDims);
-}
 
 NATRON_NAMESPACE_EXIT;
 

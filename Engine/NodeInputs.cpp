@@ -252,13 +252,7 @@ Node::getInputInternal(bool useGroupRedirections,
     if (!_imp->inputsInitialized) {
         qDebug() << "Node::getInput(): inputs not initialized";
     }
-    // If during a render, return the render local graph.
-    // In the future we should make small lightweights copies of EffectInstance
-    // to avoid the usage of TLS.
-    TreeRenderNodeArgsPtr render = _imp->effect->getCurrentRender_TLS();
-    if (render) {
-        return render->getInputNode(index);
-    }
+
 
     QMutexLocker l(&_imp->inputsMutex);
     if ( ( index >= (int)_imp->inputs.size() ) || (index < 0) ) {

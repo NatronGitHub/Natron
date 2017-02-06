@@ -43,7 +43,6 @@ struct AbortableThreadPrivate
     QThread* thread;
     std::string threadName;
     mutable QMutex renderMutex;
-    TreeRenderWPtr currentRender;
 
     std::string currentActionName;
     NodeWPtr currentActionNode;
@@ -52,7 +51,6 @@ struct AbortableThreadPrivate
         : thread(thread)
         , threadName()
         , renderMutex()
-        , currentRender()
         , currentActionName()
         , currentActionNode()
     {
@@ -115,33 +113,6 @@ QThread*
 AbortableThread::getThread() const
 {
     return _imp->thread;
-}
-
-
-void
-AbortableThread::setCurrentRender(const TreeRenderPtr& render)
-{
-    TreeRenderPtr curRender;
-    {
-        QMutexLocker k(&_imp->renderMutex);
-        curRender = _imp->currentRender.lock();
-        _imp->currentRender = render;
-    }
-    if (render) {
-        render->registerThreadForRender(this);
-    } else {
-        if (curRender) {
-            curRender->unregisterThreadForRender(this);
-        }
-    }
-}
-
-
-TreeRenderPtr
-AbortableThread::getCurrentRender() const
-{
-    QMutexLocker k(&_imp->renderMutex);
-    return _imp->currentRender.lock();
 }
 
 

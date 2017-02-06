@@ -87,7 +87,6 @@
 #include "Engine/PrecompNode.h"
 #include "Engine/Project.h"
 #include "Engine/ReadNode.h"
-#include "Engine/RenderValuesCache.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
@@ -191,198 +190,6 @@ Node::getCurrentNodePresets() const
 }
 
 
-void
-Node::setRenderThreadSafety(RenderSafetyEnum safety)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentThreadSafety = safety;
-}
-
-RenderSafetyEnum
-Node::getCurrentRenderThreadSafety() const
-{
-    if ( !isMultiThreadingSupportEnabledForPlugin() ) {
-        return eRenderSafetyUnsafe;
-    }
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentThreadSafety;
-}
-
-void
-Node::revertToPluginThreadSafety()
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentThreadSafety = _imp->pluginSafety;
-}
-
-
-RenderSafetyEnum
-Node::getPluginRenderThreadSafety() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-    return _imp->pluginSafety;
-}
-
-void
-Node::setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentSupportOpenGLRender = support;
-}
-
-PluginOpenGLRenderSupport
-Node::getCurrentOpenGLRenderSupport() const
-{
-    PluginPtr plugin = getPlugin();
-    if (plugin) {
-        PluginOpenGLRenderSupport pluginProp = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
-        if (pluginProp != ePluginOpenGLRenderSupportYes) {
-            return pluginProp;
-        }
-    }
-
-    if (!getApp()->getProject()->isGPURenderingEnabledInProject()) {
-        return ePluginOpenGLRenderSupportNone;
-    }
-
-    // Ok still turned on, check the value of the opengl support knob in the Node page
-    KnobChoicePtr openglSupportKnob = _imp->openglRenderingEnabledKnob.lock();
-    if (openglSupportKnob) {
-        int index = openglSupportKnob->getValue();
-        if (index == 1) {
-            return ePluginOpenGLRenderSupportNone;
-        } else if (index == 2 && getApp()->isBackground()) {
-            return ePluginOpenGLRenderSupportNone;
-        }
-    }
-
-    // Descriptor returned that it supported OpenGL, let's see if it turned off/on in the instance the OpenGL rendering
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportOpenGLRender;
-}
-
-void
-Node::setCurrentSequentialRenderSupport(SequentialPreferenceEnum support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentSupportSequentialRender = support;
-}
-
-SequentialPreferenceEnum
-Node::getCurrentSequentialRenderSupport() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportSequentialRender;
-}
-
-void
-Node::setCurrentSupportTiles(bool support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentSupportTiles = support;
-}
-
-bool
-Node::getCurrentSupportTiles() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportTiles;
-}
-
-void
-Node::setCurrentSupportRenderScale(bool support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentSupportsRenderScale = support;
-}
-
-bool
-Node::getCurrentSupportRenderScale() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentSupportsRenderScale;
-}
-
-void
-Node::setCurrentCanDistort(bool support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentCanDistort = support;
-}
-
-bool
-Node::getCurrentCanDistort() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentCanDistort;
-}
-
-void
-Node::setCurrentCanTransform(bool support)
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    _imp->currentDeprecatedTransformSupport = support;
-}
-
-bool
-Node::getCurrentCanTransform() const
-{
-    QMutexLocker k(&_imp->pluginsPropMutex);
-
-    return _imp->currentDeprecatedTransformSupport;
-}
-
-void
-Node::refreshDynamicProperties()
-{
-    PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
-    PluginPtr plugin = getPlugin();
-    if (plugin) {
-        pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
-        if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
-            // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
-            pluginGLSupport = _imp->effect->getCurrentOpenGLSupport();
-        }
-    }
-
-
-    setCurrentOpenGLRenderSupport(pluginGLSupport);
-    bool tilesSupported = _imp->effect->supportsTiles();
-    bool supportsRenderScale = _imp->effect->supportsRenderScale();
-    bool multiResSupported = _imp->effect->supportsMultiResolution();
-    bool canDistort = _imp->effect->getCanDistort();
-    bool currentDeprecatedTransformSupport = _imp->effect->getCanTransform();
-
-    _imp->pluginSafety = _imp->effect->getCurrentRenderThreadSafety();
-    
-    if (!tilesSupported && _imp->pluginSafety == eRenderSafetyFullySafeFrame) {
-        // an effect which does not support tiles cannot support host frame threading
-        setRenderThreadSafety(eRenderSafetyFullySafe);
-    } else {
-        setRenderThreadSafety(_imp->pluginSafety);
-    }
-
-    setCurrentSupportTiles(multiResSupported && tilesSupported);
-    setCurrentSupportRenderScale(supportsRenderScale);
-    setCurrentSequentialRenderSupport( _imp->effect->getSequentialPreference() );
-    setCurrentCanDistort(canDistort);
-    setCurrentCanTransform(currentDeprecatedTransformSupport);
-}
-
 bool
 Node::isRenderScaleSupportEnabledForPlugin() const
 {
@@ -436,20 +243,20 @@ Node::setProcessChannelsValues(bool doR,
                                bool doB,
                                bool doA)
 {
-    KnobBoolPtr eR = _imp->enabledChan[0].lock();
+    KnobBoolPtr eR = _imp->effect->getProcessChannelKnob(0);
 
     if (eR) {
         eR->setValue(doR);
     }
-    KnobBoolPtr eG = _imp->enabledChan[1].lock();
+    KnobBoolPtr eG = _imp->effect->getProcessChannelKnob(1);
     if (eG) {
         eG->setValue(doG);
     }
-    KnobBoolPtr eB = _imp->enabledChan[2].lock();
+    KnobBoolPtr eB = _imp->effect->getProcessChannelKnob(2);
     if (eB) {
         eB->setValue(doB);
     }
-    KnobBoolPtr eA = _imp->enabledChan[3].lock();
+    KnobBoolPtr eA = _imp->effect->getProcessChannelKnob(3);
     if (eA) {
         eA->setValue(doA);
     }
@@ -812,34 +619,6 @@ Node::isActivated() const
     QMutexLocker l(&_imp->activatedMutex);
 
     return _imp->activated;
-}
-
-
-bool
-Node::isKeepInAnimationModuleButtonDown() const
-{
-    KnobButtonPtr b = _imp->keepInAnimationModuleKnob.lock();
-    if (!b) {
-        return false;
-    }
-    return b->getValue();
-}
-
-bool
-Node::isForceCachingEnabled() const
-{
-    KnobBoolPtr b = _imp->forceCaching.lock();
-    return b ? b->getValue() : false;
-}
-
-void
-Node::setForceCachingEnabled(bool value)
-{
-    KnobBoolPtr b = _imp->forceCaching.lock();
-    if (!b) {
-        return;
-    }
-    b->setValue(value);
 }
 
 
@@ -1489,80 +1268,6 @@ Node::getOriginalFrameRangeForReader(const std::string& pluginID,
     }
 }
 
-void
-Node::computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange)
-{
-    /*
-       We compute the original frame range of the sequence for the plug-in
-       because the plug-in does not have access to the exact original pattern
-       hence may not exactly end-up with the same file sequence as what the user
-       selected from the file dialog.
-     */
-    ReadNodePtr isReadNode = isEffectReadNode();
-    std::string pluginID;
-
-    if (isReadNode) {
-        NodePtr embeddedPlugin = isReadNode->getEmbeddedReader();
-        if (embeddedPlugin) {
-            pluginID = embeddedPlugin->getPluginID();
-        }
-    } else {
-        pluginID = getPluginID();
-    }
-
-    int leftBound = INT_MIN;
-    int rightBound = INT_MAX;
-    ///Set the originalFrameRange parameter of the reader if it has one.
-    KnobIntPtr originalFrameRangeKnob = toKnobInt(getKnobByName(kReaderParamNameOriginalFrameRange));
-    KnobIntPtr firstFrameKnob = toKnobInt(getKnobByName(kReaderParamNameFirstFrame));
-    KnobIntPtr lastFrameKnob = toKnobInt(getKnobByName(kReaderParamNameLastFrame));
-    if (originalFrameRangeKnob) {
-        if (originalFrameRangeKnob->getNDimensions() == 2){
-            KnobFilePtr isFile = toKnobFile(fileKnob);
-            assert(isFile);
-            if (!isFile) {
-                throw std::logic_error("Node::computeFrameRangeForReader");
-            }
-
-            if ( ReadNode::isVideoReader(pluginID) ) {
-                ///If the plug-in is a video, only ffmpeg may know how many frames there are
-                std::vector<int> frameRange(2);
-                frameRange[0] = INT_MIN;
-                frameRange[1] = INT_MAX;
-                originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
-            } else {
-                std::string pattern = isFile->getRawFileName();
-                getApp()->getProject()->canonicalizePath(pattern);
-                SequenceParsing::SequenceFromPattern seq;
-                FileSystemModel::filesListFromPattern(pattern, &seq);
-                if ( seq.empty() || (seq.size() == 1) ) {
-                    leftBound = 1;
-                    rightBound = 1;
-                } else if (seq.size() > 1) {
-                    leftBound = seq.begin()->first;
-                    rightBound = seq.rbegin()->first;
-                }
-                std::vector<int> frameRange(2);
-                frameRange[0] = leftBound;
-                frameRange[1] = rightBound;
-                originalFrameRangeKnob->setValueAcrossDimensions(frameRange);
-
-                if (setFrameRange) {
-                    if (firstFrameKnob) {
-                        firstFrameKnob->setValue(leftBound);
-                        firstFrameKnob->setRange(leftBound, rightBound);
-                    }
-                    if (lastFrameKnob) {
-                        lastFrameKnob->setValue(rightBound);
-                        lastFrameKnob->setRange(leftBound, rightBound);
-                    }
-                }
-            }
-        }
-    }
-
-}
-
 bool
 Node::isSubGraphEditedByUser() const
 {
@@ -1657,28 +1362,6 @@ Node::refreshCreatedViews(const KnobIPtr& knob)
     Q_EMIT availableViewsChanged();
 } // Node::refreshCreatedViews
 
-bool
-Node::getHideInputsKnobValue() const
-{
-    KnobBoolPtr k = _imp->hideInputs.lock();
-
-    if (!k) {
-        return false;
-    }
-
-    return k->getValue();
-}
-
-void
-Node::setHideInputsKnobValue(bool hidden)
-{
-    KnobBoolPtr k = _imp->hideInputs.lock();
-
-    if (!k) {
-        return;
-    }
-    k->setValue(hidden);
-}
 
 void
 Node::onRefreshIdentityStateRequestReceived()
@@ -1760,135 +1443,7 @@ Node::refreshIdentityState()
     Q_EMIT refreshIdentityStateRequested();
 }
 
-KnobStringPtr
-Node::getExtraLabelKnob() const
-{
-    return _imp->nodeLabelKnob.lock();
-}
 
-KnobStringPtr
-Node::getOFXSubLabelKnob() const
-{
-    return _imp->ofxSubLabelKnob.lock();
-}
-
-
-KnobBoolPtr
-Node::getDisabledKnob() const
-{
-    return _imp->disableNodeKnob.lock();
-}
-
-bool
-Node::isLifetimeActivated(int *firstFrame,
-                          int *lastFrame) const
-{
-    KnobBoolPtr enableLifetimeKnob = _imp->enableLifeTimeKnob.lock();
-
-    if (!enableLifetimeKnob) {
-        return false;
-    }
-    if ( !enableLifetimeKnob->getValue() ) {
-        return false;
-    }
-    KnobIntPtr lifetimeKnob = _imp->lifeTimeKnob.lock();
-    *firstFrame = lifetimeKnob->getValue(DimIdx(0));
-    *lastFrame = lifetimeKnob->getValue(DimIdx(1));
-
-    return true;
-}
-
-KnobBoolPtr
-Node::getLifeTimeEnabledKnob() const
-{
-    return _imp->enableLifeTimeKnob.lock();
-}
-
-KnobIntPtr
-Node::getLifeTimeKnob() const
-{
-    return _imp->lifeTimeKnob.lock();
-}
-
-bool
-Node::isNodeDisabledForFrame(TimeValue time, ViewIdx view) const
-{
-    // Check disabled knob
-    KnobBoolPtr b = _imp->disableNodeKnob.lock();
-    if (b && b->getValueAtTime(time, DimIdx(0), view)) {
-        return true;
-    }
-
-    NodeGroupPtr isContainerGrp = toNodeGroup( getGroup() );
-
-    // If within a group, check the group's disabled knob
-    if (isContainerGrp) {
-        if (isContainerGrp->getNode()->isNodeDisabledForFrame(time, view)) {
-            return true;
-        }
-    }
-
-    // If an internal IO node, check the main meta-node disabled knob
-    NodePtr ioContainer = getIOContainer();
-    if (ioContainer) {
-        return ioContainer->isNodeDisabledForFrame(time, view);
-    }
-
-    RotoDrawableItemPtr attachedItem = getAttachedRotoItem();
-    if (attachedItem && !attachedItem->isActivated(time, view)) {
-        return true;
-    }
-
-    // Check lifetime
-    int lifeTimeFirst, lifeTimeEnd;
-    bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
-    bool enabled = ( !lifeTimeEnabled || (time >= lifeTimeFirst && time <= lifeTimeEnd) );
-    return !enabled;
-} // isNodeDisabledForFrame
-
-bool
-Node::getDisabledKnobValue() const
-{
-    // Check disabled knob
-    KnobBoolPtr b = _imp->disableNodeKnob.lock();
-    if (b && b->getValue()) {
-        return true;
-    }
-
-    NodeGroupPtr isContainerGrp = toNodeGroup( getGroup() );
-
-    // If within a group, check the group's disabled knob
-    if (isContainerGrp) {
-        if (isContainerGrp->getNode()->getDisabledKnobValue()) {
-            return true;
-        }
-    }
-
-    // If an internal IO node, check the main meta-node disabled knob
-    NodePtr ioContainer = getIOContainer();
-    if (ioContainer) {
-        return ioContainer->getDisabledKnobValue();
-    }
-
-
-    int lifeTimeFirst, lifeTimeEnd;
-    bool lifeTimeEnabled = isLifetimeActivated(&lifeTimeFirst, &lifeTimeEnd);
-    double curFrame = _imp->effect->getCurrentTime_TLS();
-    bool enabled = ( !lifeTimeEnabled || (curFrame >= lifeTimeFirst && curFrame <= lifeTimeEnd) );
-
-    return !enabled;
-}
-
-
-void
-Node::setNodeDisabled(bool disabled)
-{
-    KnobBoolPtr b = _imp->disableNodeKnob.lock();
-
-    if (b) {
-        b->setValue(disabled);
-    }
-}
 
 
 ImageBitDepthEnum
@@ -1965,60 +1520,11 @@ Node::isSupportedBitDepth(ImageBitDepthEnum depth) const
     return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
 
-std::string
-Node::getNodeExtraLabel() const
-{
-    KnobStringPtr s = _imp->nodeLabelKnob.lock();
-
-    if (s) {
-        return s->getValue();
-    } else {
-        return std::string();
-    }
-}
-
-
 
 bool
 Node::isBackdropNode() const
 {
     return getPluginID() == PLUGINID_NATRON_BACKDROP;
-}
-
-void
-Node::updateEffectSubLabelKnob(const QString & name)
-{
-    if (!_imp->effect) {
-        return;
-    }
-    KnobStringPtr strKnob = _imp->ofxSubLabelKnob.lock();
-    if (strKnob) {
-        strKnob->setValue( name.toStdString() );
-    }
-}
-
-
-
-
-void
-Node::onNodeMetadatasRefreshedOnMainThread(const NodeMetadata& meta)
-{
-    assert(QThread::currentThread() == qApp->thread());
-
-    // Refresh warnings
-    _imp->refreshMetadaWarnings(meta);
-
-    // Refresh identity state
-    refreshIdentityState();
-
-    // Refresh default layer & mask channel selectors
-    refreshChannelSelectors();
-
-    // Premult might have changed, check for warnings
-    checkForPremultWarningAndCheckboxes();
-
-    // Refresh channel checkbox and layer selectors visibility
-    refreshLayersSelectorsVisibility();
 }
 
 U64
@@ -2311,91 +1817,82 @@ Node::getAttachedRotoItem() const
     return thisItem;
 }
 
-
-
-KnobBoolPtr
-Node::getProcessAllLayersKnob() const
+void
+Node::setPagesOrder(const std::list<std::string>& pages)
 {
-    return _imp->processAllLayersKnob.lock();
+    //re-order the pages
+    std::vector<KnobIPtr> pagesOrdered(pages.size());
+
+    KnobsVec knobs = getKnobs();
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr isPage = toKnobPage(*it);
+        if (!isPage) {
+            continue;
+        }
+
+        // Look for it in the pages
+        int i = 0;
+        bool found = false;
+        for (std::list<std::string>::const_iterator it2 = pages.begin(); it2 != pages.end(); ++it2, ++i) {
+            if (*it2 == isPage->getName()) {
+                pagesOrdered[i] = *it;
+                getEffectInstance()->removeKnobFromList(isPage);
+                isPage->setSecret(false);
+                found = true;
+                break;
+            }
+        }
+        if (!found && isPage->isUserKnob()) {
+            isPage->setSecret(true);
+        }
+    }
+    int index = 0;
+    for (std::vector<KnobIPtr >::iterator it =  pagesOrdered.begin(); it != pagesOrdered.end(); ++it, ++index) {
+        if (*it) {
+            getEffectInstance()->insertKnob(index, *it);
+        }
+    }
 }
+
+
+std::list<std::string>
+Node::getPagesOrder() const
+{
+    KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
+    std::list<std::string> ret;
+
+    for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
+        KnobPagePtr ispage = toKnobPage(*it);
+        if (ispage && !ispage->getChildren().empty() && !ispage->getIsSecret()) {
+            ret.push_back( ispage->getName() );
+        }
+    }
+
+    return ret;
+}
+
+bool
+Node::hasPageOrderChangedSinceDefault() const
+{
+    std::list<std::string> pagesOrder = getPagesOrder();
+    if (pagesOrder.size() != _imp->defaultPagesOrder.size()) {
+        return true;
+    }
+    std::list<std::string>::const_iterator it2 = _imp->defaultPagesOrder.begin();
+    for (std::list<std::string>::const_iterator it = pagesOrder.begin(); it!=pagesOrder.end(); ++it, ++it2) {
+        if (*it != *it2) {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 void
-Node::checkForPremultWarningAndCheckboxes()
+Node::refreshDefaultPagesOrder()
 {
-    if ( isOutputNode() || _imp->effect->isGenerator() || _imp->effect->isReader() ) {
-        return;
-    }
-    KnobBoolPtr chans[4];
-    KnobStringPtr premultWarn = _imp->premultWarning.lock();
-    if (!premultWarn) {
-        return;
-    }
-    NodePtr prefInput = getPreferredInputNode();
-
-    if ( !prefInput ) {
-        //No input, do not warn
-        premultWarn->setSecret(true);
-
-        return;
-    }
-    for (int i = 0; i < 4; ++i) {
-        chans[i] = _imp->enabledChan[i].lock();
-
-        //No checkboxes
-        if (!chans[i]) {
-            premultWarn->setSecret(true);
-
-            return;
-        }
-
-        //not RGBA
-        if ( chans[i]->getIsSecret() ) {
-            return;
-        }
-    }
-
-    ImagePremultiplicationEnum premult = _imp->effect->getPremult(TreeRenderNodeArgsPtr());
-
-    //not premult
-    if (premult != eImagePremultiplicationPremultiplied) {
-        premultWarn->setSecret(true);
-
-        return;
-    }
-
-    bool checked[4];
-    checked[3] = chans[3]->getValue();
-
-    //alpha unchecked
-    if (!checked[3]) {
-        premultWarn->setSecret(true);
-
-        return;
-    }
-    for (int i = 0; i < 3; ++i) {
-        checked[i] = chans[i]->getValue();
-        if (!checked[i]) {
-            premultWarn->setSecret(false);
-
-            return;
-        }
-    }
-
-    //RGB checked
-    premultWarn->setSecret(true);
-} // Node::checkForPremultWarningAndCheckboxes
-
-
-
-double
-Node::getHostMixingValue(TimeValue time,
-                         ViewIdx view) const
-{
-    KnobDoublePtr mix = _imp->mixWithSource.lock();
-
-    return mix ? mix->getValueAtTime(time, DimIdx(0), view) : 1.;
+    _imp->refreshDefaultPagesOrder();
 }
-
 
 NATRON_NAMESPACE_EXIT;
 

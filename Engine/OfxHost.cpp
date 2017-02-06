@@ -966,7 +966,7 @@ OfxHost::loadOFXPlugins(IOPluginsMap* readersMap,
 
         bool isDescMarkdown = (bool)p->getDescriptor().getProps().getIntProperty(kNatronOfxPropDescriptionIsMarkdown);
 
-        PluginPtr natronPlugin = Plugin::create((void*)OfxEffectInstance::create, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
+        PluginPtr natronPlugin = Plugin::create((void*)OfxEffectInstance::create, (void*)OfxEffectInstance::createRenderClone, openfxId, pluginLabel, p->getVersionMajor(), p->getVersionMinor(), groups, groupIcons);
         natronPlugin->setProperty<std::string>(kNatronPluginPropDescription, description);
         natronPlugin->setProperty<bool>(kNatronPluginPropDescriptionIsMarkdown, isDescMarkdown);
         natronPlugin->setProperty<std::string>(kNatronPluginPropResourcesPath, resourcesPath);

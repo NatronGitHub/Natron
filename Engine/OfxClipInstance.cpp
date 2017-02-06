@@ -746,7 +746,11 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
     // Get the current action arguments from the thread local storage
-    TreeRenderNodeArgsPtr renderArgs = effectTLS->getRenderArgs();
+    FrameViewRequestPtr requestData = effectTLS->getCurrentFrameViewRequest();
+    TreeRenderNodeArgsPtr renderArgs;
+    if (requestData) {
+        renderArgs = requestData->getRenderArgs();
+    }
 
     TimeValue currentActionTime;
     ViewIdx currentActionView;
@@ -818,28 +822,25 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
 
     EffectInstance::GetImageOutArgs outArgs;
-    boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs(new EffectInstance::GetImageInArgs);
-    {
-        inArgs->currentTime = currentActionTime;
-        inArgs->currentView = currentActionView;
-        inArgs->currentScale = currentActionScale;
-        inArgs->inputProxyScale = renderArgs->getParentRender()->getProxyScale();
-        inArgs->inputMipMapLevel = renderArgs->getParentRender()->getMipMapLevel();
-        RenderBackendTypeEnum backend = retTexture ? eRenderBackendTypeOpenGL : eRenderBackendTypeCPU;
-        inArgs->renderBackend = &backend;
-        inArgs->renderArgs = renderArgs;
-        inArgs->inputTime = inputTime;
-        inArgs->inputView = inputView;
-        inArgs->inputNb = inputNb;
+    RenderBackendTypeEnum backend = retTexture ? eRenderBackendTypeOpenGL : eRenderBackendTypeCPU;
+    boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs(new EffectInstance::GetImageInArgs(requestData, &backend));
+    inArgs->inputTime = inputTime;
+    inArgs->inputView = inputView;
+    inArgs->inputNb = inputNb;
+    inArgs->plane = &plane;
+    inArgs->optionalBounds = &boundsParam;
+
+    // If clipGetImage is called out of the blue in a non render action, still support it.
+    if (!requestData) {
+        inArgs->inputProxyScale = RenderScale(1.);
+        // We are not in a render action, no proxy scale should be active anyway.
+        assert(currentActionScale.x == currentActionScale.y);
+        inArgs->inputMipMapLevel = Image::getLevelFromScale(currentActionScale.x);
     }
     bool ok = effect->getImagePlane(*inArgs, &outArgs);
-    if (!ok || outArgs.imagePlanes.empty() || outArgs.roiPixel.isNull()) {
+    if (!ok || !outArgs.image || outArgs.roiPixel.isNull()) {
         return false;
     }
-
-
-    ImagePtr image = outArgs.imagePlanes.begin()->second;
-    assert(image);
 
     // If the effect is not multi-planar (most of effects) then the returned image might have a different
     // layer name than the color layer but should always have the same number of components than the components
@@ -848,7 +849,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     std::string componentsStr;
     int nComps;
     {
-        const ImagePlaneDesc& imageLayer = image->getLayer();
+        const ImagePlaneDesc& imageLayer = outArgs.image->getLayer();
         nComps = imageLayer.getNumComponents();
         if (multiPlanar) {
             // Multi-planar: return exactly the layer
@@ -880,11 +881,16 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     double par = effect->getAspectRatio(renderArgs, inputNb);
     ImageFieldingOrderEnum fielding = inputEffect->getFieldingOrder(renderArgs);
     ImagePremultiplicationEnum premult = inputEffect->getPremult(renderArgs);
-    TreeRenderNodeArgsPtr inputRenderArgs = renderArgs->getInputRenderArgs(inputNb);
-    assert(inputRenderArgs);
+    TreeRenderNodeArgsPtr inputRenderArgs;
+    if (renderArgs) {
+        inputRenderArgs = renderArgs->getInputRenderArgs(inputNb);
+    }
+
 
     U64 inputNodeFrameViewHash = 0;
-    inputRenderArgs->getFrameViewHash(inputTime, inputView, &inputNodeFrameViewHash);
+    if (inputRenderArgs) {
+        inputRenderArgs->getFrameViewHash(inputTime, inputView, &inputNodeFrameViewHash);
+    }
 
     RectD rod;
     {
@@ -900,11 +906,11 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
+        OfxImage* ofxImage = new OfxImage(getEffectHolder(), inputNb, outArgs.image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(getEffectHolder(), inputNb, image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(getEffectHolder(), inputNb, outArgs.image, rod, premult, fielding, inputNodeFrameViewHash, outArgs.roiPixel, outArgs.distortionStack, componentsStr, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }
@@ -927,7 +933,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     }
     EffectInstanceTLSDataPtr effectTLS = effect->getTLSObject();
 
-    std::map<ImagePlaneDesc, PlaneToRender> outputPlanes;
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
 
     // Get the current action arguments. The action must be the render action, otherwise it fails.
     TreeRenderNodeArgsPtr renderArgs = effectTLS->getRenderArgs();
@@ -972,9 +978,9 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     // Find an image plane already allocated, if not create it.
     ImagePtr image;
-    for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getPlaneID() == plane.getPlaneID()) {
-            image = it->second.tmpImage;
+            image = it->second;
             break;
         }
     }
@@ -1282,7 +1288,7 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
         assert(internalImage->getNumTiles() == 1);
 
         Image::Tile tile;
-        internalImage->getTileAt(0, &tile);
+        internalImage->getTileAt(0, 0, &tile);
         Image::CPUTileData tileData;
         internalImage->getCPUTileData(tile, &tileData);
 

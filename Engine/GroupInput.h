@@ -55,9 +55,20 @@ private: // derives from EffectInstance
     {
     }
 
+    GroupInput(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+    : NoOpBase(mainInstance, render)
+    {
+
+    }
+
 public:
 
     static PluginPtr createPlugin();
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new GroupInput(mainInstance, render) );
+    }
 
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {

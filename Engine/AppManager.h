@@ -188,46 +188,7 @@ public:
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
-    template <class K>
-    static
-    boost::shared_ptr<K> createKnob(const KnobHolderPtr& holder,
-                                    const std::string &label,
-                                    int dimension = 1,
-                                    bool declaredByPlugin = true)
-    {
-        return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
-    }
 
-    template <class K>
-    static
-    boost::shared_ptr<K>
-    createKnob(const KnobHolderPtr& holder,
-               const QString &label,
-               int dimension = 1,
-               bool declaredByPlugin = true)
-    {
-        return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
-    }
-
-    template <typename K>
-    static boost::shared_ptr<K>
-    checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
-                                      const std::string& scriptName,
-                                      const std::string& label,
-                                      int dimension = 1)
-    {
-        return appPTR->getKnobFactory().checkIfKnobExistsWithNameOrCreate<K>(holder, scriptName, label, dimension);
-    }
-
-    template <typename K>
-    static boost::shared_ptr<K>
-    checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
-                                      const std::string& scriptName,
-                                      const QString& label,
-                                      int dimension = 1) 
-    {
-        return checkIfKnobExistsWithNameOrCreate<K>(holder, scriptName, label.toStdString(), dimension);
-    }
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the

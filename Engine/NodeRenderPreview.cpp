@@ -284,34 +284,28 @@ Node::makePreviewImage(TimeValue time,
         args->treeRoot = shared_from_this();
         args->time = time;
         args->view = ViewIdx(0);
-
-        // Render all layers produced
-        args->layers = 0;
         args->mipMapLevel = mipMapLevel;
-
         args->proxyScale = RenderScale(1.);
-
-        // Render the RoD
-        args->canonicalRoI = 0;
         args->draftMode = false;
         args->playback = false;
         args->byPassCache = false;
     }
 
-    std::map<ImagePlaneDesc, ImagePtr> planes;
+    ImagePtr img;
     TreeRenderPtr render = TreeRender::create(args);
-    ActionRetCodeEnum stat = render->launchRender(&planes);
-    if (isFailureRetCode(stat)) {
-        return false;
+    {
+        FrameViewRequestPtr outputRequest;
+        ActionRetCodeEnum stat = render->launchRender(&outputRequest);
+        if (isFailureRetCode(stat)) {
+            return false;
+        }
+        img = outputRequest->getImagePlane();
     }
-    assert(!planes.empty());
-
-    const ImagePtr& img = planes.begin()->second;
 
     // we convert only when input is Linear.
     // Rec709 and sRGB is acceptable for preview
     bool convertToSrgb = getApp()->getDefaultColorSpaceForBitDepth( img->getBitDepth() ) == eViewerColorSpaceLinear;
-
+    
     // Ensure we have an untiled format
     ImagePtr imageForPreview = img;
     if (imageForPreview->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || imageForPreview->getStorageMode() == eStorageModeGLTex){
@@ -336,7 +330,7 @@ Node::makePreviewImage(TimeValue time,
         }
     }
     Image::Tile mainTile;
-    imageForPreview->getTileAt(0, &mainTile);
+    imageForPreview->getTileAt(0, 0, &mainTile);
 
     Image::CPUTileData tileData;
     imageForPreview->getCPUTileData(mainTile, &tileData);

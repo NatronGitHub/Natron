@@ -70,8 +70,8 @@ AnimatingObjectI::AnimatingObjectI()
 
 }
 
-AnimatingObjectI::AnimatingObjectI(const AnimatingObjectI& other)
-: _imp(new AnimatingObjectIPrivate(*other._imp))
+AnimatingObjectI::AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other)
+: _imp(new AnimatingObjectIPrivate(*other->_imp))
 {
 
 }
