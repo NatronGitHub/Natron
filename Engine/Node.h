@@ -856,11 +856,6 @@ public:
 
     int getIsNodeRenderingCounter() const;
 
-
-    //see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
-    //only 1 clone can render at any time
-    QMutex & getRenderInstancesSharedMutex();
-
     void refreshPreviewsRecursivelyDownstream(TimeValue time);
 
     void refreshPreviewsRecursivelyUpstream(TimeValue time);

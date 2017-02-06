@@ -211,7 +211,7 @@ struct EffectInstanceCommonData
     RenderSafetyEnum pluginSafety;
 
     DynamicProperties props;
-
+    
     EffectInstanceCommonData()
     : attachedContextsMutex(QMutex::Recursive)
     , attachedContexts()
@@ -228,6 +228,10 @@ struct EffectInstanceCommonData
 struct RenderCloneData
 {
     mutable QMutex lock;
+    
+    
+    // Used to lock out render instances when the plug-in render thread safety is set to eRenderSafetyInstanceSafe
+    mutable QMutex instanceSafeRenderMutex;
 
     // Render-local inputs vector
     std::vector<EffectInstancePtr> inputs;
@@ -265,6 +269,7 @@ struct RenderCloneData
 
     RenderCloneData()
     : lock()
+    , instanceSafeRenderMutex(QMutex::Recursive)
     , inputs()
     , currentFrameView()
     , frames()

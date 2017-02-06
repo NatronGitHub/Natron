@@ -42,9 +42,11 @@ struct EffectInstanceTLSDataPrivate
     // the current action.
     std::list<GenericActionTLSArgsPtr> actionsArgsStack;
 
+    FrameViewRequestPtr currentFrameViewRequest;
 
     EffectInstanceTLSDataPrivate()
     : actionsArgsStack()
+    , currentFrameViewRequest()
     {
 
     }
@@ -86,29 +88,6 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
     _imp->actionsArgsStack.push_back(args);
 }
 
-
-void
-EffectInstanceTLSData::pushRenderActionArgs(const FrameViewRequestPtr& requestData, const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
-{
-    RenderActionTLSDataPtr args(new RenderActionTLSData);
-    args->time = requestData->getTime();
-    args->view = requestData->getView();
-
-    args->scale = requestData->getRenderClone()->getCurrentRender()->getProxyScale();
-    double mipMapScale = Image::getScaleFromMipMapLevel(requestData->getRenderMappedMipMapLevel());
-    args->scale.x *= mipMapScale;
-    args->scale.y *= mipMapScale;
-    args->requestData = requestData;
-    args->outputPlanes = outputPlanes;
-#ifdef DEBUG
-    args->canSetValue = false;
-    if (!_imp->actionsArgsStack.empty()) {
-        qDebug() << "The render action cannot be caller recursively, this is a bug!";
-    }
-#endif
-    _imp->actionsArgsStack.push_back(args);
-
-}
 
 void
 EffectInstanceTLSData::popArgs()
@@ -166,27 +145,33 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
     return true;
 }
 
-
-bool
-EffectInstanceTLSData::getCurrentRenderActionArgs(FrameViewRequestPtr* requestData, std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
+void
+EffectInstanceTLSData::setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData)
 {
-    if (_imp->actionsArgsStack.empty()) {
-        return false;
-    }
-    const RenderActionTLSData* args = dynamic_cast<const RenderActionTLSData*>(_imp->actionsArgsStack.back().get());
-    if (!args) {
-        return false;
-    }
-
     if (requestData) {
-        *requestData = args->requestData;
+        assert(!_imp->currentFrameViewRequest);
+        _imp->currentFrameViewRequest = requestData;
+    } else {
+        _imp->currentFrameViewRequest.reset();
     }
+}
 
-    if (outputPlanes) {
-        *outputPlanes = args->outputPlanes;
-    }
- 
-    return true;
+
+FrameViewRequestPtr
+EffectInstanceTLSData::getCurrentFrameViewRequest() const
+{
+    return _imp->currentFrameViewRequest;
+}
+
+SetCurrentFrameViewRequest_RAII::SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request)
+: _effect(effect)
+{
+    effect->setCurrentFrameViewRequestTLS(request);
+}
+
+SetCurrentFrameViewRequest_RAII::~SetCurrentFrameViewRequest_RAII()
+{
+    _effect->setCurrentFrameViewRequestTLS(FrameViewRequestPtr());
 }
 
 NATRON_NAMESPACE_EXIT

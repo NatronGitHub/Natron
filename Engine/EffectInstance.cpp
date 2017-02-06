@@ -927,6 +927,12 @@ EffectInstance::getOrCreateTLSObject() const
     return EffectInstanceTLSDataPtr();
 }
 
+void
+EffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& /*request*/)
+{
+
+}
+
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)
     : _node(node)
     , _didGroupEmit(false)
@@ -1865,6 +1871,7 @@ EffectInstance::refreshDynamicProperties()
     setCurrentCanDistort(canDistort);
     setCurrentCanTransform(currentDeprecatedTransformSupport);
 }
+
 
 
 NATRON_NAMESPACE_EXIT;

@@ -144,7 +144,7 @@ EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
 bool
 EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, FrameViewRequestPtr* request)
 {
-
+    assert(renderData);
     // Needs to be locked: frame requests may be added spontaneously by the plug-in
     QMutexLocker k(&renderData->lock);
 
@@ -352,13 +352,12 @@ EffectInstance::Implementation::tiledRenderingFunctorInSeparateThread(const Rect
     ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
     QThread* curThread = QThread::currentThread();
 
-    boost::scoped_ptr<FrameViewRequestSetter_RAII> tlsSetFrameViewRequest;
+    // Set the frame view request on the TLS for OpenFX
+    boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> tlsSetFrameViewRequest;
     if (spawnerThread != curThread) {
 
         // Set the frame view request on the TLS
-        EffectInstanceTLSDataPtr tls = _publicInterface->getTLSObject();
-        assert(tls);
-        tlsSetFrameViewRequest.reset(new FrameViewRequestSetter_RAII(tls, args.requestData));
+        tlsSetFrameViewRequest.reset(new SetCurrentFrameViewRequest_RAII(_publicInterface->shared_from_this(), args.requestData));
     }
 
 
@@ -405,7 +404,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
     if (rectToRender.identityInputNumber != -1) {
         stat = renderHandlerIdentity(rectToRender, args);
     } else {
-        stat = renderHandlerPlugin(tls, rectToRender, combinedScale, args);
+        stat = renderHandlerPlugin(rectToRender, combinedScale, args);
         if (isFailureRetCode(stat)) {
             return stat;
         }

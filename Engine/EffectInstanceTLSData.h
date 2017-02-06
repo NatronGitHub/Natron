@@ -86,43 +86,6 @@ public:
 };
 
 
-// The render action requires extra data that are valid throughout a single call
-// of a render action
-class RenderActionTLSData : public GenericActionTLSArgs
-{
-public:
-
-    RenderActionTLSData()
-    : GenericActionTLSArgs()
-    , requestData()
-    , outputPlanes()
-    {
-
-    }
-
-    virtual ~RenderActionTLSData() OVERRIDE {}
-
-
-    // The render window passed to the render action in pixel coordinates.
-    // This is useful in the following cases:
-    // - the clipGetImage function on the output clip should return an OfxImage with bounds
-    // that are clipped to this render window so that if the plug-in attempts to write outside
-    // the bounds, it may be caught easily
-    // - When calling clipGetImage on an input clip: if the call at the given time/view was not
-    // advertised properly in getFramesNeeded, we don't have an image pointer to the input image,
-    // thus we have to re-call renderRoI: but we need to make sure we don't ask for more than what
-    // getRegionsOfInterest on the renderwindow would compute.
-    FrameViewRequestPtr requestData;
-
-    // For each plane to render, the pointers to the internal images used during render: this is used when calling
-    // clipGetImage on the output clip.
-    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
-
-
-
-};
-
-
 //these are per-node thread-local data
 struct EffectInstanceTLSDataPrivate;
 class EffectInstanceTLSData
@@ -143,11 +106,6 @@ public:
                         , bool canBeCalledRecursively
 #endif
                         );
-
-    /**
-     * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
-     **/
-    void pushRenderActionArgs(const FrameViewRequestPtr& requestData, const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes);
 
     /**
      * @brief Pop the current action TLS. This call must match a call to one of the push functions above.
@@ -171,10 +129,15 @@ public:
     bool getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const;
 
     /**
+     * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
+     **/
+    void setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData);
+
+    
+    /**
      * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
      **/
-    bool getCurrentRenderActionArgs(FrameViewRequestPtr* requestData,
-                                    std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const;
+    FrameViewRequestPtr getCurrentFrameViewRequest() const;
 
 
     /**
@@ -223,24 +186,15 @@ public:
 
 };
 
-class RenderActionArgsSetter_RAII
+
+class SetCurrentFrameViewRequest_RAII
 {
-    EffectInstanceTLSDataPtr tls;
+    EffectInstancePtr _effect;
 public:
-
-    RenderActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
-                                const FrameViewRequestPtr& reqestData,
-                                const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
-    : tls(tls)
-    {
-        tls->pushRenderActionArgs(reqestData, outputPlanes);
-    }
-
-    ~RenderActionArgsSetter_RAII()
-    {
-        tls->popArgs();
-    }
     
+    SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request);
+    
+    ~SetCurrentFrameViewRequest_RAII();
 };
 
 NATRON_NAMESPACE_EXIT;

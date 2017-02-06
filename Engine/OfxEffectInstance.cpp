@@ -432,6 +432,12 @@ OfxEffectInstance::getOrCreateTLSObject() const
     return _imp->common->tlsData->getOrCreateTLSData();
 }
 
+void
+OfxEffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request)
+{
+    EffectInstanceTLSDataPtr tls = getOrCreateTLSObject();
+    tls->setCurrentFrameViewRequest(request);
+}
 
 void
 OfxEffectInstance::tryInitializeOverlayInteracts()
@@ -1582,10 +1588,12 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         TreeRenderPtr render = getCurrentRender();
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        RenderActionArgsSetter_RAII actionArgsTls(tls,
-                                                  args.requestData,
-                                                  args.outputPlanes);
-
+        EffectActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
         stat = _imp->common->effect->renderAction((OfxTime)args.time,
                                           field,
                                           ofxRoI,

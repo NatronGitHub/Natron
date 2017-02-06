@@ -1230,13 +1230,6 @@ Node::getIsNodeRenderingCounter() const
 }
 
 
-QMutex &
-Node::getRenderInstancesSharedMutex()
-{
-    return _imp->renderInstancesSharedMutex;
-}
-
-
 NodePtr
 Node::getIOContainer() const
 {

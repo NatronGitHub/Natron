@@ -994,6 +994,8 @@ private:
     bool invalidateHashCacheImplementation(const bool recurse, std::set<HashableObject*>* invalidatedObjects);
 
 public:
+    
+    virtual void setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request);
 
     virtual TimeValue getCurrentTime_TLS() const OVERRIDE;
     virtual ViewIdx getCurrentView_TLS() const OVERRIDE;
@@ -1197,7 +1199,8 @@ public:
                                     const ImagePlaneDesc& plane,
                                     const RectD & roiCanonical,
                                     int inputNbInRequester,
-                                    const FrameViewRequestPtr& requester);
+                                    const FrameViewRequestPtr& requester,
+                                    FrameViewRequestPtr* createdRequest);
 
     /**
      * @brief Function that actually render the planes given by planesToRender. In output, the planes field in the results struct
@@ -1705,7 +1708,7 @@ public:
      **/
     virtual void onEffectCreated(const CreateNodeArgs& /*args*/) {}
 
-
+    
 
     /**
      * @brief Must return whether the plug-in handles concurrent OpenGL renders or not.
@@ -1865,6 +1868,7 @@ private:
 
 
 protected:
+    
 
     virtual void refreshExtraStateAfterTimeChanged(bool isPlayback, TimeValue time)  OVERRIDE;
 
@@ -1900,15 +1904,13 @@ protected:
 
 private:
 
+    
+    
     class Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 
     friend class ReadNode;
     friend class WriteNode;
-
-
-
-
 
 
 private:

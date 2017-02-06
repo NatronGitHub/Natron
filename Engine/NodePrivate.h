@@ -237,9 +237,6 @@ public:
     // waits in this condition until the preview is aborted
     QWaitCondition mustQuitPreviewCond;
 
-    // Used to lock out render instances when the plug-in render thread safety is set to eRenderSafetyInstanceSafe
-    QMutex renderInstancesSharedMutex;
-
     // When creating a Reader or Writer node, this is a pointer to the meta node that the user actually see.
     NodeWPtr ioContainer;
 

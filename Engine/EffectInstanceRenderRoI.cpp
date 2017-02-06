@@ -105,7 +105,6 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
 {
 
     *isPassThrough = false;
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
 
     std::list<ImagePlaneDesc> layersProduced, passThroughLayers;
     int passThroughInputNb;
@@ -118,7 +117,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
 
         GetComponentsResultsPtr results = requestData->getComponentsResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(requestData->getTime(), requestData->getView(), renderArgs, &results);
+            ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(requestData->getTime(), requestData->getView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -157,14 +156,16 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                     return eActionStatusFailed;
                 } else {
                     // Fetch the plane on the pass-through input
-                    TreeRenderNodeArgsPtr passThroughRenderArgs = renderArgs->getInputRenderArgs(passThroughInputNb);
-                    if (!passThroughRenderArgs) {
-                        return eActionStatusFailed;
+                    
+                    EffectInstancePtr ptInput = _publicInterface->getInput(passThroughInputNb);
+                    if (!ptInput) {
+                        return eActionStatusInputDisconnected;
                     }
+                        
                     *isPassThrough = true;
 
                     FrameViewRequestPtr createdRequest;
-                    return passThroughRenderArgs->requestRender(passThroughTime, passThroughView, mipMapLevel, plane, roiCanonical, passThroughInputNb, requestData, &createdRequest);
+                    return ptInput->requestRender(passThroughTime, passThroughView, mipMapLevel, plane, roiCanonical, passThroughInputNb, requestData, &createdRequest);
                 }
             }
         }
@@ -183,7 +184,6 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
                                                      const FrameViewRequestPtr& requestData,
                                                      bool *isIdentity)
 {
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
 
     TimeValue inputTimeIdentity;
     int inputNbIdentity;
@@ -196,7 +196,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
 
         IsIdentityResultsPtr results;
         {
-            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, requestData->getTime(), combinedScale, pixelRod, requestData->getView(), renderArgs, &results);
+            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, requestData->getTime(), combinedScale, pixelRod, requestData->getView(),  &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -220,17 +220,17 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return requestData->getRenderArgs()->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, &createdRequest);
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, &createdRequest);
 
     } else {
         assert(inputNbIdentity != -1);
-        TreeRenderNodeArgsPtr passThroughRenderArgs = renderArgs->getInputRenderArgs(inputNbIdentity);
-        if (!passThroughRenderArgs) {
-            return eActionStatusFailed;
+        EffectInstancePtr identityInput = _publicInterface->getInput(inputNbIdentity);
+        if (!identityInput) {
+            return eActionStatusInputDisconnected;
         }
 
         FrameViewRequestPtr createdRequest;
-        return passThroughRenderArgs->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, &createdRequest);
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, &createdRequest);
 
     }
 } // EffectInstance::Implementation::handleIdentityEffect
@@ -243,21 +243,19 @@ EffectInstance::Implementation::handleConcatenation(const FrameViewRequestPtr& r
                                                     const RectD& canonicalRoi,
                                                     bool *concatenated)
 {
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
-
     *concatenated = false;
-    if (!renderArgs->getParentRender()->isConcatenationEnabled()) {
+    if (!_publicInterface->getCurrentRender()->isConcatenationEnabled()) {
         return eActionStatusOK;
     }
 
-    bool canDistort = renderArgs->getCurrentDistortSupport();
-    bool canTransform = renderArgs->getCurrentTransformationSupport_deprecated();
+    bool canDistort = _publicInterface->getCurrentCanDistort();
+    bool canTransform = _publicInterface->getCurrentCanTransform();
 
     if (!canDistort && !canTransform) {
         return eActionStatusOK;
     }
 
-    EffectInstancePtr requesterEffect = requester->getRenderArgs()->getNode()->getEffectInstance();
+    EffectInstancePtr requesterEffect = requester->getRenderClone();
     bool canReturnDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
     bool canReturnDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
 
@@ -269,7 +267,7 @@ EffectInstance::Implementation::handleConcatenation(const FrameViewRequestPtr& r
 
     DistortionFunction2DPtr disto = requestData->getDistortionResults();
     if (!disto) {
-        ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), renderArgs, &disto);
+        ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &disto);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -295,20 +293,20 @@ EffectInstance::Implementation::handleConcatenation(const FrameViewRequestPtr& r
     if (disto->transformMatrix) {
 
         // The caller expects a transformation matrix in pixel coordinates
-        double par = _publicInterface->getAspectRatio(renderArgs, -1);
+        double par = _publicInterface->getAspectRatio(-1);
         Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
         Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
         *disto->transformMatrix = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
     }
 
     // Recurse on input given by plug-in
-    TreeRenderNodeArgsPtr distoRenderArgs = renderArgs->getInputRenderArgs(disto->inputNbToDistort);
-    if (!distoRenderArgs) {
-        return eActionStatusFailed;
+    EffectInstancePtr distoInput = _publicInterface->getInput(disto->inputNbToDistort);
+    if (!distoInput) {
+        return eActionStatusInputDisconnected;
     }
 
     FrameViewRequestPtr inputRequest;
-    distoRenderArgs->requestRender(requestData->getTime(), requestData->getView(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, &inputRequest);
+    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, &inputRequest);
 
     // Create a distorsion functions stack
     Distortion2DStackPtr distoStack(new Distortion2DStack);
@@ -320,8 +318,8 @@ EffectInstance::Implementation::handleConcatenation(const FrameViewRequestPtr& r
     }
 
     // If this the caller effect also supports transforms, append this effect transformation, otherwise no need to append it, this effect will render anyway.
-    bool requesterCanTransform = requester->getRenderArgs()->getCurrentTransformationSupport_deprecated();
-    bool requesterCanDistort = requester->getRenderArgs()->getCurrentDistortSupport();
+    bool requesterCanTransform = requester->getRenderClone()->getCurrentCanTransform();
+    bool requesterCanDistort = requester->getRenderClone()->getCurrentCanDistort();
 
     if (requesterCanDistort || requesterCanTransform) {
         distoStack->pushDistortion(disto);
@@ -362,9 +360,8 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
             inputRod = attachedStroke->getLastStrokeMovementBbox();
         } else {
 
-            TreeRenderNodeArgsPtr inputRenderArgs = requestPassData->getRenderArgs()->getInputRenderArgs(i);
             GetRegionOfDefinitionResultsPtr rodResults;
-            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(requestPassData->getTime(), renderMappedScale, requestPassData->getView(), inputRenderArgs, &rodResults);
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(requestPassData->getTime(), renderMappedScale, requestPassData->getView(), &rodResults);
             if (isFailureRetCode(stat)) {
                 break;
             }
@@ -408,8 +405,6 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
     // Compute the rectangle portion (renderWindow) left to render.
     // The renderwindow is the bounding box of all tiles that are left to render (not the tiles that are pending)
 
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
-
     // If the image is entirely cached, do not even compute it and insert it in the output planes map
     Image::TileStateMap tilesState;
     bool hasUnRenderedTile;
@@ -421,7 +416,7 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
     }
 
     // If the effect does not support tiles, render everything again
-    if (!renderArgs->getCurrentTilesSupport()) {
+    if (!_publicInterface->getCurrentSupportTiles()) {
         // If not using the cache, render the full RoI
         // The RoI has already been set to the pixelRoD in this case
         RectToRender r;
@@ -444,7 +439,7 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
         RectI inputRodIntersectionPixel;
         if (canSplitRenderWindowWithIdentityRectangles(requestData, renderMappedScale, &inputRodIntersection)) {
 
-            double par = _publicInterface->getAspectRatio(requestData->getRenderArgs(), -1);
+            double par = _publicInterface->getAspectRatio(-1);
             inputRodIntersection.toPixelEnclosing(renderMappedScale, par, &inputRodIntersectionPixel);
             
             // For each tile, if outside of the input intersections, check if it is identity.
@@ -458,7 +453,7 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
                     ViewIdx inputIdentityView;
                     {
                         IsIdentityResultsPtr results;
-                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, requestData->getTime(), renderMappedScale, it->second.bounds, requestData->getView(), requestData->getRenderArgs(), &results);
+                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, requestData->getTime(), renderMappedScale, it->second.bounds, requestData->getView(), &results);
                         if (isFailureRetCode(stat)) {
                             continue;
                         } else {
@@ -511,7 +506,7 @@ EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& req
     }
 
     // For each reduced rect to render, add it to the final list
-    if (reducedRects.size() == 1 && renderArgs->getCurrentRenderSafety() == eRenderSafetyFullySafeFrame) {
+    if (reducedRects.size() == 1 && _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame) {
         RectI mainRenderRect = reducedRects.front();
 
         // If plug-in wants host frame threading and there is only 1 rect to render, split it
@@ -538,16 +533,15 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
                                                  bool delayAllocation)
 {
 
-    TreeRenderNodeArgsPtr renderArgs = requestPassData->getRenderArgs();
-
     // Mark the image as draft in the cache
-    bool isDraftRender = renderArgs->getParentRender()->isDraftRender();
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
+    bool isDraftRender = render->isDraftRender();
 
     // The node frame/view hash to identify the image in the cache
     U64 nodeFrameViewHash = requestPassData->getHash();
 
     // The bitdepth of the image
-    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(renderArgs, -1);
+    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);
 
     // Create the corresponding image plane.
     // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
@@ -561,8 +555,8 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
         {
             initArgs.bounds = roiPixels;
             initArgs.cachePolicy = eCacheAccessModeReadWrite;
-            initArgs.renderArgs = renderArgs;
-            initArgs.proxyScale = renderArgs->getParentRender()->getProxyScale();
+            initArgs.renderClone = _publicInterface->shared_from_this();
+            initArgs.proxyScale = render->getProxyScale();
             initArgs.mipMapLevel = mappedMipMapLevel;
             initArgs.isDraft = isDraftRender;
             initArgs.nodeTimeInvariantHash = nodeFrameViewHash;
@@ -623,14 +617,15 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             break;
     }
 
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
 
     OSGLContextPtr glContext;
     switch (backendType) {
         case eRenderBackendTypeOpenGL:
-            glContext = requestData->getRenderArgs()->getParentRender()->getGPUOpenGLContext();
+            glContext = render->getGPUOpenGLContext();
             break;
         case eRenderBackendTypeOSMesa:
-            glContext = requestData->getRenderArgs()->getParentRender()->getCPUOpenGLContext();
+            glContext = render->getCPUOpenGLContext();
             break;
         default:
             break;
@@ -659,7 +654,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             RectI drawingLastMovementBBoxPixel;
             {
                 RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
-                double par = _publicInterface->getBitDepth(requestData->getRenderArgs(), -1);
+                double par = _publicInterface->getBitDepth(-1);
                 lastStrokeRoD.toPixelEnclosing(combinedScale, par, &drawingLastMovementBBoxPixel);
             }
             {
@@ -676,7 +671,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
     } // isAccumulating
 
     // The bitdepth of the image
-    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(requestData->getRenderArgs(), -1);
+    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);
 
 
     ImagePtr outputTmpImage;
@@ -685,11 +680,11 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
         Image::InitStorageArgs tmpImgInitArgs;
         {
             tmpImgInitArgs.bounds = roiPixels;
-            tmpImgInitArgs.renderArgs = requestData->getRenderArgs();
+            tmpImgInitArgs.renderClone = _publicInterface->shared_from_this();
             tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
             tmpImgInitArgs.bufferFormat = imageBufferLayout;
             tmpImgInitArgs.mipMapLevel = mipMapLevel;
-            tmpImgInitArgs.proxyScale = requestData->getRenderArgs()->getParentRender()->getProxyScale();
+            tmpImgInitArgs.proxyScale = render->getProxyScale();
             tmpImgInitArgs.glContext = glContext;
             switch (backendType) {
                 case eRenderBackendTypeOpenGL:
@@ -741,11 +736,11 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
                 Image::InitStorageArgs tmpImgInitArgs;
                 {
                     tmpImgInitArgs.bounds = it->rect;
-                    tmpImgInitArgs.renderArgs = requestData->getRenderArgs();
+                    tmpImgInitArgs.renderClone = _publicInterface->shared_from_this();
                     tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
                     tmpImgInitArgs.bufferFormat = imageBufferLayout;
                     tmpImgInitArgs.mipMapLevel = mipMapLevel;
-                    tmpImgInitArgs.proxyScale = requestData->getRenderArgs()->getParentRender()->getProxyScale();
+                    tmpImgInitArgs.proxyScale = render->getProxyScale();
                     tmpImgInitArgs.glContext = glContext;
                     switch (backendType) {
                         case eRenderBackendTypeOpenGL:
@@ -788,26 +783,7 @@ EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& 
     // There should always be at least 1 plane to render (The color plane)
     assert(!renderRects.empty());
 
-    RenderSafetyEnum safety = requestData->getRenderArgs()->getCurrentRenderSafety();
-
-    EffectInstancePtr renderInstance;
-    //
-    // Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
-    // Reasons to use a render clone is because a plug-in is eRenderSafetyInstanceSafe or does not support
-    // concurrent GL renders.
-    //
-    const RectToRender& firstRectToRender = renderRects.front();
-    bool useRenderClone = false;
-    useRenderClone |= (safety == eRenderSafetyInstanceSafe && !_publicInterface->getNode()->isDuringPaintStrokeCreation());
-    useRenderClone |= safety != eRenderSafetyUnsafe && firstRectToRender.backendType == eRenderBackendTypeOpenGL && !_publicInterface->supportsConcurrentOpenGLRenders();
-
-    if (useRenderClone) {
-        renderInstance = _publicInterface->getOrCreateRenderInstance();
-    } else {
-        renderInstance = _publicInterface->shared_from_this();
-    }
-    assert(renderInstance);
-
+    RenderSafetyEnum safety = _publicInterface->getCurrentRenderThreadSafety();
     // eRenderSafetyInstanceSafe means that there is at most one render per instance
     // NOTE: the per-instance lock should be shared between
     // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
@@ -818,14 +794,15 @@ EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& 
 
     boost::scoped_ptr<QMutexLocker> locker;
 
+    const RectToRender& firstRectToRender = renderRects.front();
 
     // Since we may are going to sit and wait on this lock, to allow this thread to be re-used by another task of the thread pool we
     // temporarily release the thread to the threadpool and reserve it again once
     // we waited.
     bool hasReleasedThread = false;
-    if (safety == eRenderSafetyInstanceSafe && !useRenderClone) {
+    if (safety == eRenderSafetyInstanceSafe) {
         QThreadPool::globalInstance()->releaseThread();
-        locker.reset( new QMutexLocker( &_publicInterface->getNode()->getRenderInstancesSharedMutex() ) );
+        locker.reset( new QMutexLocker( &renderData->instanceSafeRenderMutex ) );
         hasReleasedThread = true;
     } else if (safety == eRenderSafetyUnsafe) {
         PluginPtr p = _publicInterface->getNode()->getPlugin();
@@ -840,14 +817,16 @@ EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& 
     if (hasReleasedThread) {
         QThreadPool::globalInstance()->reserveThread();
     }
+    
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
 
     OSGLContextPtr glContext;
     switch (firstRectToRender.backendType) {
         case eRenderBackendTypeOpenGL:
-            glContext = requestData->getRenderArgs()->getParentRender()->getGPUOpenGLContext();
+            glContext = render->getGPUOpenGLContext();
             break;
         case eRenderBackendTypeOSMesa:
-            glContext = requestData->getRenderArgs()->getParentRender()->getCPUOpenGLContext();
+            glContext = render->getCPUOpenGLContext();
             break;
         default:
             break;
@@ -864,14 +843,14 @@ EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& 
     EffectOpenGLContextDataPtr glContextData;
     if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
         firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
-        ActionRetCodeEnum stat = renderInstance->attachOpenGLContext_public(requestData->getTime(), requestData->getView(), combinedScale, requestData->getRenderArgs(), glContext, &glContextData);
+        ActionRetCodeEnum stat = _publicInterface->attachOpenGLContext_public(requestData->getTime(), requestData->getView(), combinedScale, glContext, &glContextData);
         if (isFailureRetCode(stat)) {
             renderRetCode = stat;
         }
     }
     if (renderRetCode == eActionStatusOK) {
 
-        renderRetCode = renderInstance->_imp->renderForClone(requestData, glContext, glContextData, combinedScale, renderRects, producedImagePlanes);
+        renderRetCode = renderForClone(requestData, glContext, glContextData, combinedScale, renderRects, producedImagePlanes);
 
         if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
             firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
@@ -884,15 +863,11 @@ EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& 
                 !_publicInterface->supportsConcurrentOpenGLRenders() ||
                 glContextData.use_count() == 1) {
 
-                renderInstance->dettachOpenGLContext_public(requestData->getRenderArgs(), glContext, glContextData);
+                _publicInterface->dettachOpenGLContext_public(glContext, glContextData);
             }
         }
     }
-    if (useRenderClone) {
-        _publicInterface->releaseRenderInstance(renderInstance);
-    }
-    
-
+ 
     return renderRetCode;
 } // launchInternalRender
 
@@ -907,14 +882,12 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
 {
     // For all frames/views needed, recurse on inputs with the appropriate RoI
 
-    TreeRenderNodeArgsPtr renderArgs = requestPassData->getRenderArgs();
-
     // Get frames needed to recurse upstream
     FramesNeededMap framesNeeded;
     {
         GetFramesNeededResultsPtr results = requestPassData->getFramesNeededResults();
         if (!results) {
-            ActionRetCodeEnum stat = _publicInterface->getFramesNeeded_public(requestPassData->getTime(), requestPassData->getView(), renderArgs, &results);
+            ActionRetCodeEnum stat = _publicInterface->getFramesNeeded_public(requestPassData->getTime(), requestPassData->getView(),  &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -929,7 +902,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
     // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
     RoIMap inputsRoi;
     {
-        ActionRetCodeEnum stat = _publicInterface->getRegionsOfInterest_public(requestPassData->getTime(), combinedScale, roiCanonical, requestPassData->getView(), renderArgs, &inputsRoi);
+        ActionRetCodeEnum stat = _publicInterface->getRegionsOfInterest_public(requestPassData->getTime(), combinedScale, roiCanonical, requestPassData->getView(), &inputsRoi);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -942,14 +915,9 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
         if (!inputEffect) {
             continue;
         }
-        NodePtr inputNode = inputEffect->getNode();
-        assert(inputNode);
 
         assert(inputNb != -1);
 
-
-        TreeRenderNodeArgsPtr inputRenderArgs = renderArgs->getInputRenderArgs(inputNb);
-        assert(inputRenderArgs);
 
         ///There cannot be frames needed without components needed.
         const std::list<ImagePlaneDesc>* inputPlanesNeeded = 0;
@@ -985,7 +953,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
             return eActionStatusFailed;
         }
 
-        bool inputIsContinuous = inputEffect->canRenderContinuously(inputRenderArgs);
+        bool inputIsContinuous = inputEffect->canRenderContinuously();
 
         {
 
@@ -1019,7 +987,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
                         }
                         for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
                             FrameViewRequestPtr createdRequest;
-                            ActionRetCodeEnum stat = inputRenderArgs->requestRender(inputTime, viewIt->first, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, &createdRequest);
+                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, &createdRequest);
                             if (isFailureRetCode(stat)) {
                                 return stat;
                             }
@@ -1043,9 +1011,12 @@ EffectInstance::requestRender(TimeValue time,
                               const ImagePlaneDesc& plane,
                               const RectD & roiCanonical,
                               int inputNbInRequester,
-                              const FrameViewRequestPtr& requester)
+                              const FrameViewRequestPtr& requester,
+                              FrameViewRequestPtr* createdRequest)
 {
-
+    TreeRenderPtr render = getCurrentRender();
+    assert(render);
+    
     FrameViewRequestPtr requestData;
     {
         FrameViewPair frameView;
@@ -1055,48 +1026,39 @@ EffectInstance::requestRender(TimeValue time,
 
         // Create the frame/view request object
         {
-            bool created = getOrCreateFrameViewRequest(frameView.time, frameView.view, mipMapLevel, plane, &requestData);
+            bool created = _imp->getOrCreateFrameViewRequest(frameView.time, frameView.view, mipMapLevel, plane, &requestData);
             (void)created;
         }
-        *createdRequest = thisFrameView;
+        *createdRequest = requestData;
     }
 
     // If this render has no dependencies, add it to the things to render
 #pragma message WARN("do this block on all exit points of the func")
     if (requestData->getNumDependencies() == 0) {
-        getParentRender()->addDependencyFreeRender(requestData);
+        render->addDependencyFreeRender(requestData);
     }
-    getParentRender()->addTaskToRender(thisFrameView);
+    render->addTaskToRender(requestData);
 
     // Add this frame/view as depdency of the requester
     if (requester) {
-        requester->addDependency(thisFrameView);
+        requester->addDependency(requestData);
     }
 
 
 
-    // Set the frame view request on the TLS
-    EffectInstanceTLSDataPtr tls = getTLSObject();
-    assert(tls);
-    FrameViewRequestSetter_RAII tlsSetFrameViewRequest(tls, requestData);
+    // Set the frame view request on the TLS for OpenFX
+    SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
 
-
-    // This call cannot be made on a render clone itself.
-    assert(_imp->mainInstance);
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
-
-    // Ensure the render args are the ones of this node.
-    assert(renderArgs && renderArgs->getNode() == getNode());
 
     // Some nodes do not support render-scale and can only render at scale 1.
     // If the render requested a mipmap level different than 0, we must render at mipmap level 0 then downscale to the requested
     // mipmap level.
     // If the render requested a proxy scale different than 1, we fail because we cannot render at scale 1 then resize at an arbitrary scale.
 
-    const bool renderFullScaleThenDownScale = !renderArgs->getCurrentRenderScaleSupport() && requestData->getMipMapLevel() > 0;
-    const RenderScale& proxyScale = renderArgs->getParentRender()->getProxyScale();
+    const bool renderFullScaleThenDownScale = !getCurrentSupportRenderScale() && requestData->getMipMapLevel() > 0;
+    const RenderScale& proxyScale = render->getProxyScale();
 
-    if (!renderArgs->getCurrentRenderScaleSupport() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
+    if (!getCurrentSupportRenderScale() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
         setPersistentMessage(eMessageTypeError, tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
         return eActionStatusFailed;
     }
@@ -1111,7 +1073,7 @@ EffectInstance::requestRender(TimeValue time,
     {
         GetRegionOfDefinitionResultsPtr results;
         {
-            ActionRetCodeEnum stat = getRegionOfDefinition_public(requestData->getTime(), mappedCombinedScale, requestData->getView(), renderArgs, &results);
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(requestData->getTime(), mappedCombinedScale, requestData->getView(), &results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -1144,7 +1106,7 @@ EffectInstance::requestRender(TimeValue time,
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle identity effects /////////////////////////////////////////////////////////////////
-    const double par = getAspectRatio(renderArgs, -1);
+    const double par = getAspectRatio(-1);
     {
         bool isIdentity;
         ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, rod, mappedCombinedScale, roiCanonical, requestData, &isIdentity);
@@ -1201,14 +1163,14 @@ EffectInstance::requestRender(TimeValue time,
 
     rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
 
-    if (!renderArgs->getCurrentTilesSupport()) {
+    if (!getCurrentSupportTiles()) {
         // If tiles are not supported the RoI is the full image bounds
         renderMappedRoI = pixelRoDRenderMapped;
     } else {
 
         // Round the roi to the tile size if the render is cached
         if (cachePolicy != eCacheAccessModeNone) {
-            ImageBitDepthEnum outputBitDepth = getBitDepth(renderArgs, -1);
+            ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
             int tileWidth, tileHeight;
             Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
             renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
@@ -1281,10 +1243,9 @@ static void invalidateCachedPlanesToRender(const std::map<ImagePlaneDesc, ImageP
 ActionRetCodeEnum
 EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
 {
-    // Set the frame view request on the TLS
-    EffectInstanceTLSDataPtr tls = getTLSObject();
-    assert(tls);
-    FrameViewRequestSetter_RAII tlsSetFrameViewRequest(tls, requestData);
+    
+    // Set the frame view request on the TLS for OpenFX
+    SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
 
     {
         FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted();
@@ -1309,11 +1270,9 @@ ActionRetCodeEnum
 EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
 {
 
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
-
-    const double par = getAspectRatio(renderArgs, -1);
+    const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
-    const RenderScale mappedCombinedScale = EffectInstance::Implementation::getCombinedScale(mappedMipMapLevel, renderArgs->getParentRender()->getProxyScale());
+    const RenderScale mappedCombinedScale = EffectInstance::Implementation::getCombinedScale(mappedMipMapLevel, getCurrentRender()->getProxyScale());
 
     RectI renderMappedRoI;
     requestData->getCurrentRoI().toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
@@ -1377,7 +1336,7 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
 
     // If using GPU and out of memory retry on CPU if possible
     if (renderRetCode == eActionStatusOutOfMemory && !renderRects.empty() && renderRects.front().backendType == eRenderBackendTypeOpenGL) {
-        if (renderArgs->getCurrentRenderOpenGLSupport() != ePluginOpenGLRenderSupportYes) {
+        if (getCurrentOpenGLRenderSupport() != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
             invalidateCachedPlanesToRender(producedImagePlanes);
             return eActionStatusFailed;
@@ -1424,25 +1383,25 @@ EffectInstance::Implementation::renderForClone(const FrameViewRequestPtr& reques
     NotifyRenderingStarted_RAII renderingNotifier(_publicInterface->getNode().get());
 
     // If this node is not sequential we at least have to bracket the render action with a call to begin and end sequence render.
-    TreeRenderNodeArgsPtr renderArgs = requestData->getRenderArgs();
-
     RangeD sequenceRange;
     {
         GetFrameRangeResultsPtr rangeResults;
-        ActionRetCodeEnum stat = _publicInterface->getFrameRange_public(renderArgs, &rangeResults);
+        ActionRetCodeEnum stat = _publicInterface->getFrameRange_public(&rangeResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
         rangeResults->getFrameRangeResults(&sequenceRange);
     }
 
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
+    
     // We only need to call begin if we've not already called it.
     bool callBeginSequenceRender = false;
-    if ( !_publicInterface->isWriter() || (requestData->getRenderArgs()->getCurrentRenderSequentialPreference() == eSequentialPreferenceNotSequential) ) {
+    if ( !_publicInterface->isWriter() || (_publicInterface->getCurrentSequentialRenderSupport() == eSequentialPreferenceNotSequential) ) {
         callBeginSequenceRender = true;
     }
 
-    bool isPlayback = requestData->getRenderArgs()->getParentRender()->isPlayback();
+    bool isPlayback = render->isPlayback();
     TimeValue time = requestData->getTime();
 
 
@@ -1454,11 +1413,10 @@ EffectInstance::Implementation::renderForClone(const FrameViewRequestPtr& reques
                                                                               combinedScale,
                                                                               isPlayback,
                                                                               !isPlayback,
-                                                                              renderArgs->getParentRender()->isDraftRender(),
+                                                                              render->isDraftRender(),
                                                                               requestData->getView(),
                                                                               renderRects.front().backendType,
-                                                                              glContextData,
-                                                                              renderArgs);
+                                                                              glContextData);
         
         if (isFailureRetCode(stat)) {
             return stat;
@@ -1470,7 +1428,7 @@ EffectInstance::Implementation::renderForClone(const FrameViewRequestPtr& reques
 #ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
     const bool attemptHostFrameThreading = false;
 #else
-    const bool attemptHostFrameThreading = renderArgs->getCurrentRenderSafety() == eRenderSafetyFullySafeFrame &&
+    const bool attemptHostFrameThreading = _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame &&
                                            renderRects.size() > 1 &&
                                            renderRects.front().backendType == eRenderBackendTypeCPU;
 #endif
@@ -1543,11 +1501,10 @@ EffectInstance::Implementation::renderForClone(const FrameViewRequestPtr& reques
                                                                             combinedScale,
                                                                             isPlayback,
                                                                             !isPlayback,
-                                                                            renderArgs->getParentRender()->isDraftRender(),
+                                                                            render->isDraftRender(),
                                                                             requestData->getView(),
                                                                             renderRects.front().backendType,
-                                                                            glContextData,
-                                                                            renderArgs);
+                                                                            glContextData);
         if (isFailureRetCode(stat)) {
             return stat;
         }
