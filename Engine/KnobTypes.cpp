@@ -1014,7 +1014,7 @@ KnobChoice::choiceMatch(const std::string& choice,
     std::replace( choiceparen.begin(), choiceparen.end(), '[', '(');
     std::replace( choiceparen.begin(), choiceparen.end(), ']', ')');
     for (std::size_t i = 0; i < entries.size(); ++i) {
-        std::string entryparen = entries[i];
+        std::string entryparen = entries[i].id;
         std::replace( entryparen.begin(), entryparen.end(), '[', '(');
         std::replace( entryparen.begin(), entryparen.end(), ']', ')');
 
@@ -1030,7 +1030,7 @@ KnobChoice::choiceMatch(const std::string& choice,
     if ( boost::algorithm::ends_with(choice, " 1") ) {
         std::string choicenopar(choice, 0, choice.size()-2);
         for (std::size_t i = 0; i < entries.size(); ++i) {
-            if (entries[i] == choicenopar) {
+            if (entries[i].id == choicenopar) {
                 if (matchedEntry) {
                     *matchedEntry = entries[i];
                 }
