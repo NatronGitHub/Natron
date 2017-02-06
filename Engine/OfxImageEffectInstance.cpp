@@ -59,7 +59,6 @@ CLANG_DIAG_ON(uninitialized)
 #include "Engine/MemoryInfo.h" // printAsRAM
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ViewerInstance.h"
 #include "Engine/ViewerNode.h"
 #include "Engine/OfxClipInstance.h"
@@ -123,32 +122,12 @@ OfxImageEffectInstance::~OfxImageEffectInstance()
 {
 }
 
-class ThreadIsActionCaller_RAII
-{
-    OfxImageEffectInstance* _self;
-
-public:
-
-    ThreadIsActionCaller_RAII(OfxImageEffectInstance* self)
-        : _self(self)
-    {
-        appPTR->setThreadAsActionCaller(_self, true);
-    }
-
-    ~ThreadIsActionCaller_RAII()
-    {
-        appPTR->setThreadAsActionCaller(_self, false);
-    }
-};
-
 OfxStatus
 OfxImageEffectInstance::mainEntry(const char *action,
                                   const void *handle,
                                   OFX::Host::Property::Set *inArgs,
                                   OFX::Host::Property::Set *outArgs)
 {
-    ThreadIsActionCaller_RAII t(this);
-
     return OFX::Host::ImageEffect::Instance::mainEntry(action, handle, inArgs, outArgs);
 }
 
@@ -352,12 +331,13 @@ double
 OfxImageEffectInstance::getEffectDuration() const
 {
     assert( getOfxEffectInstance() );
-    NodePtr node = getOfxEffectInstance()->getNode();
+    OfxEffectInstancePtr effect = getOfxEffectInstance();
+    NodePtr node = effect->getNode();
     if (!node) {
         return 0;
     }
     int firstFrame, lastFrame;
-    bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
+    bool lifetimeEnabled = effect->isLifetimeActivated(&firstFrame, &lastFrame);
     if (lifetimeEnabled) {
         return std::max(double(lastFrame - firstFrame) + 1., 1.);
     } else {
@@ -759,9 +739,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
                         if (sep) {
                             sep->resetParent();
                         } else {
-                            sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
-                            assert(sep);
-                            sep->setName(separatorName);
+                            sep = knobHolder->createKnob<KnobSeparator>(separatorName);
+                            sep->setLabel(QString());
                             /**
                              * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
                              * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
@@ -783,7 +762,8 @@ OfxImageEffectInstance::addParamsToTheirParents()
     if ( !finalPages.empty() ) {
         mainPage = finalPages.begin();
     } else {
-        KnobPagePtr page = AppManager::createKnob<KnobPage>( effect, tr("Settings") );
+        KnobPagePtr page = effect->createKnob<KnobPage>("settingsPage");
+        page->setLabel(tr("Settings"));
         PageOrderedPtr pageData( new PageOrdered() );
         pageData->page = page;
         finalPages.push_back(pageData);
@@ -876,9 +856,9 @@ OfxImageEffectInstance::addParamsToTheirParents()
                     if (sep) {
                         sep->resetParent();
                     } else {
-                        sep = AppManager::createKnob<KnobSeparator>( knobHolder, std::string() );
+                        sep = knobHolder->createKnob<KnobSeparator>(separatorName);
                         assert(sep);
-                        sep->setName(separatorName);
+                        sep->setLabel(QString());
                         /**
                          * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
                          * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that

@@ -2756,10 +2756,15 @@ AppManager::getOCIOConfigPath() const
 }
 
 void
-AppManager::setThreadAsActionCaller(OfxImageEffectInstance* instance,
-                                    bool actionCaller)
+AppManager::setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect)
 {
-    _imp->ofxHost->setThreadAsActionCaller(instance, actionCaller);
+    _imp->ofxHost->setOFXLastActionCaller_TLS(effect);
+}
+
+OfxEffectInstancePtr
+AppManager::getOFXCurrentEffect_TLS() const
+{
+    return _imp->ofxHost->getCurrentEffect_TLS();
 }
 
 void

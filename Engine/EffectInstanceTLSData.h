@@ -139,16 +139,6 @@ public:
      **/
     FrameViewRequestPtr getCurrentFrameViewRequest() const;
 
-
-    /**
-     * @brief This function pops the last action arguments of the stack if it is the render action.
-     * The reason for this function is when we do host frame threading:
-     * The original thread might already have TLS set for the render action when we copy TLS onto the new thread.
-     * But the new thread does not want the render action TLS, so we pop it.
-     **/
-    void ensureLastActionInStackIsNotRender();
-
-
     
 private:
     

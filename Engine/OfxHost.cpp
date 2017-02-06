@@ -417,11 +417,12 @@ OfxHost::getStringProperty(const std::string &name,
             pluginVersionMajor = _imp->loadingPluginVersionMajor;
             pluginVersionMinor = _imp->loadingPluginVersionMinor;
         } else {
-            OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
-            if (tls && tls->lastEffectCallingMainEntry) {
-                pluginID = tls->lastEffectCallingMainEntry->getPlugin()->getIdentifier();
-                pluginVersionMajor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMajor();
-                pluginVersionMinor = tls->lastEffectCallingMainEntry->getPlugin()->getVersionMinor();
+            OfxEffectInstancePtr effect = getCurrentEffect_TLS();
+            if (effect) {
+                OfxImageEffectInstance* ofxEffect = effect->effectInstance();
+                pluginID = ofxEffect->getPlugin()->getIdentifier();
+                pluginVersionMajor = ofxEffect->getPlugin()->getVersionMajor();
+                pluginVersionMinor = ofxEffect->getPlugin()->getVersionMinor();
             }
         }
 
@@ -1134,13 +1135,26 @@ OfxHost::newMemoryInstance(size_t nBytes)
 #ifdef OFX_SUPPORTS_MULTITHREAD
 
 void
-OfxHost::setThreadAsActionCaller(OfxImageEffectInstance* instance,
-                                 bool /*actionCaller*/)
+OfxHost::setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect)
 {
     OfxHostDataTLSPtr tls = _imp->tlsData->getOrCreateTLSData();
+    if (effect) {
+        tls->effectActionsStack.push_back(effect);
+    } else {
+        assert(!tls->effectActionsStack.empty());
+        tls->effectActionsStack.pop_back();
+    }
 
-    tls->lastEffectCallingMainEntry = instance;
+}
 
+OfxEffectInstancePtr
+OfxHost::getCurrentEffect_TLS() const
+{
+    OfxHostDataTLSPtr tls = _imp->tlsData->getTLSData();
+    if (!tls || tls->effectActionsStack.empty()) {
+        return OfxEffectInstancePtr();
+    }
+    return tls->effectActionsStack.back();
 }
 
 struct OfxFunctorArgs
@@ -1151,8 +1165,7 @@ struct OfxFunctorArgs
 
 static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
                                                unsigned int threadMax,
-                                               void *customArg,
-                                               const TreeRenderNodeArgsPtr& /*renderArgs*/)
+                                               void *customArg)
 {
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
     try {
@@ -1164,6 +1177,7 @@ static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
 
 } // ofxMultiThreadFunctor
 
+
 OfxStatus
 OfxHost::multiThread(OfxThreadFunctionV1 func,
                      unsigned int nThreads,
@@ -1172,13 +1186,16 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
     if (!func) {
         return kOfxStatFailed;
     }
+    
+    // Recover the effect calling multiThread using TLS
+    OfxEffectInstancePtr effect = getCurrentEffect_TLS();
 
     OfxFunctorArgs args;
     args.ofxFunc = func;
     args.customArg = customArg;
     // OpenFX does not pass the image effect instance pointer back to us so we loose the context...
     // The only way to recover it will be in the aborted() function entry point with help of thread local storage.
-    ActionRetCodeEnum stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, TreeRenderNodeArgsPtr());
+    ActionRetCodeEnum stat = MultiThread::launchThreads(ofxMultiThreadFunctor, nThreads, (void*)&args, effect);
     if (stat == eActionStatusFailed) {
         return kOfxStatFailed;
     } else if (stat == eActionStatusOutOfMemory) {

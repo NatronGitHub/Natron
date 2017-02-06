@@ -363,11 +363,6 @@ EffectInstance::Implementation::tiledRenderingFunctorInSeparateThread(const Rect
 
     ActionRetCodeEnum ret = tiledRenderingFunctor(rectToRender, args);
 
-    //Exit of the host frame threading thread
-    if (spawnerThread != curThread) {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
-
     return ret;
 } // tiledRenderingFunctorInSeparateThread
 

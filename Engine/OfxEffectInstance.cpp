@@ -184,6 +184,23 @@ struct OfxEffectInstancePrivate
 
 };
 
+
+class ThreadIsActionCaller_RAII
+{
+    
+public:
+    
+    ThreadIsActionCaller_RAII(const OfxEffectInstancePtr& effect)
+    {
+        appPTR->setOFXLastActionCaller_TLS(effect);
+    }
+    
+    ~ThreadIsActionCaller_RAII()
+    {
+        appPTR->setOFXLastActionCaller_TLS(OfxEffectInstancePtr());
+    }
+};
+
 OfxEffectInstance::OfxEffectInstance(const NodePtr& node)
 : AbstractOfxEffectInstance(node)
 , _imp(new OfxEffectInstancePrivate)
@@ -361,6 +378,8 @@ void
 OfxEffectInstance::createInstanceAction()
 {
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
     EffectActionArgsSetter_RAII actionArgsTls(tls,  TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
@@ -447,6 +466,8 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
         // already created
         return;
     }
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     QString pluginID = QString::fromUtf8( getNode()->getPluginID().c_str() );
     /*
@@ -927,7 +948,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
                                               );
 
 
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     _imp->common->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     _imp->common->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
@@ -1027,6 +1048,7 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 #endif
                                               );
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     // It has been overriden and no data is actually set on the clip, everything will be set into the
     // metadata object
@@ -1051,6 +1073,8 @@ OfxEffectInstance::onMetadataChanged(const NodeMetadata& metadata)
                                               );
 
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     assert(_imp->common->effect);
     _imp->common->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
     _imp->common->effect->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, s);
@@ -1083,7 +1107,7 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 #endif
                                               );
 
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     OfxRectD ofxRod;
     OfxStatus stat = _imp->common->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
@@ -1129,7 +1153,7 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
 
     assert(_imp->common->effect);
 
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
 
     // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
@@ -1189,7 +1213,7 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
     OfxStatus stat;
 
     {
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
         EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
@@ -1256,6 +1280,8 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
         OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
         {
             assert(_imp->common->effect);
+            
+            ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
             EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
             EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, RenderScale(1.)
@@ -1349,7 +1375,7 @@ OfxEffectInstance::getFrameRange(double *first, double *last)
                                                   , /*canBeCalledRecursively*/ true
 #endif
                                                   );
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         st = _imp->common->effect->getTimeDomainAction(range);
     }
@@ -1404,6 +1430,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
 #endif
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         OfxStatus stat = _imp->common->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
         if (stat == kOfxStatFailed) {
@@ -1492,7 +1519,8 @@ OfxEffectInstance::beginSequenceRender(double first,
                                                   );
         
 
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
@@ -1535,6 +1563,7 @@ OfxEffectInstance::endSequenceRender(double first,
 #endif
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
@@ -1594,6 +1623,9 @@ OfxEffectInstance::render(const RenderActionArgs& args)
                                                   , /*canBeCalledRecursively*/ false
 #endif
                                                   );
+        
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         stat = _imp->common->effect->renderAction((OfxTime)args.time,
                                           field,
                                           ofxRoI,
@@ -1721,6 +1753,8 @@ OfxEffectInstance::drawOverlay(TimeValue time,
 #endif
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         _imp->common->overlayInteract->drawAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
     }
 }
@@ -1764,6 +1798,7 @@ OfxEffectInstance::onOverlayPenDown(TimeValue time,
 #endif
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         OfxStatus stat = _imp->common->overlayInteract->penDownAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
@@ -1809,6 +1844,7 @@ OfxEffectInstance::onOverlayPenMotion(TimeValue time,
 #endif
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         stat = _imp->common->overlayInteract->penMotionAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
@@ -1850,6 +1886,7 @@ OfxEffectInstance::onOverlayPenUp(TimeValue time,
 #endif
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         OfxStatus stat = _imp->common->overlayInteract->penUpAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
         if (stat == kOfxStatOK) {
@@ -1882,7 +1919,7 @@ OfxEffectInstance::onOverlayKeyDown(TimeValue time,
 #endif
                                                   );
 
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         QByteArray keyStr;
         OfxStatus stat = _imp->common->overlayInteract->keyDownAction( time, renderScale, view,_imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
@@ -1917,7 +1954,8 @@ OfxEffectInstance::onOverlayKeyUp(TimeValue time,
 
                                                   );
 
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         QByteArray keyStr;
         OfxStatus stat = _imp->common->overlayInteract->keyUpAction( time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
@@ -1950,6 +1988,8 @@ OfxEffectInstance::onOverlayKeyRepeat(TimeValue time,
 #endif
 
                                                   );
+        
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         QByteArray keyStr;
         OfxStatus stat = _imp->common->overlayInteract->keyRepeatAction( time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
@@ -1981,6 +2021,8 @@ OfxEffectInstance::onOverlayFocusGained(TimeValue time,
 
                                                   );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         OfxStatus stat;
         stat = _imp->common->overlayInteract->gainFocusAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
@@ -2011,7 +2053,8 @@ OfxEffectInstance::onOverlayFocusLost(TimeValue time,
 
                                                   );
 
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         OfxStatus stat;
         stat = _imp->common->overlayInteract->loseFocusAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
@@ -2139,8 +2182,20 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     RenderScale renderScale  = getNode()->getOverlayInteractRenderScale();
+    
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, ViewIdx(0), renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              
+                                              );
+    
 
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     OfxStatus stat = kOfxStatOK;
     stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
 
@@ -2160,6 +2215,10 @@ OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
         return;
     }
 
+    
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
 
     ///This action as all the overlay interacts actions can trigger recursive actions, such as
     ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
@@ -2174,6 +2233,8 @@ OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
     if (!_imp->common->initialized) {
         return;
     }
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
 
 
@@ -2191,6 +2252,9 @@ OfxEffectInstance::purgeCaches()
     if (!_imp->common->initialized) {
         return;
     }
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat;
     {
@@ -2198,6 +2262,8 @@ OfxEffectInstance::purgeCaches()
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
         assert(_imp->common->effect);
+        
+        
         stat =  _imp->common->effect->purgeCachesAction();
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
@@ -2272,7 +2338,7 @@ OfxEffectInstance::supportsMultiResolution() const
 void
 OfxEffectInstance::beginEditKnobs()
 {
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     effectInstance()->beginInstanceEditAction();
 }
 
@@ -2294,7 +2360,7 @@ OfxEffectInstance::syncPrivateData_other_thread()
 void
 OfxEffectInstance::onSyncPrivateDataRequested()
 {
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     effectInstance()->syncPrivateDataAction();
 }
 
@@ -2359,7 +2425,8 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
 #endif
                                               );
 
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     OFX::Host::ImageEffect::ComponentsMap compMap;
     OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
     OfxTime ptTime;
@@ -2522,7 +2589,8 @@ OfxEffectInstance::getDistortion(TimeValue time,
 #endif
 
                                                   );
-
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         try {
             if (effectInstance()->canDistort()) {
                 stat = effectInstance()->getDistortionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
@@ -2667,6 +2735,7 @@ OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const Rende
 #endif
                                               );
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData(glContext->isGPUContext()) );
 
@@ -2707,7 +2776,8 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
 #endif
                                               );
 
-
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
     void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;

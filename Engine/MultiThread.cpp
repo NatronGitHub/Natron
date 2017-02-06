@@ -54,6 +54,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/ThreadPool.h"
 
 // An effect may not use more than this amount of threads
@@ -132,6 +133,7 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
                       unsigned int threadIndex,
                       unsigned int threadMax,
                       QThread* spawnerThread,
+                      const EffectInstancePtr& effect,
                       void *customArg)
 {
     assert(threadIndex < threadMax);
@@ -143,11 +145,12 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
     // If we launched the functor in a new thread,
     // this thread doesn't have any TLS set.
     // However some functions in the OpenFX API might require it.
-    // We flag on the application that this thread is spawned from
-    // another thread and whenever it will try to access the TLS
-    // it will copy the required data.
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->softCopy(spawnerThread, spawnedThread);
+    boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
+    if (spawnedThread != spawnerThread && effect) {
+        EffectInstanceTLSDataPtr tls = effect->getTLSObject();
+        if (tls) {
+            frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(effect, tls->getCurrentFrameViewRequest()));
+        }
     }
 
     ActionRetCodeEnum ret = eActionStatusOK;
@@ -161,11 +164,6 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
 
     // Reset back the index otherwise it could mess up the indices if the same thread is re-used
     imp->popThreadIndex(spawnedThread);
-
-    // If we used TLS on this thread, clean it up.
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
 
     return ret;
 } // threadFunctionWrapper
@@ -181,6 +179,7 @@ public:
                         unsigned int threadMax,
                         QThread* spawnerThread,
                         void *customArg,
+                        const EffectInstancePtr& effect,
                         ActionRetCodeEnum *stat)
     : QThread()
     , AbortableThread(this)
@@ -190,6 +189,7 @@ public:
     , _threadMax(threadMax)
     , _spawnerThread(spawnerThread)
     , _customArg(customArg)
+    , _effect(effect)
     , _stat(stat)
     {
         setThreadName("Multi-thread suite");
@@ -203,13 +203,17 @@ private:
 
         _imp->pushThreadIndex(this, _threadIndex);
 
-        // This thread doesn't have any TLS set.
+        
+        // If we launched the functor in a new thread,
+        // this thread doesn't have any TLS set.
         // However some functions in the OpenFX API might require it.
-        // We flag on the application that this thread is spawned from
-        // another thread and whenever it will try to access the TLS
-        // it will copy the required data.
-
-        appPTR->getAppTLS()->softCopy(_spawnerThread, this);
+        boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
+        if (_effect) {
+            EffectInstanceTLSDataPtr tls = _effect->getTLSObject();
+            if (tls) {
+                frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(_effect, tls->getCurrentFrameViewRequest()));
+            }
+        }
 
         assert(*_stat == eActionStatusFailed);
         try {
@@ -222,9 +226,6 @@ private:
 
         // Reset back the index otherwise it could mess up the indexes if the same thread is re-used
         _imp->popThreadIndex(this);
-
-        // If we used TLS on this thread, clean it up.
-        appPTR->getAppTLS()->cleanupTLSForThread();
     }
 
 private:
@@ -234,6 +235,7 @@ private:
     unsigned int _threadMax;
     QThread* _spawnerThread;
     void *_customArg;
+    EffectInstancePtr _effect;
     ActionRetCodeEnum *_stat;
 };
 
@@ -322,7 +324,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
-            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, customArg);
+            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, effect, customArg);
             if (isFailureRetCode(stat)) {
                 // This thread failed, wait for other threads and exit
                 future.waitForFinished();
@@ -351,7 +353,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             // at most maxConcurrentThread should be running at the same time
             QVector<NonThreadPoolThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, spawnerThread, customArg, &status[i]);
+                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, spawnerThread, customArg, effect, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads
@@ -471,7 +473,7 @@ MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
         return multiThreadFunction(0, 1);
     } else {
         // OK do it
-        ActionRetCodeEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _renderArgs);
+        ActionRetCodeEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
         return stat;
     }
 }

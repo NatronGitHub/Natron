@@ -111,20 +111,6 @@ EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 #endif
 
 
-void
-EffectInstanceTLSData::ensureLastActionInStackIsNotRender()
-{
-    if (_imp->actionsArgsStack.empty()) {
-        return;
-    }
-    const GenericActionTLSArgsPtr& curAction = _imp->actionsArgsStack.back();
-    const RenderActionTLSData* args = dynamic_cast<const RenderActionTLSData*>(curAction.get());
-    if (!args) {
-        return;
-    }
-    _imp->actionsArgsStack.pop_back();
-}
-
 bool
 EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const
 {

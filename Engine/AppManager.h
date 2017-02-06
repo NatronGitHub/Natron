@@ -262,7 +262,9 @@ public:
 
     int getHardwareIdealThreadCount();
 
-    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
+    void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
+    
+    OfxEffectInstancePtr getOFXCurrentEffect_TLS() const;
 
     /**
      * @brief Returns a list of IDs of all the plug-ins currently loaded.
