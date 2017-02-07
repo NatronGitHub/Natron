@@ -1891,6 +1891,8 @@ public:
 
     void findPluginFormatKnobs();
 
+    void setRenderCloneInput(const EffectInstancePtr& input, int inputNb);
+
 private:
 
     void refreshMetadaWarnings(const NodeMetadata &metadata);

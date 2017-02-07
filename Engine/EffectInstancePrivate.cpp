@@ -155,7 +155,6 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, View
         hash = _publicInterface->computeHash(args);
         renderData->setFrameViewHash(time, view, hash);
     }
-    
     QMutexLocker k(&renderData->lock);
 
     FrameViewPair p = {time, view};

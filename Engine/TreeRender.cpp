@@ -584,14 +584,17 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node, std::set<NodePt
 
     // Recurse on all inputs to ensure they are part of the tree and make the connections to this
     // node render args
+    std::vector<EffectInstancePtr> renderCloneInputs;
     {
         int nInputs = node->getMaxInputCount();
+        renderCloneInputs.resize(nInputs);
         for (int i = 0; i < nInputs; ++i) {
             NodePtr inputNode = node->getInput(i);
             if (!inputNode) {
                 continue;
             }
-            buildRenderTreeRecursive(inputNode, visitedNodes);
+
+            renderCloneInputs[i] = buildRenderTreeRecursive(inputNode, visitedNodes);
         }
     }
 
@@ -609,6 +612,13 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node, std::set<NodePt
             renderClone = toEffectInstance(mainInstance->createRenderClone(_publicInterface->shared_from_this()));
             assert(renderClone);
             renderClonesMap[mainInstance] = renderClone;
+
+            for (std::size_t i = 0; i < renderCloneInputs.size(); ++i) {
+                if (mainInstance->isInputMask(i) && !mainInstance->isMaskEnabled(i)) {
+                    continue;
+                }
+                renderClone->setRenderCloneInput(renderCloneInputs[i], i);
+            }
         }
     }
 
@@ -841,7 +851,7 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
         ActionRetCodeEnum stat = _imp->rootRenderClone->requestRender(_imp->time, _imp->view, _imp->mipMapLevel, _imp->plane, _imp->canonicalRoI, -1, FrameViewRequestPtr(), outputRequest);
 
         if (isFailureRetCode(stat)) {
-            return _imp->state;
+            return stat;
         }
     }
 

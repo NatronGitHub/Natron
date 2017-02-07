@@ -4306,11 +4306,13 @@ KnobHolder::~KnobHolder()
             }
         }
     } else {
-        TreeRenderPtr render = _imp->currentRender.lock();
-        std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
-        for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
-            if ((*it)->isRenderCloneNeeded()) {
-                (*it)->removeRenderClone(render);
+        if (_imp->common->knobsTable) {
+            TreeRenderPtr render = _imp->currentRender.lock();
+            std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
+            for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
+                if ((*it)->isRenderCloneNeeded()) {
+                    (*it)->removeRenderClone(render);
+                }
             }
         }
     }

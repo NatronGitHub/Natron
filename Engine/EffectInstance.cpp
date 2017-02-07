@@ -102,16 +102,20 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const TreeRenderP
 {
     int nInputs = other->getMaxInputCount();
     _imp->renderData->inputs.resize(nInputs);
-    for (std::size_t i = 0; i < _imp->renderData->inputs.size(); ++i) {
-        if (other->isInputMask(i) && !isMaskEnabled(i)) {
-            continue;
-        }
-        _imp->renderData->inputs[i] = other->getInput(i);
-    }
+ 
 }
 
 EffectInstance::~EffectInstance()
 {
+}
+
+void
+EffectInstance::setRenderCloneInput(const EffectInstancePtr& input, int inputNb)
+{
+    assert(inputNb < (int)_imp->renderData->inputs.size());
+    if (inputNb < (int)_imp->renderData->inputs.size()) {
+        _imp->renderData->inputs[inputNb] = input;
+    }
 }
 
 KnobHolderPtr
