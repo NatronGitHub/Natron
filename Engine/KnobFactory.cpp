@@ -99,6 +99,40 @@ KnobFactory::getHolderKnob(const KnobHolderPtr& holder,
     return holder->getKnobByName(scriptName);
 }
 
+KnobHelperPtr
+KnobFactory::createRenderCloneKnob(const KnobIPtr& mainInstanceKnob, const KnobHolderPtr& holder) const
+{
+    std::map<std::string, LibraryBinary *>::const_iterator it = _loadedKnobs.find(mainInstanceKnob->typeName());
+
+    if ( it == _loadedKnobs.end() ) {
+        return KnobHelperPtr();
+    }
+    std::pair<bool, KnobRenderCloneBuilder> builderFunc = it->second->findFunction<KnobRenderCloneBuilder>("createRenderClone");
+    if (!builderFunc.first) {
+        return KnobHelperPtr();
+    }
+
+
+    // If the knob does not evaluate on change, do not copy it anyway since the value is irrelevant to the render.
+    if (!mainInstanceKnob->getEvaluateOnChange()) {
+        return toKnobHelper(mainInstanceKnob);
+    }
+
+    KnobRenderCloneBuilder builder = (KnobRenderCloneBuilder)(builderFunc.second);
+    KnobHelperPtr knob = ( builder(holder, mainInstanceKnob) );
+    if (!knob) {
+        KnobHelperPtr();
+    }
+    knob->populate();
+
+
+    if (holder) {
+        holder->addKnob(knob);
+    }
+    return knob;
+
+} // createRenderCloneKnob
+
 KnobHelperPtr KnobFactory::createKnob(const std::string &id,
                                       const KnobHolderPtr& holder,
                                       const std::string &name,
@@ -112,42 +146,21 @@ KnobHelperPtr KnobFactory::createKnob(const std::string &id,
 
     KnobHelperPtr knob;
 
-    KnobHolderPtr mainInstance = holder->getMainInstance();
-    if (mainInstance) {
-        std::pair<bool, KnobRenderCloneBuilder> builderFunc = it->second->findFunction<KnobRenderCloneBuilder>("createRenderClone");
-        if (!builderFunc.first) {
-            return KnobHelperPtr();
-        }
-
-        KnobIPtr mainInstanceKnob = mainInstance->getKnobByName(name);
-        if (!mainInstanceKnob) {
-            KnobHelperPtr();
-        }
-
-        // If the knob does not evaluate on change, do not copy it anyway since the value is irrelevant to the render.
-        if (!mainInstanceKnob->getEvaluateOnChange()) {
-            return toKnobHelper(mainInstanceKnob);
-        }
-
-        KnobRenderCloneBuilder builder = (KnobRenderCloneBuilder)(builderFunc.second);
-        knob = ( builder(holder, mainInstanceKnob) );
-        if (!knob) {
-            KnobHelperPtr();
-        }
-    } else {
-        std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("create");
-        if (!builderFunc.first) {
-            return KnobHelperPtr();
-        }
-
-        KnobBuilder builder = (KnobBuilder)(builderFunc.second);
-        knob = ( builder(holder, name, dimension) );
-        if (!knob) {
-            KnobHelperPtr();
-        }
-        knob->setName(name);
-        knob->populate();
+    std::pair<bool, KnobBuilder> builderFunc = it->second->findFunction<KnobBuilder>("create");
+    if (!builderFunc.first) {
+        return KnobHelperPtr();
     }
+
+    KnobBuilder builder = (KnobBuilder)(builderFunc.second);
+    knob = ( builder(holder, name, dimension) );
+    if (!knob) {
+        KnobHelperPtr();
+    }
+    knob->setName(name);
+
+
+    knob->populate();
+
 
     if (holder) {
         holder->addKnob(knob);

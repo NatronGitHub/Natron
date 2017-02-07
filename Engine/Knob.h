@@ -1245,7 +1245,7 @@ public:
         if (!k) {
             return boost::shared_ptr<K>();
         }
-        return boost::dynamic_pointer_cast<K>(holder);
+        return boost::dynamic_pointer_cast<K>(k);
     }
 
 protected:
@@ -2671,7 +2671,7 @@ public:
     KnobIPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
 
     template <typename K>
-    boost::shared_ptr<K> getKnobByNameAndType(const std::string& name) const WARN_UNUSED_RETURN
+    boost::shared_ptr<K> getKnobByNameAndType(const std::string& name) const 
     {
         KnobIPtr ret = getKnobByName(name);
         if (!ret) {

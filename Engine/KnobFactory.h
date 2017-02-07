@@ -76,7 +76,6 @@ public:
         // - we found a knob with the same script-name but not the same type or dimension, so create a new one which will have an altered script-name (with a number appended)
         // - we did not find such a knob, create it
         boost::shared_ptr<K> ret = createKnob<K>(holder, scriptName, dimension);
-        ret->setName(scriptName);
         
         return ret;
     }
@@ -85,6 +84,8 @@ public:
                              const KnobHolderPtr& holder,
                              const std::string &name,
                              int dimension = 1) const WARN_UNUSED_RETURN;
+
+    KnobHelperPtr createRenderCloneKnob(const KnobIPtr& mainInstance, const KnobHolderPtr& holder) const WARN_UNUSED_RETURN;
 
 private:
 

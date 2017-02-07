@@ -469,11 +469,18 @@ KnobHelper::isKeyFrameTrackingEnabled() const
 void
 KnobHelper::populate()
 {
+    KnobIPtr thisKnob = shared_from_this();
+    KnobHolderPtr holder = getHolder();
+
+    // Register the knob in the render clones map
+    {
+        QMutexLocker locker(&_imp->common->renderClonesMapMutex);
+        _imp->common->renderClonesMap[holder] = thisKnob;
+    }
 
     if (_imp->mainInstance.lock()) {
         return;
     }
-    KnobIPtr thisKnob = shared_from_this();
     boost::shared_ptr<KnobSignalSlotHandler> handler( new KnobSignalSlotHandler(thisKnob) );
 
     setSignalSlotHandler(handler);
@@ -1411,6 +1418,11 @@ KnobHelper::setName(const std::string & name,
 KnobIPtr
 KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
 {
+    KnobHolderPtr thisHolder = getHolder();
+    assert(!thisHolder->isRenderClone());
+    if (thisHolder == holder) {
+        return boost::const_pointer_cast<KnobI>(shared_from_this());
+    }
     QMutexLocker k(&_imp->common->renderClonesMapMutex);
     std::map<KnobHolderWPtr, KnobIWPtr>::const_iterator found = _imp->common->renderClonesMap.find(holder);
     if (found != _imp->common->renderClonesMap.end()) {
@@ -4447,10 +4459,7 @@ KnobHolder::addKnob(const KnobIPtr& k)
         }
         _imp->knobs.push_back(k);
     }
-    KnobHelperPtr helper = toKnobHelper(k);
 
-    QMutexLocker locker(&helper->_imp->common->renderClonesMapMutex);
-    helper->_imp->common->renderClonesMap[shared_from_this()] = k;
 }
 
 void
@@ -5272,7 +5281,7 @@ KnobHolder::initializeKnobsPublic()
         // For a clone, just make a shallow copy of the main instance knobs
         KnobsVec mainInstanceKnobs = _imp->mainInstance->getKnobs_mt_safe();
         for (KnobsVec::const_iterator it = mainInstanceKnobs.begin(); it != mainInstanceKnobs.end(); ++it) {
-            (void)appPTR->getKnobFactory().createKnob((*it)->typeName(), thisShared, (*it)->getName());
+            (void)appPTR->getKnobFactory().createRenderCloneKnob((*it), thisShared);
         }
 
         // Force the clone to fetch its parameters

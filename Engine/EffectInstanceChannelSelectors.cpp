@@ -740,7 +740,6 @@ EffectInstance::findOrCreateChannelEnabled()
         _imp->defKnobs->enabledChan[3].lock()->setAddNewLine(false);
         KnobStringPtr premultWarning = createKnob<KnobString>("premultWarningKnob");
         premultWarning->setLabel(QString());
-        premultWarning->setDefaultValue(false);
         premultWarning->setIconLabel("dialog-warning");
         premultWarning->setSecret(true);
         premultWarning->setAsLabel();
