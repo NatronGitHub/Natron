@@ -146,15 +146,6 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, View
 {
     assert(renderData);
     // Needs to be locked: frame requests may be added spontaneously by the plug-in
-    QMutexLocker k(&renderData->lock);
-
-    FrameViewPair p = {time, view};
-    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
-    if (found != renderData->frames.end()) {
-        *request = found->second;
-        return false;
-    }
-
     U64 hash;
     if (!renderData->getFrameViewHash(time, view, &hash)) {
         HashableObject::ComputeHashArgs args;
@@ -164,6 +155,17 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, View
         hash = _publicInterface->computeHash(args);
         renderData->setFrameViewHash(time, view, hash);
     }
+    
+    QMutexLocker k(&renderData->lock);
+
+    FrameViewPair p = {time, view};
+    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
+    if (found != renderData->frames.end()) {
+        *request = found->second;
+        return false;
+    }
+
+
 
     FrameViewRequestPtr& ret = renderData->frames[p];
     ret.reset(new FrameViewRequest(time, view, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
