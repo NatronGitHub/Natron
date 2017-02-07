@@ -1919,8 +1919,6 @@ private:
 
     void createPyPlugExportGroup();
 
-    void createPythonPage();
-
     void findOrCreateChannelEnabled();
 
     void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);

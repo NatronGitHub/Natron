@@ -842,6 +842,7 @@ public:
     void initializeInputs();
 
     /**
+
      * @brief Returns true if the parallel render args thread-storage is set
      **/
     bool isNodeRendering() const;
