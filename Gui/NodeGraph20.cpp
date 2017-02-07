@@ -129,10 +129,10 @@ NodeGraph::checkForHints(bool shiftdown,
                         int nMaxInput = internalNode->getMaxInputCount();
                         bool selectedHasInput = selectedNodeInternalNode->hasInputConnected();
                         int selectedMaxInput = selectedNodeInternalNode->getMaxInputCount();
-                        double nPAR = internalNode->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(),-1);
-                        double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(),-1);
-                        double nFPS = internalNode->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
-                        double selectedFPS = selectedNodeInternalNode->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+                        double nPAR = internalNode->getEffectInstance()->getAspectRatio(-1);
+                        double selectedPAR = selectedNodeInternalNode->getEffectInstance()->getAspectRatio(-1);
+                        double nFPS = internalNode->getEffectInstance()->getFrameRate();
+                        double selectedFPS = selectedNodeInternalNode->getEffectInstance()->getFrameRate();
                         bool isValid = true;
 
                         if ( (selectedPAR != nPAR) || (std::abs(nFPS - selectedFPS) > 0.01) ) {

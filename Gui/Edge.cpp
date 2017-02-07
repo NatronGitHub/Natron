@@ -311,7 +311,7 @@ Edge::computeVisibility(bool hovered) const
     }
 
     ///Determine whether the edge should be visible or not
-    bool hideInputsKnobValue = dst ? dst->getNode()->getHideInputsKnobValue() : false;
+    bool hideInputsKnobValue = dst ? dst->getNode()->getEffectInstance()->getHideInputsKnobValue() : false;
     if ( hideInputsKnobValue && !_imp->isOutputEdge ) {
         return false;
     }

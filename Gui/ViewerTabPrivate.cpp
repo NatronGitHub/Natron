@@ -100,7 +100,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
     // Internally this will return an identity matrix if the node is identity
 
     {
-        stat = currentNode->getDistortion_public(time, s, view, TreeRenderNodeArgsPtr(), &disto);
+        stat = currentNode->getDistortion_public(time, s, view, &disto);
         if (isFailureRetCode(stat)) {
             return false;
         }
@@ -115,7 +115,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
     if (stat == eActionStatusOK) {
         assert(input);
-        double par = input->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
+        double par = input->getAspectRatio(-1);
 
         if (disto->transformMatrix) {
             Transform::Matrix3x3 mat(*disto->transformMatrix);
@@ -195,7 +195,7 @@ transformTimeForNode(const EffectInstancePtr& currentNode,
     FramesNeededMap framesNeeded;
     {
         GetFramesNeededResultsPtr results;
-        ActionRetCodeEnum stat = currentNode->getFramesNeeded_public(TimeValue(inTime), view, TreeRenderNodeArgsPtr(), &results);
+        ActionRetCodeEnum stat = currentNode->getFramesNeeded_public(TimeValue(inTime), view, &results);
         if (isFailureRetCode(stat)) {
             return inTime;
         }
@@ -235,7 +235,7 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
         return true;
     }
 
-    if ( !currentNode->getNode()->isNodeDisabledForFrame(time, view) ) {
+    if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
         *newTime = transformTimeForNode(currentNode, time, view);
     } else {
         *newTime = time;

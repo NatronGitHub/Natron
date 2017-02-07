@@ -1064,7 +1064,7 @@ void
 DisableNodesCommand::undo()
 {
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->lock()->getNode()->setNodeDisabled(false);
+        it->lock()->getNode()->getEffectInstance()->setNodeDisabled(false);
     }
     setText( tr("Disable nodes") );
 }
@@ -1073,7 +1073,7 @@ void
 DisableNodesCommand::redo()
 {
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->lock()->getNode()->setNodeDisabled(true);
+        it->lock()->getNode()->getEffectInstance()->setNodeDisabled(true);
     }
     setText( tr("Disable nodes") );
 }
@@ -1092,7 +1092,7 @@ void
 EnableNodesCommand::undo()
 {
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->lock()->getNode()->setNodeDisabled(true);
+        it->lock()->getNode()->getEffectInstance()->setNodeDisabled(true);
     }
     setText( tr("Enable nodes") );
 }
@@ -1101,7 +1101,7 @@ void
 EnableNodesCommand::redo()
 {
     for (std::list<boost::weak_ptr<NodeGui> >::iterator it = _nodes.begin(); it != _nodes.end(); ++it) {
-        it->lock()->getNode()->setNodeDisabled(false);
+        it->lock()->getNode()->getEffectInstance()->setNodeDisabled(false);
     }
     setText( tr("Enable nodes") );
 }

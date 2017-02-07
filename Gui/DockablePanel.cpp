@@ -958,7 +958,7 @@ DockablePanel::setClosedInternal(bool closed)
 
         Gui* gui = getGui();
         if (gui) {
-            if (internalNode && !internalNode->isKeepInAnimationModuleButtonDown()) {
+            if (internalNode && !internalNode->getEffectInstance()->isKeepInAnimationModuleButtonDown()) {
                 if (!closed) {
                     gui->addNodeGuiToAnimationModuleEditor(nodeGui);
                 } else {

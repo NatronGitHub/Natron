@@ -57,7 +57,6 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/ProjectSerialization.h"
-#include "Serialization/NodeGroupSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
 #include "Engine/Bezier.h"
@@ -437,12 +436,11 @@ public:
 class NodeCollectionSerialization
 {
 
-private:
+public:
 
     // The list of all nodes in the collection
     std::list< NodeSerializationPtr > _serializedNodes;
 
-public:
 
     NodeCollectionSerialization()
     {
@@ -462,9 +460,6 @@ public:
     {
         _serializedNodes.push_back(s);
     }
-
-
-private:
 
 
     template<class Archive>
@@ -1683,7 +1678,7 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
             _nodes.push_back(ns);
         }
     } else {
-        NodeCollectionSerialization nodes;
+        Compat::NodeCollectionSerialization nodes;
         ar & ::boost::serialization::make_nvp("NodesCollection", nodes);
         _nodes = nodes.getNodesSerialization();
     }
