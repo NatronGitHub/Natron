@@ -1153,7 +1153,7 @@ private: // derives from KnobI
              const std::string &name,
              int dimension);
 
-    KnobPage(const KnobHolderPtr& holder, const KnobPagePtr& mainInstance);
+    KnobPage(const KnobHolderPtr& holder, const KnobIPtr& mainInstance);
 
 public:
     static KnobHelperPtr create(const KnobHolderPtr& holder,
@@ -1164,7 +1164,7 @@ public:
     }
 
     static KnobHelperPtr createRenderClone(const KnobHolderPtr& holder,
-                                           const KnobPagePtr& mainKnob)
+                                           const KnobIPtr& mainKnob)
     {
         return KnobPagePtr(new KnobPage(holder, mainKnob));
     }

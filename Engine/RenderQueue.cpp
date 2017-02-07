@@ -157,7 +157,7 @@ RenderQueuePrivate::validateRenderOptions(RenderQueue::RenderWork& w)
 
     if ( (w.frameStep == INT_MAX) || (w.frameStep == INT_MIN) || w.frameStep == 0 ) {
         ///Get the frame step from the frame step parameter of the Writer
-        w.frameStep = TimeValue(w.treeRoot->getFrameStepKnobValue());
+        w.frameStep = TimeValue(w.treeRoot->getEffectInstance()->getFrameStepKnobValue());
     }
 
     if (w.frameStep == 0) {
@@ -171,7 +171,7 @@ RenderQueuePrivate::validateRenderOptions(RenderQueue::RenderWork& w)
     if ( (w.firstFrame == INT_MIN) || (w.lastFrame == INT_MAX) ) {
         {
             GetFrameRangeResultsPtr results;
-            ActionRetCodeEnum stat = w.treeRoot->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            ActionRetCodeEnum stat = w.treeRoot->getEffectInstance()->getFrameRange_public(&results);
             if (!isFailureRetCode(stat)) {
                 RangeD range;
                 results->getFrameRangeResults(&range);

@@ -246,6 +246,11 @@ struct CommonData
     // The last return value of random to preserve its state
     mutable U32 lastRandomHash;
 
+    mutable QMutex renderClonesMapMutex;
+
+    // For each instance, a pointer to the knob
+    std::map<KnobHolderWPtr, KnobIWPtr> renderClonesMap;
+
     // Protects hasModifications
     mutable QMutex hasModificationsMutex;
 
@@ -312,6 +317,8 @@ struct CommonData
     , expressionRecursionLevelMutex(QMutex::Recursive)
     , dimensionNames()
     , lastRandomHash(0)
+    , renderClonesMapMutex()
+    , renderClonesMap()
     , hasModificationsMutex()
     , hasModifications()
     , valueChangedBlockedMutex()

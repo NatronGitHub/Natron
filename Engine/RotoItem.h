@@ -92,7 +92,7 @@ public:
 
     RotoItem(const KnobItemsTablePtr& model);
 
-    RotoItem(const RotoItemPtr& other);
+    RotoItem(const RotoItemPtr& other, const TreeRenderPtr& render);
 
     virtual ~RotoItem();
 
@@ -114,6 +114,8 @@ public:
     virtual std::string getBaseItemName() const OVERRIDE = 0;
 
 protected:
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
     virtual void initializeKnobs() OVERRIDE;
 

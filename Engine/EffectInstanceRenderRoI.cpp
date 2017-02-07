@@ -355,7 +355,7 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
 
         RotoShapeRenderNode* isRotoShapeRenderNode = dynamic_cast<RotoShapeRenderNode*>(input.get());
         if (isRotoShapeRenderNode) {
-            RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
+            RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
             assert(attachedStroke);
             inputRod = attachedStroke->getLastStrokeMovementBbox();
         } else {
@@ -634,14 +634,14 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 
     // When accumulating, re-use the same buffer of previous steps and resize it if needed.
     // Note that in this mode only a single plane can be rendered at once
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
     assert(attachedStroke->isRenderClone());
     bool isAccumulating = attachedStroke && attachedStroke->isCurrentlyDrawing();
     ImagePtr accumBuffer;
     if (isAccumulating) {
 
         // Get the accum buffer on the node. Note that this is not concurrent renders safe.
-        accumBuffer = _publicInterface->getNode()->getAccumBuffer();
+        accumBuffer = _publicInterface->getAccumBuffer();
 
         // If we do not have an accumulation buffer, we follow the usual code path
         if (accumBuffer) {
@@ -707,7 +707,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
         requestData->setImagePlane(outputTmpImage);
 
         if (isAccumulating) {
-            _publicInterface->getNode()->setAccumBuffer(outputTmpImage);
+            _publicInterface->setAccumBuffer(outputTmpImage);
         }
 
         // Storage the temporary image in the output planes
@@ -911,7 +911,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
     for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
         int inputNb = it->first;
-        EffectInstancePtr inputEffect = _publicInterface->resolveInputEffectForFrameNeeded(inputNb, 0);
+        EffectInstancePtr inputEffect = _publicInterface->getInput(inputNb);
         if (!inputEffect) {
             continue;
         }
@@ -1003,6 +1003,28 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
     return eActionStatusOK;
 } // handleUpstreamFramesNeeded
 
+class AddDependencyFreeRender_RAII
+{
+    FrameViewRequestPtr _requestData;
+    TreeRenderPtr _render;
+public:
+
+    AddDependencyFreeRender_RAII(const TreeRenderPtr& render, const FrameViewRequestPtr& requestData)
+    : _requestData(requestData)
+    , _render(render)
+    {
+
+    }
+
+    ~AddDependencyFreeRender_RAII()
+    {
+        // If this render has no dependencies, add it to the things to render
+
+        if (_requestData->getNumDependencies() == 0) {
+            _render->addDependencyFreeRender(_requestData);
+        }
+    }
+};
 
 ActionRetCodeEnum
 EffectInstance::requestRender(TimeValue time,
@@ -1032,18 +1054,15 @@ EffectInstance::requestRender(TimeValue time,
         *createdRequest = requestData;
     }
 
-    // If this render has no dependencies, add it to the things to render
-#pragma message WARN("do this block on all exit points of the func")
-    if (requestData->getNumDependencies() == 0) {
-        render->addDependencyFreeRender(requestData);
-    }
+    // When exiting this function, add the request to the dependency free list if it has no dependencies.
+    AddDependencyFreeRender_RAII addDependencyFreeRender(render, requestData);
+
     render->addTaskToRender(requestData);
 
     // Add this frame/view as depdency of the requester
     if (requester) {
         requester->addDependency(requestData);
     }
-
 
 
     // Set the frame view request on the TLS for OpenFX

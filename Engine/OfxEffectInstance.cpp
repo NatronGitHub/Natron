@@ -439,6 +439,20 @@ OfxEffectInstance::~OfxEffectInstance()
     }
 }
 
+#ifdef DEBUG
+void
+OfxEffectInstance::checkCanSetValueAndWarn()
+{
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getTLSData();
+    if (!tls) {
+        return;
+    }
+    if (tls->isDuringActionThatCannotSetValue()) {
+        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
+    }
+}
+#endif
+
 EffectInstanceTLSDataPtr
 OfxEffectInstance::getTLSObject() const
 {

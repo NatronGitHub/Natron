@@ -111,7 +111,7 @@ fillCPUBlack(void* ptrs[4],
                            ImageBitDepthEnum bitDepth,
                            const RectI& bounds,
                            const RectI& roi,
-                           const TreeRenderNodeArgsPtr& renderArgs)
+                           const EffectInstancePtr& renderClone)
 {
     if (roi == bounds) {
         // memset the whole bounds at once
@@ -132,7 +132,7 @@ fillCPUBlack(void* ptrs[4],
         // memset for each scan-line
         for (int y = roi.y1; y < roi.y2; ++y) {
 
-            if (renderArgs && renderArgs->isRenderAborted()) {
+            if (renderClone && renderClone->isRenderAborted()) {
                 return;
             }
 
@@ -161,7 +161,7 @@ fillForDepthForComponents(void* ptrs[4],
                           float a,
                           const RectI& bounds,
                           const RectI& roi,
-                          const TreeRenderNodeArgsPtr& renderArgs)
+                          const EffectInstancePtr& renderClone)
 {
     const float fillValue[4] = {
         nComps == 1 ? a * maxValue : r * maxValue, g * maxValue, b * maxValue, a * maxValue
@@ -181,7 +181,7 @@ fillForDepthForComponents(void* ptrs[4],
 
     for (int y = roi.y1; y < roi.y2; ++y) {
 
-        if (renderArgs && renderArgs->isRenderAborted()) {
+        if (renderClone && renderClone->isRenderAborted()) {
             return;
         }
 
@@ -213,20 +213,20 @@ fillForDepth(void* ptrs[4],
              int nComps,
              const RectI& bounds,
              const RectI& roi,
-             const TreeRenderNodeArgsPtr& renderArgs)
+             const EffectInstancePtr& renderClone)
 {
     switch (nComps) {
         case 1:
-            fillForDepthForComponents<PIX, maxValue, 1>(ptrs, r, g, b, a, bounds, roi, renderArgs);
+            fillForDepthForComponents<PIX, maxValue, 1>(ptrs, r, g, b, a, bounds, roi, renderClone);
             break;
         case 2:
-            fillForDepthForComponents<PIX, maxValue, 2>(ptrs, r, g, b, a, bounds, roi, renderArgs);
+            fillForDepthForComponents<PIX, maxValue, 2>(ptrs, r, g, b, a, bounds, roi, renderClone);
             break;
         case 3:
-            fillForDepthForComponents<PIX, maxValue, 3>(ptrs, r, g, b, a, bounds, roi, renderArgs);
+            fillForDepthForComponents<PIX, maxValue, 3>(ptrs, r, g, b, a, bounds, roi, renderClone);
             break;
         case 4:
-            fillForDepthForComponents<PIX, maxValue, 4>(ptrs, r, g, b, a, bounds, roi, renderArgs);
+            fillForDepthForComponents<PIX, maxValue, 4>(ptrs, r, g, b, a, bounds, roi, renderClone);
             break;
         default:
             break;
@@ -244,22 +244,22 @@ ImagePrivate::fillCPU(void* ptrs[4],
                       ImageBitDepthEnum bitDepth,
                       const RectI& bounds,
                       const RectI& roi,
-                      const TreeRenderNodeArgsPtr& renderArgs)
+                      const EffectInstancePtr& renderClone)
 {
     if (r == 0 && g == 0 &&  b == 0 && a == 0) {
-        fillCPUBlack(ptrs, nComps, bitDepth, bounds, roi, renderArgs);
+        fillCPUBlack(ptrs, nComps, bitDepth, bounds, roi, renderClone);
         return;
     }
 
     switch (bitDepth) {
         case eImageBitDepthByte:
-            fillForDepth<unsigned char, 255>(ptrs, r, g, b, a, nComps, bounds, roi, renderArgs);
+            fillForDepth<unsigned char, 255>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
             break;
         case eImageBitDepthFloat:
-            fillForDepth<float, 1>(ptrs, r, g, b, a, nComps, bounds, roi, renderArgs);
+            fillForDepth<float, 1>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
             break;
         case eImageBitDepthShort:
-            fillForDepth<unsigned short, 65535>(ptrs, r, g, b, a, nComps, bounds, roi, renderArgs);
+            fillForDepth<unsigned short, 65535>(ptrs, r, g, b, a, nComps, bounds, roi, renderClone);
             break;
         case eImageBitDepthHalf:
         default:

@@ -1238,6 +1238,20 @@ public:
 
     virtual void clearRenderValuesCache() = 0;
 
+    template <typename K>
+    boost::shared_ptr<K> getCloneForHolder(const KnobHolderPtr& holder) const
+    {
+        KnobIPtr k = getCloneForHolderInternal(holder);
+        if (!k) {
+            return boost::shared_ptr<K>();
+        }
+        return boost::dynamic_pointer_cast<K>(holder);
+    }
+
+protected:
+
+    virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const = 0;
+
 public:
 
     virtual bool useHostOverlayHandle() const { return false; }
@@ -1509,9 +1523,13 @@ protected:
 
     KnobDimViewBasePtr getDataForDimView(DimIdx dimension, ViewIdx view) const;
 
+    virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+
 public:
 
-    
+
+
+
     virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
 
 
@@ -2651,25 +2669,17 @@ public:
 
     AppInstancePtr getApp() const WARN_UNUSED_RETURN;
     KnobIPtr getKnobByName(const std::string & name) const WARN_UNUSED_RETURN;
-    KnobIPtr getOtherKnobByName(const std::string & name, const KnobIConstPtr& caller) const WARN_UNUSED_RETURN;
 
-    template <typename TYPE>
-    boost::shared_ptr<TYPE> getKnobByNameAndType(const std::string & name) const
+    template <typename K>
+    boost::shared_ptr<K> getKnobByNameAndType(const std::string& name) const WARN_UNUSED_RETURN
     {
-        const KnobsVec& knobs = getKnobs();
-
-        for (KnobsVec::const_iterator it = knobs.begin(); it != knobs.end(); ++it) {
-            if ( (*it)->getName() == name ) {
-                boost::shared_ptr<TYPE> isType = boost::dynamic_pointer_cast<TYPE>(*it);
-                if (isType) {
-                    return isType;
-                }
-                break;
-            }
+        KnobIPtr ret = getKnobByName(name);
+        if (!ret) {
+            return boost::shared_ptr<K>();
         }
-
-        return boost::shared_ptr<TYPE>();
+        return boost::dynamic_pointer_cast<K>(ret);
     }
+
 
     const std::vector< KnobIPtr > & getKnobs() const WARN_UNUSED_RETURN;
     std::vector< KnobIPtr >  getKnobs_mt_safe() const WARN_UNUSED_RETURN;
@@ -2967,6 +2977,7 @@ protected:
         return false;
     }
 
+public:
     /**
      * @brief Create a new clone for rendering.
      * Can only be called on the main instance!
@@ -2977,7 +2988,7 @@ protected:
      * @brief Remove a clone previously created with createRenderClone
      * Can only be called on the main instance!
      **/
-    void removeRenderClone(const KnobHolderPtr& clone);
+    void removeRenderClone(const TreeRenderPtr& render);
 
     /**
      * @brief Returns a clone created for the given render

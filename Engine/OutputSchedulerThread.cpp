@@ -60,6 +60,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/Image.h"
 #include "Engine/KnobFile.h"
 #include "Engine/Node.h"
@@ -73,7 +74,6 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Timer.h"
 #include "Engine/TimeLine.h"
 #include "Engine/TreeRender.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/RotoPaint.h"
 #include "Engine/RotoStrokeItem.h"
@@ -648,8 +648,7 @@ OutputSchedulerThread::startRender()
                                                                                        false /*draftMode*/,
                                                                                        ViewIdx(0),
                                                                                        eRenderBackendTypeCPU /*useOpenGL*/,
-                                                                                       EffectOpenGLContextDataPtr(),
-                                                                                       TreeRenderNodeArgsPtr());
+                                                                                       EffectOpenGLContextDataPtr());
         if (isFailureRetCode(stat)) {
             
             _imp->engine->abortRenderingNoRestart();
@@ -708,8 +707,7 @@ OutputSchedulerThread::stopRender()
                                                                            false,
                                                                            ViewIdx(0),
                                                                            eRenderBackendTypeCPU /*use OpenGL render*/,
-                                                                           EffectOpenGLContextDataPtr(),
-                                                                           TreeRenderNodeArgsPtr()) );
+                                                                           EffectOpenGLContextDataPtr()) );
     }
     
     
@@ -1475,7 +1473,7 @@ void
 OutputSchedulerThread::runAfterFrameRenderedCallback(TimeValue frame)
 {
     NodePtr effect = getOutputNode();
-    std::string cb = effect->getAfterFrameRenderCallback();
+    std::string cb = effect->getEffectInstance()->getAfterFrameRenderCallback();
     if ( cb.empty() ) {
         return;
     }
@@ -1647,7 +1645,7 @@ private:
 
     void runBeforeFrameRenderCallback(TimeValue frame, const NodePtr& outputNode)
     {
-        std::string cb = outputNode->getBeforeFrameRenderCallback();
+        std::string cb = outputNode->getEffectInstance()->getBeforeFrameRenderCallback();
         if ( cb.empty() ) {
             return;
         }
@@ -1705,7 +1703,7 @@ protected:
                                           TimeValue time,
                                           ViewIdx view,
                                           const RenderStatsPtr& stats,
-                                          std::map<ImagePlaneDesc, ImagePtr>* planes)
+                                          ImagePtr* imagePlane)
     {
         if (!outputNode) {
             return eActionStatusFailed;
@@ -1729,8 +1727,8 @@ protected:
         args->time = time;
         args->view = view;
 
-        // Render all layers produced
-        args->layers = 0;
+        // Render default layer produced
+        args->plane = 0;
 
         // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
         args->mipMapLevel = 0;
@@ -1752,7 +1750,11 @@ protected:
                 QMutexLocker k(&renderObjectsMutex);
                 renderObjects.push_back(render);
             }
-            retCode = render->launchRender(planes);
+            FrameViewRequestPtr outputRequest;
+            retCode = render->launchRender(&outputRequest);
+            if (!isFailureRetCode(retCode)) {
+                *imagePlane = outputRequest->getImagePlane();
+            }
         }
 
         if (isFailureRetCode(retCode)) {
@@ -1791,8 +1793,8 @@ private:
             frame->view = viewsToRender[view];
             frame->stats = stats;
             
-            std::map<ImagePlaneDesc, ImagePtr> planes;
-            ActionRetCodeEnum stat = renderFrameInternal(outputNode, time, viewsToRender[view], stats, &planes);
+            ImagePtr imagePlane;
+            ActionRetCodeEnum stat = renderFrameInternal(outputNode, time, viewsToRender[view], stats, &imagePlane);
             if (isFailureRetCode(stat)) {
                 _imp->scheduler->notifyRenderFailure(stat, std::string());
             }
@@ -1896,7 +1898,7 @@ DefaultScheduler::aboutToStartRender()
         isWrite->onSequenceRenderStarted();
     }
 
-    std::string cb = outputNode->getBeforeRenderCallback();
+    std::string cb = outputNode->getEffectInstance()->getBeforeRenderCallback();
     if ( !cb.empty() ) {
         std::vector<std::string> args;
         std::string error;
@@ -1955,7 +1957,7 @@ DefaultScheduler::onRenderStopped(bool aborted)
     }
 
 
-    std::string cb = outputNode->getAfterRenderCallback();
+    std::string cb = outputNode->getEffectInstance()->getAfterRenderCallback();
     if ( !cb.empty() ) {
         std::vector<std::string> args;
         std::string error;
@@ -2160,8 +2162,8 @@ public:
         args->time = inArgs->time;
         args->view = inArgs->view;
 
-        // Render all layers produced by the viewer process node
-        args->layers = 0;
+        // Render default plane produced
+        args->plane = 0;
 
         // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
         args->mipMapLevel = inArgs->viewerMipMapLevel;
@@ -2184,31 +2186,24 @@ public:
     static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs)
     {
         assert(inArgs->renderObject);
-        std::map<ImagePlaneDesc, ImagePtr> planes;
-        inArgs->retCode = inArgs->renderObject->launchRender(&planes);
-        if (planes.empty()) {
-            inArgs->retCode = eActionStatusFailed;
+        FrameViewRequestPtr outputRequest;
+        inArgs->retCode = inArgs->renderObject->launchRender(&outputRequest);
+        if (isFailureRetCode(inArgs->retCode)) {
             return;
         }
         // Convert the image to a format that can be uploaded to a OpenGL texture
         {
-            inArgs->outputImage = planes.begin()->second;
+            inArgs->outputImage = outputRequest->getImagePlane();
 
             // Find the key of the first tile in the image and store it so that in the gui
             // we can later on re-use this key to check the cache for the timeline's cache line
             {
-                int nTiles = inArgs->outputImage->getNumTiles();
-                for (int i = 0; i < nTiles; ++i) {
-                    Image::Tile tile;
-                    inArgs->outputImage->getTileAt(i, &tile);
-                    for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
-                        if (tile.perChannelTile[c].entryLocker) {
-                            inArgs->viewerProcessImageTileKey = toImageTileKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
-                            assert(inArgs->viewerProcessImageTileKey);
-                            break;
-                        }
-                    }
-                    if (inArgs->viewerProcessImageTileKey) {
+                Image::Tile tile;
+                inArgs->outputImage->getTileAt(0, 0, &tile);
+                for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
+                    if (tile.perChannelTile[c].entryLocker) {
+                        inArgs->viewerProcessImageTileKey = toImageTileKey(tile.perChannelTile[c].entryLocker->getProcessLocalEntry()->getKey());
+                        assert(inArgs->viewerProcessImageTileKey);
                         break;
                     }
                 }

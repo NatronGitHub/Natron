@@ -130,8 +130,8 @@ RotoItem::RotoItem(const KnobItemsTablePtr& model)
 {
 }
 
-RotoItem::RotoItem(const RotoItemPtr& other)
-: KnobTableItem(other)
+RotoItem::RotoItem(const RotoItemPtr& other, const TreeRenderPtr& render)
+: KnobTableItem(other, render)
 , _imp(new RotoItemPrivate(*other->_imp))
 {
 
@@ -141,13 +141,22 @@ RotoItem::~RotoItem()
 {
 }
 
+void
+RotoItem::fetchRenderCloneKnobs()
+{
+    KnobTableItem::fetchRenderCloneKnobs();
+
+    _imp->activatedKnob = getKnobByNameAndType<KnobButton>(kParamRotoItemEnabled);
+    _imp->lockedKnob = getKnobByNameAndType<KnobButton>(kParamRotoItemLocked);
+    _imp->soloKnob = getKnobByNameAndType<KnobButton>(kParamRotoItemSolo);
+}
 
 void
 RotoItem::initializeKnobs()
 {
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemEnabledLabel));
-        param->setName(kParamRotoItemEnabled);
+        KnobButtonPtr param = createKnob<KnobButton>(kParamRotoItemEnabled);
+        param->setLabel(tr(kParamRotoItemEnabledLabel));
         param->setHintToolTip(tr(kParamRotoItemEnabledHint));
         param->setIconLabel("Images/visible.png", true);
         param->setIconLabel("Images/unvisible.png", false);
@@ -161,8 +170,8 @@ RotoItem::initializeKnobs()
 
     if (type == RotoPaint::eRotoPaintTypeRoto ||
         type == RotoPaint::eRotoPaintTypeRotoPaint) {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemLockedLabel));
-        param->setName(kParamRotoItemLocked);
+        KnobButtonPtr param = createKnob<KnobButton>(kParamRotoItemLocked);
+        param->setLabel(tr(kParamRotoItemLockedLabel));
         param->setHintToolTip(tr(kParamRotoItemLockedHint));
         param->setIconLabel("Images/locked.png", true);
         param->setIconLabel("Images/unlocked.png", false);
@@ -172,8 +181,8 @@ RotoItem::initializeKnobs()
     }
 
     if (type == RotoPaint::eRotoPaintTypeComp) {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(shared_from_this(), tr(kParamRotoItemSoloLabel));
-        param->setName(kParamRotoItemSolo);
+        KnobButtonPtr param = createKnob<KnobButton>(kParamRotoItemSolo);
+        param->setLabel(tr(kParamRotoItemSoloLabel));
         param->setHintToolTip(tr(kParamRotoItemSoloHint));
         param->setIconLabel("Images/soloOn.png", true);
         param->setIconLabel("Images/soloOff.png", false);

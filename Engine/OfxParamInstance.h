@@ -153,7 +153,12 @@ public:
                     int dimension)
     {
         EffectInstancePtr holder = getKnobHolder();
-        return AppManager::getOrCreateKnob<TYPE>(holder, scriptName, getParamLabel(param), dimension);
+        boost::shared_ptr<TYPE> ret = holder->getOrCreateKnob<TYPE>(scriptName, dimension);
+        if (!ret) {
+            return ret;
+        }
+        ret->setLabel(getParamLabel(param));
+        return ret;
     }
 
 public Q_SLOTS:
@@ -330,7 +335,6 @@ public:
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated() const;
 
 private:
 
@@ -468,9 +472,6 @@ public:
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
-    bool isAnimated() const;
-
 private:
     KnobColorWPtr _knob;
 };
@@ -516,8 +517,6 @@ public:
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
-    bool isAnimated() const;
 
 private:
     KnobColorWPtr _knob;
@@ -563,8 +562,6 @@ public:
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    //bool isAnimated(int dimension) const;
-    bool isAnimated() const;
 
 private:
 
@@ -659,8 +656,6 @@ public:
     virtual KnobIPtr getKnob() const OVERRIDE FINAL;
     virtual OFX::Host::Param::Instance* getOfxParam() OVERRIDE FINAL { return this; }
 
-    bool isAnimated(int dimension) const;
-    bool isAnimated() const;
 
 private:
 

@@ -537,7 +537,7 @@ HistogramCPU::run()
         if (request.roiParam.isNull()) {
             roiPixels = image->getBounds();
         } else {
-            request.roiParam.toPixelEnclosing(image->getMipMapLevel(), treeRoot->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1), &roiPixels);
+            request.roiParam.toPixelEnclosing(image->getMipMapLevel(), treeRoot->getEffectInstance()->getAspectRatio(-1), &roiPixels);
             roiPixels.intersect(imageData.tileBounds, &roiPixels);
         }
 

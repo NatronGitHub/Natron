@@ -246,7 +246,10 @@ public:
     virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getTLSObject() const OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const OVERRIDE FINAL;
-    
+#ifdef DEBUG
+    virtual void checkCanSetValueAndWarn() OVERRIDE FINAL;
+#endif
+
     virtual void setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request) OVERRIDE FINAL;
 public:
 

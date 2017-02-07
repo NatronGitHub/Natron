@@ -329,6 +329,7 @@ PropertyModified_RAII::~PropertyModified_RAII()
     _h->setDynamicPropertyModified(false);
 }
 
+
 EffectInstancePtr
 OfxParamToKnob::getKnobHolder() const
 {
@@ -678,6 +679,12 @@ OfxParamToKnob::onMinMaxChanged(DimSpec dimension)
     }
 }
 
+template <typename K>
+static boost::shared_ptr<K> resolveRenderKnob(const KnobIPtr& originalKnob)
+{
+    return originalKnob->getCloneForHolder<K>(appPTR->getOFXCurrentEffect_TLS());
+}
+
 ////////////////////////// OfxPushButtonInstance /////////////////////////////////////////////////
 
 OfxPushButtonInstance::OfxPushButtonInstance(const OfxEffectInstancePtr& node,
@@ -685,7 +692,7 @@ OfxPushButtonInstance::OfxPushButtonInstance(const OfxEffectInstancePtr& node,
     : OfxParamToKnob(node)
     , OFX::Host::Param::PushbuttonInstance( descriptor, node->effectInstance() )
 {
-    _knob = checkIfKnobExistsWithNameOrCreate<KnobButton>(descriptor.getName(), this, 1);
+    _knob = getOrCreateKnob<KnobButton>(descriptor.getName(), this, 1);
 }
 
 // callback which should set enabled state as appropriate
@@ -756,7 +763,7 @@ OfxIntegerInstance::OfxIntegerInstance(const OfxEffectInstancePtr& node,
     , OFX::Host::Param::IntegerInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobIntPtr k = checkIfKnobExistsWithNameOrCreate<KnobInt>(descriptor.getName(), this, 1);
+    KnobIntPtr k = getOrCreateKnob<KnobInt>(descriptor.getName(), this, 1);
 
     _knob = k;
     setRange();
@@ -770,13 +777,15 @@ OfxIntegerInstance::OfxIntegerInstance(const OfxEffectInstancePtr& node,
     k->setDimensionName(DimIdx(0), dimensionName);
 }
 
+
 OfxStatus
 OfxIntegerInstance::get(int & v)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
+
     ViewIdx view = knob->getCurrentView_TLS();
     v = knob->getValue(DimIdx(0), view);
 
@@ -787,7 +796,7 @@ OfxStatus
 OfxIntegerInstance::get(OfxTime time,
                         int & v)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
@@ -800,7 +809,7 @@ OfxIntegerInstance::get(OfxTime time,
 OfxStatus
 OfxIntegerInstance::set(int v)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
@@ -814,7 +823,7 @@ OfxStatus
 OfxIntegerInstance::set(OfxTime time,
                         int v)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
@@ -893,14 +902,14 @@ OfxIntegerInstance::getKnob() const
 OfxStatus
 OfxIntegerInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobInt>(_knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxIntegerInstance::getKeyTime(int nth,
                                OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobInt>(_knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -908,19 +917,19 @@ OfxIntegerInstance::getKeyIndex(OfxTime time,
                                 int direction,
                                 int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobInt>(_knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxIntegerInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobInt>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxIntegerInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobInt>(_knob.lock()) );
 }
 
 OfxStatus
@@ -964,7 +973,7 @@ OfxDoubleInstance::OfxDoubleInstance(const OfxEffectInstancePtr& node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
     const std::string & coordSystem = getDefaultCoordinateSystem();
-    KnobDoublePtr dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(descriptor.getName(), this, 1);
+    KnobDoublePtr dblKnob = getOrCreateKnob<KnobDouble>(descriptor.getName(), this, 1);
 
     _knob = dblKnob;
     setRange();
@@ -1018,7 +1027,7 @@ OfxDoubleInstance::OfxDoubleInstance(const OfxEffectInstancePtr& node,
 OfxStatus
 OfxDoubleInstance::get(double & v)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     v = knob->getValue(DimIdx(0), view);
 
@@ -1029,7 +1038,7 @@ OfxStatus
 OfxDoubleInstance::get(OfxTime time,
                        double & v)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     v = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
@@ -1039,7 +1048,7 @@ OfxDoubleInstance::get(OfxTime time,
 OfxStatus
 OfxDoubleInstance::set(double v)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
 
     knob->setValue(v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
@@ -1050,7 +1059,7 @@ OfxStatus
 OfxDoubleInstance::set(OfxTime time,
                        double v)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
 
     knob->setValueAtTime(TimeValue(time), v, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
@@ -1061,7 +1070,7 @@ OfxStatus
 OfxDoubleInstance::derive(OfxTime time,
                           double & v)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
 
     v = knob->getDerivativeAtTime( TimeValue(time), knob->getCurrentView_TLS(), DimIdx(0) );
 
@@ -1073,7 +1082,7 @@ OfxDoubleInstance::integrate(OfxTime time1,
                              OfxTime time2,
                              double & v)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
 
     v = knob->getIntegrateFromTimeToTime( TimeValue(time1), TimeValue(time2), knob->getCurrentView_TLS(), DimIdx(0) );
 
@@ -1166,13 +1175,7 @@ OfxDoubleInstance::getKnob() const
     return _knob.lock();
 }
 
-bool
-OfxDoubleInstance::isAnimated() const
-{
-    KnobDoublePtr knob = _knob.lock();
 
-    return knob->isAnimated( DimIdx(0), knob->getCurrentView_TLS() );
-}
 
 OfxStatus
 OfxDoubleInstance::getNumKeys(unsigned int &nKeys) const
@@ -1198,13 +1201,13 @@ OfxDoubleInstance::getKeyIndex(OfxTime time,
 OfxStatus
 OfxDoubleInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobDouble>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxDoubleInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobDouble>(_knob.lock()) );
 }
 
 OfxStatus
@@ -1225,7 +1228,7 @@ OfxBooleanInstance::OfxBooleanInstance(const OfxEffectInstancePtr& node,
     , OFX::Host::Param::BooleanInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobBoolPtr b = checkIfKnobExistsWithNameOrCreate<KnobBool>(descriptor.getName(), this, 1);
+    KnobBoolPtr b = getOrCreateKnob<KnobBool>(descriptor.getName(), this, 1);
 
     _knob = b;
     int def = properties.getIntProperty(kOfxParamPropDefault);
@@ -1235,7 +1238,7 @@ OfxBooleanInstance::OfxBooleanInstance(const OfxEffectInstancePtr& node,
 OfxStatus
 OfxBooleanInstance::get(bool & b)
 {
-    KnobBoolPtr knob = _knob.lock();
+    KnobBoolPtr knob = resolveRenderKnob<KnobBool>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     b = knob->getValue(DimIdx(0), view);
 
@@ -1247,7 +1250,7 @@ OfxBooleanInstance::get(OfxTime time,
                         bool & b)
 {
     assert( KnobBool::canAnimateStatic() );
-    KnobBoolPtr knob = _knob.lock();
+    KnobBoolPtr knob = resolveRenderKnob<KnobBool>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     b = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
@@ -1257,7 +1260,7 @@ OfxBooleanInstance::get(OfxTime time,
 OfxStatus
 OfxBooleanInstance::set(bool b)
 {
-    KnobBoolPtr knob = _knob.lock();
+    KnobBoolPtr knob = resolveRenderKnob<KnobBool>(_knob.lock());
 
     knob->setValue(b, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
@@ -1269,7 +1272,7 @@ OfxBooleanInstance::set(OfxTime time,
                         bool b)
 {
     assert( KnobBool::canAnimateStatic() );
-    KnobBoolPtr knob = _knob.lock();
+    KnobBoolPtr knob = resolveRenderKnob<KnobBool>(_knob.lock());
     knob->setValueAtTime(TimeValue(time), b, knob->getCurrentView_TLS(), DimIdx(0), eValueChangedReasonPluginEdited, 0);
 
     return kOfxStatOK;
@@ -1344,14 +1347,14 @@ OfxBooleanInstance::getKnob() const
 OfxStatus
 OfxBooleanInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobBool>(_knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxBooleanInstance::getKeyTime(int nth,
                                OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobBool>(_knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -1359,19 +1362,19 @@ OfxBooleanInstance::getKeyIndex(OfxTime time,
                                 int direction,
                                 int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobBool>(_knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxBooleanInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobBool>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxBooleanInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobBool>(_knob.lock()) );
 }
 
 OfxStatus
@@ -1393,7 +1396,7 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
     , OFX::Host::Param::ChoiceInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobChoicePtr choice = checkIfKnobExistsWithNameOrCreate<KnobChoice>(descriptor.getName(), this, 1);
+    KnobChoicePtr choice = getOrCreateKnob<KnobChoice>(descriptor.getName(), this, 1);
 
     _knob = choice;
 
@@ -1433,7 +1436,7 @@ OfxChoiceInstance::OfxChoiceInstance(const OfxEffectInstancePtr& node,
 OfxStatus
 OfxChoiceInstance::get(int & v)
 {
-    KnobChoicePtr knob = _knob.lock();
+    KnobChoicePtr knob = resolveRenderKnob<KnobChoice>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     v = knob->getValue(DimIdx(0), view);
 
@@ -1445,7 +1448,7 @@ OfxChoiceInstance::get(OfxTime time,
                        int & v)
 {
     assert( KnobChoice::canAnimateStatic() );
-    KnobChoicePtr knob = _knob.lock();
+    KnobChoicePtr knob = resolveRenderKnob<KnobChoice>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     v = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
 
@@ -1455,7 +1458,7 @@ OfxChoiceInstance::get(OfxTime time,
 OfxStatus
 OfxChoiceInstance::set(int v)
 {
-    KnobChoicePtr knob = _knob.lock();
+    KnobChoicePtr knob = resolveRenderKnob<KnobChoice>(_knob.lock());
 
     if (!knob) {
         return kOfxStatFailed;
@@ -1475,7 +1478,7 @@ OfxStatus
 OfxChoiceInstance::set(OfxTime time,
                        int v)
 {
-    KnobChoicePtr knob = _knob.lock();
+    KnobChoicePtr knob = resolveRenderKnob<KnobChoice>(_knob.lock());
 
     if (!knob) {
         return kOfxStatFailed;
@@ -1606,14 +1609,14 @@ OfxChoiceInstance::getKnob() const
 OfxStatus
 OfxChoiceInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobChoice>(_knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxChoiceInstance::getKeyTime(int nth,
                               OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobChoice>(_knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -1621,19 +1624,19 @@ OfxChoiceInstance::getKeyIndex(OfxTime time,
                                int direction,
                                int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobChoice>(_knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxChoiceInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobChoice>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxChoiceInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobChoice>(_knob.lock()) );
 }
 
 OfxStatus
@@ -1654,7 +1657,7 @@ OfxRGBAInstance::OfxRGBAInstance(const OfxEffectInstancePtr& node,
     , OFX::Host::Param::RGBAInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobColorPtr knob = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 4);
+    KnobColorPtr knob = getOrCreateKnob<KnobColor>(descriptor.getName(), this, 4);
 
     _knob = knob;
 
@@ -1687,7 +1690,7 @@ OfxRGBAInstance::get(double & r,
                      double & b,
                      double & a)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getValue(DimIdx(0), view);
     g = color->getValue(DimIdx(1), view);
@@ -1704,7 +1707,7 @@ OfxRGBAInstance::get(OfxTime time,
                      double & b,
                      double & a)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
 
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getValueAtTime( TimeValue(time), DimIdx(0), view );
@@ -1721,7 +1724,7 @@ OfxRGBAInstance::set(double r,
                      double b,
                      double a)
 {
-    KnobColorPtr knob = _knob.lock();
+    KnobColorPtr knob = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<double> vals(4);
     vals[0] = r;
@@ -1740,7 +1743,7 @@ OfxRGBAInstance::set(OfxTime time,
                      double b,
                      double a)
 {
-    KnobColorPtr knob = _knob.lock();
+    KnobColorPtr knob = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<double> vals(4);
     vals[0] = r;
@@ -1759,7 +1762,7 @@ OfxRGBAInstance::derive(OfxTime time,
                         double & b,
                         double & a)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getDerivativeAtTime(TimeValue(time), view, DimIdx(0));
     g = color->getDerivativeAtTime(TimeValue(time), view, DimIdx(1));
@@ -1777,7 +1780,7 @@ OfxRGBAInstance::integrate(OfxTime time1,
                            double & b,
                            double & a)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(0));
     g = color->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1));
@@ -1880,33 +1883,18 @@ OfxRGBAInstance::getKnob() const
     return _knob.lock();
 }
 
-bool
-OfxRGBAInstance::isAnimated(int dimension) const
-{
-    KnobColorPtr color = _knob.lock();
-    ViewIdx view = color->getCurrentView_TLS();
-    return color->isAnimated( DimIdx(dimension), view );
-}
-
-bool
-OfxRGBAInstance::isAnimated() const
-{
-    KnobColorPtr color = _knob.lock();
-    ViewIdx view = color->getCurrentView_TLS();
-    return color->isAnimated( DimIdx(0), view ) || color->isAnimated( DimIdx(1), view ) || color->isAnimated( DimIdx(2), view ) || color->isAnimated( DimIdx(3), view );
-}
 
 OfxStatus
 OfxRGBAInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobColor>(_knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxRGBAInstance::getKeyTime(int nth,
                             OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobColor>(_knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -1914,19 +1902,19 @@ OfxRGBAInstance::getKeyIndex(OfxTime time,
                              int direction,
                              int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobColor>(_knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxRGBAInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobColor>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxRGBAInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobColor>(_knob.lock()) );
 }
 
 OfxStatus
@@ -1947,7 +1935,7 @@ OfxRGBInstance::OfxRGBInstance(const OfxEffectInstancePtr& node,
     , OFX::Host::Param::RGBInstance( descriptor, node->effectInstance() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobColorPtr color  = checkIfKnobExistsWithNameOrCreate<KnobColor>(descriptor.getName(), this, 3);
+    KnobColorPtr color  = getOrCreateKnob<KnobColor>(descriptor.getName(), this, 3);
 
     _knob = color;
 
@@ -1977,7 +1965,7 @@ OfxRGBInstance::get(double & r,
                     double & g,
                     double & b)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getValue(DimIdx(0), view);
     g = color->getValue(DimIdx(1), view);
@@ -1992,7 +1980,7 @@ OfxRGBInstance::get(OfxTime time,
                     double & g,
                     double & b)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getValueAtTime(TimeValue(time), DimIdx(0), view);
     g = color->getValueAtTime(TimeValue(time), DimIdx(1), view);
@@ -2006,7 +1994,7 @@ OfxRGBInstance::set(double r,
                     double g,
                     double b)
 {
-    KnobColorPtr knob = _knob.lock();
+    KnobColorPtr knob = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<double> vals(3);
     vals[0] = r;
@@ -2023,7 +2011,7 @@ OfxRGBInstance::set(OfxTime time,
                     double g,
                     double b)
 {
-    KnobColorPtr knob = _knob.lock();
+    KnobColorPtr knob = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<double> vals(3);
     vals[0] = r;
@@ -2039,7 +2027,7 @@ OfxRGBInstance::derive(OfxTime time,
                        double & g,
                        double & b)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getDerivativeAtTime(TimeValue(time), view, DimIdx(0));
     g = color->getDerivativeAtTime(TimeValue(time), view, DimIdx(1));
@@ -2055,7 +2043,7 @@ OfxRGBInstance::integrate(OfxTime time1,
                           double & g,
                           double & b)
 {
-    KnobColorPtr color = _knob.lock();
+    KnobColorPtr color = resolveRenderKnob<KnobColor>(_knob.lock());
     ViewIdx view = color->getCurrentView_TLS();
     r = color->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(0));
     g = color->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1));
@@ -2156,33 +2144,17 @@ OfxRGBInstance::getKnob() const
     return _knob.lock();
 }
 
-bool
-OfxRGBInstance::isAnimated(int dimension) const
-{
-    KnobColorPtr color = _knob.lock();
-    ViewIdx view = color->getCurrentView_TLS();
-    return color->isAnimated( DimIdx(dimension), view );
-}
-
-bool
-OfxRGBInstance::isAnimated() const
-{
-    KnobColorPtr color = _knob.lock();
-    ViewIdx view = color->getCurrentView_TLS();
-    return color->isAnimated( DimIdx(0), view ) || color->isAnimated( DimIdx(1), view ) || color->isAnimated( DimIdx(2), view );
-}
-
 OfxStatus
 OfxRGBInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobColor>(_knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxRGBInstance::getKeyTime(int nth,
                            OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobColor>(_knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -2190,19 +2162,19 @@ OfxRGBInstance::getKeyIndex(OfxTime time,
                             int direction,
                             int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobColor>(_knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxRGBInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobColor>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxRGBInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobColor>(_knob.lock()) );
 }
 
 OfxStatus
@@ -2246,7 +2218,7 @@ OfxDouble2DInstance::OfxDouble2DInstance(const OfxEffectInstancePtr& node,
 
     KnobDoublePtr dblKnob = node->getKnobByNameAndType<KnobDouble>(paramName);
     if (!dblKnob) {
-        dblKnob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
+        dblKnob = getOrCreateKnob<KnobDouble>(paramName, this, knobDims);
     }
     _knob = dblKnob;
     setRange();
@@ -2322,7 +2294,7 @@ OfxStatus
 OfxDouble2DInstance::get(double & x1,
                          double & x2)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValue(DimIdx(_startIndex), view);
     x2 = knob->getValue(DimIdx(_startIndex + 1), view);
@@ -2335,7 +2307,7 @@ OfxDouble2DInstance::get(OfxTime time,
                          double & x1,
                          double & x2)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex + 1), view);
@@ -2347,7 +2319,7 @@ OfxStatus
 OfxDouble2DInstance::set(double x1,
                          double x2)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     std::vector<double> vals(2);
     vals[0] = x1;
     vals[1] = x2;
@@ -2362,7 +2334,7 @@ OfxDouble2DInstance::set(OfxTime time,
                          double x1,
                          double x2)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     std::vector<double> vals(2);
     vals[0] = x1;
     vals[1] = x2;
@@ -2377,7 +2349,7 @@ OfxDouble2DInstance::derive(OfxTime time,
                             double &x1,
                             double & x2)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
 
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(_startIndex));
@@ -2392,7 +2364,7 @@ OfxDouble2DInstance::integrate(OfxTime time1,
                                double &x1,
                                double & x2)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(_startIndex));
     x2 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1 + _startIndex));
@@ -2502,25 +2474,18 @@ OfxDouble2DInstance::getKnob() const
     return _knob.lock();
 }
 
-bool
-OfxDouble2DInstance::isAnimated() const
-{
-    KnobDoublePtr knob = _knob.lock();
-    ViewIdx view = knob->getCurrentView_TLS();
-    return knob->isAnimated( DimIdx(0 + _startIndex), view ) || knob->isAnimated( DimIdx(1 + _startIndex), view);
-}
 
 OfxStatus
 OfxDouble2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys, _startIndex, _startIndex + 2);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobDouble>(_knob.lock()), nKeys, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
 OfxDouble2DInstance::getKeyTime(int nth,
                                 OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time, _startIndex, _startIndex + 2);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobDouble>(_knob.lock()), nth, time, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
@@ -2528,19 +2493,19 @@ OfxDouble2DInstance::getKeyIndex(OfxTime time,
                                  int direction,
                                  int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index, _startIndex, _startIndex + 2);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobDouble>(_knob.lock()), time, direction, index, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
 OfxDouble2DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time, _startIndex, _startIndex + 2);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobDouble>(_knob.lock()), time, _startIndex, _startIndex + 2);
 }
 
 OfxStatus
 OfxDouble2DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys(_knob.lock(), _startIndex, _startIndex + 2);
+    return OfxKeyFrame::deleteAllKeys(resolveRenderKnob<KnobDouble>(_knob.lock()), _startIndex, _startIndex + 2);
 }
 
 OfxStatus
@@ -2584,7 +2549,7 @@ OfxInteger2DInstance::OfxInteger2DInstance(const OfxEffectInstancePtr& node,
 
     KnobIntPtr iKnob = node->getKnobByNameAndType<KnobInt>(paramName);
     if (!iKnob) {
-        iKnob = checkIfKnobExistsWithNameOrCreate<KnobInt>(paramName, this, knobDims);
+        iKnob = getOrCreateKnob<KnobInt>(paramName, this, knobDims);
     }
     _knob = iKnob;
     setRange();
@@ -2614,7 +2579,7 @@ OfxStatus
 OfxInteger2DInstance::get(int & x1,
                           int & x2)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValue(DimIdx(_startIndex), view);
     x2 = knob->getValue(DimIdx(_startIndex + 1), view);
@@ -2627,7 +2592,7 @@ OfxInteger2DInstance::get(OfxTime time,
                           int & x1,
                           int & x2)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(_startIndex + 1), view);
@@ -2639,7 +2604,7 @@ OfxStatus
 OfxInteger2DInstance::set(int x1,
                           int x2)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<int> vals(2);
     vals[0] = x1;
@@ -2654,7 +2619,7 @@ OfxInteger2DInstance::set(OfxTime time,
                           int x1,
                           int x2)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<int> vals(2);
     vals[0] = x1;
@@ -2767,14 +2732,14 @@ OfxInteger2DInstance::getKnob() const
 OfxStatus
 OfxInteger2DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys, _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobInt>(_knob.lock()), nKeys, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
 OfxInteger2DInstance::getKeyTime(int nth,
                                  OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time, _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobInt>(_knob.lock()), nth, time, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
@@ -2782,19 +2747,19 @@ OfxInteger2DInstance::getKeyIndex(OfxTime time,
                                   int direction,
                                   int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index, _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobInt>(_knob.lock()), time, direction, index, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
 OfxInteger2DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time, _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobInt>(_knob.lock()), time, _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
 OfxInteger2DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys(_knob.lock(), _startIndex, 2 + _startIndex);
+    return OfxKeyFrame::deleteAllKeys(resolveRenderKnob<KnobInt>(_knob.lock()), _startIndex, 2 + _startIndex);
 }
 
 OfxStatus
@@ -2843,7 +2808,7 @@ OfxDouble3DInstance::OfxDouble3DInstance(const OfxEffectInstancePtr& node,
 
     KnobDoublePtr knob = node->getKnobByNameAndType<KnobDouble>(paramName);
     if (!knob) {
-        knob = checkIfKnobExistsWithNameOrCreate<KnobDouble>(paramName, this, knobDims);
+        knob = getOrCreateKnob<KnobDouble>(paramName, this, knobDims);
     }
     _knob = knob;
     setRange();
@@ -2874,7 +2839,7 @@ OfxDouble3DInstance::get(double & x1,
                          double & x2,
                          double & x3)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValue(DimIdx(0 + _startIndex), view);
     x2 = knob->getValue(DimIdx(1 + _startIndex), view);
@@ -2889,7 +2854,7 @@ OfxDouble3DInstance::get(OfxTime time,
                          double & x2,
                          double & x3)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(0 + _startIndex), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(1 + _startIndex), view);
@@ -2903,7 +2868,7 @@ OfxDouble3DInstance::set(double x1,
                          double x2,
                          double x3)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<double> vals(3);
     vals[0] = x1;
@@ -2920,7 +2885,7 @@ OfxDouble3DInstance::set(OfxTime time,
                          double x2,
                          double x3)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<double> vals(3);
     vals[0] = x1;
@@ -2938,7 +2903,7 @@ OfxDouble3DInstance::derive(OfxTime time,
                             double & x2,
                             double & x3)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(0 + _startIndex));
     x2 = knob->getDerivativeAtTime(TimeValue(time), view, DimIdx(1 + _startIndex));
@@ -2954,7 +2919,7 @@ OfxDouble3DInstance::integrate(OfxTime time1,
                                double & x2,
                                double & x3)
 {
-    KnobDoublePtr knob = _knob.lock();
+    KnobDoublePtr knob = resolveRenderKnob<KnobDouble>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(0 + _startIndex));
     x2 = knob->getIntegrateFromTimeToTime(TimeValue(time1), TimeValue(time2), view, DimIdx(1 + _startIndex));
@@ -3066,33 +3031,17 @@ OfxDouble3DInstance::getKnob() const
     return _knob.lock();
 }
 
-bool
-OfxDouble3DInstance::isAnimated(int dimension) const
-{
-    KnobDoublePtr knob = _knob.lock();
-    ViewIdx view = knob->getCurrentView_TLS();
-    return knob->isAnimated( DimIdx(dimension), view );
-}
-
-bool
-OfxDouble3DInstance::isAnimated() const
-{
-    KnobDoublePtr knob = _knob.lock();
-    ViewIdx view = knob->getCurrentView_TLS();
-    return knob->isAnimated( DimIdx(0 + _startIndex), view ) || knob->isAnimated( DimIdx(1 + _startIndex), view ) || knob->isAnimated( DimIdx(2 + _startIndex), view );
-}
-
 OfxStatus
 OfxDouble3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys, _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobDouble>(_knob.lock()), nKeys, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
 OfxDouble3DInstance::getKeyTime(int nth,
                                 OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time, _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobDouble>(_knob.lock()), nth, time, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
@@ -3100,19 +3049,19 @@ OfxDouble3DInstance::getKeyIndex(OfxTime time,
                                  int direction,
                                  int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index, _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobDouble>(_knob.lock()), time, direction, index, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
 OfxDouble3DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time, _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobDouble>(_knob.lock()), time, _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
 OfxDouble3DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys(_knob.lock(), _startIndex, 3 + _startIndex);
+    return OfxKeyFrame::deleteAllKeys(resolveRenderKnob<KnobDouble>(_knob.lock()), _startIndex, 3 + _startIndex);
 }
 
 OfxStatus
@@ -3134,7 +3083,7 @@ OfxInteger3DInstance::OfxInteger3DInstance(const OfxEffectInstancePtr&node,
 {
     const int dims = 3;
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobIntPtr knob = checkIfKnobExistsWithNameOrCreate<KnobInt>(descriptor.getName(), this, dims);
+    KnobIntPtr knob = getOrCreateKnob<KnobInt>(descriptor.getName(), this, dims);
 
     _knob = knob;
     setRange();
@@ -3162,7 +3111,7 @@ OfxInteger3DInstance::get(int & x1,
                           int & x2,
                           int & x3)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValue(DimIdx(0), view);
     x2 = knob->getValue(DimIdx(1), view);
@@ -3177,7 +3126,7 @@ OfxInteger3DInstance::get(OfxTime time,
                           int & x2,
                           int & x3)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     x1 = knob->getValueAtTime(TimeValue(time), DimIdx(0), view);
     x2 = knob->getValueAtTime(TimeValue(time), DimIdx(1), view);
@@ -3191,7 +3140,7 @@ OfxInteger3DInstance::set(int x1,
                           int x2,
                           int x3)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<int> vals(3);
     vals[0] = x1;
@@ -3208,7 +3157,7 @@ OfxInteger3DInstance::set(OfxTime time,
                           int x2,
                           int x3)
 {
-    KnobIntPtr knob = _knob.lock();
+    KnobIntPtr knob = resolveRenderKnob<KnobInt>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     std::vector<int> vals(3);
     vals[0] = x1;
@@ -3318,14 +3267,14 @@ OfxInteger3DInstance::getKnob() const
 OfxStatus
 OfxInteger3DInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobInt>(_knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxInteger3DInstance::getKeyTime(int nth,
                                  OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobInt>(_knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -3333,19 +3282,19 @@ OfxInteger3DInstance::getKeyIndex(OfxTime time,
                                   int direction,
                                   int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobInt>(_knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxInteger3DInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobInt>(_knob.lock()), time);
 }
 
 OfxStatus
 OfxInteger3DInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _knob.lock() );
+    return OfxKeyFrame::deleteAllKeys(resolveRenderKnob<KnobInt>(_knob.lock()));
 }
 
 OfxStatus
@@ -3368,7 +3317,7 @@ OfxGroupInstance::OfxGroupInstance(const OfxEffectInstancePtr& node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
     int isTab = properties.getIntProperty(kFnOfxParamPropGroupIsTab);
-    KnobGroupPtr group = checkIfKnobExistsWithNameOrCreate<KnobGroup>(descriptor.getName(), this, 1);
+    KnobGroupPtr group = getOrCreateKnob<KnobGroup>(descriptor.getName(), this, 1);
 
     _groupKnob = group;
     int opened = properties.getIntProperty(kOfxParamPropGroupOpen);
@@ -3453,11 +3402,7 @@ OfxPageInstance::OfxPageInstance(const OfxEffectInstancePtr& node,
     , OFX::Host::Param::PageInstance( descriptor, node->effectInstance() )
     , _pageKnob()
 {
-    EffectInstancePtr holder = getKnobHolder();
-
-    assert(holder);
-
-    _pageKnob = checkIfKnobExistsWithNameOrCreate<KnobPage>(descriptor.getName(), this, 1);
+    _pageKnob = getOrCreateKnob<KnobPage>(descriptor.getName(), this, 1);
 }
 
 // callback which should set enabled state as appropriate
@@ -3550,7 +3495,7 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
                              getScriptName() == kOfxImageEffectProxyParamName) );
         int fileIsOutput = !properties.getIntProperty(kOfxParamPropStringFilePathExists);
 
-        fileKnob = checkIfKnobExistsWithNameOrCreate<KnobFile>(descriptor.getName(), this, 1);
+        fileKnob = getOrCreateKnob<KnobFile>(descriptor.getName(), this, 1);
         _imp->fileKnob = fileKnob;
 
         if (!fileIsOutput) {
@@ -3569,11 +3514,11 @@ OfxStringInstance::OfxStringInstance(const OfxEffectInstancePtr& node,
             fileKnob->setDialogFilters(filters);
         }
     } else if (mode == kOfxParamStringIsDirectoryPath) {
-        pathKnob = checkIfKnobExistsWithNameOrCreate<KnobPath>(descriptor.getName(), this, 1);
+        pathKnob = getOrCreateKnob<KnobPath>(descriptor.getName(), this, 1);
         _imp->pathKnob = pathKnob;
         pathKnob->setMultiPath(false);
     } else if ( (mode == kOfxParamStringIsSingleLine) || (mode == kOfxParamStringIsLabel) || (mode == kOfxParamStringIsMultiLine) || richText ) {
-        stringKnob = checkIfKnobExistsWithNameOrCreate<KnobString>(descriptor.getName(), this, 1);
+        stringKnob = getOrCreateKnob<KnobString>(descriptor.getName(), this, 1);
         _imp->stringKnob = stringKnob;
         if (mode == kOfxParamStringIsLabel) {
 
@@ -3638,9 +3583,9 @@ OfxStringInstance::projectEnvVar_setProxy(std::string& str) const
 OfxStatus
 OfxStringInstance::get(std::string &str)
 {
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr strknob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
 
     if (fileKnob) {
         str = fileKnob->getValue();
@@ -3659,9 +3604,9 @@ OfxStatus
 OfxStringInstance::get(OfxTime time,
                        std::string & str)
 {
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr strknob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
 
     if (fileKnob) {
         str = fileKnob->getValueAtTime(TimeValue(time), DimIdx(0), fileKnob->getCurrentView_TLS());
@@ -3680,9 +3625,9 @@ OfxStringInstance::get(OfxTime time,
 OfxStatus
 OfxStringInstance::set(const char* str)
 {
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr strknob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
 
     if (fileKnob) {
         std::string s(str);
@@ -3707,9 +3652,9 @@ OfxStringInstance::set(OfxTime time,
 {
     assert( KnobString::canAnimateStatic() );
 
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr strknob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
 
 
     if (fileKnob) {
@@ -3941,11 +3886,11 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr stringKnob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
-    if (stringKnob) {
-        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    if (strknob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
     } else if (pathKnob) {
@@ -3963,11 +3908,11 @@ OfxStringInstance::getKeyTime(int nth,
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr stringKnob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
-    if (stringKnob) {
-        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    if (strknob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
     } else if (pathKnob) {
@@ -3986,11 +3931,11 @@ OfxStringInstance::getKeyIndex(OfxTime time,
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr stringKnob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
-    if (stringKnob) {
-        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    if (strknob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
     } else if (pathKnob) {
@@ -4007,11 +3952,11 @@ OfxStringInstance::deleteKey(OfxTime time)
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr stringKnob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
-    if (stringKnob) {
-        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    if (strknob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
     } else if (pathKnob) {
@@ -4028,11 +3973,11 @@ OfxStringInstance::deleteAllKeys()
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = _imp->fileKnob.lock();
-    KnobStringPtr stringKnob = _imp->stringKnob.lock();
-    KnobPathPtr pathKnob = _imp->pathKnob.lock();
-    if (stringKnob) {
-        knob = boost::dynamic_pointer_cast<KnobI>(stringKnob);
+    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
+    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
+    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    if (strknob) {
+        knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
     } else if (pathKnob) {
@@ -4093,7 +4038,7 @@ OfxCustomInstance::OfxCustomInstance(const OfxEffectInstancePtr& node,
     , _imp( new OfxCustomInstancePrivate() )
 {
     const OFX::Host::Property::Set &properties = getProperties();
-    KnobStringPtr knob = checkIfKnobExistsWithNameOrCreate<KnobString>(descriptor.getName(), this, 1);
+    KnobStringPtr knob = getOrCreateKnob<KnobString>(descriptor.getName(), this, 1);
 
     _imp->knob = knob;
 
@@ -4112,7 +4057,7 @@ OfxCustomInstance::~OfxCustomInstance()
 OfxStatus
 OfxCustomInstance::get(std::string &str)
 {
-    KnobStringPtr knob = _imp->knob.lock();
+    KnobStringPtr knob = resolveRenderKnob<KnobString>(_imp->knob.lock());
 
     if (!knob) {
         return kOfxStatErrBadHandle;
@@ -4129,7 +4074,7 @@ OfxCustomInstance::get(OfxTime time,
 {
     assert( KnobString::canAnimateStatic() );
     // it should call _customParamInterpolationV1Entry
-    KnobStringPtr knob = _imp->knob.lock();
+    KnobStringPtr knob = resolveRenderKnob<KnobString>(_imp->knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
@@ -4142,7 +4087,7 @@ OfxCustomInstance::get(OfxTime time,
 OfxStatus
 OfxCustomInstance::set(const char* str)
 {
-    KnobStringPtr knob = _imp->knob.lock();
+    KnobStringPtr knob = resolveRenderKnob<KnobString>(_imp->knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
@@ -4157,7 +4102,7 @@ OfxCustomInstance::set(OfxTime time,
                        const char* str)
 {
     assert( KnobString::canAnimateStatic() );
-    KnobStringPtr knob = _imp->knob.lock();
+    KnobStringPtr knob = resolveRenderKnob<KnobString>(_imp->knob.lock());
     if (!knob) {
         return kOfxStatErrBadHandle;
     }
@@ -4265,14 +4210,14 @@ OfxCustomInstance::setEvaluateOnChange()
 OfxStatus
 OfxCustomInstance::getNumKeys(unsigned int &nKeys) const
 {
-    return OfxKeyFrame::getNumKeys(_imp->knob.lock(), nKeys);
+    return OfxKeyFrame::getNumKeys(resolveRenderKnob<KnobString>(_imp->knob.lock()), nKeys);
 }
 
 OfxStatus
 OfxCustomInstance::getKeyTime(int nth,
                               OfxTime & time) const
 {
-    return OfxKeyFrame::getKeyTime(_imp->knob.lock(), nth, time);
+    return OfxKeyFrame::getKeyTime(resolveRenderKnob<KnobString>(_imp->knob.lock()), nth, time);
 }
 
 OfxStatus
@@ -4280,19 +4225,19 @@ OfxCustomInstance::getKeyIndex(OfxTime time,
                                int direction,
                                int & index) const
 {
-    return OfxKeyFrame::getKeyIndex(_imp->knob.lock(), time, direction, index);
+    return OfxKeyFrame::getKeyIndex(resolveRenderKnob<KnobString>(_imp->knob.lock()), time, direction, index);
 }
 
 OfxStatus
 OfxCustomInstance::deleteKey(OfxTime time)
 {
-    return OfxKeyFrame::deleteKey(_imp->knob.lock(), time);
+    return OfxKeyFrame::deleteKey(resolveRenderKnob<KnobString>(_imp->knob.lock()), time);
 }
 
 OfxStatus
 OfxCustomInstance::deleteAllKeys()
 {
-    return OfxKeyFrame::deleteAllKeys( _imp->knob.lock() );
+    return OfxKeyFrame::deleteAllKeys( resolveRenderKnob<KnobString>(_imp->knob.lock()) );
 }
 
 OfxStatus
@@ -4314,7 +4259,7 @@ OfxParametricInstance::OfxParametricInstance(const OfxEffectInstancePtr& node,
 {
     const OFX::Host::Property::Set &properties = getProperties();
     int parametricDimension = properties.getIntProperty(kOfxParamPropParametricDimension);
-    KnobParametricPtr knob = checkIfKnobExistsWithNameOrCreate<KnobParametric>(descriptor.getName(), this, parametricDimension);
+    KnobParametricPtr knob = getOrCreateKnob<KnobParametric>(descriptor.getName(), this, parametricDimension);
 
 
     _knob = knob;
@@ -4477,7 +4422,7 @@ OfxParametricInstance::getValue(int curveIndex,
                                 double parametricPosition,
                                 double *returnValue)
 {
-    KnobParametricPtr knob = _knob.lock();
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     ActionRetCodeEnum stat = knob->evaluateCurve(DimIdx(curveIndex), view, parametricPosition, returnValue);
 
@@ -4493,7 +4438,7 @@ OfxParametricInstance::getNControlPoints(int curveIndex,
                                          double /*time*/,
                                          int *returnValue)
 {
-    KnobParametricPtr knob = _knob.lock();
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     ActionRetCodeEnum stat = knob->getNControlPoints(DimIdx(curveIndex), view, returnValue);
 
@@ -4511,7 +4456,7 @@ OfxParametricInstance::getNthControlPoint(int curveIndex,
                                           double *key,
                                           double *value)
 {
-    KnobParametricPtr knob = _knob.lock();
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     ActionRetCodeEnum stat = knob->getNthControlPoint(DimIdx(curveIndex), view, nthCtl, key, value);
 
@@ -4531,7 +4476,7 @@ OfxParametricInstance::setNthControlPoint(int curveIndex,
                                           double value,
                                           bool /*addAnimationKey*/)
 {
-    KnobParametricPtr knob = _knob.lock();
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     ActionRetCodeEnum stat = knob->setNthControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl, key, value);
 
@@ -4559,8 +4504,10 @@ OfxParametricInstance::addControlPoint(int curveIndex,
         return eActionStatusFailed;
     }
 
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
+
     ActionRetCodeEnum stat;
-    EffectInstancePtr effect = toEffectInstance( _knob.lock()->getHolder() );
+    EffectInstancePtr effect = toEffectInstance( knob->getHolder() );
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default
     // The initial curve for some plugins may be better with a specific interpolation. Unfortunately, the kOfxParametricSuiteV1 doesn't offer different interpolation methods
 #ifdef DEBUG
@@ -4574,7 +4521,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
             interpolation = eKeyframeTypeCubic;
         }
     }
-    stat = _knob.lock()->addControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), key, value, interpolation);
+    stat = knob->addControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), key, value, interpolation);
 
     if (!isFailureRetCode(stat)) {
         return kOfxStatOK;
@@ -4587,7 +4534,7 @@ OfxStatus
 OfxParametricInstance::deleteControlPoint(int curveIndex,
                                           int nthCtl)
 {
-    KnobParametricPtr knob = _knob.lock();
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     ActionRetCodeEnum stat = knob->deleteControlPoint(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view, nthCtl);
 
@@ -4602,7 +4549,7 @@ OfxStatus
 OfxParametricInstance::deleteAllControlPoints(int curveIndex)
 {
 
-    KnobParametricPtr knob = _knob.lock();
+    KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
     ViewIdx view = knob->getCurrentView_TLS();
     ActionRetCodeEnum stat = knob->deleteAllControlPoints(eValueChangedReasonPluginEdited, DimIdx(curveIndex), view);
 

@@ -54,13 +54,13 @@ ViewerNode::initializeKnobs()
 
 
 
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( thisShared, tr("UIControls") );
-    page->setName("viewerUIControls");
+    KnobPagePtr page = createKnob<KnobPage>("viewerUIControls");
+    page->setLabel(tr("UIControls"));
     page->setSecret(true);
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamLayersLabel) );
-        param->setName(kViewerNodeParamLayers);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamLayers);
+        param->setLabel(tr(kViewerNodeParamLayersLabel));
         param->setHintToolTip(tr(kViewerNodeParamLayersHint));
         param->setMissingEntryWarningEnabled(false);
         page->addKnob(param);
@@ -70,8 +70,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamAlphaChannelLabel) );
-        param->setName(kViewerNodeParamAlphaChannel);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamAlphaChannel);
+        param->setLabel(tr(kViewerNodeParamAlphaChannelLabel));
         param->setHintToolTip(tr(kViewerNodeParamAlphaChannelHint));
         param->setMissingEntryWarningEnabled(false);
         page->addKnob(param);
@@ -83,8 +83,8 @@ ViewerNode::initializeKnobs()
     std::vector<ChoiceOption> displayChannelEntries;
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamDisplayChannelsLabel) );
-        param->setName(kViewerNodeParamDisplayChannels);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamDisplayChannels);
+        param->setLabel(tr(kViewerNodeParamDisplayChannelsLabel));
         param->setHintToolTip(tr(kViewerNodeParamDisplayChannelsHint));
         {
 
@@ -139,8 +139,8 @@ ViewerNode::initializeKnobs()
         _imp->displayChannelsKnob[0] = param;
     }
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamDisplayChannelsLabel) );
-        param->setName(kViewerNodeParamDisplayChannelsB);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamDisplayChannelsB);
+        param->setLabel(tr(kViewerNodeParamDisplayChannelsLabel));
         param->populateChoices(displayChannelEntries);
 
         param->setDefaultValue(1);
@@ -151,8 +151,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamZoomLabel) );
-        param->setName(kViewerNodeParamZoom);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamZoom);
+        param->setLabel(tr(kViewerNodeParamZoomLabel));
         param->setHintToolTip(tr(kViewerNodeParamZoomHint));
         param->setSecret(true);
         param->setMissingEntryWarningEnabled(false);
@@ -198,8 +198,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamClipToFormatLabel) );
-        param->setName(kViewerNodeParamClipToFormat);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamClipToFormat);
+        param->setLabel(tr(kViewerNodeParamClipToFormatLabel));
         param->setHintToolTip(tr(kViewerNodeParamClipToFormatHint));
         page->addKnob(param);
         param->setSecret(true);
@@ -212,8 +212,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamFullFrameLabel) );
-        param->setName(kViewerNodeParamFullFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamFullFrame);
+        param->setLabel(tr(kViewerNodeParamFullFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamFullFrameHint));
         param->setCheckable(true);
         page->addKnob(param);
@@ -225,8 +225,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableUserRoILabel) );
-        param->setName(kViewerNodeParamEnableUserRoI);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableUserRoI);
+        param->setLabel(tr(kViewerNodeParamEnableUserRoILabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableUserRoIHint));
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionCreateNewRoI);
         param->setCheckable(true);
@@ -240,7 +240,7 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
+        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerNodeParamUserRoIBottomLeft), 2 );
         param->setDefaultValuesAreNormalized(true);
         param->setSecret(true);
         param->setDefaultValue(0.2, DimIdx(0));
@@ -249,7 +249,7 @@ ViewerNode::initializeKnobs()
         _imp->userRoIBtmLeftKnob = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamUserRoISize), 2 );
+        KnobDoublePtr param = createKnob<KnobDouble>(std::string(kViewerNodeParamUserRoISize), 2 );
         param->setDefaultValuesAreNormalized(true);
         param->setDefaultValue(.6, DimIdx(0));
         param->setDefaultValue(.6, DimIdx(1));
@@ -260,8 +260,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamProxyLevelLabel) );
-        param->setName(kViewerNodeParamProxyLevel);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamProxyLevel);
+        param->setLabel(tr(kViewerNodeParamProxyLevelLabel));
         param->setHintToolTip(tr(kViewerNodeParamProxyLevelHint));
         {
             std::vector<ChoiceOption> entries;
@@ -289,8 +289,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPauseRenderLabel) );
-        param->setName(kViewerNodeParamPauseRender);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPauseRender);
+        param->setLabel(tr(kViewerNodeParamPauseRenderLabel));
         param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionPauseAB);
         page->addKnob(param);
@@ -304,8 +304,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPauseRenderLabel) );
-        param->setName(kViewerNodeParamPauseRenderB);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPauseRenderB);
+        param->setLabel(tr(kViewerNodeParamPauseRenderLabel));
         param->setHintToolTip(tr(kViewerNodeParamPauseRenderHint));
         page->addKnob(param);
         param->setSecret(true);
@@ -318,8 +318,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamAInputLabel) );
-        param->setName(kViewerNodeParamAInput);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamAInput);
+        param->setLabel(tr(kViewerNodeParamAInputLabel));
         param->setHintToolTip(tr(kViewerNodeParamAInputHint));
         param->setInViewerContextLabel(tr(kViewerNodeParamAInputLabel));
         page->addKnob(param);
@@ -329,8 +329,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamOperationLabel) );
-        param->setName(kViewerNodeParamOperation);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamOperation);
+        param->setLabel(tr(kViewerNodeParamOperationLabel));
         param->setHintToolTip(tr(kViewerNodeParamOperation));
         {
             std::vector<ChoiceOption> entries;
@@ -364,8 +364,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamBInputLabel) );
-        param->setName(kViewerNodeParamBInput);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamBInput);
+        param->setLabel(tr(kViewerNodeParamBInputLabel));
         param->setHintToolTip(tr(kViewerNodeParamBInputHint));
         param->setInViewerContextLabel(tr(kViewerNodeParamBInputLabel));
         param->setTextToFitHorizontally("ColorCorrect1");
@@ -375,8 +375,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableGainLabel) );
-        param->setName(kViewerNodeParamEnableGain);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableGain);
+        param->setLabel(tr(kViewerNodeParamEnableGainLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableGainHint));
         page->addKnob(param);
         param->setSecret(true);
@@ -388,8 +388,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerNodeParamGainLabel), 1 );
-        param->setName(kViewerNodeParamGain);
+        KnobDoublePtr param = createKnob<KnobDouble>(kViewerNodeParamGain);
+        param->setLabel(tr(kViewerNodeParamGainLabel));
         param->setHintToolTip(tr(kViewerNodeParamGainHint));
         page->addKnob(param);
         param->setSecret(true);
@@ -398,8 +398,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableAutoContrastLabel) );
-        param->setName(kViewerNodeParamEnableAutoContrast);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableAutoContrast);
+        param->setLabel(tr(kViewerNodeParamEnableAutoContrastLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableAutoContrastHint));
         page->addKnob(param);
         param->setSecret(true);
@@ -411,8 +411,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableGammaLabel) );
-        param->setName(kViewerNodeParamEnableGamma);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableGamma);
+        param->setLabel(tr(kViewerNodeParamEnableGammaLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableGammaHint));
         page->addKnob(param);
         param->setSecret(true);
@@ -424,8 +424,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerNodeParamGammaLabel), 1 );
-        param->setName(kViewerNodeParamGamma);
+        KnobDoublePtr param = createKnob<KnobDouble>(kViewerNodeParamGamma);
+        param->setLabel(tr(kViewerNodeParamGammaLabel));
         param->setHintToolTip(tr(kViewerNodeParamGammaHint));
         param->setDefaultValue(1.);
         page->addKnob(param);
@@ -435,8 +435,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamColorspaceLabel) );
-        param->setName(kViewerNodeParamColorspace);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamColorspace);
+        param->setLabel(tr(kViewerNodeParamColorspaceLabel));
         param->setHintToolTip(tr(kViewerNodeParamColorspaceHint));
         {
             std::vector<ChoiceOption> entries;
@@ -452,8 +452,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamViewLabel) );
-        param->setName(kViewerNodeParamView);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamView);
+        param->setLabel(tr(kViewerNodeParamViewLabel));
         param->setHintToolTip(tr(kViewerNodeParamViewHint));
         {
             // Views gets populated in getPreferredMetadata
@@ -468,8 +468,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRefreshViewportLabel) );
-        param->setName(kViewerNodeParamRefreshViewport);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamRefreshViewport);
+        param->setLabel(tr(kViewerNodeParamRefreshViewportLabel));
         param->setHintToolTip(tr(kViewerNodeParamRefreshViewportHint));
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionRefreshWithStats);
         param->setSecret(true);
@@ -486,8 +486,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSyncViewportsLabel) );
-        param->setName(kViewerNodeParamSyncViewports);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamSyncViewports);
+        param->setLabel(tr(kViewerNodeParamSyncViewportsLabel));
         param->setHintToolTip(tr(kViewerNodeParamSyncViewportsHint));
         param->setInViewerContextCanHaveShortcut(true);
         param->setSecret(true);
@@ -499,8 +499,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamFitViewportLabel) );
-        param->setName(kViewerNodeParamFitViewport);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamFitViewport);
+        param->setLabel(tr(kViewerNodeParamFitViewportLabel));
         param->setHintToolTip(tr(kViewerNodeParamFitViewportHint));
         param->setInViewerContextCanHaveShortcut(true);
         param->setSecret(true);
@@ -511,8 +511,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamCheckerBoardLabel) );
-        param->setName(kViewerNodeParamCheckerBoard);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamCheckerBoard);
+        param->setLabel(tr(kViewerNodeParamCheckerBoardLabel));
         param->setHintToolTip(tr(kViewerNodeParamCheckerBoardHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -526,8 +526,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableColorPickerLabel) );
-        param->setName(kViewerNodeParamEnableColorPicker);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableColorPicker);
+        param->setLabel(tr(kViewerNodeParamEnableColorPickerLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableColorPickerHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -548,12 +548,12 @@ ViewerNode::initializeKnobs()
 
 
 
-    KnobPagePtr playerToolbarPage = AppManager::createKnob<KnobPage>( thisShared, tr("PlayerPage") );
-    playerToolbarPage->setName(kViewerNodeParamPlayerToolBarPage);
+    KnobPagePtr playerToolbarPage = createKnob<KnobPage>("PlayerPage");
+    playerToolbarPage->setLabel(tr(kViewerNodeParamPlayerToolBarPage));
     playerToolbarPage->setSecret(true);
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSetInPointLabel) );
-        param->setName(kViewerNodeParamSetInPoint);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamSetInPoint);
+        param->setLabel(tr(kViewerNodeParamSetInPointLabel));
         param->setHintToolTip(tr(kViewerNodeParamSetInPointHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -563,8 +563,8 @@ ViewerNode::initializeKnobs()
         _imp->setInPointButtonKnob = param;
     }
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamInPointLabel) );
-        param->setName(kViewerNodeParamInPoint);
+        KnobIntPtr param = createKnob<KnobInt>(kViewerNodeParamInPoint);
+        param->setLabel(tr(kViewerNodeParamInPointLabel));
         param->setHintToolTip(tr(kViewerNodeParamInPointHint));
         param->setSecret(true);
         param->setDefaultValue(projectFirst);
@@ -573,8 +573,8 @@ ViewerNode::initializeKnobs()
         _imp->inPointKnob = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>( thisShared, tr(kViewerNodeParamEnableFpsLabel) );
-        param->setName(kViewerNodeParamEnableFps);
+        KnobBoolPtr param = createKnob<KnobBool>(kViewerNodeParamEnableFps);
+        param->setLabel(tr(kViewerNodeParamEnableFpsLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableFpsHint));
         param->setInViewerContextLabel(tr("FPS"));
         param->setSecret(true);
@@ -583,8 +583,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerNodeParamFpsLabel) );
-        param->setName(kViewerNodeParamFps);
+        KnobDoublePtr param = createKnob<KnobDouble>(kViewerNodeParamFps);
+        param->setLabel(tr(kViewerNodeParamFpsLabel));
         param->setHintToolTip(tr(kViewerNodeParamFpsHint));
         param->setSecret(true);
         param->setDefaultValue(projectFps);
@@ -595,8 +595,8 @@ ViewerNode::initializeKnobs()
         _imp->fpsKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamEnableTurboModeLabel) );
-        param->setName(kViewerNodeParamEnableTurboMode);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamEnableTurboMode);
+        param->setLabel(tr(kViewerNodeParamEnableTurboModeLabel));
         param->setHintToolTip(tr(kViewerNodeParamEnableTurboModeHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -607,8 +607,8 @@ ViewerNode::initializeKnobs()
         _imp->enableTurboModeButtonKnob = param;
     }
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamPlaybackModeLabel) );
-        param->setName(kViewerNodeParamPlaybackMode);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerNodeParamPlaybackMode);
+        param->setLabel(tr(kViewerNodeParamPlaybackModeLabel));
         param->setHintToolTip(tr(kViewerNodeParamPlaybackModeHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -627,8 +627,8 @@ ViewerNode::initializeKnobs()
         _imp->playbackModeKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSyncTimelinesLabel) );
-        param->setName(kViewerNodeParamSyncTimelines);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamSyncTimelines);
+        param->setLabel(tr(kViewerNodeParamSyncTimelinesLabel));
         param->setHintToolTip(tr(kViewerNodeParamSyncTimelinesHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -640,8 +640,8 @@ ViewerNode::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamFirstFrameLabel) );
-        param->setName(kViewerNodeParamFirstFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamFirstFrame);
+        param->setLabel(tr(kViewerNodeParamFirstFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamFirstFrameHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -650,8 +650,8 @@ ViewerNode::initializeKnobs()
         _imp->firstFrameButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPlayBackwardLabel) );
-        param->setName(kViewerNodeParamPlayBackward);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPlayBackward);
+        param->setLabel(tr(kViewerNodeParamPlayBackwardLabel));
         param->setHintToolTip(tr(kViewerNodeParamPlayBackwardHint));
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionAbortRender);
         param->setSecret(true);
@@ -663,8 +663,8 @@ ViewerNode::initializeKnobs()
         _imp->playBackwardButtonKnob = param;
     }
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamCurrentFrameLabel) );
-        param->setName(kViewerNodeParamCurrentFrame);
+        KnobIntPtr param = createKnob<KnobInt>(kViewerNodeParamCurrentFrame);
+        param->setLabel(tr(kViewerNodeParamCurrentFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamCurrentFrameHint));
         param->setSecret(true);
         param->setDefaultValue(currentFrame);
@@ -675,8 +675,8 @@ ViewerNode::initializeKnobs()
         _imp->curFrameKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPlayForwardLabel) );
-        param->setName(kViewerNodeParamPlayForward);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPlayForward);
+        param->setLabel(tr(kViewerNodeParamPlayForwardLabel));
         param->setHintToolTip(tr(kViewerNodeParamPlayForwardHint));
         param->addInViewerContextShortcutsReference(kViewerNodeParamActionAbortRender);
         param->setSecret(true);
@@ -688,8 +688,8 @@ ViewerNode::initializeKnobs()
         _imp->playForwardButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamLastFrameLabel) );
-        param->setName(kViewerNodeParamLastFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamLastFrame);
+        param->setLabel(tr(kViewerNodeParamLastFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamLastFrameHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -698,8 +698,8 @@ ViewerNode::initializeKnobs()
         _imp->lastFrameButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPreviousFrameLabel) );
-        param->setName(kViewerNodeParamPreviousFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPreviousFrame);
+        param->setLabel(tr(kViewerNodeParamPreviousFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamPreviousFrameHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -708,8 +708,8 @@ ViewerNode::initializeKnobs()
         _imp->prevFrameButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamNextFrameLabel) );
-        param->setName(kViewerNodeParamNextFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamNextFrame);
+        param->setLabel(tr(kViewerNodeParamNextFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamNextFrameHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -718,8 +718,8 @@ ViewerNode::initializeKnobs()
         _imp->nextFrameButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPreviousKeyFrameLabel) );
-        param->setName(kViewerNodeParamPreviousKeyFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPreviousKeyFrame);
+        param->setLabel(tr(kViewerNodeParamPreviousKeyFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamPreviousKeyFrameHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -728,8 +728,8 @@ ViewerNode::initializeKnobs()
         _imp->prevKeyFrameButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamNextKeyFrameLabel) );
-        param->setName(kViewerNodeParamNextKeyFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamNextKeyFrame);
+        param->setLabel(tr(kViewerNodeParamNextKeyFrameLabel));
         param->setHintToolTip(tr(kViewerNodeParamNextKeyFrameHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -738,8 +738,8 @@ ViewerNode::initializeKnobs()
         _imp->nextKeyFrameButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamPreviousIncrLabel) );
-        param->setName(kViewerNodeParamPreviousIncr);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamPreviousIncr);
+        param->setLabel(tr(kViewerNodeParamPreviousIncrLabel));
         param->setHintToolTip(tr(kViewerNodeParamPreviousIncrHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -748,8 +748,8 @@ ViewerNode::initializeKnobs()
         _imp->prevIncrButtonKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamNextIncrLabel) );
-        param->setName(kViewerNodeParamNextIncr);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamNextIncr);
+        param->setLabel(tr(kViewerNodeParamNextIncrLabel));
         param->setHintToolTip(tr(kViewerNodeParamNextIncrHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -758,8 +758,8 @@ ViewerNode::initializeKnobs()
         _imp->nextIncrButtonKnob = param;
     }
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamFrameIncrementLabel) );
-        param->setName(kViewerNodeParamFrameIncrement);
+        KnobIntPtr param = createKnob<KnobInt>(kViewerNodeParamFrameIncrement);
+        param->setLabel(tr(kViewerNodeParamFrameIncrementLabel));
         param->setHintToolTip(tr(kViewerNodeParamFrameIncrementHint));
         param->setSecret(true);
         param->setDefaultValue(10);
@@ -769,8 +769,8 @@ ViewerNode::initializeKnobs()
         _imp->incrFrameKnob = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamSetOutPointLabel) );
-        param->setName(kViewerNodeParamSetOutPoint);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamSetOutPoint);
+        param->setLabel(tr(kViewerNodeParamSetOutPointLabel));
         param->setHintToolTip(tr(kViewerNodeParamSetOutPointHint));
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -780,8 +780,8 @@ ViewerNode::initializeKnobs()
         _imp->setOutPointButtonKnob = param;
     }
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kViewerNodeParamOutPointLabel) );
-        param->setName(kViewerNodeParamOutPoint);
+        KnobIntPtr param = createKnob<KnobInt>(kViewerNodeParamOutPoint);
+        param->setLabel(tr(kViewerNodeParamOutPointLabel));
         param->setHintToolTip(tr(kViewerNodeParamOutPointHint));
         param->setSecret(true);
         param->setValueCenteredInSpinBox(true);
@@ -878,70 +878,70 @@ ViewerNode::initializeKnobs()
     playerToolbarPage->addKnob(_imp->setOutPointButtonKnob.lock());
 
     // Right click menu
-    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kViewerNodeParamRightClickMenu) );
+    KnobChoicePtr rightClickMenu = createKnob<KnobChoice>( std::string(kViewerNodeParamRightClickMenu) );
     rightClickMenu->setSecret(true);
     rightClickMenu->setEvaluateOnChange(false);
     page->addKnob(rightClickMenu);
     _imp->rightClickMenu = rightClickMenu;
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuToggleWipeLabel) );
-        action->setName(kViewerNodeParamRightClickMenuToggleWipe);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuToggleWipe);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuToggleWipeLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickToggleWipe = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuCenterWipeLabel) );
-        action->setName(kViewerNodeParamRightClickMenuCenterWipe);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuCenterWipe);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuCenterWipeLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickCenterWipe = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuPreviousLayerLabel) );
-        action->setName(kViewerNodeParamRightClickMenuPreviousLayer);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuPreviousLayer);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuPreviousLayerLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickPreviousLayer = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuNextLayerLabel) );
-        action->setName(kViewerNodeParamRightClickMenuNextLayer);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuNextLayer);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuNextLayerLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickNextLayer = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuPreviousViewLabel) );
-        action->setName(kViewerNodeParamRightClickMenuPreviousView);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuPreviousView);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuPreviousViewLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickPreviousView = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuNextViewLabel) );
-        action->setName(kViewerNodeParamRightClickMenuNextView);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuNextView);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuNextViewLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickNextView = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuSwitchABLabel) );
-        action->setName(kViewerNodeParamRightClickMenuSwitchAB);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuSwitchAB);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuSwitchABLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         page->addKnob(action);
         _imp->rightClickSwitchAB = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideOverlaysLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHideOverlays);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuShowHideOverlays);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuShowHideOverlaysLabel));
         action->setSecret(true);
         action->setCheckable(true);
         action->setDefaultValue(true);
@@ -952,16 +952,16 @@ ViewerNode::initializeKnobs()
         _imp->rightClickShowHideOverlays = action;
     }
 
-    KnobChoicePtr showHideSubMenu = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideSubMenuLabel) );
-    showHideSubMenu->setName(kViewerNodeParamRightClickMenuShowHideSubMenu);
+    KnobChoicePtr showHideSubMenu = createKnob<KnobChoice>(kViewerNodeParamRightClickMenuShowHideSubMenu);
+    showHideSubMenu->setLabel(tr(kViewerNodeParamRightClickMenuShowHideSubMenuLabel));
     showHideSubMenu->setSecret(true);
     showHideSubMenu->setEvaluateOnChange(false);
     page->addKnob(showHideSubMenu);
     _imp->rightClickShowHideSubMenu = showHideSubMenu;
 
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuHideAllLabel) );
-        action->setName(kViewerNodeParamRightClickMenuHideAll);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuHideAll);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuHideAllLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -969,8 +969,8 @@ ViewerNode::initializeKnobs()
         _imp->rightClickHideAll = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuHideAllTopLabel) );
-        action->setName(kViewerNodeParamRightClickMenuHideAllTop);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuHideAllTop);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuHideAllTopLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -980,8 +980,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuHideAllBottomLabel) );
-        action->setName(kViewerNodeParamRightClickMenuHideAllBottom);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuHideAllBottom);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuHideAllBottomLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -991,8 +991,8 @@ ViewerNode::initializeKnobs()
 
 
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHidePlayerLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHidePlayer);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuShowHidePlayer);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuShowHidePlayerLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -1001,8 +1001,8 @@ ViewerNode::initializeKnobs()
         _imp->rightClickShowHidePlayer = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideTimelineLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHideTimeline);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuShowHideTimeline);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuShowHideTimelineLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -1011,8 +1011,8 @@ ViewerNode::initializeKnobs()
         _imp->rightClickShowHideTimeline = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHideLeftToolbar);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuShowHideLeftToolbar);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuShowHideLeftToolbarLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -1021,8 +1021,8 @@ ViewerNode::initializeKnobs()
         _imp->rightClickShowHideLeftToolbar = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideTopToolbarLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHideTopToolbar);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuShowHideTopToolbar);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuShowHideTopToolbarLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -1031,8 +1031,8 @@ ViewerNode::initializeKnobs()
         _imp->rightClickShowHideTopToolbar = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamRightClickMenuShowHideTabHeaderLabel) );
-        action->setName(kViewerNodeParamRightClickMenuShowHideTabHeader);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamRightClickMenuShowHideTabHeader);
+        action->setLabel(tr(kViewerNodeParamRightClickMenuShowHideTabHeaderLabel));
         action->setSecret(true);
         action->setInViewerContextCanHaveShortcut(true);
         action->setCheckable(true);
@@ -1044,8 +1044,8 @@ ViewerNode::initializeKnobs()
 
     // Viewer actions
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionLuminanceLabel) );
-        action->setName(kViewerNodeParamActionLuminance);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionLuminance);
+        action->setLabel(tr(kViewerNodeParamActionLuminanceLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1053,8 +1053,8 @@ ViewerNode::initializeKnobs()
         _imp->displayLuminanceAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionLuminanceALabel) );
-        action->setName(kViewerNodeParamActionLuminanceA);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionLuminanceA);
+        action->setLabel(tr(kViewerNodeParamActionLuminanceALabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1062,8 +1062,8 @@ ViewerNode::initializeKnobs()
         _imp->displayLuminanceAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionRedLabel) );
-        action->setName(kViewerNodeParamActionRed);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionRed);
+        action->setLabel(tr(kViewerNodeParamActionRedLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1071,8 +1071,8 @@ ViewerNode::initializeKnobs()
         _imp->displayRedAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionRedALabel) );
-        action->setName(kViewerNodeParamActionRedA);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionRedA);
+        action->setLabel(tr(kViewerNodeParamActionRedALabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1080,8 +1080,8 @@ ViewerNode::initializeKnobs()
         _imp->displayRedAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionGreenLabel) );
-        action->setName(kViewerNodeParamActionGreen);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionGreen);
+        action->setLabel(tr(kViewerNodeParamActionGreenLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1089,8 +1089,8 @@ ViewerNode::initializeKnobs()
         _imp->displayGreenAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionGreenALabel) );
-        action->setName(kViewerNodeParamActionGreenA);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionGreenA);
+        action->setLabel(tr(kViewerNodeParamActionGreenALabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1098,8 +1098,8 @@ ViewerNode::initializeKnobs()
         _imp->displayGreenAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionBlueLabel) );
-        action->setName(kViewerNodeParamActionBlue);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionBlue);
+        action->setLabel(tr(kViewerNodeParamActionBlueLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1107,8 +1107,8 @@ ViewerNode::initializeKnobs()
         _imp->displayBlueAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionBlueALabel) );
-        action->setName(kViewerNodeParamActionBlueA);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionBlueA);
+        action->setLabel(tr(kViewerNodeParamActionBlueALabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1116,8 +1116,8 @@ ViewerNode::initializeKnobs()
         _imp->displayBlueAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionAlphaLabel) );
-        action->setName(kViewerNodeParamActionAlpha);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionAlpha);
+        action->setLabel(tr(kViewerNodeParamActionAlphaLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1125,8 +1125,8 @@ ViewerNode::initializeKnobs()
         _imp->displayAlphaAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionAlphaALabel) );
-        action->setName(kViewerNodeParamActionAlphaA);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionAlphaA);
+        action->setLabel(tr(kViewerNodeParamActionAlphaALabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1134,8 +1134,8 @@ ViewerNode::initializeKnobs()
         _imp->displayAlphaAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionMatteLabel) );
-        action->setName(kViewerNodeParamActionMatte);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionMatte);
+        action->setLabel(tr(kViewerNodeParamActionMatteLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1143,8 +1143,8 @@ ViewerNode::initializeKnobs()
         _imp->displayMatteAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionMatteALabel) );
-        action->setName(kViewerNodeParamActionMatteA);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionMatteA);
+        action->setLabel(tr(kViewerNodeParamActionMatteALabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1152,8 +1152,8 @@ ViewerNode::initializeKnobs()
         _imp->displayMatteAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionZoomInLabel) );
-        action->setName(kViewerNodeParamActionZoomIn);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionZoomIn);
+        action->setLabel(tr(kViewerNodeParamActionZoomInLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1161,8 +1161,8 @@ ViewerNode::initializeKnobs()
         _imp->zoomInAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionZoomOutLabel) );
-        action->setName(kViewerNodeParamActionZoomOut);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionZoomOut);
+        action->setLabel(tr(kViewerNodeParamActionZoomOutLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1170,8 +1170,8 @@ ViewerNode::initializeKnobs()
         _imp->zoomOutAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionScaleOneLabel) );
-        action->setName(kViewerNodeParamActionScaleOne);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionScaleOne);
+        action->setLabel(tr(kViewerNodeParamActionScaleOneLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1179,8 +1179,8 @@ ViewerNode::initializeKnobs()
         _imp->zoomScaleOneAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionProxy2Label) );
-        action->setName(kViewerNodeParamActionProxy2);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionProxy2);
+        action->setLabel(tr(kViewerNodeParamActionProxy2Label));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1188,8 +1188,8 @@ ViewerNode::initializeKnobs()
         _imp->proxyLevelAction[0] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionProxy4Label) );
-        action->setName(kViewerNodeParamActionProxy4);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionProxy4);
+        action->setLabel(tr(kViewerNodeParamActionProxy4Label));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1197,8 +1197,8 @@ ViewerNode::initializeKnobs()
         _imp->proxyLevelAction[1] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionProxy8Label) );
-        action->setName(kViewerNodeParamActionProxy8);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionProxy8);
+        action->setLabel(tr(kViewerNodeParamActionProxy8Label));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1206,8 +1206,8 @@ ViewerNode::initializeKnobs()
         _imp->proxyLevelAction[2] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionProxy16Label) );
-        action->setName(kViewerNodeParamActionProxy16);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionProxy16);
+        action->setLabel(tr(kViewerNodeParamActionProxy16Label));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1215,8 +1215,8 @@ ViewerNode::initializeKnobs()
         _imp->proxyLevelAction[3] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionProxy32Label) );
-        action->setName(kViewerNodeParamActionProxy32);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionProxy32);
+        action->setLabel(tr(kViewerNodeParamActionProxy32Label));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1224,8 +1224,8 @@ ViewerNode::initializeKnobs()
         _imp->proxyLevelAction[4] = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionLeftViewLabel) );
-        action->setName(kViewerNodeParamActionLeftView);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionLeftView);
+        action->setLabel(tr(kViewerNodeParamActionLeftViewLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1233,8 +1233,8 @@ ViewerNode::initializeKnobs()
         _imp->leftViewAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionRightViewLabel) );
-        action->setName(kViewerNodeParamActionRightView);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionRightView);
+        action->setLabel(tr(kViewerNodeParamActionRightViewLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1242,8 +1242,8 @@ ViewerNode::initializeKnobs()
         _imp->rightViewAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionPauseABLabel) );
-        action->setName(kViewerNodeParamActionPauseAB);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionPauseAB);
+        action->setLabel(tr(kViewerNodeParamActionPauseABLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1251,8 +1251,8 @@ ViewerNode::initializeKnobs()
         _imp->pauseABAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionCreateNewRoILabel) );
-        action->setName(kViewerNodeParamActionCreateNewRoI);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionCreateNewRoI);
+        action->setLabel(tr(kViewerNodeParamActionCreateNewRoILabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1260,8 +1260,8 @@ ViewerNode::initializeKnobs()
         _imp->createUserRoIAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionRefreshWithStatsLabel) );
-        action->setName(kViewerNodeParamActionRefreshWithStats);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionRefreshWithStats);
+        action->setLabel(tr(kViewerNodeParamActionRefreshWithStatsLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1269,8 +1269,8 @@ ViewerNode::initializeKnobs()
         _imp->enableStatsAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerNodeParamActionAbortRenderLabel) );
-        action->setName(kViewerNodeParamActionAbortRender);
+        KnobButtonPtr action = createKnob<KnobButton>(kViewerNodeParamActionAbortRender);
+        action->setLabel(tr(kViewerNodeParamActionAbortRenderLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -1280,8 +1280,8 @@ ViewerNode::initializeKnobs()
 
     // Viewer overlays
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamWipeCenter), 2 );
-        param->setName(kViewerNodeParamWipeCenter);
+        KnobDoublePtr param = createKnob<KnobDouble>( std::string(kViewerNodeParamWipeCenter), 2 );
+        param->setLabel(tr(kViewerNodeParamWipeCenter));
         param->setSecret(true);
         param->setDefaultValuesAreNormalized(true);
         param->setDefaultValue(0.5, DimIdx(0));
@@ -1291,8 +1291,8 @@ ViewerNode::initializeKnobs()
         _imp->wipeCenter = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamWipeAmount), 1 );
-        param->setName(kViewerNodeParamWipeAmount);
+        KnobDoublePtr param = createKnob<KnobDouble>( std::string(kViewerNodeParamWipeAmount), 1 );
+        param->setLabel(tr(kViewerNodeParamWipeAmount));
         param->setSecret(true);
         param->setDefaultValue(1.);
         page->addKnob(param);
@@ -1300,8 +1300,8 @@ ViewerNode::initializeKnobs()
         _imp->wipeAmount = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, std::string(kViewerNodeParamWipeAngle), 1 );
-        param->setName(kViewerNodeParamWipeAngle);
+        KnobDoublePtr param = createKnob<KnobDouble>( std::string(kViewerNodeParamWipeAngle), 1 );
+        param->setLabel(tr(kViewerNodeParamWipeAngle));
         param->setSecret(true);
         page->addKnob(param);
         addOverlaySlaveParam(param);

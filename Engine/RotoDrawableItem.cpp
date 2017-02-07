@@ -203,8 +203,8 @@ RotoDrawableItem::RotoDrawableItem(const KnobItemsTablePtr& model)
 }
 
 
-RotoDrawableItem::RotoDrawableItem(const RotoDrawableItemPtr& other)
-: RotoItem(other)
+RotoDrawableItem::RotoDrawableItem(const RotoDrawableItemPtr& other, const TreeRenderPtr& render)
+: RotoItem(other, render)
 , _imp(new RotoDrawableItemPrivate(*other->_imp))
 {
 
@@ -248,7 +248,7 @@ static void attachStrokeToNode(const NodePtr& node, const NodePtr& rotopaintNode
     assert(rotopaintNode);
     assert(node);
     assert(item);
-    node->attachRotoItem(item);
+    node->getEffectInstance()->attachRotoItem(item);
 
     // Link OpenGL enabled knob to the one on the Rotopaint so the user can control if GPU rendering is used in the roto internal node graph
     KnobChoicePtr glRenderKnob = node->getEffectInstance()->getOrCreateOpenGLEnabledKnob();
@@ -1439,6 +1439,89 @@ CompNodeItem::getSerializationClassName() const
 {
     return kSerializationCompLayerTag;
 }
+
+void
+RotoDrawableItem::fetchRenderCloneKnobs()
+{
+
+    RotoItem::fetchRenderCloneKnobs();
+
+    RotoStrokeType type = getBrushType();
+    RotoStrokeItem* isStroke = dynamic_cast<RotoStrokeItem*>(this);
+    Bezier* isBezier = dynamic_cast<Bezier*>(this);
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->opacity = getKnobByNameAndType<KnobDouble>(kRotoOpacityParam);
+    }
+    _imp->lifeTime = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemLifeTimeParam);
+    _imp->lifeTimeFrame = getKnobByNameAndType<KnobInt>(kRotoDrawableItemLifeTimeFrameParam);
+    _imp->customRange = getKnobByNameAndType<KnobBool>(kRotoLifeTimeCustomRangeParam);
+
+    if (type != eRotoStrokeTypeComp) {
+        _imp->overlayColor  = getKnobByNameAndType<KnobColor>(kRotoOverlayColor);
+    }
+
+    _imp->compOperator = getKnobByNameAndType<KnobChoice>(kRotoCompOperatorParam);
+
+    // Item types that output a mask may not have an invert parameter
+    if (type != eRotoStrokeTypeSolid &&
+        type != eRotoStrokeTypeSmear) {
+
+            _imp->invertKnob  = getKnobByNameAndType<KnobButton>(kRotoInvertedParam);
+    }
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->color = createDuplicateOfTableKnob<KnobColor>(kRotoColorParam);
+    }
+
+    // Brush: only for strokes or open beziers
+    if (isStroke || (isBezier && isBezier->isOpenBezier())) {
+        _imp->brushSize = getKnobByNameAndType<KnobDouble>(kRotoBrushSizeParam);
+        _imp->brushSpacing = getKnobByNameAndType<KnobDouble>(kRotoBrushSpacingParam);
+        _imp->brushHardness = getKnobByNameAndType<KnobDouble>(kRotoBrushHardnessParam);
+        _imp->visiblePortion = getKnobByNameAndType<KnobDouble>(kRotoBrushVisiblePortionParam);
+    }
+
+
+    // The comp item doesn't have a vector graphics mask hence cannot have a transform on it
+    if (type != eRotoStrokeTypeComp) {
+        // Transform
+        _imp->translate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemTranslateParam);
+        _imp->rotate = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemRotateParam);
+        _imp->scale = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemScaleParam);
+        _imp->scaleUniform = getKnobByNameAndType<KnobBool>(kRotoDrawableItemScaleUniformParam);
+        _imp->skewX = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemSkewXParam);
+        _imp->skewY = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemSkewYParam);
+        _imp->skewOrder = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemSkewOrderParam);
+        _imp->center = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemCenterParam);
+        _imp->extraMatrix = getKnobByNameAndType<KnobDouble>(kRotoDrawableItemExtraMatrixParam);
+    }
+
+    if (type == eRotoStrokeTypeReveal ||
+        type == eRotoStrokeTypeClone ||
+        type == eRotoStrokeTypeComp) {
+        _imp->mergeAInputChoice = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemMergeAInputParam);
+        _imp->timeOffset = getKnobByNameAndType<KnobInt>(kRotoBrushTimeOffsetParam);
+
+        if (type != eRotoStrokeTypeComp) {
+            _imp->timeOffsetMode = getKnobByNameAndType<KnobChoice>(kRotoBrushTimeOffsetModeParam);
+        } else {
+            _imp->mergeMaskInputChoice = getKnobByNameAndType<KnobChoice>(kRotoDrawableItemMergeMaskParam);
+        }
+    }
+
+    if (type == eRotoStrokeTypeComp) {
+        _imp->mixKnob = getKnobByNameAndType<KnobDouble>(kLayeredCompMixParam);
+    } else {
+        _imp->mixKnob = getKnobByNameAndType<KnobDouble>(kHostMixingKnobName);
+    }
+
+    if (type == eRotoStrokeTypeSolid) {
+        _imp->motionBlurAmount = getKnobByNameAndType<KnobInt>(kRotoPerShapeMotionBlurParam);
+        _imp->motionBlurShutter = getKnobByNameAndType<KnobDouble>(kRotoPerShapeShutterParam);
+        _imp->motionBlurShutterType = getKnobByNameAndType<KnobChoice>(kRotoPerShapeShutterOffsetTypeParam);
+        _imp->motionBlurCustomShutter = getKnobByNameAndType<KnobDouble>(kRotoPerShapeShutterCustomOffsetParam);
+    }
+
+} // fetchRenderCloneKnobs
 
 void
 RotoDrawableItem::initializeKnobs()

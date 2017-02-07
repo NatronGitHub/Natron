@@ -31,7 +31,6 @@
 
 #include "Engine/EffectInstance.h"
 #include "Engine/KnobItemsTable.h"
-#include "Engine/TreeRenderNodeArgs.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -82,18 +81,11 @@ Knob<T>::getKnobExpresionResults(TimeValue time, ViewIdx view, DimIdx dimension)
     U64 effectHash = 0;
     assert(effect);
     if (effect) {
-        TreeRenderNodeArgsPtr render = effect->getCurrentRender_TLS();
-        if (render) {
-            render->getTimeViewInvariantHash(&effectHash);
-        }
-        if (effectHash == 0) {
-            ComputeHashArgs hashArgs;
-            hashArgs.render = render;
-            hashArgs.time = time;
-            hashArgs.view = view;
-            hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewInvariant;
-            effectHash = effect->computeHash(hashArgs);
-        }
+        ComputeHashArgs hashArgs;
+        hashArgs.time = time;
+        hashArgs.view = view;
+        hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+        effectHash = effect->computeHash(hashArgs);
     }
 
 

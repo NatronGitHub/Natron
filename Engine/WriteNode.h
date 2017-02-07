@@ -111,6 +111,8 @@ public:
         return false;
     }
 
+    virtual void setupInitialSubGraphState() OVERRIDE FINAL;
+
     void renderSequenceStarted();
     void renderSequenceEnd();
 
@@ -122,6 +124,7 @@ public Q_SLOTS:
     void onSequenceRenderFinished();
 
 private:
+
 
     virtual ActionRetCodeEnum getFrameRange(double *first, double *last) OVERRIDE FINAL;
     virtual void initializeKnobs() OVERRIDE FINAL;

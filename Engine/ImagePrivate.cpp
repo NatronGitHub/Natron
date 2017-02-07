@@ -259,7 +259,7 @@ ImagePrivate::initTileAndFetchFromCache(int tx, int ty)
                             {
                                 Image::InitStorageArgs tmpArgs;
                                 tmpArgs.bounds = tile.tileBounds;
-                                tmpArgs.renderArgs = renderArgs;
+                                tmpArgs.renderClone = renderClone;
                                 tmpArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
                                 tmpArgs.layer = channelIndices.size() > 1 ? ImagePlaneDesc::getAlphaComponents() : layer;
                                 tmpArgs.bitdepth = bitdepth;
@@ -371,7 +371,7 @@ ImagePrivate::insertTilesInCache()
 
     CachePtr cache = appPTR->getCache();
 
-    bool renderAborted = renderArgs->isRenderAborted();
+    bool renderAborted = renderClone->isRenderAborted();
 
     for (TileMap::iterator it = tiles.begin(); it != tiles.end(); ++it) {
 
@@ -389,7 +389,6 @@ ImagePrivate::insertTilesInCache()
             if (status == CacheEntryLocker::eCacheEntryStatusMustCompute && !renderAborted) {
                 thisChannelTile.entryLocker->insertInCache();
             }
-            thisChannelTile.entryLocker.reset();
         }
         
     } // for each tile
@@ -430,7 +429,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
     if (fromImage._imp->bufferFormat == eImageBufferLayoutMonoChannelTiled && toImage._imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
         ImagePtr tmpImage;
         Image::InitStorageArgs args;
-        args.renderArgs = fromImage._imp->renderArgs;
+        args.renderClone = fromImage._imp->renderClone;
         args.bounds = roi;
         args.layer = fromImage._imp->layer;
         tmpImage = Image::create(args);
@@ -454,7 +453,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
             if (isGlEntry->getOpenGLContext() != otherIsGlEntry->getOpenGLContext()) {
                 ImagePtr tmpImage;
                 Image::InitStorageArgs args;
-                args.renderArgs = fromImage._imp->renderArgs;
+                args.renderClone = fromImage._imp->renderClone;
                 args.bounds = fromImage.getBounds();
                 args.layer = ImagePlaneDesc::getRGBAComponents();
                 tmpImage = Image::create(args);
@@ -470,7 +469,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         if (toImage._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || toImage.getComponentsCount() != 4 || toImage.getBounds() != fromImage.getBounds()) {
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
-            args.renderArgs = fromImage._imp->renderArgs;
+            args.renderClone = fromImage._imp->renderClone;
             args.bounds = fromImage.getBounds();
             args.layer = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
@@ -493,7 +492,7 @@ ImagePrivate::checkIfCopyToTempImageIsNeeded(const Image& fromImage, const Image
         if (fromImage._imp->bufferFormat != eImageBufferLayoutRGBAPackedFullRect || fromImage.getComponentsCount() != 4) {
             ImagePtr tmpImage;
             Image::InitStorageArgs args;
-            args.renderArgs = fromImage._imp->renderArgs;
+            args.renderClone = fromImage._imp->renderClone;
             args.bounds = fromImage.getBounds();
             args.layer = ImagePlaneDesc::getRGBAComponents();
             tmpImage = Image::create(args);
@@ -523,8 +522,8 @@ class CopyUntiledToTileProcessor : public MultiThreadProcessorBase
 
 public:
 
-    CopyUntiledToTileProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : MultiThreadProcessorBase(renderArgs)
+    CopyUntiledToTileProcessor(const EffectInstancePtr& renderClone)
+    : MultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -552,8 +551,7 @@ public:
     }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads,
-                                                  const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL WARN_UNUSED_RETURN
+                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         // Each threads get a rectangular portion but full scan-lines
         int fromIndex, toIndex;
@@ -577,7 +575,7 @@ public:
 
             thisTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(_fromImage->tiles.begin()->second, _fromStorage, _fromBufferFormat, thisTile, _toStorage, _toBufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(_fromImage->tiles.begin()->second, _fromStorage, _fromBufferFormat, thisTile, _toStorage, _toBufferFormat, argsCpy, _effect);
         }
         return eActionStatusOK;
     }
@@ -621,7 +619,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
 
     if ((fromStorage == eStorageModeRAM || fromStorage == eStorageModeDisk) &&
         (toStorage == eStorageModeRAM || toStorage == eStorageModeDisk)) {
-        CopyUntiledToTileProcessor processor(renderArgs);
+        CopyUntiledToTileProcessor processor(renderClone);
         processor.setData(&args, this, toStorage, bufferFormat, fromImage._imp.get(), fromImage._imp->bufferFormat, fromStorage, tileIndices);
         ActionRetCodeEnum stat = processor.launchThreads();
         (void)stat;
@@ -633,7 +631,7 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
             const Image::Tile& thisTile = tiles[tileIndices[i]];
             thisTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, thisTile, toStorage, bufferFormat, argsCpy, renderClone);
         }
     }
     
@@ -654,8 +652,8 @@ class CopyTiledToUntiledProcessor : public MultiThreadProcessorBase
 
 public:
 
-    CopyTiledToUntiledProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : MultiThreadProcessorBase(renderArgs)
+    CopyTiledToUntiledProcessor(const EffectInstancePtr& renderClone)
+    : MultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -683,8 +681,7 @@ public:
     }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads,
-                                                  const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL WARN_UNUSED_RETURN
+                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         // Each threads get a rectangular portion but full scan-lines
         int fromIndex, toIndex;
@@ -706,7 +703,7 @@ public:
             const Image::Tile& fromTile = foundTile->second;
             fromTile.tileBounds.intersect(_originalArgs->roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromTile, _fromStorage, _fromBufferFormat, _imp->tiles.begin()->second, _toStorage, _toBufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(fromTile, _fromStorage, _fromBufferFormat, _imp->tiles.begin()->second, _toStorage, _toBufferFormat, argsCpy, _effect);
 
         }
         return eActionStatusOK;
@@ -749,7 +746,7 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
 
     if ((fromStorage == eStorageModeRAM || fromStorage == eStorageModeDisk) &&
         (toStorage == eStorageModeRAM || toStorage == eStorageModeDisk)) {
-        CopyTiledToUntiledProcessor processor(renderArgs);
+        CopyTiledToUntiledProcessor processor(renderClone);
         processor.setData(&args, this, toStorage, bufferFormat, fromImage._imp.get(), fromImage._imp->bufferFormat, fromStorage, tileIndices);
         ActionRetCodeEnum stat = processor.launchThreads();
         (void)stat;
@@ -761,7 +758,7 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
             const Image::Tile& fromTile = fromImage._imp->tiles[tileIndices[i]];
             fromTile.tileBounds.intersect(args.roi, &argsCpy.roi);
 
-            ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, argsCpy, renderArgs);
+            ImagePrivate::copyRectangle(fromTile, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, argsCpy, renderClone);
         }
     }
 
@@ -780,7 +777,7 @@ ImagePrivate::copyUntiledImageToUntiledImage(const Image& fromImage, const Image
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
     const StorageModeEnum toStorage = tiles.begin()->second.perChannelTile[0].buffer->getStorageMode();
 
-    ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, args, renderArgs);
+    ImagePrivate::copyRectangle(fromImage._imp->tiles.begin()->second, fromStorage, fromImage._imp->bufferFormat, tiles.begin()->second, toStorage, bufferFormat, args, renderClone);
 
 } // copyUntiledImageToUntiledImage
 

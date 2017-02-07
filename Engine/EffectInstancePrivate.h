@@ -154,6 +154,15 @@ struct DefaultKnobs
     KnobBoolWPtr processAllLayersKnob;
     std::map<int, MaskSelector> maskSelectors;
 
+    // True if the effect has isHostChannelSelectorSupported() returning true
+    bool hostChannelSelectorEnabled;
+
+    DefaultKnobs()
+    : hostChannelSelectorEnabled(false)
+    {
+
+    }
+
 };
 
 struct DynamicProperties
@@ -211,13 +220,52 @@ struct EffectInstanceCommonData
     RenderSafetyEnum pluginSafety;
 
     DynamicProperties props;
-    
+
+
+    // Protects supportedInputComponents & supportedOutputComponents
+    mutable QMutex supportedComponentsMutex;
+
+    // The accepted number of components in input and in output of the plug-in
+    // These two are also protected by inputsMutex
+    // This is a bitset: each bit tells whether the plug-in supports N comps
+    std::vector< std::bitset<4> > supportedInputComponents;
+    std::bitset<4> supportedOutputComponents;
+
+
+    // List of supported bitdepth by the plug-in
+    std::list <ImageBitDepthEnum> supportedDepths;
+
+    // Protects created component
+    mutable QMutex createdPlanesMutex;
+
+    // Comps created by the user in the stream.
+    std::list<ImagePlaneDesc> createdPlanes;
+
+    // If this node is part of a RotoPaint item implementation
+    // this is a pointer to the roto item itself
+    boost::weak_ptr<RotoDrawableItem> paintStroke;
+
+    // During painting we keep track of the image that was rendered
+    // at the previous step so that we can accumulate the renders
+    mutable QMutex accumBufferMutex;
+    ImagePtr accumBuffer;
+
+
     EffectInstanceCommonData()
     : attachedContextsMutex(QMutex::Recursive)
     , attachedContexts()
     , pluginsPropMutex()
     , pluginSafety(eRenderSafetyInstanceSafe)
     , props()
+    , supportedComponentsMutex()
+    , supportedInputComponents()
+    , supportedOutputComponents()
+    , supportedDepths()
+    , createdPlanesMutex()
+    , createdPlanes()
+    , paintStroke()
+    , accumBufferMutex()
+    , accumBuffer()
     {
 
     }
@@ -227,9 +275,9 @@ struct EffectInstanceCommonData
 // Data specific to a render clone
 struct RenderCloneData
 {
+    // Protects data in this structure accross multiple render threads
     mutable QMutex lock;
-    
-    
+
     // Used to lock out render instances when the plug-in render thread safety is set to eRenderSafetyInstanceSafe
     mutable QMutex instanceSafeRenderMutex;
 
@@ -320,14 +368,14 @@ public:
     // can not be a smart ptr
     EffectInstance* _publicInterface;
 
+    // Common data shared accross the main instance and all render instances.
     boost::shared_ptr<EffectInstanceCommonData> common;
 
-    // These are arguments global to the render of frame.
-    // In each render of a frame multiple subsequent render on the effect may occur but these data should remain the same.
-    // Multiple threads may share the same pointer as these datas remain the same.
+    // Data specific to a render clone. Each render clone is tied to a single render but these datas may be
+    // accessed by multiple threads in the render.
     boost::scoped_ptr<RenderCloneData> renderData;
 
-    // Default implementation knobs
+    // Default implementation knobs. They are shared with the main instance implementation.
     boost::shared_ptr<DefaultKnobs> defKnobs;
 
 public:
@@ -511,8 +559,7 @@ public:
 
     void onMaskSelectorChanged(int inputNb, const MaskSelector& selector);
 
-    ImagePlaneDesc getSelectedLayerInternal(int inputNb,
-                                            const std::list<ImagePlaneDesc>& availableLayers,
+    ImagePlaneDesc getSelectedLayerInternal(const std::list<ImagePlaneDesc>& availableLayers,
                                             const ChannelSelector& selector) const;
 
     void onLayerChanged(bool isOutput);

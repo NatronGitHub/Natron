@@ -179,7 +179,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
 
             {
                 std::list<ImagePlaneDesc> userCreatedLayers;
-                getNode()->getUserCreatedComponents(&userCreatedLayers);
+                getUserCreatedComponents(&userCreatedLayers);
                 mergeLayersList(userCreatedLayers, &availableLayersInOutput);
             }
 
@@ -227,7 +227,7 @@ EffectInstance::getLayersProducedAndNeeded_default(TimeValue time,
 
         // For a mask get its selected channel
         ImagePlaneDesc maskComp;
-        int channelMask = getNode()->getMaskChannel(i, upstreamAvailableLayers, &maskComp);
+        int channelMask = getMaskChannel(i, upstreamAvailableLayers, &maskComp);
 
 
         std::vector<ImagePlaneDesc> clipPrefsAllComps;
@@ -338,7 +338,7 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
                 }
             }
             ImagePlaneDesc maskComp;
-            int channelMask = getNode()->getMaskChannel(i, upstreamAvailableLayers, &maskComp);
+            int channelMask = getMaskChannel(i, upstreamAvailableLayers, &maskComp);
             if (channelMask >= 0 && maskComp.getNumComponents() > 0) {
                 maskPlanesNeeded.clear();
                 maskPlanesNeeded.push_back(maskComp);
@@ -423,7 +423,7 @@ EffectInstance::getAvailableLayers(TimeValue time, ViewIdx view, int inputNb,  s
 
     if (inputNb == -1) {
         std::list<ImagePlaneDesc> userCreatedLayers;
-        getNode()->getUserCreatedComponents(&userCreatedLayers);
+        getUserCreatedComponents(&userCreatedLayers);
         mergeLayersList(userCreatedLayers, availableLayers);
     }
 
@@ -894,7 +894,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
     bool caught = false;
 
     // Node is disabled or doesn't have any channel to process, be identity on the main input
-    if ((isNodeDisabledForFrame(time, view) || !getNode()->hasAtLeastOneChannelToProcess() )) {
+    if ((isNodeDisabledForFrame(time, view) || !hasAtLeastOneChannelToProcess() )) {
         (*results)->setIdentityData(getNode()->getPreferredInput(), time, view);
         caught = true;
     }
@@ -966,7 +966,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
 
     // When drawing a paint-stroke, never use the getRegionOfDefinition cache because the RoD changes at each render step
     // but the hash does not (so that each draw step can re-use the same image.)
-    bool useCache = !getNode()->isDuringPaintStrokeCreation();
+    bool useCache = !isDuringPaintStrokeCreation();
 
     U64 hash = 0;
     // Get a hash to cache the results
@@ -1877,7 +1877,7 @@ getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
             //None comps
             return rawComps;
         } else {
-            rawComps = self->getNode()->findClosestSupportedNumberOfComponents(inputNb, rawComps);
+            rawComps = self->findClosestSupportedNumberOfComponents(inputNb, rawComps);
         }
     }
     if (!rawComps) {
@@ -1890,11 +1890,6 @@ getUnmappedNumberOfCompsForColorPlane(const EffectInstancePtr& self,
 ActionRetCodeEnum
 EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 {
-    NodePtr node = getNode();
-
-    if (!node) {
-        return eActionStatusInputDisconnected;
-    }
 
     const bool multiBitDepth = supportsMultipleClipDepths();
     int nInputs = getMaxInputCount();
@@ -2011,7 +2006,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setIsContinuous(hasOneInputContinuous || hasAnimation);
 
     // now find the best depth that the plugin supports
-    deepestBitDepth = node->getClosestSupportedBitDepth(deepestBitDepth);
+    deepestBitDepth = getClosestSupportedBitDepth(deepestBitDepth);
 
     bool multipleClipsPAR = supportsMultipleClipPARs();
 
@@ -2064,7 +2059,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             // "Optional input clips can always have their component types remapped"
             // http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#id482755
             ImageBitDepthEnum depth = deepestBitDepth;
-            int remappedComps = node->findClosestSupportedNumberOfComponents(i, mostComponents);
+            int remappedComps = findClosestSupportedNumberOfComponents(i, mostComponents);
             metadata.setColorPlaneNComps(i, remappedComps);
             if ( (i == -1) && !premultSet &&
                 ( ( remappedComps == 4 ) || ( remappedComps == 1 ) ) ) {
@@ -2085,7 +2080,7 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
             }
 
 
-            ImageBitDepthEnum depth = multiBitDepth ? node->getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
+            ImageBitDepthEnum depth = multiBitDepth ? getClosestSupportedBitDepth(rawDepth) : deepestBitDepth;
             metadata.setBitDepth(i, depth);
 
             metadata.setColorPlaneNComps(i, rawComps);
@@ -2119,16 +2114,11 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
 void
 EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
 {
-    NodePtr node = _publicInterface->getNode();
-
-    if (!node) {
-        return;
-    }
 
     const bool supportsMultipleClipDepths = _publicInterface->supportsMultipleClipDepths();
     const bool supportsMultipleClipPARs = _publicInterface->supportsMultipleClipPARs();
 
-    int nInputs = node->getMaxInputCount();
+    int nInputs = _publicInterface->getMaxInputCount();
 
     double outputPAR = md.getPixelAspectRatio(-1);
 
@@ -2138,7 +2128,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
     for (int i = -1; i < nInputs; ++i) {
 
         ImageBitDepthEnum depth = md.getBitDepth(i);
-        md.setBitDepth( i, node->getClosestSupportedBitDepth(depth));
+        md.setBitDepth( i, _publicInterface->getClosestSupportedBitDepth(depth));
 
         int nComps = md.getColorPlaneNComps(i);
         bool isAlpha = false;
@@ -2151,7 +2141,7 @@ EffectInstance::Implementation::checkMetadata(NodeMetadata &md)
             }
         }
 
-        nComps = node->findClosestSupportedNumberOfComponents(i, nComps);
+        nComps = _publicInterface->findClosestSupportedNumberOfComponents(i, nComps);
 
 
         md.setColorPlaneNComps(i, nComps);

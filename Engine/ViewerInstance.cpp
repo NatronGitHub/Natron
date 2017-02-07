@@ -107,7 +107,7 @@ struct ViewerInstancePrivate
 
     ImagePlaneDesc getComponentsFromDisplayChannels(const ImagePlaneDesc& alphaLayer) const;
 
-    void getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
+    void getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;
 
     void setDisplayChannelsFromLayer(const std::list<ImagePlaneDesc>& availableLayers);
     
@@ -226,32 +226,44 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 }
 
 void
+ViewerInstance::fetchRenderCloneKnobs()
+{
+    _imp->layerChoiceKnob = getKnobByNameAndType<KnobChoice>(kViewerInstanceParamOutputLayer);
+    _imp->alphaChannelChoiceKnob = getKnobByNameAndType<KnobChoice>(kViewerInstanceParamAlphaChannel);
+    _imp->displayChannels = getKnobByNameAndType<KnobChoice>(kViewerInstanceParamDisplayChannels);
+    _imp->gainKnob = getKnobByNameAndType<KnobDouble>(kViewerInstanceNodeParamGain);
+    _imp->gammaKnob = getKnobByNameAndType<KnobDouble>(kViewerInstanceParamGamma);
+    _imp->outputColorspace = getKnobByNameAndType<KnobChoice>(kViewerInstanceParamColorspace);
+    _imp->autoContrastKnob = getKnobByNameAndType<KnobButton>(kViewerInstanceParamEnableAutoContrast);
+}
+
+void
 ViewerInstance::initializeKnobs()
 {
     EffectInstancePtr thisShared = shared_from_this();
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( thisShared, tr("Controls") );
-    page->setName("controlsPage");
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
 
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamOutputLayerLabel) );
-        param->setName(kViewerInstanceParamOutputLayer);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerInstanceParamOutputLayer);
+        param->setLabel(tr(kViewerInstanceParamOutputLayerLabel) );
         param->setHintToolTip(tr(kViewerInstanceParamOutputLayerHint));
         page->addKnob(param);
         _imp->layerChoiceKnob = param;
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamAlphaChannelLabel) );
-        param->setName(kViewerInstanceParamAlphaChannel);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerInstanceParamAlphaChannel );
+        param->setLabel(tr(kViewerInstanceParamAlphaChannelLabel));
         param->setHintToolTip(tr(kViewerInstanceParamAlphaChannelHint));
         page->addKnob(param);
         _imp->alphaChannelChoiceKnob = param;
     }
     {
         std::vector<ChoiceOption> displayChannelEntries;
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamDisplayChannelsLabel) );
-        param->setName(kViewerInstanceParamDisplayChannels);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerInstanceParamDisplayChannels);
+        param->setLabel(tr(kViewerInstanceParamDisplayChannelsLabel) );
         param->setHintToolTip(tr(kViewerInstanceParamDisplayChannelsHint));
         {
 
@@ -267,16 +279,16 @@ ViewerInstance::initializeKnobs()
         _imp->displayChannels = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerInstanceNodeParamGainLabel), 1 );
-        param->setName(kViewerInstanceNodeParamGain);
+        KnobDoublePtr param = createKnob<KnobDouble>(kViewerInstanceNodeParamGain);
+        param->setLabel(tr(kViewerInstanceNodeParamGainLabel));
         param->setHintToolTip(tr(kViewerInstanceNodeParamGainHint));
         page->addKnob(param);
         param->setDisplayRange(-6., 6.);
         _imp->gainKnob = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>( thisShared, tr(kViewerInstanceParamGammaLabel), 1 );
-        param->setName(kViewerInstanceParamGamma);
+        KnobDoublePtr param = createKnob<KnobDouble>(kViewerInstanceParamGamma );
+        param->setLabel(tr(kViewerInstanceParamGammaLabel));
         param->setHintToolTip(tr(kViewerInstanceParamGammaHint));
         param->setDefaultValue(1.);
         page->addKnob(param);
@@ -284,8 +296,8 @@ ViewerInstance::initializeKnobs()
         _imp->gammaKnob = param;
     }
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>( thisShared, tr(kViewerInstanceParamColorspaceLabel) );
-        param->setName(kViewerInstanceParamColorspace);
+        KnobChoicePtr param = createKnob<KnobChoice>(kViewerInstanceParamColorspace);
+        param->setLabel(tr(kViewerInstanceParamColorspaceLabel) );
         param->setHintToolTip(tr(kViewerInstanceParamColorspaceHint));
         {
             std::vector<ChoiceOption> entries;
@@ -300,8 +312,8 @@ ViewerInstance::initializeKnobs()
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kViewerInstanceParamEnableAutoContrastLabel) );
-        param->setName(kViewerInstanceParamEnableAutoContrast);
+        KnobButtonPtr param = createKnob<KnobButton>(kViewerInstanceParamEnableAutoContrast);
+        param->setLabel(tr(kViewerInstanceParamEnableAutoContrastLabel) );
         param->setHintToolTip(tr(kViewerInstanceParamEnableAutoContrastHint));
         page->addKnob(param);
         param->setCheckable(true);
@@ -367,14 +379,13 @@ ViewerInstance::isIdentity(TimeValue time,
                            const RenderScale & /*scale*/,
                            const RectI & /*roi*/,
                            ViewIdx view,
-                           const TreeRenderNodeArgsPtr& render,
                            TimeValue* inputTime,
                            ViewIdx* inputView,
                            int* inputNb)
 {
     ImagePlaneDesc selectedLayer, selectedAlphaLayer;
     int alphaChannelIndex;
-    _imp->getChannelOptions(render, time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, 0);
+    _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, 0);
     DisplayChannelsEnum displayChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 
     if (displayChannels != eDisplayChannelsRGB) {
@@ -451,7 +462,6 @@ ViewerInstance::onMetadataChanged(const NodeMetadata& metadata)
 ActionRetCodeEnum
 ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
                                     ViewIdx view,
-                                    const TreeRenderNodeArgsPtr& render,
                                     std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                     std::list<ImagePlaneDesc>* layersProduced,
                                     TimeValue* passThroughTime,
@@ -465,7 +475,7 @@ ViewerInstance::getLayersProducedAndNeeded(TimeValue time,
 
     ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
-    _imp->getChannelOptions(render, time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+    _imp->getChannelOptions(time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
     layersProduced->push_back(selectedDisplayLayer);
 
@@ -487,18 +497,18 @@ ViewerInstance::setRefreshLayerAndAlphaChoiceEnabled(bool enabled)
 }
 
 void
-ViewerInstance::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
+ViewerInstance::getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
 {
-    _imp->getChannelOptions(render, time, rgbLayer, alphaLayer, alphaChannelIndex, displayChannels);
+    _imp->getChannelOptions(time, rgbLayer, alphaLayer, alphaChannelIndex, displayChannels);
 }
 
 void
-ViewerInstancePrivate::getChannelOptions(const TreeRenderNodeArgsPtr& render, TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
+ViewerInstancePrivate::getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const
 {
     std::list<ImagePlaneDesc> upstreamAvailableLayers;
     {
         const int passThroughPlanesInputNb = 0;
-        ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(time, ViewIdx(0), passThroughPlanesInputNb, render, &upstreamAvailableLayers);
+        ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(time, ViewIdx(0), passThroughPlanesInputNb, &upstreamAvailableLayers);
         (void)stat;
     }
     if (rgbLayer) {
@@ -553,7 +563,7 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
 
     {
         const int passThroughPlanesInputNb = 0;
-        ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(_publicInterface->getCurrentTime_TLS(), ViewIdx(0), passThroughPlanesInputNb, TreeRenderNodeArgsPtr(), &upstreamAvailableLayers);
+        ActionRetCodeEnum stat = _publicInterface->getAvailableLayers(_publicInterface->getCurrentTime_TLS(), ViewIdx(0), passThroughPlanesInputNb, &upstreamAvailableLayers);
         (void)stat;
     }
 
@@ -692,7 +702,7 @@ struct MinMaxVal {
 template <typename PIX, int maxValue, int srcNComps, DisplayChannelsEnum channels>
 MinMaxVal
 findAutoContrastVminVmax_generic(const Image::CPUTileData& colorImage,
-                                 const TreeRenderNodeArgsPtr& renderArgs,
+                                 const EffectInstancePtr& renderArgs,
                                  const RectI & roi)
 {
     double localVmin = std::numeric_limits<double>::infinity();
@@ -786,7 +796,7 @@ findAutoContrastVminVmax_generic(const Image::CPUTileData& colorImage,
 template <typename PIX, int maxValue, int srcNComps>
 MinMaxVal
 findAutoContrastVminVmaxForComponents(const Image::CPUTileData& colorImage,
-                                      const TreeRenderNodeArgsPtr& renderArgs,
+                                      const EffectInstancePtr& renderArgs,
                                       DisplayChannelsEnum channels,
                                       const RectI & roi)
     
@@ -814,7 +824,7 @@ findAutoContrastVminVmaxForComponents(const Image::CPUTileData& colorImage,
 template <typename PIX, int maxValue>
 MinMaxVal
 findAutoContrastVminVmaxForDepth(const Image::CPUTileData& colorImage,
-                                 const TreeRenderNodeArgsPtr& renderArgs,
+                                 const EffectInstancePtr& renderArgs,
                                  DisplayChannelsEnum channels,
                                  const RectI & roi)
 
@@ -837,7 +847,7 @@ findAutoContrastVminVmaxForDepth(const Image::CPUTileData& colorImage,
 
 MinMaxVal
 findAutoContrastVminVmax(const Image::CPUTileData& colorImage,
-                         const TreeRenderNodeArgsPtr& renderArgs,
+                         const EffectInstancePtr& renderArgs,
                          DisplayChannelsEnum channels,
                          const RectI & roi)
 {
@@ -864,7 +874,7 @@ class FindAutoContrastProcessor : public ImageMultiThreadProcessorBase
 
 public:
 
-    FindAutoContrastProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    FindAutoContrastProcessor(const EffectInstancePtr& renderArgs)
     : ImageMultiThreadProcessorBase(renderArgs)
     {
         _result.min = std::numeric_limits<double>::infinity();
@@ -888,9 +898,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        MinMaxVal localResult = findAutoContrastVminVmax(_colorImage, renderArgs, _channels, renderWindow);
+        MinMaxVal localResult = findAutoContrastVminVmax(_colorImage, _effect, _channels, renderWindow);
 
         QMutexLocker k(&_resultMutex);
         _result.min = std::min(_result.min, localResult.min);
@@ -903,7 +913,7 @@ struct RenderViewerArgs
 {
     Image::CPUTileData colorImage, alphaImage, dstImage;
     int alphaChannelIndex;
-    TreeRenderNodeArgsPtr renderArgs;
+    EffectInstancePtr renderArgs;
     double gamma, gain, offset;
     DisplayChannelsEnum channels;
     const Color::Lut* srcColorspace;
@@ -1302,7 +1312,7 @@ class ViewerProcessor : public ImageMultiThreadProcessorBase
 
 public:
 
-    ViewerProcessor(const TreeRenderNodeArgsPtr& renderArgs)
+    ViewerProcessor(const EffectInstancePtr& renderArgs)
     : ImageMultiThreadProcessorBase(renderArgs)
     {
 
@@ -1321,7 +1331,7 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& /*renderArgs*/) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
         if (_args.dstImage.bitDepth == eImageBitDepthFloat) {
             applyViewerProcess32bit(_args, renderWindow);
@@ -1344,7 +1354,7 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
-    _imp->getChannelOptions(args.renderArgs, args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+    _imp->getChannelOptions(args.time, &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
 
     if (args.outputPlanes.size() != 1 || args.outputPlanes.begin()->first.getNumComponents() != 4) {
@@ -1357,39 +1367,33 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     DisplayChannelsEnum displayChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 
-    std::list<ImagePlaneDesc> layersToFetch;
-    if (selectedLayer.getNumComponents() > 0) {
-        layersToFetch.push_back(selectedLayer);
-    }
-    if (selectedAlphaLayer.getNumComponents() > 0 && selectedAlphaLayer != selectedLayer) {
-        layersToFetch.push_back(selectedAlphaLayer);
-    }
 
     // Fetch the color and alpha image
     ImagePtr colorImage, alphaImage;
-    {
+    if (selectedLayer.getNumComponents() > 0) {
         GetImageOutArgs outArgs;
-        GetImageInArgs inArgs(args);
+        GetImageInArgs inArgs(args.requestData, &args.backendType);
         inArgs.inputNb = 0;
-        inArgs.layers = &layersToFetch;
+        inArgs.plane = &selectedLayer;
         bool ok = getImagePlane(inArgs, &outArgs);
         if (!ok) {
             return eActionStatusFailed;
         }
-        {
-            std::map<ImagePlaneDesc, ImagePtr>::iterator foundLayer = outArgs.imagePlanes.find(selectedLayer);
-            if (foundLayer != outArgs.imagePlanes.end()) {
-                colorImage = foundLayer->second;
-            }
-        }
-        {
-            std::map<ImagePlaneDesc, ImagePtr>::iterator foundAlphaLayer = outArgs.imagePlanes.find(selectedAlphaLayer);
-            if (foundAlphaLayer != outArgs.imagePlanes.end()) {
-                alphaImage = foundAlphaLayer->second;
-            }
-        }
+        colorImage = outArgs.image;
     }
-    
+    if (selectedAlphaLayer.getNumComponents() > 0 && selectedAlphaLayer != selectedLayer) {
+        GetImageOutArgs outArgs;
+        GetImageInArgs inArgs(args.requestData, &args.backendType);
+        inArgs.inputNb = 0;
+        inArgs.plane = &selectedLayer;
+        bool ok = getImagePlane(inArgs, &outArgs);
+        if (!ok) {
+            return eActionStatusFailed;
+        }
+        alphaImage = outArgs.image;
+    }
+
+
     if (!colorImage) {
         setPersistentMessage(eMessageTypeError, tr("Could not fetch source image for selected layer").toStdString());
         return eActionStatusFailed;
@@ -1410,22 +1414,22 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     RenderViewerArgs renderViewerArgs;
     renderViewerArgs.alphaChannelIndex = alphaChannelIndex;
-    renderViewerArgs.renderArgs = args.renderArgs;
+    renderViewerArgs.renderArgs = shared_from_this();
     renderViewerArgs.channels = displayChannels;
     if (colorImage) {
         Image::Tile tile;
-        colorImage->getTileAt(0, &tile);
+        colorImage->getTileAt(0, 0, &tile);
         colorImage->getCPUTileData(tile, &renderViewerArgs.colorImage);
     }
     if (alphaImage) {
         Image::Tile tile;
-        alphaImage->getTileAt(0, &tile);
+        alphaImage->getTileAt(0, 0, &tile);
         alphaImage->getCPUTileData(tile, &renderViewerArgs.alphaImage);
     }
 
     {
         Image::Tile dstTile;
-        dstImage->getTileAt(0, &dstTile);
+        dstImage->getTileAt(0, 0, &dstTile);
         dstImage->getCPUTileData(dstTile, &renderViewerArgs.dstImage);
     }
 
@@ -1442,7 +1446,7 @@ ViewerInstance::render(const RenderActionArgs& args)
         renderViewerArgs.offset = 0;
     } else {
 
-        FindAutoContrastProcessor processor(args.renderArgs);
+        FindAutoContrastProcessor processor(shared_from_this());
         processor.setValues(renderViewerArgs.colorImage, displayChannels);
         processor.setRenderWindow(args.roi);
         processor.process();
@@ -1466,7 +1470,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     renderViewerArgs.dstColorspace = lutFromColorspace((ViewerColorSpaceEnum)_imp->outputColorspace.lock()->getValue());
 
 
-    ViewerProcessor processor(args.renderArgs);
+    ViewerProcessor processor(shared_from_this());
     processor.setValues(renderViewerArgs);
     processor.setRenderWindow(args.roi);
     processor.process();

@@ -224,8 +224,8 @@ Bezier::Bezier(const KnobItemsTablePtr& model,
 {
 }
 
-Bezier::Bezier(const BezierPtr& other)
-: RotoDrawableItem(other)
+Bezier::Bezier(const BezierPtr& other, const TreeRenderPtr& render)
+: RotoDrawableItem(other, render)
 , _imp( new BezierPrivate(*other->_imp) )
 {
 
@@ -243,9 +243,9 @@ Bezier::~Bezier()
 }
 
 KnobHolderPtr
-Bezier::createRenderCopy(const TreeRenderPtr& /*render*/) const
+Bezier::createRenderCopy(const TreeRenderPtr& render) const
 {
-    BezierPtr ret(new Bezier(toBezier(getMainInstance())));
+    BezierPtr ret(new Bezier(toBezier(getMainInstance()), render));
     return ret;
 }
 
@@ -4012,6 +4012,15 @@ Bezier::initializeKnobs()
     _imp->fallOffRampType = createDuplicateOfTableKnob<KnobChoice>(kRotoFeatherFallOffType);
 
 } // initializeKnobs
+
+void
+Bezier::fetchRenderCloneKnobs()
+{
+    RotoDrawableItem::fetchRenderCloneKnobs();
+    _imp->feather = getKnobByNameAndType<KnobDouble>(kRotoFeatherParam);
+    _imp->featherFallOff = getKnobByNameAndType<KnobDouble>(kRotoFeatherFallOffParam);
+    _imp->fallOffRampType = getKnobByNameAndType<KnobChoice>(kRotoFeatherFallOffType);
+}
 
 KnobDoublePtr
 Bezier::getFeatherKnob() const

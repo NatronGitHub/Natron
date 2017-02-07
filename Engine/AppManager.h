@@ -382,7 +382,7 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& instance, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -478,14 +478,14 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
+    void onOFXDialogOnMainThreadReceived(const OfxEffectInstancePtr& instance, void* instanceData);
 
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
 
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    void s_requestOFXDialogOnMainThread(const OfxEffectInstancePtr& instance, void* instanceData);
 
 protected:
 

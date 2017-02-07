@@ -38,6 +38,7 @@ GCC_DIAG_ON(unused-parameter)
 #include "Engine/Project.h"
 #include "Engine/TimeLine.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/Image.h"
 #include "Engine/TreeRender.h"
 #include "Engine/Node.h"
@@ -402,7 +403,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         args->view = ViewIdx(0);
 
         // Render all layers produced
-        args->layers = 0;
+        args->plane = 0;
         args->mipMapLevel = downscale;
         args->proxyScale = RenderScale(1.);
 
@@ -412,9 +413,9 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
         args->byPassCache = false;
     }
 
-    std::map<ImagePlaneDesc, ImagePtr> planes;
     TreeRenderPtr render = TreeRender::create(args);
-    ActionRetCodeEnum stat = render->launchRender(&planes);
+    FrameViewRequestPtr outputRequest;
+    ActionRetCodeEnum stat = render->launchRender(&outputRequest);
     if (isFailureRetCode(stat)) {
 
 #ifdef TRACE_LIB_MV
@@ -425,7 +426,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     }
 
 
-    ImagePtr sourceImage = planes.begin()->second;
+    ImagePtr sourceImage = outputRequest->getImagePlane();
     const RectI& sourceBounds = sourceImage->getBounds();
     RectI intersectedRoI;
     if ( !roi.intersect(sourceBounds, &intersectedRoI) ) {
@@ -462,7 +463,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
     Image::CPUTileData imageData;
     {
         Image::Tile tile;
-        sourceImage->getTileAt(0, &tile);
+        sourceImage->getTileAt(0, 0, &tile);
         sourceImage->getCPUTileData(tile, &imageData);
     }
 

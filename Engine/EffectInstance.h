@@ -1003,6 +1003,10 @@ public:
     virtual EffectInstanceTLSDataPtr getTLSObject() const;
     virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const;
 
+#ifdef DEBUG
+    virtual void checkCanSetValueAndWarn() {}
+#endif
+
     /**
      * @brief Forwarded to the node's name
      **/
@@ -1110,6 +1114,13 @@ public:
     virtual bool isPaintingOverItselfEnabled() const WARN_UNUSED_RETURN;
 
     /**
+     * @brief For plug-ins that accumulate (for now just RotoShapeRenderNode), this is a pointer
+     * to the last rendered image.
+     **/
+    void setAccumBuffer(const ImagePtr& lastRenderedImage);
+    ImagePtr getAccumBuffer() const;
+
+    /**
      * @brief Returns true if the node is capable of generating
      * data and process data on the input as well
      **/
@@ -1143,10 +1154,11 @@ public:
 
     virtual bool getCreateChannelSelectorKnob() const;
 
-    /**
-     * @brief Returns whether masking is enabled or not
-     **/
-    bool isMaskEnabled(int inputNb) const;
+    void refreshAcceptedComponents(int nInputs);
+
+    void refreshAcceptedBitDepths();
+
+protected:
 
     /**
      * @brief Routine called after the creation of an effect. This function must
@@ -1159,11 +1171,14 @@ public:
     virtual void addAcceptedComponents(int inputNb, std::bitset<4> * comps) = 0;
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const = 0;
 
+public:
 
     /**
      * @brief Can be derived to give a more meaningful label to the input 'inputNb'
      **/
     virtual std::string getInputLabel(int inputNb) const WARN_UNUSED_RETURN;
+
+    void onInputLabelChanged(int inputNb, const std::string& label);
 
     /**
      * @brief Return a string indicating the purpose of the given input. It is used for the user documentation.
@@ -1287,11 +1302,6 @@ public:
         ~NotifyInputNRenderingStarted_RAII();
     };
 
-
-public:
-
-
-    EffectInstancePtr resolveInputEffectForFrameNeeded(const int inputNb, int* channelForMask);
 
 public:
 
@@ -1730,6 +1740,28 @@ public:
 
     bool ifInfiniteclipRectToProjectDefault(RectD* rod) const;
 
+    /**
+     * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
+     * Do not use that anywhere else.
+     **/
+    void attachRotoItem(const RotoDrawableItemPtr& stroke);
+
+    /**
+     * @brief Returns the attached roto item. If called from a render thread, this will
+     * return a pointer to the shallow render copy.
+     **/
+    RotoDrawableItemPtr getAttachedRotoItem() const;
+
+    /**
+     * @brief Return the item set with attachRotoItem
+     **/
+    RotoDrawableItemPtr getOriginalAttachedItem() const;
+
+    bool isDuringPaintStrokeCreation() const;
+    
+
+    void setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA);
+
 
     KnobDoublePtr getOrCreateHostMixKnob(const KnobPagePtr& mainPage);
 
@@ -1740,9 +1772,17 @@ public:
 
     void refreshLayersSelectorsVisibility();
 
+    void refreshEnabledKnobsLabel(const ImagePlaneDesc& mainInputComps, const ImagePlaneDesc& outputComps);
+
+    bool addUserComponents(const ImagePlaneDesc& comps);
+
+    void getUserCreatedComponents(std::list<ImagePlaneDesc>* comps);
+
     bool getProcessChannel(int channelIndex) const;
 
     KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
+
+    KnobBoolPtr getPreviewEnabledKnob() const;
 
     KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
 
@@ -1772,11 +1812,42 @@ public:
 
     KnobFilePtr getPyPlugExtScriptKnob() const;
 
+    KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
+
     double getHostMixingValue(TimeValue time, ViewIdx view) const;
+
+    std::string getKnobChangedCallback() const;
+    std::string getInputChangedCallback() const;
+    std::string getBeforeRenderCallback() const;
+    std::string getBeforeFrameRenderCallback() const;
+    std::string getAfterRenderCallback() const;
+    std::string getAfterFrameRenderCallback() const;
+    std::string getAfterNodeCreatedCallback() const;
+    std::string getBeforeNodeRemovalCallback() const;
+    std::string getAfterSelectionChangedCallback() const;
 
     std::string getNodeExtraLabel() const;
 
+    bool isPluginUsingHostChannelSelectors() const;
 
+    bool hasAtLeastOneChannelToProcess() const;
+    
+    /**
+     * @brief Returns the components and index of the channel to use to produce the mask.
+     * None = -1
+     * R = 0
+     * G = 1
+     * B = 2
+     * A = 3
+     **/
+    int getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const;
+
+    int isMaskChannelKnob(const KnobIConstPtr& knob) const;
+
+    /**
+     * @brief Returns whether masking is enabled or not
+     **/
+    bool isMaskEnabled(int inputNb) const;
 
     bool getSelectedLayer(int inputNb,
                           const std::list<ImagePlaneDesc>& availableLayers,
@@ -1784,6 +1855,26 @@ public:
                           bool* isAll,
                           ImagePlaneDesc *layer) const;
 
+    /**
+     * @brief Returns true if the given input supports the given components. If inputNb equals -1
+     * then this function will check whether the effect can produce the given components.
+     **/
+    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
+
+    /**
+     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
+     * If inputNb equals -1 then this function will check the output components.
+     **/
+    int findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
+
+    std::bitset<4> getSupportedComponents(int inputNb) const;
+
+    ImageBitDepthEnum getBestSupportedBitDepth() const;
+    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
+    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
+    
+
+    
     void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
 
     int getFrameStepKnobValue() const;
@@ -1816,6 +1907,7 @@ public:
 
     void computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange);
 
+    void findPluginFormatKnobs();
 
 private:
 
@@ -1828,8 +1920,6 @@ private:
     void onFileNameParameterChanged(const KnobIPtr& fileKnob);
 
     bool handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
-
-    void findPluginFormatKnobs();
 
     void initializeDefaultKnobs(bool loadingSerialization, bool hasGUI);
 

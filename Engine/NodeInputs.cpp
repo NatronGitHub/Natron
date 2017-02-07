@@ -29,7 +29,6 @@
 #include "Engine/GroupOutput.h"
 #include "Engine/PrecompNode.h"
 #include "Engine/Settings.h"
-#include "Engine/TreeRenderNodeArgs.h"
 
 NATRON_NAMESPACE_ENTER;
 
@@ -78,18 +77,7 @@ Node::initializeInputs()
 
 
         ///Set the components the plug-in accepts
-        _imp->inputsComponents.resize(inputCount);
-        for (int i = 0; i < inputCount; ++i) {
-            _imp->inputsComponents[i].reset();
-            if ( _imp->effect->isInputMask(i) ) {
-                //Force alpha for masks
-                _imp->inputsComponents[i][0] = 1;
-            } else {
-                _imp->effect->addAcceptedComponents(i, &_imp->inputsComponents[i]);
-            }
-        }
-        _imp->outputComponents.reset();
-        _imp->effect->addAcceptedComponents(-1, &_imp->outputComponents);
+        _imp->effect->refreshAcceptedComponents(inputCount);
     }
     _imp->inputsInitialized = true;
 
@@ -184,24 +172,6 @@ applyNodeRedirectionsDownstream(int recurseCounter,
                 if (output) {
                     applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
                 }
-            }
-        }
-
-        return;
-    }
-
-    PrecompNodePtr isInPrecomp = node->isPartOfPrecomp();
-    if ( isInPrecomp && (isInPrecomp->getOutputNode() == node) ) {
-        //This node is the output of the precomp, its outputs are the outputs of the precomp node
-        NodesWList groupOutputs;
-
-        isInPrecomp->getNode()->getOutputs_mt_safe(groupOutputs);
-
-        for (NodesWList::iterator it2 = groupOutputs.begin(); it2 != groupOutputs.end(); ++it2) {
-            //Call recursively on them
-            NodePtr output = it2->lock();
-            if (output) {
-                applyNodeRedirectionsDownstream(recurseCounter + 1, output, translated);
             }
         }
 
@@ -343,15 +313,7 @@ Node::setInputLabel(int inputNb, const std::string& label)
         }
         _imp->inputLabels[inputNb] = label;
     }
-    std::map<int, MaskSelector>::iterator foundMask = _imp->maskSelectors.find(inputNb);
-    if (foundMask != _imp->maskSelectors.end()) {
-        foundMask->second.channel.lock()->setLabel(label);
-    }
-
-    std::map<int, ChannelSelector>::iterator foundChannel = _imp->channelsSelectors.find(inputNb);
-    if (foundChannel != _imp->channelsSelectors.end()) {
-        foundChannel->second.layer.lock()->setLabel(label + std::string(" Layer"));
-    }
+    _imp->effect->onInputLabelChanged(inputNb, label);
 
     Q_EMIT inputEdgeLabelChanged(inputNb, QString::fromUtf8(label.c_str()));
 }
@@ -552,7 +514,6 @@ checkCanConnectNoMultiRes(const Node* output,
         ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(TimeValue(output->getApp()->getTimeLine()->currentFrame()),
                                                                                           scale,
                                                                                           ViewIdx(0),
-                                                                                          TreeRenderNodeArgsPtr(),
                                                                                           &actionResults);
         if (isFailureRetCode(stat)) {
             return Node::eCanConnectInput_givenNodeNotConnectable;
@@ -586,7 +547,6 @@ checkCanConnectNoMultiRes(const Node* output,
             ActionRetCodeEnum stat = inputNode->getEffectInstance()->getRegionOfDefinition_public(TimeValue(output->getApp()->getTimeLine()->currentFrame()),
                                                                                                   scale,
                                                                                                   ViewIdx(0),
-                                                                                                  TreeRenderNodeArgsPtr(),
                                                                                                   &actionResults);
             if ( isFailureRetCode(stat)) {
                 return Node::eCanConnectInput_givenNodeNotConnectable;
@@ -643,20 +603,20 @@ Node::canConnectInput(const NodePtr& input,
     {
         ///Check for invalid pixel aspect ratio if the node doesn't support multiple clip PARs
 
-        double inputPAR = input->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
-        double inputFPS = input->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+        double inputPAR = input->getEffectInstance()->getAspectRatio(-1);
+        double inputFPS = input->getEffectInstance()->getFrameRate();
         QMutexLocker l(&_imp->inputsMutex);
 
         for (InputsV::const_iterator it = _imp->inputs.begin(); it != _imp->inputs.end(); ++it) {
             NodePtr node = it->lock();
             if (node) {
                 if ( !_imp->effect->supportsMultipleClipPARs() ) {
-                    if (node->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1) != inputPAR) {
+                    if (node->getEffectInstance()->getAspectRatio(-1) != inputPAR) {
                         return eCanConnectInput_differentPars;
                     }
                 }
 
-                if (std::abs(node->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr()) - inputFPS) > 0.01) {
+                if (std::abs(node->getEffectInstance()->getFrameRate() - inputFPS) > 0.01) {
                     return eCanConnectInput_differentFPS;
                 }
             }
@@ -788,7 +748,7 @@ Node::replaceInputInternal(const NodePtr& input, int inputNumber, bool failIfExi
     _imp->effect->invalidateHashCache();
 
     // Run Python callback
-    std::string inputChangedCB = getInputChangedCallback();
+    std::string inputChangedCB = _imp->effect->getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
         _imp->runInputChangedCallback(inputNumber, inputChangedCB);
     }
@@ -876,7 +836,7 @@ Node::switchInput0And1()
 
 
 
-    std::string inputChangedCB = getInputChangedCallback();
+    std::string inputChangedCB = _imp->effect->getInputChangedCallback();
     if ( !inputChangedCB.empty() ) {
         _imp->runInputChangedCallback(inputAIndex, inputChangedCB);
         _imp->runInputChangedCallback(inputBIndex, inputChangedCB);
@@ -1280,7 +1240,7 @@ Node::endInputEdition(bool triggerRender)
 
             _imp->effect->onMetadataChanged_recursive_public();
 
-            refreshDynamicProperties();
+            _imp->effect->refreshDynamicProperties();
         }
 
         triggerRender = triggerRender && hasChanged;
@@ -1343,18 +1303,6 @@ Node::onInputChanged(int inputNb)
             for (std::map<NodePtr, int> ::iterator it = groupOutputs.begin(); it != groupOutputs.end(); ++it) {
                 it->first->onInputChanged(it->second);
             }
-        }
-    }
-
-    /*
-     * If this node is the output of a pre-comp, notify the precomp output nodes that their input have changed
-     */
-    PrecompNodePtr isInPrecomp = isPartOfPrecomp();
-    if ( isInPrecomp && (isInPrecomp->getOutputNode().get() == this) ) {
-        std::map<NodePtr, int> inputOutputs;
-        isInPrecomp->getNode()->getOutputsConnectedToThisNode(&inputOutputs);
-        for (std::map<NodePtr, int> ::iterator it = inputOutputs.begin(); it != inputOutputs.end(); ++it) {
-            it->first->onInputChanged(it->second);
         }
     }
 

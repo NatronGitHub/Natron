@@ -77,7 +77,7 @@ public:
 private:
 
 
-    RotoStrokeItem(const RotoStrokeItemPtr& other);
+    RotoStrokeItem(const RotoStrokeItemPtr& other, const TreeRenderPtr& render);
 
 public:
 
@@ -249,6 +249,8 @@ private:
     {
         return true;
     }
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
     virtual void initializeKnobs() OVERRIDE;
 

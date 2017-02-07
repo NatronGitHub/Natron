@@ -375,10 +375,8 @@ void
 OfxImageEffectInstance::getRenderScaleRecursive(double &x,
                                                 double &y) const
 {
-
     x = 1.;
     y = 1.;
-
 }
 
 OfxStatus
@@ -1021,11 +1019,8 @@ OfxImageEffectInstance::timeLineGetBounds(double &t1,
 int
 OfxImageEffectInstance::abort()
 {
-    TreeRenderNodeArgsPtr currentRender = getOfxEffectInstance()->getCurrentRender_TLS();
-    if (!currentRender) {
-        return 0;
-    }
-    return (int)currentRender->isRenderAborted();
+    OfxEffectInstancePtr curEffect = appPTR->getOFXCurrentEffect_TLS();
+    return (int)curEffect->isRenderAborted();
 }
 
 OFX::Host::Memory::Instance*
@@ -1145,7 +1140,6 @@ OfxImageEffectInstance::getClipPreferences_safe(NodeMetadata& defaultPrefs)
 {
     /// create the out args with the stuff that does not depend on individual clips
     OFX::Host::Property::Set outArgs;
-    OfxEffectInstancePtr effect = _ofxEffectInstance.lock();
     std::map<OfxClipInstance*, int> clipInputs;
 
     setupClipPreferencesArgsFromMetadata(defaultPrefs, outArgs, clipInputs);

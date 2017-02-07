@@ -92,7 +92,6 @@ Image::pushTilesToCacheIfNotAborted()
     // Push tiles to cache if needed
     if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
         _imp->cachePolicy == eCacheAccessModeWriteOnly) {
-        assert(_imp->renderArgs);
         _imp->insertTilesInCache();
     }
 
@@ -155,8 +154,8 @@ class TileFetcherProcessor : public MultiThreadProcessorBase
 
 public:
 
-    TileFetcherProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : MultiThreadProcessorBase(renderArgs)
+    TileFetcherProcessor(const EffectInstancePtr& renderClone)
+    : MultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -184,8 +183,7 @@ public:
     }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads,
-                                                  const TreeRenderNodeArgsPtr& /*renderArgs*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         // Each threads get a rectangular portion but full scan-lines
         int fromIndex, toIndex;
@@ -235,7 +233,7 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     layer = args.layer;
     proxyScale = args.proxyScale;
     mipMapLevel = args.mipMapLevel;
-    renderArgs = args.renderArgs;
+    renderClone = args.renderClone;
     enabledChannels = args.components;
     bitdepth = args.bitdepth;
     tilesAllocated = args.delayAllocation;
@@ -303,7 +301,7 @@ ImagePrivate::initTiles()
             }
         }
 #else
-        TileFetcherProcessor processor(renderArgs);
+        TileFetcherProcessor processor(renderClone);
         processor.setData(this);
         ActionRetCodeEnum stat = processor.launchThreads();
         if (stat == eActionStatusFailed) {
@@ -1018,8 +1016,8 @@ class FillProcessor : public ImageMultiThreadProcessorBase
 
 public:
 
-    FillProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    FillProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -1039,9 +1037,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _tileBounds, renderWindow, renderArgs);
+        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _tileBounds, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1074,7 +1072,7 @@ Image::fill(const RectI & roi,
 
         RGBAColourF color = {r, g, b, a};
 
-        FillProcessor processor(_imp->renderArgs);
+        FillProcessor processor(_imp->renderClone);
         processor.setValues(tileData.ptrs, tileData.tileBounds, tileData.bitDepth, tileData.nComps, color);
         processor.setRenderWindow(tileRoI);
         processor.process();
@@ -1289,7 +1287,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
     if (previousLevelImage->_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
         InitStorageArgs args;
         args.bounds = roi;
-        args.renderArgs = _imp->renderArgs;
+        args.renderClone = _imp->renderClone;
         args.layer = previousLevelImage->_imp->layer;
         args.bitdepth = previousLevelImage->getBitDepth();
         args.proxyScale = previousLevelImage->getProxyScale();
@@ -1314,7 +1312,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         {
             InitStorageArgs args;
             args.bounds = halvedRoI;
-            args.renderArgs = _imp->renderArgs;
+            args.renderClone = _imp->renderClone;
             args.layer = previousLevelImage->_imp->layer;
             args.bitdepth = previousLevelImage->getBitDepth();
             args.proxyScale = previousLevelImage->getProxyScale();
@@ -1370,8 +1368,8 @@ class MaskMixProcessor : public ImageMultiThreadProcessorBase
     bool _maskInvert;
 public:
 
-    MaskMixProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    MaskMixProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     , _srcTileData()
     , _maskTileData()
     , _dstTileData()
@@ -1400,9 +1398,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.tileBounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.tileBounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.tileBounds, renderWindow, renderArgs);
+        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.tileBounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.tileBounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.tileBounds, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1462,7 +1460,7 @@ Image::applyMaskMix(const RectI& roi,
         RectI tileRoI;
         roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-        MaskMixProcessor processor(_imp->renderArgs);
+        MaskMixProcessor processor(_imp->renderClone);
         processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
         processor.setRenderWindow(tileRoI);
         processor.process();
@@ -1498,8 +1496,8 @@ class CopyUnProcessedProcessor : public ImageMultiThreadProcessorBase
     std::bitset<4> _processChannels;
 public:
 
-    CopyUnProcessedProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    CopyUnProcessedProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -1519,9 +1517,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.tileBounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.tileBounds, _processChannels, renderWindow, renderArgs);
+        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.tileBounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.tileBounds, _processChannels, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1570,7 +1568,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
         RectI tileRoI;
         roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-        CopyUnProcessedProcessor processor(_imp->renderArgs);
+        CopyUnProcessedProcessor processor(_imp->renderClone);
         processor.setValues(srcImgData, dstImgData, processChannels);
         processor.setRenderWindow(tileRoI);
         processor.process();

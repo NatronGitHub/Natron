@@ -103,12 +103,6 @@ public:
     // For groups which may be pyplugs, return the handle of the group plugin
     PluginPtr getOriginalPlugin() const;
 
-
-    void setPrecompNode(const PrecompNodePtr& precomp);
-
-    //
-    PrecompNodePtr isPartOfPrecomp() const;
-
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
      * This function also loads all parameters. Node connections will not be setup in this method.
@@ -257,7 +251,6 @@ public:
 
     bool isGLFinishRequiredBeforeRender() const;
 
-    void refreshAcceptedBitDepths();
 
     /**
      * @brief Quits any processing on going on this node, this call is non blocking
@@ -362,40 +355,6 @@ public:
      **/
     bool isEntitledForInspectorInputsStyle() const;
 
-    /**
-     * @brief Returns true if the given input supports the given components. If inputNb equals -1
-     * then this function will check whether the effect can produce the given components.
-     **/
-    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
-
-    /**
-     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
-     * If inputNb equals -1 then this function will check the output components.
-     **/
-    int findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
-
-    std::bitset<4> getSupportedComponents(int inputNb) const;
-
-    ImageBitDepthEnum getBestSupportedBitDepth() const;
-    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
-    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
-
-    /**
-     * @brief Returns the components and index of the channel to use to produce the mask.
-     * None = -1
-     * R = 0
-     * G = 1
-     * B = 2
-     * A = 3
-     **/
-    int getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const;
-
-    int isMaskChannelKnob(const KnobIConstPtr& knob) const;
-
-    /**
-     * @brief Returns whether masking is enabled or not
-     **/
-    bool isMaskEnabled(int inputNb) const;
 
     /**
      * @brief Returns a pointer to the input Node at index 'index'
@@ -486,15 +445,6 @@ public:
 
     bool isMultiThreadingSupportEnabledForPlugin() const;
 
-    /////////////////////ROTO-PAINT related functionnalities//////////////////////
-    //////////////////////////////////////////////////////////////////////////////
-
-    bool isDuringPaintStrokeCreation() const;
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////
-
-    void setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA);
 
     /**
      * @brief Used in the implementation of EffectInstance::onMetadataChanged_recursive so we know if the metadata changed or not.
@@ -633,27 +583,11 @@ public:
     bool getNodeIsSelected() const;
 
 
-    std::string getKnobChangedCallback() const;
-    std::string getInputChangedCallback() const;
+
 
     void runChangedParamCallback(const KnobIPtr& k, bool userEdited);
 
-    /**
-     * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
-     * Do not use that anywhere else.
-     **/
-    void attachRotoItem(const RotoDrawableItemPtr& stroke);
 
-    /**
-     * @brief Returns the attached roto item. If called from a render thread, this will
-     * return a pointer to the shallow render copy.
-     **/
-    RotoDrawableItemPtr getAttachedRotoItem() const;
-
-    /**
-     * @brief Return the item set with attachRotoItem
-     **/
-    RotoDrawableItemPtr getOriginalAttachedItem() const;
 
 protected:
 
@@ -892,17 +826,8 @@ public:
      **/
     bool canOthersConnectToThisNode() const;
 
-    /**
-     * @brief Clears any pointer refering to the last rendered image
-     **/
-    void clearLastRenderedImage();
 
-    /**
-     * @brief For plug-ins that accumulate (for now just RotoShapeRenderNode), this is a pointer
-     * to the last rendered image.
-     **/
-    void setAccumBuffer(const ImagePtr& lastRenderedImage);
-    ImagePtr getAccumBuffer() const;
+    
 
     struct KnobLink
     {
@@ -978,12 +903,7 @@ public:
 
     const std::string& getLabel() const;
     std::string getLabel_mt_safe() const;
-    std::string getBeforeRenderCallback() const;
-    std::string getBeforeFrameRenderCallback() const;
-    std::string getAfterRenderCallback() const;
-    std::string getAfterFrameRenderCallback() const;
-    std::string getAfterNodeCreatedCallback() const;
-    std::string getBeforeNodeRemovalCallback() const;
+   
     
     void runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
@@ -1112,20 +1032,11 @@ public:
 
     bool isSubGraphEditedByUser() const;
 
-    bool isPluginUsingHostChannelSelectors() const;
-
-    bool addUserComponents(const ImagePlaneDesc& comps);
-
-    void getUserCreatedComponents(std::list<ImagePlaneDesc>* comps);
-
-    bool hasAtLeastOneChannelToProcess() const;
-
     void removeParameterFromPython(const std::string& parameterName);
 
 public:
 
 
-    KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
 
     const std::vector<std::string>& getCreatedViews() const;
 
@@ -1155,7 +1066,6 @@ public:
     void setStreamWarnings(const std::map<StreamWarningEnum, QString>& warnings);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
-    void refreshEnabledKnobsLabel(const ImagePlaneDesc& mainInputComps, const ImagePlaneDesc& outputComps);
 
     bool isNodeUpstream(const NodeConstPtr& input) const;
 
@@ -1179,7 +1089,6 @@ private:
 
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
 
-    void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
 public Q_SLOTS:
 
@@ -1242,6 +1151,9 @@ public Q_SLOTS:
         Q_EMIT enabledChannelCheckboxChanged();
     }
 
+    void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
+
+    
 Q_SIGNALS:
 
     void keepInAnimationModuleKnobChanged();

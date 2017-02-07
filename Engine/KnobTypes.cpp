@@ -3831,7 +3831,7 @@ KnobTable::KnobTable(const KnobHolderPtr& holder,
 
 
 KnobTable::KnobTable(const KnobHolderPtr& holder,
-          const KnobTablePtr& mainInstance)
+          const KnobIPtr& mainInstance)
 : KnobStringBase(holder, mainInstance)
 {
 

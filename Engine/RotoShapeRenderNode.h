@@ -126,6 +126,8 @@ public:
 
 private:
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
+
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void purgeCaches() OVERRIDE FINAL;

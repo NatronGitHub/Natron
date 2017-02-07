@@ -260,6 +260,7 @@ private:
 
     void addTaskToRender(const FrameViewRequestPtr& render);
 
+    friend class AddDependencyFreeRender_RAII;
     friend class EffectInstance;
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };

@@ -612,9 +612,9 @@ KnobTableItem::KnobTableItem(const KnobItemsTablePtr& model)
 }
 
 
-KnobTableItem::KnobTableItem(const KnobTableItemPtr& other)
-: NamedKnobHolder(other)
-, AnimatingObjectI(other)
+KnobTableItem::KnobTableItem(const KnobTableItemPtr& other, const TreeRenderPtr& render)
+: NamedKnobHolder(other, render)
+, AnimatingObjectI(other, render)
 , _imp(new KnobTableItemPrivate(*other->_imp))
 {
 

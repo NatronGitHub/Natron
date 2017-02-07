@@ -260,7 +260,7 @@ Node::makePreviewImage(TimeValue time,
         RenderScale scale(1.);
 
         GetRegionOfDefinitionResultsPtr actionResults;
-        ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, scale, ViewIdx(0), TreeRenderNodeArgsPtr(), &actionResults);
+        ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, scale, ViewIdx(0), &actionResults);
         if (isFailureRetCode(stat)) {
             return false;
         }
@@ -438,7 +438,7 @@ void
 Node::togglePreview()
 {
     ///MT-safe from Knob
-    KnobBoolPtr b = _imp->previewEnabledKnob.lock();
+    KnobBoolPtr b = _imp->effect->getPreviewEnabledKnob();
     if (!b) {
         return;
     }
@@ -449,7 +449,7 @@ bool
 Node::isPreviewEnabled() const
 {
     ///MT-safe from EffectInstance
-    KnobBoolPtr b = _imp->previewEnabledKnob.lock();
+    KnobBoolPtr b = _imp->effect->getPreviewEnabledKnob();
     if (!b) {
         return false;
     }

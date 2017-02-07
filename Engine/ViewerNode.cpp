@@ -1074,7 +1074,7 @@ ViewerNode::updateViewer(const UpdateViewerArgs& args)
         RectD rod;
         NodePtr viewerProcessNode = _imp->internalViewerProcessNode[i].lock();
         GetRegionOfDefinitionResultsPtr actionResults;
-        ActionRetCodeEnum stat = viewerProcessNode->getEffectInstance()->getRegionOfDefinition_public(args.time, RenderScale(1.), args.view, TreeRenderNodeArgsPtr(), &actionResults);
+        ActionRetCodeEnum stat = viewerProcessNode->getEffectInstance()->getRegionOfDefinition_public(args.time, RenderScale(1.), args.view,  &actionResults);
         if (!isFailureRetCode(stat)) {
             rod = actionResults->getRoD();
         }
@@ -1155,10 +1155,10 @@ ViewerNode::refreshFps()
         NodePtr input1 = getCurrentBInput();
 
         if (input0) {
-            fps = input0->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+            fps = input0->getEffectInstance()->getFrameRate();
         } else {
             if (input1) {
-                fps = input1->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+                fps = input1->getEffectInstance()->getFrameRate();
             } else {
                 fps = getApp()->getProjectFrameRate();
             }

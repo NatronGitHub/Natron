@@ -972,14 +972,14 @@ renderSmearDot(const unsigned char* maskData,
     Image::CPUTileData dstImageData;
     {
         Image::Tile tile;
-        outputImage->getTileAt(0, &tile);
+        outputImage->getTileAt(0, 0, &tile);
         outputImage->getCPUTileData(tile, &dstImageData);
     }
 
     Image::CPUTileData tmpImageData;
     {
         Image::Tile tile;
-        tmpBuf->getTileAt(0, &tile);
+        tmpBuf->getTileAt(0,0, &tile);
         tmpBuf->getCPUTileData(tile, &tmpImageData);
     }
 
@@ -1970,7 +1970,7 @@ RotoShapeRenderCairo::renderMaskInternal_cairo(const RotoDrawableItemPtr& rotoIt
         Image::CPUTileData imageData;
         {
             Image::Tile tile;
-            dstImage->getTileAt(0, &tile);
+            dstImage->getTileAt(0, 0, &tile);
             dstImage->getCPUTileData(tile, &imageData);
         }
 

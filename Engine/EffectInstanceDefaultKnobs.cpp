@@ -1177,7 +1177,7 @@ EffectInstance::isNodeDisabledForFrame(TimeValue time, ViewIdx view) const
         return ioContainer->getEffectInstance()->isNodeDisabledForFrame(time, view);
     }
 
-    RotoDrawableItemPtr attachedItem = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr attachedItem = getAttachedRotoItem();
     if (attachedItem && !attachedItem->isActivated(time, view)) {
         return true;
     }
@@ -1351,7 +1351,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
     for (int i = 0; i < inputsCount; ++i) {
         inputLabels[i] = getInputLabel(i);
 
-        std::bitset<4> inputSupportedComps = getNode()->getSupportedComponents(i);
+        std::bitset<4> inputSupportedComps = getSupportedComponents(i);
         bool isMask = isInputMask(i);
         bool supportsOnlyAlpha = inputSupportedComps[0] && !inputSupportedComps[1] && !inputSupportedComps[2] && !inputSupportedComps[3];
 

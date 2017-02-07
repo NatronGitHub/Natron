@@ -170,7 +170,7 @@ TrackerNode::setupInitialSubGraphState()
         if (!cpNode) {
             throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_OFX_CORNERPIN)).toStdString());
         }
-        cpNode->setNodeDisabled(true);
+        cpNode->getEffectInstance()->setNodeDisabled(true);
         _imp->cornerPinNode = cpNode;
     }
 
@@ -184,7 +184,7 @@ TrackerNode::setupInitialSubGraphState()
         if (!tNode) {
             throw std::runtime_error(tr("The Tracker node requires the plug-in %1 to be installed.").arg(QLatin1String(PLUGINID_OFX_TRANSFORM)).toStdString());
         }
-        tNode->setNodeDisabled(true);
+        tNode->getEffectInstance()->setNodeDisabled(true);
         _imp->transformNode = tNode;
 
         output->connectInput(tNode, 0);
@@ -205,9 +205,9 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamAddTrackLabel) );
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamAddTrack);
 
-        param->setName(kTrackerUIParamAddTrack);
+        param->setLabel(tr(kTrackerUIParamAddTrackLabel));
         param->setHintToolTip( tr(kTrackerUIParamAddTrackHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -220,8 +220,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackBWLabel) );
-        param->setName(kTrackerUIParamTrackBW);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackBW);
+        param->setLabel(tr(kTrackerUIParamTrackBWLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackBWHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -234,8 +234,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->trackBwButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackPreviousLabel) );
-        param->setName(kTrackerUIParamTrackPrevious);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackPrevious);
+        param->setLabel(tr(kTrackerUIParamTrackPreviousLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackPreviousHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -246,8 +246,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamStopTrackingLabel) );
-        param->setName(kTrackerUIParamStopTracking);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamStopTracking );
+        param->setLabel(tr(kTrackerUIParamStopTrackingLabel));
         param->setHintToolTip( tr(kTrackerUIParamStopTrackingHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -258,8 +258,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackNextLabel) );
-        param->setName(kTrackerUIParamTrackNext);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackNext);
+        param->setLabel(tr(kTrackerUIParamTrackNextLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackNextHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -269,8 +269,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->trackNextButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackFWLabel) );
-        param->setName(kTrackerUIParamTrackFW);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackFW);
+        param->setLabel(tr(kTrackerUIParamTrackFWLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackFWHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -283,8 +283,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->trackFwButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackRangeLabel) );
-        param->setName(kTrackerUIParamTrackRange);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRange);
+        param->setLabel(tr(kTrackerUIParamTrackRangeLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -294,8 +294,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->trackRangeButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackAllKeyframesLabel) );
-        param->setName(kTrackerUIParamTrackAllKeyframes);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackAllKeyframes);
+        param->setLabel(tr(kTrackerUIParamTrackAllKeyframesLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackAllKeyframesHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -305,8 +305,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->trackAllKeyframesButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackCurrentKeyframeLabel) );
-        param->setName(kTrackerUIParamTrackCurrentKeyframe);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackCurrentKeyframe);
+        param->setLabel(tr(kTrackerUIParamTrackCurrentKeyframeLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackCurrentKeyframeHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -316,8 +316,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->trackCurrentKeyframeButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamSetPatternKeyFrameLabel) );
-        param->setName(kTrackerUIParamSetPatternKeyFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamSetPatternKeyFrame);
+        param->setLabel(tr(kTrackerUIParamSetPatternKeyFrameLabel));
         param->setHintToolTip( tr(kTrackerUIParamSetPatternKeyFrameHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -327,8 +327,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->setKeyFrameButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
-        param->setName(kTrackerUIParamRemovePatternKeyFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamRemovePatternKeyFrame);
+        param->setLabel(tr(kTrackerUIParamRemovePatternKeyFrameLabel) );
         param->setHintToolTip( tr(kTrackerUIParamRemovePatternKeyFrameHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -338,8 +338,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->removeKeyFrameButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamClearAllAnimationLabel) );
-        param->setName(kTrackerUIParamClearAllAnimation);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamClearAllAnimation);
+        param->setLabel(tr(kTrackerUIParamClearAllAnimationLabel) );
         param->setHintToolTip( tr(kTrackerUIParamClearAllAnimationHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -349,8 +349,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->clearAllAnimationButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamClearAnimationBwLabel) );
-        param->setName(kTrackerUIParamClearAnimationBw);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamClearAnimationBw );
+        param->setLabel(tr(kTrackerUIParamClearAnimationBwLabel));
         param->setHintToolTip( tr(kTrackerUIParamClearAnimationBwHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -360,8 +360,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->clearBwAnimationButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamClearAnimationFwLabel) );
-        param->setName(kTrackerUIParamClearAnimationFw);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamClearAnimationFw);
+        param->setLabel(tr(kTrackerUIParamClearAnimationFwLabel) );
         param->setHintToolTip( tr(kTrackerUIParamClearAnimationFwHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -372,8 +372,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRefreshViewerLabel) );
-        param->setName(kTrackerUIParamRefreshViewer);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamRefreshViewer);
+        param->setLabel(tr(kTrackerUIParamRefreshViewerLabel) );
         param->setHintToolTip( tr(kTrackerUIParamRefreshViewerHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -387,8 +387,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamCenterViewerLabel) );
-        param->setName(kTrackerUIParamCenterViewer);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamCenterViewer);
+        param->setLabel(tr(kTrackerUIParamCenterViewerLabel) );
         param->setHintToolTip( tr(kTrackerUIParamCenterViewerHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -401,8 +401,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamCreateKeyOnMoveLabel) );
-        param->setName(kTrackerUIParamCreateKeyOnMove);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamCreateKeyOnMove );
+        param->setLabel(tr(kTrackerUIParamCreateKeyOnMoveLabel));
         param->setHintToolTip( tr(kTrackerUIParamCreateKeyOnMoveHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -416,8 +416,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamShowErrorLabel) );
-        param->setName(kTrackerUIParamShowError);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamShowError );
+        param->setLabel(tr(kTrackerUIParamShowErrorLabel));
         param->setHintToolTip( tr(kTrackerUIParamShowErrorHint) );
         param->setEvaluateOnChange(false);
         param->setCheckable(true);
@@ -433,8 +433,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
 
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamResetOffsetLabel) );
-        param->setName(kTrackerUIParamResetOffset);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamResetOffset);
+        param->setLabel(tr(kTrackerUIParamResetOffsetLabel) );
         param->setHintToolTip( tr(kTrackerUIParamResetOffsetHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -446,8 +446,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamResetTrackLabel) );
-        param->setName(kTrackerUIParamResetTrack);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamResetTrack);
+        param->setLabel(tr(kTrackerUIParamResetTrackLabel) );
         param->setHintToolTip( tr(kTrackerUIParamResetTrackHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -459,9 +459,9 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamMagWindowSizeLabel) );
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamMagWindowSize);
         param->setInViewerContextLabel(tr(kTrackerUIParamMagWindowSizeLabel));
-        param->setName(kTrackerUIParamMagWindowSize);
+        param->setLabel(tr(kTrackerUIParamMagWindowSizeLabel) );
         param->setHintToolTip( tr(kTrackerUIParamMagWindowSizeHint) );
         param->setEvaluateOnChange(false);
         param->setDefaultValue(200);
@@ -473,8 +473,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerUIParamDefaultMarkerPatternWinSizeLabel), 1, false);
-        param->setName(kTrackerUIParamDefaultMarkerPatternWinSize);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamDefaultMarkerPatternWinSize);
+        param->setLabel(tr(kTrackerUIParamDefaultMarkerPatternWinSizeLabel));
         param->setInViewerContextLabel(tr(kTrackerUIParamDefaultMarkerPatternWinSizeLabel));
         param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerPatternWinSizeHint) );
         param->setInViewerContextIconFilePath("Images/patternSize.png");
@@ -490,8 +490,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerUIParamDefaultMarkerSearchWinSizeLabel), 1, false);
-        param->setName(kTrackerUIParamDefaultMarkerSearchWinSize);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamDefaultMarkerSearchWinSize);
+        param->setLabel(tr(kTrackerUIParamDefaultMarkerSearchWinSizeLabel));
         param->setInViewerContextLabel(tr(kTrackerUIParamDefaultMarkerSearchWinSizeLabel));
         param->setHintToolTip( tr(kTrackerUIParamDefaultMarkerSearchWinSizeHint) );
         param->setInViewerContextIconFilePath("Images/searchSize.png");
@@ -506,8 +506,8 @@ TrackerNode::initializeViewerUIKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(""), 1, false);
-        param->setName(kTrackerUIParamDefaultMotionModel);
+        KnobChoicePtr param = createKnob<KnobChoice>(kTrackerUIParamDefaultMotionModel);
+        param->setLabel(QString());
         param->setAnimationEnabled(false);
         {
             std::vector<ChoiceOption> choices;
@@ -575,8 +575,8 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
 
 
     // Track range dialog
-    KnobGroupPtr dialog = AppManager::createKnob<KnobGroup>( thisShared, tr(kTrackerUIParamTrackRangeDialogLabel) );
-    dialog->setName(kTrackerUIParamTrackRangeDialog);
+    KnobGroupPtr dialog = createKnob<KnobGroup>(kTrackerUIParamTrackRangeDialog);
+    dialog->setLabel(tr(kTrackerUIParamTrackRangeDialogLabel));
     dialog->setSecret(true);
     dialog->setEvaluateOnChange(false);
     dialog->setDefaultValue(false);
@@ -586,8 +586,8 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
     _imp->ui->trackRangeDialogGroup = dialog;
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel) );
-        param->setName(kTrackerUIParamTrackRangeDialogFirstFrame);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogFirstFrame );
+        param->setLabel(tr(kTrackerUIParamTrackRangeDialogFirstFrameLabel));
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogFirstFrameHint) );
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -599,8 +599,8 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
-        param->setName(kTrackerUIParamTrackRangeDialogLastFrame);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogLastFrame);
+        param->setLabel(tr(kTrackerUIParamTrackRangeDialogLastFrameLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogLastFrameHint) );
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -612,8 +612,8 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>( thisShared, tr(kTrackerUIParamTrackRangeDialogStepLabel) );
-        param->setName(kTrackerUIParamTrackRangeDialogStep);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerUIParamTrackRangeDialogStep);
+        param->setLabel(tr(kTrackerUIParamTrackRangeDialogStepLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogStepHint) );
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -625,8 +625,8 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
-        param->setName(kTrackerUIParamTrackRangeDialogOkButton);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRangeDialogOkButton);
+        param->setLabel(tr(kTrackerUIParamTrackRangeDialogOkButtonLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogOkButtonHint) );
         param->setSecret(true);
         param->setAddNewLine(false);
@@ -638,8 +638,8 @@ TrackerNode::initializeTrackRangeDialogKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
-        param->setName(kTrackerUIParamTrackRangeDialogCancelButton);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerUIParamTrackRangeDialogCancelButton);
+        param->setLabel(tr(kTrackerUIParamTrackRangeDialogCancelButtonLabel) );
         param->setHintToolTip( tr(kTrackerUIParamTrackRangeDialogCancelButtonHint) );
         param->setSecret(true);
         param->setEvaluateOnChange(false);
@@ -653,15 +653,15 @@ TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
 {
     TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
     // Right click menu
-    KnobChoicePtr rightClickMenu = AppManager::createKnob<KnobChoice>( thisShared, std::string(kTrackerUIParamRightClickMenu) );
+    KnobChoicePtr rightClickMenu = createKnob<KnobChoice>(std::string(kTrackerUIParamRightClickMenu) );
     rightClickMenu->setSecret(true);
     rightClickMenu->setEvaluateOnChange(false);
     trackingPage->addKnob(rightClickMenu);
     _imp->ui->rightClickMenuKnob = rightClickMenu;
 
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
-        action->setName(kTrackerUIParamRightClickMenuActionSelectAllTracks);
+        KnobButtonPtr action = createKnob<KnobButton>(kTrackerUIParamRightClickMenuActionSelectAllTracks);
+        action->setLabel(tr(kTrackerUIParamRightClickMenuActionSelectAllTracksLabel) );
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -670,8 +670,8 @@ TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->selectAllTracksMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel) );
-        action->setName(kTrackerUIParamRightClickMenuActionRemoveTracks);
+        KnobButtonPtr action = createKnob<KnobButton>(kTrackerUIParamRightClickMenuActionRemoveTracks );
+        action->setLabel(tr(kTrackerUIParamRightClickMenuActionRemoveTracksLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -680,8 +680,8 @@ TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->removeTracksMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
-        action->setName(kTrackerUIParamRightClickMenuActionNudgeBottom);
+        KnobButtonPtr action = createKnob<KnobButton>(kTrackerUIParamRightClickMenuActionNudgeBottom);
+        action->setLabel(tr(kTrackerUIParamRightClickMenuActionNudgeBottomLabel) );
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -690,8 +690,8 @@ TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->nudgeTracksOnBottomMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel) );
-        action->setName(kTrackerUIParamRightClickMenuActionNudgeLeft);
+        KnobButtonPtr action = createKnob<KnobButton>(kTrackerUIParamRightClickMenuActionNudgeLeft );
+        action->setLabel(tr(kTrackerUIParamRightClickMenuActionNudgeLeftLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -700,8 +700,8 @@ TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->nudgeTracksOnLeftMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel) );
-        action->setName(kTrackerUIParamRightClickMenuActionNudgeRight);
+        KnobButtonPtr action = createKnob<KnobButton>(kTrackerUIParamRightClickMenuActionNudgeRight );
+        action->setLabel(tr(kTrackerUIParamRightClickMenuActionNudgeRightLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -710,8 +710,8 @@ TrackerNode::initializeRightClickMenuKnobs(const KnobPagePtr& trackingPage)
         _imp->ui->nudgeTracksOnRightMenuAction = action;
     }
     {
-        KnobButtonPtr action = AppManager::createKnob<KnobButton>( thisShared, tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel) );
-        action->setName(kTrackerUIParamRightClickMenuActionNudgeTop);
+        KnobButtonPtr action = createKnob<KnobButton>(kTrackerUIParamRightClickMenuActionNudgeTop );
+        action->setLabel(tr(kTrackerUIParamRightClickMenuActionNudgeTopLabel));
         action->setSecret(true);
         action->setEvaluateOnChange(false);
         action->setInViewerContextCanHaveShortcut(true);
@@ -762,8 +762,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
 
 #ifdef NATRON_TRACKER_ENABLE_TRACKER_PM
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamUsePatternMatchingLabel), 1);
-        param->setName(kTrackerParamUsePatternMatching);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamUsePatternMatching);
+        param->setLabel(tr(kTrackerParamUsePatternMatchingLabel));
         param->setHintToolTip( tr(kTrackerParamUsePatternMatchingHint) );
         param->setDefaultValue(false);
         param->setAnimationEnabled(false);
@@ -774,8 +774,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamPatternMatchingScoreTypeLabel), 1, false);
-        param->setName(kTrackerParamPatternMatchingScoreType);
+        KnobChoicePtr param = createKnob<KnobChoice>(kTrackerParamPatternMatchingScoreType);
+        param->setLabel(tr(kTrackerParamPatternMatchingScoreTypeLabel));
         param->setHintToolTip( tr(kTrackerParamPatternMatchingScoreTypeHint) );
         {
             std::vector<ChoiceOption> choices;
@@ -794,8 +794,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
 #endif // NATRON_TRACKER_ENABLE_TRACKER_PM
 
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamTrackRedLabel), 1, false);
-        param->setName(kTrackerParamTrackRed);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamTrackRed);
+        param->setLabel(tr(kTrackerParamTrackRedLabel));
         param->setHintToolTip( tr(kTrackerParamTrackRedHint) );
         param->setDefaultValue(true);
         param->setAnimationEnabled(false);
@@ -806,8 +806,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamTrackGreenLabel), 1, false);
-        param->setName(kTrackerParamTrackGreen);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamTrackGreen);
+        param->setLabel(tr(kTrackerParamTrackGreenLabel));
         param->setHintToolTip( tr(kTrackerParamTrackGreenHint) );
         param->setDefaultValue(true);
         param->setAnimationEnabled(false);
@@ -818,8 +818,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamTrackBlueLabel), 1, false);
-        param->setName(kTrackerParamTrackBlue);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamTrackBlue);
+        param->setLabel(tr(kTrackerParamTrackBlueLabel));
         param->setHintToolTip( tr(kTrackerParamTrackBlueHint) );
         param->setDefaultValue(true);
         param->setAnimationEnabled(false);
@@ -828,8 +828,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->enableTrackBlue = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamMaxErrorLabel), 1, false);
-        param->setName(kTrackerParamMaxError);
+        KnobDoublePtr param = createKnob<KnobDouble>(kTrackerParamMaxError);
+        param->setLabel(tr(kTrackerParamMaxErrorLabel));
         param->setHintToolTip( tr(kTrackerParamMaxErrorHint) );
         param->setAnimationEnabled(false);
         param->setRange(0., 1.);
@@ -839,8 +839,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->maxError = param;
     }
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamMaximumIterationLabel), 1, false);
-        param->setName(kTrackerParamMaximumIteration);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerParamMaximumIteration);
+        param->setLabel(tr(kTrackerParamMaximumIterationLabel));
         param->setHintToolTip( tr(kTrackerParamMaximumIterationHint) );
         param->setAnimationEnabled(false);
         param->setRange(0, 150);
@@ -850,8 +850,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->maxIterations = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamBruteForcePreTrackLabel), 1, false);
-        param->setName(kTrackerParamBruteForcePreTrack);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamBruteForcePreTrack);
+        param->setLabel(tr(kTrackerParamBruteForcePreTrackLabel));
         param->setHintToolTip( tr(kTrackerParamBruteForcePreTrackHint) );
         param->setDefaultValue(true);
         param->setAnimationEnabled(false);
@@ -861,8 +861,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->bruteForcePreTrack = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamNormalizeIntensitiesLabel), 1, false);
-        param->setName(kTrackerParamNormalizeIntensities);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamNormalizeIntensities);
+        param->setLabel(tr(kTrackerParamNormalizeIntensitiesLabel));
         param->setHintToolTip( tr(kTrackerParamNormalizeIntensitiesHint) );
         param->setDefaultValue(false);
         param->setAnimationEnabled(false);
@@ -871,8 +871,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->useNormalizedIntensities = param;
     }
     {
-        KnobDoublePtr param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamPreBlurSigmaLabel), 1, false);
-        param->setName(kTrackerParamPreBlurSigma);
+        KnobDoublePtr param = createKnob<KnobDouble>(kTrackerParamPreBlurSigma);
+        param->setLabel(tr(kTrackerParamPreBlurSigmaLabel));
         param->setHintToolTip( tr(kTrackerParamPreBlurSigmaHint) );
         param->setAnimationEnabled(false);
         param->setRange(0, 10.);
@@ -883,14 +883,14 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
     }
 
     {
-        KnobSeparatorPtr  param = AppManager::createKnob<KnobSeparator>(thisShared, tr(kTrackerParamPerTrackParamsSeparatorLabel), 3);
-        param->setName(kTrackerParamPerTrackParamsSeparator);
+        KnobSeparatorPtr  param = createKnob<KnobSeparator>(kTrackerParamPerTrackParamsSeparator, 3);
+        param->setLabel(tr(kTrackerParamPerTrackParamsSeparatorLabel));
         trackingPage->addKnob(param);
         _imp->perTrackParamsSeparator = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamEnabledLabel), 1, false);
-        param->setName(kTrackerParamEnabled);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamEnabled);
+        param->setLabel(tr(kTrackerParamEnabledLabel));
         param->setHintToolTip( tr(kTrackerParamEnabledHint) );
         param->setAnimationEnabled(true);
         param->setDefaultValue(true);
@@ -902,8 +902,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->knobsTable->addPerItemKnobMaster(param);
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamAutoKeyEnabledLabel), 1, false);
-        param->setName(kTrackerParamAutoKeyEnabled);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamAutoKeyEnabled);
+        param->setLabel(tr(kTrackerParamAutoKeyEnabledLabel));
         param->setHintToolTip( tr(kTrackerParamAutoKeyEnabledHint) );
         param->setAnimationEnabled(false);
         param->setDefaultValue(false);
@@ -914,8 +914,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
 
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamMotionModelLabel), 1, false);
-        param->setName(kTrackerParamMotionModel);
+        KnobChoicePtr param = createKnob<KnobChoice>(kTrackerParamMotionModel);
+        param->setLabel(tr(kTrackerParamMotionModelLabel));
         param->setHintToolTip( tr(kTrackerParamMotionModelHint) );
         {
             std::vector<ChoiceOption> choices;
@@ -934,14 +934,14 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
 
     // Add a separator before the table
     {
-        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr(""));
-        param->setName("trackTableSep");
+        KnobSeparatorPtr param = createKnob<KnobSeparator>("trackTableSep");
+        param->setLabel(QString());
         trackingPage->addKnob(param);
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerAddTrackParamLabel), 1, false);
-        param->setName(kTrackerAddTrackParam);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerAddTrackParam);
+        param->setLabel(tr(kTrackerAddTrackParamLabel));
         param->setHintToolTip( tr(kTrackerAddTrackParamHint) );
         param->setEvaluateOnChange(false);
         param->setAddNewLine(false);
@@ -949,8 +949,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->addTrackFromPanelButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerRemoveTracksParamLabel), 1, false);
-        param->setName(kTrackerRemoveTracksParam);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerRemoveTracksParam);
+        param->setLabel(tr(kTrackerRemoveTracksParamLabel));
         param->setHintToolTip( tr(kTrackerRemoveTracksParamHint) );
         param->setEvaluateOnChange(false);
         param->setAddNewLine(false);
@@ -958,8 +958,8 @@ TrackerNode::initializeTrackingPageKnobs(const KnobPagePtr& trackingPage)
         _imp->removeSelectedTracksButton = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerAverageTracksParamLabel), 1, false);
-        param->setName(kTrackerAverageTracksParam);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerAverageTracksParam);
+        param->setLabel(tr(kTrackerAverageTracksParamLabel));
         param->setHintToolTip( tr(kTrackerAverageTracksParamHint) );
         param->setEvaluateOnChange(false);
         trackingPage->addKnob(param);
@@ -975,14 +975,15 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     TrackerNodePtr thisShared = toTrackerNode(shared_from_this());
 
     {
-        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr("Transform Generation"), 3);
+        KnobSeparatorPtr param = createKnob<KnobSeparator>("transformSep");
+        param->setLabel(tr("Transform Generation"));
         transformPage->addKnob(param);
         _imp->transformGenerationSeparator = param;
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamMotionTypeLabel), 1);
-        param->setName(kTrackerParamMotionType);
+        KnobChoicePtr param = createKnob<KnobChoice>(kTrackerParamMotionType);
+        param->setLabel(tr(kTrackerParamMotionTypeLabel));
         param->setHintToolTip( tr(kTrackerParamMotionTypeHint) );
         {
             std::vector<ChoiceOption> choices;
@@ -1000,8 +1001,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     }
 
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(thisShared, tr(kTrackerParamTransformTypeLabel), 1);
-        param->setName(kTrackerParamTransformType);
+        KnobChoicePtr param = createKnob<KnobChoice>(kTrackerParamTransformType);
+        param->setLabel(tr(kTrackerParamTransformTypeLabel));
         param->setHintToolTip( tr(kTrackerParamTransformTypeHint) );
         {
             std::vector<ChoiceOption> choices;
@@ -1015,8 +1016,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     }
 
     {
-        KnobIntPtr param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamReferenceFrameLabel), 1);
-        param->setName(kTrackerParamReferenceFrame);
+        KnobIntPtr param = createKnob<KnobInt>(kTrackerParamReferenceFrame);
+        param->setLabel(tr(kTrackerParamReferenceFrameLabel));
         param->setHintToolTip( tr(kTrackerParamReferenceFrameHint) );
         param->setAnimationEnabled(false);
         param->setDefaultValue(0);
@@ -1027,15 +1028,15 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     }
 
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerParamSetReferenceFrameLabel), 1);
-        param->setName(kTrackerParamSetReferenceFrame);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerParamSetReferenceFrame);
+        param->setLabel(tr(kTrackerParamSetReferenceFrameLabel));
         param->setHintToolTip( tr(kTrackerParamSetReferenceFrameHint) );
         transformPage->addKnob(param);
         _imp->setCurrentFrameButton = param;
     }
     {
-        KnobIntPtr  param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamJitterPeriodLabel), 1);
-        param->setName(kTrackerParamJitterPeriod);
+        KnobIntPtr  param = createKnob<KnobInt>(kTrackerParamJitterPeriod);
+        param->setLabel(tr(kTrackerParamJitterPeriodLabel));
         param->setHintToolTip( tr(kTrackerParamJitterPeriodHint) );
         param->setAnimationEnabled(false);
         param->setDefaultValue(10);
@@ -1045,8 +1046,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->jitterPeriod = param;
     }
     {
-        KnobIntPtr  param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamSmoothLabel), 3);
-        param->setName(kTrackerParamSmooth);
+        KnobIntPtr  param = createKnob<KnobInt>(kTrackerParamSmooth, 3);
+        param->setLabel(tr(kTrackerParamSmoothLabel));
         param->setHintToolTip( tr(kTrackerParamSmoothHint) );
         param->setAnimationEnabled(false);
         param->disableSlider();
@@ -1061,8 +1062,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->smoothTransform = param;
     }
     {
-        KnobIntPtr  param = AppManager::createKnob<KnobInt>(thisShared, tr(kTrackerParamSmoothCornerPinLabel), 1);
-        param->setName(kTrackerParamSmoothCornerPin);
+        KnobIntPtr  param = createKnob<KnobInt>(kTrackerParamSmoothCornerPin);
+        param->setLabel(tr(kTrackerParamSmoothCornerPinLabel));
         param->setHintToolTip( tr(kTrackerParamSmoothCornerPinHint) );
         param->setAnimationEnabled(false);
         param->disableSlider();
@@ -1073,8 +1074,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->smoothCornerPin = param;
     }
     {
-        KnobBoolPtr  param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamAutoGenerateTransformLabel), 1);
-        param->setName(kTrackerParamAutoGenerateTransform);
+        KnobBoolPtr  param = createKnob<KnobBool>(kTrackerParamAutoGenerateTransform);
+        param->setLabel(tr(kTrackerParamAutoGenerateTransformLabel));
         param->setHintToolTip( tr(kTrackerParamAutoGenerateTransformHint) );
         param->setAnimationEnabled(false);
         param->setEvaluateOnChange(false);
@@ -1084,16 +1085,16 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->autoGenerateTransform = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerParamGenerateTransformLabel), 1);
-        param->setName(kTrackerParamGenerateTransform);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerParamGenerateTransform);
+        param->setLabel(tr(kTrackerParamGenerateTransformLabel));
         param->setHintToolTip( tr(kTrackerParamGenerateTransformHint) );
         param->setEvaluateOnChange(false);
         transformPage->addKnob(param);
         _imp->generateTransformButton = param;
     }
     {
-        KnobBoolPtr  param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamRobustModelLabel), 1);
-        param->setName(kTrackerParamRobustModel);
+        KnobBoolPtr  param = createKnob<KnobBool>(kTrackerParamRobustModel);
+        param->setLabel(tr(kTrackerParamRobustModelLabel));
         param->setHintToolTip( tr(kTrackerParamRobustModelHint) );
         param->setAnimationEnabled(false);
         param->setEvaluateOnChange(false);
@@ -1103,8 +1104,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->robustModel = param;
     }
     {
-        KnobStringPtr  param = AppManager::createKnob<KnobString>(thisShared, tr(kTrackerParamFittingErrorWarningLabel), 1);
-        param->setName(kTrackerParamFittingErrorWarning);
+        KnobStringPtr  param = createKnob<KnobString>(kTrackerParamFittingErrorWarning);
+        param->setLabel(tr(kTrackerParamFittingErrorWarningLabel));
         param->setHintToolTip( tr(kTrackerParamFittingErrorWarningHint) );
         param->setAnimationEnabled(false);
         param->setDefaultValue( tr(kTrackerParamFittingErrorWarningLabel).toStdString() );
@@ -1116,8 +1117,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->fittingErrorWarning = param;
     }
     {
-        KnobDoublePtr  param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamFittingErrorLabel), 1);
-        param->setName(kTrackerParamFittingError);
+        KnobDoublePtr  param = createKnob<KnobDouble>(kTrackerParamFittingError);
+        param->setLabel(tr(kTrackerParamFittingErrorLabel));
         param->setHintToolTip( tr(kTrackerParamFittingErrorHint) );
         param->setEvaluateOnChange(false);
         param->setAddNewLine(false);
@@ -1126,8 +1127,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->fittingError = param;
     }
     {
-        KnobDoublePtr  param = AppManager::createKnob<KnobDouble>(thisShared, tr(kTrackerParamFittingErrorWarnValueLabel), 1);
-        param->setName(kTrackerParamFittingErrorWarnValue);
+        KnobDoublePtr  param = createKnob<KnobDouble>(kTrackerParamFittingErrorWarnValue);
+        param->setLabel(tr(kTrackerParamFittingErrorWarnValueLabel));
         param->setHintToolTip( tr(kTrackerParamFittingErrorWarnValueHint) );
         param->setAnimationEnabled(false);
         param->setEvaluateOnChange(false);
@@ -1136,8 +1137,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->fittingErrorWarnIfAbove = param;
     }
     {
-        KnobStringPtr param = AppManager::createKnob<KnobString>(thisShared, std::string(), 1);
-        param->setName(kTrackerParamTransformOutOfDate);
+        KnobStringPtr param = createKnob<KnobString>(kTrackerParamTransformOutOfDate);
+        param->setLabel(QString());
         param->setHintToolTip( tr(kTrackerParamTransformOutOfDateHint) );
         param->setIconLabel("dialog-warning");
         param->setAsLabel();
@@ -1147,14 +1148,15 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->transformOutOfDateLabel = param;
     }
     {
-        KnobSeparatorPtr  param = AppManager::createKnob<KnobSeparator>(thisShared, tr("Transform Controls"), 3);
+        KnobSeparatorPtr  param = createKnob<KnobSeparator>("transformControlsSep");
+        param->setLabel(tr("Transform Controls"));
         transformPage->addKnob(param);
         param->setSecret(true);
         _imp->transformControlsSeparator = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamDisableTransformLabel), 1);
-        param->setName(kTrackerParamDisableTransform);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamDisableTransform);
+        param->setLabel(tr(kTrackerParamDisableTransformLabel));
         param->setHintToolTip( tr(kTrackerParamDisableTransformHint) );
         param->setEvaluateOnChange(false);
         param->setSecret(true);
@@ -1170,51 +1172,51 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->translate = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode, thisShared, transformPage);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamRotate, tNode,thisShared, transformPage);
         param->setSecret(true);
         _imp->rotate = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode, thisShared, transformPage);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamScale, tNode,thisShared, transformPage);
         param->setAddNewLine(false);
         param->setSecret(true);
         _imp->scale = param;
     }
     {
-        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamUniform, tNode, thisShared, transformPage);
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamUniform, tNode,thisShared, transformPage);
         param->setSecret(true);
         _imp->scaleUniform = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamSkewX, tNode, thisShared, transformPage);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamSkewX, tNode,thisShared, transformPage);
         param->setSecret(true);
         _imp->skewX = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode, thisShared, transformPage);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamSkewY, tNode,thisShared, transformPage);
         param->setSecret(true);
         _imp->skewY = param;
     }
     {
-        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode, thisShared, transformPage);
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamSkewOrder, tNode,thisShared, transformPage);
         param->setSecret(true);
         _imp->skewOrder = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode, thisShared, transformPage);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamCenter, tNode,thisShared, transformPage);
         param->setSecret(true);
         _imp->center = param;
     }
     NodePtr cNode = _imp->cornerPinNode.lock();
-    KnobGroupPtr  toGroupKnob = AppManager::createKnob<KnobGroup>(thisShared, tr(kCornerPinParamTo), 1);
-    toGroupKnob->setName(kCornerPinParamTo);
+    KnobGroupPtr  toGroupKnob = createKnob<KnobGroup>(kCornerPinParamTo);
+    toGroupKnob->setLabel(tr(kCornerPinParamTo));
     toGroupKnob->setAsTab();
     toGroupKnob->setSecret(true);
     transformPage->addKnob(toGroupKnob);
     _imp->toGroup = toGroupKnob;
 
-    KnobGroupPtr  fromGroupKnob = AppManager::createKnob<KnobGroup>(thisShared, tr(kCornerPinParamFrom), 1);
-    fromGroupKnob->setName(kCornerPinParamFrom);
+    KnobGroupPtr  fromGroupKnob = createKnob<KnobGroup>(kCornerPinParamFrom);
+    fromGroupKnob->setLabel(tr(kCornerPinParamFrom));
     fromGroupKnob->setAsTab();
     fromGroupKnob->setSecret(true);
     transformPage->addKnob(fromGroupKnob);
@@ -1227,19 +1229,19 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
     for (int i = 0; i < 4; ++i) {
         _imp->fromPoints[i] = createDuplicateKnob<KnobDouble>(fromPointNames[i], cNode, thisShared, transformPage, fromGroupKnob);
 
-        _imp->toPoints[i] = createDuplicateKnob<KnobDouble>(toPointNames[i], cNode, thisShared, transformPage, toGroupKnob);
+        _imp->toPoints[i] = createDuplicateKnob<KnobDouble>(toPointNames[i], cNode,thisShared, transformPage, toGroupKnob);
         _imp->toPoints[i].lock()->setAddNewLine(false);
-        _imp->enableToPoint[i] = createDuplicateKnob<KnobBool>(enablePointNames[i], cNode, thisShared, transformPage, toGroupKnob);
+        _imp->enableToPoint[i] = createDuplicateKnob<KnobBool>(enablePointNames[i], cNode,thisShared, transformPage, toGroupKnob);
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kCornerPinParamSetToInputRoDLabel), 1);
-        param->setName(kCornerPinParamSetToInputRoD);
+        KnobButtonPtr param = createKnob<KnobButton>(kCornerPinParamSetToInputRoD);
+        param->setLabel(tr(kCornerPinParamSetToInputRoDLabel));
         param->setHintToolTip( tr(kCornerPinParamSetToInputRoDHint) );
         fromGroupKnob->addKnob(param);
         _imp->setFromPointsToInputRodButton = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>( thisShared, std::string(kTrackerParamCornerPinFromPointsSetOnce) );
+        KnobBoolPtr param = createKnob<KnobBool>(std::string(kTrackerParamCornerPinFromPointsSetOnce) );
         param->setSecret(true);
         fromGroupKnob->addKnob(param);
         _imp->cornerPinFromPointsSetOnceAutomatically = param;
@@ -1261,39 +1263,39 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->invertTransform = param;
     }
     {
-        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamFilter, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamFilter, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         param->setAddNewLine(false);
         _imp->filter = param;
     }
     {
-        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamClamp, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamClamp, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         param->setAddNewLine(false);
         _imp->clamp = param;
     }
     {
-        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamBlackOutside, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobBoolPtr param = createDuplicateKnob<KnobBool>(kTransformParamBlackOutside, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         _imp->blackOutside = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamMotionBlur, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamMotionBlur, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         _imp->motionBlur = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamShutter, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         _imp->shutter = param;
     }
     {
-        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobChoicePtr param = createDuplicateKnob<KnobChoice>(kTransformParamShutterOffset, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         _imp->shutterOffset = param;
     }
     {
-        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode, thisShared, transformPage, KnobGroupPtr(), cNode);
+        KnobDoublePtr param = createDuplicateKnob<KnobDouble>(kTransformParamCustomShutterOffset, tNode,thisShared, transformPage, KnobGroupPtr(), cNode);
         param->setSecret(true);
         _imp->customShutterOffset = param;
     }
@@ -1325,14 +1327,14 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
                                     KnobBoolPtr() /*interactive*/);
 
     {
-        KnobSeparatorPtr param = AppManager::createKnob<KnobSeparator>(thisShared, tr(kTrackerParamExportDataSeparatorLabel), 1, false);
-        param->setName(kTrackerParamExportDataSeparator);
+        KnobSeparatorPtr param = createKnob<KnobSeparator>(kTrackerParamExportDataSeparator);
+        param->setLabel(tr(kTrackerParamExportDataSeparatorLabel));
         transformPage->addKnob(param);
         _imp->exportDataSep = param;
     }
     {
-        KnobBoolPtr param = AppManager::createKnob<KnobBool>(thisShared, tr(kTrackerParamExportLinkLabel), 1, false);
-        param->setName(kTrackerParamExportLink);
+        KnobBoolPtr param = createKnob<KnobBool>(kTrackerParamExportLink);
+        param->setLabel(tr(kTrackerParamExportLinkLabel));
         param->setHintToolTip( tr(kTrackerParamExportLinkHint) );
         param->setAnimationEnabled(false);
         param->setAddNewLine(false);
@@ -1341,8 +1343,8 @@ TrackerNode::initializeTransformPageKnobs(const KnobPagePtr& transformPage)
         _imp->exportLink = param;
     }
     {
-        KnobButtonPtr param = AppManager::createKnob<KnobButton>(thisShared, tr(kTrackerParamExportButtonLabel), 1);
-        param->setName(kTrackerParamExportButton);
+        KnobButtonPtr param = createKnob<KnobButton>(kTrackerParamExportButton);
+        param->setLabel(tr(kTrackerParamExportButtonLabel));
         param->setHintToolTip( tr(kTrackerParamExportButtonHint) );
         param->setEnabled(false);
         transformPage->addKnob(param);
@@ -1372,11 +1374,11 @@ TrackerNode::initializeKnobs()
     
     _imp->tracker.reset(new TrackerHelper(_imp));
     
-    KnobPagePtr trackingPage = AppManager::createKnob<KnobPage>(thisShared, tr("Tracking"), 1, false);
-    trackingPage->setName("trackingPage");
+    KnobPagePtr trackingPage = createKnob<KnobPage>("trackingPage");
+    trackingPage->setLabel(tr("Tracking"));
     _imp->trackingPageKnob = trackingPage;
-    KnobPagePtr transformPage = AppManager::createKnob<KnobPage>(thisShared, tr("Transform"), 1, false);
-    transformPage->setName("transformPage");
+    KnobPagePtr transformPage = createKnob<KnobPage>("transformPage");
+    transformPage->setLabel(tr("Transform"));
     _imp->transformPageKnob = transformPage;
 
     initializeTrackingPageKnobs(trackingPage);
@@ -1568,7 +1570,7 @@ TrackerNodePrivate::getInputRoD(TimeValue time, ViewIdx view) const
 
     if (inputEffect) {
         GetRegionOfDefinitionResultsPtr results;
-        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(time, RenderScale(1.), view, TreeRenderNodeArgsPtr(), &results);
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(time, RenderScale(1.), view, &results);
         if (!isFailureRetCode(stat)) {
             return results->getRoD();
         }
@@ -1777,8 +1779,8 @@ TrackerNodePrivate::refreshVisibilityFromTransformTypeInternal(TrackerTransformN
     KnobBoolPtr disableTransformKnob = disableTransform.lock();
     bool disableNodes = disableTransformKnob->getValue();
 
-    transformNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
-    cornerPinNode.lock()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
+    transformNode.lock()->getEffectInstance()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeCornerPin || motionType == eTrackerMotionTypeNone);
+    cornerPinNode.lock()->getEffectInstance()->setNodeDisabled(disableNodes || transformType == eTrackerTransformNodeTransform || motionType == eTrackerMotionTypeNone);
 
     transformControlsSeparator.lock()->setSecret(motionType == eTrackerMotionTypeNone);
     disableTransformKnob->setSecret(motionType == eTrackerMotionTypeNone);

@@ -1123,7 +1123,7 @@ renderBezier_gl_internal(const OSGLContextPtr& glContext,
 
 
 void
-RotoShapeRenderGL::renderBezier_gl(const OSGLContextAttacherPtr& glContext,
+RotoShapeRenderGL::renderBezier_gl(const OSGLContextPtr& glContext,
                                    const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
                                    const BezierPtr& bezier,
@@ -1136,11 +1136,10 @@ RotoShapeRenderGL::renderBezier_gl(const OSGLContextAttacherPtr& glContext,
                                    const RenderScale& scale,
                                    int target)
 {
-    OSGLContextPtr context = glContext->getContext();
-    if (context->isGPUContext()) {
-        renderBezier_gl_internal<GL_GPU>(context, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
+    if (glContext->isGPUContext()) {
+        renderBezier_gl_internal<GL_GPU>(glContext, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
     } else {
-        renderBezier_gl_internal<GL_CPU>(context, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
+        renderBezier_gl_internal<GL_CPU>(glContext, glData, roi, bezier, dstImage, opacity, time, view, shutterRange, nDivisions, scale, target);
     }
 } // RotoShapeRenderGL::renderBezier_gl
 
@@ -1676,7 +1675,7 @@ renderStrokeRenderDot_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr userDat
 }
 
 void
-RotoShapeRenderGL::renderStroke_gl(const OSGLContextAttacherPtr& glContextAttacher,
+RotoShapeRenderGL::renderStroke_gl(const OSGLContextPtr& glContext,
                                    const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                    const RectI& roi,
                                    const ImagePtr& dstImage,
@@ -1697,8 +1696,6 @@ RotoShapeRenderGL::renderStroke_gl(const OSGLContextAttacherPtr& glContextAttach
 
     *distToNextOut = distToNextIn;
     *lastCenterPointOut = lastCenterPointIn;
-
-    OSGLContextPtr glContext = glContextAttacher->getContext();
 
     GLShaderBasePtr accumShader = glData->getOrCreateAccumulateShader();
     GLShaderBasePtr copyShader = glContext->getOrCreateCopyTexShader();
@@ -2117,7 +2114,7 @@ renderSmearEnd_gl(RotoShapeRenderNodePrivate::RenderStrokeDataPtr /*userData*/)
 }
 
 bool
-RotoShapeRenderGL::renderSmear_gl(const OSGLContextAttacherPtr& glContextAttacher,
+RotoShapeRenderGL::renderSmear_gl(const OSGLContextPtr& glContext,
                                   const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                   const RectI& roi,
                                   const ImagePtr& dstImage,
@@ -2132,7 +2129,7 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextAttacherPtr& glContextAttache
                                   Point* lastCenterPointOut)
 {
     RenderSmearGLData data;
-    data.glContext = glContextAttacher->getContext();
+    data.glContext = glContext;
     data.glData = glData;
     data.dstImage = dstImage;
     data.roi = roi;
@@ -2157,7 +2154,7 @@ RotoShapeRenderGL::renderSmear_gl(const OSGLContextAttacherPtr& glContextAttache
                                                                            lastCenterPointOut);
 
     // Also report the results to the dst image on the default framebuffer
-    if (!glContextAttacher->getContext()->isGPUContext()) {
+    if (!glContext->isGPUContext()) {
         // Disable scissors because we are going to use opengl outside of RoI
         GL_CPU::Disable(GL_SCISSOR_TEST);
         GL_CPU::BindFramebuffer(GL_FRAMEBUFFER, 0);

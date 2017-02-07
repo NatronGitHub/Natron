@@ -121,10 +121,11 @@ StubNode::initializeKnobs()
 {
     EffectInstancePtr thisShared = shared_from_this();
     
-    KnobPagePtr page = AppManager::createKnob<KnobPage>(thisShared, tr("Controls"));
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
     {
-        KnobStringPtr param = AppManager::createKnob<KnobString>(thisShared, tr(kStubNodeParamSerializationLabel));
-        param->setName(kStubNodeParamSerialization);
+        KnobStringPtr param = createKnob<KnobString>(kStubNodeParamSerialization);
+        param->setLabel(tr(kStubNodeParamSerializationLabel));
         param->setHintToolTip(tr(kStubNodeParamSerializationHint));
         param->setAsMultiLine();
         page->addKnob(param);
@@ -160,7 +161,7 @@ StubNode::refreshInputsFromSerialization()
     // Check for label knob
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = _imp->serialObj->_knobsValues.begin(); it != _imp->serialObj->_knobsValues.end(); ++it) {
         if ((*it)->_scriptName == kUserLabelKnobName) {
-            KnobStringPtr labelKnob = getNode()->getExtraLabelKnob();
+            KnobStringPtr labelKnob = getExtraLabelKnob();
             if (labelKnob) {
                 labelKnob->fromSerialization(**it);
             }

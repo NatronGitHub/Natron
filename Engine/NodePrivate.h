@@ -135,9 +135,6 @@ public:
     mutable QMutex groupMutex;
     NodeCollectionWPtr group;
 
-    // If this node is part of a precomp, this is a pointer to it
-    boost::weak_ptr<PrecompNode> precomp;
-
     // pointer to the app: needed to access project stuff
     AppInstanceWPtr app;
 
@@ -170,12 +167,6 @@ public:
 
     // Set during interact actions. This is only read/written on the main-thread.
     OverlaySupport* overlaysViewport;
-
-    // The accepted number of components in input and in output of the plug-in
-    // These two are also protected by inputsMutex
-    // This is a bitset: each bit tells whether the plug-in supports N comps
-    std::vector< std::bitset<4> > inputsComponents;
-    std::bitset<4> outputComponents;
 
     // Protects scriptName and label
     mutable QMutex nameMutex;
@@ -240,9 +231,6 @@ public:
     // When creating a Reader or Writer node, this is a pointer to the meta node that the user actually see.
     NodeWPtr ioContainer;
 
-    // List of supported bitdepth by the plug-in
-    std::list <ImageBitDepthEnum> supportedDepths;
-
 
     // Protects lastRenderStartedSlotCallTime & lastInputNRenderStartedSlotCallTime
     QMutex lastRenderStartedMutex;
@@ -273,21 +261,6 @@ public:
 
     // True if the node was created with the kCreateNodeArgsPropSilent flag
     bool wasCreatedSilently;
-
-    // Protects created components
-    mutable QMutex createdComponentsMutex;
-
-    // Comps created by the user in the stream.
-    std::list<ImagePlaneDesc> createdComponents;
-
-    // If this node is part of a RotoPaint item implementation
-    // this is a pointer to the roto item itself
-    boost::weak_ptr<RotoDrawableItem> paintStroke;
-
-    // During painting we keep track of the image that was rendered
-    // at the previous step so that we can accumulate the renders
-    mutable QMutex accumBufferMutex;
-    ImagePtr accumBuffer;
 
     // Protects isBeingDestroyed
     mutable QMutex isBeingDestroyedMutex;
@@ -347,8 +320,6 @@ public:
     // True when restoreNodeToDefault is called
     bool restoringDefaults;
 
-    // True if the effect has isHostChannelSelectorSupported() returning true
-    bool hostChannelSelectorEnabled;
 };
 
 

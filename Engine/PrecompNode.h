@@ -32,7 +32,7 @@
 #include <boost/scoped_ptr.hpp>
 #endif
 
-#include "Engine/EffectInstance.h"
+#include "Engine/NodeGroup.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -40,7 +40,7 @@ NATRON_NAMESPACE_ENTER;
 
 struct PrecompNodePrivate;
 class PrecompNode
-    : public EffectInstance
+    : public NodeGroup
 {
 GCC_DIAG_SUGGEST_OVERRIDE_OFF
     Q_OBJECT
@@ -49,16 +49,10 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     PrecompNode(const NodePtr& n);
-    PrecompNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new PrecompNode(node) );
-    }
-
-    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
-    {
-        return EffectInstancePtr( new PrecompNode(mainInstance, render) );
     }
 
     static PluginPtr createPlugin();
@@ -66,22 +60,6 @@ public:
     virtual ~PrecompNode();
 
 
-    virtual int getMaxInputCount() const OVERRIDE WARN_UNUSED_RETURN
-    {
-        return 0;
-    }
-
-
-    virtual bool isInputOptional(int /*inputNb*/) const OVERRIDE
-    {
-        return false;
-    }
-
-    virtual void addAcceptedComponents(int inputNb, std::bitset<4>* comps) OVERRIDE FINAL;
-
-    virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
-
-  
     virtual bool isOutput() const OVERRIDE WARN_UNUSED_RETURN
     {
         return false;
@@ -97,10 +75,20 @@ public:
 
     NodePtr getOutputNode() const;
 
-    void getPrecompInputs(NodesList* nodes) const;
-
     AppInstancePtr getPrecompApp() const;
     virtual bool getCreateChannelSelectorKnob() const OVERRIDE FINAL WARN_UNUSED_RETURN { return false; }
+
+    virtual bool isSubGraphUserVisible() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual bool isSubGraphPersistent() const OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return false;
+    }
+
+    virtual void setupInitialSubGraphState() OVERRIDE FINAL;
 
 public Q_SLOTS:
 

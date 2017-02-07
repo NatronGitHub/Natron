@@ -37,45 +37,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-//Template specialization for EffectInstance::EffectInstanceTLSData:
-//We do this  for the following reasons:
-//We may be here in 2 cases: either in a thread from the multi-thread suite or from a thread that just got spawned
-//from the host-frame threading (executing tiledRenderingFunctor).
-//A multi-thread suite thread is not allowed by OpenFX to call clipGetImage, which does not require us to apply TLS
-//on OfxClipInstance and also RenderArgs in EffectInstance. But a multi-thread suite thread may call the abort() function
-//which needs the ParallelRenderArgs set on the EffectInstance.
-//Similarly a host-frame threading thread is spawned at a time where the spawner thread only has the ParallelRenderArgs
-//set on the TLS, so just copy this instead of the whole TLS.
-
-template <>
-boost::shared_ptr<EffectInstanceTLSData>
-TLSHolder<EffectInstanceTLSData>::copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const
-{
-    QWriteLocker k(&perThreadDataMutex);
-    ThreadDataMap::iterator found = perThreadData.find(fromThread);
-
-    if ( found == perThreadData.end() ) {
-        ///No TLS for fromThread
-        return boost::shared_ptr<EffectInstanceTLSData>();
-    }
-
-    ThreadData data;
-    //Copy constructor
-    data.value.reset( new EffectInstanceTLSData( *(found->second.value) ) );
-    perThreadData[toThread] = data;
-
-    return data.value;
-}
-
-template <>
-void
-TLSHolder<EffectInstanceTLSData>::copyTLS(const QThread* fromThread,
-                                          const QThread* toThread) const
-{
-    boost::shared_ptr<EffectInstanceTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
-
-    Q_UNUSED(tlsDataPtr);
-}
 
 template <typename T>
 void

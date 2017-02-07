@@ -115,7 +115,7 @@ private:
  **/
 class MultiThreadProcessorBase
 {
-private:
+protected:
 
     EffectInstancePtr _effect;
 

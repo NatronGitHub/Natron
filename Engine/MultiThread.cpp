@@ -177,7 +177,6 @@ public:
                         MultiThread::ThreadFunctor func,
                         unsigned int threadIndex,
                         unsigned int threadMax,
-                        QThread* spawnerThread,
                         void *customArg,
                         const EffectInstancePtr& effect,
                         ActionRetCodeEnum *stat)
@@ -187,7 +186,6 @@ public:
     , _func(func)
     , _threadIndex(threadIndex)
     , _threadMax(threadMax)
-    , _spawnerThread(spawnerThread)
     , _customArg(customArg)
     , _effect(effect)
     , _stat(stat)
@@ -233,7 +231,6 @@ private:
     MultiThread::ThreadFunctor *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
-    QThread* _spawnerThread;
     void *_customArg;
     EffectInstancePtr _effect;
     ActionRetCodeEnum *_stat;
@@ -320,7 +317,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
-        QFuture<ActionRetCodeEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, customArg) );
+        QFuture<ActionRetCodeEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
@@ -353,7 +350,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             // at most maxConcurrentThread should be running at the same time
             QVector<NonThreadPoolThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, spawnerThread, customArg, effect, &status[i]);
+                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, customArg, effect, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads

@@ -1350,6 +1350,9 @@ void
 KnobHelper::setName(const std::string & name,
                     bool throwExceptions)
 {
+    if (name == _imp->common->name) {
+        return;
+    }
     _imp->common->originalName = name;
     _imp->common->name = NATRON_PYTHON_NAMESPACE::makeNameScriptFriendly(name);
     KnobHolderPtr holder = getHolder();
@@ -1368,7 +1371,7 @@ KnobHelper::setName(const std::string & name,
             ss << no;
         }
         finalName = ss.str();
-        if ( holder->getOtherKnobByName( finalName, shared_from_this() ) ) {
+        if ( holder->getKnobByName(finalName) ) {
             foundItem = true;
         } else {
             foundItem = false;
@@ -1404,6 +1407,17 @@ KnobHelper::setName(const std::string & name,
     }
     _imp->common->name = finalName;
 } // KnobHelper::setName
+
+KnobIPtr
+KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
+{
+    QMutexLocker k(&_imp->common->renderClonesMapMutex);
+    std::map<KnobHolderWPtr, KnobIWPtr>::const_iterator found = _imp->common->renderClonesMap.find(holder);
+    if (found != _imp->common->renderClonesMap.end()) {
+        return found->second.lock();
+    }
+    return KnobIPtr();
+}
 
 const std::string &
 KnobHelper::getName() const
@@ -4214,6 +4228,7 @@ struct KnobHolder::KnobHolderPrivate
     QMutex knobsMutex;
 
     std::vector< KnobIPtr > knobs;
+    std::map<std::string, KnobIWPtr> knobsOrdered;
     bool knobsInitialized;
     bool isInitializingKnobs;
 
@@ -4226,6 +4241,7 @@ struct KnobHolder::KnobHolderPrivate
     : common(new KnobHolderCommonData)
     , knobsMutex()
     , knobs()
+    , knobsOrdered()
     , knobsInitialized(false)
     , isInitializingKnobs(false)
     , mainInstance()
@@ -4239,6 +4255,7 @@ struct KnobHolder::KnobHolderPrivate
     : common(other->_imp->common)
     , knobsMutex()
     , knobs()
+    , knobsOrdered()
     , knobsInitialized(false)
     , isInitializingKnobs(false)
     , mainInstance(other)
@@ -4274,6 +4291,14 @@ KnobHolder::~KnobHolder()
                 helper->_imp->holder.reset();
                 helper->deleteKnob();
                 
+            }
+        }
+    } else {
+        TreeRenderPtr render = _imp->currentRender.lock();
+        std::vector<KnobTableItemPtr> allItems = _imp->common->knobsTable->getAllItems();
+        for (std::vector<KnobTableItemPtr>::const_iterator it = allItems.begin(); it != allItems.end(); ++it) {
+            if ((*it)->isRenderCloneNeeded()) {
+                (*it)->removeRenderClone(render);
             }
         }
     }
@@ -4411,13 +4436,19 @@ KnobHolder::isInitializingKnobs() const
 void
 KnobHolder::addKnob(const KnobIPtr& k)
 {
-    QMutexLocker kk(&_imp->knobsMutex);
-    for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if (*it == k) {
-            return;
+    {
+        QMutexLocker kk(&_imp->knobsMutex);
+        for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
+            if (*it == k) {
+                return;
+            }
         }
+        _imp->knobs.push_back(k);
     }
-    _imp->knobs.push_back(k);
+    KnobHelperPtr helper = toKnobHelper(k);
+
+    QMutexLocker locker(&helper->_imp->common->renderClonesMapMutex);
+    helper->_imp->common->renderClonesMap[shared_from_this()] = k;
 }
 
 void
@@ -4428,11 +4459,14 @@ KnobHolder::insertKnob(int index,
         return;
     }
     QMutexLocker kk(&_imp->knobsMutex);
-    for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-        if (*it == k) {
+    {
+        std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(k->getName());
+        if (found != _imp->knobsOrdered.end()) {
             return;
         }
+        _imp->knobsOrdered[k->getName()] = k;
     }
+
     if ( index >= (int)_imp->knobs.size() ) {
         _imp->knobs.push_back(k);
     } else {
@@ -4454,6 +4488,12 @@ KnobHolder::removeKnobFromList(const KnobIConstPtr& knob)
             return;
         }
     }
+    std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(knob->getName());
+    if (found != _imp->knobsOrdered.end()) {
+        _imp->knobsOrdered.erase(found);
+    }
+
+
 }
 
 void
@@ -4502,32 +4542,19 @@ KnobHolder::deleteKnob(const KnobIPtr& knob,
 {
     assert( QThread::currentThread() == qApp->thread() );
 
-    KnobsVec knobs;
     {
         QMutexLocker k(&_imp->knobsMutex);
-        knobs = _imp->knobs;
-    }
-    KnobIPtr sharedKnob;
-    for (KnobsVec::iterator it = knobs.begin(); it != knobs.end(); ++it) {
-        if (*it == knob) {
-            (*it)->deleteKnob();
-            sharedKnob = *it;
-            break;
+        std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(knob->getName());
+        if (found == _imp->knobsOrdered.end()) {
+            return;
         }
     }
 
-    {
-        QMutexLocker k(&_imp->knobsMutex);
-        for (KnobsVec::iterator it2 = _imp->knobs.begin(); it2 != _imp->knobs.end(); ++it2) {
-            if (*it2 == knob) {
-                _imp->knobs.erase(it2);
-                break;
-            }
-        }
-    }
+    removeKnobFromList(knob);
 
-    if (sharedKnob && alsoDeleteGui && _imp->common->settingsPanel) {
-        _imp->common->settingsPanel->deleteKnobGui(sharedKnob);
+
+    if (alsoDeleteGui && _imp->common->settingsPanel) {
+        _imp->common->settingsPanel->deleteKnobGui(knob);
     }
 }
 
@@ -5253,15 +5280,31 @@ KnobHolder::initializeKnobsPublic()
 }
 
 void
-KnobHolder::removeRenderClone(const KnobHolderPtr& clone)
+KnobHolder::removeRenderClone(const TreeRenderPtr& render)
 {
     // This must be the main instance!
     assert(!_imp->mainInstance);
-    QMutexLocker k(&_imp->common->renderClonesMutex);
-    TreeRenderPtr render = clone->getCurrentRender();
-    std::map<TreeRenderWPtr, KnobHolderPtr>::iterator found = _imp->common->renderClones.find(render);
-    if (found != _imp->common->renderClones.end()) {
-        _imp->common->renderClones.erase(found);
+    KnobHolderPtr clone;
+    {
+        QMutexLocker locker(&_imp->common->renderClonesMutex);
+        std::map<TreeRenderWPtr, KnobHolderPtr>::iterator found = _imp->common->renderClones.find(render);
+        if (found != _imp->common->renderClones.end()) {
+            clone = found->second;
+            _imp->common->renderClones.erase(found);
+        }
+    }
+
+    if (!clone) {
+        return;
+    }
+    // For each knob, remove the clone from the map
+    for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
+        KnobHelperPtr k = toKnobHelper(_imp->knobs[i]);
+        QMutexLocker locker(&k->_imp->common->renderClonesMapMutex);
+        std::map<KnobHolderWPtr, KnobIWPtr>::const_iterator found = k->_imp->common->renderClonesMap.find(clone);
+        if (found != k->_imp->common->renderClonesMap.end()) {
+            k->_imp->common->renderClonesMap.erase(found);
+        }
     }
 }
 
@@ -5376,34 +5419,11 @@ KnobHolder::refreshAfterTimeChangeOnlyKnobsWithTimeEvaluation(TimeValue time)
 KnobIPtr
 KnobHolder::getKnobByName(const std::string & name) const
 {
-#pragma message WARN("Use a map here!")
     QMutexLocker k(&_imp->knobsMutex);
-
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        if (_imp->knobs[i]->getName() == name) {
-            return _imp->knobs[i];
-        }
+    std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(name);
+    if (found != _imp->knobsOrdered.end()) {
+        return found->second.lock();
     }
-
-    return KnobIPtr();
-}
-
-// Same as getKnobByName expect that if we find the caller, we skip it
-KnobIPtr
-KnobHolder::getOtherKnobByName(const std::string & name,
-                               const KnobIConstPtr& caller) const
-{
-    QMutexLocker k(&_imp->knobsMutex);
-
-    for (U32 i = 0; i < _imp->knobs.size(); ++i) {
-        if (_imp->knobs[i] == caller) {
-            continue;
-        }
-        if (_imp->knobs[i]->getName() == name) {
-            return _imp->knobs[i];
-        }
-    }
-
     return KnobIPtr();
 }
 

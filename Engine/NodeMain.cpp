@@ -200,7 +200,7 @@ Node::load(const CreateNodeArgsPtr& args)
     initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
 
     // Set plug-in accepted bitdepths and set default metadata
-    refreshAcceptedBitDepths();
+    _imp->effect->refreshAcceptedBitDepths();
 
     // Load inputs
     initializeInputs();
@@ -238,7 +238,7 @@ Node::load(const CreateNodeArgsPtr& args)
 
 
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
-    refreshDynamicProperties();
+    _imp->effect->refreshDynamicProperties();
 
     // Ensure the OpenGL support knob has a consistant state according to the project
     _imp->effect->onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
@@ -688,7 +688,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // User created components
     std::list<ImagePlaneDesc> userComps;
-    getUserCreatedComponents(&userComps);
+    _imp->effect->getUserCreatedComponents(&userComps);
     for (std::list<ImagePlaneDesc>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
         SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization s;
         it->toSerialization(&s);
@@ -847,14 +847,13 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     _imp->effect->beginChanges();
     _imp->effect->onKnobsAboutToBeLoaded(serialization);
 
-    {
-        QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
-            ImagePlaneDesc s;
-            s.fromSerialization(*it);
-            _imp->createdComponents.push_back(s);
-        }
+
+    for (std::list<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
+        ImagePlaneDesc s;
+        s.fromSerialization(*it);
+        _imp->effect->addUserComponents(s);
     }
+
 
     {
         // Load all knobs
@@ -1690,7 +1689,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
     ///Free all memory used by the plug-in.
 
-    clearLastRenderedImage();
+    _imp->effect->clearLastRenderedImage();
 
     if (parentCol && !beingDestroyed) {
         parentCol->notifyNodeDeactivated( shared_from_this() );

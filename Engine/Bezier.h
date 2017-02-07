@@ -89,7 +89,7 @@ public:
 private:
 
     
-    Bezier(const BezierPtr& other);
+    Bezier(const BezierPtr& other, const TreeRenderPtr& render);
 
     virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
 
@@ -688,6 +688,8 @@ private:
     void onKeyFrameRemovedForView(TimeValue time, ViewIdx view);
 
     virtual void initializeKnobs() OVERRIDE;
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
 
     boost::scoped_ptr<BezierPrivate> _imp;
 };

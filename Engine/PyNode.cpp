@@ -1459,7 +1459,7 @@ Effect::getRegionOfDefinition(double time,
     RenderScale s(1.);
 
     GetRegionOfDefinitionResultsPtr results;
-    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(TimeValue(time), s, ViewIdx(view), TreeRenderNodeArgsPtr(), &results);
+    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(TimeValue(time), s, ViewIdx(view),  &results);
     if (isFailureRetCode(stat)) {
         return rod;
     }
@@ -1538,7 +1538,7 @@ Effect::addUserPlane(const QString& planeName,
     ImagePlaneDesc comp(planeName.toStdString(), "", compsGlobal, chans);
 
 
-    return n->addUserComponents(comp);
+    return n->getEffectInstance()->addUserComponents(comp);
 }
 
 std::list<ImageLayer>
@@ -1556,7 +1556,7 @@ Effect::getAvailableLayers(int inputNb) const
     TimeValue time(n->getApp()->getTimeLine()->currentFrame());
 
     std::list<ImagePlaneDesc> availComps;
-    n->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb, TreeRenderNodeArgsPtr(), &availComps);
+    n->getEffectInstance()->getAvailableLayers(time, ViewIdx(0), inputNb,  &availComps);
     for (std::list<ImagePlaneDesc>::iterator it = availComps.begin(); it != availComps.end(); ++it) {
         ret.push_back(ImageLayer(*it));
     }
@@ -1575,7 +1575,7 @@ Effect::getFrameRate() const
         return 24.;
     }
 
-    return node->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+    return node->getEffectInstance()->getFrameRate();
 }
 
 double
@@ -1588,7 +1588,7 @@ Effect::getPixelAspectRatio() const
         return 1.;
     }
 
-    return node->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1);
+    return node->getEffectInstance()->getAspectRatio(-1);
 }
 
 ImageBitDepthEnum
@@ -1601,7 +1601,7 @@ Effect::getBitDepth() const
         return eImageBitDepthFloat;
     }
 
-    return node->getEffectInstance()->getBitDepth(TreeRenderNodeArgsPtr(), -1);
+    return node->getEffectInstance()->getBitDepth(-1);
 }
 
 ImagePremultiplicationEnum
@@ -1614,7 +1614,7 @@ Effect::getPremult() const
         return eImagePremultiplicationPremultiplied;
     }
 
-    return node->getEffectInstance()->getPremult(TreeRenderNodeArgsPtr());
+    return node->getEffectInstance()->getPremult();
 }
 
 void

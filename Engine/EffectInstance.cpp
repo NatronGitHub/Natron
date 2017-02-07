@@ -103,6 +103,9 @@ EffectInstance::EffectInstance(const EffectInstancePtr& other, const TreeRenderP
     int nInputs = other->getMaxInputCount();
     _imp->renderData->inputs.resize(nInputs);
     for (std::size_t i = 0; i < _imp->renderData->inputs.size(); ++i) {
+        if (other->isInputMask(i) && !isMaskEnabled(i)) {
+            continue;
+        }
         _imp->renderData->inputs[i] = other->getInput(i);
     }
 }
@@ -220,7 +223,7 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
         }
         for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
 
-            EffectInstancePtr inputEffect = resolveInputEffectForFrameNeeded(it->first, 0);
+            EffectInstancePtr inputEffect = getInput(it->first);
             if (!inputEffect) {
                 continue;
             }
@@ -461,7 +464,7 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
 
     if (nOutputNodes == 0) {
         // outputs == 0, never cache, unless explicitly set or rotopaint internal node
-        RotoDrawableItemPtr attachedStroke = node->getAttachedRotoItem();
+        RotoDrawableItemPtr attachedStroke = getAttachedRotoItem();
 
         return isForceCachingEnabled() || appPTR->isAggressiveCachingEnabled() ||
         ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() );
@@ -511,12 +514,12 @@ EffectInstance::shouldCacheOutput(bool isFrameVaryingOrAnimated,
         return true;
     }
 
-    if ( node->isDuringPaintStrokeCreation() ) {
+    if ( isDuringPaintStrokeCreation() ) {
         // When painting we must always cache
         return true;
     }
 
-    RotoDrawableItemPtr attachedStroke = node->getAttachedRotoItem();
+    RotoDrawableItemPtr attachedStroke = getAttachedRotoItem();
     if ( attachedStroke && attachedStroke->getModel()->getNode()->isSettingsPanelVisible() ) {
         // Internal RotoPaint tree and the Roto node has its settings panel opened, cache it.
         return true;
@@ -577,53 +580,25 @@ EffectInstance::getInputLabel(int inputNb) const
     return out;
 }
 
+void
+EffectInstance::onInputLabelChanged(int inputNb, const std::string& label)
+{
+    std::map<int, MaskSelector>::iterator foundMask = _imp->defKnobs->maskSelectors.find(inputNb);
+    if (foundMask != _imp->defKnobs->maskSelectors.end()) {
+        foundMask->second.channel.lock()->setLabel(label);
+    }
+
+    std::map<int, ChannelSelector>::iterator foundChannel = _imp->defKnobs->channelsSelectors.find(inputNb);
+    if (foundChannel != _imp->defKnobs->channelsSelectors.end()) {
+        foundChannel->second.layer.lock()->setLabel(label + std::string(" Layer"));
+    }
+}
+
 std::string
 EffectInstance::getInputHint(int /*inputNb*/) const
 {
     return std::string();
 }
-
-
-EffectInstancePtr
-EffectInstance::resolveInputEffectForFrameNeeded(const int inputNb,
-                                                 int* channelForMask)
-{
-    // Check if the input is a mask
-    if (channelForMask) {
-        *channelForMask = -1;
-    }
-    if (isInputMask(inputNb)) {
-
-        // If the mask is disabled, don't even bother
-        if (!isMaskEnabled(inputNb) ) {
-            return EffectInstancePtr();
-        }
-
-        ImagePlaneDesc maskComps;
-
-        std::list<ImagePlaneDesc> upstreamAvailableLayers;
-
-        ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), getCurrentView_TLS(), inputNb, &upstreamAvailableLayers);
-        if (isFailureRetCode(stat)) {
-            return EffectInstancePtr();
-        }
-        int channelForAlphaInput = getNode()->getMaskChannel(inputNb, upstreamAvailableLayers, &maskComps);
-
-
-        if (channelForMask) {
-            *channelForMask = channelForAlphaInput;
-        }
-
-        // No mask or no layer selected for the mask
-        if ((channelForAlphaInput == -1) || (maskComps.getNumComponents() == 0)) {
-            return EffectInstancePtr();
-        }
-
-    }
-
-    return getInput(inputNb);
-    
-} // resolveInputEffectForFrameNeeded
 
 
 
@@ -743,8 +718,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         return false;
     }
 
-    int channelForMask = -1;
-    EffectInstancePtr inputEffect= resolveInputEffectForFrameNeeded(inArgs.inputNb, &channelForMask);
+    EffectInstancePtr inputEffect = getInput(inArgs.inputNb);
 
     if (!inputEffect) {
         // Disconnected input
@@ -757,19 +731,22 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // Launch a render to recover the image.
     // It should be very fast if the image was already rendered.
-    TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
-    rargs->time = inArgs.inputTime;
-    rargs->view = inArgs.inputView;
-    rargs->treeRoot = inputEffect->getNode();
-    rargs->canonicalRoI = gotRoI ? &roiCanonical : 0;
-    rargs->proxyScale = inArgs.inputProxyScale;
-    rargs->mipMapLevel = inArgs.inputMipMapLevel;
-    rargs->plane = inArgs.plane;
-    rargs->draftMode = inArgs.draftMode;
-    rargs->playback = inArgs.playback;
-    rargs->byPassCache = inArgs.byPassCache;
-
-    TreeRenderPtr renderObject = TreeRender::create(rargs);
+    TreeRenderPtr renderObject = getCurrentRender();
+    if (!renderObject) {
+        // We are not during a render, create one.
+        TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
+        rargs->time = inArgs.inputTime;
+        rargs->view = inArgs.inputView;
+        rargs->treeRoot = inputEffect->getNode();
+        rargs->canonicalRoI = gotRoI ? &roiCanonical : 0;
+        rargs->proxyScale = inArgs.inputProxyScale;
+        rargs->mipMapLevel = inArgs.inputMipMapLevel;
+        rargs->plane = inArgs.plane;
+        rargs->draftMode = inArgs.draftMode;
+        rargs->playback = inArgs.playback;
+        rargs->byPassCache = inArgs.byPassCache;
+        renderObject = TreeRender::create(rargs);
+    }
     FrameViewRequestPtr outputRequest;
     ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
     if (isFailureRetCode(status)) {
@@ -859,6 +836,19 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
         convertedImage = Image::create(initArgs);
 
+
+        int channelForMask = - 1;
+        ImagePlaneDesc maskComps;
+        {
+            std::list<ImagePlaneDesc> upstreamAvailableLayers;
+            ActionRetCodeEnum stat = getAvailableLayers(getCurrentTime_TLS(), getCurrentView_TLS(), inArgs.inputNb, &upstreamAvailableLayers);
+            if (isFailureRetCode(stat)) {
+                return EffectInstancePtr();
+            }
+            channelForMask = getMaskChannel(inArgs.inputNb, upstreamAvailableLayers, &maskComps);
+        }
+        
+        
         Image::CopyPixelsArgs copyArgs;
         {
             copyArgs.roi = initArgs.bounds;
@@ -1020,6 +1010,11 @@ bool
 EffectInstance::message(MessageTypeEnum type,
                         const std::string & content) const
 {
+    TreeRenderPtr render = getCurrentRender();
+    if (render && render->isRenderAborted()) {
+        return false;
+    }
+
     NodePtr node = getNode();
     assert(node);
     return node ? node->message(type, content) : false;
@@ -1145,12 +1140,6 @@ EffectInstance::getCreateChannelSelectorKnob() const
 }
 
 
-bool
-EffectInstance::isMaskEnabled(int inputNb) const
-{
-    return getNode()->isMaskEnabled(inputNb);
-}
-
 RenderSafetyEnum
 EffectInstance::getRenderThreadSafety() const
 {
@@ -1211,14 +1200,40 @@ EffectInstance::setCurrentCursor(const QString& customCursorFilePath)
 void
 EffectInstance::clearLastRenderedImage()
 {
+    {
+        QMutexLocker k(&_imp->common->accumBufferMutex);
+        _imp->common->accumBuffer.reset();
+    }
     invalidateHashCache();
 }
 
+void
+EffectInstance::setAccumBuffer(const ImagePtr& accumBuffer)
+{
+    ImagePtr curAccumBuffer;
+    {
+        QMutexLocker k(&_imp->common->accumBufferMutex);
+        curAccumBuffer = _imp->common->accumBuffer;
+        _imp->common->accumBuffer = accumBuffer;
+    }
+    // Ensure it is not destroyed while under the mutex, this could lead to a deadlock if the OpenGL context
+    // switches during the texture destruction.
+    curAccumBuffer.reset();
+}
+
+ImagePtr
+EffectInstance::getAccumBuffer() const
+{
+    {
+        QMutexLocker k(&_imp->common->accumBufferMutex);
+        return _imp->common->accumBuffer;
+    }
+}
 
 bool
 EffectInstance::isPaintingOverItselfEnabled() const
 {
-    return getNode()->isDuringPaintStrokeCreation();
+    return isDuringPaintStrokeCreation();
 }
 
 void
@@ -1872,7 +1887,152 @@ EffectInstance::refreshDynamicProperties()
     setCurrentCanTransform(currentDeprecatedTransformSupport);
 }
 
+void
+EffectInstance::attachRotoItem(const RotoDrawableItemPtr& stroke)
+{
+    assert( QThread::currentThread() == qApp->thread() );
+    _imp->common->paintStroke = stroke;
+    setProcessChannelsValues(true, true, true, true);
+}
 
+RotoDrawableItemPtr
+EffectInstance::getOriginalAttachedItem() const
+{
+    return _imp->common->paintStroke.lock();
+}
+
+RotoDrawableItemPtr
+EffectInstance::getAttachedRotoItem() const
+{
+
+    RotoDrawableItemPtr thisItem = _imp->common->paintStroke.lock();
+    if (!thisItem) {
+        return thisItem;
+    }
+    assert(!thisItem->isRenderClone());
+    // On a render thread, use the local thread copy
+    TreeRenderPtr currentRender = getCurrentRender();
+    if (currentRender && thisItem->isRenderCloneNeeded()) {
+        return boost::dynamic_pointer_cast<RotoDrawableItem>(toRotoItem(thisItem->getRenderClone(currentRender)));
+    }
+    return thisItem;
+}
+
+
+bool
+EffectInstance::isDuringPaintStrokeCreation() const
+{
+    // We should render only
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
+    if (!attachedStroke) {
+        return false;
+    }
+    return attachedStroke->isCurrentlyDrawing();
+}
+
+KnobBoolPtr
+EffectInstance::getPreviewEnabledKnob() const
+{
+    return _imp->defKnobs->previewEnabledKnob.lock();
+}
+
+void
+EffectInstance::setProcessChannelsValues(bool doR,
+                               bool doG,
+                               bool doB,
+                               bool doA)
+{
+    KnobBoolPtr eR = getProcessChannelKnob(0);
+
+    if (eR) {
+        eR->setValue(doR);
+    }
+    KnobBoolPtr eG = getProcessChannelKnob(1);
+    if (eG) {
+        eG->setValue(doG);
+    }
+    KnobBoolPtr eB = getProcessChannelKnob(2);
+    if (eB) {
+        eB->setValue(doB);
+    }
+    KnobBoolPtr eA = getProcessChannelKnob(3);
+    if (eA) {
+        eA->setValue(doA);
+    }
+}
+
+std::string
+EffectInstance::getKnobChangedCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->knobChangedCallback.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getInputChangedCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->inputChangedCallback.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+
+std::string
+EffectInstance::getBeforeRenderCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->beforeRender.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getBeforeFrameRenderCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->beforeFrameRender.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getAfterRenderCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->afterRender.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getAfterFrameRenderCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->afterFrameRender.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getAfterNodeCreatedCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->nodeCreatedCallback.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getBeforeNodeRemovalCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->nodeRemovalCallback.lock();
+
+    return s ? s->getValue() : std::string();
+}
+
+std::string
+EffectInstance::getAfterSelectionChangedCallback() const
+{
+    KnobStringPtr s = _imp->defKnobs->tableSelectionChangedCallback.lock();
+
+    return s ? s->getValue() : std::string();
+}
 
 NATRON_NAMESPACE_EXIT;
 

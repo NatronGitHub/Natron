@@ -110,6 +110,8 @@ public:
 
 private:
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
+
     virtual void onMetadataChanged(const NodeMetadata& metadata) OVERRIDE FINAL;
 
     virtual void initializeKnobs() OVERRIDE FINAL;

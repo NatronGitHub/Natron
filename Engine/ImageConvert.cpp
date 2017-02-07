@@ -143,7 +143,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                                   const RectI& srcBounds,
                                   void* dstBufPtrs[4],
                                   const RectI& dstBounds,
-                                  const TreeRenderNodeArgsPtr& renderArgs)
+                                  const EffectInstancePtr& renderClone)
 {
 
     const Color::Lut* const srcLut_ = lutFromColorspace(srcColorSpace);
@@ -159,7 +159,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
 
     for (int y = renderWindow.y1; y < renderWindow.y2; ++y) {
 
-        if (renderArgs && renderArgs->isRenderAborted()) {
+        if (renderClone && renderClone->isRenderAborted()) {
             return;
         }
 
@@ -334,7 +334,7 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
                                             const RectI& srcBounds,
                                             void* dstBufPtrs[4],
                                             const RectI& dstBounds,
-                                            const TreeRenderNodeArgsPtr& renderArgs)
+                                            const EffectInstancePtr& renderClone)
 {
     // Other cases are optimizes in convertFromMono and convertToMono
     assert(dstNComps > 1 && srcNComps > 1);
@@ -346,7 +346,7 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
         // Start of the line for error diffusion
         // coverity[dont_call]
 
-        if (renderArgs && renderArgs->isRenderAborted()) {
+        if (renderClone && renderClone->isRenderAborted()) {
             return;
         }
 
@@ -534,7 +534,7 @@ static convertToMonoImage(const RectI & renderWindow,
                           const RectI& srcBounds,
                           void* dstBufPtrs[4],
                           const RectI& dstBounds,
-                          const TreeRenderNodeArgsPtr& renderArgs)
+                          const EffectInstancePtr& renderClone)
 {
     assert(dstBufPtrs[0] && !dstBufPtrs[1] && !dstBufPtrs[2] && !dstBufPtrs[3]);
 
@@ -545,7 +545,7 @@ static convertToMonoImage(const RectI & renderWindow,
         // coverity[dont_call]
 
 
-        if (renderArgs && renderArgs->isRenderAborted()) {
+        if (renderClone && renderClone->isRenderAborted()) {
             return;
         }
 
@@ -588,7 +588,7 @@ static convertFromMonoImage(const RectI & renderWindow,
                             const RectI& srcBounds,
                             void* dstBufPtrs[4],
                             const RectI& dstBounds,
-                            const TreeRenderNodeArgsPtr& renderArgs)
+                            const EffectInstancePtr& renderClone)
 {
     
 
@@ -600,7 +600,7 @@ static convertFromMonoImage(const RectI & renderWindow,
         // Start of the line for error diffusion
         // coverity[dont_call]
 
-        if (renderArgs && renderArgs->isRenderAborted()) {
+        if (renderClone && renderClone->isRenderAborted()) {
             return;
         }
 
@@ -658,17 +658,17 @@ static convertFromMonoImageForComps(const RectI & renderWindow,
                                     void* dstBufPtrs[4],
                                     int dstNComps,
                                     const RectI& dstBounds,
-                                    const TreeRenderNodeArgsPtr& renderArgs)
+                                    const EffectInstancePtr& renderClone)
 {
     switch (dstNComps) {
         case 2:
-            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         case 3:
-            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         case 4:
-            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+            convertFromMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 4, monoConversion>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         default:
             assert(false);
@@ -689,12 +689,12 @@ convertToFormatInternalForUnpremult(const RectI & renderWindow,
                                     const RectI& srcBounds,
                                     void* dstBufPtrs[4],
                                     const RectI& dstBounds,
-                                    const TreeRenderNodeArgsPtr& renderArgs)
+                                    const EffectInstancePtr& renderClone)
 {
     if ( (srcColorSpace == eViewerColorSpaceLinear) && (dstColorSpace == eViewerColorSpaceLinear) ) {
-        convertToFormatInternalForColorSpace<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, false>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+        convertToFormatInternalForColorSpace<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, false>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
     } else {
-        convertToFormatInternalForColorSpace<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, true>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+        convertToFormatInternalForColorSpace<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, requiresUnpremult, true>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
     }
 }
 
@@ -710,13 +710,13 @@ convertToFormatInternal(const RectI & renderWindow,
                         const RectI& srcBounds,
                         void* dstBufPtrs[4],
                         const RectI& dstBounds,
-                        const TreeRenderNodeArgsPtr& renderArgs)
+                        const EffectInstancePtr& renderClone)
 {
     // General case
     if (requiresUnpremult) {
-        convertToFormatInternalForUnpremult<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, true>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+        convertToFormatInternalForUnpremult<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, true>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
     } else {
-        convertToFormatInternalForUnpremult<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, false>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+        convertToFormatInternalForUnpremult<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, dstNComps, false>(renderWindow, srcColorSpace, dstColorSpace, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
     }
 
 } // convertToFormatInternal
@@ -735,7 +735,7 @@ convertToFormatInternalForSrcComps(const RectI & renderWindow,
                                    void* dstBufPtrs[4],
                                    int dstNComps,
                                    const RectI& dstBounds,
-                                   const TreeRenderNodeArgsPtr& renderArgs)
+                                   const EffectInstancePtr& renderClone)
 {
     switch (dstNComps) {
         case 1:
@@ -744,24 +744,24 @@ convertToFormatInternalForSrcComps(const RectI & renderWindow,
             // optimize the conversion
             switch (alphaHandling) {
                 case Image::eAlphaChannelHandlingFillFromChannel:
-                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingFillFromChannel>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingFillFromChannel>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
                     break;
                 case Image::eAlphaChannelHandlingCreateFill1:
-                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill1>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill1>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
                     break;
                 case Image::eAlphaChannelHandlingCreateFill0:
-                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill0>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+                    convertToMonoImage<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, Image::eAlphaChannelHandlingCreateFill0>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
                     break;
             }
         }   break;
         case 2:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         case 3:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         case 4:
-            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+            convertToFormatInternal<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, srcNComps, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstBounds, renderClone);
             break;
         default:
             assert(false);
@@ -784,12 +784,12 @@ convertToFormatInternalForDstDepth(const RectI & renderWindow,
                                    void* dstBufPtrs[4],
                                    int dstNComps,
                                    const RectI& dstBounds,
-                                   const TreeRenderNodeArgsPtr& renderArgs)
+                                   const EffectInstancePtr& renderClone)
 {
 
     if (srcNComps == dstNComps) {
         // Optimize same number of components
-        convertToFormatInternal_sameComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue>(renderWindow, srcColorSpace, dstColorSpace, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstBounds, renderArgs);
+        convertToFormatInternal_sameComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue>(renderWindow, srcColorSpace, dstColorSpace, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstBounds, renderClone);
         return;
     }
 
@@ -797,13 +797,13 @@ convertToFormatInternalForDstDepth(const RectI & renderWindow,
         // Mono image to something else, optimize
         switch (monoConversion) {
             case Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers:
-                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndLeaveOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
                 break;
             case Image::eMonoToPackedConversionCopyToChannelAndFillOthers:
-                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndFillOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToChannelAndFillOthers>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
                 break;
             case Image::eMonoToPackedConversionCopyToAll:
-                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToAll>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+                convertFromMonoImageForComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, Image::eMonoToPackedConversionCopyToAll>(renderWindow, conversionChannel, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
                 break;
         }
         return;
@@ -811,13 +811,13 @@ convertToFormatInternalForDstDepth(const RectI & renderWindow,
     switch (srcNComps) {
 
         case 2:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         case 3:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 2>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         case 4:
-            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForSrcComps<SRCPIX, srcMaxValue, DSTPIX, dstMaxValue, 3>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, srcBufPtrs, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         default:
             assert(false);
@@ -841,20 +841,20 @@ convertToFormatInternalForSrcDepth(const RectI & renderWindow,
                                    int dstNComps,
                                    ImageBitDepthEnum dstBitDepth,
                                    const RectI& dstBounds,
-                                   const TreeRenderNodeArgsPtr& renderArgs)
+                                   const EffectInstancePtr& renderClone)
 {
     switch ( dstBitDepth ) {
         case eImageBitDepthByte:
             ///Same as a copy
-            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         case eImageBitDepthShort:
-            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         case eImageBitDepthHalf:
             break;
         case eImageBitDepthFloat:
-            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderArgs);
+            convertToFormatInternalForDstDepth<SRCPIX, srcMaxValue, float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBounds, renderClone);
             break;
         case eImageBitDepthNone:
             break;
@@ -878,22 +878,22 @@ ImagePrivate::convertCPUImage(const RectI & renderWindow,
                               int dstNComps,
                               ImageBitDepthEnum dstBitDepth,
                               const RectI& dstBounds,
-                              const TreeRenderNodeArgsPtr& renderArgs)
+                              const EffectInstancePtr& renderClone)
 {
     assert( srcBounds.contains(renderWindow) && dstBounds.contains(renderWindow) );
 
     switch ( srcBitDepth ) {
         case eImageBitDepthByte:
             ///Same as a copy
-            convertToFormatInternalForSrcDepth<unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderArgs);
+            convertToFormatInternalForSrcDepth<unsigned char, 255>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
             break;
         case eImageBitDepthShort:
-            convertToFormatInternalForSrcDepth<unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderArgs);
+            convertToFormatInternalForSrcDepth<unsigned short, 65535>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
             break;
         case eImageBitDepthHalf:
             break;
         case eImageBitDepthFloat:
-            convertToFormatInternalForSrcDepth<float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderArgs);
+            convertToFormatInternalForSrcDepth<float, 1>(renderWindow, srcColorSpace, dstColorSpace, requiresUnpremult, conversionChannel, alphaHandling, monoConversion, srcBufPtrs, srcNComps, srcBounds, dstBufPtrs, dstNComps, dstBitDepth, dstBounds, renderClone);
             break;
         case eImageBitDepthNone:
             break;
@@ -1148,8 +1148,8 @@ class CopyPixelsProcessor : public ImageMultiThreadProcessorBase
     Image::CopyPixelsArgs _copyArgs;
 public:
 
-    CopyPixelsProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    CopyPixelsProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     , _srcTileData()
     , _dstTileData()
     , _copyArgs()
@@ -1172,7 +1172,7 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
         // This function is very optimized and templated for most common cases
         // In the best optimized case, memcpy is used
@@ -1191,7 +1191,7 @@ private:
                                       _dstTileData.nComps,
                                       _dstTileData.bitDepth,
                                       _dstTileData.tileBounds,
-                                      renderArgs);
+                                      _effect);
         return eActionStatusOK;
     }
 };
@@ -1205,7 +1205,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
                             StorageModeEnum toStorage,
                             ImageBufferLayoutEnum toLayout,
                             const Image::CopyPixelsArgs& args,
-                            const TreeRenderNodeArgsPtr& renderArgs)
+                            const EffectInstancePtr& renderClone)
 {
 
     assert(fromStorage != eStorageModeNone && toStorage != eStorageModeNone);
@@ -1323,7 +1323,7 @@ ImagePrivate::copyRectangle(const Image::Tile& fromTile,
         Image::getCPUTileData(fromTile, fromLayout, &srcTileData);
         Image::getCPUTileData(toTile, toLayout, &dstTileData);
 
-        CopyPixelsProcessor processor(renderArgs);
+        CopyPixelsProcessor processor(renderClone);
         processor.setRenderWindow(args.roi);
         processor.setValues(srcTileData, dstTileData, args);
         processor.process();

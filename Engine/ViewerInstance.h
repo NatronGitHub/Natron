@@ -139,6 +139,7 @@ private:
 
     virtual void initializeKnobs() OVERRIDE FINAL;
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
 
     virtual ActionRetCodeEnum isIdentity(TimeValue time,
                                          const RenderScale & scale,

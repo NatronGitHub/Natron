@@ -102,7 +102,7 @@ public:
     RotoDrawableItem(const KnobItemsTablePtr& model);
 
     // The copy constructor makes a shallow copy and only copy knob pointers
-    RotoDrawableItem(const RotoDrawableItemPtr& other);
+    RotoDrawableItem(const RotoDrawableItemPtr& other, const TreeRenderPtr& render);
 
     virtual ~RotoDrawableItem();
 
@@ -218,6 +218,8 @@ public:
     void resetTransformCenter();
 
     virtual void initializeKnobs() OVERRIDE;
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
     virtual RotoStrokeType getBrushType() const = 0;
 

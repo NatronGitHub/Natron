@@ -383,8 +383,8 @@ RotoStrokeItem::RotoStrokeItem(RotoStrokeType type,
 {
 }
 
-RotoStrokeItem::RotoStrokeItem(const RotoStrokeItemPtr& other)
-: RotoDrawableItem(other)
+RotoStrokeItem::RotoStrokeItem(const RotoStrokeItemPtr& other, const TreeRenderPtr& render)
+: RotoDrawableItem(other, render)
 , _imp(new RotoStrokeItemPrivate(this, other->getBrushType()))
 {
 
@@ -401,11 +401,12 @@ RotoStrokeItem::~RotoStrokeItem()
 }
 
 KnobHolderPtr
-RotoStrokeItem::createRenderCopy(const TreeRenderPtr& /*render*/) const
+RotoStrokeItem::createRenderCopy(const TreeRenderPtr& render) const
 {
+    RotoStrokeItemPtr mainInstance = toRotoStrokeItem(boost::const_pointer_cast<KnobHolder>(shared_from_this()));
     {
         QMutexLocker k(&_imp->lock);
-        RotoStrokeItemPtr ret(new RotoStrokeItem(*this));
+        RotoStrokeItemPtr ret(new RotoStrokeItem(mainInstance, render));
         ret->_imp->copyStrokeForRendering(*_imp);
         return ret;
     }
@@ -1390,6 +1391,36 @@ RotoStrokeItem::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 
 
     RotoDrawableItem::appendToHash(args, hash);
+}
+
+void
+RotoStrokeItem::fetchRenderCloneKnobs()
+{
+    // Make a strength parameter when relevant
+    if (_imp->type == eRotoStrokeTypeBlur ||
+        _imp->type == eRotoStrokeTypeSharpen) {
+        _imp->effectStrength = getOrCreateKnob<KnobDouble>(kRotoBrushEffectParam);
+    }
+
+    // This is global to any stroke
+    _imp->pressureSize = getOrCreateKnob<KnobBool>(kRotoBrushPressureSizeParam);
+    _imp->pressureOpacity = getOrCreateKnob<KnobBool>(kRotoBrushPressureOpacityParam);
+    _imp->pressureHardness = getOrCreateKnob<KnobBool>(kRotoBrushPressureHardnessParam);
+    _imp->buildUp = getOrCreateKnob<KnobBool>(kRotoBrushBuildupParam);
+
+    if ( (_imp->type == eRotoStrokeTypeClone) || (_imp->type == eRotoStrokeTypeReveal) ) {
+        // Clone transform
+        _imp->cloneTranslate = getOrCreateKnob<KnobDouble>(kRotoBrushTranslateParam);
+        _imp->cloneRotate = getOrCreateKnob<KnobDouble>(kRotoBrushRotateParam);
+        _imp->cloneScale = getOrCreateKnob<KnobDouble>(kRotoBrushScaleParam);
+        _imp->cloneScaleUniform = getOrCreateKnob<KnobBool>(kRotoBrushScaleUniformParam);
+        _imp->cloneSkewX = getOrCreateKnob<KnobDouble>(kRotoBrushSkewXParam);
+        _imp->cloneSkewY = getOrCreateKnob<KnobDouble>(kRotoBrushSkewYParam);
+        _imp->cloneSkewOrder = getOrCreateKnob<KnobChoice>(kRotoBrushSkewOrderParam);
+        _imp->cloneCenter = getOrCreateKnob<KnobDouble>(kRotoBrushCenterParam);
+        _imp->cloneFilter = getOrCreateKnob<KnobChoice>(kRotoBrushFilterParam);
+        _imp->cloneBlackOutside = getOrCreateKnob<KnobBool>(kRotoBrushBlackOutsideParam);
+    }
 }
 
 void

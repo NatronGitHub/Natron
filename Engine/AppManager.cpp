@@ -382,7 +382,7 @@ AppManager::AppManager()
     assert(!_instance);
     _instance = this;
 
-    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxImageEffectInstance*,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxImageEffectInstance*,void*)) );
+    QObject::connect( this, SIGNAL(s_requestOFXDialogOnMainThread(OfxEffectInstancePtr,void*)), this, SLOT(onOFXDialogOnMainThreadReceived(OfxEffectInstancePtr,void*)) );
 
 #ifdef __NATRON_WIN32__
     FileSystemModel::initDriveLettersToNetworkShareNamesMapping();
@@ -2800,7 +2800,7 @@ AppManager::getUserPythonCommands() const
 
 
 void
-AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
+AppManager::requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& instance,
                                          void* instanceData)
 {
     if ( QThread::currentThread() == qApp->thread() ) {
@@ -2811,23 +2811,23 @@ AppManager::requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance,
 }
 
 void
-AppManager::onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance,
+AppManager::onOFXDialogOnMainThreadReceived(const OfxEffectInstancePtr& instanceParam,
                                             void* instanceData)
 {
     assert( QThread::currentThread() == qApp->thread() );
-    if (!instance) {
+
+    OfxEffectInstancePtr instance;
+    if (!instanceParam) {
         // instance may be NULL if using OfxDialogSuiteV1
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        instance = tls->lastEffectCallingMainEntry;
+        instance = _imp->ofxHost->getCurrentEffect_TLS();
     } else {
 #ifdef DEBUG
-        OfxHost::OfxHostDataTLSPtr tls = _imp->ofxHost->getTLSData();
-        assert(instance == tls->lastEffectCallingMainEntry);
+        assert(instanceParam == _imp->ofxHost->getCurrentEffect_TLS());
 #endif
     }
 #ifdef OFX_SUPPORTS_DIALOG
     if (instance) {
-        instance->dialog(instanceData);
+        instance->effectInstance()->dialog(instanceData);
     }
 #else
     Q_UNUSED(instanceData);

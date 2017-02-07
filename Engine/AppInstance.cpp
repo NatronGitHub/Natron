@@ -1441,7 +1441,7 @@ AppInstance::clearAllLastRenderedImages()
     _imp->_currentProject->getNodes_recursive(activeNodes, false);
 
     for (NodesList::iterator it = activeNodes.begin(); it != activeNodes.end(); ++it) {
-        (*it)->clearLastRenderedImage();
+        (*it)->getEffectInstance()->clearLastRenderedImage();
     }
 }
 

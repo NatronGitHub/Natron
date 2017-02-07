@@ -963,7 +963,7 @@ NodeCollection::recomputeFrameRangeForAllReadersInternal(int* firstFrame,
 
 
                 GetFrameRangeResultsPtr results;
-                ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public( TreeRenderNodeArgsPtr(), &results );
+                ActionRetCodeEnum stat = (*it)->getEffectInstance()->getFrameRange_public(&results );
                 if (!isFailureRetCode(stat)) {
                     RangeD thisRange;
 

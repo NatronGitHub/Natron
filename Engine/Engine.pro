@@ -93,6 +93,7 @@ SOURCES += \
     Distortion2D.cpp \
     Dot.cpp \
     EffectInstance.cpp \
+    EffectInstanceChannelSelectors.cpp \
     EffectInstanceDefaultKnobs.cpp \
     EffectInstanceTLSData.cpp \
     EffectInstanceActions.cpp \
@@ -143,7 +144,6 @@ SOURCES += \
     MultiThread.cpp \
     MemoryInfo.cpp \
     Node.cpp \
-    NodeChannelSelectors.cpp \
     NodeDocumentation.cpp \
     NodeInputs.cpp \
     NodeMain.cpp \

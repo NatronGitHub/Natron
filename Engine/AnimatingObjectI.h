@@ -175,7 +175,7 @@ public:
 
     AnimatingObjectI();
 
-    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other);
+    AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const TreeRenderPtr& render);
 
     virtual ~AnimatingObjectI();
 

@@ -81,7 +81,7 @@ public:
 
     virtual ~KnobTableItem();
 
-    KnobTableItem(const KnobTableItemPtr& other);
+    KnobTableItem(const KnobTableItemPtr& other, const TreeRenderPtr& render);
 
     KnobItemsTablePtr getModel() const;
 

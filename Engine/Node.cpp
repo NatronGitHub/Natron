@@ -97,7 +97,6 @@
 #include "Engine/TrackMarker.h"
 #include "Engine/TrackerNode.h"
 #include "Engine/TrackerHelper.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TLSHolder.h"
 #include "Engine/UndoCommand.h"
 #include "Engine/Utils.h" // convertFromPlainText
@@ -168,20 +167,6 @@ Node::getOriginalPlugin() const
     return _imp->plugin.lock();
 }
 
-void
-Node::setPrecompNode(const PrecompNodePtr& precomp)
-{
-    //QMutexLocker k(&_imp->pluginsPropMutex);
-    _imp->precomp = precomp;
-}
-
-PrecompNodePtr
-Node::isPartOfPrecomp() const
-{
-    //QMutexLocker k(&_imp->pluginsPropMutex);
-    return _imp->precomp.lock();
-}
-
 std::string
 Node::getCurrentNodePresets() const
 {
@@ -204,63 +189,12 @@ Node::isMultiThreadingSupportEnabledForPlugin() const
     return plugin ? plugin->isMultiThreadingEnabled() : true;
 }
 
-
-bool
-Node::isDuringPaintStrokeCreation() const
-{
-    // We should render only
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(getAttachedRotoItem());
-    if (!attachedStroke) {
-        return false;
-    }
-    return attachedStroke->isCurrentlyDrawing();
-}
-
-
-void
-Node::refreshAcceptedBitDepths()
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->supportedDepths.clear();
-    _imp->effect->addSupportedBitDepth(&_imp->supportedDepths);
-    if ( _imp->supportedDepths.empty() ) {
-        //From the spec:
-        //The default for a plugin is to have none set, the plugin must define at least one in its describe action.
-        throw std::runtime_error(tr("This plug-in does not support any of 8-bit, 16-bit or 32-bit floating point image processing").toStdString());
-    }
-
-}
-
 bool
 Node::isNodeCreated() const
 {
     return _imp->nodeCreated;
 }
 
-void
-Node::setProcessChannelsValues(bool doR,
-                               bool doG,
-                               bool doB,
-                               bool doA)
-{
-    KnobBoolPtr eR = _imp->effect->getProcessChannelKnob(0);
-
-    if (eR) {
-        eR->setValue(doR);
-    }
-    KnobBoolPtr eG = _imp->effect->getProcessChannelKnob(1);
-    if (eG) {
-        eG->setValue(doG);
-    }
-    KnobBoolPtr eB = _imp->effect->getProcessChannelKnob(2);
-    if (eB) {
-        eB->setValue(doB);
-    }
-    KnobBoolPtr eA = _imp->effect->getProcessChannelKnob(3);
-    if (eA) {
-        eA->setValue(doA);
-    }
-}
 
 bool
 Node::setStreamWarningInternal(StreamWarningEnum warning,
@@ -661,38 +595,6 @@ Node::getMinorVersion() const
     return (int)plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
 }
 
-void
-Node::clearLastRenderedImage()
-{
-    {
-        QMutexLocker k(&_imp->accumBufferMutex);
-        _imp->accumBuffer.reset();
-    }
-    _imp->effect->clearLastRenderedImage();
-}
-
-void
-Node::setAccumBuffer(const ImagePtr& accumBuffer)
-{
-    ImagePtr curAccumBuffer;
-    {
-        QMutexLocker k(&_imp->accumBufferMutex);
-        curAccumBuffer = _imp->accumBuffer;
-        _imp->accumBuffer = accumBuffer;
-    }
-    // Ensure it is not destroyed while under the mutex, this could lead to a deadlock if the OpenGL context
-    // switches during the texture destruction.
-    curAccumBuffer.reset();
-}
-
-ImagePtr
-Node::getAccumBuffer() const
-{
-    {
-        QMutexLocker k(&_imp->accumBufferMutex);
-        return _imp->accumBuffer;
-    }
-}
 
 KnobIPtr
 Node::getKnobByName(const std::string & name) const
@@ -923,11 +825,6 @@ Node::message(MessageTypeEnum type,
               const std::string & content) const
 {
     if ( (!_imp->nodeCreated && _imp->wasCreatedSilently) || _imp->restoringDefaults) {
-        return false;
-    }
-
-    TreeRenderNodeArgsPtr currentRender = _imp->effect->getCurrentRender_TLS();
-    if (currentRender && currentRender->isRenderAborted()) {
         return false;
     }
 
@@ -1385,7 +1282,7 @@ Node::onRefreshIdentityStateRequestReceived()
     bool viewAware =  _imp->effect->isViewAware();
     int nViews = !viewAware ? 1 : project->getProjectViewsCount();
 
-    RectI format = _imp->effect->getOutputFormat(TreeRenderNodeArgsPtr());
+    RectI format = _imp->effect->getOutputFormat();
 
     //The one view node might report it is identity, but we do not want it to display it
 
@@ -1396,7 +1293,7 @@ Node::onRefreshIdentityStateRequestReceived()
         for (int i = 0; i < nViews; ++i) {
 
             IsIdentityResultsPtr isIdentityResults;
-            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, format, ViewIdx(i), TreeRenderNodeArgsPtr(), &isIdentityResults);
+            ActionRetCodeEnum stat = _imp->effect->isIdentity_public(true, time, scale, format, ViewIdx(i), &isIdentityResults);
             if (isFailureRetCode(stat)) {
                 continue;
             }
@@ -1434,83 +1331,6 @@ Node::refreshIdentityState()
         ++_imp->refreshIdentityStateRequestsCount;
     }
     Q_EMIT refreshIdentityStateRequested();
-}
-
-
-
-
-ImageBitDepthEnum
-Node::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
-{
-    bool foundShort = false;
-    bool foundByte = false;
-
-    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
-        if (*it == depth) {
-            return depth;
-        } else if (*it == eImageBitDepthFloat) {
-            return eImageBitDepthFloat;
-        } else if (*it == eImageBitDepthShort) {
-            foundShort = true;
-        } else if (*it == eImageBitDepthByte) {
-            foundByte = true;
-        }
-    }
-    if (foundShort) {
-        return eImageBitDepthShort;
-    } else if (foundByte) {
-        return eImageBitDepthByte;
-    } else {
-        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
-        assert(false);
-
-        return eImageBitDepthNone;
-    }
-}
-
-ImageBitDepthEnum
-Node::getBestSupportedBitDepth() const
-{
-    bool foundShort = false;
-    bool foundByte = false;
-
-    for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->supportedDepths.begin(); it != _imp->supportedDepths.end(); ++it) {
-        switch (*it) {
-        case eImageBitDepthByte:
-            foundByte = true;
-            break;
-
-        case eImageBitDepthShort:
-            foundShort = true;
-            break;
-        case eImageBitDepthHalf:
-            break;
-
-        case eImageBitDepthFloat:
-
-            return eImageBitDepthFloat;
-
-        case eImageBitDepthNone:
-            break;
-        }
-    }
-
-    if (foundShort) {
-        return eImageBitDepthShort;
-    } else if (foundByte) {
-        return eImageBitDepthByte;
-    } else {
-        ///The plug-in doesn't support any bitdepth, the program shouldn't even have reached here.
-        assert(false);
-
-        return eImageBitDepthNone;
-    }
-}
-
-bool
-Node::isSupportedBitDepth(ImageBitDepthEnum depth) const
-{
-    return std::find(_imp->supportedDepths.begin(), _imp->supportedDepths.end(), depth) != _imp->supportedDepths.end();
 }
 
 
@@ -1777,38 +1597,7 @@ Node::isSettingsPanelVisible() const
     return isSettingsPanelVisibleInternal(tmplist);
 }
 
-void
-Node::attachRotoItem(const RotoDrawableItemPtr& stroke)
-{
-    assert( QThread::currentThread() == qApp->thread() );
-    _imp->paintStroke = stroke;
-    setProcessChannelsValues(true, true, true, true);
-}
 
-RotoDrawableItemPtr
-Node::getOriginalAttachedItem() const
-{
-    return _imp->paintStroke.lock();
-}
-
-RotoDrawableItemPtr
-Node::getAttachedRotoItem() const
-{
-    EffectInstancePtr effect = getEffectInstance();
-    if (!effect) {
-        return RotoDrawableItemPtr();
-    }
-    RotoDrawableItemPtr thisItem = _imp->paintStroke.lock();
-    if (!thisItem) {
-        return thisItem;
-    }
-    // On a render thread, use the local thread copy
-    TreeRenderNodeArgsPtr currentRender = effect->getCurrentRender_TLS();
-    if (currentRender && thisItem->isRenderCloneNeeded()) {
-        return thisItem->getCachedDrawable(currentRender->getParentRender());
-    }
-    return thisItem;
-}
 
 void
 Node::setPagesOrder(const std::list<std::string>& pages)
@@ -1886,6 +1675,9 @@ Node::refreshDefaultPagesOrder()
 {
     _imp->refreshDefaultPagesOrder();
 }
+
+
+
 
 NATRON_NAMESPACE_EXIT;
 

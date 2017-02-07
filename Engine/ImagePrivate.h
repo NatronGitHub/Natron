@@ -33,6 +33,7 @@
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/Image.h"
 #include "Engine/ImageStorage.h"
@@ -40,7 +41,6 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/RectI.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
@@ -88,7 +88,7 @@ struct ImagePrivate
     // This must be set if the cache policy is not none.
     // This will be used to prevent inserting in the cache part of images that had
     // their render aborted.
-    TreeRenderNodeArgsPtr renderArgs;
+    EffectInstancePtr renderClone;
 
     // The channels enabled
     std::bitset<4> enabledChannels;
@@ -128,7 +128,7 @@ struct ImagePrivate
     , mipMapLevel(0)
     , cachePolicy(eCacheAccessModeNone)
     , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
-    , renderArgs()
+    , renderClone()
     , enabledChannels()
     , bitdepth(eImageBitDepthNone)
     , storage(eStorageModeNone)
@@ -188,7 +188,7 @@ struct ImagePrivate
                               StorageModeEnum toStorage,
                               ImageBufferLayoutEnum toLayout,
                               const Image::CopyPixelsArgs& args,
-                              const TreeRenderNodeArgsPtr& renderArgs);
+                              const EffectInstancePtr& renderClone);
 
     /**
      * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
@@ -233,7 +233,7 @@ struct ImagePrivate
                                 int dstNComps,
                                 ImageBitDepthEnum dstBitDepth,
                                 const RectI& dstBounds,
-                                const TreeRenderNodeArgsPtr& renderArgs);
+                                const EffectInstancePtr& renderClone);
 
     static void fillGL(const RectI & roi,
                        float r,
@@ -251,7 +251,7 @@ struct ImagePrivate
                         ImageBitDepthEnum bitDepth,
                         const RectI& bounds,
                         const RectI& roi,
-                        const TreeRenderNodeArgsPtr& renderArgs);
+                        const EffectInstancePtr& renderClone);
 
     static void halveImage(const void* srcPtrs[4],
                            int nComps,
@@ -285,7 +285,7 @@ struct ImagePrivate
                                 bool invertMask,
                                 const RectI& dstBounds,
                                 const RectI& roi,
-                                const TreeRenderNodeArgsPtr& renderArgs);
+                                const EffectInstancePtr& renderClone);
 
     static void copyUnprocessedChannelsGL(const GLImageStoragePtr& originalTexture,
                                           const GLImageStoragePtr& dstTexture,
@@ -301,7 +301,7 @@ struct ImagePrivate
                                            const RectI& dstBounds,
                                            const std::bitset<4> processChannels,
                                            const RectI& roi,
-                                           const TreeRenderNodeArgsPtr& renderArgs);
+                                           const EffectInstancePtr& renderClone);
     
     
 };

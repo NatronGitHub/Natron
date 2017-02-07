@@ -1421,7 +1421,7 @@ OfxHost::requestDialog(OfxImageEffectHandle instance,
     OFX::Host::ImageEffect::Base *effectBase = reinterpret_cast<OFX::Host::ImageEffect::Base*>(instance);
     OfxImageEffectInstance *effectInstance = dynamic_cast<OfxImageEffectInstance*>(effectBase);
     if (effectInstance) {
-        appPTR->requestOFXDIalogOnMainThread(effectInstance, instanceData);
+        appPTR->requestOFXDIalogOnMainThread(appPTR->getOFXCurrentEffect_TLS(), instanceData);
     }
 
     return kOfxStatOK;

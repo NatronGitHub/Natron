@@ -134,7 +134,6 @@ JoinViewsNode::isIdentity(TimeValue time,
                           const RenderScale & /*scale*/,
                           const RectI & /*roi*/,
                           ViewIdx view,
-                          const TreeRenderNodeArgsPtr& /*render*/,
                           TimeValue* inputTime,
                           ViewIdx* inputView,
                           int* inputNb)
