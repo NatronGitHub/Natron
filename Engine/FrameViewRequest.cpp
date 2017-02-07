@@ -81,42 +81,6 @@ FrameView_compare_less::operator() (const FrameViewPair & lhs,
     }
 }
 
-struct PreRenderedDataKey
-{
-    TimeValue time;
-    ViewIdx view;
-    int inputNb;
-};
-
-struct PreRenderedDataKey_Compare
-{
-    bool operator() (const PreRenderedDataKey& lhs, const PreRenderedDataKey& rhs) const
-    {
-        if (lhs.inputNb < rhs.inputNb) {
-            return true;
-        } else if (lhs.inputNb > rhs.inputNb) {
-            return false;
-        } else {
-            if (lhs.time < rhs.time) {
-                return true;
-            } else if (lhs.time > rhs.time) {
-                return false;
-            } else {
-                return lhs.view < rhs.view;
-            }
-        }
-    }
-};
-
-struct PreRenderedDataStuff
-{
-    std::map<ImagePlaneDesc, ImagePtr> planes;
-    Distortion2DStackPtr distortion;
-};
-
-typedef std::map<PreRenderedDataKey, PreRenderedDataStuff, PreRenderedDataKey_Compare> PreRenderedDataMap;
-
-
 struct FrameViewRequestPrivate
 {
     // Protects all data members;
@@ -173,9 +137,6 @@ struct FrameViewRequestPrivate
     // The hash for this frame view
     U64 frameViewHash;
 
-    // The pre-rendered input images
-    PreRenderedDataMap inputImages;
-
     // The needed components at this frame/view
     GetComponentsResultsPtr neededComps;
 
@@ -213,7 +174,6 @@ struct FrameViewRequestPrivate
     , listeners()
     , frameViewsNeeded()
     , frameViewHash(timeViewHash)
-    , inputImages()
     , neededComps()
     , distortion()
     , distortionStack()
@@ -369,110 +329,6 @@ FrameViewRequest::waitForPendingResults()
 
     return ret;
 } // waitForPendingResults
-
-void
-FrameViewRequest::appendPreRenderedInputs(int inputNb,
-                                          TimeValue time,
-                                          ViewIdx view,
-                                          const std::map<ImagePlaneDesc, ImagePtr>& planes,
-                                          const Distortion2DStackPtr& distortionStack)
-{
-    QMutexLocker k(&_imp->lock);
-
-    PreRenderedDataKey key;
-    key.time = time;
-    key.view = view;
-    key.inputNb = inputNb;
-
-    PreRenderedDataStuff& data = _imp->inputImages[key];
-    data.distortion = distortionStack;
-
-    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
-        bool isColorPlane = it->first.isColorPlane();
-
-        std::map<ImagePlaneDesc, ImagePtr>::iterator foundImage = data.planes.end();
-        for (std::map<ImagePlaneDesc, ImagePtr>::iterator it2 = data.planes.begin(); it2 != data.planes.end(); ++it2) {
-            if (it2->first.isColorPlane() && isColorPlane) {
-                foundImage = it2;
-                break;
-            } else if (it->first == it2->first) {
-                foundImage = it2;
-                break;
-            }
-        }
-        // If we already have a pre-rendered corresponding image, replace it only if the new image
-        // is at least equal in bounds or greater
-        if (foundImage != data.planes.end()) {
-            if (it->second->getBounds().contains(foundImage->second->getBounds())) {
-                foundImage->second = it->second;
-            }
-        } else {
-            data.planes.insert(*it);
-        }
-    }
-} // appendPreRenderedInputs
-
-
-
-void
-FrameViewRequest::getPreRenderedInputs(int inputNb,
-                                       TimeValue time,
-                                       ViewIdx view,
-                                       const RectI& roi,
-                                       const std::list<ImagePlaneDesc>& layers,
-                                       std::map<ImagePlaneDesc, ImagePtr>* planes,
-                                       std::list<ImagePlaneDesc>* planesLeftToRendered,
-                                       Distortion2DStackPtr* distortionStack) const
-{
-    QMutexLocker k(&_imp->lock);
-    PreRenderedDataKey key;
-    key.time = time;
-    key.view = view;
-    key.inputNb = inputNb;
-
-    PreRenderedDataMap::const_iterator foundData = _imp->inputImages.find(key);
-    if (foundData == _imp->inputImages.end()) {
-        *planesLeftToRendered = layers;
-        return;
-    }
-
-    for (std::list<ImagePlaneDesc>::const_iterator it = layers.begin(); it != layers.end(); ++it) {
-
-        bool isColorPlane = it->isColorPlane();
-
-        std::map<ImagePlaneDesc, ImagePtr>::const_iterator foundImage = foundData->second.planes.end();
-        for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it2 = foundData->second.planes.begin(); it2 != foundData->second.planes.end(); ++it2) {
-            if (it2->first.isColorPlane() && isColorPlane) {
-                foundImage = it2;
-                break;
-            } else if (*it == it2->first) {
-                foundImage = it2;
-                break;
-            }
-        }
-        if (foundImage != foundData->second.planes.end()) {
-            if (foundImage->second->getBounds().contains(roi)) {
-                planes->insert(*foundImage);
-                continue;
-            }
-        }
-        planesLeftToRendered->push_back(*it);
-    }
-
-    if (foundData->second.distortion) {
-        *distortionStack = foundData->second.distortion;
-    }
-
-} // getPreRenderedInputs
-
-
-void
-FrameViewRequest::clearPreRenderedInputs()
-{
-
-    QMutexLocker k(&_imp->lock);
-    _imp->inputImages.clear();
-} // clearPreRenderedInputs
 
 RectD
 FrameViewRequest::getCurrentRoI() const

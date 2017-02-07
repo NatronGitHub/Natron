@@ -753,7 +753,7 @@ Project::initializeKnobs()
                 const Format& f = appFormats[i];
                 QString formatStr = ProjectPrivate::generateStringFromFormat(f);
                 if ( (f.width() == 1920) && (f.height() == 1080) && (f.getPixelAspectRatio() == 1) ) {
-                    _imp->formatKnob->setDefaultValue(i);
+                    param->setDefaultValue(i);
                 }
                 entries.push_back( ChoiceOption(formatStr.toStdString(),"", "") );
                 _imp->builtinFormats.push_back(f);
@@ -859,7 +859,7 @@ Project::initializeKnobs()
         param->setAsStringList(true);
         std::list<std::string> defaultViews;
         defaultViews.push_back("Main");
-        std::string encodedDefaultViews = _imp->viewsList->encodeToKnobTableFormatSingleCol(defaultViews);
+        std::string encodedDefaultViews = param->encodeToKnobTableFormatSingleCol(defaultViews);
         param->setDefaultValue(encodedDefaultViews);
         viewsPage->addKnob(param);
         _imp->viewsList = param;

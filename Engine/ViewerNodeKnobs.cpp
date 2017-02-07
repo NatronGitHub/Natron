@@ -548,8 +548,7 @@ ViewerNode::initializeKnobs()
 
 
 
-    KnobPagePtr playerToolbarPage = createKnob<KnobPage>("PlayerPage");
-    playerToolbarPage->setLabel(tr(kViewerNodeParamPlayerToolBarPage));
+    KnobPagePtr playerToolbarPage = createKnob<KnobPage>(kViewerNodeParamPlayerToolBarPage);
     playerToolbarPage->setSecret(true);
     {
         KnobButtonPtr param = createKnob<KnobButton>(kViewerNodeParamSetInPoint);

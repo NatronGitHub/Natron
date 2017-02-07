@@ -194,10 +194,12 @@ public:
 
 
     /**
-     * @brief Return the image plane to render
+     * @brief Return the image plane to render.
+     * This is the final image rendered.
      **/
     ImagePtr getImagePlane() const;
     void setImagePlane(const ImagePtr& image);
+
 
     /**
      * @brief Get the cache policy for this frame/view
@@ -210,34 +212,6 @@ public:
      **/
     EffectInstancePtr getRenderClone() const;
 
-    /**
-     * @brief When an input image of this request is rendered, we hold a pointer to it in this object
-     * until the image of this object's frame/view has been rendered.
-     **/
-    void appendPreRenderedInputs(int inputNb,
-                                 TimeValue time,
-                                 ViewIdx view,
-                                 const std::map<ImagePlaneDesc, ImagePtr>& planes,
-                                 const Distortion2DStackPtr& distortionStack);
-
-
-    /**
-     * @brief Get results that were previously appended in appendPreRenderedInputs
-     **/
-    void getPreRenderedInputs(int inputNb,
-                              TimeValue time,
-                              ViewIdx view,
-                              const RectI& roi,
-                              const std::list<ImagePlaneDesc>& layers,
-                              std::map<ImagePlaneDesc, ImagePtr>* planes,
-                              std::list<ImagePlaneDesc>* planesLeftToRendered,
-                              Distortion2DStackPtr* distortionStack) const;
-
-    /**
-     * @brief Clear any data held by a call to appendPreRenderedInputs.
-     * If images are backed in the cache they will not be destroyed yet, otherwise they will be deleted.
-     **/
-    void clearPreRenderedInputs();
 
     /**
      * @brief Add a new dependency to this frame/view. This frame/view will not be able to render until all dependencies will be rendered.

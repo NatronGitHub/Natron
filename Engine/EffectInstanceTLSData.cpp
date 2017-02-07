@@ -88,6 +88,25 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
     _imp->actionsArgsStack.push_back(args);
 }
 
+void
+EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+                                            const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
+{
+    RenderActionTLSDataPtr args(new RenderActionTLSData);
+    args->time = time;
+    args->view = view;
+    args->scale = scale;
+    args->outputPlanes = outputPlanes;
+#ifdef DEBUG
+    args->canSetValue = false;
+    if (!_imp->actionsArgsStack.empty()) {
+        qDebug() << "The render action cannot be caller recursively, this is a bug!";
+    }
+#endif
+    _imp->actionsArgsStack.push_back(args);
+    
+}
+
 
 void
 EffectInstanceTLSData::popArgs()
@@ -128,6 +147,36 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
     if (scale) {
         *scale = args->scale;
     }
+    return true;
+}
+
+
+bool
+EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
+                                                  std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
+{
+    if (_imp->actionsArgsStack.empty()) {
+        return false;
+    }
+    const RenderActionTLSData* args = dynamic_cast<const RenderActionTLSData*>(_imp->actionsArgsStack.back().get());
+    if (!args) {
+        return false;
+    }
+
+    if (time) {
+        *time = args->time;
+    }
+    if (view) {
+        *view = args->view;
+    }
+    if (scale) {
+        *scale = args->scale;
+    }
+
+    if (outputPlanes) {
+        *outputPlanes = args->outputPlanes;
+    }
+
     return true;
 }
 

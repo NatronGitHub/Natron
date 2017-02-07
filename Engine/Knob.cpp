@@ -4438,10 +4438,12 @@ KnobHolder::addKnob(const KnobIPtr& k)
 {
     {
         QMutexLocker kk(&_imp->knobsMutex);
-        for (KnobsVec::iterator it = _imp->knobs.begin(); it != _imp->knobs.end(); ++it) {
-            if (*it == k) {
+        {
+            std::map<std::string, KnobIWPtr>::iterator found = _imp->knobsOrdered.find(k->getName());
+            if (found != _imp->knobsOrdered.end()) {
                 return;
             }
+            _imp->knobsOrdered[k->getName()] = k;
         }
         _imp->knobs.push_back(k);
     }
@@ -5268,7 +5270,7 @@ KnobHolder::initializeKnobsPublic()
         initializeKnobs();
     } else {
         // For a clone, just make a shallow copy of the main instance knobs
-        const KnobsVec& mainInstanceKnobs = _imp->mainInstance->getKnobs();
+        KnobsVec mainInstanceKnobs = _imp->mainInstance->getKnobs_mt_safe();
         for (KnobsVec::const_iterator it = mainInstanceKnobs.begin(); it != mainInstanceKnobs.end(); ++it) {
             (void)appPTR->getKnobFactory().createKnob((*it)->typeName(), thisShared, (*it)->getName());
         }

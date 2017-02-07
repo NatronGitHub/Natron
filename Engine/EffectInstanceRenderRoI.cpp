@@ -770,7 +770,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 } // allocateRenderBackendStorageForRenderRects
 
 ActionRetCodeEnum
-EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& requestData,
+EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
                                                      const RenderScale& combinedScale,
                                                      const std::list<RectToRender>& renderRects,
                                                      const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes)
@@ -850,7 +850,7 @@ EffectInstance::Implementation::launchInternalRender(const FrameViewRequestPtr& 
     }
     if (renderRetCode == eActionStatusOK) {
 
-        renderRetCode = renderForClone(requestData, glContext, glContextData, combinedScale, renderRects, producedImagePlanes);
+        renderRetCode = launchPluginRenderAndHostFrameThreading(requestData, glContext, glContextData, combinedScale, renderRects, producedImagePlanes);
 
         if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
             firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
@@ -1332,7 +1332,7 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
             if (isFailureRetCode(renderRetCode)) {
                 break;
             }
-            renderRetCode = _imp->launchInternalRender(requestData, mappedCombinedScale, renderRects, producedImagePlanes);
+            renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, renderRects, producedImagePlanes);
             if (isFailureRetCode(renderRetCode)) {
                 break;
             }
@@ -1389,15 +1389,15 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::renderForClone(const FrameViewRequestPtr& requestData,
-                                               const OSGLContextPtr& glContext,
-                                               const EffectOpenGLContextDataPtr& glContextData,
-                                               const RenderScale& combinedScale,
-                                               const std::list<RectToRender>& renderRects,
-                                               const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes)
+EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
+                                                                        const OSGLContextPtr& glContext,
+                                                                        const EffectOpenGLContextDataPtr& glContextData,
+                                                                        const RenderScale& combinedScale,
+                                                                        const std::list<RectToRender>& renderRects,
+                                                                        const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes)
 {
     assert( !renderRects.empty() );
-
+    
     // Notify the gui we're rendering
     NotifyRenderingStarted_RAII renderingNotifier(_publicInterface->getNode().get());
 
@@ -1531,6 +1531,6 @@ EffectInstance::Implementation::renderForClone(const FrameViewRequestPtr& reques
     }
     return eActionStatusOK;
     
-} // renderForClone
+} // launchPluginRenderAndHostFrameThreading
 
 NATRON_NAMESPACE_EXIT;

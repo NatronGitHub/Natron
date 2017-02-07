@@ -85,6 +85,25 @@ public:
 
 };
 
+class RenderActionTLSData : public GenericActionTLSArgs
+{
+public:
+
+    RenderActionTLSData()
+    : GenericActionTLSArgs()
+    , outputPlanes()
+    {
+
+    }
+
+    virtual ~RenderActionTLSData() OVERRIDE {}
+
+    // For each plane to render, the pointers to the internal images used during render: this is used when calling
+    // clipGetImage on the output clip.
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
+
+};
+
 
 //these are per-node thread-local data
 struct EffectInstanceTLSDataPrivate;
@@ -108,6 +127,12 @@ public:
                         );
 
     /**
+     * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
+     **/
+    void pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+                              const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes);
+
+    /**
      * @brief Pop the current action TLS. This call must match a call to one of the push functions above.
      * The push/pop functions should be encapsulated in a RAII style class to ensure the TLS is correctly popped
      * in all cases.
@@ -127,6 +152,12 @@ public:
      * between a push/pop bracket.
      **/
     bool getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const;
+
+    /**
+     * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
+     **/
+    bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
+                                    std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const;
 
     /**
      * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
@@ -176,6 +207,25 @@ public:
 
 };
 
+class RenderActionArgsSetter_RAII
+{
+    EffectInstanceTLSDataPtr tls;
+public:
+
+    RenderActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
+                                TimeValue time, ViewIdx view, const RenderScale& scale,
+                                const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
+    : tls(tls)
+    {
+        tls->pushRenderActionArgs(time, view, scale, outputPlanes);
+    }
+
+    ~RenderActionArgsSetter_RAII()
+    {
+        tls->popArgs();
+    }
+    
+};
 
 class SetCurrentFrameViewRequest_RAII
 {

@@ -242,12 +242,13 @@ EffectInstance::findPluginFormatKnobs()
 void
 EffectInstance::findRightClickMenuKnob(const KnobsVec& knobs)
 {
+    NodePtr node = getNode();
     for (std::size_t i = 0; i < knobs.size(); ++i) {
         if (knobs[i]->getName() == kNatronOfxParamRightClickMenu) {
             KnobIPtr rightClickKnob = knobs[i];
             KnobChoicePtr isChoice = toKnobChoice(rightClickKnob);
             if (isChoice) {
-                QObject::connect( isChoice.get(), SIGNAL(populated()), this, SIGNAL(rightClickMenuKnobPopulated()) );
+                QObject::connect( isChoice.get(), SIGNAL(populated()), node.get(), SIGNAL(rightClickMenuKnobPopulated()) );
             }
             break;
         }

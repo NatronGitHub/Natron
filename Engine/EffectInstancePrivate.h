@@ -514,19 +514,19 @@ public:
                                                                  std::map<ImagePlaneDesc, ImagePtr> *producedPlanes,
                                                                  std::list<RectToRender>* renderRects);
 
-    ActionRetCodeEnum launchInternalRender(const FrameViewRequestPtr& requestData,
-                                           const RenderScale& combinedScale,
-                                           const std::list<RectToRender>& renderRects,
-                                           const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+    ActionRetCodeEnum launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
+                                                      const RenderScale& combinedScale,
+                                                      const std::list<RectToRender>& renderRects,
+                                                      const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
 
 
-    ActionRetCodeEnum renderForClone(const FrameViewRequestPtr& requestData,
-                                     const OSGLContextPtr& glContext,
-                                     const EffectOpenGLContextDataPtr& glContextData,
-                                     const RenderScale& combinedScale,
-                                     const std::list<RectToRender>& renderRects,
-                                     const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
-
+    ActionRetCodeEnum launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
+                                                              const OSGLContextPtr& glContext,
+                                                              const EffectOpenGLContextDataPtr& glContextData,
+                                                              const RenderScale& combinedScale,
+                                                              const std::list<RectToRender>& renderRects,
+                                                              const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes);
+    
     struct TiledRenderingFunctorArgs
     {
         FrameViewRequestPtr requestData;

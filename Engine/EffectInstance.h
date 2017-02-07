@@ -223,22 +223,6 @@ NATRON_NAMESPACE_ENTER;
 #define kNodeParamProcessAllLayersHint "When checked all planes in input will be processed and output to the same plane as in input. It is useful for example to apply a Transform effect on all planes."
 
 
-struct PlaneToRender
-{
-    // Points to the image composed of mono channel tiles stored with mmap 
-    ImagePtr cacheImage;
-
-    // Points to a temporary image that the plug-in will render
-    ImagePtr tmpImage;
-
-    PlaneToRender()
-    : cacheImage()
-    , tmpImage()
-    {
-    }
-};
-
-
 /**
  * @brief This is the base class for visual effects.
  **/
@@ -1206,7 +1190,8 @@ public:
      * - Check if the node is identity, if so it recurses on the identity input
      * - Check if this node can render any requested plane to render if not recurses on pass-through input
      * - Check if this node has a transform, if so recurses on the distorsion input
-     * - Check if the image is cached
+     * - Check if the image is cached, if so do not continue
+     * - Recurses on all frames needed on inputs.
      **/
     ActionRetCodeEnum requestRender(TimeValue time,
                                     ViewIdx view,
@@ -1218,9 +1203,9 @@ public:
                                     FrameViewRequestPtr* createdRequest);
 
     /**
-     * @brief Function that actually render the planes given by planesToRender. In output, the planes field in the results struct
-     * will be filled with the actual image planes pointers.
-     * This function must be called after preRender and the planesToRender argument must be the object returned by preRender.
+     * @brief Function that actually render a request. In output, the image corresponding to the request
+     * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
+     * This function must be called on the FrameViewRequest object returned by requestRender()
      **/
     ActionRetCodeEnum launchRender(const FrameViewRequestPtr& requestData);
 
@@ -1725,9 +1710,6 @@ public:
      * By default the OpenFX OpenGL render suite cannot support concurrent OpenGL renders, but version 2 specified by natron allows to do so.
      **/
     virtual bool supportsConcurrentOpenGLRenders() const { return true; }
-
-
-    void clearRenderInstances();
 
 
     /**

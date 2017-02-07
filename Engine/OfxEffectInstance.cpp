@@ -1609,17 +1609,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
-    bool multiPlanar = isMultiPlanar();
     std::list<std::string> ofxPlanes;
+
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanesMap;
     for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
-        if (!multiPlanar) {
-            // When not multi-planar, the components of the image will be the colorplane
-            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->second->getLayer()));
-        } else {
-            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
-        }
-
+        ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
+        outputPlanesMap[it->first] = it->second;
     }
 
     {
@@ -1631,12 +1627,9 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         TreeRenderPtr render = getCurrentRender();
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale
-#ifdef DEBUG
-                                                  , /*canSetValue*/ false
-                                                  , /*canBeCalledRecursively*/ false
-#endif
-                                                  );
+
+
+        RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale, outputPlanesMap);
         
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
         

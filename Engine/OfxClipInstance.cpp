@@ -914,26 +914,20 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     if (!effectTLS) {
         return false;
     }
-    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
-
     TimeValue currentActionTime;
     ViewIdx currentActionView;
     RenderScale currentActionScale;
-    bool gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale);
-    assert(gotTLS);
-    if (!gotTLS) {
-        // If there's no tls object this is a bug in Natron
-        return false;
-    }
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
+    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &outputPlanes);
 
 
     // Get the current action arguments. The action must be the render action, otherwise it fails.
     FrameViewRequestPtr requestData = effectTLS->getCurrentFrameViewRequest();
-    if (!requestData) {
+    if (!gotTLS || !requestData) {
+        assert(false);
         std::cerr << effect->getScriptName_mt_safe() << ": clipGetImage on the output clip may only be called during the render action" << std::endl;
         return false;
     }
-
 
     // Figure out the plane requested
     ImagePlaneDesc plane;
@@ -964,7 +958,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     // Find an image plane already allocated, if not create it.
     ImagePtr image;
-    for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = outputPlanes.begin(); it != outputPlanes.end(); ++it) {
         if (it->first.getPlaneID() == plane.getPlaneID()) {
             image = it->second;
             break;

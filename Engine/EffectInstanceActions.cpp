@@ -1325,14 +1325,21 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     }
 
 
+    // Since the frames needed results are part of the computation of the hash itself, only cache it internally if we got a hash.
+    // Otherwise this is cached in the hash computation itself.
     U64 hash = 0;
     // Get a hash to cache the results
     {
-        ComputeHashArgs hashArgs;
-        hashArgs.time = time;
-        hashArgs.view = view;
-        hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-        hash = computeHash(hashArgs);
+        HashableObject::FindHashArgs findArgs;
+        findArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
+        findArgs.time = time;
+        findArgs.view = view;
+        if (!findCachedHash(findArgs, &hash)) {
+            if (_imp->renderData) {
+                // We might have it already if this is a render clone
+                _imp->renderData->getFrameViewHash(time, view, &hash);
+            }
+        }
     }
     NodePtr thisNode = getNode();
 
@@ -1660,9 +1667,6 @@ EffectInstance::onKnobValueChanged_public(const KnobIPtr& k,
     ///Refresh the dynamic properties that can be changed during the instanceChanged action
     refreshDynamicProperties();
 
-    // If there are any render clones, kill them as the plug-in might have changed internally
-    clearRenderInstances();
-    
     return ret;
 } // onKnobValueChanged_public
 

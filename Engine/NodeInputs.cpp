@@ -1270,9 +1270,6 @@ Node::onInputChanged(int inputNb)
     _imp->effect->onInputChanged_public(inputNb);
     _imp->inputsModified.insert(inputNb);
 
-    // If the effect has render clones, kill them as the plug-in might have changed its internal state
-    _imp->effect->clearRenderInstances();
-
 
     /*
      If this is a group, also notify the output nodes of the GroupInput node inside the Group corresponding to
