@@ -14,7 +14,7 @@
 
 - Readers and writers now only get the colorspace from the filename if it is before the extension and preceded by a delimiter
 - BilateralGuided: bug fix
-- Natron can now use plugins compiled with the DaVinci Resolve OpenFX SDK (which assumes that the host is Resolve), such as the Paul Dore plugins (see https://github.com/baldavenger/).
+- Natron can now use plugins compiled with the DaVinci Resolve OpenFX SDK (which assumes that the host is Resolve), such as the Paul Dore plugins (see https://github.com/baldavenger/). These plugins may require CUDA runtime library to run. It can be found in the Resolve installation. On macOS, execute `cp "/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Libraries/libcudart.dylib /Applications/Natron.app/Contents/Frameworks/libcudart.7.5.dylib`
 
 
 ## Version 2.2.3
