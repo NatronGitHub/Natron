@@ -44,8 +44,10 @@ NATRON_NAMESPACE_ENTER;
 AppTLS::AppTLS()
     : _objectMutex()
     , _object( new GLobalTLSObject() )
+#ifndef NATRON_TLS_DISABLE_COPY
     , _spawnsMutex()
     , _spawns()
+#endif
 {
 }
 
@@ -65,19 +67,7 @@ AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
     }
 }
 
-static void
-copyAbortInfo(QThread* fromThread,
-              QThread* toThread)
-{
-    AbortableThread* fromAbortable = dynamic_cast<AbortableThread*>(fromThread);
-    AbortableThread* toAbortable = dynamic_cast<AbortableThread*>(toThread);
-
-    if (fromAbortable && toAbortable) {
-        TreeRenderPtr render = fromAbortable->getCurrentRender();
-        toAbortable->setCurrentRender(render);
-    }
-}
-
+#ifndef NATRON_TLS_DISABLE_COPY
 void
 AppTLS::copyTLS(QThread* fromThread,
                 QThread* toThread)
@@ -85,8 +75,6 @@ AppTLS::copyTLS(QThread* fromThread,
     if ( (fromThread == toThread) || !fromThread || !toThread ) {
         return;
     }
-
-    copyAbortInfo(fromThread, toThread);
 
     QReadLocker k(&_objectMutex);
     const TLSObjects& objectsCRef = _object->objects; // take a const ref, since it's a read lock
@@ -107,24 +95,19 @@ AppTLS::softCopy(QThread* fromThread,
         return;
     }
 
-    copyAbortInfo(fromThread, toThread);
-
     QWriteLocker k(&_spawnsMutex);
     _spawns[toThread] = fromThread;
 }
-
+#endif
 void
 AppTLS::cleanupTLSForThread()
 {
     QThread* curThread = QThread::currentThread();
-    AbortableThread* isAbortableThread = dynamic_cast<AbortableThread*>(curThread);
 
-    if (isAbortableThread) {
-        isAbortableThread->setCurrentRender(TreeRenderPtr());
-    }
 
     // Clean-up any thread data on the TLSHolder
 
+#ifndef NATRON_TLS_DISABLE_COPY
     // If this thread was spawned, but TLS not used, do not bother to clean-up
     {
         // Try to find first with a read-lock so we still allow other threads to run
@@ -148,6 +131,7 @@ AppTLS::cleanupTLSForThread()
             }
         }
     }
+#endif
 
     // First determine if this thread has objects to clean. Do it under
     // a read locker so we don't lock out other threads

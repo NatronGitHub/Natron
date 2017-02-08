@@ -1275,7 +1275,7 @@ TrackerNodeInteract::convertImageTosRGBOpenGLTexture(const ImagePtr& image,
     Image::CPUTileData imageData;
     {
         Image::Tile tile;
-        image->getTileAt(0, &tile);
+        image->getTileAt(0, 0, &tile);
         image->getCPUTileData(tile, &imageData);
     }
 

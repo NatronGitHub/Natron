@@ -56,6 +56,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/KnobTypes.h"
 #include "Engine/CreateNodeArgs.h"
 #include "Engine/Distortion2D.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/EffectOpenGLContextData.h"
 #include "Engine/Node.h"
 #include "Engine/NodeMetadata.h"
@@ -68,6 +69,7 @@ CLANG_DIAG_ON(unknown-pragmas)
 #include "Engine/ReadNode.h"
 #include "Engine/RotoLayer.h"
 #include "Engine/TimeLine.h"
+#include "Engine/TLSHolder.h"
 #include "Engine/Transform.h"
 #include "Engine/TreeRender.h"
 #include "Engine/UndoCommand.h"
@@ -79,18 +81,14 @@ CLANG_DIAG_ON(unknown-pragmas)
 
 NATRON_NAMESPACE_ENTER;
 
-
-struct OfxEffectInstancePrivate
+struct OfxEffectInstanceCommon
 {
+    // The internal OpenFX image effect is shared amongst clones because cloning for render
+    // is not yet standardized.
     boost::scoped_ptr<OfxImageEffectInstance> effect;
 
-
     boost::scoped_ptr<OfxOverlayInteract> overlayInteract; // ptr to the overlay interact if any
-    KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
-    KnobIntWPtr selectionRectangleStateKnob;
-    KnobStringWPtr undoRedoTextKnob;
-    KnobBoolWPtr undoRedoStateKnob;
-    ContextEnum context;
+
     struct ClipsInfo
     {
         ClipsInfo()
@@ -117,6 +115,15 @@ struct OfxEffectInstancePrivate
 
     std::vector<ClipsInfo> clipsInfos;
     OfxClipInstance* outputClip;
+
+    boost::shared_ptr<TLSHolder<EffectInstanceTLSData> > tlsData;
+
+    KnobStringWPtr cursorKnob; // secret knob for ofx effects so they can set the cursor
+    KnobIntWPtr selectionRectangleStateKnob;
+    KnobStringWPtr undoRedoTextKnob;
+    KnobBoolWPtr undoRedoStateKnob;
+    ContextEnum context;
+
     int nbSourceClips;
     SequentialPreferenceEnum sequentialPref;
     mutable QMutex supportsConcurrentGLRendersMutex;
@@ -126,9 +133,9 @@ struct OfxEffectInstancePrivate
     bool initialized; //true when the image effect instance has been created and populated
 
     /*
-       Some OpenFX do not handle render scale properly when it comes to overlay interacts.
-       We try to keep a blacklist of these and call overlay actions with render scale = 1  in that
-       case
+     Some OpenFX do not handle render scale properly when it comes to overlay interacts.
+     We try to keep a blacklist of these and call overlay actions with render scale = 1  in that
+     case
      */
     bool overlaysCanHandleRenderScale;
     bool supportsMultipleClipPARs;
@@ -136,69 +143,77 @@ struct OfxEffectInstancePrivate
     bool doesTemporalAccess;
     bool multiplanar;
 
+    OfxEffectInstanceCommon()
+    : effect()
+    , overlayInteract()
+    , clipsInfos()
+    , outputClip(0)
+    , tlsData(new TLSHolder<EffectInstanceTLSData>())
+    , cursorKnob()
+    , selectionRectangleStateKnob()
+    , undoRedoTextKnob()
+    , undoRedoStateKnob()
+    , context(eContextNone)
+    , nbSourceClips(0)
+    , sequentialPref(eSequentialPreferenceNotSequential)
+    , supportsConcurrentGLRendersMutex()
+    , supportsConcurrentGLRenders(false)
+    , isOutput(false)
+    , penDown(false)
+    , initialized(false)
+    , overlaysCanHandleRenderScale(true)
+    , supportsMultipleClipPARs(false)
+    , supportsMultipleClipDepths(false)
+    , doesTemporalAccess(false)
+    , multiplanar(false)
+    {
+
+    }
+};
+
+struct OfxEffectInstancePrivate
+{
+
+    boost::shared_ptr<OfxEffectInstanceCommon> common;
+
     OfxEffectInstancePrivate()
-        : effect()
-        , overlayInteract()
-        , cursorKnob()
-        , selectionRectangleStateKnob()
-        , undoRedoTextKnob()
-        , undoRedoStateKnob()
-        , context(eContextNone)
-        , clipsInfos()
-        , outputClip(0)
-        , nbSourceClips(0)
-        , sequentialPref(eSequentialPreferenceNotSequential)
-        , supportsConcurrentGLRendersMutex()
-        , supportsConcurrentGLRenders(false)
-        , isOutput(false)
-        , penDown(false)
-        , initialized(false)
-        , overlaysCanHandleRenderScale(true)
-        , supportsMultipleClipPARs(false)
-        , supportsMultipleClipDepths(false)
-        , doesTemporalAccess(false)
-        , multiplanar(false)
+    : common()
     {
     }
 
-    OfxEffectInstancePrivate(const OfxEffectInstancePrivate& other)
-        : effect()
-        , overlayInteract()
-        , context(other.context)
-        , clipsInfos(other.clipsInfos)
-        , outputClip(other.outputClip)
-        , nbSourceClips(other.nbSourceClips)
-        , sequentialPref(other.sequentialPref)
-        , supportsConcurrentGLRendersMutex()
-        , supportsConcurrentGLRenders(other.supportsConcurrentGLRenders)
-        , isOutput(other.isOutput)
-        , penDown(other.penDown)
-        , initialized(other.initialized)
-        , overlaysCanHandleRenderScale(other.overlaysCanHandleRenderScale)
-        , supportsMultipleClipPARs(other.supportsMultipleClipPARs)
-        , supportsMultipleClipDepths(other.supportsMultipleClipDepths)
-        , doesTemporalAccess(other.doesTemporalAccess)
-        , multiplanar(other.multiplanar)
-    {
-    }
 
 };
 
+
+
+ThreadIsActionCaller_RAII::ThreadIsActionCaller_RAII(const OfxEffectInstancePtr& effect)
+{
+    appPTR->setOFXLastActionCaller_TLS(effect);
+}
+
+ThreadIsActionCaller_RAII::~ThreadIsActionCaller_RAII()
+{
+    appPTR->setOFXLastActionCaller_TLS(OfxEffectInstancePtr());
+}
+
+
 OfxEffectInstance::OfxEffectInstance(const NodePtr& node)
-    : AbstractOfxEffectInstance(node)
-    , _imp( new OfxEffectInstancePrivate() )
+: AbstractOfxEffectInstance(node)
+, _imp(new OfxEffectInstancePrivate)
 {
-    QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
-}
-
-OfxEffectInstance::OfxEffectInstance(const OfxEffectInstance& other)
-    : AbstractOfxEffectInstance(other)
-    , _imp( new OfxEffectInstancePrivate(*other._imp) )
-{
+    _imp->common.reset(new OfxEffectInstanceCommon);
     QObject::connect( this, SIGNAL(syncPrivateDataRequested()), this, SLOT(onSyncPrivateDataRequested()) );
 }
 
 
+OfxEffectInstance::OfxEffectInstance(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: AbstractOfxEffectInstance(mainInstance, render)
+, _imp(new OfxEffectInstancePrivate)
+{
+    OfxEffectInstance* mainEffect = dynamic_cast<OfxEffectInstance*>(mainInstance.get());
+    assert(mainEffect);
+    _imp->common = mainEffect->_imp->common;
+}
 
 void
 OfxEffectInstance::describePlugin()
@@ -215,13 +230,13 @@ OfxEffectInstance::describePlugin()
     }
 
     // Check if we already called describe then describeInContext.
-    OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&_imp->context);
+    OFX::Host::ImageEffect::Descriptor* desc = natronPlugin->getOfxDesc(&_imp->common->context);
 
     if (!desc) {
         // Call the actions
         try {
             //  Should this method be in AppManager?
-            desc = appPTR->getPluginContextAndDescribe(ofxPlugin, &_imp->context);
+            desc = appPTR->getPluginContextAndDescribe(ofxPlugin, &_imp->common->context);
         } catch (const std::exception& e) {
             std::string message = tr("Failed to create an instance of %1:").arg(QString::fromUtf8(natronPlugin->getPluginID().c_str())).toStdString()
             + '\n' + e.what();
@@ -229,86 +244,86 @@ OfxEffectInstance::describePlugin()
         }
 
         assert(desc);
-        natronPlugin->setOfxDesc(desc, _imp->context);
+        natronPlugin->setOfxDesc(desc, _imp->common->context);
 
     }
 
-    assert(ofxPlugin && desc && _imp->context != eContextNone);
+    assert(ofxPlugin && desc && _imp->common->context != eContextNone);
 
-    if (_imp->context == eContextWriter) {
-        _imp->isOutput = true;
+    if (_imp->common->context == eContextWriter) {
+        _imp->common->isOutput = true;
     }
 
 
 
-    _imp->effect.reset( new OfxImageEffectInstance(ofxPlugin, *desc, mapContextToString(_imp->context), false) );
-    assert(_imp->effect);
+    _imp->common->effect.reset( new OfxImageEffectInstance(ofxPlugin, *desc, mapContextToString(_imp->common->context), false) );
+    assert(_imp->common->effect);
 
     OfxEffectInstancePtr thisShared = boost::dynamic_pointer_cast<OfxEffectInstance>( shared_from_this() );
-    _imp->effect->setOfxEffectInstance(thisShared);
+    _imp->common->effect->setOfxEffectInstance(thisShared);
 
     OfxEffectInstance::MappedInputV clips = inputClipsCopyWithoutOutput();
-    _imp->nbSourceClips = (int)clips.size();
+    _imp->common->nbSourceClips = (int)clips.size();
 
-    _imp->clipsInfos.resize( clips.size() );
+    _imp->common->clipsInfos.resize( clips.size() );
     for (unsigned i = 0; i < clips.size(); ++i) {
-        OfxEffectInstancePrivate::ClipsInfo info;
+        OfxEffectInstanceCommon::ClipsInfo info;
         info.optional = clips[i]->isOptional();
         info.mask = clips[i]->isMask();
         info.clip = NULL;
         // label, hint, visible are set below
-        _imp->clipsInfos[i] = info;
+        _imp->common->clipsInfos[i] = info;
     }
 
-    _imp->supportsMultipleClipPARs = _imp->effect->supportsMultipleClipPARs();
-    _imp->supportsMultipleClipDepths = _imp->effect->supportsMultipleClipDepths();
-    _imp->doesTemporalAccess = _imp->effect->temporalAccess();
-    _imp->multiplanar = _imp->effect->isMultiPlanar();
-    int sequential = _imp->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
+    _imp->common->supportsMultipleClipPARs = _imp->common->effect->supportsMultipleClipPARs();
+    _imp->common->supportsMultipleClipDepths = _imp->common->effect->supportsMultipleClipDepths();
+    _imp->common->doesTemporalAccess = _imp->common->effect->temporalAccess();
+    _imp->common->multiplanar = _imp->common->effect->isMultiPlanar();
+    int sequential = _imp->common->effect->getPlugin()->getDescriptor().getProps().getIntProperty(kOfxImageEffectInstancePropSequentialRender);
     switch (sequential) {
         case 0:
-            _imp->sequentialPref = eSequentialPreferenceNotSequential;
+            _imp->common->sequentialPref = eSequentialPreferenceNotSequential;
             break;
         case 1:
-            _imp->sequentialPref = eSequentialPreferenceOnlySequential;
+            _imp->common->sequentialPref = eSequentialPreferenceOnlySequential;
             break;
         case 2:
-            _imp->sequentialPref = eSequentialPreferencePreferSequential;
+            _imp->common->sequentialPref = eSequentialPreferencePreferSequential;
             break;
         default:
-            _imp->sequentialPref =  eSequentialPreferenceNotSequential;
+            _imp->common->sequentialPref =  eSequentialPreferenceNotSequential;
             break;
     }
 
     ///Create clips & parameters
-    OfxStatus stat = _imp->effect->populate();
+    OfxStatus stat = _imp->common->effect->populate();
     if (stat != kOfxStatOK) {
         throw std::runtime_error("Failed to create parameters and clips");
     }
 
     for (unsigned i = 0; i < clips.size(); ++i) {
-        _imp->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip( clips[i]->getName() ) );
-        _imp->clipsInfos[i].label = _imp->clipsInfos[i].clip->getLabel();
-        _imp->clipsInfos[i].hint = _imp->clipsInfos[i].clip->getHint();
-        _imp->clipsInfos[i].visible = !_imp->clipsInfos[i].clip->isSecret();
-        _imp->clipsInfos[i].canReceiveDistortion = clips[i]->canDistort();
-        _imp->clipsInfos[i].canReceiveDeprecatedTransform3x3 = clips[i]->canTransform();
+        _imp->common->clipsInfos[i].clip = dynamic_cast<OfxClipInstance*>( _imp->common->effect->getClip( clips[i]->getName() ) );
+        _imp->common->clipsInfos[i].label = _imp->common->clipsInfos[i].clip->getLabel();
+        _imp->common->clipsInfos[i].hint = _imp->common->clipsInfos[i].clip->getHint();
+        _imp->common->clipsInfos[i].visible = !_imp->common->clipsInfos[i].clip->isSecret();
+        _imp->common->clipsInfos[i].canReceiveDistortion = clips[i]->canDistort();
+        _imp->common->clipsInfos[i].canReceiveDeprecatedTransform3x3 = clips[i]->canTransform();
 
         // An effect that supports the distortion suite should not supports also the old transformation suite: this is obsolete.
-        assert(!_imp->clipsInfos[i].canReceiveDistortion || !_imp->clipsInfos[i].canReceiveDeprecatedTransform3x3);
-        assert(_imp->clipsInfos[i].clip);
+        assert(!_imp->common->clipsInfos[i].canReceiveDistortion || !_imp->common->clipsInfos[i].canReceiveDeprecatedTransform3x3);
+        assert(_imp->common->clipsInfos[i].clip);
     }
 
-    _imp->outputClip = dynamic_cast<OfxClipInstance*>( _imp->effect->getClip(kOfxImageEffectOutputClipName) );
-    assert(_imp->outputClip);
+    _imp->common->outputClip = dynamic_cast<OfxClipInstance*>( _imp->common->effect->getClip(kOfxImageEffectOutputClipName) );
+    assert(_imp->common->outputClip);
 
-    _imp->effect->addParamsToTheirParents();
+    _imp->common->effect->addParamsToTheirParents();
 
     {
         KnobIPtr foundCursorKnob = getKnobByName(kNatronOfxParamCursorName);
         if (foundCursorKnob) {
             KnobStringPtr isStringKnob = toKnobString(foundCursorKnob);
-            _imp->cursorKnob = isStringKnob;
+            _imp->common->cursorKnob = isStringKnob;
         }
     }
 
@@ -317,29 +332,29 @@ OfxEffectInstance::describePlugin()
         KnobIPtr foundSelKnob = getKnobByName(kNatronOfxImageEffectSelectionRectangle);
         if (foundSelKnob) {
             KnobIntPtr isIntKnob = toKnobInt(foundSelKnob);
-            _imp->selectionRectangleStateKnob = isIntKnob;
+            _imp->common->selectionRectangleStateKnob = isIntKnob;
         }
     }
     {
         KnobIPtr foundTextKnob = getKnobByName(kNatronOfxParamUndoRedoText);
         if (foundTextKnob) {
             KnobStringPtr isStringKnob = toKnobString(foundTextKnob);
-            _imp->undoRedoTextKnob = isStringKnob;
+            _imp->common->undoRedoTextKnob = isStringKnob;
         }
     }
     {
         KnobIPtr foundUndoRedoKnob = getKnobByName(kNatronOfxParamUndoRedoState);
         if (foundUndoRedoKnob) {
             KnobBoolPtr isBool = toKnobBool(foundUndoRedoKnob);
-            _imp->undoRedoStateKnob = isBool;
+            _imp->common->undoRedoStateKnob = isBool;
         }
     }
 
 
-    int nPages = _imp->effect->getDescriptor().getProps().getDimension(kOfxPluginPropParamPageOrder);
+    int nPages = _imp->common->effect->getDescriptor().getProps().getDimension(kOfxPluginPropParamPageOrder);
     std::list<std::string> pagesOrder;
     for (int i = 0; i < nPages; ++i) {
-        const std::string& pageName = _imp->effect->getDescriptor().getProps().getStringProperty(kOfxPluginPropParamPageOrder, i);
+        const std::string& pageName = _imp->common->effect->getDescriptor().getProps().getStringProperty(kOfxPluginPropParamPageOrder, i);
         pagesOrder.push_back(pageName);
     }
     if ( !pagesOrder.empty() ) {
@@ -347,10 +362,10 @@ OfxEffectInstance::describePlugin()
     }
 
 
-    assert( _imp->effect->getPlugin() );
-    assert( _imp->effect->getPlugin()->getPluginHandle() );
-    assert( _imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin() );
-    assert(_imp->effect->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
+    assert( _imp->common->effect->getPlugin() );
+    assert( _imp->common->effect->getPlugin()->getPluginHandle() );
+    assert( _imp->common->effect->getPlugin()->getPluginHandle()->getOfxPlugin() );
+    assert(_imp->common->effect->getPlugin()->getPluginHandle()->getOfxPlugin()->mainEntry);
 
 } // describePlugin
 
@@ -359,10 +374,19 @@ void
 OfxEffectInstance::createInstanceAction()
 {
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,  TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
 
     OfxStatus stat;
-    stat = _imp->effect->createInstanceAction();
+    stat = _imp->common->effect->createInstanceAction();
 
     if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
         QString message;
@@ -380,93 +404,111 @@ OfxEffectInstance::createInstanceAction()
         }
     }
 
-    _imp->initialized = true;
+    _imp->common->initialized = true;
 
 }
 
 OfxImageEffectInstance*
 OfxEffectInstance::effectInstance()
 {
-    return _imp->effect.get();
+    return _imp->common->effect.get();
 }
 
 const OfxImageEffectInstance*
 OfxEffectInstance::effectInstance() const
 {
-    return _imp->effect.get();
+    return _imp->common->effect.get();
 }
 
 bool
 OfxEffectInstance::isInitialized() const
 {
-    return _imp->initialized;
+    return _imp->common->initialized;
 }
 
 
 OfxEffectInstance::~OfxEffectInstance()
 {
-    _imp->overlayInteract.reset();
-    if (_imp->effect) {
-        _imp->effect->destroyInstanceAction();
+    _imp->common->overlayInteract.reset();
+    if (_imp->common->effect) {
+        _imp->common->effect->destroyInstanceAction();
     }
 }
 
-EffectInstancePtr
-OfxEffectInstance::createRenderClone()
+#ifdef DEBUG
+void
+OfxEffectInstance::checkCanSetValueAndWarn()
 {
-    OfxEffectInstancePtr clone( new OfxEffectInstance(*this) );
-
-    clone->_imp->effect.reset( new OfxImageEffectInstance(*_imp->effect) );
-    assert(clone->_imp->effect);
-    clone->_imp->effect->setOfxEffectInstance(clone);
-
-    OfxStatus stat;
-    stat = clone->_imp->effect->createInstanceAction();
-
-
-    if ( (stat != kOfxStatOK) && (stat != kOfxStatReplyDefault) ) {
-        // Failed to create clone...
-        return EffectInstancePtr();
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getTLSData();
+    if (!tls) {
+        return;
     }
+    if (tls->isDuringActionThatCannotSetValue()) {
+        qDebug() << getScriptName_mt_safe().c_str() << ": setValue()/setValueAtTime() was called during an action that is not allowed to call this function.";
+    }
+}
+#endif
 
-
-    return clone;
+EffectInstanceTLSDataPtr
+OfxEffectInstance::getTLSObject() const
+{
+    return _imp->common->tlsData->getTLSData();
 }
 
+EffectInstanceTLSDataPtr
+OfxEffectInstance::getTLSObjectForThread(QThread* thread) const
+{
+    return _imp->common->tlsData->getTLSDataForThread(thread);
+}
+
+EffectInstanceTLSDataPtr
+OfxEffectInstance::getOrCreateTLSObject() const
+{
+    return _imp->common->tlsData->getOrCreateTLSData();
+}
+
+void
+OfxEffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request)
+{
+    EffectInstanceTLSDataPtr tls = getOrCreateTLSObject();
+    tls->setCurrentFrameViewRequest(request);
+}
 
 void
 OfxEffectInstance::tryInitializeOverlayInteracts()
 {
-    assert(_imp->context != eContextNone);
-    if (_imp->overlayInteract) {
+    assert(_imp->common->context != eContextNone);
+    if (_imp->common->overlayInteract) {
         // already created
         return;
     }
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     QString pluginID = QString::fromUtf8( getNode()->getPluginID().c_str() );
     /*
        Currently genarts plug-ins do not handle render scale properly for overlays
      */
     if ( pluginID.startsWith( QString::fromUtf8("com.genarts.") ) ) {
-        _imp->overlaysCanHandleRenderScale = false;
+        _imp->common->overlaysCanHandleRenderScale = false;
     }
 
     /*create overlay instance if any*/
-    assert(_imp->effect);
-    OfxPluginEntryPoint *overlayEntryPoint = _imp->effect->getOverlayInteractMainEntry();
+    assert(_imp->common->effect);
+    OfxPluginEntryPoint *overlayEntryPoint = _imp->common->effect->getOverlayInteractMainEntry();
     if (overlayEntryPoint) {
-        _imp->overlayInteract.reset( new OfxOverlayInteract(*_imp->effect, 8, true) );
+        _imp->common->overlayInteract.reset( new OfxOverlayInteract(*_imp->common->effect, 8, true) );
         double sx, sy;
         effectInstance()->getRenderScaleRecursive(sx, sy);
         RenderScale s(sx, sy);
 
 
-        _imp->overlayInteract->createInstanceAction();
+        _imp->common->overlayInteract->createInstanceAction();
 
 
         ///Fetch all parameters that are overlay slave
         std::vector<std::string> slaveParams;
-        _imp->overlayInteract->getSlaveToParam(slaveParams);
+        _imp->common->overlayInteract->getSlaveToParam(slaveParams);
         for (U32 i = 0; i < slaveParams.size(); ++i) {
             KnobIPtr param;
             const std::vector< KnobIPtr > & knobs = getKnobs();
@@ -520,31 +562,31 @@ OfxEffectInstance::tryInitializeOverlayInteracts()
 void
 OfxEffectInstance::setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor)
 {
-    if (!_imp->overlayInteract) {
+    if (!_imp->common->overlayInteract) {
         return;
     }
 
-    if (!_imp->overlayInteract->isColorPickerRequired()) {
+    if (!_imp->common->overlayInteract->isColorPickerRequired()) {
         return;
     }
     if (!hasColor) {
-        _imp->overlayInteract->setHasColorPicker(false);
+        _imp->common->overlayInteract->setHasColorPicker(false);
     } else {
         if (setColor) {
-            _imp->overlayInteract->setLastColorPickerColor(color);
+            _imp->common->overlayInteract->setLastColorPickerColor(color);
         }
-        _imp->overlayInteract->setHasColorPicker(true);
+        _imp->common->overlayInteract->setHasColorPicker(true);
     }
 
-    ignore_result(_imp->overlayInteract->redraw());
+    ignore_result(_imp->common->overlayInteract->redraw());
 }
 
 bool
 OfxEffectInstance::isOutput() const
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
 
-    return _imp->isOutput;
+    return _imp->common->isOutput;
 }
 
 bool
@@ -577,9 +619,9 @@ OfxEffectInstance::isGenerator() const
 bool
 OfxEffectInstance::isReader() const
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
 
-    return _imp->context == eContextReader;
+    return _imp->common->context == eContextReader;
 }
 
 bool
@@ -598,15 +640,15 @@ OfxEffectInstance::isVideoWriter() const
 bool
 OfxEffectInstance::isWriter() const
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
 
-    return _imp->context == eContextWriter;
+    return _imp->common->context == eContextWriter;
 }
 
 bool
 OfxEffectInstance::isGeneratorAndFilter() const
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
     const std::set<std::string> & contexts = effectInstance()->getPlugin()->getContexts();
     std::set<std::string>::const_iterator foundGenerator = contexts.find(kOfxImageEffectContextGenerator);
     std::set<std::string>::const_iterator foundGeneral = contexts.find(kOfxImageEffectContextGeneral);
@@ -802,34 +844,34 @@ AbstractOfxEffectInstance::makePluginLabel(const std::string & shortLabel,
 void
 OfxEffectInstance::onClipLabelChanged(int inputNb, const std::string& label)
 {
-    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
-    _imp->clipsInfos[inputNb].label = label;
+    assert(inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size());
+    _imp->common->clipsInfos[inputNb].label = label;
     getNode()->setInputLabel(inputNb, label);
 }
 
 void
 OfxEffectInstance::onClipHintChanged(int inputNb, const std::string& hint)
 {
-    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
-    _imp->clipsInfos[inputNb].hint = hint;
+    assert(inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size());
+    _imp->common->clipsInfos[inputNb].hint = hint;
     getNode()->setInputHint(inputNb, hint);
 }
 
 void
 OfxEffectInstance::onClipSecretChanged(int inputNb, bool isSecret)
 {
-    assert(inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size());
-    _imp->clipsInfos[inputNb].visible = !isSecret;
+    assert(inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size());
+    _imp->common->clipsInfos[inputNb].visible = !isSecret;
     getNode()->setInputVisible(inputNb, !isSecret);
 }
 
 std::string
 OfxEffectInstance::getInputLabel(int inputNb) const
 {
-    assert(_imp->context != eContextNone);
-    assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );
-    if (_imp->context != eContextReader) {
-        return _imp->clipsInfos[inputNb].clip->getShortLabel();
+    assert(_imp->common->context != eContextNone);
+    assert( inputNb >= 0 &&  inputNb < (int)_imp->common->clipsInfos.size() );
+    if (_imp->common->context != eContextReader) {
+        return _imp->common->clipsInfos[inputNb].clip->getShortLabel();
     } else {
         return NATRON_READER_INPUT_NAME;
     }
@@ -838,10 +880,10 @@ OfxEffectInstance::getInputLabel(int inputNb) const
 std::string
 OfxEffectInstance::getInputHint(int inputNb) const
 {
-    assert(_imp->context != eContextNone);
-    assert( inputNb >= 0 &&  inputNb < (int)_imp->clipsInfos.size() );
-    if (_imp->context != eContextReader) {
-        return _imp->clipsInfos[inputNb].clip->getHint();
+    assert(_imp->common->context != eContextNone);
+    assert( inputNb >= 0 &&  inputNb < (int)_imp->common->clipsInfos.size() );
+    if (_imp->common->context != eContextReader) {
+        return _imp->common->clipsInfos[inputNb].clip->getHint();
     } else {
         return NATRON_READER_INPUT_NAME;
     }
@@ -850,7 +892,7 @@ OfxEffectInstance::getInputHint(int inputNb) const
 OfxEffectInstance::MappedInputV
 OfxEffectInstance::inputClipsCopyWithoutOutput() const
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
     assert( effectInstance() );
     const std::vector<OFX::Host::ImageEffect::ClipDescriptor*> & clips = effectInstance()->getDescriptor().getClipsByOrder();
     MappedInputV copy;
@@ -867,56 +909,66 @@ OfxEffectInstance::inputClipsCopyWithoutOutput() const
 OfxClipInstance*
 OfxEffectInstance::getClipCorrespondingToInput(int inputNo) const
 {
-    assert(_imp->context != eContextNone);
-    assert( inputNo < (int)_imp->clipsInfos.size() );
+    assert(_imp->common->context != eContextNone);
+    assert( inputNo < (int)_imp->common->clipsInfos.size() );
 
-    return _imp->clipsInfos[inputNo].clip;
+    return _imp->common->clipsInfos[inputNo].clip;
 }
 
 int
 OfxEffectInstance::getMaxInputCount() const
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
 
     //const std::string & context = effectInstance()->getContext();
-    return _imp->nbSourceClips;
+    return _imp->common->nbSourceClips;
 }
 
 bool
 OfxEffectInstance::isInputOptional(int inputNb) const
 {
-    assert(_imp->context != eContextNone);
-    assert( inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size() );
+    assert(_imp->common->context != eContextNone);
+    assert( inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size() );
 
-    return _imp->clipsInfos[inputNb].optional;
+    return _imp->common->clipsInfos[inputNb].optional;
 }
 
 bool
 OfxEffectInstance::isInputMask(int inputNb) const
 {
-    assert(_imp->context != eContextNone);
-    assert( inputNb >= 0 && inputNb < (int)_imp->clipsInfos.size() );
+    assert(_imp->common->context != eContextNone);
+    assert( inputNb >= 0 && inputNb < (int)_imp->common->clipsInfos.size() );
 
-    return _imp->clipsInfos[inputNb].mask;
+    return _imp->common->clipsInfos[inputNb].mask;
 }
 
 
 void
 OfxEffectInstance::onInputChanged(int inputNo)
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
     OfxClipInstance* clip = getClipCorrespondingToInput(inputNo);
     assert(clip);
     TimeValue time(getApp()->getTimeLine()->currentFrame());
     RenderScale s(1.);
 
-    assert(_imp->effect);
+    assert(_imp->common->effect);
 
 
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
 
-    _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
-    _imp->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
-    _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
+    _imp->common->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _imp->common->effect->clipInstanceChangedAction(clip->getName(), kOfxChangeUserEdited, time, s);
+    _imp->common->effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
 }
 
@@ -998,14 +1050,25 @@ OfxEffectInstance::mapContextToString(ContextEnum ctx)
 ActionRetCodeEnum
 OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 {
-    if (!_imp->initialized || !_imp->effect) {
+    if (!_imp->common->initialized || !_imp->common->effect) {
         return eActionStatusFailed;
     }
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
+
+
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     // It has been overriden and no data is actually set on the clip, everything will be set into the
     // metadata object
-    ActionRetCodeEnum stat = _imp->effect->getClipPreferences_safe(metadata);
+    ActionRetCodeEnum stat = _imp->common->effect->getClipPreferences_safe(metadata);
     return stat;
 }
 
@@ -1013,14 +1076,25 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 void
 OfxEffectInstance::onMetadataChanged(const NodeMetadata& metadata)
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
     TimeValue time(getApp()->getTimeLine()->currentFrame());
     RenderScale s(1.);
+
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     
-    assert(_imp->effect);
-    _imp->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
-    _imp->effect->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, s);
-    _imp->effect->endInstanceChangedAction(kOfxChangeUserEdited);
+    assert(_imp->common->effect);
+    _imp->common->effect->beginInstanceChangedAction(kOfxChangeUserEdited);
+    _imp->common->effect->clipInstanceChangedAction(kOfxImageEffectOutputClipName, kOfxChangeUserEdited, time, s);
+    _imp->common->effect->endInstanceChangedAction(kOfxChangeUserEdited);
 
     
     EffectInstance::onMetadataChanged(metadata);
@@ -1030,19 +1104,29 @@ ActionRetCodeEnum
 OfxEffectInstance::getRegionOfDefinition(TimeValue time,
                                          const RenderScale & scale,
                                          ViewIdx view,
-                                         const TreeRenderNodeArgsPtr& /*render*/,
                                          RectD* rod)
 {
-    assert(_imp->context != eContextNone);
-    if (!_imp->initialized) {
+    assert(_imp->common->context != eContextNone);
+    if (!_imp->common->initialized) {
         return eActionStatusFailed;
     }
 
-    assert(_imp->effect);
+    assert(_imp->common->effect);
 
+
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+
+    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     OfxRectD ofxRod;
-    OfxStatus stat = _imp->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
+    OfxStatus stat = _imp->common->effect->getRegionOfDefinitionAction(time, scale, view, ofxRod);
     if (stat == kOfxStatFailed) {
         return eActionStatusFailed;
     }
@@ -1073,20 +1157,19 @@ void
 OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
                                                  const RenderScale & scale,
                                                  ViewIdx view,
-                                                 const TreeRenderNodeArgsPtr& /*render*/,
                                                  RectD *rod)
 {
-    assert(_imp->context != eContextNone);
-    if (!_imp->initialized) {
+    assert(_imp->common->context != eContextNone);
+    if (!_imp->common->initialized) {
         throw std::runtime_error("OfxEffectInstance not initialized");
     }
 
     OfxRectD ofxRod;
 
 
-    assert(_imp->effect);
+    assert(_imp->common->effect);
 
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
 
     // from http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetRegionOfDefinition
@@ -1098,7 +1181,17 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
 
     // the following ofxh function does the job
 
-    ofxRod = _imp->effect->calcDefaultRegionOfDefinition(time, scale, view);
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              );
+
+
+
+    ofxRod = _imp->common->effect->calcDefaultRegionOfDefinition(time, scale, view);
 
 
     rod->x1 = ofxRod.x1;
@@ -1122,12 +1215,11 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
                                         const RenderScale & scale,
                                         const RectD & renderWindow, //!< the region to be rendered in the output image, in Canonical Coordinates
                                         ViewIdx view,
-                                        const TreeRenderNodeArgsPtr& /*render*/,
                                         RoIMap* ret)
 {
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
     std::map<OFX::Host::ImageEffect::ClipInstance*, OfxRectD> inputRois;
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return eActionStatusFailed;
     }
 
@@ -1137,14 +1229,22 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
     OfxStatus stat;
 
     {
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
 
 
         OfxRectD roi;
         rectToOfxRectD(renderWindow, &roi);
 
-        assert(_imp->effect);
-        stat = _imp->effect->getRegionOfInterestAction( (OfxTime)time, scale, view,
+        assert(_imp->common->effect);
+        stat = _imp->common->effect->getRegionOfInterestAction( (OfxTime)time, scale, view,
                                                         roi, inputRois );
     }
 
@@ -1184,22 +1284,31 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
 ActionRetCodeEnum
 OfxEffectInstance::getFramesNeeded(TimeValue time,
                                    ViewIdx view,
-                                   const TreeRenderNodeArgsPtr& /*render*/,
                                    FramesNeededMap* results)
 {
-    assert(_imp->context != eContextNone);
-    if (!_imp->initialized) {
+    assert(_imp->common->context != eContextNone);
+    if (!_imp->common->initialized) {
         return eActionStatusFailed;
     }
-    assert(_imp->effect);
+    assert(_imp->common->effect);
 
     if ( isViewAware() ) {
         OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
         {
-            assert(_imp->effect);
+            assert(_imp->common->effect);
+            
+            ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
+            EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+            EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, RenderScale(1.)
+#ifdef DEBUG
+                                                      , /*canSetValue*/ false
+                                                      , /*canBeCalledRecursively*/ false
+#endif
+                                                      );
 
 
-            OfxStatus stat = _imp->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
+            OfxStatus stat = _imp->common->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
             if (stat == kOfxStatFailed) {
                 return eActionStatusFailed;
             }
@@ -1226,10 +1335,10 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
     } else {
         OFX::Host::ImageEffect::RangeMap inputRanges;
         {
-            assert(_imp->effect);
+            assert(_imp->common->effect);
 
             ///Take the preferences lock so that it cannot be modified throughout the action.
-            OfxStatus stat = _imp->effect->getFrameNeededAction( (OfxTime)time, inputRanges );
+            OfxStatus stat = _imp->common->effect->getFrameNeededAction( (OfxTime)time, inputRanges );
             if (stat == kOfxStatFailed) {
                 return eActionStatusFailed;
             }
@@ -1256,10 +1365,10 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
 } // OfxEffectInstance::getFramesNeeded
 
 ActionRetCodeEnum
-OfxEffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render, double *first, double *last)
+OfxEffectInstance::getFrameRange(double *first, double *last)
 {
-    assert(_imp->context != eContextNone);
-    if (!_imp->initialized) {
+    assert(_imp->common->context != eContextNone);
+    if (!_imp->common->initialized) {
         return eActionStatusFailed;
     }
     OfxRangeD range;
@@ -1267,22 +1376,31 @@ OfxEffectInstance::getFrameRange(const TreeRenderNodeArgsPtr& render, double *fi
     //  see http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxImageEffectActionGetTimeDomain"
     // Edit: Also add the 'writer' context as we need the getTimeDomain action to be able to find out the frame range to render.
     OfxStatus st = kOfxStatReplyDefault;
-    if ( (_imp->context == eContextGeneral) ||
-         ( _imp->context == eContextReader) ||
-         ( _imp->context == eContextWriter) ||
-         ( _imp->context == eContextGenerator) ) {
-        assert(_imp->effect);
+    if ( (_imp->common->context == eContextGeneral) ||
+         ( _imp->common->context == eContextReader) ||
+         ( _imp->common->context == eContextWriter) ||
+         ( _imp->common->context == eContextGenerator) ) {
+        assert(_imp->common->effect);
 
 
 
-        st = _imp->effect->getTimeDomainAction(range);
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,TimeValue(0), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
+        st = _imp->common->effect->getTimeDomainAction(range);
     }
     if (st == kOfxStatOK) {
         *first = range.min;
         *last = range.max;
         return eActionStatusOK;
     } else if (st == kOfxStatReplyDefault) {
-        return EffectInstance::getFrameRange(render, first, last);
+        return EffectInstance::getFrameRange(first, last);
     }
     return eActionStatusFailed;
 } // getFrameRange
@@ -1292,7 +1410,6 @@ OfxEffectInstance::isIdentity(TimeValue time,
                               const RenderScale & scale,
                               const RectI & renderWindow,
                               ViewIdx view,
-                              const TreeRenderNodeArgsPtr& /*render*/,
                               TimeValue* inputTime,
                               ViewIdx* inputView,
                               int* inputNb)
@@ -1301,11 +1418,11 @@ OfxEffectInstance::isIdentity(TimeValue time,
     *inputNb = -1;
     *inputTime = time;
 
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return eActionStatusFailed;
     }
 
-    assert(_imp->context != eContextNone);
+    assert(_imp->common->context != eContextNone);
 
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
     std::string inputclip;
@@ -1319,11 +1436,19 @@ OfxEffectInstance::isIdentity(TimeValue time,
         ofxRoI.y1 = renderWindow.bottom();
         ofxRoI.y2 = renderWindow.top();
 
-        assert(_imp->effect);
+        assert(_imp->common->effect);
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
 
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
-        OfxStatus stat = _imp->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
+        OfxStatus stat = _imp->common->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
         if (stat == kOfxStatFailed) {
             return eActionStatusFailed;
         } else if (stat == kOfxStatReplyDefault) {
@@ -1331,7 +1456,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
         }
     }
 
-    OFX::Host::ImageEffect::ClipInstance* clip = _imp->effect->getClip(inputclip);
+    OFX::Host::ImageEffect::ClipInstance* clip = _imp->common->effect->getClip(inputclip);
     if (!clip) {
         // this is a plugin-side error, don't crash
         qDebug() << "Error in OfxEffectInstance::render(): kOfxImageEffectActionIsIdentity returned an unknown clip: " << inputclip.c_str();
@@ -1392,8 +1517,7 @@ OfxEffectInstance::beginSequenceRender(double first,
                                        bool draftMode,
                                        ViewIdx view,
                                        RenderBackendTypeEnum backendType,
-                                       const EffectOpenGLContextDataPtr& glContextData,
-                                       const TreeRenderNodeArgsPtr& /*render*/)
+                                       const EffectOpenGLContextDataPtr& glContextData)
 {
 
     OfxStatus stat;
@@ -1402,6 +1526,17 @@ OfxEffectInstance::beginSequenceRender(double first,
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+        
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         stat = effectInstance()->beginRenderAction(first, last, step,
                                                    interactive, scale,
                                                    isSequentialRender, isRenderResponseToUserInteraction,
@@ -1426,8 +1561,7 @@ OfxEffectInstance::endSequenceRender(double first,
                                      bool draftMode,
                                      ViewIdx view,
                                      RenderBackendTypeEnum backendType,
-                                     const EffectOpenGLContextDataPtr& glContextData,
-                                     const TreeRenderNodeArgsPtr& /*render*/)
+                                     const EffectOpenGLContextDataPtr& glContextData)
 {
 
     OfxStatus stat;
@@ -1437,6 +1571,15 @@ OfxEffectInstance::endSequenceRender(double first,
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         stat = effectInstance()->endRenderAction(first, last, step,
                                                  interactive, scale,
@@ -1454,7 +1597,7 @@ OfxEffectInstance::endSequenceRender(double first,
 ActionRetCodeEnum
 OfxEffectInstance::render(const RenderActionArgs& args)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return eActionStatusFailed;
     }
 
@@ -1468,36 +1611,39 @@ OfxEffectInstance::render(const RenderActionArgs& args)
     int viewsCount = getApp()->getProject()->getProjectViewsCount();
     OfxStatus stat;
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
-    bool multiPlanar = isMultiPlanar();
     std::list<std::string> ofxPlanes;
+
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanesMap;
     for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin();
          it != args.outputPlanes.end(); ++it) {
-        if (!multiPlanar) {
-            // When not multi-planar, the components of the image will be the colorplane
-            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->second->getLayer()));
-        } else {
-            ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
-        }
-
+        ofxPlanes.push_back(ImagePlaneDesc::mapPlaneToOFXPlaneString(it->first));
+        outputPlanesMap[it->first] = it->second;
     }
 
     {
-        assert(_imp->effect);
+        assert(_imp->common->effect);
 
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( args.glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
-        TreeRenderPtr parentRender = args.renderArgs->getParentRender();
+        TreeRenderPtr render = getCurrentRender();
 
-        stat = _imp->effect->renderAction((OfxTime)args.time,
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+
+
+        RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale, args.roi, outputPlanesMap);
+        
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
+        stat = _imp->common->effect->renderAction((OfxTime)args.time,
                                           field,
                                           ofxRoI,
                                           args.renderScale,
-                                          parentRender->isPlayback(),
-                                          !parentRender->isPlayback(),
+                                          render->isPlayback(),
+                                          !render->isPlayback(),
                                           args.backendType == eRenderBackendTypeOpenGL,
                                           oglData,
-                                          parentRender->isDraftRender(),
+                                          render->isDraftRender(),
                                           args.view,
                                           viewsCount,
                                           ofxPlanes );
@@ -1532,13 +1678,13 @@ OfxEffectInstance::render(const RenderActionArgs& args)
 bool
 OfxEffectInstance::supportsMultipleClipPARs() const
 {
-    return _imp->supportsMultipleClipPARs;
+    return _imp->common->supportsMultipleClipPARs;
 }
 
 bool
 OfxEffectInstance::supportsMultipleClipDepths() const
 {
-    return _imp->supportsMultipleClipDepths;
+    return _imp->common->supportsMultipleClipDepths;
 }
 
 PluginOpenGLRenderSupport
@@ -1557,28 +1703,6 @@ OfxEffectInstance::getCurrentOpenGLSupport() const
     }
 }
 
-RenderSafetyEnum
-OfxEffectInstance::getCurrentRenderThreadSafety() const
-{
-    if (!_imp->effect) {
-        return eRenderSafetyUnsafe;
-    }
-    const std::string & safety = _imp->effect->getRenderThreadSafety();
-    if (safety == kOfxImageEffectRenderUnsafe) {
-        return eRenderSafetyUnsafe;
-    } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-        return  eRenderSafetyInstanceSafe;
-    } else if (safety == kOfxImageEffectRenderFullySafe) {
-        if ( _imp->effect->getHostFrameThreading() ) {
-            return eRenderSafetyFullySafeFrame;
-        } else {
-            return eRenderSafetyFullySafe;
-        }
-    } else {
-        qDebug() << "Unknown thread safety level: " << safety.c_str();
-        return eRenderSafetyUnsafe;
-    }
-}
 
 const std::string &
 OfxEffectInstance::getShortLabel() const
@@ -1595,7 +1719,7 @@ OfxEffectInstance::initializeOverlayInteract()
 bool
 OfxEffectInstance::canHandleRenderScaleForOverlays() const
 {
-    return _imp->overlaysCanHandleRenderScale;
+    return _imp->common->overlaysCanHandleRenderScale;
 }
 
 void
@@ -1603,21 +1727,30 @@ OfxEffectInstance::drawOverlay(TimeValue time,
                                const RenderScale & renderScale,
                                ViewIdx view)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ false
+#endif
+                                                  );
 
-        _imp->overlayInteract->drawAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
+        _imp->common->overlayInteract->drawAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
     }
 }
 
 void
 OfxEffectInstance::setCurrentViewportForOverlays(OverlaySupport* viewport)
 {
-    if (_imp->overlayInteract) {
-        _imp->overlayInteract->setCallingViewport(viewport);
+    if (_imp->common->overlayInteract) {
+        _imp->common->overlayInteract->setCallingViewport(viewport);
     }
 }
 
@@ -1631,10 +1764,10 @@ OfxEffectInstance::onOverlayPenDown(TimeValue time,
                                     TimeValue /*timestamp*/,
                                     PenType /*pen*/)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
 
         OfxPointD penPos;
@@ -1644,10 +1777,20 @@ OfxEffectInstance::onOverlayPenDown(TimeValue time,
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
 
-        OfxStatus stat = _imp->overlayInteract->penDownAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
+        OfxStatus stat = _imp->common->overlayInteract->penDownAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
         if (stat == kOfxStatOK) {
-            _imp->penDown = true;
+            _imp->common->penDown = true;
 
             return true;
         }
@@ -1665,10 +1808,10 @@ OfxEffectInstance::onOverlayPenMotion(TimeValue time,
                                       double pressure,
                                       TimeValue /*timestamp*/)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
 
         OfxPointD penPos;
@@ -1679,7 +1822,18 @@ OfxEffectInstance::onOverlayPenMotion(TimeValue time,
         penPosViewport.y = viewportPos.y();
         OfxStatus stat;
 
-        stat = _imp->overlayInteract->penMotionAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
+
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
+        stat = _imp->common->overlayInteract->penMotionAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
 
         if (stat == kOfxStatOK) {
             return true;
@@ -1698,10 +1852,10 @@ OfxEffectInstance::onOverlayPenUp(TimeValue time,
                                   double pressure,
                                   TimeValue /*timestamp*/)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
 
         OfxPointD penPos;
@@ -1711,9 +1865,19 @@ OfxEffectInstance::onOverlayPenUp(TimeValue time,
         penPosViewport.x = viewportPos.x();
         penPosViewport.y = viewportPos.y();
 
-        OfxStatus stat = _imp->overlayInteract->penUpAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
+        OfxStatus stat = _imp->common->overlayInteract->penUpAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, penPos, penPosViewport, pressure);
         if (stat == kOfxStatOK) {
-            _imp->penDown = false;
+            _imp->common->penDown = false;
 
             return true;
         }
@@ -1729,14 +1893,23 @@ OfxEffectInstance::onOverlayKeyDown(TimeValue time,
                                     Key key,
                                     KeyboardModifiers /*modifiers*/)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         QByteArray keyStr;
-        OfxStatus stat = _imp->overlayInteract->keyDownAction( time, renderScale, view,_imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->common->overlayInteract->keyDownAction( time, renderScale, view,_imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
             return true;
@@ -1753,15 +1926,25 @@ OfxEffectInstance::onOverlayKeyUp(TimeValue time,
                                   Key key,
                                   KeyboardModifiers /* modifiers*/)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
 
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         QByteArray keyStr;
-        OfxStatus stat = _imp->overlayInteract->keyUpAction( time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->common->overlayInteract->keyUpAction( time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
             return true;
@@ -1779,13 +1962,24 @@ OfxEffectInstance::onOverlayKeyRepeat(TimeValue time,
                                       Key key,
                                       KeyboardModifiers /*modifiers*/)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
+
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+
+                                                  );
+        
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
         QByteArray keyStr;
-        OfxStatus stat = _imp->overlayInteract->keyRepeatAction( time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
+        OfxStatus stat = _imp->common->overlayInteract->keyRepeatAction( time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0, (int)key, keyStr.data() );
 
         if (stat == kOfxStatOK) {
             return true;
@@ -1800,14 +1994,24 @@ OfxEffectInstance::onOverlayFocusGained(TimeValue time,
                                         const RenderScale & renderScale,
                                         ViewIdx view)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
 
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         OfxStatus stat;
-        stat = _imp->overlayInteract->gainFocusAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
+        stat = _imp->common->overlayInteract->gainFocusAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1821,14 +2025,25 @@ OfxEffectInstance::onOverlayFocusLost(TimeValue time,
                                       const RenderScale & renderScale,
                                       ViewIdx view)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
-    if (_imp->overlayInteract) {
+    if (_imp->common->overlayInteract) {
 
 
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ true
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+
+                                                  );
+
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         OfxStatus stat;
-        stat = _imp->overlayInteract->loseFocusAction(time, renderScale, view, _imp->overlayInteract->hasColorPicker() ? &_imp->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
+        stat = _imp->common->overlayInteract->loseFocusAction(time, renderScale, view, _imp->common->overlayInteract->hasColorPicker() ? &_imp->common->overlayInteract->getLastColorPickerColor() : /*colourPicker=*/0);
         if (stat == kOfxStatOK) {
             return true;
         }
@@ -1840,7 +2055,7 @@ OfxEffectInstance::onOverlayFocusLost(TimeValue time,
 bool
 OfxEffectInstance::hasOverlay() const
 {
-    return _imp->overlayInteract != NULL;
+    return _imp->common->overlayInteract != NULL;
 }
 
 
@@ -1921,13 +2136,13 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
                                ViewSetSpec /*view*/,
                                TimeValue time)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return false;
     }
 
     {
         // Handle cursor knob
-        KnobStringPtr cursorKnob = _imp->cursorKnob.lock();
+        KnobStringPtr cursorKnob = _imp->common->cursorKnob.lock();
         if (k == cursorKnob) {
             CursorEnum c;
             std::string cursorStr = cursorKnob->getValue();
@@ -1938,9 +2153,9 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
             }
             return true;
         }
-        KnobStringPtr undoRedoText = _imp->undoRedoTextKnob.lock();
+        KnobStringPtr undoRedoText = _imp->common->undoRedoTextKnob.lock();
         if (k == undoRedoText) {
-            KnobBoolPtr undoRedoState = _imp->undoRedoStateKnob.lock();
+            KnobBoolPtr undoRedoState = _imp->common->undoRedoStateKnob.lock();
             assert(undoRedoState);
 
             if (undoRedoState && reason == eValueChangedReasonPluginEdited) {
@@ -1954,8 +2169,20 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     std::string ofxReason = natronValueChangedReasonToOfxValueChangedReason(reason);
     assert( !ofxReason.empty() ); // crashes when resetting to defaults
     RenderScale renderScale  = getNode()->getOverlayInteractRenderScale();
+    
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, ViewIdx(0), renderScale
+#ifdef DEBUG
+                                              , /*canSetValue*/ true
+                                              , /*canBeCalledRecursively*/ true
+#endif
+                                              
+                                              );
+    
 
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     OfxStatus stat = kOfxStatOK;
     stat = effectInstance()->paramInstanceChangedAction(k->getOriginalName(), ofxReason, (OfxTime)time, renderScale);
 
@@ -1971,9 +2198,13 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
 void
 OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return;
     }
+
+    
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
 
     ///This action as all the overlay interacts actions can trigger recursive actions, such as
@@ -1986,9 +2217,11 @@ OfxEffectInstance::beginKnobsValuesChanged(ValueChangedReasonEnum reason)
 void
 OfxEffectInstance::endKnobsValuesChanged(ValueChangedReasonEnum reason)
 {
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return;
     }
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
 
 
@@ -2003,17 +2236,22 @@ void
 OfxEffectInstance::purgeCaches()
 {
 
-    if (!_imp->initialized) {
+    if (!_imp->common->initialized) {
         return;
     }
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     // The kOfxActionPurgeCaches is an action that may be passed to a plug-in instance from time to time in low memory situations. Instances recieving this action should destroy any data structures they may have and release the associated memory, they can later reconstruct this from the effect's parameter set and associated information. http://openfx.sourceforge.net/Documentation/1.3/ofxProgrammingReference.html#kOfxActionPurgeCaches
     OfxStatus stat;
     {
-        assert(_imp->effect);
+        assert(_imp->common->effect);
 
         ///Take the preferences lock so that it cannot be modified throughout the action.
-        assert(_imp->effect);
-        stat =  _imp->effect->purgeCachesAction();
+        assert(_imp->common->effect);
+        
+        
+        stat =  _imp->common->effect->purgeCachesAction();
 
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     }
@@ -2025,7 +2263,7 @@ OfxEffectInstance::purgeCaches()
         ///getClipPreferences() so we don't take the clips preferences lock for read here otherwise we would
         ///create a deadlock. This code then assumes that the instance changed action of the plug-in doesn't require
         ///the clip preferences to stay the same throughout the action.
-        stat =  _imp->effect->syncPrivateDataAction();
+        stat =  _imp->common->effect->syncPrivateDataAction();
         assert(stat == kOfxStatOK || stat == kOfxStatReplyDefault);
     }
 
@@ -2087,7 +2325,7 @@ OfxEffectInstance::supportsMultiResolution() const
 void
 OfxEffectInstance::beginEditKnobs()
 {
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     effectInstance()->beginInstanceEditAction();
 }
 
@@ -2109,7 +2347,7 @@ OfxEffectInstance::syncPrivateData_other_thread()
 void
 OfxEffectInstance::onSyncPrivateDataRequested()
 {
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     effectInstance()->syncPrivateDataAction();
 }
 
@@ -2158,7 +2396,6 @@ OfxEffectInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) co
 ActionRetCodeEnum
 OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
                                               ViewIdx view,
-                                              const TreeRenderNodeArgsPtr& /*renderArgs*/,
                                               std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                               std::list<ImagePlaneDesc>* layersProduced,
                                               TimeValue* passThroughTime,
@@ -2167,8 +2404,16 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
 {
 
 
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
 
-
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+    
     OFX::Host::ImageEffect::ComponentsMap compMap;
     OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
     OfxTime ptTime;
@@ -2220,7 +2465,7 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
 bool
 OfxEffectInstance::isMultiPlanar() const
 {
-    return _imp->multiplanar;
+    return _imp->common->multiplanar;
 }
 
 EffectInstance::PassThroughEnum
@@ -2268,7 +2513,7 @@ OfxEffectInstance::isViewInvariant() const
 SequentialPreferenceEnum
 OfxEffectInstance::getSequentialPreference() const
 {
-    return _imp->sequentialPref;
+    return _imp->common->sequentialPref;
 }
 
 bool
@@ -2292,22 +2537,22 @@ OfxEffectInstance::getCanDistort() const
 bool
 OfxEffectInstance::getInputCanReceiveTransform(int inputNb) const
 {
-    if (inputNb < 0 || inputNb >= (int)_imp->clipsInfos.size()) {
+    if (inputNb < 0 || inputNb >= (int)_imp->common->clipsInfos.size()) {
         assert(false);
         return false;
     }
-    return _imp->clipsInfos[inputNb].canReceiveDistortion;
+    return _imp->common->clipsInfos[inputNb].canReceiveDistortion;
 
 }
 
 bool
 OfxEffectInstance::getInputCanReceiveDistortion(int inputNb) const
 {
-    if (inputNb < 0 || inputNb >= (int)_imp->clipsInfos.size()) {
+    if (inputNb < 0 || inputNb >= (int)_imp->common->clipsInfos.size()) {
         assert(false);
         return false;
     }
-    return _imp->clipsInfos[inputNb].canReceiveDistortion;
+    return _imp->common->clipsInfos[inputNb].canReceiveDistortion;
 }
 
 
@@ -2315,7 +2560,6 @@ ActionRetCodeEnum
 OfxEffectInstance::getDistortion(TimeValue time,
                                  const RenderScale & renderScale, //< the plug-in accepted scale
                                  ViewIdx view,
-                                 const TreeRenderNodeArgsPtr& /*render*/,
                                  DistortionFunction2D* distortion)
 {
     const std::string field = kOfxImageFieldNone; // TODO: support interlaced data
@@ -2323,6 +2567,17 @@ OfxEffectInstance::getDistortion(TimeValue time,
     double tmpTransform[9];
     OfxStatus stat;
     {
+
+        EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, renderScale
+#ifdef DEBUG
+                                                  , /*canSetValue*/ false
+                                                  , /*canBeCalledRecursively*/ true
+#endif
+
+                                                  );
+        ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+        
         try {
             if (effectInstance()->canDistort()) {
                 stat = effectInstance()->getDistortionAction( (OfxTime)time, field, renderScale, view, clipName, tmpTransform, &distortion->func, &distortion->customData, &distortion->customDataSizeHintInBytes, &distortion->customDataFreeFunc );
@@ -2363,7 +2618,7 @@ bool
 OfxEffectInstance::doesTemporalClipAccess() const
 {
     // first, check the descriptor, then the instance
-    return _imp->doesTemporalAccess;
+    return _imp->common->doesTemporalAccess;
 }
 
 bool
@@ -2408,12 +2663,12 @@ OfxEffectInstance::isHostMixingEnabled() const
 int
 OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
 {
-    for (std::size_t i = 0; i < _imp->clipsInfos.size(); ++i) {
-        if (_imp->clipsInfos[i].clip == clip) {
+    for (std::size_t i = 0; i < _imp->common->clipsInfos.size(); ++i) {
+        if (_imp->common->clipsInfos[i].clip == clip) {
             return (int)i;
         }
     }
-    if (clip == _imp->outputClip) {
+    if (clip == _imp->common->outputClip) {
         return -1;
     }
 
@@ -2423,7 +2678,7 @@ OfxEffectInstance::getClipInputNumber(const OfxClipInstance* clip) const
 void
 OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
 {
-    if (!_imp->effect) {
+    if (!_imp->common->effect) {
         return;
     }
     std::size_t foundLastDot = fullyQualifiedName.find_last_of('.');
@@ -2438,27 +2693,36 @@ OfxEffectInstance::onScriptNameChanged(const std::string& fullyQualifiedName)
         groupprefix = fullyQualifiedName.substr(0, foundLastDot);
     }
     appID = getApp()->getAppIDString();
-    assert(_imp->effect);
+    assert(_imp->common->effect);
 
-    _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
-    _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);
-    _imp->effect->getProps().setStringProperty(kNatronOfxImageEffectPropInstanceId, scriptname);
+    _imp->common->effect->getProps().setStringProperty(kNatronOfxImageEffectPropProjectId, appID);
+    _imp->common->effect->getProps().setStringProperty(kNatronOfxImageEffectPropGroupId, groupprefix);
+    _imp->common->effect->getProps().setStringProperty(kNatronOfxImageEffectPropInstanceId, scriptname);
 }
 
 bool
 OfxEffectInstance::supportsConcurrentOpenGLRenders() const
 {
     // By default OpenFX OpenGL render suite does not support concurrent OpenGL renders.
-    QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
+    QMutexLocker k(&_imp->common->supportsConcurrentGLRendersMutex);
 
-    return _imp->supportsConcurrentGLRenders;
+    return _imp->common->supportsConcurrentGLRenders;
 }
 
 ActionRetCodeEnum
-OfxEffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
 
 
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     boost::shared_ptr<OfxGLContextEffectData> ofxData( new OfxGLContextEffectData(glContext->isGPUContext()) );
 
@@ -2470,9 +2734,9 @@ OfxEffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, con
     // concurrent OpenGL renders.
     if (ofxGLData) {
         ofxData->setDataHandle(ofxGLData);
-        QMutexLocker k(&_imp->supportsConcurrentGLRendersMutex);
-        if (!_imp->supportsConcurrentGLRenders) {
-            _imp->supportsConcurrentGLRenders = true;
+        QMutexLocker k(&_imp->common->supportsConcurrentGLRendersMutex);
+        if (!_imp->common->supportsConcurrentGLRenders) {
+            _imp->common->supportsConcurrentGLRenders = true;
         }
     }
     if (stat == kOfxStatFailed) {
@@ -2487,10 +2751,20 @@ OfxEffectInstance::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, con
 }
 
 ActionRetCodeEnum
-OfxEffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
+OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
 
 
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
+    
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
     OfxGLContextEffectData* isOfxData = dynamic_cast<OfxGLContextEffectData*>( data.get() );
     void* ofxGLData = isOfxData ? isOfxData->getDataHandle() : 0;
@@ -2514,7 +2788,7 @@ OfxEffectInstance::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArg
 void
 OfxEffectInstance::onInteractViewportSelectionCleared()
 {
-    KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
+    KnobIntPtr k = _imp->common->selectionRectangleStateKnob.lock();
     if (!k) {
         return;
     }
@@ -2528,7 +2802,7 @@ OfxEffectInstance::onInteractViewportSelectionCleared()
 void
 OfxEffectInstance::onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease)
 {
-    KnobIntPtr k = _imp->selectionRectangleStateKnob.lock();
+    KnobIntPtr k = _imp->common->selectionRectangleStateKnob.lock();
     if (!k) {
         return;
     }

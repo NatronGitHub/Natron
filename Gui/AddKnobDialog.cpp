@@ -1350,6 +1350,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
 {
 
     assert(!knob);
+    std::string name = nameLineEdit->text().toStdString();
     std::string label = labelLineEdit->text().toStdString();
     int dim = AddKnobDialog::dataTypeDim(t);
     switch (t) {
@@ -1357,7 +1358,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
     case AddKnobDialog::eParamDataTypeInteger2D:
     case AddKnobDialog::eParamDataTypeInteger3D: {
         //int
-        KnobIntPtr k = AppManager::createKnob<KnobInt>(panel->getHolder(), label, dim, false);
+        KnobIntPtr k = panel->getHolder()->createKnob<KnobInt>(name, dim);
         setKnobMinMax<int>(k);
         knob = k;
         break;
@@ -1367,7 +1368,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
     case AddKnobDialog::eParamDataTypeFloatingPoint3D: {
         //double
         int dim = (int)t - 2;
-        KnobDoublePtr k = AppManager::createKnob<KnobDouble>(panel->getHolder(), label, dim, false);
+        KnobDoublePtr k = panel->getHolder()->createKnob<KnobDouble>(name, dim);
         setKnobMinMax<double>(k);
         knob = k;
         break;
@@ -1376,13 +1377,13 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
     case AddKnobDialog::eParamDataTypeColorRGBA: {
         // color
         int dim = (int)t - 3;
-        KnobColorPtr k = AppManager::createKnob<KnobColor>(panel->getHolder(), label, dim, false);
+        KnobColorPtr k = panel->getHolder()->createKnob<KnobColor>(name, dim);
         setKnobMinMax<double>(k);
         knob = k;
         break;
     }
     case AddKnobDialog::eParamDataTypeChoice: {
-        KnobChoicePtr k = AppManager::createKnob<KnobChoice>(panel->getHolder(), label, 1, false);
+        KnobChoicePtr k = panel->getHolder()->createKnob<KnobChoice>(name);
         QString entriesRaw = menuItemsEdit->toPlainText();
         QTextStream stream(&entriesRaw);
         std::vector<ChoiceOption> entries;
@@ -1425,7 +1426,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         break;
     }
     case AddKnobDialog::eParamDataTypeCheckbox: {
-        KnobBoolPtr k = AppManager::createKnob<KnobBool>(panel->getHolder(), label, 1, false);
+        KnobBoolPtr k = panel->getHolder()->createKnob<KnobBool>(name);
         bool defValue = defaultBool->isChecked();
         k->setDefaultValue(defValue);
         knob = k;
@@ -1433,7 +1434,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
     }
     case AddKnobDialog::eParamDataTypeLabel:
     case AddKnobDialog::eParamDataTypeTextInput: {
-        KnobStringPtr k = AppManager::createKnob<KnobString>(panel->getHolder(), label, 1, false);
+        KnobStringPtr k = panel->getHolder()->createKnob<KnobString>(name);
         if ( multiLine->isChecked() ) {
             k->setAsMultiLine();
             if ( richText->isChecked() ) {
@@ -1450,7 +1451,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         break;
     }
     case AddKnobDialog::eParamDataTypeInputFile: {
-        KnobFilePtr k = AppManager::createKnob<KnobFile>(panel->getHolder(), label, 1, false);
+        KnobFilePtr k = panel->getHolder()->createKnob<KnobFile>(name);
 
         KnobFile::KnobFileDialogTypeEnum dialogType;
         if ( fileDialogSelectExisting->isChecked()) {
@@ -1474,7 +1475,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         break;
     }
     case AddKnobDialog::eParamDataTypeDirectory: {
-        KnobPathPtr k = AppManager::createKnob<KnobPath>(panel->getHolder(), label, 1, false);
+        KnobPathPtr k = panel->getHolder()->createKnob<KnobPath>(name);
         if ( multiPath->isChecked() ) {
             k->setMultiPath(true);
         }
@@ -1484,7 +1485,7 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         break;
     }
     case AddKnobDialog::eParamDataTypeGroup: {
-        KnobGroupPtr k = AppManager::createKnob<KnobGroup>(panel->getHolder(), label, 1, false);
+        KnobGroupPtr k = panel->getHolder()->createKnob<KnobGroup>(name);
         if ( groupAsTab->isChecked() ) {
             k->setAsTab();
         }
@@ -1493,25 +1494,25 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
         break;
     }
     case AddKnobDialog::eParamDataTypePage: {
-        KnobPagePtr k = AppManager::createKnob<KnobPage>(panel->getHolder(), label, 1, false);
+        KnobPagePtr k = panel->getHolder()->createKnob<KnobPage>(name);
         knob = k;
         break;
     }
     case AddKnobDialog::eParamDataTypeButton: {
-        KnobButtonPtr k = AppManager::createKnob<KnobButton>(panel->getHolder(), label, 1, false);
+        KnobButtonPtr k = panel->getHolder()->createKnob<KnobButton>(name);
         knob = k;
         break;
     }
     case AddKnobDialog::eParamDataTypeSeparator: {
-        KnobSeparatorPtr k = AppManager::createKnob<KnobSeparator>(panel->getHolder(), label, 1, false);
+        KnobSeparatorPtr k = panel->getHolder()->createKnob<KnobSeparator>(name);
         knob = k;
         break;
     }
     default:
         break;
     } // switch
-
-
+    knob->setDeclaredByPlugin(false);
+    knob->setLabel(label);
     assert(knob);
     knob->setAsUserKnob(true);
     if ( knob->canAnimate() ) {
@@ -1519,8 +1520,6 @@ AddKnobDialogPrivate::createKnobFromSelection(AddKnobDialog::ParamDataTypeEnum t
     }
     knob->setEvaluateOnChange( evaluatesOnChange->isChecked() );
 
-
-    knob->setName(nameLineEdit->text().toStdString(), true);
     knob->setHintToolTip( tooltipArea->toPlainText().toStdString() );
     bool addedInGrp = false;
     KnobGroupPtr selectedGrp = getSelectedGroup();

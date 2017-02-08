@@ -44,6 +44,24 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct RequestPassSharedDataPrivate;
+class RequestPassSharedData
+{
+public:
+    RequestPassSharedData();
+
+    ~RequestPassSharedData();
+
+    void addDependencyFreeRender(const FrameViewRequestPtr& render);
+
+    void addTaskToRender(const FrameViewRequestPtr& render);
+
+private:
+
+    friend class FrameViewRenderRunnable;
+    friend struct TreeRenderPrivate;
+    boost::scoped_ptr<RequestPassSharedDataPrivate> _imp;
+};
 
 /**
  * @brief Setup thread local storage through a render tree starting from the tree root.
@@ -71,8 +89,10 @@ public:
         // The view at which to render
         ViewIdx view;
 
-        // The node at the bottom of the tree (from which we want to pull an image from)
-        NodePtr treeRoot;
+        // The node at the bottom of the tree (from which we want to pull an image from).
+        // If calling launchRenderWithArgs() the treeRoot is expected to be a render clone of the
+        // effect that was created in TreeRender::create, otherwise this can be the main instance.
+        EffectInstancePtr treeRootEffect;
 
         // When painting with a roto item, this points to the item used to draw
         RotoDrawableItemPtr activeRotoDrawableItem;
@@ -84,8 +104,9 @@ public:
         // full region of definition wil be rendered.
         const RectD* canonicalRoI;
 
-        // The layers to render
-        const std::list<ImagePlaneDesc>* layers;
+        // The plane to render. If NULL this will be set to the first
+        // plane the node produces (usually the color plane)
+        const ImagePlaneDesc* plane;
 
         // Proxy scale is the scale to apply to the parameters (that are expressed in the full format)
         // to obtain their value in the proxy format.
@@ -129,12 +150,25 @@ public:
     static TreeRenderPtr create(const CtorArgsPtr& inArgs);
 
     /**
-     * @brief Render the planes in output of the node passed in the inArgs of the create function
-     * and return it in the output planes.
-     * Note that the output planes are mapped to the last node render preferences and you may want to copy
-     * the image with Image::copyPixels to a more suitable format.
+     * @brief Launch the actual render on the tree that was constructed in create().
+     * @param outputResults[out] The output results if the render succeeded. The image
+     * can be retrieved on the request with getImagePlane().
+     * @returns The status, eActionStatusOK if everything went fine.
      **/
-    ActionRetCodeEnum launchRender(std::map<ImagePlaneDesc, ImagePtr>* outputPlanes);
+    ActionRetCodeEnum launchRender(FrameViewRequestPtr* outputRequest);
+
+    /**
+     * @brief Same as launchRender() except that it launches the render on a different node than the root
+     * of the tree with different parameters. 
+     **/
+    ActionRetCodeEnum launchRenderWithArgs(const EffectInstancePtr& renderClone,
+                                           TimeValue time,
+                                           ViewIdx view,
+                                           const RenderScale& proxyScale,
+                                           unsigned int mipMapLevel,
+                                           const ImagePlaneDesc* plane,
+                                           const RectD* canonicalRoI,
+                                           FrameViewRequestPtr* outputRequest);
 
 
     virtual ~TreeRender();
@@ -149,20 +183,6 @@ public:
      **/
     ViewIdx getView() const;
 
-    /**
-     * @brief Get the proxy scale of the render
-     **/
-    RenderScale getProxyScale() const;
-
-    /**
-     * @brief Get the mipmaplevel of the render
-     **/
-    unsigned int getMipMapLevel() const;
-
-    /**
-     * @brief Get proxy scale + mipmap scale combined
-     **/
-    RenderScale getProxyMipMapScale() const;
 
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
@@ -200,20 +220,10 @@ public:
     bool isConcatenationEnabled() const;
 
     /**
-     * @brief Returns arguments that are specific to the given node by that remain the same throughout the render of the frame, even if multiple time/view
-     * are rendered.
-     **/
-    TreeRenderNodeArgsPtr getNodeRenderArgs(const NodePtr& node) const;
-
-    /**
      * @brief The root node in the tree (i.e: the effect from which we want the results)
      **/
-    NodePtr getTreeRoot() const;
+    EffectInstancePtr getTreeRootRenderClone() const;
 
-    /**
-     * @brief Get the tree root render args
-     **/
-    TreeRenderNodeArgsPtr getTreeRootRenderNode() const;
 
     /**
      * @brief Returns the object used to gather stats for this rende
@@ -225,11 +235,6 @@ public:
      **/
     OSGLContextPtr getGPUOpenGLContext() const;
     OSGLContextPtr getCPUOpenGLContext() const;
-
-    /**
-     * @brief Get the RoI in canonical coordinates that was requested to the tree root
-     **/
-    RectD getCanonicalRoI() const;
 
 private Q_SLOTS:
 
@@ -248,7 +253,7 @@ Q_SIGNALS:
 private:
 
 
-
+#if 0
     /**
      * @brief Registers the thread as part of this render request. Whenever AbortableThread::setAbortInfo is called, the thread is automatically registered
      * in this class as to be part of this render. This is used to monitor running threads for a specific render and to know if a thread has stalled when
@@ -266,6 +271,9 @@ private:
 
     // To call registerThreadForRender and unregister
     friend class AbortableThread;
+#endif
+
+
 
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };

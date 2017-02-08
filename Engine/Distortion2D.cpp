@@ -91,6 +91,15 @@ Distortion2DStack::pushDistortion(const DistortionFunction2DPtr& distortion)
     }
 }
 
+void
+Distortion2DStack::pushDistortionStack(const Distortion2DStack& stack)
+{
+    const std::list<DistortionFunction2DPtr>& distos = stack.getStack();
+    for (std::list<DistortionFunction2DPtr>::const_iterator it = distos.begin(); it != distos.end(); ++it) {
+        pushDistortion(*it);
+    }
+}
+
 const std::list<DistortionFunction2DPtr>&
 Distortion2DStack::getStack() const
 {

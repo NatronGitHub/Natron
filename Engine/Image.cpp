@@ -38,6 +38,9 @@
 #define M_LN2       0.693147180559945309417232121458176568  /* loge(2)        */
 #endif
 
+// When defined, tiles will be fetched from the cache (and optionnally downscaled) sequentially
+//#define NATRON_IMAGE_SEQUENTIAL_INIT
+
 NATRON_NAMESPACE_ENTER;
 
 Image::Image()
@@ -50,7 +53,7 @@ ImagePtr
 Image::create(const InitStorageArgs& args)
 {
     ImagePtr ret(new Image);
-    ret->init(args);
+    ret->_imp->init(args);
     return ret;
 }
 
@@ -62,9 +65,9 @@ Image::~Image()
     // If this image is the last image holding a pointer to memory buffers, ensure these buffers
     // gets deallocated in a specific thread and not a render thread
     std::list<ImageStorageBasePtr> toDeleteInDeleterThread;
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        for (std::size_t c = 0;  c < _imp->tiles[i].perChannelTile.size(); ++c) {
-            toDeleteInDeleterThread.push_back(_imp->tiles[i].perChannelTile[c].buffer);
+    for (TileMap::const_iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+        for (std::size_t c = 0;  c < it->second.perChannelTile.size(); ++c) {
+            toDeleteInDeleterThread.push_back(it->second.perChannelTile[c].buffer);
         }
     }
 
@@ -89,7 +92,6 @@ Image::pushTilesToCacheIfNotAborted()
     // Push tiles to cache if needed
     if (_imp->cachePolicy == eCacheAccessModeReadWrite ||
         _imp->cachePolicy == eCacheAccessModeWriteOnly) {
-        assert(_imp->renderArgs);
         _imp->insertTilesInCache();
     }
 
@@ -102,13 +104,13 @@ Image::waitForPendingTiles()
         return true;
     }
     bool hasStuffToRender = false;
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
-            if (_imp->tiles[i].perChannelTile[c].entryLocker) {
-                if (_imp->tiles[i].perChannelTile[c].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-                    _imp->tiles[i].perChannelTile[c].entryLocker->waitForPendingEntry();
+    for (TileMap::const_iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+        for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
+            if (it->second.perChannelTile[c].entryLocker) {
+                if (it->second.perChannelTile[c].entryLocker->getStatus() == CacheEntryLocker::eCacheEntryStatusComputationPending) {
+                    it->second.perChannelTile[c].entryLocker->waitForPendingEntry();
                 }
-                CacheEntryLocker::CacheEntryStatusEnum status = _imp->tiles[i].perChannelTile[c].entryLocker->getStatus();
+                CacheEntryLocker::CacheEntryStatusEnum status = it->second.perChannelTile[c].entryLocker->getStatus();
                 assert(status == CacheEntryLocker::eCacheEntryStatusCached || status == CacheEntryLocker::eCacheEntryStatusMustCompute);
 
                 if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
@@ -147,16 +149,13 @@ Image::InitStorageArgs::InitStorageArgs()
 class TileFetcherProcessor : public MultiThreadProcessorBase
 {
 
-    std::vector<std::pair<int,int> > _tileIndices;
-    int _nTilesWidth, _nTilesHeight;
-    int _tileSizeX, _tileSizeY;
+    std::vector<TileCoord> _tileIndices;
     ImagePrivate* _imp;
-    const Image::InitStorageArgs* _args;
 
 public:
 
-    TileFetcherProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : MultiThreadProcessorBase(renderArgs)
+    TileFetcherProcessor(const EffectInstancePtr& renderClone)
+    : MultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -166,33 +165,10 @@ public:
 
     }
 
-    void setData(ImagePrivate* imp, const Image::InitStorageArgs* args, int nTilesWidth, int nTilesHeight, int tileSizeX, int tileSizeY)
+    void setData(const std::vector<TileCoord> &tileIndices, ImagePrivate* imp)
     {
-        // Initialize each tile
-        int tx = 0, ty = 0;
-        int nTiles = nTilesWidth * nTilesHeight;
-        _tileIndices.resize(nTiles);
-        for (int tile_i = 0; tile_i < nTiles; ++tile_i) {
-
-            _tileIndices[tile_i].first = tx;
-            _tileIndices[tile_i].second = ty;
-
-            // Increment tile coords
-            if (tx == nTilesWidth - 1) {
-                tx = 0;
-                ++ty;
-            } else {
-                ++tx;
-            }
-        } // for each tile
-
-
-        _nTilesWidth = nTilesWidth;
-        _nTilesHeight = nTilesHeight;
-        _tileSizeX = tileSizeX;
-        _tileSizeY = tileSizeY;
+        _tileIndices = tileIndices;
         _imp = imp;
-        _args = args;
     }
 
     virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
@@ -201,33 +177,35 @@ public:
     }
 
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
-                                                  unsigned int nThreads,
-                                                  const TreeRenderNodeArgsPtr& /*renderArgs*/) OVERRIDE FINAL WARN_UNUSED_RETURN
+                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
         // Each threads get a rectangular portion but full scan-lines
         int fromIndex, toIndex;
         ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tileIndices.size(), &fromIndex, &toIndex);
-
-        if ( (toIndex - fromIndex) <= 0 ) {
-            return eActionStatusOK;
-        }
-
         for (int i = fromIndex; i < toIndex; ++i) {
-            int tx = _tileIndices[i].first;
-            int ty = _tileIndices[i].second;
-            _imp->initTileAndFetchFromCache(*_args, tx, ty, _nTilesWidth, _tileSizeX, _tileSizeY);
+            const TileCoord& c = _tileIndices[i];
+            TileMap::iterator found = _imp->tiles.find(c);
+            if (found == _imp->tiles.end()) {
+                assert(false);
+                continue;
+            }
+            try {
+                _imp->initTileAndFetchFromCache(c, found->second);
+            } catch (...) {
+                return eActionStatusFailed;
+            }
         }
         return eActionStatusOK;
     }
 };
 
 void
-Image::init(const Image::InitStorageArgs& args)
+ImagePrivate::init(const Image::InitStorageArgs& args)
 {
 
     // Should be initialized once!
-    assert(_imp->tiles.empty());
-    if (!_imp->tiles.empty()) {
+    assert(tiles.empty());
+    if (!tiles.empty()) {
         throw std::bad_alloc();
     }
 
@@ -238,22 +216,33 @@ Image::init(const Image::InitStorageArgs& args)
 
     RenderScale proxyPlusMipMapScale = args.proxyScale;
     {
-        double mipMapScale = getScaleFromMipMapLevel(args.mipMapLevel);
+        double mipMapScale = Image::getScaleFromMipMapLevel(args.mipMapLevel);
         proxyPlusMipMapScale.x *= mipMapScale;
         proxyPlusMipMapScale.y *= mipMapScale;
     }
 
-    _imp->bounds = args.bounds;
-    _imp->cachePolicy = args.cachePolicy;
+    originalBounds = args.bounds;
+    boundsRoundedToTile = originalBounds;
+    cachePolicy = args.cachePolicy;
     if (args.storage != eStorageModeDisk) {
         // We can only cache stuff on disk.
-        _imp->cachePolicy = eCacheAccessModeNone;
+        cachePolicy = eCacheAccessModeNone;
     }
-    _imp->bufferFormat = args.bufferFormat;
-    _imp->layer = args.layer;
-    _imp->proxyScale = args.proxyScale;
-    _imp->mipMapLevel = args.mipMapLevel;
-    _imp->renderArgs = args.renderArgs;
+    bufferFormat = args.bufferFormat;
+    layer = args.layer;
+    proxyScale = args.proxyScale;
+    mipMapLevel = args.mipMapLevel;
+    renderClone = args.renderClone;
+    enabledChannels = args.components;
+    bitdepth = args.bitdepth;
+    tilesAllocated = !args.delayAllocation;
+    storage = args.storage;
+    glContext = args.glContext;
+    textureTarget = args.textureTarget;
+    nodeHash = args.nodeTimeInvariantHash;
+    time = args.time;
+    view = args.view;
+    isDraftImage = args.isDraft;
 
     // OpenGL texture back-end only supports 32-bit float RGBA packed format.
     assert(args.storage != eStorageModeGLTex || (args.bufferFormat == eImageBufferLayoutRGBAPackedFullRect && args.bitdepth == eImageBitDepthFloat));
@@ -261,9 +250,9 @@ Image::init(const Image::InitStorageArgs& args)
         throw std::bad_alloc();
     }
 
-    // MMAP storage only supports mono channel tiles.
-    assert(args.storage != eStorageModeDisk || args.bufferFormat == eImageBufferLayoutMonoChannelTiled);
-    if (args.storage == eStorageModeDisk && args.bufferFormat != eImageBufferLayoutMonoChannelTiled) {
+    // MMAP storage only supports mono channel tiles, except if it is an external buffer.
+    assert(args.storage != eStorageModeDisk || args.bufferFormat == eImageBufferLayoutMonoChannelTiled || args.externalBuffer);
+    if (args.storage == eStorageModeDisk && args.bufferFormat != eImageBufferLayoutMonoChannelTiled && !args.externalBuffer) {
         throw std::bad_alloc();
     }
 
@@ -276,37 +265,80 @@ Image::init(const Image::InitStorageArgs& args)
 
 
     // For tiled layout, get the number of tiles in X and Y depending on the bounds and the tile zie.
-    int nTilesHeight,nTilesWidth;
-    int tileSizeX = 0, tileSizeY = 0;
     switch (args.bufferFormat) {
         case eImageBufferLayoutMonoChannelTiled: {
             // The size of a tile depends on the bitdepth
             Cache::getTileSizePx(args.bitdepth, &tileSizeX, &tileSizeY);
-            nTilesHeight = std::ceil((double)_imp->bounds.height() / tileSizeY);
-            nTilesWidth = std::ceil((double)_imp->bounds.width() / tileSizeX);
+            boundsRoundedToTile.roundToTileSize(tileSizeX, tileSizeY);
         }   break;
         case eImageBufferLayoutRGBACoplanarFullRect:
         case eImageBufferLayoutRGBAPackedFullRect:
-            nTilesHeight = 1;
-            nTilesWidth = 1;
+            tileSizeX = originalBounds.width();
+            tileSizeY = originalBounds.height();
             break;
     }
 
-
-    int nTiles = nTilesWidth * nTilesHeight;
-    assert(nTiles > 0);
-    _imp->tiles.resize(nTiles);
-
+    assert(boundsRoundedToTile.width() % tileSizeX == 0 && boundsRoundedToTile.height() % tileSizeY == 0);
     if (args.externalBuffer) {
-        _imp->initFromExternalBuffer(args);
+        initFromExternalBuffer(args);
     } else {
-        TileFetcherProcessor processor(args.renderArgs);
-        processor.setData(_imp.get(), &args, nTilesWidth, nTilesHeight, tileSizeX, tileSizeY);
+        initTiles();
+    }
+} // init
+
+void
+ImagePrivate::initTiles()
+{
+    if (tileSizeX == boundsRoundedToTile.width() && tileSizeY == boundsRoundedToTile.height()) {
+        // Single tile
+        TileCoord c = {0, 0};
+        initTileAndFetchFromCache(c, tiles[c]);
+    } else {
+
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+        std::vector<TileCoord> tileIndices;
+#endif
+        // Initialize each tile
+        for (int ty = boundsRoundedToTile.y1; ty < boundsRoundedToTile.y2; ty += tileSizeY) {
+            for (int tx = boundsRoundedToTile.x1; tx < boundsRoundedToTile.x2; tx += tileSizeX) {
+                TileCoord c = {tx, ty};
+                assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+
+                // This tile was already initialized.
+                {
+                    TileMap::const_iterator found = tiles.find(c);
+                    if (found != tiles.end()) {
+                        assert(found->second.perChannelTile.size() > 0);
+                        continue;
+                    }
+                }
+                Image::Tile& tile = tiles[c];
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+                tileIndices.push_back(c);
+                (void)tile;
+#else
+                initTileAndFetchFromCache(c, tile);
+#endif
+            }
+        }
+
+
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+        TileFetcherProcessor processor(renderClone);
+        processor.setData(tileIndices, this);
         ActionRetCodeEnum stat = processor.launchThreads();
-        (void)stat;
+        if (stat == eActionStatusFailed) {
+            throw std::bad_alloc();
+        }
+#endif
+#ifdef DEBUG
+        for (TileMap::const_iterator it = tiles.begin(); it != tiles.end(); ++it) {
+            assert(it->second.perChannelTile.size() > 0);
+        }
+#endif
     }
 
-} // init
+}
 
 Image::CopyPixelsArgs::CopyPixelsArgs()
 : roi()
@@ -333,16 +365,16 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
     // Roi must intersect both images bounds
     RectI roi;
-    if (!other._imp->bounds.intersect(args.roi, &roi)) {
+    if (!other._imp->originalBounds.intersect(args.roi, &roi)) {
         return;
     }
-    if (!_imp->bounds.intersect(args.roi, &roi)) {
+    if (!_imp->originalBounds.intersect(args.roi, &roi)) {
         return;
     }
 
 
     // Optimize: try to just copy the memory buffer pointers instead of copying the memory itself
-    if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->bounds) {
+    if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->originalBounds) {
 
         bool copyPointers = true;
         if (_imp->tiles.size() != other._imp->tiles.size()) {
@@ -355,13 +387,13 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
                 copyPointers = false;
             }
         }
-        if (copyPointers && _imp->bounds != other._imp->bounds) {
+        if (copyPointers && _imp->originalBounds != other._imp->originalBounds) {
             copyPointers = false;
         }
         if (copyPointers && getBitDepth() != other.getBitDepth()) {
             copyPointers = false;
         }
-        if (copyPointers && _imp->tiles[0].perChannelTile.size() != other._imp->tiles[0].perChannelTile.size()) {
+        if (copyPointers && _imp->tiles.begin()->second.perChannelTile.size() != other._imp->tiles.begin()->second.perChannelTile.size()) {
             copyPointers = false;
         }
         if (copyPointers && _imp->layer.getNumComponents() != other._imp->layer.getNumComponents()) {
@@ -378,10 +410,11 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 
         if (copyPointers) {
             assert(_imp->tiles.size() == other._imp->tiles.size());
-            for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-                assert(_imp->tiles[i].perChannelTile.size() == other._imp->tiles[i].perChannelTile.size());
-                for (std::size_t c = 0; c < _imp->tiles[c].perChannelTile.size(); ++c) {
-                    _imp->tiles[i].perChannelTile[c].buffer = other._imp->tiles[i].perChannelTile[c].buffer;
+            TileMap::iterator oit = other._imp->tiles.begin();
+            for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it, ++oit) {
+                assert(it->second.perChannelTile.size() == oit->second.perChannelTile.size());
+                for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
+                    it->second.perChannelTile[c].buffer = oit->second.perChannelTile[c].buffer;
                 }
             }
         }
@@ -419,13 +452,15 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
 void
 Image::ensureBuffersAllocated()
 {
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
-        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
-            if (_imp->tiles[i].perChannelTile[c].buffer->hasAllocateMemoryArgs()) {
-                _imp->tiles[i].perChannelTile[c].buffer->allocateMemoryFromSetArgs();
+    QMutexLocker k(&_imp->tilesAllocatedMutex);
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+        for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
+            if (it->second.perChannelTile[c].buffer->hasAllocateMemoryArgs()) {
+                it->second.perChannelTile[c].buffer->allocateMemoryFromSetArgs();
             }
         }
     }
+    _imp->tilesAllocated = true;
 } // ensureBuffersAllocated
 
 ImageBufferLayoutEnum
@@ -440,14 +475,14 @@ Image::getStorageMode() const
     if (_imp->tiles.empty()) {
         return eStorageModeNone;
     }
-    assert(!_imp->tiles[0].perChannelTile.empty() && _imp->tiles[0].perChannelTile[0].buffer);
-    return _imp->tiles[0].perChannelTile[0].buffer->getStorageMode();
+    assert(!_imp->tiles.begin()->second.perChannelTile.empty() && _imp->tiles.begin()->second.perChannelTile[0].buffer);
+    return _imp->tiles.begin()->second.perChannelTile[0].buffer->getStorageMode();
 }
 
 const RectI&
 Image::getBounds() const
 {
-    return _imp->bounds;
+    return _imp->originalBounds;
 }
 
 const RenderScale&
@@ -496,11 +531,7 @@ Image::getLayer() const
 ImageBitDepthEnum
 Image::getBitDepth() const
 {
-    if (_imp->tiles.empty()) {
-        return eImageBitDepthNone;
-    }
-    assert(!_imp->tiles[0].perChannelTile.empty() && _imp->tiles[0].perChannelTile[0].buffer);
-    return _imp->tiles[0].perChannelTile[0].buffer->getBitDepth();
+    return _imp->bitdepth;
 }
 
 GLImageStoragePtr
@@ -509,10 +540,10 @@ Image::getGLImageStorage() const
     if (_imp->tiles.empty()) {
         return GLImageStoragePtr();
     }
-    if (_imp->tiles[0].perChannelTile.empty()) {
+    if (_imp->tiles.begin()->second.perChannelTile.empty()) {
         return GLImageStoragePtr();
     }
-    GLImageStoragePtr isGLEntry = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
+    GLImageStoragePtr isGLEntry = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
     return isGLEntry;
 }
 
@@ -577,6 +608,13 @@ Image::getCPUTileData(const Image::Tile& tile,
     getCPUTileData(tile, _imp->bufferFormat, data);
 }
 
+void
+Image::getTileSize(int *tileSizeX, int* tileSizeY) const
+{
+    *tileSizeX = _imp->tileSizeX;
+    *tileSizeY = _imp->tileSizeY;
+}
+
 int
 Image::getNumTiles() const
 {
@@ -590,47 +628,58 @@ Image::getCachePolicy() const
     return _imp->cachePolicy;
 }
 
-std::list<RectI>
-Image::getRestToRender(bool *hasPendingResults) const
+void
+Image::getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
 {
+    *hasPendingResults = false;
+    *hasUnRenderedTile = false;
 
-    std::list<RectI> ret;
-    if (_imp->cachePolicy != eCacheAccessModeReadWrite) {
-        return std::list<RectI>();
-    }
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+        TileState &state = (*tileStatus)[it->first];
         bool hasChannelNotCached = false;
-        for (std::size_t c = 0; c < _imp->tiles[i].perChannelTile.size(); ++c) {
+        bool hasChannelPending = false;
+        for (std::size_t c = 0; c < it->second.perChannelTile.size(); ++c) {
 
-            if (!_imp->tiles[i].perChannelTile[c].entryLocker) {
-                continue;
-
+            CacheEntryLocker::CacheEntryStatusEnum status;
+            if (it->second.perChannelTile[c].entryLocker) {
+                status = it->second.perChannelTile[c].entryLocker->getStatus();
+            } else {
+                status = CacheEntryLocker::eCacheEntryStatusMustCompute;
             }
-            CacheEntryLocker::CacheEntryStatusEnum status = _imp->tiles[i].perChannelTile[c].entryLocker->getStatus();
-            if (status != CacheEntryLocker::eCacheEntryStatusCached) {
+
+            if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
                 hasChannelNotCached = true;
             }
             if (status == CacheEntryLocker::eCacheEntryStatusComputationPending) {
-                *hasPendingResults = true;
+                hasChannelPending = true;
             }
         }
-        if (hasChannelNotCached) {
-            if (!_imp->tiles[i].tileBounds.isNull()) {
-                ret.push_back(_imp->tiles[i].tileBounds);
-            }
+        state.status = eTileStatusNotRendered;
+         if (!hasChannelNotCached && hasChannelPending) {
+            state.status = eTileStatusPending;
+        } else if (!hasChannelPending && !hasChannelNotCached) {
+            state.status = eTileStatusRendered;
         }
+        if (state.status == eTileStatusPending) {
+            *hasPendingResults = true;
+        } else if (state.status == eTileStatusNotRendered) {
+            *hasUnRenderedTile = true;
+        }
+        state.bounds = it->second.tileBounds;
     }
-    return ret;
 } // getRestToRender
 
 bool
-Image::getTileAt(int tileIndex, Image::Tile* tile) const
+Image::getTileAt(int tx, int ty, Image::Tile* tile) const
 {
-    if (!tile || tileIndex < 0 || tileIndex > (int)_imp->tiles.size()) {
+    assert(tile);
+    TileCoord coord = {tx, ty};
+    TileMap::const_iterator found = _imp->tiles.find(coord);
+    if (found == _imp->tiles.end()) {
         return false;
     }
-    *tile = _imp->tiles[tileIndex];
+    *tile = found->second;
     return true;
 }
 
@@ -671,6 +720,333 @@ Image::getABCDRectangles(const RectI& srcBounds, const RectI& biggerBounds, Rect
 
 } // getABCDRectangles
 
+static void getImageBoundsFromTilesState(const Image::TileStateMap& tiles, int tileSizeX, int tileSizeY,
+                                         RectI& imageBoundsRoundedToTileSize,
+                                         RectI& imageBoundsNotRounded)
+{
+    {
+        Image::TileStateMap::const_iterator bottomLeft = tiles.begin();
+        Image::TileStateMap::const_reverse_iterator topRight = tiles.rbegin();
+        imageBoundsRoundedToTileSize.x1 = bottomLeft->first.tx;
+        imageBoundsRoundedToTileSize.y1 = bottomLeft->first.ty;
+        imageBoundsRoundedToTileSize.x2 = topRight->first.tx + tileSizeX;
+        imageBoundsRoundedToTileSize.y2 = topRight->first.ty + tileSizeY;
+
+        imageBoundsNotRounded.x1 = bottomLeft->second.bounds.x1;
+        imageBoundsNotRounded.y1 = bottomLeft->second.bounds.y1;
+        imageBoundsNotRounded.x2 = topRight->second.bounds.x2;
+        imageBoundsNotRounded.y2 = topRight->second.bounds.y2;
+    }
+
+    assert(imageBoundsRoundedToTileSize.x1 % tileSizeX == 0);
+    assert(imageBoundsRoundedToTileSize.y1 % tileSizeY == 0);
+    assert(imageBoundsRoundedToTileSize.x2 % tileSizeX == 0);
+    assert(imageBoundsRoundedToTileSize.y2 % tileSizeY == 0);
+}
+
+RectI
+Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY)
+{
+
+    if (tiles.empty()) {
+        return RectI();
+    }
+
+    RectI imageBoundsRoundedToTileSize;
+    RectI imageBoundsNotRounded;
+    getImageBoundsFromTilesState(tiles, tileSizeX, tileSizeY, imageBoundsRoundedToTileSize, imageBoundsNotRounded);
+    assert(imageBoundsRoundedToTileSize.contains(roi));
+
+    RectI roiRoundedToTileSize = roi;
+    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+    // Search for rendered lines from bottom to top
+    for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
+
+        bool hasTileUnrenderedOnLine = false;
+        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnLine = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnLine) {
+            roiRoundedToTileSize.y1 += tileSizeY;
+        }
+    }
+
+    // Search for rendered lines from top to bottom
+    for (int y = roiRoundedToTileSize.y2 - tileSizeY; y >= roiRoundedToTileSize.y1; y -= tileSizeY) {
+
+        bool hasTileUnrenderedOnLine = false;
+        for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnLine = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnLine) {
+            roiRoundedToTileSize.y2 -= tileSizeY;
+        }
+    }
+
+    // Avoid making roiRoundedToTileSize.width() iterations for nothing
+    if (roiRoundedToTileSize.isNull()) {
+        return roiRoundedToTileSize;
+    }
+
+
+    // Search for rendered columns from left to right
+    for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
+
+        bool hasTileUnrenderedOnCol = false;
+        for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnCol = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnCol) {
+            roiRoundedToTileSize.x1 += tileSizeX;
+        }
+    }
+
+    // Avoid making roiRoundedToTileSize.width() iterations for nothing
+    if (roiRoundedToTileSize.isNull()) {
+        return roiRoundedToTileSize;
+    }
+
+    // Search for rendered columns from right to left
+    for (int x = roiRoundedToTileSize.x2 - tileSizeX; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
+
+        bool hasTileUnrenderedOnCol = false;
+        for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
+
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status == eTileStatusNotRendered) {
+                hasTileUnrenderedOnCol = true;
+                break;
+            }
+        }
+        if (!hasTileUnrenderedOnCol) {
+            roiRoundedToTileSize.x2 -= tileSizeX;
+        }
+    }
+
+    // Intersect the result to the actual image bounds (because the tiles are rounded to tile size)
+    RectI ret;
+    roiRoundedToTileSize.intersect(imageBoundsNotRounded, &ret);
+    return ret;
+
+    
+} // getMinimalBboxToRenderFromTilesState
+
+void
+Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const RectI& roi, int tileSizeX, int tileSizeY, std::list<RectI>* rectsToRender)
+{
+    if (tiles.empty()) {
+        return;
+    }
+
+    RectI roiRoundedToTileSize = roi;
+    roiRoundedToTileSize.roundToTileSize(tileSizeX, tileSizeY);
+
+    RectI bboxM = getMinimalBboxToRenderFromTilesState(tiles, roi, tileSizeX, tileSizeY);
+    if (bboxM.isNull()) {
+        return;
+    }
+
+    bboxM.roundToTileSize(tileSizeX, tileSizeY);
+
+    // optimization by Fred, Jan 31, 2014
+    //
+    // Now that we have the smallest enclosing bounding box,
+    // let's try to find rectangles for the bottom, the top,
+    // the left and the right part.
+    // This happens quite often, for example when zooming out
+    // (in this case the area to compute is formed of A, B, C and D,
+    // and X is already rendered), or when panning (in this case the area
+    // is just two rectangles, e.g. A and C, and the rectangles B, D and
+    // X are already rendered).
+    // The rectangles A, B, C and D from the following drawing are just
+    // zeroes, and X contains zeroes and ones.
+    //
+    // BBBBBBBBBBBBBB
+    // BBBBBBBBBBBBBB
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // CXXXXXXXXXXDDD
+    // AAAAAAAAAAAAAA
+
+    // First, find if there's an "A" rectangle, and push it to the result
+    //find bottom
+    RectI bboxX = bboxM;
+    RectI bboxA = bboxX;
+    bboxA.y2 = bboxA.y1;
+    for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+        bool hasRenderedTileOnLine = false;
+        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status != eTileStatusNotRendered) {
+                hasRenderedTileOnLine = true;
+                break;
+            }
+        }
+        if (hasRenderedTileOnLine) {
+            break;
+        } else {
+            bboxX.y1 += tileSizeY;
+            bboxA.y2 = bboxX.y1;
+        }
+    }
+    if ( !bboxA.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        RectI bboxAIntersected;
+        bboxA.intersect(roi, &bboxAIntersected);
+        rectsToRender->push_back(bboxAIntersected);
+    }
+
+    // Now, find the "B" rectangle
+    //find top
+    RectI bboxB = bboxX;
+    bboxB.y1 = bboxB.y2;
+
+    for (int y = bboxX.y2 - tileSizeY; y >= bboxX.y1; y -= tileSizeY) {
+        bool hasRenderedTileOnLine = false;
+        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+            TileCoord c = {x, y};
+            TileStateMap::const_iterator foundTile = tiles.find(c);
+            assert(foundTile != tiles.end());
+            if (foundTile->second.status != eTileStatusNotRendered) {
+                hasRenderedTileOnLine = true;
+                break;
+            }
+        }
+        if (hasRenderedTileOnLine) {
+            break;
+        } else {
+            bboxX.y2 -= tileSizeY;
+            bboxB.y1 = bboxX.y2;
+        }
+    }
+
+    if ( !bboxB.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        RectI bboxBIntersected;
+        bboxB.intersect(roi, &bboxBIntersected);
+        rectsToRender->push_back(bboxBIntersected);
+    }
+
+    //find left
+    RectI bboxC = bboxX;
+    bboxC.x2 = bboxC.x1;
+    if ( bboxX.y1 < bboxX.y2 ) {
+        for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
+            bool hasRenderedTileOnCol = false;
+            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+                TileCoord c = {x, y};
+                TileStateMap::const_iterator foundTile = tiles.find(c);
+                assert(foundTile != tiles.end());
+                if (foundTile->second.status != eTileStatusNotRendered) {
+                    hasRenderedTileOnCol = true;
+                    break;
+                }
+
+            }
+            if (hasRenderedTileOnCol) {
+                break;
+            } else {
+                bboxX.x1 += tileSizeX;
+                bboxC.x2 = bboxX.x1;
+            }
+        }
+    }
+    if ( !bboxC.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        RectI bboxCIntersected;
+        bboxC.intersect(roi, &bboxCIntersected);
+        rectsToRender->push_back(bboxCIntersected);
+    }
+
+    //find right
+    RectI bboxD = bboxX;
+    bboxD.x1 = bboxD.x2;
+    if ( bboxX.y1 < bboxX.y2 ) {
+        for (int x = bboxX.x2 - tileSizeX; x >= bboxX.x1; x -= tileSizeX) {
+            bool hasRenderedTileOnCol = false;
+            for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
+                TileCoord c = {x, y};
+                TileStateMap::const_iterator foundTile = tiles.find(c);
+                assert(foundTile != tiles.end());
+                if (foundTile->second.status != eTileStatusNotRendered) {
+                    hasRenderedTileOnCol = true;
+                    break;
+                }
+            }
+            if (hasRenderedTileOnCol) {
+                break;
+            } else {
+                bboxX.x2 -= tileSizeX;
+                bboxD.x1 = bboxX.x2;
+            }
+        }
+    }
+    if ( !bboxD.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        RectI bboxDIntersected;
+        bboxD.intersect(roi, &bboxDIntersected);
+        rectsToRender->push_back(bboxDIntersected);
+    }
+
+    assert( bboxA.bottom() == bboxM.bottom() );
+    assert( bboxA.left() == bboxM.left() );
+    assert( bboxA.right() == bboxM.right() );
+    assert( bboxA.top() == bboxX.bottom() );
+
+    assert( bboxB.top() == bboxM.top() );
+    assert( bboxB.left() == bboxM.left() );
+    assert( bboxB.right() == bboxM.right() );
+    assert( bboxB.bottom() == bboxX.top() );
+
+    assert( bboxC.top() == bboxX.top() );
+    assert( bboxC.left() == bboxM.left() );
+    assert( bboxC.right() == bboxX.left() );
+    assert( bboxC.bottom() == bboxX.bottom() );
+
+    assert( bboxD.top() == bboxX.top() );
+    assert( bboxD.left() == bboxX.right() );
+    assert( bboxD.right() == bboxM.right() );
+    assert( bboxD.bottom() == bboxX.bottom() );
+
+    // get the bounding box of what's left (the X rectangle in the drawing above)
+    bboxX = getMinimalBboxToRenderFromTilesState(tiles, bboxX, tileSizeX, tileSizeY);
+
+    if ( !bboxX.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        RectI bboxXIntersected;
+        bboxX.intersect(roi, &bboxXIntersected);
+        rectsToRender->push_back(bboxXIntersected);
+    }
+
+} // getMinimalRectsToRenderFromTilesState
+
 class FillProcessor : public ImageMultiThreadProcessorBase
 {
     void* _ptrs[4];
@@ -681,8 +1057,8 @@ class FillProcessor : public ImageMultiThreadProcessorBase
 
 public:
 
-    FillProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    FillProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -702,9 +1078,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _tileBounds, renderWindow, renderArgs);
+        ImagePrivate::fillCPU(_ptrs, _color.r, _color.g, _color.b, _color.a, _nComps, _bitDepth, _tileBounds, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -721,23 +1097,23 @@ Image::fill(const RectI & roi,
     }
 
     if (getStorageMode() == eStorageModeGLTex) {
-        GLImageStoragePtr glEntry = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
+        GLImageStoragePtr glEntry = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
         _imp->fillGL(roi, r, g, b, a, glEntry);
         return;
     }
 
 
 
-    for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
         Image::CPUTileData tileData;
-        getCPUTileData(_imp->tiles[tile_i], &tileData);
+        getCPUTileData(it->second, &tileData);
         RectI tileRoI;
         roi.intersect(tileData.tileBounds, &tileRoI);
 
         RGBAColourF color = {r, g, b, a};
 
-        FillProcessor processor(_imp->renderArgs);
+        FillProcessor processor(_imp->renderClone);
         processor.setValues(tileData.ptrs, tileData.tileBounds, tileData.bitDepth, tileData.nComps, color);
         processor.setRenderWindow(tileRoI);
         processor.process();
@@ -761,34 +1137,46 @@ Image::fillBoundsZero()
 void
 Image::ensureBounds(const RectI& roi)
 {
-    if (_imp->bounds.contains(roi)) {
+    if (_imp->originalBounds.contains(roi)) {
         return;
     }
 
-    ImagePtr tmpImage;
-    {
-        Image::InitStorageArgs initArgs;
-        initArgs.bounds = _imp->bounds;
-        initArgs.bounds.merge(roi);
-        initArgs.layer = getLayer();
-        initArgs.bitdepth = getBitDepth();
-        initArgs.bufferFormat = getBufferFormat();
-        initArgs.storage = getStorageMode();
-        initArgs.mipMapLevel = getMipMapLevel();
-        initArgs.proxyScale = getProxyScale();
-        GLImageStoragePtr isGlEntry = getGLImageStorage();
-        if (isGlEntry) {
-            initArgs.textureTarget = isGlEntry->getGLTextureTarget();
-            initArgs.glContext = isGlEntry->getOpenGLContext();
-        }
-        tmpImage = Image::create(initArgs);
-    }
-    Image::CopyPixelsArgs cpyArgs;
-    cpyArgs.roi = _imp->bounds;
-    tmpImage->copyPixels(*this, cpyArgs);
+    RectI oldBounds = _imp->originalBounds;
+    RectI newBounds = oldBounds;
+    newBounds.merge(roi);
 
-    // Swap images so that this image becomes the resized one.
-    _imp.swap(tmpImage->_imp);
+    if (_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
+
+        _imp->originalBounds = newBounds;
+        _imp->boundsRoundedToTile = newBounds;
+        _imp->boundsRoundedToTile.roundToTileSize(_imp->tileSizeX, _imp->tileSizeY);
+        _imp->initTiles();
+    } else {
+        ImagePtr tmpImage;
+        {
+            Image::InitStorageArgs initArgs;
+            initArgs.bounds = newBounds;
+            initArgs.layer = getLayer();
+            initArgs.bitdepth = getBitDepth();
+            initArgs.bufferFormat = getBufferFormat();
+            initArgs.storage = getStorageMode();
+            initArgs.mipMapLevel = getMipMapLevel();
+            initArgs.proxyScale = getProxyScale();
+            GLImageStoragePtr isGlEntry = getGLImageStorage();
+            if (isGlEntry) {
+                initArgs.textureTarget = isGlEntry->getGLTextureTarget();
+                initArgs.glContext = isGlEntry->getOpenGLContext();
+            }
+            tmpImage = Image::create(initArgs);
+        }
+        Image::CopyPixelsArgs cpyArgs;
+        cpyArgs.roi = oldBounds;
+        tmpImage->copyPixels(*this, cpyArgs);
+
+        // Swap images so that this image becomes the resized one.
+        _imp.swap(tmpImage->_imp);
+
+    }
 } // ensureBounds
 
 void
@@ -924,8 +1312,8 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
     }
 
     // The roi must be contained in the bounds of the image
-    assert(_imp->bounds.contains(roi));
-    if (!_imp->bounds.contains(roi)) {
+    assert(_imp->originalBounds.contains(roi));
+    if (!_imp->originalBounds.contains(roi)) {
         return ImagePtr();
     }
 
@@ -940,7 +1328,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
     if (previousLevelImage->_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
         InitStorageArgs args;
         args.bounds = roi;
-        args.renderArgs = _imp->renderArgs;
+        args.renderClone = _imp->renderClone;
         args.layer = previousLevelImage->_imp->layer;
         args.bitdepth = previousLevelImage->getBitDepth();
         args.proxyScale = previousLevelImage->getProxyScale();
@@ -965,7 +1353,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         {
             InitStorageArgs args;
             args.bounds = halvedRoI;
-            args.renderArgs = _imp->renderArgs;
+            args.renderClone = _imp->renderClone;
             args.layer = previousLevelImage->_imp->layer;
             args.bitdepth = previousLevelImage->getBitDepth();
             args.proxyScale = previousLevelImage->getProxyScale();
@@ -974,10 +1362,10 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         }
 
         Image::CPUTileData srcTileData;
-        getCPUTileData(previousLevelImage->_imp->tiles[0], &srcTileData);
+        getCPUTileData(previousLevelImage->_imp->tiles.begin()->second, &srcTileData);
 
         Image::CPUTileData dstTileData;
-        getCPUTileData(mipmapImage->_imp->tiles[0], &dstTileData);
+        getCPUTileData(mipmapImage->_imp->tiles.begin()->second, &dstTileData);
 
         ImagePrivate::halveImage((const void**)srcTileData.ptrs, srcTileData.nComps, srcTileData.bitDepth, srcTileData.tileBounds, dstTileData.ptrs, dstTileData.tileBounds);
 
@@ -1001,9 +1389,9 @@ Image::checkForNaNs(const RectI& roi)
 
     bool hasNan = false;
 
-    for (std::size_t i = 0; i < _imp->tiles.size(); ++i) {
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
         Image::CPUTileData tileData;
-        getCPUTileData(_imp->tiles[i], &tileData);
+        getCPUTileData(it->second, &tileData);
 
         RectI tileRoi;
         roi.intersect(tileData.tileBounds, &tileRoi);
@@ -1021,8 +1409,8 @@ class MaskMixProcessor : public ImageMultiThreadProcessorBase
     bool _maskInvert;
 public:
 
-    MaskMixProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    MaskMixProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     , _srcTileData()
     , _maskTileData()
     , _dstTileData()
@@ -1051,9 +1439,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.tileBounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.tileBounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.tileBounds, renderWindow, renderArgs);
+        ImagePrivate::applyMaskMixCPU((const void**)_srcTileData.ptrs, _srcTileData.tileBounds, _srcTileData.nComps, (const void**)_maskTileData.ptrs, _maskTileData.tileBounds, _dstTileData.ptrs, _dstTileData.bitDepth, _dstTileData.nComps, _mix, _maskInvert, _dstTileData.tileBounds, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1079,13 +1467,13 @@ Image::applyMaskMix(const RectI& roi,
         GLImageStoragePtr originalImageTexture, maskTexture, dstTexture;
         if (originalImg) {
             assert(originalImg->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
+            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles.begin()->second.perChannelTile[0].buffer);
         }
         if (maskImg && masked) {
             assert(maskImg->getStorageMode() == eStorageModeGLTex);
-            maskTexture = toGLImageStorage(maskImg->_imp->tiles[0].perChannelTile[0].buffer);
+            maskTexture = toGLImageStorage(maskImg->_imp->tiles.begin()->second.perChannelTile[0].buffer);
         }
-        dstTexture = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
+        dstTexture = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
         ImagePrivate::applyMaskMixGL(originalImageTexture, maskTexture, dstTexture, mix, maskInvert, roi);
         return;
     }
@@ -1096,24 +1484,24 @@ Image::applyMaskMix(const RectI& roi,
 
     Image::CPUTileData srcImgData, maskImgData;
     if (originalImg) {
-        getCPUTileData(originalImg->_imp->tiles[0], &srcImgData);
+        getCPUTileData(originalImg->_imp->tiles.begin()->second, &srcImgData);
     }
 
     if (maskImg) {
-        getCPUTileData(maskImg->_imp->tiles[0], &maskImgData);
+        getCPUTileData(maskImg->_imp->tiles.begin()->second, &maskImgData);
         assert(maskImgData.nComps == 1);
     }
 
 
-    for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
         Image::CPUTileData dstImgData;
-        getCPUTileData(_imp->tiles[tile_i], &dstImgData);
+        getCPUTileData(it->second, &dstImgData);
 
         RectI tileRoI;
         roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-        MaskMixProcessor processor(_imp->renderArgs);
+        MaskMixProcessor processor(_imp->renderClone);
         processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
         processor.setRenderWindow(tileRoI);
         processor.process();
@@ -1149,8 +1537,8 @@ class CopyUnProcessedProcessor : public ImageMultiThreadProcessorBase
     std::bitset<4> _processChannels;
 public:
 
-    CopyUnProcessedProcessor(const TreeRenderNodeArgsPtr& renderArgs)
-    : ImageMultiThreadProcessorBase(renderArgs)
+    CopyUnProcessedProcessor(const EffectInstancePtr& renderClone)
+    : ImageMultiThreadProcessorBase(renderClone)
     {
 
     }
@@ -1170,9 +1558,9 @@ public:
 
 private:
 
-    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow, const TreeRenderNodeArgsPtr& renderArgs) OVERRIDE FINAL
+    virtual ActionRetCodeEnum multiThreadProcessImages(const RectI& renderWindow) OVERRIDE FINAL
     {
-        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.tileBounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.tileBounds, _processChannels, renderWindow, renderArgs);
+        ImagePrivate::copyUnprocessedChannelsCPU((const void**)_srcImgData.ptrs, _srcImgData.tileBounds, _srcImgData.nComps, (void**)_dstImgData.ptrs, _dstImgData.bitDepth, _dstImgData.nComps, _dstImgData.tileBounds, _processChannels, renderWindow, _effect);
         return eActionStatusOK;
     }
 };
@@ -1193,10 +1581,10 @@ Image::copyUnProcessedChannels(const RectI& roi,
         GLImageStoragePtr originalImageTexture, dstTexture;
         if (originalImg) {
             assert(originalImg->getStorageMode() == eStorageModeGLTex);
-            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles[0].perChannelTile[0].buffer);
+            originalImageTexture = toGLImageStorage(originalImg->_imp->tiles.begin()->second.perChannelTile[0].buffer);
         }
 
-        dstTexture = toGLImageStorage(_imp->tiles[0].perChannelTile[0].buffer);
+        dstTexture = toGLImageStorage(_imp->tiles.begin()->second.perChannelTile[0].buffer);
 
         RectI realRoi;
         roi.intersect(dstTexture->getBounds(), &realRoi);
@@ -1209,19 +1597,19 @@ Image::copyUnProcessedChannels(const RectI& roi,
 
     Image::CPUTileData srcImgData;
     if (originalImg) {
-        getCPUTileData(originalImg->_imp->tiles[0], &srcImgData);
+        getCPUTileData(originalImg->_imp->tiles.begin()->second, &srcImgData);
     }
 
 
-    for (std::size_t tile_i = 0; tile_i < _imp->tiles.size(); ++tile_i) {
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
         Image::CPUTileData dstImgData;
-        getCPUTileData(_imp->tiles[tile_i], &dstImgData);
+        getCPUTileData(it->second, &dstImgData);
 
         RectI tileRoI;
         roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-        CopyUnProcessedProcessor processor(_imp->renderArgs);
+        CopyUnProcessedProcessor processor(_imp->renderClone);
         processor.setValues(srcImgData, dstImgData, processChannels);
         processor.setRenderWindow(tileRoI);
         processor.process();

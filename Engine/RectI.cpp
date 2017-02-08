@@ -39,9 +39,9 @@
 NATRON_NAMESPACE_ENTER;
 
 /// if splitCount is zero, this function returns a set of less than area()/MINAREA rects which are no smaller than MINAREA
-std::vector<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
+std::list<RectI> RectI::splitIntoSmallerRects(int splitsCount) const
 {
-    std::vector<RectI> ret;
+    std::list<RectI> ret;
 
     if ( isNull() ) {
         return ret;
@@ -162,6 +162,14 @@ RectI::toCanonical_noClipping(const RenderScale& thisScale,
     rect->y2 = y2 * inverseScale.y;
 }
 
+void
+RectI::roundToTileSize(int tileSizeX, int tileSizeY)
+{
+    x1 = (int)std::floor((double)x1 / tileSizeX) * tileSizeX;
+    y1 = (int)std::floor((double)y1 / tileSizeY) * tileSizeY;
+    x2 = (int)std::ceil((double)x2 / tileSizeX) * tileSizeX;
+    y2 = (int)std::ceil((double)y2 / tileSizeY) * tileSizeY;
+}
 
 void
 RectI::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* obj)

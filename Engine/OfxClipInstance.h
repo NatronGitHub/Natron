@@ -260,7 +260,6 @@ private:
                                        ViewIdx view,
                                        const RenderScale& scale,
                                        EffectInstancePtr associatedNode,
-                                       const TreeRenderNodeArgsPtr& associatedNodeRenderArgs,
                                        OfxRectD* rod) const;
 
     bool getInputImageInternal(const OfxTime time,

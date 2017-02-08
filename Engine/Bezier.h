@@ -88,11 +88,10 @@ public:
 
 private:
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
-    Bezier(const Bezier& other);
+    
+    Bezier(const BezierPtr& other, const TreeRenderPtr& render);
 
-    virtual RotoDrawableItemPtr createRenderCopy() const OVERRIDE FINAL;
+    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
 
     virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
     {
@@ -689,6 +688,8 @@ private:
     void onKeyFrameRemovedForView(TimeValue time, ViewIdx view);
 
     virtual void initializeKnobs() OVERRIDE;
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
 
     boost::scoped_ptr<BezierPrivate> _imp;
 };

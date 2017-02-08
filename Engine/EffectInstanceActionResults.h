@@ -474,6 +474,12 @@ public:
 
     }
 
+    const std::map<int, std::list<ImagePlaneDesc> >& getNeededInputPlanes() const;
+
+    std::bitset<4> getProcessChannels() const;
+
+    const std::list<ImagePlaneDesc>& getProducedPlanes() const;
+
     // This is thread-safe and doesn't require a mutex:
     // The thread computing this entry and calling the setter is guaranteed
     // to be the only one interacting with this object. Then all objects

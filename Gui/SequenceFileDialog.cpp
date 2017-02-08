@@ -2993,7 +2993,7 @@ SequenceFileDialog::refreshPreviewAfterSelectionChange()
         RangeD range = {1., 1.};
         {
             GetFrameRangeResultsPtr results;
-            ActionRetCodeEnum stat = reader->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            ActionRetCodeEnum stat = reader->getEffectInstance()->getFrameRange_public(&results);
             if (!isFailureRetCode(stat)) {
                 results->getFrameRangeResults(&range);
             }

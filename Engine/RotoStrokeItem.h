@@ -77,9 +77,7 @@ public:
 private:
 
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
-    RotoStrokeItem(const RotoStrokeItem& other);
+    RotoStrokeItem(const RotoStrokeItemPtr& other, const TreeRenderPtr& render);
 
 public:
 
@@ -245,12 +243,14 @@ public:
     
 private:
 
-    virtual RotoDrawableItemPtr createRenderCopy() const OVERRIDE FINAL;
+    virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
 
     virtual bool isRenderCloneNeeded() const OVERRIDE FINAL
     {
         return true;
     }
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
     virtual void initializeKnobs() OVERRIDE;
 

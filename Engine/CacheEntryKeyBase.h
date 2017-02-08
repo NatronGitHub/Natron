@@ -40,6 +40,7 @@
 #include "Engine/IPCCommon.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
+#include "Engine/RectI.h"
 
 #include "Engine/EngineFwd.h"
 
@@ -168,8 +169,7 @@ public:
                  unsigned int mipMapLevel,
                  bool draftMode,
                  ImageBitDepthEnum bitdepth,
-                 int tileX,
-                 int tileY);
+                 const RectI& tileBounds);
 
     virtual ~ImageTileKey();
 
@@ -177,11 +177,9 @@ public:
 
     std::string getLayerChannel() const;
 
-    int getTileX() const;
+    const RectI& getTileBounds() const;
 
-    int getTileY() const;
-
-    RenderScale getProxyScale() const;
+    const RenderScale& getProxyScale() const;
 
     unsigned int getMipMapLevel() const;
 

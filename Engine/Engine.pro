@@ -93,6 +93,8 @@ SOURCES += \
     Distortion2D.cpp \
     Dot.cpp \
     EffectInstance.cpp \
+    EffectInstanceChannelSelectors.cpp \
+    EffectInstanceDefaultKnobs.cpp \
     EffectInstanceTLSData.cpp \
     EffectInstanceActions.cpp \
     EffectInstanceActionResults.cpp \
@@ -104,6 +106,7 @@ SOURCES += \
     FileSystemModel.cpp \
     FitCurve.cpp \
     Format.cpp \
+    FrameViewRequest.cpp \
     FStreamsSupport.cpp \
     GenericSchedulerThread.cpp \
     GenericSchedulerThreadWatcher.cpp \
@@ -141,9 +144,7 @@ SOURCES += \
     MultiThread.cpp \
     MemoryInfo.cpp \
     Node.cpp \
-    NodeChannelSelectors.cpp \
     NodeDocumentation.cpp \
-    NodeDefaultKnobs.cpp \
     NodeInputs.cpp \
     NodeMain.cpp \
     NodeName.cpp \
@@ -189,7 +190,6 @@ SOURCES += \
     PySideCompat.cpp \
     PyTracker.cpp \
     ReadNode.cpp \
-    RenderValuesCache.cpp \
     RectD.cpp \
     RectI.cpp \
     RenderStats.cpp \
@@ -230,7 +230,6 @@ SOURCES += \
     TrackerNodeTransformExport.cpp \
     TrackScheduler.cpp \
     TreeRender.cpp \
-    TreeRenderNodeArgs.cpp \
     TLSHolder.cpp \
     Transform.cpp \
     Utils.cpp \
@@ -340,6 +339,7 @@ HEADERS += \
     FileSystemModel.h \
     FitCurve.h \
     Format.h \
+    FrameViewRequest.h \
     FStreamsSupport.h \
     fstream_mingw.h \
     GenericSchedulerThread.h \
@@ -433,7 +433,6 @@ HEADERS += \
     RectD.h \
     RectI.h \
     RenderStats.h \
-    RenderValuesCache.h \
     RenderQueue.h \
     RotoBezierTriangulation.h \
     RotoDrawableItem.h \
@@ -476,7 +475,6 @@ HEADERS += \
     TrackScheduler.h \
     TrackMarker.h \
     TreeRender.h \
-    TreeRenderNodeArgs.h \
     TLSHolder.h \
     TLSHolderImpl.h \
     Transform.h \

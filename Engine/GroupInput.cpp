@@ -41,7 +41,7 @@ GroupInput::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)GroupInput::create, PLUGINID_NATRON_INPUT, "Input", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)GroupInput::create, (void*)GroupInput::createRenderClone, PLUGINID_NATRON_INPUT, "Input", 1, 0, grouping);
 
     QString desc =  tr("This node can only be used within a Group. It adds an input arrow to the group.");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -55,22 +55,21 @@ GroupInput::createPlugin()
 void
 GroupInput::initializeKnobs()
 {
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
 
-    page->setName("controls");
-
-    KnobBoolPtr optKnob = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Optional") );
+    KnobBoolPtr optKnob = createKnob<KnobBool>(kNatronGroupInputIsOptionalParamName);
+    optKnob->setLabel(tr("Optional"));
     optKnob->setHintToolTip( tr("When checked, this input of the group will be optional, i.e it will not be required that it is connected "
                                 "for the render to work.") );
     optKnob->setAnimationEnabled(false);
-    optKnob->setName(kNatronGroupInputIsOptionalParamName);
     page->addKnob(optKnob);
     _optional = optKnob;
 
-    KnobBoolPtr maskKnob = AppManager::createKnob<KnobBool>( shared_from_this(), tr("Mask") );
+    KnobBoolPtr maskKnob = createKnob<KnobBool>(kNatronGroupInputIsMaskParamName);
     maskKnob->setHintToolTip( tr("When checked, this input of the group will be considered as a mask. A mask is always optional.") );
     maskKnob->setAnimationEnabled(false);
-    maskKnob->setName(kNatronGroupInputIsMaskParamName);
+    maskKnob->setLabel(tr("Mask"));
     page->addKnob(maskKnob);
     _mask = maskKnob;
 }

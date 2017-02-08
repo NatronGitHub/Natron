@@ -43,12 +43,18 @@ private: // derives from EffectInstance
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
     JoinViewsNode(const NodePtr& node);
 
+    JoinViewsNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
+
 public:
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new JoinViewsNode(node) );
     }
 
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new JoinViewsNode(mainInstance, render) );
+    }
 
     static PluginPtr createPlugin();
 
@@ -98,7 +104,6 @@ private:
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            const TreeRenderNodeArgsPtr& render,
                             TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -113,7 +113,6 @@ TrackSchedulerPrivate::trackStepFunctor(int trackIndex,
         track->natronMarker->setEnabledAtTime(TimeValue(time), false);
     }
 
-    appPTR->getAppTLS()->cleanupTLSForThread();
 
     return ret;
 }
@@ -302,7 +301,6 @@ TrackScheduler::threadLoopOnce(const GenericThreadStartArgsPtr& inArgs)
         } // while (cur != end) {
     } // IsTrackingFlagSetter_RAII
 
-    appPTR->getAppTLS()->cleanupTLSForThread();
 
     for (std::size_t i = 0; i < tracks.size(); ++i) {
         tracks[i]->natronMarker->notifyTrackingEnded();

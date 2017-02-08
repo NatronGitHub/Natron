@@ -181,7 +181,7 @@ NodeAnim::initialize(AnimatedItemTypeEnum nodeType)
 
     if (nodeType == eAnimatedItemTypeCommon) {
         // Also connect the lifetime knob
-        KnobIntPtr lifeTimeKnob = internalNode->getLifeTimeKnob();
+        KnobIntPtr lifeTimeKnob = internalNode->getEffectInstance()->getLifeTimeKnob();
         if (lifeTimeKnob) {
             connect( lifeTimeKnob->getSignalSlotHandler().get(), SIGNAL(mustRefreshKnobGui(ViewSetSpec,DimSpec,ValueChangedReasonEnum)), this, SLOT(onFrameRangeKnobChanged()) );
         }
@@ -431,7 +431,7 @@ NodeAnim::isRangeDrawingEnabled() const
         return false;
     }
     int first,last;
-    return node->isLifetimeActivated(&first, &last);
+    return node->getEffectInstance()->isLifetimeActivated(&first, &last);
 }
 
 bool
@@ -495,7 +495,7 @@ NodeAnim::refreshVisibility()
 
     // If settings panel is not opened and the "Keep in Animation Module" knob is not checked, hide the node.
     NodeGuiPtr nodeGui = getNodeGui();
-    bool keepInAnimationModule = nodeGui->getNode()->isKeepInAnimationModuleButtonDown();
+    bool keepInAnimationModule = nodeGui->getNode()->getEffectInstance()->isKeepInAnimationModuleButtonDown();
     if (!keepInAnimationModule && !nodeGui->isSettingsPanelVisible()) {
         showNode = false;
     }
@@ -639,7 +639,7 @@ NodeAnimPrivate::computeRetimeRange()
         RangeD inputRange = {0, 0};
         {
             GetFrameRangeResultsPtr results;
-            ActionRetCodeEnum stat = input->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+            ActionRetCodeEnum stat = input->getEffectInstance()->getFrameRange_public(&results);
             if (!isFailureRetCode(stat)) {
                 results->getFrameRangeResults(&inputRange);
             }
@@ -648,12 +648,12 @@ NodeAnimPrivate::computeRetimeRange()
         FramesNeededMap framesFirst, framesLast;
         {
             GetFramesNeededResultsPtr results;
-            ActionRetCodeEnum stat = node->getEffectInstance()->getFramesNeeded_public(TimeValue(inputRange.min), ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
+            ActionRetCodeEnum stat = node->getEffectInstance()->getFramesNeeded_public(TimeValue(inputRange.min), ViewIdx(0), &results);
             if (!isFailureRetCode(stat)) {
                 results->getFramesNeeded(&framesFirst);
             }
 
-            stat = node->getEffectInstance()->getFramesNeeded_public(TimeValue(inputRange.max), ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
+            stat = node->getEffectInstance()->getFramesNeeded_public(TimeValue(inputRange.max), ViewIdx(0), &results);
             if (!isFailureRetCode(stat)) {
                 results->getFramesNeeded(&framesLast);
             }
@@ -742,7 +742,7 @@ NodeAnimPrivate::computeCommonNodeRange()
         return;
     }
     int first,last;
-    bool lifetimeEnabled = node->isLifetimeActivated(&first, &last);
+    bool lifetimeEnabled = node->getEffectInstance()->isLifetimeActivated(&first, &last);
 
     if (lifetimeEnabled) {
         frameRange.min = first;

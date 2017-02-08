@@ -101,15 +101,9 @@ typedef std::vector<PerViewEnabledMap> PerDimensionEnabledMap;
 
 typedef std::map<ViewIdx, bool> PerViewAllDimensionsVisible;
 
-
-struct KnobHelperPrivate
+// Contains all datas shared amongst render clones and main instance
+struct CommonData
 {
-    // Ptr to the public class, can not be a smart ptr
-    KnobHelper* publicInterface;
-
-    // The holder containing this knob. This may be null if the knob is not in a collection
-    KnobHolderWPtr holder;
-
     KnobFrameViewHashingStrategyEnum cacheInvalidationStrategy;
 
     // Protects the label
@@ -204,7 +198,7 @@ struct KnobHelperPrivate
 
     // protects perDimViewData and perDimViewSavedData
     mutable QMutex perDimViewDataMutex;
-    
+
     // For each dimension and view the value stuff
     PerDimensionKnobDataMap perDimViewData;
 
@@ -252,6 +246,11 @@ struct KnobHelperPrivate
     // The last return value of random to preserve its state
     mutable U32 lastRandomHash;
 
+    mutable QMutex renderClonesMapMutex;
+
+    // For each instance, a pointer to the knob
+    std::map<KnobHolderWPtr, KnobIWPtr> renderClonesMap;
+
     // Protects hasModifications
     mutable QMutex hasModificationsMutex;
 
@@ -269,24 +268,18 @@ struct KnobHelperPrivate
 
     // If true, when this knob change, it is required to refresh the meta-data on a Node
     bool isMetadataSlave;
-
+    
     // When enabled the keyframes can be displayed on the timeline if the knob is visible
     // protected by stateMutex
     bool keyframeTrackingEnabled;
 
-    KnobHelperPrivate(KnobHelper* publicInterface_,
-                      const KnobHolderPtr& holder_,
-                      int nDims,
-                      const std::string & label_,
-                      bool declaredByPlugin_)
-    : publicInterface(publicInterface_)
-    , holder(holder_)
-    , cacheInvalidationStrategy(eKnobHashingStrategyValue)
+    CommonData()
+    : cacheInvalidationStrategy(eKnobHashingStrategyValue)
     , labelMutex()
-    , label(label_)
+    , label()
     , iconFilePath()
-    , name( label_.c_str() )
-    , originalName( label_.c_str() )
+    , name()
+    , originalName()
     , newLine(true)
     , addSeparator(false)
     , itemSpacing(0)
@@ -306,14 +299,14 @@ struct KnobHelperPrivate
     , tooltipHint()
     , hintIsMarkdown(false)
     , isAnimationEnabled(true)
-    , dimension(nDims)
+    , dimension()
     , allDimensionsVisible()
     , autoFoldEnabled(true)
     , autoAdjustFoldExpandEnabled(true)
     , perDimViewDataMutex()
     , perDimViewData()
     , perDimViewSavedData()
-    , declaredByPlugin(declaredByPlugin_)
+    , declaredByPlugin(true)
     , userKnob(false)
     , customInteract()
     , gui()
@@ -324,6 +317,8 @@ struct KnobHelperPrivate
     , expressionRecursionLevelMutex(QMutex::Recursive)
     , dimensionNames()
     , lastRandomHash(0)
+    , renderClonesMapMutex()
+    , renderClonesMap()
     , hasModificationsMutex()
     , hasModifications()
     , valueChangedBlockedMutex()
@@ -331,23 +326,69 @@ struct KnobHelperPrivate
     , autoKeyingDisabled(0)
     , isMetadataSlave(false)
     , keyframeTrackingEnabled(true)
+
     {
+
+    }
+};
+
+
+struct KnobHelperPrivate
+{
+    // Ptr to the public class, can not be a smart ptr
+    KnobHelper* publicInterface;
+
+    // The holder containing this knob. This may be null if the knob is not in a collection
+    KnobHolderWPtr holder;
+
+    // Pointer to the main instance if this is a render clone, or NULL
+    boost::weak_ptr<KnobHelper> mainInstance;
+
+    boost::shared_ptr<CommonData> common;
+
+    KnobHelperPrivate(KnobHelper* publicInterface_,
+                      const KnobHolderPtr& holder_,
+                      int nDims,
+                      const std::string & scriptName)
+    : publicInterface(publicInterface_)
+    , holder(holder_)
+    , mainInstance()
+    , common(new CommonData)
+    {
+        common->dimension = nDims;
+        common->name = scriptName;
+        common->originalName = scriptName;
+        common->label = scriptName;
+
         {
             KnobHolderPtr h = holder.lock();
             if ( h && !h->canKnobsAnimate() ) {
-                isAnimationEnabled = false;
+                common->isAnimationEnabled = false;
             }
         }
 
-        dimensionNames.resize(dimension);
-        hasModifications.resize(dimension);
-        allDimensionsVisible[ViewIdx(0)] = true;
-        perDimViewData.resize(dimension);
-        expressions.resize(dimension);
-        perDimViewSavedData.resize(dimension);
+        common->dimensionNames.resize(nDims);
+        common->hasModifications.resize(nDims);
+        common->allDimensionsVisible[ViewIdx(0)] = true;
+        common->expressions.resize(nDims);
+        common->perDimViewSavedData.resize(nDims);
         for (int i = 0; i < nDims; ++i) {
-            hasModifications[i][ViewIdx(0)] = false;
+            common->hasModifications[i][ViewIdx(0)] = false;
         }
+
+        common->perDimViewData.resize(nDims);
+    }
+
+    KnobHelperPrivate(KnobHelper* publicInterface,
+                      const KnobHolderPtr& holder,
+                      const KnobHelperPtr& mainInstance)
+    : publicInterface(publicInterface)
+    , holder(holder)
+    , mainInstance(mainInstance)
+    , common(mainInstance->_imp->common)
+    {
+        publicInterface->_signalSlotHandler = mainInstance->_signalSlotHandler;
+        common->perDimViewData.resize(common->dimension);
     }
 
     void parseListenersFromExpression(DimIdx dimension, ViewIdx view);

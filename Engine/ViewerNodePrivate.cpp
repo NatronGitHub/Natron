@@ -245,7 +245,7 @@ ViewerNodePrivate::setAlphaChannelFromLayerIfRGBA()
     ImagePlaneDesc selectedLayer, selectedAlphaLayer, selectedDisplayLayer;
     int alphaChannelIndex;
     ViewerInstancePtr internalViewer = internalViewerProcessNode[0].lock()->isEffectViewerInstance();
-    internalViewer->getChannelOptions(TreeRenderNodeArgsPtr(), _publicInterface->getTimelineCurrentTime(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
+    internalViewer->getChannelOptions(_publicInterface->getTimelineCurrentTime(), &selectedLayer, &selectedAlphaLayer, &alphaChannelIndex, &selectedDisplayLayer);
 
     // Set the alpha channel to the selected layer's alpha channel if it is not pointing to anything
     if (selectedLayer.getNumComponents() == 4 && selectedAlphaLayer.getNumComponents() == 0) {

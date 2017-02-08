@@ -50,16 +50,6 @@ public:
 
     virtual ~AbortableThread();
 
-    /**
-     * @brief Set the informations related to a specific render so we know if it was aborted or not in getAbortInfo()
-     **/
-    void setCurrentRender(const TreeRenderPtr& render);
-
-    /**
-     * @brief Returns the render currently owning this thread
-     **/
-    TreeRenderPtr getCurrentRender() const;
-
     // For debug purposes, so that the debugger can display the thread name
     void setThreadName(const std::string& threadName);
 

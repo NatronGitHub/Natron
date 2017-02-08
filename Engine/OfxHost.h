@@ -154,7 +154,7 @@ public:
 
     void clearPluginsLoadedCache();
 
-    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
+    void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
 
     OFX::Host::ImageEffect::Descriptor* getPluginContextAndDescribe(OFX::Host::ImageEffect::ImageEffectPlugin* plugin,
                                                                     ContextEnum* ctx);
@@ -166,11 +166,10 @@ public:
      **/
     struct OfxHostTLSData
     {
-        OfxImageEffectInstance* lastEffectCallingMainEntry;
-
-
+        std::list<OfxEffectInstancePtr> effectActionsStack;
+        
         OfxHostTLSData()
-            : lastEffectCallingMainEntry(0)
+        : effectActionsStack()
         {
         }
     };
@@ -178,6 +177,8 @@ public:
     typedef boost::shared_ptr<OfxHostTLSData> OfxHostDataTLSPtr;
 
     OfxHostDataTLSPtr getTLSData() const;
+    
+    OfxEffectInstancePtr getCurrentEffect_TLS() const;
 
 private:
 

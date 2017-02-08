@@ -163,6 +163,7 @@ Node::load(const CreateNodeArgsPtr& args)
     }
     _imp->effect = createFunc(thisShared);
     assert(_imp->effect);
+    assert(!_imp->effect->isRenderClone());
     if (!_imp->effect) {
         throw std::runtime_error(tr("Could not create instance of %1").arg(QString::fromUtf8(getPluginID().c_str())).toStdString());
     }
@@ -200,13 +201,13 @@ Node::load(const CreateNodeArgsPtr& args)
     initNodeScriptName(serialization.get(), QString::fromUtf8(argFixedName.c_str()));
 
     // Set plug-in accepted bitdepths and set default metadata
-    refreshAcceptedBitDepths();
+    _imp->effect->refreshAcceptedBitDepths();
 
     // Load inputs
     initializeInputs();
 
     // Create knobs
-    initializeKnobs(serialization.get() != 0, !argsNoNodeGui);
+    _imp->effect->initializeKnobs(serialization.get() != 0, !argsNoNodeGui);
 
     // If this node is a group and we are in gui mode, create the node graph right now before creating any other
     // subnodes (in restoreNodeToDefaultState). This is so that the nodes get a proper position
@@ -227,22 +228,24 @@ Node::load(const CreateNodeArgsPtr& args)
     _imp->effect->createInstanceAction_public();
 
     // For readers, set their original frame range when creating them
+#if 0
     if ( !serialization && ( _imp->effect->isReader() || _imp->effect->isWriter() ) ) {
         KnobIPtr filenameKnob = getKnobByName(kOfxImageEffectFileParamName);
         if (filenameKnob) {
-            onFileNameParameterChanged(filenameKnob);
+            _imp->effect->onFileNameParameterChanged(filenameKnob);
         }
     }
+#endif
 
 
     // Refresh dynamic props such as tiles support, OpenGL support, multi-thread etc...
-    refreshDynamicProperties();
+    _imp->effect->refreshDynamicProperties();
 
     // Ensure the OpenGL support knob has a consistant state according to the project
-    onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
+    _imp->effect->onOpenGLEnabledKnobChangedOnProject(getApp()->getProject()->isOpenGLRenderActivated());
 
     // Get the sub-label knob
-    restoreSublabel();
+    _imp->effect->restoreSublabel();
 
     // If this plug-in create views (ReadOIIO only) then refresh them
     refreshCreatedViews();
@@ -375,9 +378,10 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
         if (isPage) {
             KnobPagePtr page;
             if (!found) {
-                page = AppManager::createKnob<KnobPage>(_imp->effect, groupSerialization->_label, 1, false);
+                page = _imp->effect->createKnob<KnobPage>(groupSerialization->_name);
+                page->setLabel(groupSerialization->_label);
+                page->setDeclaredByPlugin(false);
                 page->setAsUserKnob(true);
-                page->setName(groupSerialization->_name);
             } else {
                 page = toKnobPage(found);
             }
@@ -392,7 +396,9 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
         } else if (isGroup) { //!ispage
             KnobGroupPtr grp;
             if (!found) {
-                grp = AppManager::createKnob<KnobGroup>(_imp->effect, groupSerialization->_label, 1, false);
+                grp = _imp->effect->createKnob<KnobGroup>(groupSerialization->_name);
+                grp->setDeclaredByPlugin(false);
+                grp->setLabel(groupSerialization->_label);
             } else {
                 grp = toKnobGroup(found);
 
@@ -449,27 +455,27 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
             knob = found;
         } else {
             if (isInt) {
-                knob = AppManager::createKnob<KnobInt>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobInt>(serialization->_scriptName);
             } else if (isDouble) {
-                knob = AppManager::createKnob<KnobDouble>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobDouble>(serialization->_scriptName);
             } else if (isBool) {
-                knob = AppManager::createKnob<KnobBool>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobBool>(serialization->_scriptName);
             } else if (isChoice) {
-                knob = AppManager::createKnob<KnobChoice>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobChoice>(serialization->_scriptName);
             } else if (isColor) {
-                knob = AppManager::createKnob<KnobColor>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobColor>(serialization->_scriptName);
             } else if (isString) {
-                knob = AppManager::createKnob<KnobString>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobString>(serialization->_scriptName);
             } else if (isFile) {
-                knob = AppManager::createKnob<KnobFile>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobFile>(serialization->_scriptName);
             } else if (isPath) {
-                knob = AppManager::createKnob<KnobPath>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobPath>(serialization->_scriptName);
             } else if (isButton) {
-                knob = AppManager::createKnob<KnobButton>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobButton>(serialization->_scriptName);
             } else if (isSeparator) {
-                knob = AppManager::createKnob<KnobSeparator>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobSeparator>(serialization->_scriptName);
             } else if (isParametric) {
-                knob = AppManager::createKnob<KnobParametric>(_imp->effect, serialization->_label, serialization->_dimension, false);
+                knob = _imp->effect->createKnob<KnobParametric>(serialization->_scriptName);
             }
 
         } // found
@@ -479,7 +485,8 @@ Node::restoreUserKnob(const KnobGroupPtr& group,
         if (!knob) {
             return;
         }
-
+        knob->setDeclaredByPlugin(false);
+        knob->setLabel(serialization->_label);
         knob->fromSerialization(*serialization);
         
         if (group) {
@@ -528,7 +535,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
     // Always store the sub-graph when encoding as a PyPlug
     const bool subGraphEdited = serialization->_encodeType == SERIALIZATION_NAMESPACE::NodeSerialization::eNodeSerializationTypePyPlug || isSubGraphEditedByUser();
 
-    KnobPagePtr pyPlugPage = _imp->pyPlugPage.lock();
+    KnobPagePtr pyPlugPage = getEffectInstance()->getPyPlugPage();
 
     KnobsVec knobs = getEffectInstance()->getKnobs_mt_safe();
     std::list<KnobIPtr > userPages;
@@ -682,7 +689,7 @@ Node::toSerialization(SERIALIZATION_NAMESPACE::SerializationObjectBase* serializ
 
     // User created components
     std::list<ImagePlaneDesc> userComps;
-    getUserCreatedComponents(&userComps);
+    _imp->effect->getUserCreatedComponents(&userComps);
     for (std::list<ImagePlaneDesc>::iterator it = userComps.begin(); it!=userComps.end(); ++it) {
         SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization s;
         it->toSerialization(&s);
@@ -841,14 +848,13 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
     _imp->effect->beginChanges();
     _imp->effect->onKnobsAboutToBeLoaded(serialization);
 
-    {
-        QMutexLocker k(&_imp->createdComponentsMutex);
-        for (std::list<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
-            ImagePlaneDesc s;
-            s.fromSerialization(*it);
-            _imp->createdComponents.push_back(s);
-        }
+
+    for (std::list<SERIALIZATION_NAMESPACE::ImagePlaneDescSerialization>::const_iterator it = serialization._userComponents.begin(); it!=serialization._userComponents.end(); ++it) {
+        ImagePlaneDesc s;
+        s.fromSerialization(*it);
+        _imp->effect->addUserComponents(s);
     }
+
 
     {
         // Load all knobs
@@ -869,7 +875,7 @@ Node::loadKnobsFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerializatio
 
     KnobIPtr filenameParam = getKnobByName(kOfxImageEffectFileParamName);
     if (filenameParam) {
-        computeFrameRangeForReader(filenameParam, false);
+        getEffectInstance()->computeFrameRangeForReader(filenameParam, false);
     }
 
     // now restore the roto context if the node has a roto context
@@ -1059,14 +1065,14 @@ Node::exportNodeToPyPlug(const std::string& filePath)
 
     // Perform checks before writing the file
     {
-        std::string pyPlugID = _imp->pyPlugIDKnob.lock()->getValue();
+        std::string pyPlugID = _imp->effect->getPyPlugIDKnob()->getValue();
         if (pyPlugID.empty()) {
             std::string message = tr("The plug-in ID cannot be empty").toStdString();
             throw std::runtime_error(message);
         }
     }
     {
-        std::string pyPlugLabel = _imp->pyPlugLabelKnob.lock()->getValue();
+        std::string pyPlugLabel = _imp->effect->getPyPlugLabelKnob()->getValue();
         if (pyPlugLabel.empty()) {
             std::string message = tr("The plug-in label cannot be empty").toStdString();
             throw std::runtime_error(message);
@@ -1083,7 +1089,7 @@ Node::exportNodeToPyPlug(const std::string& filePath)
     }
 
     {
-        std::string iconFilePath = _imp->pyPlugIconKnob.lock()->getValue();
+        std::string iconFilePath = _imp->effect->getPyPlugIconKnob()->getValue();
         std::string path;
         std::size_t foundSlash = iconFilePath.find_last_of('/');
         if (foundSlash != std::string::npos) {
@@ -1095,7 +1101,7 @@ Node::exportNodeToPyPlug(const std::string& filePath)
         }
     }
     {
-        std::string callbacksFilePath = _imp->pyPlugExtPythonScript.lock()->getValue();
+        std::string callbacksFilePath = _imp->effect->getPyPlugExtScriptKnob()->getValue();
         std::string path;
         std::size_t foundSlash = callbacksFilePath.find_last_of('/');
         if (foundSlash != std::string::npos) {
@@ -1684,7 +1690,7 @@ Node::deactivate(const std::list< NodePtr > & outputsToDisconnect,
 
     ///Free all memory used by the plug-in.
 
-    clearLastRenderedImage();
+    _imp->effect->clearLastRenderedImage();
 
     if (parentCol && !beingDestroyed) {
         parentCol->notifyNodeDeactivated( shared_from_this() );

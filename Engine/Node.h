@@ -56,98 +56,7 @@ CLANG_DIAG_ON(deprecated)
 
 NATRON_NAMESPACE_ENTER;
 
-#define kNodePageParamName "nodePage"
-#define kNodePageParamLabel "Node"
-#define kInfoPageParamName "infoPage"
-#define kInfoPageParamLabel "Info"
-#define kPyPlugPageParamName "pyPlugPage"
-#define kPyPlugPageParamLabel "PyPlug"
 
-#define kDisableNodeKnobName "disableNode"
-#define kLifeTimeNodeKnobName "nodeLifeTime"
-#define kEnableLifeTimeNodeKnobName "enableNodeLifeTime"
-#define kUserLabelKnobName "userTextArea"
-#define kEnableMaskKnobName "enableMask"
-#define kEnableInputKnobName "enableInput"
-#define kMaskChannelKnobName "maskChannel"
-#define kInputChannelKnobName "inputChannel"
-#define kEnablePreviewKnobName "enablePreview"
-#define kOutputChannelsKnobName "channels"
-
-#define kHostMixingKnobName "hostMix"
-#define kHostMixingKnobLabel "Mix"
-#define kHostMixingKnobHint "Mix between the source image at 0 and the full effect at 1"
-
-#define kOfxMaskInvertParamName "maskInvert"
-#define kOfxMixParamName "mix"
-
-#define kReadOIIOAvailableViewsKnobName "availableViews"
-#define kWriteOIIOParamViewsSelector "viewsSelector"
-
-#define kNatronNodeKnobExportPyPlugGroup "exportPyPlugDialog"
-#define kNatronNodeKnobExportPyPlugGroupLabel "Export"
-
-#define kNatronNodeKnobExportPyPlugButton "exportPyPlug"
-#define kNatronNodeKnobExportPyPlugButtonLabel "Export"
-
-#define kNatronNodeKnobConvertToGroupButton "convertToGroup"
-#define kNatronNodeKnobConvertToGroupButtonLabel "Convert to Group"
-
-#define kNatronNodeKnobPyPlugPluginID "pyPlugPluginID"
-#define kNatronNodeKnobPyPlugPluginIDLabel "PyPlug ID"
-#define kNatronNodeKnobPyPlugPluginIDHint "When exporting a group to PyPlug, this will be the plug-in ID of the PyPlug.\n" \
-"Generally, this contains domain and sub-domains names " \
-"such as fr.inria.group.XXX.\n" \
-"If two plug-ins or more happen to have the same ID, they will be " \
-"gathered by version.\n" \
-"If two plug-ins or more have the same ID and version, the first loaded in the" \
-" search-paths will take precedence over the other."
-
-#define kNatronNodeKnobPyPlugPluginLabel "pyPlugPluginLabel"
-#define kNatronNodeKnobPyPlugPluginLabelLabel "PyPlug Label"
-#define kNatronNodeKnobPyPlugPluginLabelHint "When exporting a group to PyPlug, this will be the plug-in label as visible in the GUI of the PyPlug"
-
-#define kNatronNodeKnobPyPlugPluginGrouping "pyPlugPluginGrouping"
-#define kNatronNodeKnobPyPlugPluginGroupingLabel "PyPlug Grouping"
-#define kNatronNodeKnobPyPlugPluginGroupingHint "When exporting a group to PyPlug, this will be the grouping of the PyPlug, that is the menu under which it should be located. For example: \"Color/MyPyPlugs\". Each sub-level must be separated by a '/' character"
-
-#define kNatronNodeKnobPyPlugPluginIconFile "pyPlugPluginIcon"
-#define kNatronNodeKnobPyPlugPluginIconFileLabel "PyPlug Icon"
-#define kNatronNodeKnobPyPlugPluginIconFileHint "When exporting a group to PyPlug, this parameter indicates the filename of a PNG file of the icon to be used for this plug-in. The filename should be relative to the directory containing the PyPlug script"
-
-#define kNatronNodeKnobPyPlugPluginDescription "pyPlugPluginDescription"
-#define kNatronNodeKnobPyPlugPluginDescriptionLabel "PyPlug Description"
-#define kNatronNodeKnobPyPlugPluginDescriptionHint "When exporting a group to PyPlug, this will be the documentation of the PyPlug"
-
-#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdown "pyPlugPluginDescriptionIsMarkdown"
-#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownLabel "Markdown"
-#define kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint "Indicates whether the PyPlug description is encoded in Markdown or not. This is helpful to use rich text capabilities for the documentation"
-
-#define kNatronNodeKnobPyPlugPluginVersion "pyPlugPluginVersion"
-#define kNatronNodeKnobPyPlugPluginVersionLabel "PyPlug Version"
-#define kNatronNodeKnobPyPlugPluginVersionHint "When exporting a group to PyPlug, this will be the version of the PyPlug. This is useful to indicate users it has changed"
-
-#define kNatronNodeKnobPyPlugPluginCallbacksPythonScript "pyPlugCallbacksPythonScript"
-#define kNatronNodeKnobPyPlugPluginCallbacksPythonScriptLabel "Callback(s) Python script"
-#define kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint "When exporting a group to PyPlug, this parameter indicates the filename of a Python script where callbacks used by this PyPlug are defined. The filename should be relative to the directory containing the PyPlug script"
-
-#define kNatronNodeKnobPyPlugPluginShortcut "pyPlugPluginShortcut"
-#define kNatronNodeKnobPyPlugPluginShortcutLabel "PyPlug Shortcut"
-#define kNatronNodeKnobPyPlugPluginShortcutHint "When exporting a group to PyPlug, this will be the keyboard shortcut by default the user can use to create the PyPlug. The user can always change it later on in the Preferences/Shortcut Editor"
-
-#define kNatronNodeKnobExportDialogFilePath "exportFilePath"
-#define kNatronNodeKnobExportDialogFilePathLabel "File"
-#define kNatronNodeKnobExportDialogFilePathHint "The file where to write"
-
-#define kNatronNodeKnobExportDialogOkButton "exportDialogOkButton"
-#define kNatronNodeKnobExportDialogOkButtonLabel "Ok"
-
-#define kNatronNodeKnobExportDialogCancelButton "exportDialogCancelButton"
-#define kNatronNodeKnobExportDialogCancelButtonLabel "Cancel"
-
-#define kNatronNodeKnobKeepInAnimationModuleButton "keepInAnimationModuleButton"
-#define kNatronNodeKnobKeepInAnimationModuleButtonLabel "Keep In Animation Module"
-#define kNatronNodeKnobKeepInAnimationModuleButtonHint "When checked, this node will always be visible in the Animation Module regardless of whether its settings panel is opened or not"
 
 struct NodePrivate;
 class Node
@@ -193,12 +102,6 @@ public:
 
     // For groups which may be pyplugs, return the handle of the group plugin
     PluginPtr getOriginalPlugin() const;
-
-
-    void setPrecompNode(const PrecompNodePtr& precomp);
-
-    //
-    PrecompNodePtr isPartOfPrecomp() const;
 
     /**
      * @brief Creates the EffectInstance that will be embedded into this node and set it up.
@@ -348,7 +251,6 @@ public:
 
     bool isGLFinishRequiredBeforeRender() const;
 
-    void refreshAcceptedBitDepths();
 
     /**
      * @brief Quits any processing on going on this node, this call is non blocking
@@ -453,38 +355,6 @@ public:
      **/
     bool isEntitledForInspectorInputsStyle() const;
 
-    /**
-     * @brief Returns true if the given input supports the given components. If inputNb equals -1
-     * then this function will check whether the effect can produce the given components.
-     **/
-    bool isSupportedComponent(int inputNb, const ImagePlaneDesc& comp) const;
-
-    /**
-     * @brief Returns the most appropriate number of components that can be supported by the inputNb.
-     * If inputNb equals -1 then this function will check the output components.
-     **/
-    int findClosestSupportedNumberOfComponents(int inputNb, int nComps) const;
-
-    ImageBitDepthEnum getBestSupportedBitDepth() const;
-    bool isSupportedBitDepth(ImageBitDepthEnum depth) const;
-    ImageBitDepthEnum getClosestSupportedBitDepth(ImageBitDepthEnum depth);
-
-    /**
-     * @brief Returns the components and index of the channel to use to produce the mask.
-     * None = -1
-     * R = 0
-     * G = 1
-     * B = 2
-     * A = 3
-     **/
-    int getMaskChannel(int inputNb, const std::list<ImagePlaneDesc>& availableLayers, ImagePlaneDesc* comps) const;
-
-    int isMaskChannelKnob(const KnobIConstPtr& knob) const;
-
-    /**
-     * @brief Returns whether masking is enabled or not
-     **/
-    bool isMaskEnabled(int inputNb) const;
 
     /**
      * @brief Returns a pointer to the input Node at index 'index'
@@ -571,45 +441,10 @@ public:
 
     NodePtr getPreferredInputNode() const;
 
-
-    void setRenderThreadSafety(RenderSafetyEnum safety);
-    RenderSafetyEnum getCurrentRenderThreadSafety() const;
-    RenderSafetyEnum getPluginRenderThreadSafety() const;
-    void revertToPluginThreadSafety();
-
-    void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
-    PluginOpenGLRenderSupport getCurrentOpenGLRenderSupport() const;
-
-    void setCurrentSequentialRenderSupport(SequentialPreferenceEnum support);
-    SequentialPreferenceEnum getCurrentSequentialRenderSupport() const;
-
-    void setCurrentCanDistort(bool support);
-    bool getCurrentCanDistort() const;
-
-    void setCurrentCanTransform(bool support);
-    bool getCurrentCanTransform() const;
-
-    void setCurrentSupportTiles(bool support);
-    bool getCurrentSupportTiles() const;
-
-    void setCurrentSupportRenderScale(bool support);
-    bool getCurrentSupportRenderScale() const;
-
-    void refreshDynamicProperties();
-
     bool isRenderScaleSupportEnabledForPlugin() const;
 
     bool isMultiThreadingSupportEnabledForPlugin() const;
 
-    /////////////////////ROTO-PAINT related functionnalities//////////////////////
-    //////////////////////////////////////////////////////////////////////////////
-
-    bool isDuringPaintStrokeCreation() const;
-
-    ////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////////////////////////////////////////////////////////////
-
-    void setProcessChannelsValues(bool doR, bool doG, bool doB, bool doA);
 
     /**
      * @brief Used in the implementation of EffectInstance::onMetadataChanged_recursive so we know if the metadata changed or not.
@@ -707,9 +542,6 @@ public:
 
     bool isSettingsPanelMinimized() const;
 
-    void onOpenGLEnabledKnobChangedOnProject(bool activated);
-
-    KnobChoicePtr getOrCreateOpenGLEnabledKnob() const;
 
 private:
 
@@ -751,27 +583,11 @@ public:
     bool getNodeIsSelected() const;
 
 
-    std::string getKnobChangedCallback() const;
-    std::string getInputChangedCallback() const;
+
 
     void runChangedParamCallback(const KnobIPtr& k, bool userEdited);
 
-    /**
-     * @brief This is used exclusively by nodes in the underlying graph of the implementation of the RotoPaint.
-     * Do not use that anywhere else.
-     **/
-    void attachRotoItem(const RotoDrawableItemPtr& stroke);
 
-    /**
-     * @brief Returns the attached roto item. If called from a render thread, this will
-     * return a pointer to the shallow render copy.
-     **/
-    RotoDrawableItemPtr getAttachedRotoItem() const;
-
-    /**
-     * @brief Return the item set with attachRotoItem
-     **/
-    RotoDrawableItemPtr getOriginalAttachedItem() const;
 
 protected:
 
@@ -974,11 +790,6 @@ public:
 
     int getIsNodeRenderingCounter() const;
 
-
-    //see eRenderSafetyInstanceSafe in EffectInstance::renderRoI
-    //only 1 clone can render at any time
-    QMutex & getRenderInstancesSharedMutex();
-
     void refreshPreviewsRecursivelyDownstream(TimeValue time);
 
     void refreshPreviewsRecursivelyUpstream(TimeValue time);
@@ -990,9 +801,6 @@ public:
     //When creating a Reader or Writer node, this is a pointer to the "bundle" node that the user actually see.
     NodePtr getIOContainer() const;
 
-    KnobStringPtr getExtraLabelKnob() const;
-
-    KnobStringPtr getOFXSubLabelKnob() const;
 
     void beginInputEdition();
 
@@ -1000,29 +808,6 @@ public:
 
     void onInputChanged(int inputNb);
 
-    bool onEffectKnobValueChanged(const KnobIPtr& what, ValueChangedReasonEnum reason);
-
-    bool getDisabledKnobValue() const;
-
-    bool isNodeDisabledForFrame(TimeValue time, ViewIdx view) const;
-
-    void setNodeDisabled(bool disabled);
-
-    KnobBoolPtr getDisabledKnob() const;
-
-    bool isLifetimeActivated(int *firstFrame, int *lastFrame) const;
-
-    KnobBoolPtr getLifeTimeEnabledKnob() const;
-
-    KnobIntPtr getLifeTimeKnob() const;
-
-    std::string getNodeExtraLabel() const;
-
-    bool isKeepInAnimationModuleButtonDown() const;
-
-private:
-
-    void restoreSublabel();
 
 public:
 
@@ -1036,29 +821,13 @@ public:
      **/
     bool hasSequentialOnlyNodeUpstream(std::string & nodeName) const;
 
-
-    /**
-     * @brief Updates the sub label knob: e.g for the Merge node it corresponds to the
-     * operation name currently used and visible on the node
-     **/
-    void updateEffectSubLabelKnob(const QString & name);
-
     /**
      * @brief Returns true if an effect should be able to connect this node.
      **/
     bool canOthersConnectToThisNode() const;
 
-    /**
-     * @brief Clears any pointer refering to the last rendered image
-     **/
-    void clearLastRenderedImage();
 
-    /**
-     * @brief For plug-ins that accumulate (for now just RotoShapeRenderNode), this is a pointer
-     * to the last rendered image.
-     **/
-    void setLastRenderedImage(const ImagePtr& lastRenderedImage);
-    ImagePtr getLastRenderedImage() const;
+    
 
     struct KnobLink
     {
@@ -1073,54 +842,7 @@ public:
     void initializeInputs();
 
     /**
-     * @brief Forwarded to the live effect instance
-     **/
-    void initializeKnobs(bool loadingSerialization, bool hasGUI);
 
-    void checkForPremultWarningAndCheckboxes();
-
-    void findPluginFormatKnobs();
-
-    KnobDoublePtr getOrCreateHostMixKnob(const KnobPagePtr& mainPage);
-    
-    KnobPagePtr getOrCreateMainPage();
-
-private:
-
-    void initializeDefaultKnobs(bool loadingSerialization, bool hasGUI);
-
-    void findPluginFormatKnobs(const KnobsVec & knobs, bool loadingSerialization);
-
-    void findRightClickMenuKnob(const KnobsVec& knobs);
-
-    void createNodePage(const KnobPagePtr& settingsPage);
-
-    void createInfoPage();
-
-    void createPyPlugPage();
-
-    void createPyPlugExportGroup();
-
-    void createMaskSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
-                             const std::vector<std::string>& inputLabels,
-                             const KnobPagePtr& mainPage,
-                             bool addNewLineOnLastMask,
-                             KnobIPtr* lastKnobCreated);
-
-
-    void createLabelKnob(const KnobPagePtr& settingsPage, const std::string& label);
-
-    void findOrCreateChannelEnabled();
-
-    void createChannelSelectors(const std::vector<std::pair<bool, bool> >& hasMaskChannelSelector,
-                                const std::vector<std::string>& inputLabels,
-                                const KnobPagePtr& mainPage,
-                                KnobIPtr* lastKnobBeforeAdvancedOption);
-
-public:
-
-
-    /**
      * @brief Returns true if the parallel render args thread-storage is set
      **/
     bool isNodeRendering() const;
@@ -1136,9 +858,7 @@ public:
      **/
     bool checkIfConnectingInputIsOk(const NodePtr& input) const;
 
-    bool isForceCachingEnabled() const;
-
-    void setForceCachingEnabled(bool b);
+ 
 
     /**
      * @brief Declares to Python all parameters as attribute of the variable representing this node.
@@ -1184,20 +904,13 @@ public:
 
     const std::string& getLabel() const;
     std::string getLabel_mt_safe() const;
-    std::string getBeforeRenderCallback() const;
-    std::string getBeforeFrameRenderCallback() const;
-    std::string getAfterRenderCallback() const;
-    std::string getAfterFrameRenderCallback() const;
-    std::string getAfterNodeCreatedCallback() const;
-    std::string getBeforeNodeRemovalCallback() const;
+   
     
     void runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason);
 
-    void onFileNameParameterChanged(const KnobIPtr& fileKnob);
 
     static void getOriginalFrameRangeForReader(const std::string& pluginID, const std::string& canonicalFileName, int* firstFrame, int* lastFrame);
 
-    void computeFrameRangeForReader(const KnobIPtr& fileKnob, bool setFrameRange);
 
 
     bool canHandleRenderScaleForOverlays() const;
@@ -1320,41 +1033,11 @@ public:
 
     bool isSubGraphEditedByUser() const;
 
-    //Returns true if changed
-    bool refreshChannelSelectors();
-
-    void refreshLayersSelectorsVisibility();
-
-    bool isPluginUsingHostChannelSelectors() const;
-
-    bool getProcessChannel(int channelIndex) const;
-
-    KnobBoolPtr getProcessChannelKnob(int channelIndex) const;
-
-    KnobChoicePtr getChannelSelectorKnob(int inputNb) const;
-
-    KnobBoolPtr getProcessAllLayersKnob() const;
-
-    bool getSelectedLayer(int inputNb,
-                          const std::list<ImagePlaneDesc>& availableLayers,
-                          std::bitset<4> *processChannels,
-                          bool* isAll,
-                          ImagePlaneDesc *layer) const;
-
-    bool addUserComponents(const ImagePlaneDesc& comps);
-
-    void getUserCreatedComponents(std::list<ImagePlaneDesc>* comps);
-
-    bool hasAtLeastOneChannelToProcess() const;
-
     void removeParameterFromPython(const std::string& parameterName);
-
-    double getHostMixingValue(TimeValue time, ViewIdx view) const;
 
 public:
 
 
-    KnobChoicePtr getLayerChoiceKnob(int inputNb) const;
 
     const std::vector<std::string>& getCreatedViews() const;
 
@@ -1362,14 +1045,6 @@ public:
 
     void refreshIdentityState();
 
-    bool getHideInputsKnobValue() const;
-    void setHideInputsKnobValue(bool hidden);
-
-    int getFrameStepKnobValue() const;
-
-    void refreshFormatParamChoice(const std::vector<ChoiceOption>& entries, int defValue, bool loadingProject);
-
-    bool handleFormatKnob(const KnobIPtr& knob);
 
     QString makeDocumentation(bool genHTML) const;
 
@@ -1392,11 +1067,11 @@ public:
     void setStreamWarnings(const std::map<StreamWarningEnum, QString>& warnings);
     void getStreamWarnings(std::map<StreamWarningEnum, QString>* warnings) const;
 
-    void refreshEnabledKnobsLabel(const ImagePlaneDesc& mainInputComps, const ImagePlaneDesc& outputComps);
 
     bool isNodeUpstream(const NodeConstPtr& input) const;
 
-    void onNodeMetadatasRefreshedOnMainThread(const NodeMetadata& meta);
+
+    void refreshCreatedViews(const KnobIPtr& knob);
 
 private:
 
@@ -1410,13 +1085,11 @@ private:
 
     bool setStreamWarningInternal(StreamWarningEnum warning, const QString& message);
 
-    void refreshCreatedViews(const KnobIPtr& knob);
 
     void setNameInternal(const std::string& name, bool throwErrors);
 
     std::string getFullyQualifiedNameInternal(const std::string& scriptName) const;
 
-    void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
 
 public Q_SLOTS:
 
@@ -1450,6 +1123,38 @@ public Q_SLOTS:
         Q_EMIT settingsPanelClosed(closed);
     }
 
+    void s_nodeExtraLabelChanged()
+    {
+        Q_EMIT nodeExtraLabelChanged();
+    }
+
+    void s_previewKnobToggled()
+    {
+        Q_EMIT previewKnobToggled();
+    }
+
+    void s_disabledKnobToggled(bool disabled)
+    {
+        Q_EMIT disabledKnobToggled(disabled);
+    }
+    void s_hideInputsKnobChanged(bool hidden)
+    {
+        Q_EMIT hideInputsKnobChanged(hidden);
+    }
+
+    void s_keepInAnimationModuleKnobChanged()
+    {
+        Q_EMIT keepInAnimationModuleKnobChanged();
+    }
+
+    void s_enabledChannelCheckboxChanged()
+    {
+        Q_EMIT enabledChannelCheckboxChanged();
+    }
+
+    void s_outputLayerChanged() { Q_EMIT outputLayerChanged(); }
+
+    
 Q_SIGNALS:
 
     void keepInAnimationModuleKnobChanged();
@@ -1473,8 +1178,6 @@ Q_SIGNALS:
     void inputsInitialized();
 
     void inputLabelChanged(int, QString);
-
-    void knobsInitialized();
 
     /*
      * @brief Emitted whenever an input changed on the GUI.
@@ -1528,14 +1231,13 @@ Q_SIGNALS:
 
     void enabledChannelCheckboxChanged();
 
+
 private:
 
 
     void declareTablePythonFields();
 
-    std::string makeInfoForInput(int inputNumber) const;
 
-    void refreshInfos();
 
 
     void declareNodeVariableToPython(const std::string& nodeName);

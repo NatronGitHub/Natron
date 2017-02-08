@@ -437,7 +437,7 @@ NodeGraph::showMenu(const QPoint & pos)
     hideInputs->setCheckable(true);
     bool hideInputsVal = false;
     if ( !selectedNodes.empty() ) {
-        hideInputsVal = selectedNodes.front()->getNode()->getHideInputsKnobValue();
+        hideInputsVal = selectedNodes.front()->getNode()->getEffectInstance()->getHideInputsKnobValue();
     }
     hideInputs->setChecked(hideInputsVal);
     QObject::connect( hideInputs, SIGNAL(triggered()), this, SLOT(toggleHideInputs()) );

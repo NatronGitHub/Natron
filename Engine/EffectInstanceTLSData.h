@@ -83,29 +83,15 @@ public:
     bool canSetValue;
 #endif
 
-    virtual GenericActionTLSArgsPtr createCopy()
-    {
-        GenericActionTLSArgsPtr ret(new GenericActionTLSArgs);
-        ret->time = time;
-        ret->scale = scale;
-        ret->view = view;
-#ifdef DEBUG
-        ret->canSetValue = canSetValue;
-#endif
-        return ret;
-    }
 };
 
-
-// The render action requires extra data that are valid throughout a single call
-// of a render action
 class RenderActionTLSData : public GenericActionTLSArgs
 {
 public:
 
     RenderActionTLSData()
     : GenericActionTLSArgs()
-    , renderWindowPixel()
+    , renderWindow()
     , outputPlanes()
     {
 
@@ -113,37 +99,12 @@ public:
 
     virtual ~RenderActionTLSData() OVERRIDE {}
 
-
-    // The render window passed to the render action in pixel coordinates.
-    // This is useful in the following cases:
-    // - the clipGetImage function on the output clip should return an OfxImage with bounds
-    // that are clipped to this render window so that if the plug-in attempts to write outside
-    // the bounds, it may be caught easily
-    // - When calling clipGetImage on an input clip: if the call at the given time/view was not
-    // advertised properly in getFramesNeeded, we don't have an image pointer to the input image,
-    // thus we have to re-call renderRoI: but we need to make sure we don't ask for more than what
-    // getRegionsOfInterest on the renderwindow would compute.
-    RectI renderWindowPixel;
+    // The render window in pixel coordinates that was passed to render
+    RectI renderWindow;
 
     // For each plane to render, the pointers to the internal images used during render: this is used when calling
     // clipGetImage on the output clip.
-    std::map<ImagePlaneDesc, PlaneToRender> outputPlanes;
-
-    virtual GenericActionTLSArgsPtr createCopy() OVERRIDE FINAL
-    {
-        RenderActionTLSDataPtr ret(new RenderActionTLSData);
-        ret->time = time;
-        ret->scale = scale;
-        ret->view = view;
-#ifdef DEBUG
-        ret->canSetValue = canSetValue;
-#endif
-        ret->renderWindowPixel = renderWindowPixel;
-        ret->outputPlanes  = outputPlanes;
-        return ret;
-    }
-
-
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
 
 };
 
@@ -155,8 +116,6 @@ class EffectInstanceTLSData
 public:
 
     EffectInstanceTLSData();
-
-    EffectInstanceTLSData(const EffectInstanceTLSData& other);
 
     virtual ~EffectInstanceTLSData();
 
@@ -174,9 +133,9 @@ public:
     /**
      * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
      **/
-    void pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
-                              const RectI& renderWindowPixel,
-                              const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes);
+    void pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+                              const RectI& renderWindow,
+                              const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes);
 
     /**
      * @brief Pop the current action TLS. This call must match a call to one of the push functions above.
@@ -203,31 +162,19 @@ public:
      * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
      **/
     bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
-                                    RectI* renderWindowPixel,
-                                    std::map<ImagePlaneDesc, PlaneToRender>* outputPlanes) const;
+                                    RectI* renderWindow,
+                                    std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const;
 
     /**
-     * @brief If the current action is the render action, this sets the output planes.
+     * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
      **/
-    void updateCurrentRenderActionOutputPlanes(const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes);
+    void setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData);
 
+    
     /**
-     * @brief This function pops the last action arguments of the stack if it is the render action.
-     * The reason for this function is when we do host frame threading:
-     * The original thread might already have TLS set for the render action when we copy TLS onto the new thread.
-     * But the new thread does not want the render action TLS, so we pop it.
+     * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
      **/
-    void ensureLastActionInStackIsNotRender();
-
-    /**
-     * @brief Returns the render args
-     **/
-    TreeRenderNodeArgsPtr getRenderArgs() const;
-
-    /**
-     * @brief Set the parallel render args
-     **/
-    void setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs);
+    FrameViewRequestPtr getCurrentFrameViewRequest() const;
 
     
 private:
@@ -272,12 +219,12 @@ class RenderActionArgsSetter_RAII
 public:
 
     RenderActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
-                                TimeValue time, ViewIdx view, RenderScale& scale,
-                                const RectI& renderWindowPixel,
-                                const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes)
+                                TimeValue time, ViewIdx view, const RenderScale& scale,
+                                const RectI& renderWindow,
+                                const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
     : tls(tls)
     {
-        tls->pushRenderActionArgs(time, view, scale, renderWindowPixel, outputPlanes);
+        tls->pushRenderActionArgs(time, view, scale, renderWindow, outputPlanes);
     }
 
     ~RenderActionArgsSetter_RAII()
@@ -287,6 +234,15 @@ public:
     
 };
 
+class SetCurrentFrameViewRequest_RAII
+{
+    EffectInstancePtr _effect;
+public:
+    
+    SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request);
+    
+    ~SetCurrentFrameViewRequest_RAII();
+};
 
 NATRON_NAMESPACE_EXIT;
 

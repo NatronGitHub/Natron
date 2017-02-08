@@ -250,13 +250,14 @@ NodePrivate::runOnNodeDeleteCB()
 
 
     // If this is a group, run the node deleted callback on itself
-    KnobStringPtr nodeDeletedKnob = nodeRemovalCallback.lock();
-    if (nodeDeletedKnob) {
-        cb = nodeDeletedKnob->getValue();
-        if (figureOutCallbackName(cb, &callbackFunction)) {
-            runOnNodeDeleteCBInternal(callbackFunction);
-        }
+    {
+        cb = effect->getBeforeNodeRemovalCallback();
+        if (!cb.empty()) {
+            if (figureOutCallbackName(cb, &callbackFunction)) {
+                runOnNodeDeleteCBInternal(callbackFunction);
+            }
 
+        }
     }
 
     // if there's a parent group, run the node deletec callback on the parent
@@ -264,7 +265,7 @@ NodePrivate::runOnNodeDeleteCB()
     if (isParentGroup) {
         NodePtr grpNode = isParentGroup->getNode();
         if (grpNode) {
-            cb = grpNode->getBeforeNodeRemovalCallback();
+            cb = isParentGroup->getBeforeNodeRemovalCallback();
             if (figureOutCallbackName(cb, &callbackFunction)) {
                 runOnNodeDeleteCBInternal(callbackFunction);
             }
@@ -289,9 +290,8 @@ NodePrivate::runOnNodeCreatedCB(bool userEdited)
     }
 
     // If this is a group, run the node created callback on itself
-    KnobStringPtr nodeDeletedKnob = nodeCreatedCallback.lock();
-    if (nodeDeletedKnob) {
-        cb = nodeDeletedKnob->getValue();
+    cb = effect->getAfterNodeCreatedCallback();
+    if (!cb.empty()) {
         if (figureOutCallbackName(cb, &callbackFunction)) {
             runOnNodeCreatedCBInternal(callbackFunction, userEdited);
         }
@@ -303,7 +303,7 @@ NodePrivate::runOnNodeCreatedCB(bool userEdited)
     if (isParentGroup) {
         NodePtr grpNode = isParentGroup->getNode();
         if (grpNode) {
-            cb = grpNode->getAfterNodeCreatedCallback();
+            cb = isParentGroup->getAfterNodeCreatedCallback();
             if (figureOutCallbackName(cb, &callbackFunction)) {
                 runOnNodeCreatedCBInternal(callbackFunction, userEdited);
             }
@@ -583,93 +583,29 @@ NodePrivate::runAfterItemsSelectionChangedCallback(const std::string& cb, const 
 void
 Node::runAfterTableItemsSelectionChangedCallback(const std::list<KnobTableItemPtr>& deselected, const std::list<KnobTableItemPtr>& selected, TableChangeReasonEnum reason)
 {
-    KnobStringPtr s = _imp->tableSelectionChangedCallback.lock();
-    if (!s) {
+    std::string s = _imp->effect->getAfterSelectionChangedCallback();
+    if (s.empty()) {
         return;
     }
-    _imp->runAfterItemsSelectionChangedCallback(s->getValue(), deselected, selected, reason);
+    _imp->runAfterItemsSelectionChangedCallback(s, deselected, selected, reason);
 }
 
 
 void
 Node::runChangedParamCallback(const KnobIPtr& k, bool userEdited)
 {
-    std::string cb = getKnobChangedCallback();
+    std::string cb = _imp->effect->getKnobChangedCallback();
     if (!cb.empty()) {
         _imp->runChangedParamCallback(cb, k, userEdited);
     }
 }
 
-std::string
-Node::getKnobChangedCallback() const
-{
-    KnobStringPtr s = _imp->knobChangedCallback.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-std::string
-Node::getInputChangedCallback() const
-{
-    KnobStringPtr s = _imp->inputChangedCallback.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-
-std::string
-Node::getBeforeRenderCallback() const
-{
-    KnobStringPtr s = _imp->beforeRender.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-std::string
-Node::getBeforeFrameRenderCallback() const
-{
-    KnobStringPtr s = _imp->beforeFrameRender.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-std::string
-Node::getAfterRenderCallback() const
-{
-    KnobStringPtr s = _imp->afterRender.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-std::string
-Node::getAfterFrameRenderCallback() const
-{
-    KnobStringPtr s = _imp->afterFrameRender.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-std::string
-Node::getAfterNodeCreatedCallback() const
-{
-    KnobStringPtr s = _imp->nodeCreatedCallback.lock();
-
-    return s ? s->getValue() : std::string();
-}
-
-std::string
-Node::getBeforeNodeRemovalCallback() const
-{
-    KnobStringPtr s = _imp->nodeRemovalCallback.lock();
-
-    return s ? s->getValue() : std::string();
-}
 
 
 void
 Node::runInputChangedCallback(int index)
 {
-    std::string cb = getInputChangedCallback();
+    std::string cb = _imp->effect->getInputChangedCallback();
 
     if ( !cb.empty() ) {
         _imp->runInputChangedCallback(index, cb);

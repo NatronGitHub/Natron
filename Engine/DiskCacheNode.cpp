@@ -36,6 +36,18 @@
 #include "Engine/TimeLine.h"
 #include "Engine/ViewIdx.h"
 
+#define kDiskCacheNodeFirstFrame "firstFrame"
+#define kDiskCacheNodeFirstFrameLabel "First Frame"
+#define kDiskCacheNodeFirstFrameHint ""
+
+#define kDiskCacheNodeLastFrame "lastFrame"
+#define kDiskCacheNodeLastFrameLabel "Last Frame"
+#define kDiskCacheNodeLastFrameHint ""
+
+#define kDiskCacheNodeFrameRange "frameRange"
+#define kDiskCacheNodeFrameRangeLabel "Frame Range"
+#define kDiskCacheNodeFrameRangeHint ""
+
 NATRON_NAMESPACE_ENTER;
 
 struct DiskCacheNodePrivate
@@ -55,7 +67,7 @@ DiskCacheNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)DiskCacheNode::create, PLUGINID_NATRON_DISKCACHE, "DiskCache", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)DiskCacheNode::create, (void*)DiskCacheNode::createRenderClone, PLUGINID_NATRON_DISKCACHE, "DiskCache", 1, 0, grouping);
 
     QString desc =  tr("This node caches all images of the connected input node onto the disk with full 32bit floating point raw data. "
                        "When an image is found in the cache, %1 will then not request the input branch to render out that image. "
@@ -79,6 +91,13 @@ DiskCacheNode::DiskCacheNode(const NodePtr& node)
 {
 }
 
+DiskCacheNode::DiskCacheNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp(new DiskCacheNodePrivate())
+{
+
+}
+
 DiskCacheNode::~DiskCacheNode()
 {
 }
@@ -99,7 +118,6 @@ DiskCacheNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 
 bool
 DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
-                                 const TreeRenderNodeArgsPtr& /*render*/,
                                  int /*visitsCount*/) const
 {
     // The disk cache node always caches.
@@ -109,10 +127,11 @@ DiskCacheNode::shouldCacheOutput(bool /*isFrameVaryingOrAnimated*/,
 void
 DiskCacheNode::initializeKnobs()
 {
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
-    KnobChoicePtr frameRange = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Frame range") );
-
-    frameRange->setName("frameRange");
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls") );
+    KnobChoicePtr frameRange = createKnob<KnobChoice>(kDiskCacheNodeFrameRange);
+    frameRange->setLabel(tr(kDiskCacheNodeFrameRangeLabel) );
+    frameRange->setHintToolTip(tr(kDiskCacheNodeFrameRangeHint));
     frameRange->setAnimationEnabled(false);
     {
         std::vector<ChoiceOption> choices;
@@ -126,9 +145,10 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(frameRange);
     _imp->frameRange = frameRange;
 
-    KnobIntPtr firstFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr("First Frame") );
+    KnobIntPtr firstFrame = createKnob<KnobInt>(kDiskCacheNodeFirstFrame);
+    firstFrame->setLabel(tr(kDiskCacheNodeFirstFrameLabel) );
+    firstFrame->setHintToolTip(tr(kDiskCacheNodeFirstFrameHint));
     firstFrame->setAnimationEnabled(false);
-    firstFrame->setName("firstFrame");
     firstFrame->disableSlider();
     firstFrame->setEvaluateOnChange(false);
     firstFrame->setAddNewLine(false);
@@ -137,9 +157,10 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(firstFrame);
     _imp->firstFrame = firstFrame;
 
-    KnobIntPtr lastFrame = AppManager::createKnob<KnobInt>( shared_from_this(), tr("Last Frame") );
+    KnobIntPtr lastFrame = createKnob<KnobInt>(kDiskCacheNodeLastFrame);
     lastFrame->setAnimationEnabled(false);
-    lastFrame->setName("LastFrame");
+    lastFrame->setLabel(tr(kDiskCacheNodeLastFrameLabel));
+    lastFrame->setHintToolTip(tr(kDiskCacheNodeLastFrameHint));
     lastFrame->disableSlider();
     lastFrame->setEvaluateOnChange(false);
     lastFrame->setDefaultValue(100);
@@ -147,12 +168,21 @@ DiskCacheNode::initializeKnobs()
     page->addKnob(lastFrame);
     _imp->lastFrame = lastFrame;
 
-    KnobButtonPtr preRender = AppManager::createKnob<KnobButton>( shared_from_this(), tr("Pre-cache") );
-    preRender->setName("preRender");
+    KnobButtonPtr preRender = createKnob<KnobButton>("preRender");
+    preRender->setLabel(tr("Pre-cache"));
     preRender->setEvaluateOnChange(false);
     preRender->setHintToolTip( tr("Cache the frame range specified by rendering images at zoom-level 100% only.") );
     page->addKnob(preRender);
     _imp->preRender = preRender;
+}
+
+void
+DiskCacheNode::fetchRenderCloneKnobs()
+{
+    EffectInstance::fetchRenderCloneKnobs();
+    _imp->frameRange = toKnobChoice(getKnobByName(kDiskCacheNodeFrameRange));
+    _imp->firstFrame = toKnobInt(getKnobByName(kDiskCacheNodeFirstFrame));
+    _imp->lastFrame = toKnobInt(getKnobByName(kDiskCacheNodeLastFrame));
 }
 
 bool
@@ -195,8 +225,7 @@ DiskCacheNode::knobChanged(const KnobIPtr& k,
 }
 
 ActionRetCodeEnum
-DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
-                             double *first,
+DiskCacheNode::getFrameRange(double *first,
                              double *last)
 {
     int idx = _imp->frameRange.lock()->getValue();
@@ -205,12 +234,9 @@ DiskCacheNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
     case 0: {
         EffectInstancePtr input = getInput(0);
         if (input) {
-            TreeRenderNodeArgsPtr inputRender;
-            if (render) {
-                inputRender = render->getInputRenderArgs(0);
-            }
+
             GetFrameRangeResultsPtr results;
-            ActionRetCodeEnum stat = input->getFrameRange_public(inputRender, &results);
+            ActionRetCodeEnum stat = input->getFrameRange_public(&results);
             if (isFailureRetCode(stat)) {
                 return stat;
             }
@@ -245,22 +271,18 @@ DiskCacheNode::render(const RenderActionArgs& args)
     // fetch source images and copy them
 
     for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
-        std::list<ImagePlaneDesc> layersToFetch;
-        layersToFetch.push_back(it->first);
 
-        GetImageInArgs inArgs(args);
+        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
-        inArgs.layers = &layersToFetch;
+        inArgs.plane = &it->first;
         GetImageOutArgs outArgs;
-        if (!getImagePlanes(inArgs, &outArgs)) {
+        if (!getImagePlane(inArgs, &outArgs)) {
             return eActionStatusInputDisconnected;
         }
 
-        ImagePtr inputImage = outArgs.imagePlanes.begin()->second;
-
         Image::CopyPixelsArgs cpyArgs;
         cpyArgs.roi = args.roi;
-        it->second->copyPixels(*inputImage, cpyArgs);
+        it->second->copyPixels(*outArgs.image, cpyArgs);
 
     }
     return eActionStatusOK;

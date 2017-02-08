@@ -102,8 +102,7 @@ public:
     RotoDrawableItem(const KnobItemsTablePtr& model);
 
     // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
-    RotoDrawableItem(const RotoDrawableItem& other);
+    RotoDrawableItem(const RotoDrawableItemPtr& other, const TreeRenderPtr& render);
 
     virtual ~RotoDrawableItem();
 
@@ -220,47 +219,9 @@ public:
 
     virtual void initializeKnobs() OVERRIDE;
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
+
     virtual RotoStrokeType getBrushType() const = 0;
-
-
-protected:
-    
-    /**
-     * @brief Create a shallow render copy of the other item. The copy will only contain stroke points
-     * that were not yet rendered (when drawing).
-     * By default this does not copy the item so there's no render clones. Only implement this if you have
-     * extra datas (such as control points or curves) that needs to be cloned through the render. If the item
-     * only use knobs you don't have to create a render copy as all knobs already are cached away.
-     * If implementing it, also re-implement isRenderCloneNeeded() to return true.
-     **/
-    virtual RotoDrawableItemPtr createRenderCopy() const
-    {
-        return RotoDrawableItemPtr();
-    }
-
-
-public:
-
-    virtual bool isRenderCloneNeeded() const
-    {
-        return false;
-    }
-
-    /**
-     * @brief Can only be called on a non render clone. This will create a render clone for the given renderID.
-     **/
-    RotoDrawableItemPtr getOrCreateCachedDrawable(const TreeRenderPtr& render);
-
-    /**
-     * @brief Retrieves the render clone for the given renderID
-     **/
-    RotoDrawableItemPtr getCachedDrawable(const TreeRenderPtr& render) const;
-
-    /**
-     * @brief Remove a cached drawable previously registered with getOrCreateCachedDrawable
-     **/
-    void removeCachedDrawable(const TreeRenderPtr& render) const;
-
 
 Q_SIGNALS:
 

@@ -415,9 +415,9 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
 
     // Define thisParam
     if (tableItem) {
-        ss << tabStr << "thisParam = thisItem." << name << "\n";
+        ss << tabStr << "thisParam = thisItem." << common->name << "\n";
     } else {
-        ss << tabStr << "thisParam = thisNode." << name << "\n";
+        ss << tabStr << "thisParam = thisNode." << common->name << "\n";
     }
 
     // Define dimension variable
@@ -435,7 +435,7 @@ KnobHelperPrivate::getReachablePythonAttributesForExpression(bool addTab,
 void
 KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
 {
-    assert(dimension >= 0 && dimension < (int)expressions.size());
+    assert(dimension >= 0 && dimension < (int)common->expressions.size());
 
     // Extract pointers to knobs referred to by the expression
     // Our heuristic is quite simple: we replace in the python code all calls to:
@@ -454,9 +454,9 @@ KnobHelperPrivate::parseListenersFromExpression(DimIdx dimension, ViewIdx view)
     std::string expressionCopy;
 
     {
-        QMutexLocker k(&expressionMutex);
-        ExprPerViewMap::const_iterator foundView = expressions[dimension].find(view);
-        if (foundView == expressions[dimension].end()) {
+        QMutexLocker k(&common->expressionMutex);
+        ExprPerViewMap::const_iterator foundView = common->expressions[dimension].find(view);
+        if (foundView == common->expressions[dimension].end()) {
             return;
         }
         expressionCopy = foundView->second.originalExpression;
@@ -679,9 +679,9 @@ KnobHelper::checkInvalidExpressions()
 
     std::vector<ExprToReApply> exprToReapply;
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        QMutexLocker k(&_imp->common->expressionMutex);
         for (int i = 0; i < ndims; ++i) {
-            for (ExprPerViewMap::const_iterator it = _imp->expressions[i].begin(); it != _imp->expressions[i].end(); ++it) {
+            for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
                 if (!it->second.exprInvalid.empty()) {
                     exprToReapply.resize(exprToReapply.size() + 1);
                     ExprToReApply& data = exprToReapply.back();
@@ -709,16 +709,16 @@ KnobHelper::isExpressionValid(DimIdx dimension,
                               ViewIdx view,
                               std::string* error) const
 {
-    if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
+    if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
         throw std::invalid_argument("KnobHelper::isExpressionValid(): Dimension out of range");
     }
 
     ViewIdx view_i = getViewIdxFromGetSpec(view);
     {
-        QMutexLocker k(&_imp->expressionMutex);
+        QMutexLocker k(&_imp->common->expressionMutex);
         if (error) {
-            ExprPerViewMap::const_iterator foundView = _imp->expressions[dimension].find(view_i);
-            if (foundView != _imp->expressions[dimension].end()) {
+            ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
+            if (foundView != _imp->common->expressions[dimension].end()) {
                 *error = foundView->second.exprInvalid;
                 return error->empty();
             }
@@ -732,9 +732,9 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool va
 {
     bool wasValid;
     {
-        QMutexLocker k(&_imp->expressionMutex);
-        ExprPerViewMap::iterator foundView = _imp->expressions[dimension].find(view);
-        if (foundView == _imp->expressions[dimension].end()) {
+        QMutexLocker k(&_imp->common->expressionMutex);
+        ExprPerViewMap::iterator foundView = _imp->common->expressions[dimension].find(view);
+        if (foundView == _imp->common->expressions[dimension].end()) {
             return;
         }
         wasValid = foundView->second.exprInvalid.empty();
@@ -749,10 +749,10 @@ KnobHelper::setExpressionInvalidInternal(DimIdx dimension, ViewIdx view, bool va
         {
             int ndims = getNDimensions();
             std::list<ViewIdx> views = getViewsList();
-            QMutexLocker k(&_imp->expressionMutex);
+            QMutexLocker k(&_imp->common->expressionMutex);
             for (int i = 0; i < ndims; ++i) {
                 if (i != dimension) {
-                    for (ExprPerViewMap::const_iterator it = _imp->expressions[i].begin(); it != _imp->expressions[i].end(); ++it) {
+                    for (ExprPerViewMap::const_iterator it = _imp->common->expressions[i].begin(); it != _imp->common->expressions[i].end(); ++it) {
                         if (it->first != view) {
                             if ( !it->second.exprInvalid.empty() ) {
                                 haveOtherExprInvalid = true;
@@ -786,7 +786,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
     }
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     setExpressionInvalidInternal(DimIdx(i), *it, valid, error);
@@ -797,7 +797,7 @@ KnobHelper::setExpressionInvalid(DimSpec dimension,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setExpressionInvalid(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -850,8 +850,8 @@ KnobHelper::setExpressionInternal(DimIdx dimension,
     // Set internal fields
 
     {
-        QMutexLocker k(&_imp->expressionMutex);
-        Expr& expr = _imp->expressions[dimension][view];
+        QMutexLocker k(&_imp->common->expressionMutex);
+        Expr& expr = _imp->common->expressions[dimension][view];
         expr.hasRet = hasRetVariable;
         expr.expression = exprCpy;
         expr.originalExpression = expression;
@@ -890,7 +890,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     setExpressionInternal(DimIdx(i), *it, expression, hasRetVariable, failIfInvalid);
@@ -901,7 +901,7 @@ KnobHelper::setExpressionCommon(DimSpec dimension,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setExpressionCommon(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -963,7 +963,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     replaceNodeNameInExpressionInternal(DimIdx(i), *it, oldName, newName);
@@ -974,7 +974,7 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::replaceNodeNameInExpression(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -994,13 +994,13 @@ KnobHelper::replaceNodeNameInExpression(DimSpec dimension,
 bool
 KnobHelper::isExpressionUsingRetVariable(ViewIdx view, DimIdx dimension) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::isExpressionUsingRetVariable(): Dimension out of range");
     }
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    QMutexLocker k(&_imp->expressionMutex);
-    ExprPerViewMap::const_iterator foundView = _imp->expressions[dimension].find(view_i);
-    if (foundView == _imp->expressions[dimension].end()) {
+    QMutexLocker k(&_imp->common->expressionMutex);
+    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
+    if (foundView == _imp->common->expressions[dimension].end()) {
         return false;
     }
     return foundView->second.hasRet;
@@ -1011,13 +1011,13 @@ KnobHelper::getExpressionDependencies(DimIdx dimension,
                                       ViewIdx view,
                                       KnobDimViewKeySet& dependencies) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::getExpressionDependencies(): Dimension out of range");
     }
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    QMutexLocker k(&_imp->expressionMutex);
-    ExprPerViewMap::const_iterator foundView = _imp->expressions[dimension].find(view_i);
-    if (foundView == _imp->expressions[dimension].end() || foundView->second.expression.empty()) {
+    QMutexLocker k(&_imp->common->expressionMutex);
+    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
+    if (foundView == _imp->common->expressions[dimension].end() || foundView->second.expression.empty()) {
         return false;
     }
     dependencies = foundView->second.dependencies;
@@ -1031,9 +1031,9 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
     bool hadExpression = false;
     KnobDimViewKeySet dependencies;
     {
-        QMutexLocker k(&_imp->expressionMutex);
-        ExprPerViewMap::iterator foundView = _imp->expressions[dimension].find(view);
-        if (foundView != _imp->expressions[dimension].end()) {
+        QMutexLocker k(&_imp->common->expressionMutex);
+        ExprPerViewMap::iterator foundView = _imp->common->expressions[dimension].find(view);
+        if (foundView != _imp->common->expressions[dimension].end()) {
             hadExpression = !foundView->second.originalExpression.empty();
             foundView->second.expression.clear();
             foundView->second.originalExpression.clear();
@@ -1058,9 +1058,9 @@ KnobHelper::clearExpressionInternal(DimIdx dimension, ViewIdx view)
             }
 
             {
-                QMutexLocker otherMastersLocker(&other->_imp->expressionMutex);
+                QMutexLocker otherMastersLocker(&other->_imp->common->expressionMutex);
 
-                KnobDimViewKeySet& otherListeners = other->_imp->expressions[it->dimension][it->view].listeners;
+                KnobDimViewKeySet& otherListeners = other->_imp->common->expressions[it->dimension][it->view].listeners;
                 KnobDimViewKeySet::iterator foundListener = otherListeners.find(listenerToRemoveKey);
                 if (foundListener != otherListeners.end()) {
                     otherListeners.erase(foundListener);
@@ -1083,7 +1083,7 @@ KnobHelper::clearExpression(DimSpec dimension,
     bool didSomething = false;
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     didSomething |= clearExpressionInternal(DimIdx(i), *it);
@@ -1094,7 +1094,7 @@ KnobHelper::clearExpression(DimSpec dimension,
             }
         }
     } else {
-        if ( ( dimension >= (int)_imp->expressions.size() ) || (dimension < 0) ) {
+        if ( ( dimension >= (int)_imp->common->expressions.size() ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::clearExpression(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -1160,15 +1160,15 @@ KnobHelper::executeExpression(TimeValue time,
                               PyObject** ret,
                               std::string* error) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("KnobHelper::executeExpression(): Dimension out of range");
     }
 
     std::string expr;
     {
-        QMutexLocker k(&_imp->expressionMutex);
-        ExprPerViewMap::const_iterator foundView = _imp->expressions[dimension].find(view);
-        if (foundView == _imp->expressions[dimension].end() || foundView->second.expression.empty()) {
+        QMutexLocker k(&_imp->common->expressionMutex);
+        ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view);
+        if (foundView == _imp->common->expressions[dimension].end() || foundView->second.expression.empty()) {
             return false;
         }
         expr = foundView->second.expression;
@@ -1214,13 +1214,13 @@ KnobHelper::executeExpression(TimeValue time,
 std::string
 KnobHelper::getExpression(DimIdx dimension, ViewIdx view) const
 {
-    if (dimension < 0 || dimension >= (int)_imp->expressions.size()) {
+    if (dimension < 0 || dimension >= (int)_imp->common->expressions.size()) {
         throw std::invalid_argument("Knob::getExpression: Dimension out of range");
     }
     ViewIdx view_i = getViewIdxFromGetSpec(view);
-    QMutexLocker k(&_imp->expressionMutex);
-    ExprPerViewMap::const_iterator foundView = _imp->expressions[dimension].find(view_i);
-    if (foundView == _imp->expressions[dimension].end() || foundView->second.expression.empty()) {
+    QMutexLocker k(&_imp->common->expressionMutex);
+    ExprPerViewMap::const_iterator foundView = _imp->common->expressions[dimension].find(view_i);
+    if (foundView == _imp->common->expressions[dimension].end() || foundView->second.expression.empty()) {
         return std::string();
     }
     return foundView->second.originalExpression;

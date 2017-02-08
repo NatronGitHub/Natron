@@ -109,6 +109,7 @@ ImageStorageBase::allocateMemoryFromSetArgs()
             return;
         }
         args = _imp->allocArgs;
+        _imp->allocArgs.reset();
         if (_imp->allocated) {
             return;
         }
@@ -125,6 +126,11 @@ ImageStorageBase::allocateMemory(const AllocateMemoryArgs& args)
 
     _imp->bitdepth = args.bitDepth;
     allocateMemoryImpl(args);
+
+    {
+        QMutexLocker k(&_imp->allocatedLock);
+        _imp->allocated = true;
+    }
 
     CachePtr cache = appPTR->getCache();
     if (cache) {
@@ -485,6 +491,7 @@ CacheImageTileStorage::~CacheImageTileStorage()
 void
 CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
+    assert(isAllocated());
     assert(tileDataPtr && _imp->localBuffer);
     memcpy(tileDataPtr, _imp->localBuffer->getData(), NATRON_TILE_SIZE_BYTES);
     CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);
@@ -530,19 +537,12 @@ CacheImageTileStorage::getBounds() const
 {
     RectI ret;
 
-    int tileSizeX, tileSizeY;
-    Cache::getTileSizePx(getBitDepth(), &tileSizeX, &tileSizeY);
-    // Recover the bottom left corner from the tile coords
-    {
-        CacheEntryKeyBasePtr key = getKey();
-        ImageTileKey* isImageTile = dynamic_cast<ImageTileKey*>(key.get());
-        if (isImageTile) {
-            ret.x1 = isImageTile->getTileX() * tileSizeX;
-            ret.y1 = isImageTile->getTileY() * tileSizeY;
-        }
+    CacheEntryKeyBasePtr key = getKey();
+    ImageTileKey* isImageTile = dynamic_cast<ImageTileKey*>(key.get());
+    if (isImageTile) {
+        ret = isImageTile->getTileBounds();
     }
-    ret.x2 = ret.x1 + tileSizeX;
-    ret.y2 = ret.y1 + tileSizeY;
+
     return ret;
 }
 

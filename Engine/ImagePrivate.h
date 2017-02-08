@@ -27,10 +27,13 @@
 
 #include "Global/Macros.h"
 
+#include <map>
+#include <QMutex>
 #include "Engine/AppManager.h"
 #include "Engine/Cache.h"
 #include "Engine/CacheEntryBase.h"
 #include "Engine/CacheEntryKeyBase.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/Image.h"
 #include "Engine/ImageStorage.h"
@@ -38,7 +41,6 @@
 #include "Engine/OSGLContext.h"
 #include "Engine/OSGLFunctions.h"
 #include "Engine/RectI.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TimeValue.h"
 #include "Engine/ViewIdx.h"
 
@@ -46,13 +48,27 @@
 
 NATRON_NAMESPACE_ENTER;
 
+
+// Each tile with the coordinates of its lower left corner
+// Each tile is aligned relative to (0,0):
+// an image must at least contain a single tile with coordinates (0,0).
+typedef std::map<TileCoord, Image::Tile, TileCoord_Compare> TileMap;
+
+
 struct ImagePrivate
 {
     // The rectangle where data are defined
-    RectI bounds;
+    RectI originalBounds;
+
+    // The actual rectangle of data. It might be slightly bigger than original bounds:
+    // this is the original bounds rounded to the tile size.
+    RectI boundsRoundedToTile;
 
     // Each individual tile storage
-    std::vector<Image::Tile> tiles;
+    TileMap tiles;
+
+    // The size in pixels of a tile
+    int tileSizeX, tileSizeY;
 
     // The layer represented by this image
     ImagePlaneDesc layer;
@@ -72,40 +88,74 @@ struct ImagePrivate
     // This must be set if the cache policy is not none.
     // This will be used to prevent inserting in the cache part of images that had
     // their render aborted.
-    TreeRenderNodeArgsPtr renderArgs;
+    EffectInstancePtr renderClone;
 
+    // The channels enabled
+    std::bitset<4> enabledChannels;
+
+    // The bitdepth of the image
+    ImageBitDepthEnum bitdepth;
+
+    // The image storage type
+    StorageModeEnum storage;
+
+    // Protects tilesAllocated
+    QMutex tilesAllocatedMutex;
+
+    // If true, tiles are assumed to be allocated, otherwise only cached tiles hold memory
+    bool tilesAllocated;
+
+    // The OpenGl context used is the image is stored in a texture
+    OSGLContextPtr glContext;
+
+    // The texture target if the image is stored in a texture
+    U32 textureTarget;
+
+    // The following values are passed to the ImageTileKey
+    U64 nodeHash;
+    TimeValue time;
+    ViewIdx view;
+    bool isDraftImage;
 
     ImagePrivate()
-    : bounds()
+    : originalBounds()
+    , boundsRoundedToTile()
     , tiles()
+    , tileSizeX(0)
+    , tileSizeY(0)
     , layer()
     , proxyScale(1.)
     , mipMapLevel(0)
     , cachePolicy(eCacheAccessModeNone)
     , bufferFormat(eImageBufferLayoutRGBAPackedFullRect)
-    , renderArgs()
+    , renderClone()
+    , enabledChannels()
+    , bitdepth(eImageBitDepthNone)
+    , storage(eStorageModeNone)
+    , tilesAllocatedMutex()
+    , tilesAllocated(false)
+    , glContext()
+    , textureTarget(0)
+    , nodeHash(0)
+    , time(0)
+    , view(0)
+    , isDraftImage(false)
     {
 
     }
 
+    void init(const Image::InitStorageArgs& args);
+
+    void initTiles();
+
     void initFromExternalBuffer(const Image::InitStorageArgs& args);
 
-    void initTileAndFetchFromCache(const Image::InitStorageArgs& args, int tx, int ty, int nTilesWidth, int tileSizeX, int tileSizeY);
+    void initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile);
 
     /**
      * @brief Called in the destructor to insert tiles that were processed in the cache.
      **/
     void insertTilesInCache();
-
-    /**
-     * @brief Returns the tile corresponding to the pixel at position x,y or null if out of bounds
-     **/
-    const Image::Tile* getTile(int x, int y) const;
-
-    /**
-     * @brief Returns the number of tiles that fit in 1 line of the image
-     **/
-    int getNTilesPerLine() const;
 
     /**
      * @brief Returns a rectangle of tiles coordinates that span the given rectangle of pixel coordinates
@@ -138,7 +188,7 @@ struct ImagePrivate
                               StorageModeEnum toStorage,
                               ImageBufferLayoutEnum toLayout,
                               const Image::CopyPixelsArgs& args,
-                              const TreeRenderNodeArgsPtr& renderArgs);
+                              const EffectInstancePtr& renderClone);
 
     /**
      * @brief If copying pixels from fromImage to toImage cannot be copied directly, this function
@@ -183,7 +233,7 @@ struct ImagePrivate
                                 int dstNComps,
                                 ImageBitDepthEnum dstBitDepth,
                                 const RectI& dstBounds,
-                                const TreeRenderNodeArgsPtr& renderArgs);
+                                const EffectInstancePtr& renderClone);
 
     static void fillGL(const RectI & roi,
                        float r,
@@ -201,7 +251,7 @@ struct ImagePrivate
                         ImageBitDepthEnum bitDepth,
                         const RectI& bounds,
                         const RectI& roi,
-                        const TreeRenderNodeArgsPtr& renderArgs);
+                        const EffectInstancePtr& renderClone);
 
     static void halveImage(const void* srcPtrs[4],
                            int nComps,
@@ -235,7 +285,7 @@ struct ImagePrivate
                                 bool invertMask,
                                 const RectI& dstBounds,
                                 const RectI& roi,
-                                const TreeRenderNodeArgsPtr& renderArgs);
+                                const EffectInstancePtr& renderClone);
 
     static void copyUnprocessedChannelsGL(const GLImageStoragePtr& originalTexture,
                                           const GLImageStoragePtr& dstTexture,
@@ -251,7 +301,7 @@ struct ImagePrivate
                                            const RectI& dstBounds,
                                            const std::bitset<4> processChannels,
                                            const RectI& roi,
-                                           const TreeRenderNodeArgsPtr& renderArgs);
+                                           const EffectInstancePtr& renderClone);
     
     
 };

@@ -424,11 +424,11 @@ static void
 moveNodeIfLifetimeActivated(const NodePtr& node,
                             double dt)
 {
-    KnobBoolPtr lifeTimeEnabledKnob = node->getLifeTimeEnabledKnob();
+    KnobBoolPtr lifeTimeEnabledKnob = node->getEffectInstance()->getLifeTimeEnabledKnob();
     if (!lifeTimeEnabledKnob || !lifeTimeEnabledKnob->getValue()) {
         return;
     }
-    KnobIntPtr lifeTimeKnob = node->getLifeTimeKnob();
+    KnobIntPtr lifeTimeKnob = node->getEffectInstance()->getLifeTimeKnob();
     if (!lifeTimeKnob) {
         return;
     }

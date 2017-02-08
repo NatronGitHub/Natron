@@ -32,7 +32,7 @@ NATRON_NAMESPACE_ENTER
 CurvePtr KnobHelper::getAnimationCurve(ViewIdx view,
                               DimIdx dimension) const
 {
-    if ( (dimension < 0) || ( dimension >= _imp->dimension) ) {
+    if ( (dimension < 0) || ( dimension >= _imp->common->dimension) ) {
         throw std::invalid_argument("KnobHelper::getCurve: dimension out of range");
     }
 
@@ -95,7 +95,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     deleteValuesAtTimeInternal(times, *it, DimIdx(i));
@@ -106,7 +106,7 @@ KnobHelper::deleteValuesAtTime(const std::list<double>& times,
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::deleteValuesAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -164,7 +164,7 @@ KnobHelper::deleteAnimationConditional(TimeValue time,
 {
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     deleteAnimationConditionalInternal(time, *it, DimIdx(i), before);
@@ -175,7 +175,7 @@ KnobHelper::deleteAnimationConditional(TimeValue time,
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::deleteAnimationConditional(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -276,7 +276,7 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
     bool ret = true;
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     ret &= warpValuesAtTimeInternal(times, *it, DimIdx(i), warp, outKeys);
@@ -287,7 +287,7 @@ KnobHelper::warpValuesAtTime(const std::list<double>& times, ViewSetSpec view,  
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::warpValuesAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -315,7 +315,7 @@ KnobHelper::cloneCurve(ViewIdx view,
                        const RangeD* range,
                        const StringAnimationManager* stringAnimation)
 {
-    if (dimension < 0 || dimension >= _imp->dimension) {
+    if (dimension < 0 || dimension >= _imp->common->dimension) {
         throw std::invalid_argument("KnobHelper::cloneCurve: Dimension out of range");
     }
 
@@ -395,7 +395,7 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     setInterpolationAtTimesInternal(*it, DimIdx(i), times, interpolation, newKeys);
@@ -406,7 +406,7 @@ KnobHelper::setInterpolationAtTimes(ViewSetSpec view, DimSpec dimension, const s
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setInterpolationAtTimes(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -466,7 +466,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
     bool ok = false;
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     ok |= setLeftAndRightDerivativesAtTimeInternal(*it, DimIdx(i), time, left, right);
@@ -477,7 +477,7 @@ KnobHelper::setLeftAndRightDerivativesAtTime(ViewSetSpec view,
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setLeftAndRightDerivativesAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -540,7 +540,7 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
     bool ok = false;
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     ok |= setDerivativeAtTimeInternal(*it, DimIdx(i), time, derivative, isLeft);
@@ -551,7 +551,7 @@ KnobHelper::setDerivativeAtTime(ViewSetSpec view,
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::setDerivativeAtTime(): Dimension out of range");
         }
         if (view.isAll()) {
@@ -626,7 +626,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
 
     std::list<ViewIdx> views = getViewsList();
     if (dimension.isAll()) {
-        for (int i = 0; i < _imp->dimension; ++i) {
+        for (int i = 0; i < _imp->common->dimension; ++i) {
             if (view.isAll()) {
                 for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
                     removeAnimationInternal(*it, DimIdx(i));
@@ -637,7 +637,7 @@ KnobHelper::removeAnimation(ViewSetSpec view, DimSpec dimension, ValueChangedRea
             }
         }
     } else {
-        if ( ( dimension >= _imp->dimension ) || (dimension < 0) ) {
+        if ( ( dimension >= _imp->common->dimension ) || (dimension < 0) ) {
             throw std::invalid_argument("KnobHelper::removeAnimation(): Dimension out of range");
         }
         if (view.isAll()) {

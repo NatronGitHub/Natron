@@ -81,6 +81,11 @@ public:
      **/
     void pushDistortion(const DistortionFunction2DPtr& distortion);
 
+    /**
+     * @brief Appends a stack of distortion functions to apply.
+     **/
+    void pushDistortionStack(const Distortion2DStack& stack);
+
     const std::list<DistortionFunction2DPtr>& getStack() const;
 
     /**

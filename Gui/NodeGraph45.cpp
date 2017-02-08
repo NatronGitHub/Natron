@@ -95,10 +95,10 @@ NodeGraph::toggleHideInputs()
         return;
     }
 
-    bool hidden = !selectedNodes.front()->getNode()->getHideInputsKnobValue();
+    bool hidden = !selectedNodes.front()->getNode()->getEffectInstance()->getHideInputsKnobValue();
 
     for (NodesGuiList::const_iterator it = selectedNodes.begin(); it != selectedNodes.end(); ++it) {
-        (*it)->getNode()->setHideInputsKnobValue(hidden);
+        (*it)->getNode()->getEffectInstance()->setHideInputsKnobValue(hidden);
         //(*it)->refreshEdgesVisility();
     }
 }

@@ -44,9 +44,10 @@ struct AnimatingObjectIPrivate
 
     AnimatingObjectIPrivate(const AnimatingObjectIPrivate& other)
     : viewsMutex()
-    , views(other.views)
+    , views()
     {
-
+        QMutexLocker k(&other.viewsMutex);
+        views = other.views;
     }
 
     ViewIdx findMatchingView(ViewIdx inView) const
@@ -70,8 +71,8 @@ AnimatingObjectI::AnimatingObjectI()
 
 }
 
-AnimatingObjectI::AnimatingObjectI(const AnimatingObjectI& other)
-: _imp(new AnimatingObjectIPrivate(*other._imp))
+AnimatingObjectI::AnimatingObjectI(const boost::shared_ptr<AnimatingObjectI>& other, const TreeRenderPtr& /*render*/)
+: _imp(new AnimatingObjectIPrivate(*other->_imp))
 {
 
 }

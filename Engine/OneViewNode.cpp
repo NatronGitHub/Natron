@@ -30,6 +30,10 @@
 #include "Engine/Node.h"
 #include "Engine/Project.h"
 
+#define kOneViewViewParam "view"
+#define kOneViewViewParamLabel "View"
+#define kOneViewViewParamHint "View to take from the input"
+
 NATRON_NAMESPACE_ENTER;
 
 struct OneViewNodePrivate
@@ -47,7 +51,7 @@ OneViewNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_MULTIVIEW);
-    PluginPtr ret = Plugin::create((void*)OneViewNode::create, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)OneViewNode::create, (void*)OneViewNode::createRenderClone, PLUGINID_NATRON_ONEVIEW, "OneView", 1, 0, grouping);
 
     QString desc =  tr("Takes one view from the input");
     ret->setProperty<std::string>(kNatronPluginPropDescription, desc.toStdString());
@@ -59,6 +63,13 @@ OneViewNode::createPlugin()
 OneViewNode::OneViewNode(const NodePtr& n)
     : EffectInstance(n)
     , _imp( new OneViewNodePrivate() )
+{
+
+}
+
+OneViewNode::OneViewNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp( new OneViewNodePrivate() )
 {
 
 }
@@ -92,13 +103,12 @@ OneViewNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
 void
 OneViewNode::initializeKnobs()
 {
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
 
-    page->setName("controls");
-
-    KnobChoicePtr viewKnob = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("View") );
-    viewKnob->setName("view");
-    viewKnob->setHintToolTip( tr("View to take from the input") );
+    KnobChoicePtr viewKnob = createKnob<KnobChoice>(kOneViewViewParam);
+    viewKnob->setLabel(tr(kOneViewViewParamLabel));
+    viewKnob->setHintToolTip(tr(kOneViewViewParamHint));
     page->addKnob(viewKnob);
 
     const std::vector<std::string>& views = getApp()->getProject()->getProjectViewNames();
@@ -113,12 +123,18 @@ OneViewNode::initializeKnobs()
     _imp->viewKnob = viewKnob;
 }
 
+void
+OneViewNode::fetchRenderCloneKnobs()
+{
+    EffectInstance::fetchRenderCloneKnobs();
+    _imp->viewKnob = toKnobChoice(getKnobByName(kOneViewViewParam));
+}
+
 ActionRetCodeEnum
 OneViewNode::isIdentity(TimeValue time,
                         const RenderScale & /*scale*/,
                         const RectI & /*roi*/,
                         ViewIdx /*view*/,
-                        const TreeRenderNodeArgsPtr& /*render*/,
                         TimeValue* inputTime,
                         ViewIdx* inputView,
                         int* inputNb)
@@ -136,7 +152,6 @@ OneViewNode::isIdentity(TimeValue time,
 ActionRetCodeEnum
 OneViewNode::getFramesNeeded(TimeValue time,
                              ViewIdx /*view*/,
-                             const TreeRenderNodeArgsPtr& /*render*/,
                              FramesNeededMap* ret)
 {
 

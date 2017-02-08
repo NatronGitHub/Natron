@@ -57,7 +57,6 @@ GCC_DIAG_OFF(unused-parameter)
 #include "Serialization/KnobSerialization.h"
 #include "Serialization/KnobTableItemSerialization.h"
 #include "Serialization/ProjectSerialization.h"
-#include "Serialization/NodeGroupSerialization.h"
 #include "Serialization/SerializationFwd.h"
 
 #include "Engine/Bezier.h"
@@ -432,6 +431,50 @@ public:
     std::string _planeID, _planeLabel, _channelsLabel;
     std::vector<std::string> _channels;
 
+};
+
+class NodeCollectionSerialization
+{
+
+public:
+
+    // The list of all nodes in the collection
+    std::list< NodeSerializationPtr > _serializedNodes;
+
+
+    NodeCollectionSerialization()
+    {
+    }
+
+    virtual ~NodeCollectionSerialization()
+    {
+        _serializedNodes.clear();
+    }
+
+    const std::list< NodeSerializationPtr > & getNodesSerialization() const
+    {
+        return _serializedNodes;
+    }
+
+    void addNodeSerialization(const NodeSerializationPtr& s)
+    {
+        _serializedNodes.push_back(s);
+    }
+
+
+    template<class Archive>
+    void serialize(Archive & ar,
+                   const unsigned int /*version*/)
+    {
+        int nodesCount;
+        ar & ::boost::serialization::make_nvp("NodesCount", nodesCount);
+
+        for (int i = 0; i < nodesCount; ++i) {
+            NodeSerializationPtr s(new NodeSerialization);
+            ar & ::boost::serialization::make_nvp("item", *s);
+            _serializedNodes.push_back(s);
+        }
+    }
 };
 
 } // namespace Compat
@@ -1635,7 +1678,7 @@ SERIALIZATION_NAMESPACE::ProjectSerialization::serialize(Archive & ar,
             _nodes.push_back(ns);
         }
     } else {
-        NodeCollectionSerialization nodes;
+        Compat::NodeCollectionSerialization nodes;
         ar & ::boost::serialization::make_nvp("NodesCollection", nodes);
         _nodes = nodes.getNodesSerialization();
     }

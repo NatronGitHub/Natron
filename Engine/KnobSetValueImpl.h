@@ -620,10 +620,10 @@ Knob<T>::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     int nDims = getNDimensions();
     std::vector<T> defValues(nDims);
     {
-        QMutexLocker l(&_defaultValueMutex);
+        QMutexLocker l(&_data->defaultValueMutex);
         for (int i = 0; i < nDims; ++i) {
             if (dimension.isAll() || i == dimension) {
-                defValues[i] = _defaultValues[i].value;
+                defValues[i] = _data->defaultValues[i].value;
             }
         }
     }
@@ -671,8 +671,8 @@ KnobDoubleBase::resetToDefaultValue(DimSpec dimension, ViewSetSpec view)
     for (int i = 0; i < nDims; ++i) {
         if (dimension.isAll() || i == dimension) {
             {
-                QMutexLocker l(&_defaultValueMutex);
-                defValues[i] = _defaultValues[i].value;
+                QMutexLocker l(&_data->defaultValueMutex);
+                defValues[i] = _data->defaultValues[i].value;
             }
 
             if (isDouble) {

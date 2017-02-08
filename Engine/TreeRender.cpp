@@ -30,9 +30,12 @@
 #include <QMutex>
 #include <QTimer>
 #include <QDebug>
+#include <QWaitCondition>
+#include <QRunnable>
 
 #include "Engine/Image.h"
 #include "Engine/EffectInstance.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/GPUContextPool.h"
 #include "Engine/Node.h"
 #include "Engine/NodeGroup.h"
@@ -40,7 +43,6 @@
 #include "Engine/Settings.h"
 #include "Engine/Timer.h"
 #include "Engine/ThreadPool.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/TLSHolder.h"
 
 // After this amount of time, if any thread identified in this render is still remaining
@@ -60,50 +62,45 @@ enum TreeRenderStateEnum
     eTreeRenderStateInitFailed,
 };
 
+// Render first the tasks with more dependencies: it has more chance to make more dependency-free new renders
+// to enable better concurrency
+struct FrameViewRequestComparePriority
+{
+    bool operator() (const FrameViewRequestPtr& lhs, const FrameViewRequestPtr& rhs) const
+    {
+        int lNum = lhs->getNumListeners();
+        int rNum = rhs->getNumListeners();
+        if (lNum < rNum) {
+            return true;
+        } else if (lNum > rNum) {
+            return false;
+        } else {
+            // Same number of listeners...there's no specific ordering
+            return lhs.get() < rhs.get();
+        }
+    }
+};
+
+typedef std::set<FrameViewRequestPtr, FrameViewRequestComparePriority> DependencyFreeRenderSet;
+
 struct TreeRenderPrivate
 {
 
     TreeRender* _publicInterface;
+
+    TreeRender::CtorArgsPtr ctorArgs;
+
+    // Protects state
+    mutable QMutex stateMutex;
     
     // The state of the object to avoid calling render on a failed tree
     ActionRetCodeEnum state;
 
     // A map of the per node tree render args set on each node
-    std::map<NodePtr, TreeRenderNodeArgsPtr> perNodeArgs;
-
-    // The nodes that had thread local storage set on them
-    NodesList nodes;
-
-    // The main root of the tree from which we want the image
-    NodePtr treeRoot;
+    std::map<EffectInstancePtr, EffectInstancePtr> renderClonesMap;
     
     // Render args of the root node
-    TreeRenderNodeArgsWPtr rootNodeRenderArgs;
-
-    // the time to render
-    TimeValue time;
-
-    // the view to render
-    ViewIdx view;
-
-    // The RoI to render
-    RectD canonicalRoI;
-    
-    // The list of layers to ender
-    std::list<ImagePlaneDesc> layers;
-    
-    // The scale to apply to all parameters to obtain the final render
-    RenderScale proxyScale;
-
-    // The render mipmap level: this is an additional scale applied on top of the proxy scale.
-    // A level of 0 is a factor of 1, a level 1 = 0.5, 2 = 0.25, etc...
-    unsigned int mipMapLevel;
-
-    // proxyScale * mipmap scale
-    RenderScale proxyMipMapScale;
-
-    // Rneder statistics
-    RenderStatsPtr statsObject;
+    EffectInstancePtr rootRenderClone;
 
     // the OpenGL contexts
     OSGLContextWPtr openGLContext, cpuOpenGLContext;
@@ -112,61 +109,50 @@ struct TreeRenderPrivate
     QAtomicInt aborted;
 
     // Protects threadsForThisRender
-    mutable QMutex threadsMutex;
+    //mutable QMutex threadsMutex;
 
     // A set of threads used in this render
-    ThreadSet threadsForThisRender;
+    //ThreadSet threadsForThisRender;
 
     // protects timerStarted, abortTimeoutTimer and ownerThread
-    mutable QMutex timerMutex;
+    //mutable QMutex timerMutex;
 
     // Used to track when a thread is stuck in an action after abort
-    QTimer* abortTimeoutTimer;
-    QThread* ownerThread;
-    bool timerStarted;
+    //QTimer* abortTimeoutTimer;
+    //QThread* ownerThread;
+    //bool timerStarted;
 
-    bool isPlayback;
-    bool isDraft;
-    bool byPassCache;
     bool handleNaNs;
     bool useConcatenations;
 
 
     TreeRenderPrivate(TreeRender* publicInterface)
     : _publicInterface(publicInterface)
+    , ctorArgs()
+    , stateMutex()
     , state(eActionStatusOK)
-    , perNodeArgs()
-    , nodes()
-    , treeRoot()
-    , rootNodeRenderArgs()
-    , time(0)
-    , view()
-    , canonicalRoI()
-    , layers()
-    , proxyScale()
-    , mipMapLevel(0)
-    , proxyMipMapScale()
-    , statsObject()
+    , renderClonesMap()
+    , rootRenderClone()
     , openGLContext()
     , cpuOpenGLContext()
     , aborted()
+#if 0
     , threadsMutex()
     , threadsForThisRender()
     , timerMutex()
     , abortTimeoutTimer(new QTimer)
     , ownerThread(QThread::currentThread())
     , timerStarted(false)
-    , isPlayback(false)
-    , isDraft(false)
-    , byPassCache(false)
+#endif
     , handleNaNs(true)
     , useConcatenations(true)
     {
         aborted.fetchAndStoreAcquire(0);
-
+#if 0
         abortTimeoutTimer->setSingleShot(true);
         QObject::connect( abortTimeoutTimer, SIGNAL(timeout()), publicInterface, SLOT(onAbortTimerTimeout()) );
         QObject::connect( publicInterface, SIGNAL(startTimerInOriginalThread()), publicInterface, SLOT(onStartTimerInOriginalThreadTriggered()) );
+#endif
     }
 
     /**
@@ -184,11 +170,36 @@ struct TreeRenderPrivate
      * also may be recursive).
      * This function throw exceptions upon error.
      **/
-    TreeRenderNodeArgsPtr buildRenderTreeRecursive(const NodePtr& node, std::set<NodePtr>* visitedNodes);
+    EffectInstancePtr buildRenderTreeRecursive(const EffectInstancePtr& mainInstance, std::set<EffectInstancePtr>* visitedNodes);
 
-   
+
+    EffectInstancePtr
+    findRenderClone(const EffectInstancePtr& mainInstance) const
+    {
+        assert(!mainInstance->isRenderClone());
+        std::map<EffectInstancePtr, EffectInstancePtr>::const_iterator it = renderClonesMap.find(mainInstance);
+        if (it == renderClonesMap.end()) {
+            return EffectInstancePtr();
+        }
+        return it->second;
+    }
+
+
+    void clearRenderClones();
+
+    static ActionRetCodeEnum getTreeRootRoD(const EffectInstancePtr& effect, TimeValue time, ViewIdx view, const RenderScale& scale, RectD* rod);
+
+    static ActionRetCodeEnum getTreeRootPlane(const EffectInstancePtr& effect, TimeValue time, ViewIdx view, ImagePlaneDesc* plane);
+
+    ActionRetCodeEnum launchRenderInternal(const EffectInstancePtr& renderClone,
+                                           TimeValue time,
+                                           ViewIdx view,
+                                           const RenderScale& proxyScale,
+                                           unsigned int mipMapLevel,
+                                           const ImagePlaneDesc* plane,
+                                           const RectD* canonicalRoI,
+                                           FrameViewRequestPtr* outputRequest);
 };
-
 
 
 TreeRender::TreeRender()
@@ -198,36 +209,21 @@ TreeRender::TreeRender()
 
 TreeRender::~TreeRender()
 {
+#if 0
     // post an event to delete the timer in the thread that created it
     if (_imp->abortTimeoutTimer) {
         _imp->abortTimeoutTimer->deleteLater();
     }
+#endif
 }
 
-TreeRenderNodeArgsPtr
-TreeRender::getNodeRenderArgs(const NodePtr& node) const
+
+EffectInstancePtr
+TreeRender::getTreeRootRenderClone() const
 {
-    if (!node) {
-        return TreeRenderNodeArgsPtr();
-    }
-    std::map<NodePtr, TreeRenderNodeArgsPtr>::const_iterator it = _imp->perNodeArgs.find(node);
-    if (it == _imp->perNodeArgs.end()) {
-        return TreeRenderNodeArgsPtr();
-    }
-    return it->second;
+    return _imp->rootRenderClone;
 }
 
-NodePtr
-TreeRender::getTreeRoot() const
-{
-    return _imp->treeRoot;
-}
-
-TreeRenderNodeArgsPtr
-TreeRender::getTreeRootRenderNode() const
-{
-    return _imp->rootNodeRenderArgs.lock();
-}
 
 OSGLContextPtr
 TreeRender::getGPUOpenGLContext() const
@@ -251,6 +247,9 @@ TreeRender::isRenderAborted() const
 void
 TreeRender::setRenderAborted()
 {
+#if 1
+    _imp->aborted.fetchAndAddAcquire(1);
+#else
     int abortedValue = _imp->aborted.fetchAndAddAcquire(1);
 
     if (abortedValue > 0) {
@@ -269,25 +268,26 @@ TreeRender::setRenderAborted()
     } else {
         onStartTimerInOriginalThreadTriggered();
     }
+#endif
 }
 
 bool
 TreeRender::isPlayback() const
 {
-    return _imp->isPlayback;
+    return _imp->ctorArgs->playback;
 }
 
 
 bool
 TreeRender::isDraftRender() const
 {
-    return _imp->isDraft;
+    return _imp->ctorArgs->draftMode;
 }
 
 bool
 TreeRender::isByPassCacheEnabled() const
 {
-    return _imp->byPassCache;
+    return _imp->ctorArgs->byPassCache;
 }
 
 bool
@@ -306,45 +306,23 @@ TreeRender::isConcatenationEnabled() const
 TimeValue
 TreeRender::getTime() const
 {
-    return _imp->time;
+    return _imp->ctorArgs->time;
 }
 
 ViewIdx
 TreeRender::getView() const
 {
-    return _imp->view;
-}
-
-RenderScale
-TreeRender::getProxyScale() const
-{
-    return _imp->proxyScale;
-}
-
-unsigned int
-TreeRender::getMipMapLevel() const
-{
-    return _imp->mipMapLevel;
-}
-
-RenderScale
-TreeRender::getProxyMipMapScale() const
-{
-    return _imp->proxyMipMapScale;
+    return _imp->ctorArgs->view;
 }
 
 RenderStatsPtr
 TreeRender::getStatsObject() const
 {
-    return _imp->statsObject;
+    return _imp->ctorArgs->stats;
 }
 
-RectD
-TreeRender::getCanonicalRoI() const
-{
-    return _imp->canonicalRoI;
-}
 
+#if 0
 void
 TreeRender::registerThreadForRender(AbortableThread* thread)
 {
@@ -381,17 +359,21 @@ TreeRender::unregisterThreadForRender(AbortableThread* thread)
 
     return ret;
 }
+#endif
 
 void
 TreeRender::onStartTimerInOriginalThreadTriggered()
 {
+#if 0
     assert(QThread::currentThread() == _imp->ownerThread);
     _imp->abortTimeoutTimer->start(NATRON_ABORT_TIMEOUT_MS);
+#endif
 }
 
 void
 TreeRender::onAbortTimerTimeout()
 {
+#if 0
     {
         QMutexLocker k(&_imp->timerMutex);
         assert(QThread::currentThread() == _imp->ownerThread);
@@ -477,6 +459,7 @@ TreeRender::onAbortTimerTimeout()
             }
         }
     }
+#endif
 } // onAbortTimerTimeout
 
 void
@@ -518,49 +501,40 @@ TreeRenderPrivate::fetchOpenGLContext(const TreeRender::CtorArgsPtr& inArgs)
 
 
 
-TreeRenderNodeArgsPtr
-TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
-                                            std::set<NodePtr>* visitedNodes)
+EffectInstancePtr
+TreeRenderPrivate::buildRenderTreeRecursive(const EffectInstancePtr& mainInstance, std::set<EffectInstancePtr>* visitedNodes)
 {
 
-    assert(node);
     // Sanity check
-    if ( !node || !node->isNodeCreated() ) {
-        return TreeRenderNodeArgsPtr();
+    if (!mainInstance) {
+        return EffectInstancePtr();
     }
 
-    EffectInstancePtr effect = node->getEffectInstance();
-    if (!effect) {
-        return TreeRenderNodeArgsPtr();
-    }
-
-    if (visitedNodes->find(node) != visitedNodes->end()) {
+    if (visitedNodes->find(mainInstance) != visitedNodes->end()) {
         // Already visited this node
-        TreeRenderNodeArgsPtr args = _publicInterface->getNodeRenderArgs(node);
-        assert(args);
-        return args;
+        EffectInstancePtr renderClone = findRenderClone(mainInstance);
+        assert(renderClone);
+        return renderClone;
     }
 
     // When building the render tree, the actual graph is flattened and groups no longer exist!
-    assert(!dynamic_cast<NodeGroup*>(effect.get()));
+    assert(!dynamic_cast<NodeGroup*>(mainInstance.get()));
 
-    visitedNodes->insert(node);
-
-
+    visitedNodes->insert(mainInstance);
 
     // Recurse on all inputs to ensure they are part of the tree and make the connections to this
     // node render args
-    std::vector<TreeRenderNodeArgsPtr> inputsRenderArgs;
+    std::vector<EffectInstancePtr> renderCloneInputs;
     {
-        int nInputs = node->getMaxInputCount();
-        inputsRenderArgs.resize(nInputs);
+        int nInputs = mainInstance->getMaxInputCount();
+        renderCloneInputs.resize(nInputs);
         for (int i = 0; i < nInputs; ++i) {
-            NodePtr inputNode = node->getInput(i);
+            EffectInstancePtr inputNode = mainInstance->getInput(i);
             if (!inputNode) {
                 continue;
             }
-            inputsRenderArgs[i] = buildRenderTreeRecursive(inputNode, visitedNodes);
-            assert(inputsRenderArgs[i]);
+
+            renderCloneInputs[i] = buildRenderTreeRecursive(inputNode, visitedNodes);
         }
     }
 
@@ -569,18 +543,22 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
     // the render.
     // Since we did not make any action calls yet, we ensure that knob values remain the same throughout the render
     // as long as this object lives.
-    TreeRenderNodeArgsPtr frameArgs;
+    EffectInstancePtr renderClone;
     {
-        std::map<NodePtr, TreeRenderNodeArgsPtr>::const_iterator foundArgs = perNodeArgs.find(node);
-        if (foundArgs != perNodeArgs.end()) {
-            frameArgs = foundArgs->second;
+        std::map<EffectInstancePtr, EffectInstancePtr>::const_iterator foundArgs = renderClonesMap.find(mainInstance);
+        if (foundArgs != renderClonesMap.end()) {
+            renderClone = foundArgs->second;
         } else {
-            frameArgs = TreeRenderNodeArgs::create(_publicInterface->shared_from_this(), node);
-            for (std::size_t i = 0; i < inputsRenderArgs.size(); ++i) {
-                frameArgs->setInputRenderArgs(i, inputsRenderArgs[i]);
+            renderClone = toEffectInstance(mainInstance->createRenderClone(_publicInterface->shared_from_this()));
+            assert(renderClone);
+            renderClonesMap[mainInstance] = renderClone;
+
+            for (std::size_t i = 0; i < renderCloneInputs.size(); ++i) {
+                if (mainInstance->isInputMask(i) && !mainInstance->isMaskEnabled(i)) {
+                    continue;
+                }
+                renderClone->setRenderCloneInput(renderCloneInputs[i], i);
             }
-            node->getEffectInstance()->setCurrentRender_TLS(frameArgs);
-            perNodeArgs[node] = frameArgs;
         }
     }
 
@@ -588,104 +566,79 @@ TreeRenderPrivate::buildRenderTreeRecursive(const NodePtr& node,
     // Visit all nodes that expressions of this node knobs may rely upon so we ensure they get a proper render object
     // and a render time and view when we run the expression.
     std::set<NodePtr> expressionsDeps;
-    effect->getAllExpressionDependenciesRecursive(expressionsDeps);
+    mainInstance->getAllExpressionDependenciesRecursive(expressionsDeps);
 
     for (std::set<NodePtr>::const_iterator it = expressionsDeps.begin(); it != expressionsDeps.end(); ++it) {
-        buildRenderTreeRecursive(*it, visitedNodes);
+        buildRenderTreeRecursive((*it)->getEffectInstance(), visitedNodes);
     }
 
-    return frameArgs;
+    return renderClone;
 } // buildRenderTreeRecursive
 
+void
+TreeRenderPrivate::clearRenderClones()
+{
+    TreeRenderPtr thisShared = _publicInterface->shared_from_this();
+    for (std::map<EffectInstancePtr, EffectInstancePtr>::const_iterator it = renderClonesMap.begin(); it != renderClonesMap.end(); ++it) {
+        it->first->removeRenderClone(thisShared);
+    }
+    renderClonesMap.clear();
+}
+
+ActionRetCodeEnum
+TreeRenderPrivate::getTreeRootRoD(const EffectInstancePtr& effect, TimeValue time, ViewIdx view, const RenderScale& scale, RectD* rod)
+{
+
+    GetRegionOfDefinitionResultsPtr results;
+    ActionRetCodeEnum stat = effect->getRegionOfDefinition_public(time, scale, view, &results);
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
+    assert(results);
+    *rod = results->getRoD();
+    return stat;
+}
+
+ActionRetCodeEnum
+TreeRenderPrivate::getTreeRootPlane(const EffectInstancePtr& effect, TimeValue time, ViewIdx view, ImagePlaneDesc* plane)
+{
+    GetComponentsResultsPtr results;
+    ActionRetCodeEnum stat = effect->getLayersProducedAndNeeded_public(time, view, &results);
+    if (isFailureRetCode(stat)) {
+        return stat;
+    }
+    assert(results);
+    const std::list<ImagePlaneDesc>& producedLayers = results->getProducedPlanes();
+    if (!producedLayers.empty()) {
+        *plane = producedLayers.front();
+    }
+    return stat;
+}
 
 void
-TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& publicInterface)
+TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderPtr& /*publicInterface*/)
 {
-    assert(inArgs->treeRoot);
+    assert(inArgs->treeRootEffect);
 
-    time = inArgs->time;
-    view = inArgs->view;
-    if (inArgs->canonicalRoI) {
-        canonicalRoI = *inArgs->canonicalRoI;
-    }
-    if (inArgs->layers) {
-        layers = *inArgs->layers;
-    }
-    proxyScale = inArgs->proxyScale;
-    mipMapLevel = inArgs->mipMapLevel;
-    double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
-    proxyMipMapScale.x = proxyScale.x * mipMapScale;
-    proxyMipMapScale.y = proxyScale.y * mipMapScale;
-    statsObject = inArgs->stats;
-    treeRoot = inArgs->treeRoot;
-    isPlayback = inArgs->playback;
-    isDraft = inArgs->draftMode;
-    byPassCache = inArgs->byPassCache;
+    ctorArgs = inArgs;
     handleNaNs = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
+    useConcatenations = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
 
-
+#if 0
     // If abortable thread, set abort info on the thread, to make the render abortable faster
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( ownerThread );
     if (isAbortable) {
         isAbortable->setCurrentRender(publicInterface);
     }
+#endif
 
     // Fetch the OpenGL context used for the render. It will not be attached to any render thread yet.
     fetchOpenGLContext(inArgs);
 
 
     // Build the render tree
-    std::set<NodePtr> visitedNodes;
-    TreeRenderNodeArgsPtr rootNodeArgs = buildRenderTreeRecursive(inArgs->treeRoot, &visitedNodes);
-    rootNodeRenderArgs = rootNodeArgs;
-    
-    EffectInstancePtr effectToRender = treeRoot->getEffectInstance();
-
-    // Use the provided RoI, otherwise render the RoD
-    if (canonicalRoI.isNull()) {
-        GetRegionOfDefinitionResultsPtr results;
-        ActionRetCodeEnum stat = effectToRender->getRegionOfDefinition_public(time, proxyMipMapScale, view, rootNodeArgs, &results);
-        if (isFailureRetCode(stat)) {
-            state = stat;
-            return;
-        }
-        assert(results);
-        canonicalRoI = results->getRoD();
-    }
-    
-    // Use the provided components otherwise fallback on all components needed by the output
-    if (layers.empty()) {
-        
-        GetComponentsResultsPtr results;
-        ActionRetCodeEnum stat = effectToRender->getLayersProducedAndNeeded_public(time, view, rootNodeArgs, &results);
-        if (isFailureRetCode(stat)) {
-            state = stat;
-            return;
-        }
-        assert(results);
-        
-        std::map<int, std::list<ImagePlaneDesc> > neededInputLayers;
-        std::list<ImagePlaneDesc> producedLayers, availableLayers;
-        int passThroughInputNb;
-        TimeValue passThroughTime;
-        ViewIdx passThroughView;
-        std::bitset<4> processChannels;
-        bool processAll;
-        results->getResults(&neededInputLayers, &producedLayers, &availableLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAll);
-        layers = producedLayers;
-    }
-    
-    // Cycle through the tree to make sure all nodes render once with the appropriate RoI
-    {
-        
-        ActionRetCodeEnum stat = rootNodeArgs->roiVisitFunctor(time, view, canonicalRoI, effectToRender);
-        
-        if (isFailureRetCode(stat)) {
-            state = stat;
-            return;
-        }
-    }
-
+    std::set<EffectInstancePtr> visitedNodes;
+    rootRenderClone = buildRenderTreeRecursive(inArgs->treeRootEffect, &visitedNodes);
 
 } // init
 
@@ -705,51 +658,281 @@ TreeRender::create(const CtorArgsPtr& inArgs)
     }
 
      if (isFailureRetCode(render->_imp->state)) {
-         appPTR->getAppTLS()->cleanupTLSForThread();
+         render->_imp->clearRenderClones();
      }
     
     return render;
 }
 
-ActionRetCodeEnum
-TreeRender::launchRender(std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
+
+struct RequestPassSharedDataPrivate
 {
+    // Protects dependencyFreeRenders and allRenderTasks
+    mutable QMutex dependencyFreeRendersMutex;
 
-    if (isFailureRetCode(_imp->state)) {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-        return _imp->state;
-    }
-    
-    EffectInstancePtr effectToRender = _imp->treeRoot->getEffectInstance();
-    TreeRenderNodeArgsPtr rootNodeRenderArgs = _imp->rootNodeRenderArgs.lock();
-    
-   
-    double outputPar = effectToRender->getAspectRatio(rootNodeRenderArgs, -1);
+    QWaitCondition dependencyFreeRendersEmptyCond;
 
-    RectI pixelRoI;
-    _imp->canonicalRoI.toPixelEnclosing(getProxyMipMapScale(), outputPar, &pixelRoI);
+    // A set of renders that we can launch right now
+    DependencyFreeRenderSet dependencyFreeRenders;
 
-    boost::shared_ptr<EffectInstance::RenderRoIArgs> renderRoiArgs(new EffectInstance::RenderRoIArgs(_imp->time,
-                                                                                                     _imp->view,
-                                                                                                     pixelRoI,
-                                                                                                     _imp->proxyScale,
-                                                                                                     _imp->mipMapLevel,
-                                                                                                     _imp->layers,
-                                                                                                     rootNodeRenderArgs));
-    
-    EffectInstance::RenderRoIResults results;
-    ActionRetCodeEnum stat = eActionStatusFailed;
-    try {
-        stat = effectToRender->renderRoI(*renderRoiArgs, &results);
-    } catch (...) {
+    // All renders left to do
+    std::set<FrameViewRequestPtr> allRenderTasksToProcess;
+
+    // The status global to the tasks, protected by dependencyFreeRendersMutex
+    ActionRetCodeEnum stat;
+
+    RequestPassSharedDataPrivate()
+    : dependencyFreeRendersMutex()
+    , dependencyFreeRendersEmptyCond()
+    , dependencyFreeRenders()
+    , allRenderTasksToProcess()
+    , stat(eActionStatusOK)
+    {
         
     }
-    *outputPlanes = results.outputPlanes;
+};
+
+RequestPassSharedData::RequestPassSharedData()
+: _imp(new RequestPassSharedDataPrivate)
+{
+
+}
+
+RequestPassSharedData::~RequestPassSharedData()
+{
+
+}
 
 
-    appPTR->getAppTLS()->cleanupTLSForThread();
+void
+RequestPassSharedData::addDependencyFreeRender(const FrameViewRequestPtr& render)
+{
+    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+    _imp->dependencyFreeRenders.insert(render);
+}
 
-    return stat;
+void
+RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
+{
+     QMutexLocker k(&_imp->dependencyFreeRendersMutex);
+    _imp->allRenderTasksToProcess.insert(render);
+}
+
+class TLSCleanupRAII
+{
+    TreeRenderPrivate* _imp;
+public:
+
+    TLSCleanupRAII(TreeRenderPrivate* imp)
+    : _imp(imp)
+    {
+
+    }
+
+    ~TLSCleanupRAII()
+    {
+        _imp->clearRenderClones();
+    }
+};
+
+
+class FrameViewRenderRunnable : public QRunnable
+{
+
+    RequestPassSharedDataPtr _sharedData;
+    FrameViewRequestPtr _request;
+
+public:
+
+    FrameViewRenderRunnable(const RequestPassSharedDataPtr& sharedData, const FrameViewRequestPtr& request)
+    : QRunnable()
+    , _sharedData(sharedData)
+    , _request(request)
+    {
+        assert(request);
+    }
+
+    virtual ~FrameViewRenderRunnable()
+    {
+
+    }
+
+private:
+
+    virtual void run() OVERRIDE FINAL
+    {
+
+        EffectInstancePtr renderClone = _request->getRenderClone();
+        ActionRetCodeEnum stat = renderClone->launchRender(_request);
+
+        QMutexLocker k(&_sharedData->_imp->dependencyFreeRendersMutex);
+
+        if (isFailureRetCode(stat)) {
+            _sharedData->_imp->stat = stat;
+        }
+
+        // Remove this render from all tasks left
+        {
+            std::set<FrameViewRequestPtr>::const_iterator foundTask = _sharedData->_imp->allRenderTasksToProcess.find(_request);
+            assert(foundTask != _sharedData->_imp->allRenderTasksToProcess.end());
+            if (foundTask != _sharedData->_imp->allRenderTasksToProcess.end()) {
+                _sharedData->_imp->allRenderTasksToProcess.erase(foundTask);
+            }
+        }
+
+        // For each frame/view that depend on this frame, remove it from the dependencies list.
+        std::list<FrameViewRequestPtr> listeners = _request->getListeners();
+        for (std::list<FrameViewRequestPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
+            (*it)->markDependencyAsRendered(_request);
+
+            // If the task has all its dependencies available, add it to the render queue.
+            if ((*it)->getNumDependencies() == 0) {
+                _sharedData->_imp->dependencyFreeRenders.insert(*it);
+            }
+        }
+
+        // Notify the main render thread that some more stuff can be rendered (or that we are done)
+        _sharedData->_imp->dependencyFreeRendersEmptyCond.wakeOne();
+    }
+};
+
+
+ActionRetCodeEnum
+TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
+                                        TimeValue time,
+                                        ViewIdx view,
+                                        const RenderScale& proxyScale,
+                                        unsigned int mipMapLevel,
+                                        const ImagePlaneDesc* planeParam,
+                                        const RectD* canonicalRoIParam,
+                                        FrameViewRequestPtr* outputRequest)
+{
+
+    // Get the combined scale
+    RenderScale scale = ctorArgs->proxyScale;
+    {
+        double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
+        scale.x *= mipMapScale;
+        scale.y *= mipMapScale;
+    }
+
+    assert(renderClone->isRenderClone());
+
+    // Resolve plane to render if not provided
+    ImagePlaneDesc plane;
+    if (planeParam) {
+        plane = *planeParam;
+    } else {
+        ActionRetCodeEnum stat = TreeRenderPrivate::getTreeRootPlane(renderClone, time, view, &plane);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
+
+    // Resolve RoI to render if not provided
+    RectD canonicalRoI;
+    if (canonicalRoIParam) {
+        canonicalRoI = *canonicalRoIParam;
+    } else {
+        ActionRetCodeEnum stat = TreeRenderPrivate::getTreeRootRoD(renderClone, time, view, scale, &canonicalRoI);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
+
+    RequestPassSharedDataPtr requestData(new RequestPassSharedData());
+
+    // Cycle through the tree to find and requested frames and RoIs
+    {
+        ActionRetCodeEnum stat = renderClone->requestRender(time, view, proxyScale, mipMapLevel, plane, canonicalRoI, -1, FrameViewRequestPtr(), requestData, outputRequest);
+
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
+
+    // At this point, the request pass should have created the first batch of dependency-free renders.
+    // The list cannot be empty, otherwise it should have failed before.
+    assert(!requestData->_imp->dependencyFreeRenders.empty());
+    if (requestData->_imp->dependencyFreeRenders.empty()) {
+        return eActionStatusFailed;
+    }
+
+    int numTasksRemaining;
+    {
+        QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
+        numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
+    }
+    QThreadPool* threadPool = QThreadPool::globalInstance();
+
+    bool isThreadPoolThread = isRunningInThreadPoolThread();
+
+    // While we still have tasks to render loop
+    while (numTasksRemaining > 0) {
+
+
+        // Launch all dependency-free tasks in parallel
+        QMutexLocker k(&requestData->_imp->dependencyFreeRendersMutex);
+        while (requestData->_imp->dependencyFreeRenders.size() > 0) {
+
+            FrameViewRequestPtr request = *requestData->_imp->dependencyFreeRenders.begin();
+            requestData->_imp->dependencyFreeRenders.erase(requestData->_imp->dependencyFreeRenders.begin());
+
+            threadPool->start(new FrameViewRenderRunnable(requestData, request));
+        }
+
+        // If this thread is a threadpool thread, it may wait for a while that results gets available.
+        // Release the thread to the thread pool so that it may use this thread for other runnables
+        // and reserve it back when done waiting.
+        if (isThreadPoolThread) {
+            QThreadPool::globalInstance()->releaseThread();
+        }
+
+        // Wait until a task is finished: we should be able to launch more tasks afterwards.
+        requestData->_imp->dependencyFreeRendersEmptyCond.wait(&requestData->_imp->dependencyFreeRendersMutex);
+
+        if (isThreadPoolThread) {
+            QThreadPool::globalInstance()->reserveThread();
+        }
+
+        // We have been woken-up by a finished task, check if the render is still OK
+        if (isFailureRetCode(requestData->_imp->stat)) {
+            return requestData->_imp->stat;
+        }
+
+        
+        numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
+    }
+    
+    
+    return eActionStatusOK;
+} // launchRenderInternal
+
+ActionRetCodeEnum
+TreeRender::launchRenderWithArgs(const EffectInstancePtr& renderClone,
+                                 TimeValue time,
+                                 ViewIdx view,
+                                 const RenderScale& proxyScale,
+                                 unsigned int mipMapLevel,
+                                 const ImagePlaneDesc* plane,
+                                 const RectD* canonicalRoI,
+                                 FrameViewRequestPtr* outputRequest)
+{
+    return _imp->launchRenderInternal(renderClone, time, view, proxyScale, mipMapLevel, plane, canonicalRoI, outputRequest);
+}
+
+ActionRetCodeEnum
+TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
+{
+    
+    TLSCleanupRAII tlsCleaner(_imp.get());
+
+    // init() may have failed, return early then.
+    if (isFailureRetCode(_imp->state)) {
+        return _imp->state;
+    }
+    return _imp->launchRenderInternal(_imp->rootRenderClone, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
+
 
 } // launchRender
 

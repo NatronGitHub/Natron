@@ -92,9 +92,7 @@ public:
 
     RotoItem(const KnobItemsTablePtr& model);
 
-    // The copy constructor makes a shallow copy and only copy knob pointers
-    // since the knobs are anyway cached during render in RenderValuesCache
-    RotoItem(const RotoItem& other);
+    RotoItem(const RotoItemPtr& other, const TreeRenderPtr& render);
 
     virtual ~RotoItem();
 
@@ -116,6 +114,8 @@ public:
     virtual std::string getBaseItemName() const OVERRIDE = 0;
 
 protected:
+
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
     virtual void initializeKnobs() OVERRIDE;
 

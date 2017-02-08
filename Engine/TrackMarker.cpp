@@ -31,6 +31,7 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/EffectInstance.h"
 #include "Engine/Image.h"
 #include "Engine/ImagePlaneDesc.h"
@@ -162,63 +163,63 @@ TrackMarker::initializeKnobs()
 
     int defMotionModel_i = defMotionModelKnob ? defMotionModelKnob->getValue() : 0;
 
-    KnobDoublePtr swbbtmLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamSearchWndBtmLeftLabel), 2, false);
+    KnobDoublePtr swbbtmLeft = createKnob<KnobDouble>(kTrackerParamSearchWndBtmLeft, 2);
 
-    swbbtmLeft->setName(kTrackerParamSearchWndBtmLeft);
+    swbbtmLeft->setLabel(tr(kTrackerParamSearchWndBtmLeftLabel));
     swbbtmLeft->setDefaultValue(-searchHalfSize, DimIdx(0));
     swbbtmLeft->setDefaultValue(-searchHalfSize, DimIdx(1));
     swbbtmLeft->setHintToolTip( tr(kTrackerParamSearchWndBtmLeftHint) );
     _imp->searchWindowBtmLeft = swbbtmLeft;
 
-    KnobDoublePtr swbtRight = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamSearchWndTopRightLabel), 2, false);
-    swbtRight->setName(kTrackerParamSearchWndTopRight);
+    KnobDoublePtr swbtRight = createKnob<KnobDouble>(kTrackerParamSearchWndTopRight, 2);
+    swbtRight->setLabel(tr(kTrackerParamSearchWndTopRightLabel));
     swbtRight->setDefaultValue(searchHalfSize, DimIdx(0));
     swbtRight->setDefaultValue(searchHalfSize, DimIdx(1));
     swbtRight->setHintToolTip( tr(kTrackerParamSearchWndTopRightHint) );
     _imp->searchWindowTopRight = swbtRight;
 
 
-    KnobDoublePtr ptLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternTopLeftLabel), 2, false);
-    ptLeft->setName(kTrackerParamPatternTopLeft);
+    KnobDoublePtr ptLeft = createKnob<KnobDouble>(kTrackerParamPatternTopLeft, 2);
+    ptLeft->setLabel(tr(kTrackerParamPatternTopLeftLabel));
     ptLeft->setDefaultValue(-patternHalfSize, DimIdx(0));
     ptLeft->setDefaultValue(patternHalfSize, DimIdx(1));
     ptLeft->setHintToolTip( tr(kTrackerParamPatternTopLeftHint) );
     _imp->patternTopLeft = ptLeft;
 
-    KnobDoublePtr ptRight = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternTopRightLabel), 2, false);
-    ptRight->setName(kTrackerParamPatternTopRight);
+    KnobDoublePtr ptRight = createKnob<KnobDouble>(kTrackerParamPatternTopRight, 2);
+    ptRight->setLabel(tr(kTrackerParamPatternTopRightLabel));
     ptRight->setDefaultValue(patternHalfSize, DimIdx(0));
     ptRight->setDefaultValue(patternHalfSize, DimIdx(1));
     ptRight->setHintToolTip( tr(kTrackerParamPatternTopRightHint) );
     _imp->patternTopRight = ptRight;
 
-    KnobDoublePtr pBRight = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternBtmRightLabel), 2, false);
-    pBRight->setName(kTrackerParamPatternBtmRight);
+    KnobDoublePtr pBRight = createKnob<KnobDouble>(kTrackerParamPatternBtmRight, 2);
+    pBRight->setLabel(tr(kTrackerParamPatternBtmRightLabel));
     pBRight->setDefaultValue(patternHalfSize, DimIdx(0));
     pBRight->setDefaultValue(-patternHalfSize, DimIdx(1));
     pBRight->setHintToolTip( tr(kTrackerParamPatternBtmRightHint) );
     _imp->patternBtmRight = pBRight;
 
-    KnobDoublePtr pBLeft = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamPatternBtmLeftLabel), 2, false);
-    pBLeft->setName(kTrackerParamPatternBtmLeft);
+    KnobDoublePtr pBLeft = createKnob<KnobDouble>(kTrackerParamPatternBtmLeft, 2);
+    pBLeft->setLabel(tr(kTrackerParamPatternBtmLeftLabel));
     pBLeft->setDefaultValue(-patternHalfSize, DimIdx(0));
     pBLeft->setDefaultValue(-patternHalfSize, DimIdx(1));
     pBLeft->setHintToolTip( tr(kTrackerParamPatternBtmLeftHint) );
     _imp->patternBtmLeft = pBLeft;
 
-    KnobDoublePtr centerKnob = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamCenterLabel), 2, false);
-    centerKnob->setName(kTrackerParamCenter);
+    KnobDoublePtr centerKnob = createKnob<KnobDouble>(kTrackerParamCenter, 2);
+    centerKnob->setLabel(tr(kTrackerParamCenterLabel));
     centerKnob->setHintToolTip( tr(kTrackerParamCenterHint) );
     _imp->center = centerKnob;
 
-    KnobDoublePtr offsetKnob = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamOffsetLabel), 2, false);
-    offsetKnob->setName(kTrackerParamOffset);
+    KnobDoublePtr offsetKnob = createKnob<KnobDouble>(kTrackerParamOffset, 2);
+    offsetKnob->setLabel(tr(kTrackerParamOffsetLabel));
     offsetKnob->setHintToolTip( tr(kTrackerParamOffsetHint) );
     _imp->offset = offsetKnob;
 
 #ifdef NATRON_TRACK_MARKER_USE_WEIGHT
-    KnobDoublePtr weightKnob = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamTrackWeightLabel), 1, false);
-    weightKnob->setName(kTrackerParamTrackWeight);
+    KnobDoublePtr weightKnob = createKnob<KnobDouble>(kTrackerParamTrackWeight, 1);
+    weightKnob->setLabel(tr(kTrackerParamTrackWeightLabel));
     weightKnob->setHintToolTip( tr(kTrackerParamTrackWeightHint) );
     weightKnob->setDefaultValue(1.);
     weightKnob->setAnimationEnabled(false);
@@ -226,9 +227,9 @@ TrackMarker::initializeKnobs()
     _imp->weight = weightKnob;
 #endif
 
-    KnobChoicePtr mmodelKnob = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kTrackerParamMotionModelLabel), 1, false);
+    KnobChoicePtr mmodelKnob = createKnob<KnobChoice>(kTrackerParamMotionModel, 1);
     mmodelKnob->setHintToolTip( tr(kTrackerParamMotionModelHint) );
-    mmodelKnob->setName(kTrackerParamMotionModel);
+    mmodelKnob->setLabel(tr(kTrackerParamMotionModelLabel));
     {
         std::vector<ChoiceOption> choices, helps;
         std::map<int, std::string> icons;
@@ -240,12 +241,12 @@ TrackMarker::initializeKnobs()
     mmodelKnob->setDefaultValue(defMotionModel_i);
     _imp->motionModel = mmodelKnob;
 
-    KnobDoublePtr errKnob = AppManager::createKnob<KnobDouble>(shared_from_this(), tr(kTrackerParamErrorLabel), 1, false);
-    errKnob->setName(kTrackerParamError);
+    KnobDoublePtr errKnob = createKnob<KnobDouble>(kTrackerParamError, 1);
+    errKnob->setLabel(tr(kTrackerParamErrorLabel));
     _imp->error = errKnob;
 
-    KnobBoolPtr enableKnob = AppManager::createKnob<KnobBool>(shared_from_this(), tr(kTrackerParamEnabledLabel), 1, false);
-    enableKnob->setName(kTrackerParamEnabled);
+    KnobBoolPtr enableKnob = createKnob<KnobBool>(kTrackerParamEnabled, 1);
+    enableKnob->setLabel(tr(kTrackerParamEnabledLabel));
     enableKnob->setHintToolTip( tr(kTrackerParamEnabledHint) );
     enableKnob->setAnimationEnabled(true);
     enableKnob->setDefaultValue(true);
@@ -427,7 +428,7 @@ TrackMarker::resetCenter()
         RectD rod;
         {
             GetRegionOfDefinitionResultsPtr results;
-            ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(time, scale, ViewIdx(0), TreeRenderNodeArgsPtr(), &results);
+            ActionRetCodeEnum stat = input->getEffectInstance()->getRegionOfDefinition_public(time, scale, ViewIdx(0), &results);
             if (!isFailureRetCode(stat)) {
                 rod = results->getRoD();
             }
@@ -692,12 +693,12 @@ TrackMarker::getMarkerImage(TimeValue time,
 
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
-        args->treeRoot = input;
+        args->treeRootEffect = input->getEffectInstance();
         args->time = time;
         args->view = ViewIdx(0);
 
-        // Render all layers produced
-        args->layers = 0;
+        // Render default plane
+        args->plane = 0;
         args->mipMapLevel = 0;
         args->proxyScale = RenderScale(1.);
         args->canonicalRoI = &roi;
@@ -706,13 +707,14 @@ TrackMarker::getMarkerImage(TimeValue time,
         args->byPassCache = false;
     }
 
-    std::map<ImagePlaneDesc, ImagePtr> planes;
     TreeRenderPtr render = TreeRender::create(args);
-    ActionRetCodeEnum stat = render->launchRender(&planes);
+
+    FrameViewRequestPtr outputRequest;
+    ActionRetCodeEnum stat = render->launchRender(&outputRequest);
     if (isFailureRetCode(stat)) {
         return std::make_pair(ImagePtr(), roi);
     }
-    ImagePtr sourceImage = planes.begin()->second;
+    ImagePtr sourceImage = outputRequest->getImagePlane();
 
     // Make sure the Natron image rendered is RGBA full rect and on CPU, we don't support other formats
     if (sourceImage->getStorageMode() == eStorageModeGLTex ||
@@ -828,7 +830,7 @@ TrackMarkerPM::trackMarker(bool forward,
                 NodePtr trackerInput = trackerNode->getInput(0);
                 if (trackerInput) {
                     ImagePlaneDesc comps, paireComps;
-                    trackerInput->getEffectInstance()->getMetadataComponents(TreeRenderNodeArgsPtr(), -1, &comps, &paireComps);
+                    trackerInput->getEffectInstance()->getMetadataComponents(-1, &comps, &paireComps);
                     areaPixels *= comps.getNumComponents();
                 }
 

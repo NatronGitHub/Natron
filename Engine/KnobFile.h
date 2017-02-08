@@ -45,6 +45,7 @@ NATRON_NAMESPACE_ENTER;
 
 /******************************KnobFile**************************************/
 
+struct KnobFilePrivate;
 class KnobFile
     : public QObject, public AnimatingKnobStringHelper
 {
@@ -57,10 +58,10 @@ private: // derives from KnobI
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobFile(const KnobHolderPtr& holder,
-             const std::string &description,
-             int dimension,
-             bool declaredByPlugin);
+             const std::string &name,
+             int dimension);
 
+    KnobFile(const KnobHolderPtr& holder,const KnobIPtr& mainInstance);
 public:
 
     enum KnobFileDialogTypeEnum
@@ -72,19 +73,15 @@ public:
     };
 
     static KnobHelperPtr create(const KnobHolderPtr& holder,
-                                const std::string &label,
-                                int dimension,
-                                bool declaredByPlugin = true)
+                                const std::string &name,
+                                int dimension)
     {
-        return KnobHelperPtr(new KnobFile(holder, label, dimension, declaredByPlugin));
+        return KnobHelperPtr(new KnobFile(holder, name, dimension));
     }
 
-    static KnobFilePtr create(const KnobHolderPtr& holder,
-                                const QString &label,
-                                int dimension,
-                                bool declaredByPlugin = true)
+    static KnobHelperPtr createRenderClone(const KnobHolderPtr& holder,const KnobIPtr& mainInstance)
     {
-        return KnobFilePtr(new KnobFile(holder, label.toStdString(), dimension, declaredByPlugin));
+        return KnobFilePtr(new KnobFile(holder, mainInstance));
     }
 
     virtual ~KnobFile();
@@ -101,24 +98,13 @@ public:
 
     static const std::string & typeNameStatic();
 
-    void setDialogType(KnobFileDialogTypeEnum type) {
-        _dialogType = type;
-    }
+    void setDialogType(KnobFileDialogTypeEnum type);
 
-    KnobFileDialogTypeEnum getDialogType() const
-    {
-        return _dialogType;
-    }
+    KnobFileDialogTypeEnum getDialogType() const;
 
-    void setDialogFilters(const std::vector<std::string>& filters)
-    {
-        _dialogFilters = filters;
-    }
+    void setDialogFilters(const std::vector<std::string>& filters);
 
-    const std::vector<std::string>& getDialogFilters() const
-    {
-        return _dialogFilters;
-    }
+    const std::vector<std::string>& getDialogFilters() const;
 
     void open_file()
     {
@@ -147,8 +133,7 @@ private:
     virtual bool canAnimate() const OVERRIDE FINAL;
     virtual const std::string & typeName() const OVERRIDE FINAL;
     static const std::string _typeNameStr;
-    KnobFileDialogTypeEnum _dialogType;
-    std::vector<std::string> _dialogFilters;
+    boost::shared_ptr<KnobFilePrivate> _imp;
 };
 
 
@@ -159,6 +144,7 @@ private:
  * @brief The string value is encoded the following way:
  * <Name>Lala</Name><Value>MyValue</Value>
  **/
+struct KnobPathPrivate;
 class KnobPath
     : public KnobTable
 {
@@ -167,26 +153,27 @@ private: // derives from KnobI
     // constructors should be privatized in any class that derives from boost::enable_shared_from_this<>
 
     KnobPath(const KnobHolderPtr& holder,
-             const std::string &description,
-             int dimension,
-             bool declaredByPlugin);
+             const std::string &name,
+             int dimension);
+
+    KnobPath(const KnobHolderPtr& holder,const KnobIPtr& mainInstance);
 
 public:
     static KnobHelperPtr create(const KnobHolderPtr& holder,
-                                const std::string &label,
-                                int dimension,
-                                bool declaredByPlugin = true)
+                                const std::string &name,
+                                int dimension)
     {
-        return KnobHelperPtr(new KnobPath(holder, label, dimension, declaredByPlugin));
+        return KnobHelperPtr(new KnobPath(holder, name, dimension));
     }
 
-    static KnobPathPtr create(const KnobHolderPtr& holder,
-                                const QString &label,
-                                int dimension,
-                                bool declaredByPlugin = true)
+    static KnobHelperPtr createRenderClone(const KnobHolderPtr& holder,const KnobIPtr& mainInstance)
     {
-        return KnobPathPtr(new KnobPath(holder, label.toStdString(), dimension, declaredByPlugin));
+        return KnobPathPtr(new KnobPath(holder, mainInstance));
     }
+
+
+
+    virtual ~KnobPath();
 
 
     static const std::string & typeNameStatic();
@@ -207,10 +194,7 @@ public:
     void appendPath(const std::string& path);
 
 
-    virtual int getColumnsCount() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return _isStringList ? 1 : 2;
-    }
+    virtual int getColumnsCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual std::string getColumnLabel(int col) const OVERRIDE FINAL WARN_UNUSED_RETURN
     {
@@ -229,11 +213,7 @@ public:
 
     virtual bool isCellEnabled(int row, int col, const QStringList& values) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isCellBracketDecorated(int row, int col) const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual bool useEditButton() const OVERRIDE FINAL WARN_UNUSED_RETURN
-    {
-        return _isMultiPath && !_isStringList;
-    }
-
+    virtual bool useEditButton() const OVERRIDE FINAL WARN_UNUSED_RETURN;
 private:
 
     static std::string generateUniquePathID(const std::list<std::vector<std::string> >& paths);
@@ -241,8 +221,8 @@ private:
 
 private:
     static const std::string _typeNameStr;
-    bool _isMultiPath;
-    bool _isStringList;
+   
+    boost::shared_ptr<KnobPathPrivate> _imp;
 };
 
 inline KnobFilePtr

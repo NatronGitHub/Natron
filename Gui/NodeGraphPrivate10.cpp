@@ -172,7 +172,7 @@ NodeGraphPrivate::toggleSelectedNodesEnabled()
     NodesGuiList toProcess;
 
     for (NodesGuiList::iterator it = _selection.begin(); it != _selection.end(); ++it) {
-        KnobBoolPtr k = (*it)->getNode()->getDisabledKnob();
+        KnobBoolPtr k = (*it)->getNode()->getEffectInstance()->getDisabledKnob();
         if (!k) {
             continue;
         }

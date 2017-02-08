@@ -1080,7 +1080,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     Image::CPUTileData imageData;
     if (image) {
         Image::Tile tile;
-        image->getTileAt(0, &tile);
+        image->getTileAt(0, 0, &tile);
         image->getCPUTileData(tile, &imageData);
     }
 
@@ -3130,7 +3130,7 @@ ViewerGL::getColorAt(double x,
     Image::CPUTileData imageData;
     {
         Image::Tile tile;
-        image->getTileAt(0, &tile);
+        image->getTileAt(0, 0, &tile);
         image->getCPUTileData(tile, &imageData);
     }
 
@@ -3300,7 +3300,7 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
     Image::CPUTileData imageData;
     {
         Image::Tile tile;
-        image->getTileAt(0, &tile);
+        image->getTileAt(0, 0, &tile);
         image->getCPUTileData(tile, &imageData);
     }
 

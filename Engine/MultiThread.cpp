@@ -37,6 +37,7 @@ CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QCoreApplication>
 #include <QtCore/QDebug>
 #include <QtCore/QThread>
+#include <QtCore/QReadWriteLock>
 #include <QtCore/QThreadStorage>
 #include <QtConcurrentMap> // QtCore on Qt4, QtConcurrent on Qt5
 CLANG_DIAG_ON(deprecated-register)
@@ -53,6 +54,7 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Node.h"
 #include "Engine/Settings.h"
 #include "Engine/TLSHolder.h"
+#include "Engine/EffectInstanceTLSData.h"
 #include "Engine/ThreadPool.h"
 
 // An effect may not use more than this amount of threads
@@ -74,15 +76,82 @@ struct MultiThreadPrivate
 {
 
     PerThreadMultiThreadDataMap threadsData;
+    mutable QReadWriteLock threadsDataMutex;
 
     MultiThreadPrivate()
     : threadsData()
+    , threadsDataMutex()
     {
 
+    }
+
+    void pushThreadIndex(QThread* thread, unsigned int index)
+    {
+        QWriteLocker k(&threadsDataMutex);
+        MultiThreadThreadData& data = threadsData[thread];
+        data.indices.push_back(index);
+    }
+    void popThreadIndex(QThread* thread)
+    {
+        QWriteLocker k(&threadsDataMutex);
+        PerThreadMultiThreadDataMap::iterator foundThread = threadsData.find(thread);
+        assert(foundThread != threadsData.end());
+        if (foundThread != threadsData.end()) {
+            assert(!foundThread->second.indices.empty());
+            foundThread->second.indices.pop_back();
+            if (foundThread->second.indices.empty()) {
+                threadsData.erase(foundThread);
+            }
+        }
+    }
+
+    bool getThreadIndex(QThread* thread, unsigned int* index) const
+    {
+        QReadLocker k(&threadsDataMutex);
+        PerThreadMultiThreadDataMap::const_iterator foundThread = threadsData.find(thread);
+        if (foundThread == threadsData.end()) {
+            return false;
+        }
+        if (foundThread->second.indices.empty()) {
+            return false;
+        }
+        *index = foundThread->second.indices.back();
+        return true;
     }
 };
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
+
+static void copyOFXRenderTLS(const EffectInstancePtr& effect,
+                             QThread* spawnerThread,
+                             boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> &frameViewSetter,
+                             boost::scoped_ptr<RenderActionArgsSetter_RAII> &renderActionData)
+{
+    EffectInstanceTLSDataPtr tlsSpawnerThread = effect->getTLSObjectForThread(spawnerThread);
+    EffectInstanceTLSDataPtr tlsSpawnedThread = effect->getOrCreateTLSObject();
+    if (!tlsSpawnerThread || !tlsSpawnedThread) {
+        return;
+    }
+
+    // Copy the request: this will enable threads from the multi-thread suite to
+    // correctly know that they are in an action on a render thread
+    FrameViewRequestPtr request = tlsSpawnerThread->getCurrentFrameViewRequest();
+    if (request) {
+        frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(effect, request));
+    }
+
+    // Copy the current render action args: this will enable threads from the multi-thread suite to
+    // correctly know that they are in a render action.
+    TimeValue time;
+    ViewIdx view;
+    RenderScale scale;
+    RectI renderWindow;
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
+    if (tlsSpawnerThread->getCurrentRenderActionArgs(&time, &view, &scale, &renderWindow, &outputPlanes)) {
+        renderActionData.reset(new RenderActionArgsSetter_RAII(tlsSpawnedThread, time, view, scale, renderWindow, outputPlanes));
+    }
+
+}
 
 // Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
 // to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
@@ -95,29 +164,27 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
                       unsigned int threadIndex,
                       unsigned int threadMax,
                       QThread* spawnerThread,
-                      void *customArg,
-                      const TreeRenderNodeArgsPtr& renderArgs)
+                      const EffectInstancePtr& effect,
+                      void *customArg)
 {
     assert(threadIndex < threadMax);
 
     QThread* spawnedThread = QThread::currentThread();
 
-    MultiThreadThreadData& spawnedThreadData = imp->threadsData[spawnedThread];
-    spawnedThreadData.indices.push_back(threadIndex);
+    imp->pushThreadIndex(spawnedThread, threadIndex);
 
     // If we launched the functor in a new thread,
     // this thread doesn't have any TLS set.
     // However some functions in the OpenFX API might require it.
-    // We flag on the application that this thread is spawned from
-    // another thread and whenever it will try to access the TLS
-    // it will copy the required data.
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->softCopy(spawnerThread, spawnedThread);
+    boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
+    boost::scoped_ptr<RenderActionArgsSetter_RAII> renderActionData;
+    if (spawnedThread != spawnerThread && effect) {
+        copyOFXRenderTLS(effect, spawnerThread, frameViewSetter, renderActionData);
     }
 
     ActionRetCodeEnum ret = eActionStatusOK;
     try {
-        ret = func(threadIndex, threadMax, customArg, renderArgs);
+        ret = func(threadIndex, threadMax, customArg);
     } catch (const std::bad_alloc & ba) {
         ret =  eActionStatusOutOfMemory;
     } catch (...) {
@@ -125,12 +192,7 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
     }
 
     // Reset back the index otherwise it could mess up the indices if the same thread is re-used
-    spawnedThreadData.indices.pop_back();
-
-    // If we used TLS on this thread, clean it up.
-    if (spawnedThread != spawnerThread) {
-        appPTR->getAppTLS()->cleanupTLSForThread();
-    }
+    imp->popThreadIndex(spawnedThread);
 
     return ret;
 } // threadFunctionWrapper
@@ -144,9 +206,9 @@ public:
                         MultiThread::ThreadFunctor func,
                         unsigned int threadIndex,
                         unsigned int threadMax,
-                        QThread* spawnerThread,
                         void *customArg,
-                        const TreeRenderNodeArgsPtr& renderArgs,
+                        QThread* spawnerThread,
+                        const EffectInstancePtr& effect,
                         ActionRetCodeEnum *stat)
     : QThread()
     , AbortableThread(this)
@@ -154,9 +216,9 @@ public:
     , _func(func)
     , _threadIndex(threadIndex)
     , _threadMax(threadMax)
-    , _spawnerThread(spawnerThread)
     , _customArg(customArg)
-    , _renderArgs(renderArgs)
+    , _spawnerThread(spawnerThread)
+    , _effect(effect)
     , _stat(stat)
     {
         setThreadName("Multi-thread suite");
@@ -168,21 +230,21 @@ private:
     {
         assert(_threadIndex < _threadMax);
 
-        MultiThreadThreadData& spawnedThreadData = _imp->threadsData[this];
-        spawnedThreadData.indices.push_back(_threadIndex);
+        _imp->pushThreadIndex(this, _threadIndex);
 
-
-        // This thread doesn't have any TLS set.
+        // If we launched the functor in a new thread,
+        // this thread doesn't have any TLS set.
         // However some functions in the OpenFX API might require it.
-        // We flag on the application that this thread is spawned from
-        // another thread and whenever it will try to access the TLS
-        // it will copy the required data.
+        boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
+        boost::scoped_ptr<RenderActionArgsSetter_RAII> renderActionData;
+        if (_effect) {
+            copyOFXRenderTLS(_effect, _spawnerThread, frameViewSetter, renderActionData);
+        }
 
-        appPTR->getAppTLS()->softCopy(_spawnerThread, this);
 
         assert(*_stat == eActionStatusFailed);
         try {
-            _func(_threadIndex, _threadMax, _customArg, _renderArgs);
+            _func(_threadIndex, _threadMax, _customArg);
             *_stat = eActionStatusOK;
         } catch (const std::bad_alloc & ba) {
             *_stat = eActionStatusOutOfMemory;
@@ -190,10 +252,7 @@ private:
         }
 
         // Reset back the index otherwise it could mess up the indexes if the same thread is re-used
-        spawnedThreadData.indices.pop_back();
-
-        // If we used TLS on this thread, clean it up.
-        appPTR->getAppTLS()->cleanupTLSForThread();
+        _imp->popThreadIndex(this);
     }
 
 private:
@@ -201,9 +260,9 @@ private:
     MultiThread::ThreadFunctor *_func;
     unsigned int _threadIndex;
     unsigned int _threadMax;
-    QThread* _spawnerThread;
     void *_customArg;
-    TreeRenderNodeArgsPtr _renderArgs;
+    QThread* _spawnerThread;
+    EffectInstancePtr _effect;
     ActionRetCodeEnum *_stat;
 };
 
@@ -223,7 +282,7 @@ MultiThread::~MultiThread()
 
 
 ActionRetCodeEnum
-MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const TreeRenderNodeArgsPtr& renderArgs)
+MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *customArg, const EffectInstancePtr& effect)
 {
     if (!func) {
         return eActionStatusFailed;
@@ -241,7 +300,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // multiple times.
         try {
             for (unsigned int i = 0; i < nThreads; ++i) {
-                ActionRetCodeEnum stat = func(i, nThreads, customArg, renderArgs);
+                ActionRetCodeEnum stat = func(i, nThreads, customArg);
                 if (isFailureRetCode(stat)) {
                     return stat;
                 }
@@ -259,8 +318,8 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
     // The first method is to be preferred but can be proven to not work properly with some plug-ins that
     // require thread local storage such as The Foundry Furnace plug-ins.
     bool useThreadPool = true;
-    if (renderArgs) {
-        NodePtr node = renderArgs->getNode();
+    if (effect) {
+        NodePtr node = effect->getNode();
         if (node) {
             if (boost::starts_with(node->getPluginID(), "uk.co.thefoundry.furnace")) {
                 useThreadPool = false;
@@ -288,11 +347,11 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
         // DON'T set the maximum thread count: this is a global application setting, and see the documentation excerpt above
         // QThreadPool::globalInstance()->setMaxThreadCount(nThreads);
 
-        QFuture<ActionRetCodeEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, customArg, renderArgs) );
+        QFuture<ActionRetCodeEnum> future = QtConcurrent::mapped( threadIndexes, boost::bind(threadFunctionWrapper, imp, func, _1, nThreads, spawnerThread, effect, customArg) );
 
         // Do one iteration in this thread
         if (isThreadPoolThread) {
-            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, customArg, renderArgs);
+            ActionRetCodeEnum stat = threadFunctionWrapper(imp, func, nThreads - 1, nThreads, spawnerThread, effect, customArg);
             if (isFailureRetCode(stat)) {
                 // This thread failed, wait for other threads and exit
                 future.waitForFinished();
@@ -321,7 +380,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             // at most maxConcurrentThread should be running at the same time
             QVector<NonThreadPoolThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, spawnerThread, customArg, renderArgs, &status[i]);
+                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, customArg, spawnerThread, effect, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads
@@ -393,15 +452,9 @@ MultiThread::getCurrentThreadIndex(unsigned int *threadIndex)
 
     // Get the global multi-thread handler data
     MultiThreadPrivate* imp = appPTR->getMultiThreadHandler()->_imp.get();
-
-    PerThreadMultiThreadDataMap::const_iterator foundThread = imp->threadsData.find(thisThread);
-    if (foundThread == imp->threadsData.end()) {
+    if (!imp->getThreadIndex(thisThread, threadIndex)) {
         return eActionStatusFailed;
     }
-    if (foundThread->second.indices.empty()) {
-        return eActionStatusFailed;
-    }
-    *threadIndex = foundThread->second.indices.back();
     return eActionStatusOK;
 }
 
@@ -414,8 +467,8 @@ MultiThread::isCurrentThreadSpawnedThread()
     return stat == eActionStatusOK;
 }
 
-MultiThreadProcessorBase::MultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs)
-:  _renderArgs(renderArgs)
+MultiThreadProcessorBase::MultiThreadProcessorBase(const EffectInstancePtr& effect)
+:  _effect(effect)
 {
 
 }
@@ -428,11 +481,10 @@ MultiThreadProcessorBase::~MultiThreadProcessorBase()
 ActionRetCodeEnum
 MultiThreadProcessorBase::staticMultiThreadFunction(unsigned int threadIndex,
                                                     unsigned int threadMax,
-                                                    void *customArg,
-                                                    const TreeRenderNodeArgsPtr& renderArgs)
+                                                    void *customArg)
 {
     MultiThreadProcessorBase* processor = (MultiThreadProcessorBase*)customArg;
-    return processor->multiThreadFunction(threadIndex, threadMax, renderArgs);
+    return processor->multiThreadFunction(threadIndex, threadMax);
 }
 
 ActionRetCodeEnum
@@ -445,16 +497,16 @@ MultiThreadProcessorBase::launchThreads(unsigned int nCPUs)
 
     // if 1 cpu, don't bother with the threading
     if (nCPUs == 1) {
-        return multiThreadFunction(0, 1, _renderArgs);
+        return multiThreadFunction(0, 1);
     } else {
         // OK do it
-        ActionRetCodeEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _renderArgs);
+        ActionRetCodeEnum stat = MultiThread::launchThreads(staticMultiThreadFunction, nCPUs, (void*)this /*customArgs*/, _effect);
         return stat;
     }
 }
 
-ImageMultiThreadProcessorBase::ImageMultiThreadProcessorBase(const TreeRenderNodeArgsPtr& renderArgs)
-: MultiThreadProcessorBase(renderArgs)
+ImageMultiThreadProcessorBase::ImageMultiThreadProcessorBase(const EffectInstancePtr& effect)
+: MultiThreadProcessorBase(effect)
 {
 
 }
@@ -494,8 +546,7 @@ ImageMultiThreadProcessorBase::getThreadRange(unsigned int threadID, unsigned in
 
 ActionRetCodeEnum
 ImageMultiThreadProcessorBase::multiThreadFunction(unsigned int threadID,
-                                                   unsigned int nThreads,
-                                                   const TreeRenderNodeArgsPtr& renderArgs)
+                                                   unsigned int nThreads)
 {
     // Each threads get a rectangular portion but full scan-lines
     RectI win = _renderWindow;
@@ -503,7 +554,7 @@ ImageMultiThreadProcessorBase::multiThreadFunction(unsigned int threadID,
 
     if ( (win.y2 - win.y1) > 0 ) {
         // and render that thread on each
-        return multiThreadProcessImages(win, renderArgs);
+        return multiThreadProcessImages(win);
     }
     return eActionStatusOK;
 }

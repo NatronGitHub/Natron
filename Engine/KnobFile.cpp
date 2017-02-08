@@ -50,19 +50,33 @@
 
 NATRON_NAMESPACE_ENTER;
 
-//using std::make_pair;
-//using std::pair;
+struct KnobFilePrivate
+{
 
-/***********************************KnobFile*****************************************/
+    KnobFile::KnobFileDialogTypeEnum dialogType;
+    std::vector<std::string> dialogFilters;
+
+    KnobFilePrivate()
+    : dialogType(KnobFile::eKnobFileDialogTypeOpenFile)
+    , dialogFilters()
+    {
+
+    }
+};
 
 KnobFile::KnobFile(const KnobHolderPtr& holder,
-                   const std::string &description,
-                   int dimension,
-                   bool declaredByPlugin)
-    : AnimatingKnobStringHelper(holder, description, dimension, declaredByPlugin)
-    , _dialogType(eKnobFileDialogTypeOpenFile)
-    , _dialogFilters()
+                   const std::string &name,
+                   int dimension)
+: AnimatingKnobStringHelper(holder, name, dimension)
+, _imp(new KnobFilePrivate())
 {
+}
+
+KnobFile::KnobFile(const KnobHolderPtr& holder,const KnobIPtr& mainInstance)
+: AnimatingKnobStringHelper(holder, mainInstance)
+, _imp(toKnobFile(mainInstance)->_imp)
+{
+
 }
 
 KnobFile::~KnobFile()
@@ -113,13 +127,38 @@ KnobFile::getValue(DimIdx dimension, ViewIdx view, bool clampToMinMax)
     return getValueAtTime(getCurrentTime_TLS(), dimension, view, clampToMinMax);
 }
 
+void
+KnobFile::setDialogType(KnobFileDialogTypeEnum type)
+{
+    _imp->dialogType = type;
+}
+
+KnobFile::KnobFileDialogTypeEnum
+KnobFile::getDialogType() const
+{
+    return _imp->dialogType;
+}
+
+void
+KnobFile::setDialogFilters(const std::vector<std::string>& filters)
+{
+    _imp->dialogFilters = filters;
+}
+
+const std::vector<std::string>&
+KnobFile::getDialogFilters() const
+{
+    return _imp->dialogFilters;
+}
+
+
 std::string
 KnobFile::getValueAtTime(TimeValue time, DimIdx dimension, ViewIdx view, bool /*clampToMinMax*/)
 {
     ViewIdx view_i = getViewIdxFromGetSpec(view);
 
-    if (_dialogType == eKnobFileDialogTypeOpenFileSequences ||
-        _dialogType == eKnobFileDialogTypeSaveFileSequences) {
+    if (_imp->dialogType == eKnobFileDialogTypeOpenFileSequences ||
+        _imp->dialogType == eKnobFileDialogTypeSaveFileSequences) {
         ///try to interpret the pattern and generate a filename if indexes are found
         std::vector<std::string> views;
         if ( getHolder() && getHolder()->getApp() ) {
@@ -132,15 +171,37 @@ KnobFile::getValueAtTime(TimeValue time, DimIdx dimension, ViewIdx view, bool /*
 }
 
 /***********************************KnobPath*****************************************/
+struct KnobPathPrivate
+{
+    bool isMultiPath;
+    bool isStringList;
+
+    KnobPathPrivate()
+    : isMultiPath(false)
+    , isStringList(false)
+    {
+        
+    }
+};
 
 KnobPath::KnobPath(const KnobHolderPtr& holder,
-                   const std::string &description,
-                   int dimension,
-                   bool declaredByPlugin)
-    : KnobTable(holder, description, dimension, declaredByPlugin)
-    , _isMultiPath(false)
-    , _isStringList(false)
+                   const std::string &name,
+                   int dimension)
+: KnobTable(holder, name, dimension)
+, _imp(new KnobPathPrivate())
 {
+}
+
+KnobPath::KnobPath(const KnobHolderPtr& holder,const KnobIPtr& mainInstance)
+: KnobTable(holder, mainInstance)
+, _imp(toKnobPath(mainInstance)->_imp)
+{
+
+}
+
+KnobPath::~KnobPath()
+{
+    
 }
 
 const std::string KnobPath::_typeNameStr(kKnobPathTypeName);
@@ -159,26 +220,26 @@ KnobPath::typeName() const
 void
 KnobPath::setMultiPath(bool b)
 {
-    _isMultiPath = b;
+    _imp->isMultiPath = b;
 }
 
 bool
 KnobPath::isMultiPath() const
 {
-    return _isMultiPath;
+    return _imp->isMultiPath;
 }
 
 void
 KnobPath::setAsStringList(bool b)
 {
     setMultiPath(b);
-    _isStringList = b;
+    _imp->isStringList = b;
 }
 
 bool
 KnobPath::getIsStringList() const
 {
-    return _isStringList;
+    return _imp->isStringList;
 }
 
 std::string
@@ -224,7 +285,7 @@ bool
 KnobPath::isCellBracketDecorated(int /*row*/,
                                  int col) const
 {
-    if ( (col == 0) && _isMultiPath && !_isStringList ) {
+    if ( (col == 0) && _imp->isMultiPath && !_imp->isStringList ) {
         return true;
     }
 
@@ -246,7 +307,7 @@ KnobPath::getPaths(std::list<std::string>* paths)
 void
 KnobPath::prependPath(const std::string& path)
 {
-    if (!_isMultiPath) {
+    if (!_imp->isMultiPath) {
         setValue(path);
     } else {
         std::list<std::vector<std::string> > paths;
@@ -263,7 +324,7 @@ KnobPath::prependPath(const std::string& path)
 void
 KnobPath::appendPath(const std::string& path)
 {
-    if (!_isMultiPath) {
+    if (!_imp->isMultiPath) {
         setValue(path);
     } else {
         std::list<std::vector<std::string> > paths;
@@ -280,6 +341,18 @@ KnobPath::appendPath(const std::string& path)
         paths.push_back(row);
         setTable(paths);
     }
+}
+
+int
+KnobPath::getColumnsCount() const
+{
+    return _imp->isStringList ? 1 : 2;
+}
+
+bool
+KnobPath::useEditButton() const
+{
+    return _imp->isMultiPath && !_imp->isStringList;
 }
 
 NATRON_NAMESPACE_EXIT;

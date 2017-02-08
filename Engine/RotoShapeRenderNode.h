@@ -61,13 +61,19 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
     RotoShapeRenderNode(NodePtr n);
 
-
+    RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render);
 public:
 
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new RotoShapeRenderNode(node) );
     }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render) WARN_UNUSED_RETURN
+    {
+        return EffectInstancePtr( new RotoShapeRenderNode(mainInstance, render) );
+    }
+
 
     static PluginPtr createPlugin();
 
@@ -120,15 +126,17 @@ public:
 
 private:
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE FINAL;
+
     virtual void initializeKnobs() OVERRIDE FINAL;
 
     virtual void purgeCaches() OVERRIDE FINAL;
 
-    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale, const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum attachOpenGLContext(TimeValue time, ViewIdx view, const RenderScale& scale,  const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data) OVERRIDE FINAL;
 
-    virtual ActionRetCodeEnum dettachOpenGLContext(const TreeRenderNodeArgsPtr& renderArgs, const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
+    virtual ActionRetCodeEnum dettachOpenGLContext(const OSGLContextPtr& glContext, const EffectOpenGLContextDataPtr& data) OVERRIDE FINAL;
 
-    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render,RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
+    virtual ActionRetCodeEnum getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod) OVERRIDE WARN_UNUSED_RETURN;
 
     virtual ActionRetCodeEnum getTimeInvariantMetaDatas(NodeMetadata& metadata) OVERRIDE FINAL;
 
@@ -136,14 +144,13 @@ private:
                             const RenderScale & scale,
                             const RectI & roi,
                             ViewIdx view,
-                            const TreeRenderNodeArgsPtr& render,
                             TimeValue* inputTime,
                             ViewIdx* inputView,
                             int* inputNb) OVERRIDE FINAL WARN_UNUSED_RETURN;
 
     virtual ActionRetCodeEnum render(const RenderActionArgs& args) OVERRIDE WARN_UNUSED_RETURN;
 
-    boost::scoped_ptr<RotoShapeRenderNodePrivate> _imp;
+    boost::shared_ptr<RotoShapeRenderNodePrivate> _imp;
 
 };
 

@@ -48,6 +48,8 @@
 
 #include "Engine/EngineFwd.h"
 
+#define NATRON_TLS_DISABLE_COPY
+
 NATRON_NAMESPACE_ENTER;
 
 ///This must be stored as a shared_ptr
@@ -81,10 +83,12 @@ protected:
      **/
     virtual bool cleanupPerThreadData(const QThread* curThread) const = 0;
 
+#ifndef NATRON_TLS_DISABLE_COPY
     /**
      * @brief Copy all the TLS from fromThread to toThread
      **/
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const = 0;
+#endif
 };
 
 
@@ -118,6 +122,7 @@ public:
      **/
     void registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder);
 
+#ifndef NATRON_TLS_DISABLE_COPY
 
     /**
      * @brief Copy all the TLS from fromThread to toThread
@@ -145,7 +150,7 @@ public:
     boost::shared_ptr<T> copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                                   const QThread* curThread);
 
-
+#endif
     /**
      * @brief Should be called by any thread using TLS when done to cleanup its TLS
      **/
@@ -163,21 +168,18 @@ private:
     mutable QReadWriteLock _objectMutex;
     GLobalTLSObjectPtr _object;
 
+#ifndef NATRON_TLS_DISABLE_COPY
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
     mutable QReadWriteLock _spawnsMutex;
     ThreadSpawnMap _spawns;
+#endif
 };
 
 
 /**
  * @brief Use this class if you need to hold TLS data on an object.
  * @param T is the data type held in the thread local storage.
- * @param multipleInstance If true, then the TLS object will be mapped against this object
- * so that there can be multiple instance of it in the global TLS. Otherwise only
- * a single instance of the TLS object will be present.
- *
- *
  **/
 template <typename T>
 class TLSHolder
@@ -199,18 +201,24 @@ public:
 
     virtual ~TLSHolder() {}
 
-    // Even though these data are unique to the holder thread, we need a Mutex when copying one thread data
-    // over another one.
-    // Each data member of sub-classes must be protected by this mutex in getters/setters
+    // Returns tls data for the current thread
     boost::shared_ptr<T> getTLSData() const;
+
+    // Warning this does not hold any promise on the thread safety of the returned object
+    // if the thread in parameter is different than the current thread.
+    boost::shared_ptr<T> getTLSDataForThread(QThread* thread) const;
+
+    // Get or create tls data for the current thread
     boost::shared_ptr<T> getOrCreateTLSData() const;
 
 private:
 
     virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+#ifndef NATRON_TLS_DISABLE_COPY
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
     boost::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
+#endif
 
     //Store a cache on the object to be faster than using the getOrCreate... function from AppTLS
     mutable QReadWriteLock perThreadDataMutex;

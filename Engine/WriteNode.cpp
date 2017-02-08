@@ -170,7 +170,7 @@ WriteNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)WriteNode::create, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)WriteNode::create, (void*)WriteNode::createRenderClone, PLUGINID_NATRON_WRITE, "Write", 1, 0, grouping);
 
     QString desc = tr("Node used to write images or videos on disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Writer selected from the Preferences to encode that specific format will be used.");
@@ -546,7 +546,7 @@ WriteNodePrivate::setReadNodeOriginalFrameRange()
     RangeD range = {1., 1.};
     {
         GetFrameRangeResultsPtr results;
-        ActionRetCodeEnum stat = writeNode->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+        ActionRetCodeEnum stat = writeNode->getEffectInstance()->getFrameRange_public(&results);
         if (!isFailureRetCode(stat)) {
             results->getFrameRangeResults(&range);
         }
@@ -608,7 +608,7 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
             RangeD range = {1., 1.};
             {
                 GetFrameRangeResultsPtr results;
-                ActionRetCodeEnum stat = writeNode->getEffectInstance()->getFrameRange_public(TreeRenderNodeArgsPtr(), &results);
+                ActionRetCodeEnum stat = writeNode->getEffectInstance()->getFrameRange_public(&results);
                 if (!isFailureRetCode(stat)) {
                     results->getFrameRangeResults(&range);
                 }
@@ -657,6 +657,43 @@ WriteNodePrivate::createReadNodeAndConnectGraph(const std::string& filename)
 } // WriteNodePrivate::createReadNodeAndConnectGraph
 
 void
+WriteNode::setupInitialSubGraphState()
+{
+    NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+    NodePtr inputNode, outputNode;
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        outputNode = getApp()->createNode(args);
+        assert(outputNode);
+        if (!outputNode) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_OUTPUT) ).toStdString() );
+        }
+        _imp->outputNode = outputNode;
+    }
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        inputNode = getApp()->createNode(args);
+        assert(inputNode);
+        if (!inputNode) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_INPUT) ).toStdString() );
+        }
+        _imp->inputNode = inputNode;
+    }
+    if ( inputNode && outputNode && !outputNode->getInput(0) ) {
+        outputNode->connectInput(inputNode, 0);
+    }
+
+} // setupInitialSubGraphState
+
+
+void
 WriteNodePrivate::createWriteNode(bool throwErrors,
                                   const std::string& filename,
                                   const SERIALIZATION_NAMESPACE::NodeSerialization* serialization)
@@ -667,28 +704,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     NodeGroupPtr isGrp = toNodeGroup( _publicInterface->shared_from_this() );
     NodePtr input = inputNode.lock(), output = outputNode.lock();
-    //NodePtr maskInput;
-    assert( (input && output) || (!input && !output) );
-    if (!output) {
-        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, isGrp));
-        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args->setProperty(kCreateNodeArgsPropVolatile, true);
-        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        output = _publicInterface->getApp()->createNode(args);
-    
-        assert(output);
-        outputNode = output;
-    }
-    if (!input) {
-        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, isGrp));
-        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
-        args->setProperty(kCreateNodeArgsPropVolatile, true);
-        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
-        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
-        input = _publicInterface->getApp()->createNode(args);
-        assert(input);
-        inputNode = input;
-    }
+
 
     SetCreatingWriterRAIIFlag creatingNode__(this);
     QString qpattern = QString::fromUtf8( filename.c_str() );
@@ -814,7 +830,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
     // There should always be a single input node
     assert(_publicInterface->getMaxInputCount() == 1);
 
-    _publicInterface->getNode()->findPluginFormatKnobs();
+    _publicInterface->findPluginFormatKnobs();
 
     //Clone the old values of the generic knobs
     cloneGenericKnobs();
@@ -822,7 +838,7 @@ WriteNodePrivate::createWriteNode(bool throwErrors,
 
     NodePtr thisNode = _publicInterface->getNode();
     //Refresh accepted bitdepths on the node
-    thisNode->refreshAcceptedBitDepths();
+    _publicInterface->refreshAcceptedBitDepths();
 
     //Refresh accepted components
     thisNode->initializeInputs();
@@ -934,13 +950,13 @@ WriteNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 void
 WriteNode::initializeKnobs()
 {
-    KnobPagePtr controlpage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
-
+    KnobPagePtr controlpage = createKnob<KnobPage>("controlsPage");
+    controlpage->setLabel(tr("Controls"));
 
     ///Find a  "lastFrame" parameter and add it after it
-    KnobIntPtr frameIncrKnob = AppManager::createKnob<KnobInt>( shared_from_this(), tr(kNatronWriteParamFrameStepLabel) );
+    KnobIntPtr frameIncrKnob = createKnob<KnobInt>(kNatronWriteParamFrameStep );
 
-    frameIncrKnob->setName(kNatronWriteParamFrameStep);
+    frameIncrKnob->setLabel(tr(kNatronWriteParamFrameStepLabel));
     frameIncrKnob->setHintToolTip( tr(kNatronWriteParamFrameStepHint) );
     frameIncrKnob->setAnimationEnabled(false);
     frameIncrKnob->setRange(1, INT_MAX);
@@ -963,9 +979,9 @@ WriteNode::initializeKnobs()
     _imp->frameIncrKnob = frameIncrKnob;
     _imp->writeNodeKnobs.push_back(frameIncrKnob);
 
-    KnobBoolPtr readBack = AppManager::createKnob<KnobBool>( shared_from_this(), tr(kNatronWriteParamReadBackLabel) );
+    KnobBoolPtr readBack = createKnob<KnobBool>(kNatronWriteParamReadBack);
     readBack->setAnimationEnabled(false);
-    readBack->setName(kNatronWriteParamReadBack);
+    readBack->setLabel(tr(kNatronWriteParamReadBackLabel));
     readBack->setHintToolTip( tr(kNatronWriteParamReadBackHint) );
     readBack->setEvaluateOnChange(false);
     readBack->setDefaultValue(false);
@@ -974,9 +990,9 @@ WriteNode::initializeKnobs()
     _imp->writeNodeKnobs.push_back(readBack);
 
 
-    KnobChoicePtr pluginSelector = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Encoder") );
+    KnobChoicePtr pluginSelector = createKnob<KnobChoice>(kNatronWriteNodeParamEncodingPluginChoice);
     pluginSelector->setAnimationEnabled(false);
-    pluginSelector->setName(kNatronWriteNodeParamEncodingPluginChoice);
+    pluginSelector->setLabel(tr("Encoder"));
     pluginSelector->setHintToolTip( tr("Select the internal encoder plug-in used for this file format. By default this uses "
                                        "the plug-in selected for this file extension in the Preferences.") );
     pluginSelector->setEvaluateOnChange(false);
@@ -985,16 +1001,16 @@ WriteNode::initializeKnobs()
 
     _imp->writeNodeKnobs.push_back(pluginSelector);
 
-    KnobSeparatorPtr separator = AppManager::createKnob<KnobSeparator>( shared_from_this(), tr("Encoder Options") );
-    separator->setName("encoderOptionsSeparator");
+    KnobSeparatorPtr separator = createKnob<KnobSeparator>("encoderOptionsSeparator");
+    separator->setLabel(tr("Encoder Options"));
     separator->setHintToolTip( tr("Below can be found parameters that are specific to the Writer plug-in.") );
     controlpage->addKnob(separator);
     _imp->separatorKnob = separator;
     _imp->writeNodeKnobs.push_back(separator);
 
-    KnobStringPtr pluginID = AppManager::createKnob<KnobString>( shared_from_this(), tr("PluginID") );
+    KnobStringPtr pluginID = createKnob<KnobString>(kNatronWriteNodeParamEncodingPluginID);
     pluginID->setAnimationEnabled(false);
-    pluginID->setName(kNatronWriteNodeParamEncodingPluginID);
+    pluginID->setLabel(tr("PluginID"));
     pluginID->setSecret(true);
     controlpage->addKnob(pluginID);
     _imp->pluginIDStringKnob = pluginID;
@@ -1162,8 +1178,7 @@ WriteNode::isViewAware() const
 }
 
 ActionRetCodeEnum
-WriteNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
-                         double *first,
+WriteNode::getFrameRange(double *first,
                          double *last)
 {
     NodePtr writer = _imp->embeddedPlugin.lock();
@@ -1171,10 +1186,10 @@ WriteNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
     if (writer) {
         EffectInstancePtr effect = writer->getEffectInstance();
         if (effect) {
-            return effect->getFrameRange(render, first, last);
+            return effect->getFrameRange(first, last);
         }
     }
-    return EffectInstance::getFrameRange(render, first, last);
+    return EffectInstance::getFrameRange(first, last);
     
 }
 

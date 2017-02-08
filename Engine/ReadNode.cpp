@@ -104,7 +104,7 @@ ReadNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ReadNode::create, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)ReadNode::create, (void*)ReadNode::createRenderClone, PLUGINID_NATRON_READ, "Read", 1, 0, grouping);
 
     QString desc = tr("Node used to read images or videos from disk. The image/video is identified by its filename and "
                       "its extension. Given the extension, the Reader selected from the Preferences to decode that specific format will be used.");
@@ -220,6 +220,8 @@ public:
     KnobButtonWPtr fileInfosKnob;
     std::list<KnobIWPtr > readNodeKnobs;
 
+    NodePtr inputNode, outputNode;
+
     //MT only
     int creatingReadNode;
 
@@ -227,18 +229,20 @@ public:
 
 
     ReadNodePrivate(ReadNode* publicInterface)
-        : _publicInterface(publicInterface)
-        , embeddedPluginMutex()
-        , embeddedPlugin()
-        , genericKnobsSerialization()
-        , inputFileKnob()
-        , pluginSelectorKnob()
-        , pluginIDStringKnob()
-        , separatorKnob()
-        , fileInfosKnob()
-        , readNodeKnobs()
-        , creatingReadNode(0)
-        , wasCreatedAsHiddenNode(false)
+    : _publicInterface(publicInterface)
+    , embeddedPluginMutex()
+    , embeddedPlugin()
+    , genericKnobsSerialization()
+    , inputFileKnob()
+    , pluginSelectorKnob()
+    , pluginIDStringKnob()
+    , separatorKnob()
+    , fileInfosKnob()
+    , readNodeKnobs()
+    , inputNode()
+    , outputNode()
+    , creatingReadNode(0)
+    , wasCreatedAsHiddenNode(false)
     {
     }
 
@@ -295,7 +299,7 @@ public:
 
 
 ReadNode::ReadNode(const NodePtr& n)
-    : EffectInstance(n)
+    : NodeGroup(n)
     , _imp( new ReadNodePrivate(this) )
 {
 }
@@ -480,7 +484,7 @@ ReadNodePrivate::destroyReadNode()
 void
 ReadNodePrivate::createDefaultReadNode()
 {
-    CreateNodeArgsPtr args(CreateNodeArgs::create(READ_NODE_DEFAULT_READER, NodeCollectionPtr() ));
+    CreateNodeArgsPtr args(CreateNodeArgs::create(READ_NODE_DEFAULT_READER, toNodeGroup(_publicInterface->shared_from_this())));
 
     args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
     args->setProperty(kCreateNodeArgsPropSilent, true);
@@ -642,7 +646,7 @@ ReadNodePrivate::createReadNode(bool throwErrors,
             readerPluginID = READ_NODE_DEFAULT_READER;
         }
 
-        CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, NodeCollectionPtr() ));
+        CreateNodeArgsPtr args(CreateNodeArgs::create(readerPluginID, toNodeGroup(_publicInterface->shared_from_this()) ));
         args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
         args->setProperty(kCreateNodeArgsPropVolatile, true);
         args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "internalDecoderNode");
@@ -690,7 +694,12 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         defaultFallback = true;
     }
 
-
+    if (node) {
+        outputNode->swapInput(node, 0);
+        node->swapInput(inputNode, 0);
+    } else {
+        outputNode->swapInput(inputNode, 0);
+    }
     if (defaultFallback) {
         createDefaultReadNode();
     }
@@ -698,14 +707,6 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
     //Clone the old values of the generic knobs
     cloneGenericKnobs();
-
-
-    NodePtr thisNode = _publicInterface->getNode();
-    //Refresh accepted bitdepths on the node
-    thisNode->refreshAcceptedBitDepths();
-
-    //Refresh accepted components
-    thisNode->initializeInputs();
 
     //This will refresh the GUI with this Reader specific parameters
     _publicInterface->recreateKnobs(true);
@@ -816,69 +817,6 @@ ReadNode::isGenerator() const
 }
 
 bool
-ReadNode::isOutput() const
-{
-    return false;
-}
-
-bool
-ReadNode::isMultiPlanar() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->isMultiPlanar() : EffectInstance::isMultiPlanar();
-}
-
-bool
-ReadNode::isViewAware() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->isViewAware() : EffectInstance::isViewAware();
-}
-
-bool
-ReadNode::supportsTiles() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->supportsTiles() : EffectInstance::supportsTiles();
-}
-
-bool
-ReadNode::supportsMultiResolution() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->supportsMultiResolution() : EffectInstance::supportsMultiResolution();
-}
-
-bool
-ReadNode::supportsMultipleClipDepths() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->supportsMultipleClipDepths() : EffectInstance::supportsMultipleClipDepths();
-}
-
-
-SequentialPreferenceEnum
-ReadNode::getSequentialPreference() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->getSequentialPreference() : EffectInstance::getSequentialPreference();
-}
-
-EffectInstance::ViewInvarianceLevel
-ReadNode::isViewInvariant() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->isViewInvariant() : EffectInstance::isViewInvariant();
-}
-
-EffectInstance::PassThroughEnum
-ReadNode::isPassThroughForNonRenderedPlanes() const
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->isPassThroughForNonRenderedPlanes() : EffectInstance::isPassThroughForNonRenderedPlanes();
-}
-
-bool
 ReadNode::getCreateChannelSelectorKnob() const
 {
     return false;
@@ -893,127 +831,86 @@ ReadNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
     return false;
 }
 
-int
-ReadNode::getMaxInputCount() const
-{
-    return 1;
-}
-
-std::string
-ReadNode::getInputLabel (int /*inputNb*/) const
-{
-    return NATRON_READER_INPUT_NAME;
-}
-
-bool
-ReadNode::isInputOptional(int /*inputNb*/) const
-{
-    return true;
-}
-
-bool
-ReadNode::isInputMask(int /*inputNb*/) const
-{
-    return false;
-}
-
-void
-ReadNode::addAcceptedComponents(int inputNb,
-                                std::bitset<4>* comps)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->addAcceptedComponents(inputNb, comps);
-    } else {
-        (*comps)[3] = 1;
-
-    }
-}
-
-void
-ReadNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->addSupportedBitDepth(depths);
-    } else {
-        depths->push_back(eImageBitDepthFloat);
-    }
-}
-
-void
-ReadNode::onInputChanged(int inputNo)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->onInputChanged(inputNo);
-    }
-}
-
-void
-ReadNode::purgeCaches()
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->purgeCaches_public();
-    }
-}
-
-ActionRetCodeEnum
-ReadNode::getTimeInvariantMetaDatas(NodeMetadata& metadata)
-{
-    NodePtr p = getEmbeddedReader();
-    return p ? p->getEffectInstance()->getTimeInvariantMetaDatas(metadata) : EffectInstance::getTimeInvariantMetaDatas(metadata);
-}
-
-void
-ReadNode::onMetadataChanged(const NodeMetadata& metadata)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        p->getEffectInstance()->onMetadataChanged(metadata);
-    }
-    EffectInstance::onMetadataChanged(metadata);
-}
-
 void
 ReadNode::initializeKnobs()
 {
-    KnobPagePtr controlpage = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
-    KnobButtonPtr fileInfos = AppManager::createKnob<KnobButton>( shared_from_this(), tr("File Info...") );
+    KnobPagePtr controlpage = createKnob<KnobPage>("controlsPage");
+    controlpage->setLabel(tr("Controls"));
+    {
+        KnobButtonPtr param = createKnob<KnobButton>("fileInfo");
+        param->setLabel(tr("File Info..."));
+        param->setHintToolTip( tr("Press to display informations about the file") );
+        controlpage->addKnob(param);
+        _imp->fileInfosKnob = param;
+        _imp->readNodeKnobs.push_back(param);
+    }
 
-    fileInfos->setName("fileInfo");
-    fileInfos->setHintToolTip( tr("Press to display informations about the file") );
-    controlpage->addKnob(fileInfos);
-    _imp->fileInfosKnob = fileInfos;
-    _imp->readNodeKnobs.push_back(fileInfos);
+    {
+        KnobChoicePtr param = createKnob<KnobChoice>(kNatronReadNodeParamDecodingPluginChoice);
+        param->setAnimationEnabled(false);
+        param->setLabel(tr("Decoder"));
+        param->setHintToolTip( tr("Select the internal decoder plug-in used for this file format. By default this uses "
+                                           "the plug-in selected for this file extension in the Preferences of Natron") );
+        param->setEvaluateOnChange(false);
+        _imp->pluginSelectorKnob = param;
+        controlpage->addKnob(param);
+        _imp->readNodeKnobs.push_back(param);
 
-    KnobChoicePtr pluginSelector = AppManager::createKnob<KnobChoice>( shared_from_this(), tr("Decoder") );
-    pluginSelector->setAnimationEnabled(false);
-    pluginSelector->setName(kNatronReadNodeParamDecodingPluginChoice);
-    pluginSelector->setHintToolTip( tr("Select the internal decoder plug-in used for this file format. By default this uses "
-                                       "the plug-in selected for this file extension in the Preferences of Natron") );
-    pluginSelector->setEvaluateOnChange(false);
-    _imp->pluginSelectorKnob = pluginSelector;
-    controlpage->addKnob(pluginSelector);
-
-    _imp->readNodeKnobs.push_back(pluginSelector);
-
-    KnobSeparatorPtr separator = AppManager::createKnob<KnobSeparator>( shared_from_this(), tr("Decoder Options") );
-    separator->setName("decoderOptionsSeparator");
-    separator->setHintToolTip( tr("Below can be found parameters that are specific to the Reader plug-in.") );
-    controlpage->addKnob(separator);
-    _imp->separatorKnob = separator;
-    _imp->readNodeKnobs.push_back(separator);
-
-    KnobStringPtr pluginID = AppManager::createKnob<KnobString>( shared_from_this(), tr("PluginID") );
-    pluginID->setAnimationEnabled(false);
-    pluginID->setName(kNatronReadNodeParamDecodingPluginID);
-    pluginID->setSecret(true);
-    controlpage->addKnob(pluginID);
-    _imp->pluginIDStringKnob = pluginID;
-    _imp->readNodeKnobs.push_back(pluginID);
+    }
+    {
+        KnobSeparatorPtr param = createKnob<KnobSeparator>("decoderOptionsSeparator");
+        param->setLabel(tr("Decoder Options"));
+        param->setHintToolTip( tr("Below can be found parameters that are specific to the Reader plug-in.") );
+        controlpage->addKnob(param);
+        _imp->separatorKnob = param;
+        _imp->readNodeKnobs.push_back(param);
+    }
+    {
+        KnobStringPtr param = createKnob<KnobString>(kNatronReadNodeParamDecodingPluginID);
+        param->setLabel(tr("PluginID"));
+        param->setAnimationEnabled(false);
+        param->setSecret(true);
+        controlpage->addKnob(param);
+        _imp->pluginIDStringKnob = param;
+        _imp->readNodeKnobs.push_back(param);
+    }
 }
+
+void
+ReadNode::setupInitialSubGraphState()
+{
+    NodeGroupPtr thisShared = toNodeGroup(shared_from_this());
+    NodePtr inputNode, outputNode;
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_OUTPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        outputNode = getApp()->createNode(args);
+        assert(outputNode);
+        if (!outputNode) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_OUTPUT) ).toStdString() );
+        }
+        _imp->outputNode = outputNode;
+    }
+    {
+        CreateNodeArgsPtr args(CreateNodeArgs::create(PLUGINID_NATRON_INPUT, thisShared));
+        args->setProperty(kCreateNodeArgsPropNoNodeGUI, true);
+        args->setProperty(kCreateNodeArgsPropVolatile, true);
+        args->setProperty<std::string>(kCreateNodeArgsPropNodeInitialName, "Source");
+        args->setProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins, true);
+        inputNode = getApp()->createNode(args);
+        assert(inputNode);
+        if (!inputNode) {
+            throw std::runtime_error( tr("NodeGroup cannot create node %1").arg( QLatin1String(PLUGINID_NATRON_INPUT) ).toStdString() );
+        }
+        _imp->inputNode = inputNode;
+    }
+    if ( inputNode && outputNode && !outputNode->getInput(0) ) {
+        outputNode->connectInput(inputNode, 0);
+    }
+
+} // setupInitialSubGraphState
 
 void
 ReadNode::onEffectCreated(const CreateNodeArgs& args)
@@ -1166,138 +1063,6 @@ ReadNode::knobChanged(const KnobIPtr& k,
     return ret;
 } // ReadNode::knobChanged
 
-ActionRetCodeEnum
-ReadNode::getRegionOfDefinition(TimeValue time,
-                                const RenderScale & scale,
-                                ViewIdx view,
-                                const TreeRenderNodeArgsPtr& render,
-                                RectD* rod)
-{
-    if ( !_imp->checkDecoderCreated(time, view) ) {
-        return eActionStatusFailed;
-    }
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->getRegionOfDefinition(time, scale, view, render, rod);
-    } else {
-        return eActionStatusFailed;
-    }
-}
-
-ActionRetCodeEnum
-ReadNode::getFrameRange(const TreeRenderNodeArgsPtr& render,
-                        double *first,
-                        double *last)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->getFrameRange(render, first, last);
-    } else {
-        return eActionStatusFailed;
-    }
-}
-
-ActionRetCodeEnum
-ReadNode::getLayersProducedAndNeeded(TimeValue time,
-                                         ViewIdx view,
-                                         const TreeRenderNodeArgsPtr& render,
-                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
-                                         std::list<ImagePlaneDesc>* layersProduced,
-                                         TimeValue* passThroughTime,
-                                         ViewIdx* passThroughView,
-                                         int* passThroughInputNb)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->getLayersProducedAndNeeded(time, view, render, inputLayersNeeded, layersProduced, passThroughTime, passThroughView, passThroughInputNb);
-    }
-    return eActionStatusFailed;
-}
-
-ActionRetCodeEnum
-ReadNode::beginSequenceRender(double first,
-                              double last,
-                              double step,
-                              bool interactive,
-                              const RenderScale & scale,
-                              bool isSequentialRender,
-                              bool isRenderResponseToUserInteraction,
-                              bool draftMode,
-                              ViewIdx view,
-                              RenderBackendTypeEnum backend,
-                              const EffectOpenGLContextDataPtr& glContextData,
-                              const TreeRenderNodeArgsPtr& render)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->beginSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
-    } else {
-        return eActionStatusFailed;
-    }
-}
-
-ActionRetCodeEnum
-ReadNode::endSequenceRender(double first,
-                            double last,
-                            double step,
-                            bool interactive,
-                            const RenderScale & scale,
-                            bool isSequentialRender,
-                            bool isRenderResponseToUserInteraction,
-                            bool draftMode,
-                            ViewIdx view,
-                            RenderBackendTypeEnum backend,
-                            const EffectOpenGLContextDataPtr& glContextData,
-                            const TreeRenderNodeArgsPtr& render)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->endSequenceRender(first, last, step, interactive, scale, isSequentialRender, isRenderResponseToUserInteraction, draftMode, view, backend, glContextData, render);
-    } else {
-        return eActionStatusFailed;
-    }
-}
-
-ActionRetCodeEnum
-ReadNode::render(const RenderActionArgs& args)
-{
-    if ( !_imp->checkDecoderCreated(args.time, args.view) ) {
-        return eActionStatusFailed;
-    }
-
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->render(args);
-    } else {
-        return eActionStatusFailed;
-    }
-}
-
-ActionRetCodeEnum
-ReadNode::getRegionsOfInterest(TimeValue time,
-                               const RenderScale & scale,
-                               const RectD & renderWindow,    //!< the region to be rendered in the output image, in Canonical Coordinates
-                               ViewIdx view,
-                               const TreeRenderNodeArgsPtr& render,
-                               RoIMap* ret)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->getRegionsOfInterest(time, scale, renderWindow, view, render, ret);
-    }
-    return eActionStatusFailed;
-}
-
-ActionRetCodeEnum
-ReadNode::getFramesNeeded(TimeValue time, ViewIdx view, const TreeRenderNodeArgsPtr& render, FramesNeededMap* framesNeeded)
-{
-    NodePtr p = getEmbeddedReader();
-    if (p) {
-        return p->getEffectInstance()->getFramesNeeded(time, view, render, framesNeeded);
-    } else {
-        return eActionStatusFailed;
-    }
-}
 
 NATRON_NAMESPACE_EXIT;
 

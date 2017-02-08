@@ -407,11 +407,18 @@ protected: // derives from EffectInstance, parent of RotoNode
     RotoPaint(const NodePtr& node,
               RotoPaintTypeEnum type);
 
+
 public:
 
     static EffectInstancePtr create(const NodePtr& node) WARN_UNUSED_RETURN
     {
         return EffectInstancePtr( new RotoPaint(node, eRotoPaintTypeRotoPaint) );
+    }
+
+    static EffectInstancePtr createRenderClone(const EffectInstancePtr& /*mainInstance*/, const TreeRenderPtr& /*render*/) WARN_UNUSED_RETURN
+    {
+        assert(false);
+        throw std::logic_error("A group cannot have a render clone");
     }
 
     static PluginPtr createPlugin() WARN_UNUSED_RETURN;
@@ -530,6 +537,7 @@ protected:
 
 private:
 
+    virtual void fetchRenderCloneKnobs() OVERRIDE;
 
     virtual bool shouldPreferPluginOverlayOverHostOverlay() const OVERRIDE FINAL;
 

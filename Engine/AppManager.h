@@ -188,46 +188,7 @@ public:
     SettingsPtr getCurrentSettings() const WARN_UNUSED_RETURN;
     const KnobFactory & getKnobFactory() const WARN_UNUSED_RETURN;
 
-    template <class K>
-    static
-    boost::shared_ptr<K> createKnob(const KnobHolderPtr& holder,
-                                    const std::string &label,
-                                    int dimension = 1,
-                                    bool declaredByPlugin = true)
-    {
-        return appPTR->getKnobFactory().createKnob<K>(holder, label, dimension, declaredByPlugin);
-    }
 
-    template <class K>
-    static
-    boost::shared_ptr<K>
-    createKnob(const KnobHolderPtr& holder,
-               const QString &label,
-               int dimension = 1,
-               bool declaredByPlugin = true)
-    {
-        return createKnob<K>(holder, label.toStdString(), dimension, declaredByPlugin);
-    }
-
-    template <typename K>
-    static boost::shared_ptr<K>
-    checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
-                                      const std::string& scriptName,
-                                      const std::string& label,
-                                      int dimension = 1)
-    {
-        return appPTR->getKnobFactory().checkIfKnobExistsWithNameOrCreate<K>(holder, scriptName, label, dimension);
-    }
-
-    template <typename K>
-    static boost::shared_ptr<K>
-    checkIfKnobExistsWithNameOrCreate(const KnobHolderPtr& holder,
-                                      const std::string& scriptName,
-                                      const QString& label,
-                                      int dimension = 1) 
-    {
-        return checkIfKnobExistsWithNameOrCreate<K>(holder, scriptName, label.toStdString(), dimension);
-    }
 
     /**
      * @brief If the current process is a background process, then it will right the output pipe the
@@ -301,7 +262,9 @@ public:
 
     int getHardwareIdealThreadCount();
 
-    void setThreadAsActionCaller(OfxImageEffectInstance* instance, bool actionCaller);
+    void setOFXLastActionCaller_TLS(const OfxEffectInstancePtr& effect);
+    
+    OfxEffectInstancePtr getOFXCurrentEffect_TLS() const;
 
     /**
      * @brief Returns a list of IDs of all the plug-ins currently loaded.
@@ -419,7 +382,7 @@ public:
     void setOnProjectLoadedCallback(const std::string& pythonFunc);
     void setOnProjectCreatedCallback(const std::string& pythonFunc);
 
-    void requestOFXDIalogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    void requestOFXDIalogOnMainThread(const OfxEffectInstancePtr& instance, void* instanceData);
 
 
     ///Closes the application not saving any projects.
@@ -515,14 +478,14 @@ public Q_SLOTS:
 
     void onCrashReporterNoLongerResponding();
 
-    void onOFXDialogOnMainThreadReceived(OfxImageEffectInstance* instance, void* instanceData);
+    void onOFXDialogOnMainThreadReceived(const OfxEffectInstancePtr& instance, void* instanceData);
 
 Q_SIGNALS:
 
 
     void checkerboardSettingsChanged();
 
-    void s_requestOFXDialogOnMainThread(OfxImageEffectInstance* instance, void* instanceData);
+    void s_requestOFXDialogOnMainThread(const OfxEffectInstancePtr& instance, void* instanceData);
 
 protected:
 

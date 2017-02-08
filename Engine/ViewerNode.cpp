@@ -36,7 +36,7 @@ ViewerNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_IMAGE);
-    PluginPtr ret = Plugin::create((void*)ViewerNode::create, PLUGINID_NATRON_VIEWER_GROUP, "Viewer", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)ViewerNode::create,  (void*)ViewerNode::createRenderClone, PLUGINID_NATRON_VIEWER_GROUP, "Viewer", 1, 0, grouping);
 
     ret->setProperty<std::string>(kNatronPluginPropIconFilePath, "Images/viewer_icon.png");
     QString desc = tr("The Viewer node can display the output of a node graph. Shift + double click on the viewer node to customize the viewer display process with a custom node tree");
@@ -1074,7 +1074,7 @@ ViewerNode::updateViewer(const UpdateViewerArgs& args)
         RectD rod;
         NodePtr viewerProcessNode = _imp->internalViewerProcessNode[i].lock();
         GetRegionOfDefinitionResultsPtr actionResults;
-        ActionRetCodeEnum stat = viewerProcessNode->getEffectInstance()->getRegionOfDefinition_public(args.time, RenderScale(1.), args.view, TreeRenderNodeArgsPtr(), &actionResults);
+        ActionRetCodeEnum stat = viewerProcessNode->getEffectInstance()->getRegionOfDefinition_public(args.time, RenderScale(1.), args.view,  &actionResults);
         if (!isFailureRetCode(stat)) {
             rod = actionResults->getRoD();
         }
@@ -1155,10 +1155,10 @@ ViewerNode::refreshFps()
         NodePtr input1 = getCurrentBInput();
 
         if (input0) {
-            fps = input0->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+            fps = input0->getEffectInstance()->getFrameRate();
         } else {
             if (input1) {
-                fps = input1->getEffectInstance()->getFrameRate(TreeRenderNodeArgsPtr());
+                fps = input1->getEffectInstance()->getFrameRate();
             } else {
                 fps = getApp()->getProjectFrameRate();
             }

@@ -61,7 +61,7 @@ StubNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)StubNode::create, PLUGINID_NATRON_STUB, "Stub", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)StubNode::create, (void*)StubNode::createRenderClone, PLUGINID_NATRON_STUB, "Stub", 1, 0, grouping);
 
     QString desc = tr("This plug-in is used as a temporary replacement for another plug-in when loading a project with a plug-in which cannot be found.");
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
@@ -75,6 +75,13 @@ StubNode::StubNode(const NodePtr& n)
 : NoOpBase(n)
 , _imp(new StubNodePrivate())
 {
+}
+
+StubNode::StubNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: NoOpBase(mainInstance, render)
+, _imp(new StubNodePrivate())
+{
+
 }
 
 StubNode::~StubNode()
@@ -114,10 +121,11 @@ StubNode::initializeKnobs()
 {
     EffectInstancePtr thisShared = shared_from_this();
     
-    KnobPagePtr page = AppManager::createKnob<KnobPage>(thisShared, tr("Controls"));
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
     {
-        KnobStringPtr param = AppManager::createKnob<KnobString>(thisShared, tr(kStubNodeParamSerializationLabel));
-        param->setName(kStubNodeParamSerialization);
+        KnobStringPtr param = createKnob<KnobString>(kStubNodeParamSerialization);
+        param->setLabel(tr(kStubNodeParamSerializationLabel));
         param->setHintToolTip(tr(kStubNodeParamSerializationHint));
         param->setAsMultiLine();
         page->addKnob(param);
@@ -153,7 +161,7 @@ StubNode::refreshInputsFromSerialization()
     // Check for label knob
     for (SERIALIZATION_NAMESPACE::KnobSerializationList::const_iterator it = _imp->serialObj->_knobsValues.begin(); it != _imp->serialObj->_knobsValues.end(); ++it) {
         if ((*it)->_scriptName == kUserLabelKnobName) {
-            KnobStringPtr labelKnob = getNode()->getExtraLabelKnob();
+            KnobStringPtr labelKnob = getExtraLabelKnob();
             if (labelKnob) {
                 labelKnob->fromSerialization(**it);
             }

@@ -470,13 +470,10 @@ HistogramCPU::run()
         ImagePtr image;
         {
             TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
-            args->treeRoot = treeRoot;
-            assert(args->treeRoot);
+            args->treeRootEffect = treeRoot->getEffectInstance();
+            assert(args->treeRootEffect);
             args->time = request.viewer->getTimelineCurrentTime();
             args->view = request.viewer->getCurrentView_TLS();
-            
-            // Render all layers produced by the viewer process node
-            args->layers = 0;
             
             // Render by default on disk is always using a mipmap level of 0 but using the proxy scale of the project
             int downcale_i = request.viewer->getDownscaleMipMapLevelKnobIndex();
@@ -494,12 +491,12 @@ HistogramCPU::run()
             args->byPassCache = false;
             
             TreeRenderPtr render = TreeRender::create(args);
-            std::map<ImagePlaneDesc, ImagePtr> planes;
-            ActionRetCodeEnum stat = render->launchRender(&planes);
+            FrameViewRequestPtr outputRequest;
+            ActionRetCodeEnum stat = render->launchRender(&outputRequest);
             if (isFailureRetCode(stat)) {
                 continue;
             }
-            image = planes.begin()->second;
+            image = outputRequest->getImagePlane();
 
             // We only support full rect float RAM images
             if (image->getStorageMode() == eStorageModeGLTex || image->getBufferFormat() == eImageBufferLayoutMonoChannelTiled || image->getBitDepth() != eImageBitDepthFloat) {
@@ -515,6 +512,7 @@ HistogramCPU::run()
                 Image::CopyPixelsArgs copyArgs;
                 copyArgs.roi = image->getBounds();
                 mappedImage->copyPixels(*image, copyArgs);
+                image = mappedImage;
             }
         }
         if (!image) {
@@ -531,7 +529,7 @@ HistogramCPU::run()
         Image::CPUTileData imageData;
         {
             Image::Tile tile;
-            image->getTileAt(0, &tile);
+            image->getTileAt(0, 0, &tile);
             image->getCPUTileData(tile, &imageData);
         }
 
@@ -539,7 +537,7 @@ HistogramCPU::run()
         if (request.roiParam.isNull()) {
             roiPixels = image->getBounds();
         } else {
-            request.roiParam.toPixelEnclosing(image->getMipMapLevel(), treeRoot->getEffectInstance()->getAspectRatio(TreeRenderNodeArgsPtr(), -1), &roiPixels);
+            request.roiParam.toPixelEnclosing(image->getMipMapLevel(), treeRoot->getEffectInstance()->getAspectRatio(-1), &roiPixels);
             roiPixels.intersect(imageData.tileBounds, &roiPixels);
         }
 

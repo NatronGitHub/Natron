@@ -125,7 +125,7 @@ public:
 
 
 
-    static void renderStroke_gl(const OSGLContextAttacherPtr& glContext,
+    static void renderStroke_gl(const OSGLContextPtr& glContext,
                                 const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const ImagePtr& dstImage,
@@ -143,7 +143,7 @@ public:
                                 double *distToNextOut,
                                 Point* lastCenterPointOut);
 
-    static bool renderSmear_gl(const OSGLContextAttacherPtr& glContext,
+    static bool renderSmear_gl(const OSGLContextPtr& glContext,
                                const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                const RectI& roi,
                                const ImagePtr& dstImage,
@@ -160,7 +160,7 @@ public:
 
 
 
-    static void renderBezier_gl(const OSGLContextAttacherPtr& glContext,
+    static void renderBezier_gl(const OSGLContextPtr& glContext,
                                 const RotoShapeRenderNodeOpenGLDataPtr& glData,
                                 const RectI& roi,
                                 const BezierPtr& bezier,

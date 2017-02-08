@@ -56,7 +56,7 @@ RotoShapeRenderNode::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_PAINT);
-    PluginPtr ret = Plugin::create((void*)RotoShapeRenderNode::create, PLUGINID_NATRON_ROTOSHAPE, "RotoShape", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)RotoShapeRenderNode::create, (void*)RotoShapeRenderNode::createRenderClone, PLUGINID_NATRON_ROTOSHAPE, "RotoShape", 1, 0, grouping);
     ret->setProperty<bool>(kNatronPluginPropIsInternalOnly, true);
     ret->setProperty<int>(kNatronPluginPropOpenGLSupport, (int)ePluginOpenGLRenderSupportYes);
     ret->setProperty<int>(kNatronPluginPropRenderSafety, (int)eRenderSafetyFullySafeFrame);
@@ -68,6 +68,15 @@ RotoShapeRenderNode::RotoShapeRenderNode(NodePtr n)
 : EffectInstance(n)
 , _imp(new RotoShapeRenderNodePrivate())
 {
+}
+
+RotoShapeRenderNode::RotoShapeRenderNode(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+, _imp()
+{
+    RotoShapeRenderNode* other = dynamic_cast<RotoShapeRenderNode*>(mainInstance.get());
+    assert(other);
+    _imp = other->_imp;
 }
 
 RotoShapeRenderNode::~RotoShapeRenderNode()
@@ -100,12 +109,21 @@ RotoShapeRenderNode::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) 
 }
 
 void
+RotoShapeRenderNode::fetchRenderCloneKnobs()
+{
+    EffectInstance::fetchRenderCloneKnobs();
+    _imp->outputComponents = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamOutputComponents));
+    _imp->renderType = toKnobChoice(getKnobByName(kRotoShapeRenderNodeParamType));
+}
+
+void
 RotoShapeRenderNode::initializeKnobs()
 {
-    KnobPagePtr page = AppManager::createKnob<KnobPage>(shared_from_this(), tr("Controls"));
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamOutputComponentsLabel));
-        param->setName(kRotoShapeRenderNodeParamOutputComponents);
+        KnobChoicePtr param = createKnob<KnobChoice>(kRotoShapeRenderNodeParamOutputComponents);
+        param->setLabel(tr(kRotoShapeRenderNodeParamOutputComponentsLabel));
         {
             std::vector<ChoiceOption> options;
             options.push_back(ChoiceOption(kRotoShapeRenderNodeParamOutputComponentsRGBA, "", ""));
@@ -117,8 +135,8 @@ RotoShapeRenderNode::initializeKnobs()
         _imp->outputComponents = param;
     }
     {
-        KnobChoicePtr param = AppManager::createKnob<KnobChoice>(shared_from_this(), tr(kRotoShapeRenderNodeParamTypeLabel));
-        param->setName(kRotoShapeRenderNodeParamType);
+        KnobChoicePtr param = createKnob<KnobChoice>(kRotoShapeRenderNodeParamType);
+        param->setLabel(tr(kRotoShapeRenderNodeParamTypeLabel));
         {
             std::vector<ChoiceOption> options;
             options.push_back(ChoiceOption(kRotoShapeRenderNodeParamTypeSolid, "", ""));
@@ -134,7 +152,7 @@ RotoShapeRenderNode::initializeKnobs()
 void
 RotoShapeRenderNode::appendToHash(const ComputeHashArgs& args, Hash64* hash)
 {
-    RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr item = getAttachedRotoItem();
     assert(item);
 
     if (args.hashType == HashableObject::eComputeHashTypeTimeViewVariant) {
@@ -218,16 +236,16 @@ static void getRoDFromItem(const RotoDrawableItemPtr& item, TimeValue time, View
 
 
 ActionRetCodeEnum
-RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, const TreeRenderNodeArgsPtr& render, RectD* rod)
+RotoShapeRenderNode::getRegionOfDefinition(TimeValue time, const RenderScale & scale, ViewIdx view, RectD* rod)
 {
    
 
-    ActionRetCodeEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, render, rod);
+    ActionRetCodeEnum st = EffectInstance::getRegionOfDefinition(time, scale, view, rod);
     if (isFailureRetCode(st)) {
         rod->x1 = rod->y1 = rod->x2 = rod->y2 = 0.;
     }
 
-    RotoDrawableItemPtr item = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr item = getAttachedRotoItem();
     assert(item);
     getRoDFromItem(item, time, view, rod);
 
@@ -240,7 +258,6 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
                                 const RenderScale & scale,
                                 const RectI & roi,
                                 ViewIdx view,
-                                const TreeRenderNodeArgsPtr& render,
                                 TimeValue* inputTime,
                                 ViewIdx* inputView,
                                 int* inputNb)
@@ -249,7 +266,7 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
     NodePtr node = getNode();
     
 
-    RotoDrawableItemPtr rotoItem = node->getAttachedRotoItem();
+    RotoDrawableItemPtr rotoItem = getAttachedRotoItem();
     assert(rotoItem);
     Bezier* isBezier = dynamic_cast<Bezier*>(rotoItem.get());
     if (!rotoItem || !rotoItem->isActivated(time, view) || (isBezier && (!isBezier->isCurveFinished(view) || isBezier->getControlPointsCount(view) <= 1))) {
@@ -263,7 +280,7 @@ RotoShapeRenderNode::isIdentity(TimeValue time,
     getRoDFromItem(rotoItem, time, view, &maskRod);
 
     RectI maskPixelRod;
-    maskRod.toPixelEnclosing(scale, getAspectRatio(render, -1), &maskPixelRod);
+    maskRod.toPixelEnclosing(scale, getAspectRatio(-1), &maskPixelRod);
     if ( !maskPixelRod.intersects(roi) ) {
         *inputTime = time;
         *inputNb = 0;
@@ -291,7 +308,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 #endif
 
     // Get the Roto item attached to this node. It will be a render-local clone of the original item.
-    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr rotoItem = getAttachedRotoItem();
     assert(rotoItem);
     if (!rotoItem) {
         return eActionStatusFailed;
@@ -308,7 +325,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     BezierPtr isBezier = toBezier(rotoItem);
 
     // Get the real stroke (the one the user interacts with)
-    RotoStrokeItemPtr nonRenderStroke = toRotoStrokeItem(getNode()->getOriginalAttachedItem());
+    RotoStrokeItemPtr nonRenderStroke = toRotoStrokeItem(getOriginalAttachedItem());
 
     if (type == eRotoShapeRenderTypeSmear && !isStroke) {
         return eActionStatusFailed;
@@ -317,7 +334,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
     // Check that the item is really activated... it should have been caught in isIdentity otherwise.
     assert(rotoItem->isActivated(args.time, args.view) && (!isBezier || (isBezier->isCurveFinished(args.view) && ( isBezier->getControlPointsCount(args.view) > 1 ))));
 
-    OSGLContextAttacherPtr glContext = args.glContextAttacher;
+    const OSGLContextPtr& glContext = args.glContext;
 
     // There must be an OpenGL context bound when using OpenGL.
     if ((args.backendType == eRenderBackendTypeOpenGL || args.backendType == eRenderBackendTypeOSMesa) && !glContext) {
@@ -437,33 +454,34 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
         }   break;
         case eRotoShapeRenderTypeSmear: {
 
-            if (!glContext->getContext()->isGPUContext()) {
+            OSGLContextAttacherPtr contextAttacher;
+            if (!glContext->isGPUContext()) {
                 // When rendering smear with OSMesa we need to write to the full image bounds and not only the RoI, so re-attach the default framebuffer
                 Image::CPUTileData imageData;
                 {
                     Image::Tile tile;
-                    outputPlane.second->getTileAt(0, &tile);
+                    outputPlane.second->getTileAt(0, 0, &tile);
                     outputPlane.second->getCPUTileData(tile, &imageData);
                 }
 
-                glContext = OSGLContextAttacher::create(glContext->getContext(), imageData.tileBounds.width(), imageData.tileBounds.height(), imageData.tileBounds.width(), imageData.ptrs[0]);
+                contextAttacher = OSGLContextAttacher::create(glContext, imageData.tileBounds.width(), imageData.tileBounds.height(), imageData.tileBounds.width(), imageData.ptrs[0]);
             }
 
             // Ensure that initially everything in the background is the source image
             if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
                 GetImageOutArgs outArgs;
-                GetImageInArgs inArgs(args);
+                GetImageInArgs inArgs(args.requestData, &args.roi,&args.backendType);
                 inArgs.inputNb = 0;
-                if (!getImagePlanes(inArgs, &outArgs)) {
+                if (!getImagePlane(inArgs, &outArgs)) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());
                     return eActionStatusFailed;
                 }
 
-                ImagePtr bgImage = outArgs.imagePlanes.begin()->second;
+                ImagePtr bgImage = outArgs.image;
 
 
-                if (glContext->getContext()->isGPUContext()) {
+                if (glContext->isGPUContext()) {
 
                     // Copy the BG image
                     Image::CopyPixelsArgs cpyArgs;
@@ -478,7 +496,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     initArgs.bounds = bgImage->getBounds();
                     initArgs.bitdepth = outputPlane.second->getBitDepth();
                     initArgs.storage = eStorageModeGLTex;
-                    initArgs.glContext = glContext->getContext();
+                    initArgs.glContext = glContext;
                     initArgs.textureTarget = GL_TEXTURE_2D;
                     _imp->osmesaSmearTmpTexture = Image::create(initArgs);
 
@@ -487,7 +505,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                     GL_CPU::Finish();
                 }
             } else {
-                if (!glContext->getContext()->isGPUContext() && strokeStartPointIndex == 0) {
+                if (!glContext->isGPUContext() && strokeStartPointIndex == 0) {
                     // Ensure the tmp texture has correct size
                     assert(_imp->osmesaSmearTmpTexture);
                     _imp->osmesaSmearTmpTexture->ensureBounds(outputPlane.second->getBounds());
@@ -506,7 +524,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
                 // Render with OpenGL
 
                 double opacity = rotoItem->getOpacityKnob()->getValueAtTime(args.time, DimIdx(0), args.view);
-                ImagePtr dstImage = glContext->getContext()->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
+                ImagePtr dstImage = glContext->isGPUContext() ? outputPlane.second : _imp->osmesaSmearTmpTexture;
                 assert(dstImage);
                 renderedDot = RotoShapeRenderGL::renderSmear_gl(glContext, glData, args.roi, dstImage, distNextIn, lastCenterIn, isStroke, opacity, args.time, args.view, args.renderScale, &distToNextOut, &lastCenterOut);
             }
@@ -531,7 +549,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
 void
 RotoShapeRenderNode::purgeCaches()
 {
-    RotoDrawableItemPtr rotoItem = getNode()->getAttachedRotoItem();
+    RotoDrawableItemPtr rotoItem = getAttachedRotoItem();
     if (!rotoItem) {
         return;
     }
@@ -543,7 +561,7 @@ RotoShapeRenderNode::purgeCaches()
 
 
 ActionRetCodeEnum
-RotoShapeRenderNode::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
+RotoShapeRenderNode::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, const RenderScale& /*scale*/, const OSGLContextPtr& glContext, EffectOpenGLContextDataPtr* data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret(new RotoShapeRenderNodeOpenGLData(glContext->isGPUContext()));
     *data = ret;
@@ -551,7 +569,7 @@ RotoShapeRenderNode::attachOpenGLContext(TimeValue /*time*/, ViewIdx /*view*/, c
 }
 
 ActionRetCodeEnum
-RotoShapeRenderNode::dettachOpenGLContext(const TreeRenderNodeArgsPtr& /*renderArgs*/, const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
+RotoShapeRenderNode::dettachOpenGLContext(const OSGLContextPtr& /*glContext*/, const EffectOpenGLContextDataPtr& data)
 {
     RotoShapeRenderNodeOpenGLDataPtr ret = boost::dynamic_pointer_cast<RotoShapeRenderNodeOpenGLData>(data);
     assert(ret);

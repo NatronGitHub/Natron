@@ -37,46 +37,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-//Template specialization for EffectInstance::EffectInstanceTLSData:
-//We do this  for the following reasons:
-//We may be here in 2 cases: either in a thread from the multi-thread suite or from a thread that just got spawned
-//from the host-frame threading (executing tiledRenderingFunctor).
-//A multi-thread suite thread is not allowed by OpenFX to call clipGetImage, which does not require us to apply TLS
-//on OfxClipInstance and also RenderArgs in EffectInstance. But a multi-thread suite thread may call the abort() function
-//which needs the ParallelRenderArgs set on the EffectInstance.
-//Similarly a host-frame threading thread is spawned at a time where the spawner thread only has the ParallelRenderArgs
-//set on the TLS, so just copy this instead of the whole TLS.
-
-template <>
-boost::shared_ptr<EffectInstanceTLSData>
-TLSHolder<EffectInstanceTLSData>::copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const
-{
-    QWriteLocker k(&perThreadDataMutex);
-    ThreadDataMap::iterator found = perThreadData.find(fromThread);
-
-    if ( found == perThreadData.end() ) {
-        ///No TLS for fromThread
-        return boost::shared_ptr<EffectInstanceTLSData>();
-    }
-
-    ThreadData data;
-    //Copy constructor
-    data.value.reset( new EffectInstanceTLSData( *(found->second.value) ) );
-    perThreadData[toThread] = data;
-
-    return data.value;
-}
-
-template <>
-void
-TLSHolder<EffectInstanceTLSData>::copyTLS(const QThread* fromThread,
-                                          const QThread* toThread) const
-{
-    boost::shared_ptr<EffectInstanceTLSData> tlsDataPtr = copyAndReturnNewTLS(fromThread, toThread);
-
-    Q_UNUSED(tlsDataPtr);
-}
-
+#ifndef NATRON_TLS_DISABLE_COPY
 template <typename T>
 void
 TLSHolder<T>::copyTLS(const QThread* fromThread,
@@ -96,6 +57,7 @@ TLSHolder<T>::copyAndReturnNewTLS(const QThread* fromThread,
 
     return boost::shared_ptr<T>();
 }
+#endif
 
 template <typename T>
 bool
@@ -130,16 +92,16 @@ TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 
 template <typename T>
 boost::shared_ptr<T>
-TLSHolder<T>::getTLSData() const
+TLSHolder<T>::getTLSDataForThread(QThread* curThread) const
 {
-    QThread* curThread  = QThread::currentThread();
-
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+    boost::shared_ptr<T> ret;
+#ifndef NATRON_TLS_DISABLE_COPY
+    ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
     if (ret) {
         return ret;
     }
-
+#endif
 
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
@@ -156,17 +118,29 @@ TLSHolder<T>::getTLSData() const
 
 template <typename T>
 boost::shared_ptr<T>
+TLSHolder<T>::getTLSData() const
+{
+    QThread* curThread  = QThread::currentThread();
+    return getTLSDataForThread(curThread);
+}
+
+template <typename T>
+boost::shared_ptr<T>
 TLSHolder<T>::getOrCreateTLSData() const
 {
     QThread* curThread  = QThread::currentThread();
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+    boost::shared_ptr<T> ret;
+
+#ifndef NATRON_TLS_DISABLE_COPY
+    ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
 
     if (ret) {
         return ret;
     }
-
+#endif
+    
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     //Note that if present, this call is extremely fast as we do not block other threads
     {
@@ -193,6 +167,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     return data.value;
 }
 
+#ifndef NATRON_TLS_DISABLE_COPY
 template <typename T>
 boost::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
@@ -282,6 +257,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
 
     return tls;
 }
+#endif // !NATRON_TLS_DISABLE_COPY
 
 NATRON_NAMESPACE_EXIT;
 

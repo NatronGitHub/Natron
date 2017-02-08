@@ -44,6 +44,7 @@ void
 Plugin::initializeProperties() const
 {
     createProperty<void*>(kNatronPluginPropCreateFunc, 0);
+    createProperty<void*>(kNatronPluginPropCreateRenderCloneFunc, 0);
     createProperty<std::string>(kNatronPluginPropID, std::string());
     createProperty<std::string>(kNatronPluginPropLabel, std::string());
     createProperty<std::string>(kNatronPluginPropDescription, std::string());
@@ -68,6 +69,7 @@ Plugin::initializeProperties() const
 
 PluginPtr
 Plugin::create(void* createEffectFunc,
+               void* createCloneFunc,
                const std::string &pluginID,
                const std::string &pluginLabel,
                unsigned int majorVersion,
@@ -83,6 +85,7 @@ Plugin::create(void* createEffectFunc,
     }
     PluginPtr ret(new Plugin);
     ret->setProperty<void*>(kNatronPluginPropCreateFunc, createEffectFunc);
+    ret->setProperty<void*>(kNatronPluginPropCreateRenderCloneFunc, createCloneFunc);
     ret->setProperty<std::string>(kNatronPluginPropID, pluginID);
     ret->setProperty<std::string>(kNatronPluginPropLabel, pluginLabel);
     ret->setProperty<unsigned int>(kNatronPluginPropVersion, majorVersion);

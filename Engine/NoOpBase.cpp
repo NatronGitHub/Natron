@@ -37,6 +37,12 @@ NoOpBase::NoOpBase(const NodePtr& n)
 {
 }
 
+NoOpBase::NoOpBase(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: EffectInstance(mainInstance, render)
+{
+
+}
+
 void
 NoOpBase::addAcceptedComponents(int /*inputNb*/,
                                 std::bitset<4>* supported)
@@ -57,7 +63,6 @@ NoOpBase::isIdentity(TimeValue time,
                      const RenderScale & /*scale*/,
                      const RectI & /*roi*/,
                      ViewIdx view,
-                     const TreeRenderNodeArgsPtr& /*render*/,
                      TimeValue* inputTime,
                      ViewIdx* inputView,
                      int* inputNb)

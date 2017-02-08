@@ -38,7 +38,9 @@
 #include "Engine/AppManager.h"
 #include "Engine/AppInstance.h"
 #include "Engine/CreateNodeArgs.h"
+#include "Engine/EffectInstance.h"
 #include "Engine/KnobTypes.h"
+#include "Engine/Node.h"
 #include "Engine/Project.h"
 #include "Engine/CLArgs.h"
 #include "Engine/CreateNodeArgs.h"
@@ -293,7 +295,7 @@ private:
                             node->setPosition(x, y);
                             node->setSize(w, h);
                             if (labelSerialization && !labelSerialization->_values.empty()) {
-                                KnobStringPtr labelKnob = node->getExtraLabelKnob();
+                                KnobStringPtr labelKnob = node->getEffectInstance()->getExtraLabelKnob();
                                 if (labelKnob) {
                                     labelKnob->setValue(labelSerialization->_values.begin()->second[0]._value.isString);
                                 }

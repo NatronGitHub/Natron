@@ -85,109 +85,51 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/Timer.h"
 #include "Engine/Transform.h"
 #include "Engine/TreeRender.h"
-#include "Engine/TreeRenderNodeArgs.h"
 #include "Engine/ThreadPool.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+// This controls how many frames a plug-in can pre-fetch per input
+// This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
+// do not all stick altogether in memory
+#define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 3
 
 NATRON_NAMESPACE_ENTER;
-
-/*
- * @brief Split all rects to render in smaller rects and check if each one of them is identity.
- * For identity rectangles, we just call renderRoI again on the identity input in the tiledRenderingFunctor.
- * For non-identity rectangles, compute the bounding box of them and render it
- */
-void
-EffectInstance::optimizeRectsToRender(const TreeRenderNodeArgsPtr& renderArgs,
-                                      const RectI & inputsRoDIntersection,
-                                      const std::list<RectI> & rectsToRender,
-                                      const TimeValue time,
-                                      const ViewIdx view,
-                                      const RenderScale & renderMappedScale,
-                                      std::list<EffectInstance::RectToRender>* finalRectsToRender)
-{
-    for (std::list<RectI>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it) {
-        if (it->isNull()) {
-            continue;
-        }
-        std::vector<RectI> splits = it->splitIntoSmallerRects(0);
-        EffectInstance::RectToRender nonIdentityRect;
-        nonIdentityRect.identityInputNumber = -1;
-        nonIdentityRect.identityTime = TimeValue(0.);
-
-
-        bool nonIdentityRectSet = false;
-        for (std::size_t i = 0; i < splits.size(); ++i) {
-            TimeValue identityInputTime(0.);
-            int identityInputNb = -1;
-
-            ViewIdx inputIdentityView(view);
-            if ( !splits[i].intersects(inputsRoDIntersection) ) {
-                IsIdentityResultsPtr results;
-                ActionRetCodeEnum stat = isIdentity_public(false, time, renderMappedScale, splits[i], view, renderArgs, &results);
-                if (isFailureRetCode(stat)) {
-                    identityInputNb = -1;
-                } else {
-                    results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView);
-                }
-            }
-
-            if (identityInputNb != -1) {
-                EffectInstance::RectToRender r;
-                r.identityInputNumber = identityInputNb;
-                r.identityTime = identityInputTime;
-                r.identityView = inputIdentityView;
-                r.rect = splits[i];
-                if (!r.rect.isNull()) {
-                    finalRectsToRender->push_back(r);
-                }
-            } else {
-                if (!nonIdentityRectSet) {
-                    nonIdentityRectSet = true;
-                    nonIdentityRect.rect = splits[i];
-                } else {
-                    nonIdentityRect.rect.x1 = std::min(splits[i].x1, nonIdentityRect.rect.x1);
-                    nonIdentityRect.rect.x2 = std::max(splits[i].x2, nonIdentityRect.rect.x2);
-                    nonIdentityRect.rect.y1 = std::min(splits[i].y1, nonIdentityRect.rect.y1);
-                    nonIdentityRect.rect.y2 = std::max(splits[i].y2, nonIdentityRect.rect.y2);
-                }
-            }
-        }
-        if (nonIdentityRectSet) {
-            if (!nonIdentityRect.rect.isNull()) {
-                finalRectsToRender->push_back(nonIdentityRect);
-            }
-        }
-    }
-} // optimizeRectsToRender
 
 
 /**
  * @brief This function determines the planes to render and calls recursively on upstream nodes unavailable planes
  **/
 ActionRetCodeEnum
-EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::RenderRoIArgs& args,
+EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
+                                                        const RequestPassSharedDataPtr& requestPassSharedData,
+                                                        const RectD& roiCanonical,
                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
-                                                        std::list<ImagePlaneDesc> *planesToRender,
-                                                        std::bitset<4>* processChannels,
-                                                        std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
+                                                        bool *isPassThrough)
 {
 
+    *isPassThrough = false;
 
     std::list<ImagePlaneDesc> layersProduced, passThroughLayers;
     int passThroughInputNb;
     TimeValue passThroughTime;
     ViewIdx passThroughView;
     bool processAllLayers;
+    std::bitset<4> processChannels;
     {
 
-        GetComponentsResultsPtr results;
-        ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(args.time, args.view, args.renderArgs, &results);
-        if (isFailureRetCode(stat)) {
-            return stat;
+
+        GetComponentsResultsPtr results = requestData->getComponentsResults();
+        if (!results) {
+            ActionRetCodeEnum stat = _publicInterface->getLayersProducedAndNeeded_public(requestData->getTime(), requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            requestData->setComponentsNeededResults(results);
         }
-        results->getResults(inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, processChannels, &processAllLayers);
+
+
+        results->getResults(inputLayersNeeded, &layersProduced, &passThroughLayers, &passThroughInputNb, &passThroughTime, &passThroughView, &processChannels, &processAllLayers);
     }
 
     std::list<ImagePlaneDesc> componentsToFetchUpstream;
@@ -196,81 +138,58 @@ EffectInstance::Implementation::determinePlanesToRender(const EffectInstance::Re
      * If the components are from the color plane, if another set of components of the color plane is present
      * we try to render with those instead.
      */
-    for (std::list<ImagePlaneDesc>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
+    {
+        const ImagePlaneDesc& plane = requestData->getPlaneDesc();
+        if (plane.getNumComponents() == 0) {
+            return eActionStatusFailed;
+        }
 
-        // We may not request paired layers
-        assert(it->getNumComponents() > 0);
-
-        std::list<ImagePlaneDesc>::const_iterator foundProducedLayer = ImagePlaneDesc::findEquivalentLayer(*it, layersProduced.begin(), layersProduced.end());
+        std::list<ImagePlaneDesc>::const_iterator foundProducedLayer = ImagePlaneDesc::findEquivalentLayer(plane, layersProduced.begin(), layersProduced.end());
         if (foundProducedLayer != layersProduced.end()) {
 
-            // Make sure that we ask to render what is produced by this effect rather than the original requested component.
-            // e.g: The color.RGB might have been requested but this effect might produce color.RGBA
-            planesToRender->push_back(*foundProducedLayer);
-            continue;
+            if (plane != *foundProducedLayer) {
+                // Make sure that we ask to render what is produced by this effect rather than the original requested component.
+                // e.g: The color.RGB might have been requested but this effect might produce color.RGBA
+                requestData->setPlaneDesc(*foundProducedLayer);
+            }
+        } else {
+            // The plane does not exist on this effect
+            // If the effect is not set to "All plane" and the pass-through input nb is not set then fail
+            if (!processAllLayers) {
+                if (passThroughInputNb == -1) {
+                    return eActionStatusFailed;
+                } else {
+                    // Fetch the plane on the pass-through input
+                    
+                    EffectInstancePtr ptInput = _publicInterface->getInput(passThroughInputNb);
+                    if (!ptInput) {
+                        return eActionStatusInputDisconnected;
+                    }
+                        
+                    *isPassThrough = true;
+
+                    FrameViewRequestPtr createdRequest;
+                    return ptInput->requestRender(passThroughTime, passThroughView, requestData->getProxyScale(), requestData->getMipMapLevel(), plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest);
+                }
+            }
         }
-
-        // If this effect is set to process all, then process the plane even if not produced by this node.
-        if (processAllLayers) {
-            planesToRender->push_back(*it);
-        }
-
-        // This layer was not found, look in pass-through input if this plug-in allows it
-        if (passThroughInputNb == -1) {
-            continue;
-        }
-
-        std::list<ImagePlaneDesc>::const_iterator foundInPassThroughPlanes = ImagePlaneDesc::findEquivalentLayer(*it, passThroughLayers.begin(), passThroughLayers.end());
-        if (foundInPassThroughPlanes != passThroughLayers.end()) {
-            componentsToFetchUpstream.push_back(*foundInPassThroughPlanes);
-        }
-
     }
-
-    if (componentsToFetchUpstream.empty()) {
-        return eActionStatusOK;
-    }
-
-    assert(passThroughInputNb != -1);
-    EffectInstancePtr passThroughInput = _publicInterface->getInput(passThroughInputNb);
-    if (!passThroughInput) {
-        return eActionStatusInputDisconnected;
-    }
-
-    boost::scoped_ptr<RenderRoIArgs> inArgs ( new RenderRoIArgs(args) );
-
-    // Planes are not available on this node and will not be rendered hence we have to render them upstream
-    // We cannot concatenate.
-    inArgs->canReturnDistortionFunc = false;
-    inArgs->canReturnDeprecatedTransform3x3 = false;
-
-    inArgs->components = componentsToFetchUpstream;
-
-    RenderRoIResults inputResults;
-    ActionRetCodeEnum inputRetCode = passThroughInput->renderRoI(*inArgs, &inputResults);
-
-    if (isFailureRetCode(inputRetCode) || inputResults.outputPlanes.empty() ) {
-        return inputRetCode;
-    }
-
-    outputPlanes->insert(inputResults.outputPlanes.begin(),  inputResults.outputPlanes.end());
 
     return eActionStatusOK;
 
-
-} // determinePlanesToRender
+} // handlePassThroughPlanes
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::RenderRoIArgs& args,
-                                                     double par,
+EffectInstance::Implementation::handleIdentityEffect(double par,
                                                      const RectD& rod,
-                                                     const RenderScale& scale,
-                                                     const std::list<ImagePlaneDesc> &requestedComponents,
-                                                     const std::map<int, std::list<ImagePlaneDesc> >& neededComps,
-                                                     RenderRoIResults* results,
+                                                     const RenderScale& combinedScale,
+                                                     const RectD& canonicalRoi,
+                                                     const FrameViewRequestPtr& requestData,
+                                                     const RequestPassSharedDataPtr& requestPassSharedData,
                                                      bool *isIdentity)
 {
+
     TimeValue inputTimeIdentity;
     int inputNbIdentity;
     ViewIdx inputIdentityView;
@@ -278,17 +197,20 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     {
         // If the effect is identity over the whole RoD then we can forward the render completly to the identity node
         RectI pixelRod;
-        rod.toPixelEnclosing(scale, par, &pixelRod);
+        rod.toPixelEnclosing(combinedScale, par, &pixelRod);
 
         IsIdentityResultsPtr results;
-        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, args.time, scale, pixelRod, args.view, args.renderArgs, &results);
-        if (isFailureRetCode(stat)) {
-            return stat;
+        {
+            ActionRetCodeEnum stat = _publicInterface->isIdentity_public(true, requestData->getTime(), combinedScale, pixelRod, requestData->getView(),  &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
         }
+
         results->getIdentityData(&inputNbIdentity, &inputTimeIdentity, &inputIdentityView);
 
     }
-    *isIdentity = inputNbIdentity != -1;
+    *isIdentity = inputNbIdentity >= 0 || inputNbIdentity == -2;
     if (!*isIdentity) {
         return eActionStatusOK;
     }
@@ -297,124 +219,65 @@ EffectInstance::Implementation::handleIdentityEffect(const EffectInstance::Rende
     if (inputNbIdentity == -2) {
 
         // Be safe: we may hit an infinite recursion without this check
-        assert(inputTimeIdentity != args.time);
-        if ( inputTimeIdentity == args.time) {
+        assert(inputTimeIdentity != requestData->getTime());
+        if ( inputTimeIdentity == requestData->getTime()) {
             return eActionStatusFailed;
         }
 
-        // This special value of -2 indicates that the plugin is identity of itself at another time
-        boost::scoped_ptr<RenderRoIArgs> argCpy ( new RenderRoIArgs(args) );
-        argCpy->time = inputTimeIdentity;
-        argCpy->view = inputIdentityView;
+        FrameViewRequestPtr createdRequest;
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest);
 
-        return _publicInterface->renderRoI(*argCpy, results);
-
-    }
-
-    // Check if identity input really exists, otherwise fail
-    EffectInstancePtr inputEffectIdentity = _publicInterface->getInput(inputNbIdentity);
-    if (!inputEffectIdentity) {
-        return eActionStatusInputDisconnected;
-    }
-
-    // Setup renderRoI args for the identity effect render
-    boost::scoped_ptr<RenderRoIArgs> inputArgs ( new RenderRoIArgs(args) );
-    inputArgs->time = inputTimeIdentity;
-    inputArgs->view = inputIdentityView;
-
-    bool mustCopyPixels = false;
-    {
-        // If we are requesting to render a single plane, check the planes needed in input by this node and
-        // request the needed planes instead.
-        // If we are requesting multiple planes at once, just pass-through the same planes.
-        //
-        // Note that if we request a different plane upstream, we must ensure the returned plane is converted to an image
-        // with the same number of components at least.
-        std::list<ImagePlaneDesc> compsToFetchUpstream;
-        if (requestedComponents.size() == 1) {
-            std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundCompsNeeded = neededComps.find(inputNbIdentity);
-            if ( foundCompsNeeded != neededComps.end() ) {
-                if (foundCompsNeeded->second.size() == 1) {
-                    compsToFetchUpstream.push_back(foundCompsNeeded->second.front());
-                    mustCopyPixels = true;
-                }
-            }
+    } else {
+        assert(inputNbIdentity != -1);
+        EffectInstancePtr identityInput = _publicInterface->getInput(inputNbIdentity);
+        if (!identityInput) {
+            return eActionStatusInputDisconnected;
         }
-        if (compsToFetchUpstream.empty()) {
-            compsToFetchUpstream = requestedComponents;
-        }
-        inputArgs->components = compsToFetchUpstream;
+
+        FrameViewRequestPtr createdRequest;
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest);
+
     }
-
-    // Save the planes that may already have been fetched from pass-through planes
-    std::map<ImagePlaneDesc, ImagePtr> existingPassThroughPlanes = results->outputPlanes;
-    results->outputPlanes.clear();
-
-
-    // Since we are identity, it may return a distortion
-    ActionRetCodeEnum ret =  inputEffectIdentity->renderRoI(*inputArgs, results);
-    if (ret == eActionStatusOK) {
-        if (!mustCopyPixels) {
-            // We asked exactly the requested planes upstream so we just have to re-insert them in the list
-            results->outputPlanes.insert(existingPassThroughPlanes.begin(), existingPassThroughPlanes.end());
-        } else {
-            // We must convert the plane if needed to match the components
-            assert(requestedComponents.size() == 1 && results->outputPlanes.size() == 1);
-            ImagePtr toConvert = results->outputPlanes.begin()->second;
-            Image::InitStorageArgs initArgs;
-            initArgs.bounds = toConvert->getBounds();
-            initArgs.bitdepth = toConvert->getBitDepth();
-            initArgs.layer = requestedComponents.front();
-            initArgs.storage = toConvert->getStorageMode();
-            initArgs.bufferFormat = toConvert->getBufferFormat();
-            initArgs.renderArgs = args.renderArgs;
-            ImagePtr converted = Image::create(initArgs);
-
-            Image::CopyPixelsArgs cpyArgs;
-            cpyArgs.roi = initArgs.bounds;
-            cpyArgs.monoConversion = Image::eMonoToPackedConversionCopyToChannelAndFillOthers;
-            cpyArgs.alphaHandling = Image::eAlphaChannelHandlingFillFromChannel;
-            cpyArgs.conversionChannel = 3;
-            converted->copyPixels(*toConvert, cpyArgs);
-
-            // Insert in the output planes the converted image
-            results->outputPlanes.clear();
-            results->outputPlanes[requestedComponents.front()] = converted;
-        }
-    }
-    return ret;
-
-    return eActionStatusOK;
 } // EffectInstance::Implementation::handleIdentityEffect
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleConcatenation(const EffectInstance::RenderRoIArgs& args,
+EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                    const FrameViewRequestPtr& requestData,
+                                                    const FrameViewRequestPtr& requester,
+                                                    int inputNbInRequester,
                                                     const RenderScale& renderScale,
-                                                    RenderRoIResults* results,
+                                                    const RectD& canonicalRoi,
                                                     bool *concatenated)
 {
     *concatenated = false;
-    if (!args.renderArgs->getParentRender()->isConcatenationEnabled()) {
+    if (!_publicInterface->getCurrentRender()->isConcatenationEnabled()) {
         return eActionStatusOK;
     }
 
-    bool canDistort = args.renderArgs->getCurrentDistortSupport();
-    bool canTransform = args.renderArgs->getCurrentTransformationSupport_deprecated();
+    bool canDistort = _publicInterface->getCurrentCanDistort();
+    bool canTransform = _publicInterface->getCurrentCanTransform();
 
     if (!canDistort && !canTransform) {
         return eActionStatusOK;
     }
 
+    EffectInstancePtr requesterEffect = requester->getRenderClone();
+    bool canReturnDeprecatedTransform3x3 = requesterEffect->getInputCanReceiveTransform(inputNbInRequester);
+    bool canReturnDistortionFunc = requesterEffect->getInputCanReceiveDistortion(inputNbInRequester);
+
     // If the caller can apply a distortion, then check if this effect has a distortion
-    if (!args.canReturnDeprecatedTransform3x3 && !args.canReturnDistortionFunc) {
+    if (!canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) {
         return eActionStatusOK;
     }
-    assert((args.canReturnDeprecatedTransform3x3 && !args.canReturnDistortionFunc) || (!args.canReturnDeprecatedTransform3x3 && args.canReturnDistortionFunc));
+    assert((canReturnDeprecatedTransform3x3 && !canReturnDistortionFunc) || (!canReturnDeprecatedTransform3x3 && canReturnDistortionFunc));
 
-    DistortionFunction2DPtr disto;
-    ActionRetCodeEnum stat = _publicInterface->getDistortion_public(args.time, renderScale, args.view, args.renderArgs, &disto);
-    if (isFailureRetCode(stat)) {
-        return stat;
+    DistortionFunction2DPtr disto = requestData->getDistortionResults();
+    if (!disto) {
+        ActionRetCodeEnum stat = _publicInterface->getDistortion_public(requestData->getTime(), renderScale, requestData->getView(), &disto);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+        requestData->setDistortionResults(disto);
     }
     if (!disto || disto->inputNbToDistort == -1) {
         return eActionStatusOK;
@@ -427,16 +290,16 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
 
 
     // We support backward compatibility for plug-ins that only support Transforms: if a function is returned we do not concatenate.
-    if (disto->func && !args.canReturnDistortionFunc) {
+    if (disto->func && !canReturnDistortionFunc) {
         return eActionStatusOK;
     }
 
-    assert((disto->func && args.canReturnDistortionFunc) || disto->transformMatrix);
+    assert((disto->func && canReturnDistortionFunc) || disto->transformMatrix);
 
     if (disto->transformMatrix) {
 
         // The caller expects a transformation matrix in pixel coordinates
-        double par = _publicInterface->getAspectRatio(args.renderArgs, -1);
+        double par = _publicInterface->getAspectRatio(-1);
         Transform::Matrix3x3 canonicalToPixel = Transform::matCanonicalToPixel(par, renderScale.x, renderScale.y, false);
         Transform::Matrix3x3 pixelToCanonical = Transform::matPixelToCanonical(par, renderScale.x, renderScale.y, false);
         *disto->transformMatrix = Transform::matMul(Transform::matMul(canonicalToPixel, *disto->transformMatrix), pixelToCanonical);
@@ -448,33 +311,36 @@ EffectInstance::Implementation::handleConcatenation(const EffectInstance::Render
         return eActionStatusInputDisconnected;
     }
 
-    boost::scoped_ptr<RenderRoIArgs> argsCpy(new RenderRoIArgs(args));
-    argsCpy->canReturnDeprecatedTransform3x3 = canTransform;
-    argsCpy->canReturnDistortionFunc = canDistort;
+    FrameViewRequestPtr inputRequest;
+    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest);
 
-    ActionRetCodeEnum ret = distoInput->renderRoI(*argsCpy, results);
-    if (isFailureRetCode(ret)) {
-        return ret;
+    // Create a distorsion functions stack
+    Distortion2DStackPtr distoStack(new Distortion2DStack);
+
+    // Append the list of upstream distorsions
+    Distortion2DStackPtr upstreamDistoStack = inputRequest->getDistorsionStack();
+    if (upstreamDistoStack) {
+        distoStack->pushDistortionStack(*upstreamDistoStack);
     }
 
-    // Create the stack if it was not already
-    if (!results->distortionStack) {
-        results->distortionStack.reset(new Distortion2DStack);
+    // If this the caller effect also supports transforms, append this effect transformation, otherwise no need to append it, this effect will render anyway.
+    bool requesterCanTransform = requester->getRenderClone()->getCurrentCanTransform();
+    bool requesterCanDistort = requester->getRenderClone()->getCurrentCanDistort();
+
+    if (requesterCanDistort || requesterCanTransform) {
+        distoStack->pushDistortion(disto);
     }
 
-    // And then push our distortion to the stack...
-    results->distortionStack->pushDistortion(disto);
+    // Set the stack on the frame view request
+    requestData->setDistorsionStack(distoStack);
 
     *concatenated = true;
-
-
-
 
     return eActionStatusOK;
 } // handleConcatenation
 
 bool
-EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const RenderRoIArgs& args,
+EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const FrameViewRequestPtr& requestPassData,
                                                                            const RenderScale& renderMappedScale,
                                                                            RectD* inputRoDIntersectionCanonical)
 {
@@ -495,14 +361,13 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
 
         RotoShapeRenderNode* isRotoShapeRenderNode = dynamic_cast<RotoShapeRenderNode*>(input.get());
         if (isRotoShapeRenderNode) {
-            RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
+            RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
             assert(attachedStroke);
             inputRod = attachedStroke->getLastStrokeMovementBbox();
         } else {
 
-            TreeRenderNodeArgsPtr inputRenderArgs = args.renderArgs->getInputRenderArgs(i);
             GetRegionOfDefinitionResultsPtr rodResults;
-            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(args.time, renderMappedScale, args.view, inputRenderArgs, &rodResults);
+            ActionRetCodeEnum stat = input->getRegionOfDefinition_public(requestPassData->getTime(), renderMappedScale, requestPassData->getView(), &rodResults);
             if (isFailureRetCode(stat)) {
                 break;
             }
@@ -540,437 +405,382 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
     return false;
 } // canSplitRenderWindowWithIdentityRectangles
 
-
 void
-EffectInstance::Implementation::computeRectanglesToRender(const RenderRoIArgs& args, const ImagePlanesToRenderPtr &planesToRender, const RectI& renderWindow)
+EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& requestData, const RectI& renderMappedRoI, const RenderScale& renderMappedScale, std::list<RectToRender>* renderRects, bool* hasPendingTiles)
 {
+    renderRects->clear();
 
+    
+    // Compute the rectangle portion (renderWindow) left to render.
+    Image::TileStateMap tilesState;
+    bool hasUnRenderedTile;
+    ImagePtr cacheImage = requestData->getImagePlane();
+    cacheImage->getTilesRenderState(&tilesState, &hasUnRenderedTile, hasPendingTiles);
 
-    planesToRender->rectsToRender.clear();
-
-    // The renderwindow may be null if this render only have to wait results from another render
-    if (renderWindow.isNull()) {
+    // The image is already computed
+    if (!hasUnRenderedTile) {
         return;
     }
 
     // If the effect does not support tiles, render everything again
-
-    if (!args.renderArgs->getCurrentTilesSupport()) {
+    if (!_publicInterface->getCurrentSupportTiles()) {
         // If not using the cache, render the full RoI
         // The RoI has already been set to the pixelRoD in this case
         RectToRender r;
-        r.rect = renderWindow;
+        r.rect = renderMappedRoI;
         r.identityInputNumber = -1;
-        planesToRender->rectsToRender.push_back(r);
+        renderRects->push_back(r);
         return;
     }
 
-
     //
-    // If the effect has multiple inputs (such as masks) (e.g: Merge), try to call isIdentity
-    // if the RoDs do not intersect the RoI
+    // If the effect has multiple inputs (such as Source + mask) (e.g: Merge),
+    // if the inputs do not have the same RoD, the plug-in may be identity
+    // outside the intersection of the input RoDs.
+    // We try to call isIdentity on each tile outside the input intersection
+    // so that we may not have to render uninteresting areas.
     //
-    // Edit: We don't do this anymore: it requires to render a lot of tiles which may
-    // add a lot of overhead in a conventional compositing tree.
-
-    bool didSomething = false;
-
-#if 0
+    std::list<RectToRender> identityRects;
     {
         RectD inputRodIntersection;
         RectI inputRodIntersectionPixel;
-        if (canSplitRenderWindowWithIdentityRectangles(args, renderMappedScale, &inputRodIntersection)) {
-            double par = _publicInterface->getAspectRatio(args.renderArgs, -1);
+        if (canSplitRenderWindowWithIdentityRectangles(requestData, renderMappedScale, &inputRodIntersection)) {
+
+            double par = _publicInterface->getAspectRatio(-1);
             inputRodIntersection.toPixelEnclosing(renderMappedScale, par, &inputRodIntersectionPixel);
+            
+            // For each tile, if outside of the input intersections, check if it is identity.
+            // If identity mark as rendered, and add to the RectToRender list.
+            for (Image::TileStateMap::iterator it = tilesState.begin(); it != tilesState.end(); ++it) {
 
-            std::list<RectI> rectsToOptimize;
-            rectsToOptimize.push_back(renderWindow);
 
-            _publicInterface->optimizeRectsToRender(args.renderArgs, inputRodIntersectionPixel, rectsToOptimize, args.time, args.view, renderMappedScale, &planesToRender->rectsToRender);
-            didSomething = true;
-        }
-    }
-#endif
-
-    if (!didSomething) {
-
-        if (args.renderArgs->getCurrentRenderSafety() != eRenderSafetyFullySafeFrame) {
-
-            // Plug-in did not enable host frame threading, it is expected that it handles multi-threading itself
-            // with the multi-thread suite it needs so.
-
-            RectToRender r;
-            r.rect = renderWindow;
-            r.identityInputNumber = -1;
-            planesToRender->rectsToRender.push_back(r);
-
-        } else {
-
-            // If plug-in wants host frame threading and there is only 1 rect to render, split it
-            // in the number of available threads in the thread-pool
-
-            const unsigned int nThreads = MultiThread::getNCPUsAvailable();
-
-            std::vector<RectI> splits;
-            if (nThreads > 1) {
-                splits = renderWindow.splitIntoSmallerRects(nThreads);
-            } else {
-                splits.push_back(renderWindow);
-            }
-
-            for (std::vector<RectI>::iterator it = splits.begin(); it != splits.end(); ++it) {
-                if (!it->isNull()) {
-                    RectToRender r;
-                    r.rect = *it;
-                    r.identityInputNumber = -1;
-                    planesToRender->rectsToRender.push_back(r);
-                }
-            }
-        }
-    } // !didSomething
-} // computeRectanglesToRender
-
-void
-EffectInstance::Implementation::checkPlanesToRenderAndComputeRectanglesToRender(const RenderRoIArgs & args,
-                                                                                const ImagePlanesToRenderPtr &planesToRender,
-                                                                                CacheAccessModeEnum cacheAccess,
-                                                                                const RectI& roi,
-                                                                                const OSGLContextAttacherPtr& glContextLocker,
-                                                                                bool delayAllocation,
-                                                                                std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
-{
-    // Compute the rectangle portion (renderWindow) left to render.
-    // The renderwindow is the bounding box of all tiles that are left to render (not the tiles that are pending)
-
-    RectI renderWindow;
-    {
-        bool renderWindowSet = false;
-
-        std::map<ImagePlaneDesc, PlaneToRender> planes = planesToRender->planes;
-        planesToRender->planes.clear();
-        for (std::map<ImagePlaneDesc, PlaneToRender>::const_iterator it = planes.begin(); it != planes.end(); ++it) {
-
-            // If the image is entirely cached, do not even compute it and insert it in the output planes map
-            bool planeHasPendingResults;
-            std::list<RectI> restToRender = it->second.cacheImage->getRestToRender(&planeHasPendingResults);
-
-            if (restToRender.empty() && !planeHasPendingResults) {
-                (*outputPlanes)[it->first] = it->second.cacheImage;
-                continue;
-            }
-
-            planesToRender->planes.insert(*it);
-
-            // if there's nothing left to render but only pending results, do not mark it has a portion to render.
-            if (restToRender.empty()) {
-                continue;
-            }
-
-            if (!args.renderArgs->getCurrentTilesSupport()) {
-                // If the effect does not support tiles, we must render the RoI which has been set to the pixel RoD.
-                renderWindow = roi;
-                continue;
-            }
-
-            // The temporary image will have the bounding box of tiles left to render.
-            RectI restToRenderBoundingBox;
-            {
-                bool bboxSet = false;
-                for (std::list<RectI>::const_iterator it = restToRender.begin(); it != restToRender.end(); ++it) {
-                    if (!bboxSet) {
-                        bboxSet = true;
-                        restToRenderBoundingBox = *it;
-                    } else {
-                        restToRenderBoundingBox.merge(*it);
+                if ( !it->second.bounds.intersects(inputRodIntersectionPixel) ) {
+                    TimeValue identityInputTime;
+                    int identityInputNb;
+                    ViewIdx inputIdentityView;
+                    {
+                        IsIdentityResultsPtr results;
+                        ActionRetCodeEnum stat = _publicInterface->isIdentity_public(false, requestData->getTime(), renderMappedScale, it->second.bounds, requestData->getView(), &results);
+                        if (isFailureRetCode(stat)) {
+                            continue;
+                        } else {
+                            results->getIdentityData(&identityInputNb, &identityInputTime, &inputIdentityView);
+                        }
                     }
-                }
-            }
-            if (!renderWindowSet) {
-                renderWindowSet = true;
-                renderWindow = restToRenderBoundingBox;
-            } else {
-                renderWindow.merge(restToRenderBoundingBox);
-            }
-        } // for each plane
+                    if (identityInputNb >= 0) {
+
+                        // Mark the tile rendered
+                        it->second.status = Image::eTileStatusRendered;
+
+                        // Add this rectangle to the rects to render list (it will just copy the source image and
+                        // not actually call render on it)
+                        RectToRender r;
+                        r.rect = it->second.bounds;
+                        r.identityInputNumber = identityInputNb;
+                        r.identityTime = identityInputTime;
+                        r.identityView = inputIdentityView;
+                        identityRects.push_back(r);
+                    }
+                } // if outside of inputs intersection
+            } // for each tile to render
+        } // canSplitRenderWindowWithIdentityRectangles
     }
 
-    // No planes left to render, don't even compute rectangles to render
-    if (planesToRender->planes.empty()) {
+    // Now we try to reduce the unrendered tiles in bigger rectangles so that there's a lot less calls to
+    // the render action.
+    std::list<RectI> reducedRects;
+    {
+        int tileSizeX, tileSizeY;
+        cacheImage->getTileSize(&tileSizeX, &tileSizeY);
+        Image::getMinimalRectsToRenderFromTilesState(tilesState, renderMappedRoI, tileSizeX, tileSizeY, &reducedRects);
+    }
+    if (reducedRects.empty()) {
         return;
     }
 
-    // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
-    ImageBufferLayoutEnum pluginBufferLayout = _publicInterface->getPreferredBufferLayout();
-
-    StorageModeEnum cacheStorage;
-    ImageBufferLayoutEnum cacheBufferLayout;
-
-    if (cacheAccess != eCacheAccessModeNone) {
-        // Cache format is tiled and mmap backend
-        cacheStorage = eStorageModeDisk;
-        cacheBufferLayout = eImageBufferLayoutMonoChannelTiled;
-    } else {
-        switch (planesToRender->backendType) {
-            case eRenderBackendTypeOpenGL:
-                cacheStorage = eStorageModeGLTex;
+    // If there's an identity rect covered by a rectangle to render, remove it
+    for (std::list<RectToRender>::const_iterator it = identityRects.begin(); it != identityRects.end(); ++it) {
+        bool hasRectContainingIdentityRect = false;
+        for (std::list<RectI>::const_iterator it2 = reducedRects.begin(); it2 != reducedRects.end(); ++it2) {
+            if (it2->contains(it->rect)) {
+                hasRectContainingIdentityRect = true;
                 break;
-            case eRenderBackendTypeCPU:
-            case eRenderBackendTypeOSMesa:
-                cacheStorage = eStorageModeRAM;
-                break;
+            }
         }
-        cacheBufferLayout = pluginBufferLayout;
+        if (!hasRectContainingIdentityRect) {
+            renderRects->push_back(*it);
+        }
     }
 
+    // For each reduced rect to render, add it to the final list
+    if (reducedRects.size() == 1 && _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame) {
+        RectI mainRenderRect = reducedRects.front();
 
-    if (cacheAccess != eCacheAccessModeNone && (cacheBufferLayout != pluginBufferLayout) && !renderWindow.isNull()) {
+        // If plug-in wants host frame threading and there is only 1 rect to render, split it
+        // in the number of available threads in the thread-pool
 
-        // The bitdepth of the image
-        ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(args.renderArgs, -1);
+        const unsigned int nThreads = MultiThread::getNCPUsAvailable();
+        reducedRects = mainRenderRect.splitIntoSmallerRects(nThreads);
+    }
+    for (std::list<RectI>::const_iterator it = reducedRects.begin(); it != reducedRects.end(); ++it) {
+        if (!it->isNull()) {
+            RectToRender r;
+            r.rect = *it;
+            renderRects->push_back(r);
+        }
+    }
+    
+} // checkRestToRender
 
-        for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-
-            // The image planes left are not entirely cached (or not at all): create a temporary image
-            // with the memory layout supported by the plug-in that we will write to.
-            // When the temporary image will be destroyed, it will automatically copy pixels
-            // to the cache image, which in turn when destroyed will push the tiles to the cache.
-            Image::InitStorageArgs tmpImgInitArgs;
-            {
-                tmpImgInitArgs.bounds = renderWindow;
-                tmpImgInitArgs.renderArgs = args.renderArgs;
-                tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
-                tmpImgInitArgs.bufferFormat = pluginBufferLayout;
-                tmpImgInitArgs.glContext = glContextLocker ? glContextLocker->getContext() : OSGLContextPtr();
-                switch (planesToRender->backendType) {
-                    case eRenderBackendTypeOpenGL:
-                        tmpImgInitArgs.storage = eStorageModeGLTex;
-                        break;
-                    case eRenderBackendTypeCPU:
-                    case eRenderBackendTypeOSMesa:
-                        tmpImgInitArgs.storage = eStorageModeRAM;
-                        break;
-                }
-                tmpImgInitArgs.bitdepth = outputBitDepth;
-                tmpImgInitArgs.layer = it->first;
-                // Do not allocate the image buffers yet since we initialize the image BEFORE recursing on input nodes.
-                // We need to create the image before because it does the cache look-up itself, and we don't want to recurse if
-                // there's something cached.
-                // Instead we allocate the necessary image buffers AFTER the recursion on input nodes returns.
-                tmpImgInitArgs.delayAllocation = delayAllocation;
-
-            }
-            it->second.tmpImage = Image::create(tmpImgInitArgs);
-        } // for each plane to render
-
-    } // useCache
-
-    computeRectanglesToRender(args, planesToRender, renderWindow);
-
-} // checkPlanesToRenderAndComputeRectanglesToRender
-
-void
-EffectInstance::Implementation::fetchOrCreateOutputPlanes(const RenderRoIArgs & args,
-                                                          const FrameViewRequestPtr& requestPassData,
-                                                          CacheAccessModeEnum cacheAccess,
-                                                          const ImagePlanesToRenderPtr &planesToRender,
-                                                          const std::list<ImagePlaneDesc>& requestedComponents,
-                                                          const RectI& roi,
-                                                          const RenderScale& mappedCombinedScale,
-                                                          const RenderScale& mappedProxyScale,
-                                                          unsigned int mappedMipMapLevel,
-                                                          const OSGLContextAttacherPtr& glContextLocker,
-                                                          std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
+ImagePtr
+EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requestPassData,
+                                                 const RectI& roiPixels,
+                                                 unsigned int mappedMipMapLevel,
+                                                 const ImagePlaneDesc& plane,
+                                                 bool delayAllocation)
 {
 
-
     // Mark the image as draft in the cache
-    bool isDraftRender = args.renderArgs->getParentRender()->isDraftRender();
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
+    bool isDraftRender = render->isDraftRender();
 
     // The node frame/view hash to identify the image in the cache
-    U64 nodeFrameViewHash;
-    if (!requestPassData->getHash(&nodeFrameViewHash)) {
-        HashableObject::ComputeHashArgs hashArgs;
-        hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-        hashArgs.time = args.time;
-        hashArgs.view = args.view;
-        hashArgs.render = args.renderArgs;
-        nodeFrameViewHash = _publicInterface->computeHash(hashArgs);
-        requestPassData->setHash(nodeFrameViewHash);
-    }
+    U64 nodeFrameViewHash = requestPassData->getHash();
 
     // The bitdepth of the image
-    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(args.renderArgs, -1);
+    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);
 
-    // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
-    ImageBufferLayoutEnum pluginBufferLayout = _publicInterface->getPreferredBufferLayout();
-
-    StorageModeEnum cacheStorage;
-    ImageBufferLayoutEnum cacheBufferLayout;
-    if (cacheAccess != eCacheAccessModeNone) {
-        // Cache format is tiled and mmap backend
-        cacheStorage = eStorageModeDisk;
-        cacheBufferLayout = eImageBufferLayoutMonoChannelTiled;
-    } else {
-        switch (planesToRender->backendType) {
-            case eRenderBackendTypeOpenGL:
-                cacheStorage = eStorageModeGLTex;
-                break;
-            case eRenderBackendTypeCPU:
-            case eRenderBackendTypeOSMesa:
-                cacheStorage = eStorageModeRAM;
-                break;
-        }
-        cacheBufferLayout = pluginBufferLayout;
-    }
-
-
-
-    // When accumulating, re-use the same buffer of previous steps and resize it if needed.
-    // Note that in this mode only a single plane can be rendered at once
-    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getNode()->getAttachedRotoItem());
-    if (attachedStroke && attachedStroke->isCurrentlyDrawing()) {
-
-        assert(requestedComponents.size() == 1);
-
-        ImagePtr accumBuffer = _publicInterface->getNode()->getLastRenderedImage();
-
-        // If we do not have an accumulation buffer, we follow the usual code path
-        if (accumBuffer) {
-
-            // We got an existing buffer
-            // The accumulation buffer should be using the same OpenGL context as the current render's one!
-            assert((accumBuffer->getStorageMode() == eStorageModeGLTex && accumBuffer->getGLImageStorage()->getOpenGLContext() == glContextLocker->getContext()) || accumBuffer->getStorageMode() != eStorageModeGLTex);
-
-            // Ensure the accumBuffer contains at least the RoI
-            accumBuffer->ensureBounds(roi);
-
-            // We must render the last stroke movement bounding box
-            RectI drawingLastMovementBBoxPixel;
-            {
-                RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
-                double par = _publicInterface->getBitDepth(args.renderArgs, -1);
-                lastStrokeRoD.toPixelEnclosing(mappedCombinedScale, par, &drawingLastMovementBBoxPixel);
-            }
-            {
-                planesToRender->rectsToRender.clear();
-                RectToRender r;
-                r.rect = drawingLastMovementBBoxPixel;
-                r.identityInputNumber = -1;
-                planesToRender->rectsToRender.push_back(r);
-            }
-
-            PlaneToRender& plane = planesToRender->planes[requestedComponents.front()];
-            plane.cacheImage = plane.tmpImage = accumBuffer;
-            return;
-        }
-    } // isDrawing
-
-    // For each requested components, create the corresponding image plane.
+    // Create the corresponding image plane.
     // If this plug-in does not use the cache, we directly allocate an image using the plug-in preferred buffer format.
     // If using the cache, the image has to be in a mono-channel tiled format, hence we later create a temporary copy
     // on which the plug-in will work on.
-    for (std::list<ImagePlaneDesc>::const_iterator it = requestedComponents.begin(); it != requestedComponents.end(); ++it) {
-
-
+    ImagePtr image = requestPassData->getImagePlane();
+    if (image) {
+        image->ensureBounds(roiPixels);
+    } else {
         Image::InitStorageArgs initArgs;
         {
-            initArgs.bounds = roi;
-            initArgs.cachePolicy = cacheAccess;
-            initArgs.renderArgs = args.renderArgs;
-            initArgs.proxyScale = mappedProxyScale;
+            initArgs.bounds = roiPixels;
+            initArgs.cachePolicy = eCacheAccessModeReadWrite;
+            initArgs.renderClone = _publicInterface->shared_from_this();
+            initArgs.proxyScale = requestPassData->getProxyScale();
             initArgs.mipMapLevel = mappedMipMapLevel;
             initArgs.isDraft = isDraftRender;
             initArgs.nodeTimeInvariantHash = nodeFrameViewHash;
-            initArgs.time = args.time;
-            initArgs.view = args.view;
-            initArgs.storage = cacheStorage;
-            initArgs.bufferFormat = cacheBufferLayout;
+            initArgs.time = requestPassData->getTime();
+            initArgs.view = requestPassData->getView();
+            // Cache storage is always disk
+            initArgs.storage = eStorageModeDisk;
+            // Cache format is always mono channel tiled
+            initArgs.bufferFormat = eImageBufferLayoutMonoChannelTiled;
             initArgs.bitdepth = outputBitDepth;
-            initArgs.layer = *it;
+            initArgs.layer = plane;
 
-            // Do not allocate the image buffers yet since we initialize the image BEFORE recursing on input nodes.
+            // Do not allocate the image buffers yet, instead do it before rendering.
             // We need to create the image before because it does the cache look-up itself, and we don't want to recurse if
             // there's something cached.
-            // Instead we allocate the necessary image buffers AFTER the recursion on input nodes returns.
-            initArgs.delayAllocation = true;
+            initArgs.delayAllocation = delayAllocation;
         }
-        
-        PlaneToRender &plane = planesToRender->planes[*it];
+
 
         // Image::create will lookup the cache (if asked for)
         // Since multiple threads may want to access to the same image in the cache concurrently,
         // the first thread that gets onto a tile to render will render it and lock-out other threads
         // until it is rendered entirely.
-        plane.cacheImage = Image::create(initArgs);
-        plane.tmpImage = plane.cacheImage;
+        try {
+            image = Image::create(initArgs);
+        } catch (...) {
+            return ImagePtr();
+        }
+    } // image
+    return image;
+} // fetchCachedTiles
 
-    } // for each requested plane
-
-    checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glContextLocker, true /*delayAllocation*/, outputPlanes);
-
-} // fetchOrCreateOutputPlanes
 
 ActionRetCodeEnum
-EffectInstance::Implementation::launchRenderAndWaitForPendingTiles(const RenderRoIArgs & args,
-                                                                   const ImagePlanesToRenderPtr &planesToRender,
-                                                                   const OSGLContextAttacherPtr& glRenderContext,
-                                                                   CacheAccessModeEnum cacheAccess,
-                                                                   const RectI& roi,
-                                                                   const RenderScale& renderMappedScale,
-                                                                   const std::bitset<4> &processChannels,
-                                                                   const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers,
-                                                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes)
+EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
+                                                                           const RectI& roiPixels,
+                                                                           unsigned int mipMapLevel,
+                                                                           const RenderScale& combinedScale,
+                                                                           std::map<ImagePlaneDesc, ImagePtr> *producedImagePlanes,
+                                                                           std::list<RectToRender>* renderRects)
 {
 
-    for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-        it->second.cacheImage->ensureBuffersAllocated();
-        if (it->second.tmpImage != it->second.cacheImage) {
-            it->second.tmpImage->ensureBuffersAllocated();
-        }
+
+    RenderBackendTypeEnum backendType;
+    resolveRenderBackend(requestData, roiPixels, &backendType);
+    
+    // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
+    ImageBufferLayoutEnum imageBufferLayout = _publicInterface->getPreferredBufferLayout();
+    StorageModeEnum imageStorage;
+
+    switch (backendType) {
+        case eRenderBackendTypeOpenGL:
+            imageStorage = eStorageModeGLTex;
+            break;
+        case eRenderBackendTypeCPU:
+        case eRenderBackendTypeOSMesa:
+            imageStorage = eStorageModeRAM;
+            break;
     }
 
-    while (!planesToRender->planes.empty()) {
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
 
-        ActionRetCodeEnum renderRetCode = eActionStatusOK;
-        // There may be no rectangles to render if all rectangles are pending (i.e: this render should wait for another thread
-        // to complete the render first)
-        if (!planesToRender->rectsToRender.empty()) {
-            renderRetCode = renderRoILaunchInternalRender(args, planesToRender, glRenderContext, renderMappedScale, processChannels, neededInputLayers);
-        }
-        if (isFailureRetCode(renderRetCode)) {
-            return renderRetCode;
-        }
+    OSGLContextPtr glContext;
+    switch (backendType) {
+        case eRenderBackendTypeOpenGL:
+            glContext = render->getGPUOpenGLContext();
+            break;
+        case eRenderBackendTypeOSMesa:
+            glContext = render->getCPUOpenGLContext();
+            break;
+        default:
+            break;
+    }
 
-        // The render went OK: push the cache images tiles to the cache
-        for (std::map<ImagePlaneDesc, PlaneToRender>::iterator it = planesToRender->planes.begin(); it != planesToRender->planes.end(); ++it) {
-            if (it->second.cacheImage->getCachePolicy() != eCacheAccessModeNone) {
 
-                // Destroy the temporary image if there was any.
-                // The cached image has been copied from the temporary image in tiledRenderingFunctor
-                it->second.tmpImage.reset();
+    // When accumulating, re-use the same buffer of previous steps and resize it if needed.
+    // Note that in this mode only a single plane can be rendered at once
+    RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
+    assert(!attachedStroke || attachedStroke->isRenderClone());
+    bool isAccumulating = attachedStroke && attachedStroke->isCurrentlyDrawing();
+    ImagePtr accumBuffer;
+    if (isAccumulating) {
 
-                // Push to the cache the tiles that we rendered
-                it->second.cacheImage->pushTilesToCacheIfNotAborted();
+        // Get the accum buffer on the node. Note that this is not concurrent renders safe.
+        accumBuffer = _publicInterface->getAccumBuffer();
 
-                // Wait for any pending results. After this line other threads that should have computed should be done
-                it->second.cacheImage->waitForPendingTiles();
+        // If we do not have an accumulation buffer, we follow the usual code path
+        if (accumBuffer) {
+
+            // We got an existing buffer
+            // Ensure the accumBuffer contains at least the RoI
+            accumBuffer->ensureBounds(roiPixels);
+
+            // When drawing with a paint brush, we may only render the bounding box of the un-rendered points.
+            RectI drawingLastMovementBBoxPixel;
+            {
+                RectD lastStrokeRoD = attachedStroke->getLastStrokeMovementBbox();
+                double par = _publicInterface->getBitDepth(-1);
+                lastStrokeRoD.toPixelEnclosing(combinedScale, par, &drawingLastMovementBBoxPixel);
             }
+            {
+                renderRects->clear();
+                RectToRender r;
+                r.rect = drawingLastMovementBBoxPixel;
+                r.identityInputNumber = -1;
+                r.backendType = backendType;
+                r.tmpRenderPlanes[requestData->getPlaneDesc()] = accumBuffer;
+                renderRects->push_back(r);
+            }
+            return eActionStatusOK;
+        } // accumBuffer
+    } // isAccumulating
+
+    // The bitdepth of the image
+    ImageBitDepthEnum outputBitDepth = _publicInterface->getBitDepth(-1);
+
+
+    ImagePtr outputTmpImage;
+    // If we don't use the cache image, we must allocate the output image
+    if (requestData->getCachePolicy() == eCacheAccessModeNone) {
+        Image::InitStorageArgs tmpImgInitArgs;
+        {
+            tmpImgInitArgs.bounds = roiPixels;
+            tmpImgInitArgs.renderClone = _publicInterface->shared_from_this();
+            tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
+            tmpImgInitArgs.bufferFormat = imageBufferLayout;
+            tmpImgInitArgs.mipMapLevel = mipMapLevel;
+            tmpImgInitArgs.proxyScale = requestData->getProxyScale();
+            tmpImgInitArgs.glContext = glContext;
+            switch (backendType) {
+                case eRenderBackendTypeOpenGL:
+                    tmpImgInitArgs.storage = eStorageModeGLTex;
+                    break;
+                case eRenderBackendTypeCPU:
+                case eRenderBackendTypeOSMesa:
+                    tmpImgInitArgs.storage = eStorageModeRAM;
+                    break;
+            }
+            tmpImgInitArgs.bitdepth = outputBitDepth;
+            tmpImgInitArgs.layer = requestData->getPlaneDesc();
+
         }
-        checkPlanesToRenderAndComputeRectanglesToRender(args, planesToRender, cacheAccess, roi, glRenderContext, false /*delayAllocation*/, outputPlanes);
+        try {
+            outputTmpImage = Image::create(tmpImgInitArgs);
+        } catch (...) {
+            return eActionStatusFailed;
+        }
+        requestData->setImagePlane(outputTmpImage);
 
-    } // while there is still planes to render
-    
+        if (isAccumulating) {
+            _publicInterface->setAccumBuffer(outputTmpImage);
+        }
+
+        // Storage the temporary image in the output planes
+        (*producedImagePlanes)[requestData->getPlaneDesc()] = outputTmpImage;
+    }
+
+
+
+    assert(requestData->getComponentsResults());
+    const std::list<ImagePlaneDesc>& producedPlanes = requestData->getComponentsResults()->getProducedPlanes();
+
+
+    // Set or create the temporary image for each rectangle to render and for each plane
+    // with the memory layout supported by the plug-in that we will write to.
+    for (std::list<RectToRender>::iterator it = renderRects->begin(); it != renderRects->end(); ++it) {
+        for (std::list<ImagePlaneDesc>::const_iterator it2 = producedPlanes.begin(); it2 != producedPlanes.end(); ++it2) {
+
+            ImagePtr tmpImage;
+            // If we have a cache image we did not allocate yet a temporary image for the plug-in to render onto:
+            // Allocate a small image for each rectangle.
+            // If we do not have a cache image, we just allocated a single image for the requested plane but none
+            // for other planes.
+            if (requestData->getCachePolicy() == eCacheAccessModeNone && *it2 == requestData->getPlaneDesc()) {
+                tmpImage = outputTmpImage;
+            } else {
+                Image::InitStorageArgs tmpImgInitArgs;
+                {
+                    tmpImgInitArgs.bounds = it->rect;
+                    tmpImgInitArgs.renderClone = _publicInterface->shared_from_this();
+                    tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
+                    tmpImgInitArgs.bufferFormat = imageBufferLayout;
+                    tmpImgInitArgs.mipMapLevel = mipMapLevel;
+                    tmpImgInitArgs.proxyScale = requestData->getProxyScale();
+                    tmpImgInitArgs.glContext = glContext;
+                    switch (backendType) {
+                        case eRenderBackendTypeOpenGL:
+                            tmpImgInitArgs.storage = eStorageModeGLTex;
+                            break;
+                        case eRenderBackendTypeCPU:
+                        case eRenderBackendTypeOSMesa:
+                            tmpImgInitArgs.storage = eStorageModeRAM;
+                            break;
+                    }
+                    tmpImgInitArgs.bitdepth = outputBitDepth;
+                    tmpImgInitArgs.layer = *it2;
+
+                }
+                try {
+                    tmpImage = Image::create(tmpImgInitArgs);
+                } catch (...) {
+                    return eActionStatusFailed;
+                }
+            }
+
+            it->tmpRenderPlanes[*it2] = tmpImage;
+        }
+    } // for each produced plane
     return eActionStatusOK;
-} // launcRenderAndWaitForPendingTiles
-
+    
+} // allocateRenderBackendStorageForRenderRects
 
 ActionRetCodeEnum
-EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArgs & args,
-                                                              const ImagePlanesToRenderPtr &planesToRender,
-                                                              const OSGLContextAttacherPtr& glRenderContext,
-                                                              const RenderScale& renderMappedScale,
-                                                              const std::bitset<4> &processChannels,
-                                                              const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
+EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewRequestPtr& requestData,
+                                                     const RenderScale& combinedScale,
+                                                     const std::list<RectToRender>& renderRects,
+                                                     const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes)
 {
 
     // If we reach here, it can be either because the planes are cached or not, either way
@@ -978,30 +788,9 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     ActionRetCodeEnum renderRetCode = eActionStatusOK;
 
     // There should always be at least 1 plane to render (The color plane)
-    assert( !planesToRender->planes.empty() && !planesToRender->rectsToRender.empty() );
+    assert(!renderRects.empty());
 
-    EffectInstancePtr renderInstance;
-    //
-    // Figure out If this node should use a render clone rather than execute renderRoIInternal on the main (this) instance.
-    // Reasons to use a render clone is because a plug-in is eRenderSafetyInstanceSafe or does not support
-    // concurrent GL renders.
-    //
-
-    bool useRenderClone = false;
-
-    RenderSafetyEnum safety = args.renderArgs->getCurrentRenderSafety();
-
-    useRenderClone |= (safety == eRenderSafetyInstanceSafe && !_publicInterface->getNode()->isDuringPaintStrokeCreation());
-
-    useRenderClone |= safety != eRenderSafetyUnsafe && planesToRender->backendType == eRenderBackendTypeOpenGL && !_publicInterface->supportsConcurrentOpenGLRenders();
-
-    if (useRenderClone) {
-        renderInstance = _publicInterface->getOrCreateRenderInstance();
-    } else {
-        renderInstance = _publicInterface->shared_from_this();
-    }
-    assert(renderInstance);
-
+    RenderSafetyEnum safety = _publicInterface->getCurrentRenderThreadSafety();
     // eRenderSafetyInstanceSafe means that there is at most one render per instance
     // NOTE: the per-instance lock should be shared between
     // all clones of the same instance, because an InstanceSafe plugin may assume it is the sole owner of the output image,
@@ -1012,21 +801,28 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
 
     boost::scoped_ptr<QMutexLocker> locker;
 
+    const RectToRender& firstRectToRender = renderRects.front();
 
     // Since we may are going to sit and wait on this lock, to allow this thread to be re-used by another task of the thread pool we
     // temporarily release the thread to the threadpool and reserve it again once
     // we waited.
     bool hasReleasedThread = false;
-    if (safety == eRenderSafetyInstanceSafe && !useRenderClone) {
-        QThreadPool::globalInstance()->releaseThread();
-        locker.reset( new QMutexLocker( &_publicInterface->getNode()->getRenderInstancesSharedMutex() ) );
-        hasReleasedThread = true;
+    if (safety == eRenderSafetyInstanceSafe) {
+        if (isRunningInThreadPoolThread()) {
+            QThreadPool::globalInstance()->releaseThread();
+            hasReleasedThread = true;
+        }
+        locker.reset( new QMutexLocker( &renderData->instanceSafeRenderMutex ) );
+
     } else if (safety == eRenderSafetyUnsafe) {
         PluginPtr p = _publicInterface->getNode()->getPlugin();
         assert(p);
-        QThreadPool::globalInstance()->releaseThread();
+        if (isRunningInThreadPoolThread()) {
+            QThreadPool::globalInstance()->releaseThread();
+            hasReleasedThread = true;
+        }
         locker.reset( new QMutexLocker( p->getPluginLock().get() ) );
-        hasReleasedThread = true;
+
     } else {
         // no need to lock
         Q_UNUSED(locker);
@@ -1034,108 +830,327 @@ EffectInstance::Implementation::renderRoILaunchInternalRender(const RenderRoIArg
     if (hasReleasedThread) {
         QThreadPool::globalInstance()->reserveThread();
     }
+    
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
+
+    OSGLContextPtr glContext;
+    switch (firstRectToRender.backendType) {
+        case eRenderBackendTypeOpenGL:
+            glContext = render->getGPUOpenGLContext();
+            break;
+        case eRenderBackendTypeOSMesa:
+            glContext = render->getCPUOpenGLContext();
+            break;
+        default:
+            break;
+    }
 
 
+    // Bind the OpenGL context if there's any
+    OSGLContextAttacherPtr glContextAttacher;
+    if (glContext) {
+        glContextAttacher = OSGLContextAttacher::create(glContext);
+        glContextAttacher->attach();
+    }
 
-    if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
-        planesToRender->backendType == eRenderBackendTypeOSMesa) {
-        assert(glRenderContext);
-        ActionRetCodeEnum stat = renderInstance->attachOpenGLContext_public(args.time, args.view, renderMappedScale, args.renderArgs, glRenderContext->getContext(), &planesToRender->glContextData);
+    EffectOpenGLContextDataPtr glContextData;
+    if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
+        firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
+        ActionRetCodeEnum stat = _publicInterface->attachOpenGLContext_public(requestData->getTime(), requestData->getView(), combinedScale, glContext, &glContextData);
         if (isFailureRetCode(stat)) {
             renderRetCode = stat;
         }
     }
     if (renderRetCode == eActionStatusOK) {
 
-        renderRetCode = renderInstance->renderForClone(glRenderContext,
-                                                       args,
-                                                       renderMappedScale,
-                                                       planesToRender,
-                                                       processChannels,
-                                                       neededInputLayers);
+        renderRetCode = launchPluginRenderAndHostFrameThreading(requestData, glContext, glContextData, combinedScale, renderRects, producedImagePlanes);
 
-        if (planesToRender->backendType == eRenderBackendTypeOpenGL ||
-            planesToRender->backendType == eRenderBackendTypeOSMesa) {
+        if (firstRectToRender.backendType == eRenderBackendTypeOpenGL ||
+            firstRectToRender.backendType == eRenderBackendTypeOSMesa) {
 
             // If the plug-in doesn't support concurrent OpenGL renders, release the lock that was taken in the call to attachOpenGLContext_public() above.
             // For safe plug-ins, we call dettachOpenGLContext_public when the effect is destroyed in Node::deactivate() with the function EffectInstance::dettachAllOpenGLContexts().
             // If we were the last render to use this context, clear the data now
 
-            if ( planesToRender->glContextData->getHasTakenLock() ||
+            if ( glContextData->getHasTakenLock() ||
                 !_publicInterface->supportsConcurrentOpenGLRenders() ||
-                planesToRender->glContextData.use_count() == 1) {
+                glContextData.use_count() == 1) {
 
-                renderInstance->dettachOpenGLContext_public(args.renderArgs, glRenderContext->getContext(), planesToRender->glContextData);
+                _publicInterface->dettachOpenGLContext_public(glContext, glContextData);
             }
         }
     }
-    if (useRenderClone) {
-        _publicInterface->releaseRenderInstance(renderInstance);
-    }
-    
-
+ 
     return renderRetCode;
-} // EffectInstance::Implementation::::renderRoILaunchInternalRender
+} // launchInternalRender
 
-static void invalidateCachedPlanesToRender(const EffectInstance::ImagePlanesToRenderPtr& planes)
-{
-    for (std::map<ImagePlaneDesc, PlaneToRender>::const_iterator it = planes->planes.begin(); it != planes->planes.end(); ++it) {
-        it->second.cacheImage->discardTiles();
-    }
-}
+
 
 ActionRetCodeEnum
-EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
+EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                           const FrameViewRequestPtr& requestPassData,
+                                                           const RenderScale& proxyScale,
+                                                           unsigned int mipMapLevel,
+                                                           const RectD& roiCanonical,
+                                                           const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
 {
+    // For all frames/views needed, recurse on inputs with the appropriate RoI
 
-    // Do nothing if no components were requested
-    if ( args.components.empty() ) {
-        qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out components requested empty";
-        return eActionStatusOK;
-    }
-    if ( args.roi.isNull() ) {
-        qDebug() << getScriptName_mt_safe().c_str() << "renderRoi: Early bail-out RoI requested empty ";
-        return eActionStatusOK;
-    }
-
-    // Make sure this call is not made recursively from getImage on a render clone on which we are already calling renderRoI.
-    // If so, forward the call to the main instance
-    if (_imp->mainInstance) {
-        return _imp->mainInstance->renderRoI(args, results);
+    // Get frames needed to recurse upstream
+    FramesNeededMap framesNeeded;
+    {
+        GetFramesNeededResultsPtr results = requestPassData->getFramesNeededResults();
+        if (!results) {
+            ActionRetCodeEnum stat = _publicInterface->getFramesNeeded_public(requestPassData->getTime(), requestPassData->getView(),  &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+            requestPassData->setFramesNeededResults(results);
+        }
+        results->getFramesNeeded(&framesNeeded);
     }
 
-    assert(args.renderArgs && args.renderArgs->getNode() == getNode());
+    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(mipMapLevel, proxyScale);
+
+    // Compute the regions of interest in input for this RoI.
+    // The regions of interest returned is only valid for this RoI, we don't cache it. Rather we cache on the input the bounding box
+    // of all the calls of getRegionsOfInterest that were made down-stream so that the node gets rendered only once.
+    RoIMap inputsRoi;
+    {
+        ActionRetCodeEnum stat = _publicInterface->getRegionsOfInterest_public(requestPassData->getTime(), combinedScale, roiCanonical, requestPassData->getView(), &inputsRoi);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+    }
+
+    for (FramesNeededMap::const_iterator it = framesNeeded.begin(); it != framesNeeded.end(); ++it) {
+
+        int inputNb = it->first;
+        EffectInstancePtr inputEffect = _publicInterface->getInput(inputNb);
+        if (!inputEffect) {
+            continue;
+        }
+
+        assert(inputNb != -1);
+
+
+        ///There cannot be frames needed without components needed.
+        const std::list<ImagePlaneDesc>* inputPlanesNeeded = 0;
+        {
+            std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundCompsNeeded = neededInputLayers.find(inputNb);
+            if ( foundCompsNeeded == neededInputLayers.end() ) {
+                continue;
+            }
+            inputPlanesNeeded = &foundCompsNeeded->second;
+        }
+        
+        if (inputPlanesNeeded->empty()) {
+            continue;
+        }
+
+        RectD inputRoI;
+        {
+            RoIMap::iterator foundRoI = inputsRoi.find(inputNb);
+            if (foundRoI == inputsRoi.end()) {
+                // RoI not specified... use the same RoI as passed in argument
+                inputRoI = roiCanonical;
+            } else {
+                inputRoI = foundRoI->second;
+            }
+        }
+
+        if (inputRoI.isNull()) {
+            continue;
+        }
+
+        if ( inputRoI.isInfinite() ) {
+            _publicInterface->setPersistentMessage( eMessageTypeError, _publicInterface->tr("%1 asked for an infinite region of interest upstream.").arg( QString::fromUtf8( _publicInterface->getNode()->getScriptName_mt_safe().c_str() ) ).toStdString() );
+            return eActionStatusFailed;
+        }
+
+        bool inputIsContinuous = inputEffect->canRenderContinuously();
+
+        int nbRequestedFramesForInput = 0;
+        {
+
+
+            // For all views requested in input
+            for (FrameRangesMap::const_iterator viewIt = it->second.begin(); viewIt != it->second.end(); ++viewIt) {
+
+                // For all ranges in this view
+                for (std::size_t range = 0; range < viewIt->second.size(); ++range) {
+
+
+                    // If the range bounds are no integers and the range covers more than 1 frame (min != max),
+                    // we have no clue of the interval we should use between the min and max.
+                    if (viewIt->second[range].min != viewIt->second[range].max && viewIt->second[range].min != (int)viewIt->second[range].min) {
+                        qDebug() << "WARNING:" <<  _publicInterface->getScriptName_mt_safe().c_str() << "is requesting a non integer frame range [" << viewIt->second[range].min << ","
+                        << viewIt->second[range].max <<"], this is border-line and not specified if this is supported by OpenFX. Natron will render "
+                        "this range assuming an interval of 1 between frame times.";
+                    }
+
+
+                    // For all frames in the range
+                    for (double f = viewIt->second[range].min; f <= viewIt->second[range].max; f += 1.) {
+
+
+                        TimeValue inputTime(f);
+                        {
+                            int roundedInputTime = std::floor(f + 0.5);
+                            if (roundedInputTime != inputTime && !inputIsContinuous) {
+                                inputTime = TimeValue(roundedInputTime);
+                            }
+                        }
+                        for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
+                            FrameViewRequestPtr createdRequest;
+                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest);
+                            if (isFailureRetCode(stat)) {
+                                return stat;
+                            }
+                            ++nbRequestedFramesForInput;
+                            if (nbRequestedFramesForInput >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                                break;
+                            }
+                        } // for each plane needed
+                        if (nbRequestedFramesForInput >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                            break;
+                        }
+                    } // for all frames
+                    if (nbRequestedFramesForInput >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                        break;
+                    }
+                } // for all ranges
+            } // for all views
+        } // EffectInstance::NotifyInputNRenderingStarted_RAII
+    } // for all inputs
+
+    return eActionStatusOK;
+} // handleUpstreamFramesNeeded
+
+class AddDependencyFreeRender_RAII
+{
+    FrameViewRequestPtr _requestData;
+    RequestPassSharedDataPtr _requestPassSharedData;
+public:
+
+    AddDependencyFreeRender_RAII(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
+    : _requestData(requestData)
+    , _requestPassSharedData(requestPassSharedData)
+    {
+
+    }
+
+    ~AddDependencyFreeRender_RAII()
+    {
+        // If this render has no dependencies, add it to the things to render
+
+        if (_requestData->getNumDependencies() == 0) {
+            _requestPassSharedData->addDependencyFreeRender(_requestData);
+        }
+    }
+};
+
+ActionRetCodeEnum
+EffectInstance::requestRender(TimeValue timeInArgs,
+                              ViewIdx view,
+                              const RenderScale& proxyScale,
+                              unsigned int mipMapLevel,
+                              const ImagePlaneDesc& plane,
+                              const RectD & roiCanonical,
+                              int inputNbInRequester,
+                              const FrameViewRequestPtr& requester,
+                              const RequestPassSharedDataPtr& requestPassSharedData,
+                              FrameViewRequestPtr* createdRequest)
+{
+    // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
+    TimeValue time =  roundImageTimeToEpsilon(timeInArgs);
+
+    // Check that time and view can be rendered by this effect:
+    // round the time to closest integer if the effect is not continuous
+    {
+        int roundedTime = std::floor(time + 0.5);
+
+        // A continuous effect is identity on itself on nearest integer time
+        if (roundedTime != time && !canRenderContinuously()) {
+            // We do not cache it because for non continuous effects we only cache stuff at
+            // valid frame times
+            return requestRender(TimeValue(roundedTime), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+        }
+    }
+
+    // If the effect is not frame varying, forward the request to frame 0
+    if (!isFrameVarying() && time != 0.) {
+        return requestRender(TimeValue(0), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+    }
+
+
+    // Non view aware effect is identity on the main view
+    if (isViewInvariant() == eViewInvarianceAllViewsInvariant && view != 0) {
+        // We do not cache it because for we only cache stuff for
+        // valid views
+        return requestRender(time, ViewIdx(0), proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+    }
+    
+    TreeRenderPtr render = getCurrentRender();
+    assert(render);
+    
+    FrameViewRequestPtr requestData;
+    {
+        FrameViewPair frameView;
+        // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
+        frameView.time = time;
+        frameView.view = view;
+
+        // Create the frame/view request object
+        {
+            bool created = _imp->getOrCreateFrameViewRequest(frameView.time, frameView.view, proxyScale, mipMapLevel, plane, &requestData);
+            (void)created;
+        }
+        *createdRequest = requestData;
+    }
+
+    // When exiting this function, add the request to the dependency free list if it has no dependencies.
+    AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, requestData);
+
+    requestPassSharedData->addTaskToRender(requestData);
+
+    // Add this frame/view as depdency of the requester
+    if (requester) {
+        requester->addDependency(requestData);
+        requestData->addListener(requester);
+    }
+
+
+    // Set the frame view request on the TLS for OpenFX
+    SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
+
 
     // Some nodes do not support render-scale and can only render at scale 1.
     // If the render requested a mipmap level different than 0, we must render at mipmap level 0 then downscale to the requested
     // mipmap level.
     // If the render requested a proxy scale different than 1, we fail because we cannot render at scale 1 then resize at an arbitrary scale.
-    
-    const bool renderFullScaleThenDownScale = !args.renderArgs->getCurrentRenderScaleSupport() && args.mipMapLevel > 0;
 
-    if (!args.renderArgs->getCurrentRenderScaleSupport() && (args.proxyScale.x != 1. || args.proxyScale.y != 1.)) {
+    const bool renderFullScaleThenDownScale = !getCurrentSupportRenderScale() && requestData->getMipMapLevel() > 0;
+
+    if (!getCurrentSupportRenderScale() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
         setPersistentMessage(eMessageTypeError, tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
         return eActionStatusFailed;
     }
 
-    const unsigned int mappedMipMapLevel = renderFullScaleThenDownScale ? 0 : args.mipMapLevel;
-    RenderScale originalCombinedScale;
-
-    {
-        originalCombinedScale = args.proxyScale;
-        double mipMapScale = Image::getScaleFromMipMapLevel(args.mipMapLevel);
-        originalCombinedScale.x *= mipMapScale;
-        originalCombinedScale.y *= mipMapScale;
-    }
+    const unsigned int mappedMipMapLevel = renderFullScaleThenDownScale ? 0 : requestData->getMipMapLevel();
+    requestData->setRenderMappedMipMapLevel(mappedMipMapLevel);
+    RenderScale originalCombinedScale = EffectInstance::Implementation::getCombinedScale(requestData->getMipMapLevel(), proxyScale);
     const RenderScale mappedCombinedScale = renderFullScaleThenDownScale ? RenderScale(1.) : originalCombinedScale;
 
-    // The region of definition of the effect at this frame/view in canonical coordinates
+    // Get the region of definition of the effect at this frame/view in canonical coordinates
     RectD rod;
     {
         GetRegionOfDefinitionResultsPtr results;
-        ActionRetCodeEnum stat = getRegionOfDefinition_public(args.time, mappedCombinedScale, args.view, args.renderArgs, &results);
-        if (isFailureRetCode(stat)) {
-            return stat;
+        {
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(requestData->getTime(), mappedCombinedScale, requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
         }
         rod = results->getRoD();
 
@@ -1147,132 +1162,87 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle pass-through planes /////////////////////////////////////////////////////////////
-    std::list<ImagePlaneDesc> requestedPlanes;
-    std::bitset<4> processChannels;
     std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
     {
-
-        ActionRetCodeEnum upstreamRetCode = _imp->determinePlanesToRender(args, &inputLayersNeeded, &requestedPlanes, &processChannels, &results->outputPlanes);
+        bool isPassThrough;
+        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, requestPassSharedData, roiCanonical, &inputLayersNeeded, &isPassThrough);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
 
         // There might no plane produced by this node that were requested
-        if ( requestedPlanes.empty() ) {
+        if (isPassThrough) {
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Check if effect is identity /////////////////////////////////////////////////////////////
-    const double par = getAspectRatio(args.renderArgs, -1);
+    ////////////////////////////// Handle identity effects /////////////////////////////////////////////////////////////////
+    const double par = getAspectRatio(-1);
     {
         bool isIdentity;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(args, par, rod, mappedCombinedScale, requestedPlanes, inputLayersNeeded, results, &isIdentity);
-        if (isIdentity) {
+        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, rod, mappedCombinedScale, roiCanonical, requestData, requestPassSharedData, &isIdentity);
+        if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
-    }
-
-
-    // Get the data associated to this frame. It must have been created before.
-    FrameViewRequestPtr requestPassData = args.renderArgs->getFrameViewRequest(args.time, args.view);
-    assert(requestPassData);
-
-    TreeRenderPtr renderObj = args.renderArgs->getParentRender();
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Resolve render device ///////////////////////////////////////////////////////////////////
-
-    // Point to either a GPU or CPU (OSMesa) OpenGL context
-    OSGLContextPtr glRenderContext;
-
-    // These are the planes rendered
-    ImagePlanesToRenderPtr planesToRender(new ImagePlanesToRender);
-
-    // The OpenGL context locker
-    OSGLContextAttacherPtr glContextLocker;
-    {
-        ActionRetCodeEnum errorCode = _imp->resolveRenderBackend(args, requestPassData, args.roi, &planesToRender->backendType, &glRenderContext);
-        if (isFailureRetCode(errorCode)) {
-            return errorCode;
+        if (isIdentity) {
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
+            return eActionStatusOK;
         }
-        assert(((planesToRender->backendType == eRenderBackendTypeOpenGL || planesToRender->backendType == eRenderBackendTypeOSMesa) && glRenderContext) || (planesToRender->backendType != eRenderBackendTypeOpenGL && planesToRender->backendType != eRenderBackendTypeOSMesa && !glRenderContext));
-
-        // This will create a locker for the OpenGL context but not attach it yet. It will be attached when needed
-        if (glRenderContext) {
-            glContextLocker = OSGLContextAttacher::create(glRenderContext);
-        }
-
     }
-
-
-
-    // This is the region to render in pixel coordinates at the scale of renderMappedScale
-    RectI renderMappedRoI;
-    if (!renderFullScaleThenDownScale) {
-        renderMappedRoI = args.roi;
-    } else {
-        RectD canonicalRoI;
-        args.roi.toCanonical(originalCombinedScale, par, rod, &canonicalRoI);
-        canonicalRoI.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
-    }
-
-
-    // The RoI cannot be null here, either we are in !renderFullScaleThenDownscale and we already checked at the begining
-    // of the function that the RoI was Null, either the RoD was checked for NULL.
-    assert(!renderMappedRoI.isNull());
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Handle Concatenations //////////////////////////////////////////////////////////////////
     {
 
         bool concatenated;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(args, mappedCombinedScale, results, &concatenated);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestPassSharedData, requestData, requester, inputNbInRequester, mappedCombinedScale, roiCanonical, &concatenated);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
         if (concatenated) {
+            requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusPassThrough);
             return eActionStatusOK;
         }
     }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////// Resolve render device ///////////////////////////////////////////////////////////////////
+
+
+    // This is the region to render in pixel coordinates at the scale of renderMappedScale
+    RectI renderMappedRoI;
+    roiCanonical.toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
+
+    // The RoI cannot be null here, either we are in !renderFullScaleThenDownscale and we already checked at the begining
+    // of the function that the RoI was Null, either the RoD was checked for NULL.
+    assert(!renderMappedRoI.isNull());
+
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
 
     // Should the output of this render be cached ?
-    CacheAccessModeEnum cacheAccess = _imp->shouldRenderUseCache(args, requestPassData);
+    CacheAccessModeEnum cachePolicy = _imp->shouldRenderUseCache(requestData);
+    requestData->setCachePolicy(cachePolicy);
 
-    // The RoD in pixel coordinates at the scale of renderMappedScale
+    // The RoD in pixel coordinates at the scale of mappedCombinedScale
     RectI pixelRoDRenderMapped;
-
-    // Depending on tiles support we are going to modify the RoI to clip it to the bounds of this effect.
-    // We still keep in memory what was requested for later on
-    const RectI originalRenderMappedRoI = renderMappedRoI;
-
     rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
 
-    if (!args.renderArgs->getCurrentTilesSupport()) {
+    if (!getCurrentSupportTiles()) {
         // If tiles are not supported the RoI is the full image bounds
         renderMappedRoI = pixelRoDRenderMapped;
     } else {
 
         // Round the roi to the tile size if the render is cached
-        if (cacheAccess != eCacheAccessModeNone) {
-            ImageBitDepthEnum outputBitDepth = getBitDepth(args.renderArgs, -1);
+        if (cachePolicy != eCacheAccessModeNone) {
+            ImageBitDepthEnum outputBitDepth = getBitDepth(-1);
             int tileWidth, tileHeight;
             Cache::getTileSizePx(outputBitDepth, &tileWidth, &tileHeight);
-
-            RectI tiledRoundedRoI = renderMappedRoI;
-
-            tiledRoundedRoI.x1 = renderMappedRoI.x1 +  (int)std::floor((double)(renderMappedRoI.x1 - pixelRoDRenderMapped.x1) / tileWidth ) * tileWidth;
-
-            tiledRoundedRoI.y1 = renderMappedRoI.y1 + (int)std::floor((double)(renderMappedRoI.y1 - pixelRoDRenderMapped.y1) / tileHeight ) * tileHeight;
-
-            tiledRoundedRoI.x2 = tiledRoundedRoI.x1 + (int)std::ceil((double)(renderMappedRoI.x2 - renderMappedRoI.x1)  / tileWidth ) * tileWidth;
-
-            tiledRoundedRoI.y2 = tiledRoundedRoI.y1 + (int)std::ceil((double)(renderMappedRoI.y2 - renderMappedRoI.y1) / tileHeight ) * tileHeight;
-            renderMappedRoI = tiledRoundedRoI;
+            renderMappedRoI.roundToTileSize(tileWidth, tileHeight);
         }
 
         // Make sure the RoI falls within the image bounds
@@ -1288,201 +1258,275 @@ EffectInstance::renderRoI(const RenderRoIArgs & args, RenderRoIResults* results)
     assert(!renderMappedRoI.isNull());
 
     // The requested portion to render in canonical coordinates
-    RectD canonicalRoI;
-    renderMappedRoI.toCanonical(mappedCombinedScale, par, rod, &canonicalRoI);
+    RectD roundedCanonicalRoI;
+    renderMappedRoI.toCanonical(mappedCombinedScale, par, rod, &roundedCanonicalRoI);
 
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Allocate images and look-up cache ///////////////////////////////////////////////////////
-
-    _imp->fetchOrCreateOutputPlanes(args, requestPassData, cacheAccess, planesToRender, requestedPlanes, renderMappedRoI, mappedCombinedScale, args.proxyScale, mappedMipMapLevel, glContextLocker, &results->outputPlanes);
-
-    bool hasSomethingToRender = !planesToRender->rectsToRender.empty();
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Pre-render input images ////////////////////////////////////////////////////////////////
-    if (hasSomethingToRender) {
-
-        // Ensure that we release the context while waiting for input images to be rendered.
-        if (glContextLocker) {
-            glContextLocker->dettach();
+    // Merge the roi requested onto the existing RoI requested for this frame/view
+    {
+        RectD curRoI = requestData->getCurrentRoI();
+        if (curRoI.isNull()) {
+            curRoI = roundedCanonicalRoI;
+        } else {
+            curRoI.merge(roundedCanonicalRoI);
         }
+        requestData->setCurrentRoI(curRoI);
+    }
 
-        ActionRetCodeEnum upstreamRetCode = args.renderArgs->preRenderInputImages(args.time, args.view, inputLayersNeeded);
+    // Fetch tiles from cache
+    // Note that no memory allocation is done here, images are only fetched from the cache.
+    bool hasUnRenderedTile;
+    bool hasPendingTiles;
+    {
+        ImagePtr image = _imp->fetchCachedTiles(requestData, renderMappedRoI, mappedMipMapLevel, requestData->getPlaneDesc(), true);
+        if (!image) {
+            return eActionStatusFailed;
+        }
+        requestData->setImagePlane(image);
 
+        Image::TileStateMap tilesState;
+        image->getTilesRenderState(&tilesState, &hasUnRenderedTile, &hasPendingTiles);
+    }
+
+    // If there's nothing to render, do not even add the inputs as needed dependencies.
+    if (!hasUnRenderedTile && !hasPendingTiles) {
+        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
+    } else {
+        requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusNotRendered);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleUpstreamFramesNeeded(requestPassSharedData, requestData, mappedCombinedScale, mappedMipMapLevel, roundedCanonicalRoI, inputLayersNeeded);
+        
         if (isFailureRetCode(upstreamRetCode)) {
-            invalidateCachedPlanesToRender(planesToRender);
             return upstreamRetCode;
         }
     }
+    return eActionStatusOK;
+} // requestRender
 
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Launch actual internal render ///////////////////////////////////////////////////////////
+static void invalidateCachedPlanesToRender(const std::map<ImagePlaneDesc, ImagePtr>& cachedPlanes)
+{
+    for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = cachedPlanes.begin(); it != cachedPlanes.end(); ++it) {
+        it->second->discardTiles();
+    }
+}
 
-    ActionRetCodeEnum renderRetCode = eActionStatusOK;
-    if (hasSomethingToRender) {
-        renderRetCode = _imp->launchRenderAndWaitForPendingTiles(args, planesToRender, glContextLocker, cacheAccess, renderMappedRoI, mappedCombinedScale, processChannels, inputLayersNeeded, &results->outputPlanes);
+ActionRetCodeEnum
+EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
+{
+    
+    // Set the frame view request on the TLS for OpenFX
+    SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
+
+    {
+        FrameViewRequest::FrameViewRequestStatusEnum requestStatus = requestData->notifyRenderStarted();
+        switch (requestStatus) {
+            case FrameViewRequest::eFrameViewRequestStatusRendered:
+            case FrameViewRequest::eFrameViewRequestStatusPassThrough:
+                return eActionStatusOK;
+            case FrameViewRequest::eFrameViewRequestStatusPending: {
+                ActionRetCodeEnum stat = requestData->waitForPendingResults();
+                return stat;
+            }
+            case FrameViewRequest::eFrameViewRequestStatusNotRendered:
+                break;
+        }
+    }
+    ActionRetCodeEnum stat = launchRenderInternal(requestData);
+
+    // We are done with this request, remove it from the created requests.
+    _imp->removeFrameViewRequest(requestData);
+
+    // Remove all stashes input frame view requests that we kept around.
+    requestData->clearRenderedDependencies();
+
+    // Notify that we are done rendering
+    requestData->notifyRenderFinished(stat);
+    return stat;
+} // launchRender
+
+ActionRetCodeEnum
+EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
+{
+
+    const double par = getAspectRatio(-1);
+    const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
+    const RenderScale mappedCombinedScale = EffectInstance::Implementation::getCombinedScale(mappedMipMapLevel, requestData->getProxyScale());
+
+    RectI renderMappedRoI;
+    requestData->getCurrentRoI().toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);
+
+    ImagePtr cacheImage = requestData->getImagePlane();
+    if (requestData->getCachePolicy() != eCacheAccessModeNone) {
+        // Allocate the cache storage image now.
+        // Already cached tiles will be left untouched.
+        cacheImage->ensureBuffersAllocated();
     }
 
-    // Now that this effect has rendered, clear pre-rendered inputs
-    requestPassData->clearPreRenderedInputs();
+    // Fetch or create a cache image for all other planes that the plug-in produces but are not requested
+    std::map<ImagePlaneDesc, ImagePtr> producedImagePlanes;
+    if (requestData->getCachePolicy() != eCacheAccessModeNone) {
+        assert(requestData->getComponentsResults());
+        const std::list<ImagePlaneDesc>& producedPlanes = requestData->getComponentsResults()->getProducedPlanes();
+        for (std::list<ImagePlaneDesc>::const_iterator it = producedPlanes.begin(); it != producedPlanes.end(); ++it) {
+            ImagePtr imagePlane;
+            if (*it == requestData->getPlaneDesc()) {
+                imagePlane = cacheImage;
+            } else {
+                imagePlane = _imp->fetchCachedTiles(requestData, renderMappedRoI, mappedMipMapLevel, *it, false);
+            }
+            producedImagePlanes[*it] = imagePlane;
+        }
+    }
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    ////////////////////////////// Check for failure or abortion ///////////////////////////////////////////////////////////
+    ActionRetCodeEnum renderRetCode = eActionStatusOK;
+    std::list<RectToRender> renderRects;
+    bool hasPendingTiles;
+    _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
+    while (!renderRects.empty() || hasPendingTiles) {
+
+        // There may be no rectangles to render if all rectangles are pending (i.e: this render should wait for another thread
+        // to complete the render first)
+        if (!renderRects.empty()) {
+            renderRetCode = _imp->allocateRenderBackendStorageForRenderRects(requestData, renderMappedRoI, mappedMipMapLevel, mappedCombinedScale, &producedImagePlanes, &renderRects);
+            if (isFailureRetCode(renderRetCode)) {
+                break;
+            }
+            renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, renderRects, producedImagePlanes);
+            if (isFailureRetCode(renderRetCode)) {
+                break;
+            }
+        }
+
+
+        // The render went OK: push the cache images tiles to the cache
+
+        if (requestData->getCachePolicy() == eCacheAccessModeNone) {
+            renderRects.clear();
+            hasPendingTiles = false;
+        } else {
+
+            // Push to the cache the tiles that we rendered
+            cacheImage->pushTilesToCacheIfNotAborted();
+
+            // Wait for any pending results. After this line other threads that should have computed should be done
+            cacheImage->waitForPendingTiles();
+
+            _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
+
+        }
+
+    } // while there is still something not rendered
 
     // If using GPU and out of memory retry on CPU if possible
-    if (renderRetCode == eActionStatusOutOfMemory && planesToRender->backendType == eRenderBackendTypeOpenGL) {
-        if (args.renderArgs->getCurrentRenderOpenGLSupport() != ePluginOpenGLRenderSupportYes) {
+    if (renderRetCode == eActionStatusOutOfMemory && !renderRects.empty() && renderRects.front().backendType == eRenderBackendTypeOpenGL) {
+        if (getCurrentOpenGLRenderSupport() != ePluginOpenGLRenderSupportYes) {
             // The plug-in can only use GPU or doesn't support GPU
-            invalidateCachedPlanesToRender(planesToRender);
+            invalidateCachedPlanesToRender(producedImagePlanes);
             return eActionStatusFailed;
         }
-        boost::scoped_ptr<RenderRoIArgs> newArgs( new RenderRoIArgs(args) );
-        newArgs->allowGPURendering = false;
-        return renderRoI(*newArgs, results);
+       
+        return launchRenderInternal(requestData);
     }
 
     if (renderRetCode != eActionStatusOK) {
-        invalidateCachedPlanesToRender(planesToRender);
+        invalidateCachedPlanesToRender(producedImagePlanes);
         return renderRetCode;
     }
 
-    // If the node did not support render scale and the mipmap level rendered was different than what was requested, downcale the image.
-    if (renderFullScaleThenDownScale) {
-        assert(args.mipMapLevel > 0);
-        for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
-            assert(it->second->getMipMapLevel() == 0);
-            ImagePtr downscaledImage = it->second->downscaleMipMap(it->second->getBounds(), args.mipMapLevel);
-            it->second = downscaledImage;
-        }
+    std::map<ImagePlaneDesc, ImagePtr>::iterator foundRenderedPlane = producedImagePlanes.find(requestData->getPlaneDesc());
+    if (foundRenderedPlane == producedImagePlanes.end()) {
+        return eActionStatusFailed;
     }
 
-    // Termination, check that we rendered things correctly or we should have failed earlier otherwise.
-#ifdef DEBUG
-    if ( results->outputPlanes.size() != args.components.size() ) {
-        qDebug() << "Requested:";
-        for (std::list<ImagePlaneDesc>::const_iterator it = args.components.begin(); it != args.components.end(); ++it) {
-            qDebug() << it->getPlaneID().c_str();
-        }
-        qDebug() << "But rendered:";
-        for (std::map<ImagePlaneDesc, ImagePtr>::iterator it = results->outputPlanes.begin(); it != results->outputPlanes.end(); ++it) {
-            if (it->second) {
-                qDebug() << it->first.getPlaneID().c_str();
-            }
-        }
+    const ImagePtr& outputImage = foundRenderedPlane->second;
+
+    // If the node did not support render scale and the mipmap level rendered was different than what was requested, downscale the image.
+    if (mappedMipMapLevel != requestData->getMipMapLevel()) {
+        assert(requestData->getMipMapLevel() > 0);
+        assert(outputImage->getMipMapLevel() == 0);
+        ImagePtr downscaledImage = outputImage->downscaleMipMap(outputImage->getBounds(), requestData->getMipMapLevel());
+        requestData->setImagePlane(downscaledImage);
     }
-    assert( !results->outputPlanes.empty() );
-#endif
 
     return eActionStatusOK;
-} // renderRoI
+} // launchRenderInternal
+
 
 ActionRetCodeEnum
-EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
-                               const RenderRoIArgs& args,
-                               const RenderScale& renderMappedScale,
-                               const ImagePlanesToRenderPtr & planesToRender,
-                               const std::bitset<4> processChannels,
-                               const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
+EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
+                                                                        const OSGLContextPtr& glContext,
+                                                                        const EffectOpenGLContextDataPtr& glContextData,
+                                                                        const RenderScale& combinedScale,
+                                                                        const std::list<RectToRender>& renderRects,
+                                                                        const std::map<ImagePlaneDesc, ImagePtr>& producedImagePlanes)
 {
-    assert( !planesToRender->planes.empty() && !planesToRender->rectsToRender.empty() );
-
+    assert( !renderRects.empty() );
+    
     // Notify the gui we're rendering
-    NotifyRenderingStarted_RAII renderingNotifier(getNode().get());
+    NotifyRenderingStarted_RAII renderingNotifier(_publicInterface->getNode().get());
 
     // If this node is not sequential we at least have to bracket the render action with a call to begin and end sequence render.
-
     RangeD sequenceRange;
     {
         GetFrameRangeResultsPtr rangeResults;
-        ActionRetCodeEnum stat = getFrameRange_public(args.renderArgs, &rangeResults);
+        ActionRetCodeEnum stat = _publicInterface->getFrameRange_public(&rangeResults);
         if (isFailureRetCode(stat)) {
             return stat;
         }
         rangeResults->getFrameRangeResults(&sequenceRange);
     }
 
-
+    TreeRenderPtr render = _publicInterface->getCurrentRender();
+    
     // We only need to call begin if we've not already called it.
     bool callBeginSequenceRender = false;
-    if ( !isWriter() || (args.renderArgs->getCurrentRenderSequentialPreference() == eSequentialPreferenceNotSequential) ) {
+    if ( !_publicInterface->isWriter() || (_publicInterface->getCurrentSequentialRenderSupport() == eSequentialPreferenceNotSequential) ) {
         callBeginSequenceRender = true;
     }
 
-    bool isPlayback = args.renderArgs->getParentRender()->isPlayback();
+    bool isPlayback = render->isPlayback();
+    TimeValue time = requestData->getTime();
+
 
     if (callBeginSequenceRender) {
-        ActionRetCodeEnum stat = beginSequenceRender_public(args.time,
-                                                            args.time,
-                                                            1 /*frameStep*/,
-                                                            !appPTR->isBackground() /*interactive*/,
-                                                            renderMappedScale,
-                                                            isPlayback,
-                                                            !isPlayback,
-                                                            args.renderArgs->getParentRender()->isDraftRender(),
-                                                            args.view,
-                                                            planesToRender->backendType,
-                                                            planesToRender->glContextData,
-                                                            args.renderArgs);
-
+        ActionRetCodeEnum stat = _publicInterface->beginSequenceRender_public(time,
+                                                                              time,
+                                                                              1 /*frameStep*/,
+                                                                              !appPTR->isBackground() /*interactive*/,
+                                                                              combinedScale,
+                                                                              isPlayback,
+                                                                              !isPlayback,
+                                                                              render->isDraftRender(),
+                                                                              requestData->getView(),
+                                                                              renderRects.front().backendType,
+                                                                              glContextData);
+        
         if (isFailureRetCode(stat)) {
             return stat;
         }
     }
 
 
-    // Get the main input image to copy channels from it if a RGBA checkbox is unchecked
-    int mainInputNb = getNode()->getPreferredInput();
-    if ( (mainInputNb != -1) && isInputMask(mainInputNb) ) {
-        mainInputNb = -1;
-    }
 
-    ImagePtr mainInputImage;
-    if (mainInputNb != -1) {
-        GetImageInArgs inArgs;
-        std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = neededInputLayers.find(mainInputNb);
-        if (foundNeededLayers != neededInputLayers.end()) {
-            inArgs.layers = &foundNeededLayers->second;
-            inArgs.inputNb = mainInputNb;
-            inArgs.currentTime = args.time;
-            inArgs.currentView = args.view;
-            inArgs.inputTime = inArgs.currentTime;
-            inArgs.inputView = inArgs.currentView;
-            inArgs.inputMipMapLevel = (renderMappedScale.x == 1 && renderMappedScale.y == 1) ? 0 : args.mipMapLevel;
-            inArgs.inputProxyScale = args.proxyScale;
-            inArgs.currentScale = renderMappedScale;
-            {
-
-                //inArgs.layers = args.components.front();
-            }
-            inArgs.renderBackend = &planesToRender->backendType;
-            inArgs.renderArgs = args.renderArgs;
-            GetImageOutArgs outArgs;
-            bool gotImage = getImagePlanes(inArgs, &outArgs);
-            if (gotImage) {
-                assert(!outArgs.imagePlanes.empty());
-                mainInputImage = outArgs.imagePlanes.begin()->second;
-            }
-
-        }
-    }
-
-
-    const bool attemptHostFrameThreading =
-#ifndef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
-    args.renderArgs->getCurrentRenderSafety() == eRenderSafetyFullySafeFrame &&
-    planesToRender->rectsToRender.size() > 1 &&
-    planesToRender->backendType == eRenderBackendTypeCPU;
+#ifdef NATRON_HOSTFRAMETHREADING_SEQUENTIAL
+    const bool attemptHostFrameThreading = false;
 #else
-    true;
+    const bool attemptHostFrameThreading = _publicInterface->getCurrentRenderThreadSafety() == eRenderSafetyFullySafeFrame &&
+                                           renderRects.size() > 1 &&
+                                           renderRects.front().backendType == eRenderBackendTypeCPU;
 #endif
+
+
+    TiledRenderingFunctorArgs functorArgs;
+    functorArgs.glContextData = glContextData;
+    functorArgs.glContext = glContext;
+    functorArgs.requestData = requestData;
+    functorArgs.producedImagePlanes = producedImagePlanes;
 
     if (!attemptHostFrameThreading) {
 
-        for (std::list<RectToRender>::const_iterator it = planesToRender->rectsToRender.begin(); it != planesToRender->rectsToRender.end(); ++it) {
+        for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
 
-            ActionRetCodeEnum functorRet = _imp->tiledRenderingFunctor(*it, &args, renderMappedScale, processChannels, mainInputImage, planesToRender, glContext);
+            ActionRetCodeEnum functorRet = tiledRenderingFunctor(*it, functorArgs);
             if (isFailureRetCode(functorRet)) {
                 return functorRet;
             }
@@ -1491,19 +1535,7 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
 
     } else { // attemptHostFrameThreading
 
-
-        boost::scoped_ptr<Implementation::TiledRenderingFunctorArgs> tiledArgs(new Implementation::TiledRenderingFunctorArgs);
-        tiledArgs->args = &args;
-        tiledArgs->renderMappedScale = renderMappedScale;
-        tiledArgs->mainInputImage = mainInputImage;
-        tiledArgs->processChannels = processChannels;
-        tiledArgs->planesToRender = planesToRender;
-        tiledArgs->glContext = glContext;
-
-
-
-        std::list<RectToRender> rectsToRenderList = planesToRender->rectsToRender;
-
+        std::list<RectToRender> rectsToRenderList = renderRects;
         RectToRender lastRectToRender = rectsToRenderList.back();
 
         bool isThreadPoolThread = isRunningInThreadPoolThread();
@@ -1518,19 +1550,19 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
 
         std::vector<ActionRetCodeEnum> threadReturnCodes;
         QFuture<ActionRetCodeEnum> ret = QtConcurrent::mapped( rectsToRenderList,
-                                                              boost::bind(&EffectInstance::Implementation::tiledRenderingFunctor,
-                                                                          _imp.get(),
-                                                                          *tiledArgs,
+                                                              boost::bind(&EffectInstance::Implementation::tiledRenderingFunctorInSeparateThread,
+                                                                          this,
                                                                           _1,
+                                                                          functorArgs,
                                                                           curThread) );
         if (isThreadPoolThread) {
-            ActionRetCodeEnum retCode = _imp->tiledRenderingFunctor(*tiledArgs, lastRectToRender, curThread);
+            ActionRetCodeEnum retCode = tiledRenderingFunctor(lastRectToRender, functorArgs);
             threadReturnCodes.push_back(retCode);
         }
 
         // Wait for other threads to be finished
         ret.waitForFinished();
-
+        
         for (QFuture<ActionRetCodeEnum>::const_iterator  it2 = ret.begin(); it2 != ret.end(); ++it2) {
             threadReturnCodes.push_back(*it2);
         }
@@ -1544,18 +1576,17 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     ///never call endsequence render here if the render is sequential
     if (callBeginSequenceRender) {
 
-        ActionRetCodeEnum stat = endSequenceRender_public(args.time,
-                                                          args.time,
-                                                          1 /*frameStep*/,
-                                                          !appPTR->isBackground() /*interactive*/,
-                                                          renderMappedScale,
-                                                          isPlayback,
-                                                          !isPlayback,
-                                                          args.renderArgs->getParentRender()->isDraftRender(),
-                                                          args.view,
-                                                          planesToRender->backendType,
-                                                          planesToRender->glContextData,
-                                                          args.renderArgs);
+        ActionRetCodeEnum stat = _publicInterface->endSequenceRender_public(time,
+                                                                            time,
+                                                                            1 /*frameStep*/,
+                                                                            !appPTR->isBackground() /*interactive*/,
+                                                                            combinedScale,
+                                                                            isPlayback,
+                                                                            !isPlayback,
+                                                                            render->isDraftRender(),
+                                                                            requestData->getView(),
+                                                                            renderRects.front().backendType,
+                                                                            glContextData);
         if (isFailureRetCode(stat)) {
             return stat;
         }
@@ -1563,6 +1594,6 @@ EffectInstance::renderForClone(const OSGLContextAttacherPtr& glContext,
     }
     return eActionStatusOK;
     
-} // renderRoIInternal
+} // launchPluginRenderAndHostFrameThreading
 
 NATRON_NAMESPACE_EXIT;

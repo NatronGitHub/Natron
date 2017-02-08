@@ -47,7 +47,7 @@ Backdrop::createPlugin()
 {
     std::vector<std::string> grouping;
     grouping.push_back(PLUGIN_GROUP_OTHER);
-    PluginPtr ret = Plugin::create((void*)Backdrop::create, PLUGINID_NATRON_BACKDROP, "Backdrop", 1, 0, grouping);
+    PluginPtr ret = Plugin::create((void*)Backdrop::create, (void*)Backdrop::createRenderClone,PLUGINID_NATRON_BACKDROP, "Backdrop", 1, 0, grouping);
 
     QString desc =  tr("The Backdrop node is useful to group nodes and identify them in the node graph.\n"
                        "You can also move all the nodes inside the backdrop.");
@@ -59,9 +59,16 @@ Backdrop::createPlugin()
 
 
 Backdrop::Backdrop(const NodePtr& node)
-    : NoOpBase(node)
-    , _imp( new BackdropPrivate() )
+: NoOpBase(node)
+, _imp( new BackdropPrivate() )
 {
+}
+
+Backdrop::Backdrop(const EffectInstancePtr& mainInstance, const TreeRenderPtr& render)
+: NoOpBase(mainInstance, render)
+, _imp( new BackdropPrivate() )
+{
+
 }
 
 Backdrop::~Backdrop()
@@ -71,16 +78,20 @@ Backdrop::~Backdrop()
 void
 Backdrop::initializeKnobs()
 {
-    KnobPagePtr page = AppManager::createKnob<KnobPage>( shared_from_this(), tr("Controls") );
-    KnobStringPtr knobLabel = AppManager::createKnob<KnobString>( shared_from_this(), tr("Label") );
+    KnobPagePtr page = createKnob<KnobPage>("controlsPage");
+    page->setLabel(tr("Controls"));
+    {
+        KnobStringPtr knobLabel = createKnob<KnobString>("label");
+        knobLabel->setLabel(tr("Label"));
+        knobLabel->setAnimationEnabled(false);
+        knobLabel->setAsMultiLine();
+        knobLabel->setUsesRichText(true);
+        knobLabel->setHintToolTip( tr("Text to display on the backdrop.") );
+        knobLabel->setEvaluateOnChange(false);
+        page->addKnob(knobLabel);
 
-    knobLabel->setAnimationEnabled(false);
-    knobLabel->setAsMultiLine();
-    knobLabel->setUsesRichText(true);
-    knobLabel->setHintToolTip( tr("Text to display on the backdrop.") );
-    knobLabel->setEvaluateOnChange(false);
-    page->addKnob(knobLabel);
-    _imp->knobLabel = knobLabel;
+        _imp->knobLabel = knobLabel;
+    }
 }
 
 bool

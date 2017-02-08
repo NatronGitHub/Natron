@@ -222,7 +222,6 @@ NodeGui::initialize(NodeGraph* dag,
 
     QObject::connect( internalNode.get(), SIGNAL(labelChanged(QString,QString)), this, SLOT(onInternalNameChanged(QString,QString)) );
     QObject::connect( internalNode.get(), SIGNAL(refreshEdgesGUI()), this, SLOT(refreshEdges()) );
-    QObject::connect( internalNode.get(), SIGNAL(knobsInitialized()), this, SLOT(initializeKnobs()) );
     QObject::connect( internalNode.get(), SIGNAL(inputsInitialized()), this, SLOT(initializeInputs()) );
     QObject::connect( internalNode.get(), SIGNAL(previewImageChanged(TimeValue)), this, SLOT(updatePreviewImage(TimeValue)) );
     QObject::connect( internalNode.get(), SIGNAL(previewRefreshRequested(TimeValue)), this, SLOT(forceComputePreview(TimeValue)) );
@@ -341,7 +340,7 @@ NodeGui::restoreStateAfterCreation()
     ///Refresh the disabled knob
 
     setColorFromGrouping();
-    KnobBoolPtr disabledknob = internalNode->getDisabledKnob();
+    KnobBoolPtr disabledknob = internalNode->getEffectInstance()->getDisabledKnob();
     if ( disabledknob && disabledknob->getValue() ) {
         onDisabledKnobToggled(true);
     }
@@ -379,7 +378,7 @@ NodeGui::ensurePanelCreated()
 
         {
             // Connect slots from the extra label to refresh the font when it changes
-            KnobStringPtr extraLabelKnob = getNode()->getExtraLabelKnob();
+            KnobStringPtr extraLabelKnob = getNode()->getEffectInstance()->getExtraLabelKnob();
             if (extraLabelKnob) {
                 KnobGuiIPtr extraLabelKnobUI = extraLabelKnob->getKnobGuiPointer();
                 if (extraLabelKnobUI) {
@@ -726,7 +725,7 @@ NodeGui::refreshSize()
 {
     QRectF bbox = boundingRect();
 
-    KnobStringPtr extraLabelKnob = getNode()->getExtraLabelKnob();
+    KnobStringPtr extraLabelKnob = getNode()->getEffectInstance()->getExtraLabelKnob();
     QString label;
     if (extraLabelKnob) {
         label = QString::fromUtf8(extraLabelKnob->getValue().c_str());
@@ -2362,7 +2361,7 @@ NodeGui::onDisabledKnobToggled(bool disabled)
     NodePtr node = getNode();
 
     int firstFrame, lastFrame;
-    bool lifetimeEnabled = node->isLifetimeActivated(&firstFrame, &lastFrame);
+    bool lifetimeEnabled = node->getEffectInstance()->isLifetimeActivated(&firstFrame, &lastFrame);
     int curFrame = node->getApp()->getTimeLine()->currentFrame();
     bool enabled = ( !lifetimeEnabled || (curFrame >= firstFrame && curFrame <= lastFrame) ) && !disabled;
 
@@ -2579,7 +2578,7 @@ NodeGui::onOutputLayerChanged()
     }
 
     QString extraLayerStr;
-    KnobBoolPtr processAllKnob = internalNode->getProcessAllLayersKnob();
+    KnobBoolPtr processAllKnob = internalNode->getEffectInstance()->getProcessAllLayersKnob();
     bool processAll = false;
     if (processAllKnob && processAllKnob->hasModifications()) {
         processAll = processAllKnob->getValue();
@@ -2588,15 +2587,15 @@ NodeGui::onOutputLayerChanged()
             extraLayerStr += tr("(All)");
         }
     }
-    KnobChoicePtr layerKnob = internalNode->getLayerChoiceKnob(-1);
+    KnobChoicePtr layerKnob = internalNode->getEffectInstance()->getLayerChoiceKnob(-1);
     ImagePlaneDesc outputLayer;
     {
         bool isAll;
         std::list<ImagePlaneDesc> availableLayers;
-        ActionRetCodeEnum stat = internalNode->getEffectInstance()->getAvailableLayers(internalNode->getEffectInstance()->getTimelineCurrentTime(), ViewIdx(0), -1, TreeRenderNodeArgsPtr(), &availableLayers);
+        ActionRetCodeEnum stat = internalNode->getEffectInstance()->getAvailableLayers(internalNode->getEffectInstance()->getTimelineCurrentTime(), ViewIdx(0), -1, &availableLayers);
         (void)stat;
 
-        internalNode->getSelectedLayer(-1, availableLayers, 0, &isAll, &outputLayer);
+        internalNode->getEffectInstance()->getSelectedLayer(-1, availableLayers, 0, &isAll, &outputLayer);
     }
     if (!processAll && outputLayer.getNumComponents() > 0) {
         if (!outputLayer.isColorPlane()) {
@@ -2668,8 +2667,8 @@ NodeGui::refreshNodeText()
     NodePtr node = getNode();
 
     KnobStringPtr extraLabelKnob;
-    extraLabelKnob = node->getExtraLabelKnob();
-    KnobStringPtr subLabelKnob = node->getOFXSubLabelKnob();
+    extraLabelKnob = node->getEffectInstance()->getExtraLabelKnob();
+    KnobStringPtr subLabelKnob = node->getEffectInstance()->getOFXSubLabelKnob();
 
 
     QString subLabelContent;
@@ -3346,11 +3345,11 @@ NodeGui::onIdentityStateChanged(int inputNb)
     NodePtr node = getNode();
     bool enabled = true;
 
-    if (node->getDisabledKnobValue()) {
+    if (node->getEffectInstance()->getDisabledKnobValue()) {
         enabled = false;
     }
     if (enabled) {
-        RotoDrawableItemPtr attachItem = node->getAttachedRotoItem();
+        RotoDrawableItemPtr attachItem = node->getEffectInstance()->getAttachedRotoItem();
         TimeValue time = node->getEffectInstance()->getTimelineCurrentTime();
         if (attachItem && !attachItem->isActivated(time, ViewIdx(0))) {
             enabled = false;
@@ -3875,7 +3874,7 @@ NodeGui::onInputLabelChanged(int inputNb,const QString& label)
 void
 NodeGui::onKeepInAnimationModuleKnobChanged()
 {
-    bool keep = getNode()->isKeepInAnimationModuleButtonDown();
+    bool keep = getNode()->getEffectInstance()->isKeepInAnimationModuleButtonDown();
     if (keep) {
         getDagGui()->getGui()->addNodeGuiToAnimationModuleEditor(shared_from_this());
     } else {
@@ -4045,7 +4044,7 @@ NodeGui::addComponentsWithDialog(const KnobChoicePtr& knob)
         }
         assert(knob->getHolder() == getNode()->getEffectInstance());
 
-        if ( !getNode()->addUserComponents(comps) ) {
+        if ( !getNode()->getEffectInstance()->addUserComponents(comps) ) {
             Dialogs::errorDialog( tr("Layer").toStdString(), tr("A Layer with the same name already exists").toStdString() );
             return false;
         }

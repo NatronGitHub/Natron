@@ -28,43 +28,32 @@
 #include <QDebug>
 #include <QMutex>
 
+#include "Engine/EffectInstance.h"
+#include "Engine/Image.h"
+#include "Engine/TreeRender.h"
+#include "Engine/FrameViewRequest.h"
+
 NATRON_NAMESPACE_ENTER
 
 struct EffectInstanceTLSDataPrivate
 {
+    // protects all data members since the multi-thread suite threads may access TLS of another thread
+    // using the getTLSObjectForThread() function
+    mutable QMutex lock;
+
     // We use a list here because actions may be recursive.
     // The last element in this list is always the arguments of
     // the current action.
     std::list<GenericActionTLSArgsPtr> actionsArgsStack;
 
-    // These are arguments global to the render of frame.
-    // In each render of a frame multiple subsequent render on the effect may occur but these data should remain the same.
-    // Multiple threads may share the same pointer as these datas remain the same.
-    TreeRenderNodeArgsWPtr frameArgs;
-
-    // Even though these data are unique to the holder thread, we need a Mutex when copying one thread data
-    // over another one.
-    // Each data member must be protected by this mutex in getters/setters
-    mutable QMutex lock;
+    FrameViewRequestWPtr currentFrameViewRequest;
 
     EffectInstanceTLSDataPrivate()
-    : actionsArgsStack()
-    , frameArgs()
-    , lock()
+    : lock()
+    , actionsArgsStack()
+    , currentFrameViewRequest()
     {
 
-    }
-
-    EffectInstanceTLSDataPrivate(const EffectInstanceTLSDataPrivate& other)
-    {
-        // Lock the other thread TLS (mainly for the current action args)
-        QMutexLocker k(&other.lock);
-        for (std::list<GenericActionTLSArgsPtr>::const_iterator it = other.actionsArgsStack.begin(); it!=other.actionsArgsStack.end(); ++it) {
-            actionsArgsStack.push_back((*it)->createCopy());
-        }
-        
-        // Parallel render args do not need to be copied because they are not modified by any thread throughout a render
-        frameArgs = other.frameArgs;
     }
 
 };
@@ -74,10 +63,6 @@ EffectInstanceTLSData::EffectInstanceTLSData()
 {
 }
 
-EffectInstanceTLSData::EffectInstanceTLSData(const EffectInstanceTLSData& other)
-: _imp(new EffectInstanceTLSDataPrivate(*other._imp))
-{
-}
 
 EffectInstanceTLSData::~EffectInstanceTLSData()
 {
@@ -100,7 +85,6 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
     args->canSetValue = canSetValue;
 #endif
 
-    QMutexLocker k(&_imp->lock);
 #ifdef DEBUG
     if (!canBeCalledRecursively && !_imp->actionsArgsStack.empty()) {
         qDebug() << "A non-recursive action was called recursively";
@@ -109,28 +93,29 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
     _imp->actionsArgsStack.push_back(args);
 }
 
-
 void
-EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, RenderScale& scale,
-                          const RectI& renderWindowPixel,
-                          const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes)
+EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+                                            const RectI& renderWindow,
+                                            const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
     args->time = time;
     args->view = view;
     args->scale = scale;
-    args->renderWindowPixel = renderWindowPixel;
+    args->renderWindow = renderWindow;
     args->outputPlanes = outputPlanes;
+
+    QMutexLocker k(&_imp->lock);
 #ifdef DEBUG
     args->canSetValue = false;
     if (!_imp->actionsArgsStack.empty()) {
         qDebug() << "The render action cannot be caller recursively, this is a bug!";
     }
 #endif
-    QMutexLocker k(&_imp->lock);
     _imp->actionsArgsStack.push_back(args);
-
+    
 }
+
 
 void
 EffectInstanceTLSData::popArgs()
@@ -156,36 +141,6 @@ EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 #endif
 
 
-TreeRenderNodeArgsPtr
-EffectInstanceTLSData::getRenderArgs() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->frameArgs.lock();
-}
-
-void
-EffectInstanceTLSData::setRenderArgs(const TreeRenderNodeArgsPtr& renderArgs)
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->frameArgs = renderArgs;
-}
-
-
-void
-EffectInstanceTLSData::ensureLastActionInStackIsNotRender()
-{
-    QMutexLocker k(&_imp->lock);
-    if (_imp->actionsArgsStack.empty()) {
-        return;
-    }
-    const GenericActionTLSArgsPtr& curAction = _imp->actionsArgsStack.back();
-    const RenderActionTLSData* args = dynamic_cast<const RenderActionTLSData*>(curAction.get());
-    if (!args) {
-        return;
-    }
-    _imp->actionsArgsStack.pop_back();
-}
-
 bool
 EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const
 {
@@ -207,26 +162,11 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
     return true;
 }
 
-void
-EffectInstanceTLSData::updateCurrentRenderActionOutputPlanes(const std::map<ImagePlaneDesc, PlaneToRender>& outputPlanes)
-{
-    QMutexLocker k(&_imp->lock);
-    if (_imp->actionsArgsStack.empty()) {
-        return;
-    }
-    const GenericActionTLSArgsPtr& curAction = _imp->actionsArgsStack.back();
-    RenderActionTLSData* args = dynamic_cast<RenderActionTLSData*>(curAction.get());
-    if (!args) {
-        return;
-    }
-    args->outputPlanes = outputPlanes;
-}
-
 
 bool
 EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
-                                                  RectI* renderWindowPixel,
-                                                  std::map<ImagePlaneDesc, PlaneToRender>* outputPlanes) const
+                                                  RectI* renderWindow,
+                                                  std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -246,15 +186,47 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
     if (scale) {
         *scale = args->scale;
     }
-    if (renderWindowPixel) {
-        *renderWindowPixel = args->renderWindowPixel;
+    if (renderWindow) {
+        *renderWindow = args->renderWindow;
     }
 
     if (outputPlanes) {
         *outputPlanes = args->outputPlanes;
     }
- 
+
     return true;
+}
+
+void
+EffectInstanceTLSData::setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData)
+{
+    QMutexLocker k(&_imp->lock);
+    if (requestData) {
+        assert(!_imp->currentFrameViewRequest.lock());
+        _imp->currentFrameViewRequest = requestData;
+    } else {
+        assert(_imp->currentFrameViewRequest.lock());
+        _imp->currentFrameViewRequest.reset();
+    }
+}
+
+
+FrameViewRequestPtr
+EffectInstanceTLSData::getCurrentFrameViewRequest() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->currentFrameViewRequest.lock();
+}
+
+SetCurrentFrameViewRequest_RAII::SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request)
+: _effect(effect)
+{
+    effect->setCurrentFrameViewRequestTLS(request);
+}
+
+SetCurrentFrameViewRequest_RAII::~SetCurrentFrameViewRequest_RAII()
+{
+    _effect->setCurrentFrameViewRequestTLS(FrameViewRequestPtr());
 }
 
 NATRON_NAMESPACE_EXIT
