@@ -127,6 +127,11 @@ ImageStorageBase::allocateMemory(const AllocateMemoryArgs& args)
     _imp->bitdepth = args.bitDepth;
     allocateMemoryImpl(args);
 
+    {
+        QMutexLocker k(&_imp->allocatedLock);
+        _imp->allocated = true;
+    }
+
     CachePtr cache = appPTR->getCache();
     if (cache) {
         // Notify the cache about memory changes
@@ -486,6 +491,7 @@ CacheImageTileStorage::~CacheImageTileStorage()
 void
 CacheImageTileStorage::toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers, void* tileDataPtr) const
 {
+    assert(isAllocated());
     assert(tileDataPtr && _imp->localBuffer);
     memcpy(tileDataPtr, _imp->localBuffer->getData(), NATRON_TILE_SIZE_BYTES);
     CacheEntryBase::toMemorySegment(segment, objectNamesPrefix, objectPointers, tileDataPtr);

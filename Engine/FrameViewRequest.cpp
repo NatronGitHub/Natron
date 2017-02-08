@@ -95,6 +95,9 @@ struct FrameViewRequestPrivate
     // The view at which to render
     ViewIdx view;
 
+    // The proxy scale
+    RenderScale proxyScale;
+
     // The mipmap level at which to render
     unsigned int mipMapLevel, renderMappedMipMapLevel;
 
@@ -156,6 +159,7 @@ struct FrameViewRequestPrivate
 
     FrameViewRequestPrivate(TimeValue time,
                             ViewIdx view,
+                            const RenderScale& proxyScale,
                             unsigned int mipMapLevel,
                             const ImagePlaneDesc& plane,
                             U64 timeViewHash,
@@ -164,6 +168,7 @@ struct FrameViewRequestPrivate
     , renderClone(renderClone)
     , time(time)
     , view(view)
+    , proxyScale(proxyScale)
     , mipMapLevel(mipMapLevel)
     , renderMappedMipMapLevel(mipMapLevel)
     , plane(plane)
@@ -189,11 +194,12 @@ struct FrameViewRequestPrivate
 
 FrameViewRequest::FrameViewRequest(TimeValue time,
                                    ViewIdx view,
+                                   const RenderScale& proxyScale,
                                    unsigned int mipMapLevel,
                                    const ImagePlaneDesc& plane,
                                    U64 timeViewHash,
                                    const EffectInstancePtr& renderClone)
-: _imp(new FrameViewRequestPrivate(time, view, mipMapLevel, plane, timeViewHash, renderClone))
+: _imp(new FrameViewRequestPrivate(time, view, proxyScale, mipMapLevel, plane, timeViewHash, renderClone))
 {
 
     if (renderClone->getCurrentRender()->isByPassCacheEnabled()) {
@@ -203,7 +209,6 @@ FrameViewRequest::FrameViewRequest(TimeValue time,
 
 FrameViewRequest::~FrameViewRequest()
 {
-    qDebug() << "Delete";
 }
 
 EffectInstancePtr
@@ -240,6 +245,12 @@ void
 FrameViewRequest::setRenderMappedMipMapLevel(unsigned int mipMapLevel) const
 {
     _imp->renderMappedMipMapLevel = mipMapLevel;
+}
+
+const RenderScale&
+FrameViewRequest::getProxyScale() const
+{
+    return _imp->proxyScale;
 }
 
 const ImagePlaneDesc&

@@ -125,6 +125,8 @@ public:
 
     virtual void addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const OVERRIDE FINAL;
 
+    virtual bool supportsMultipleClipDepths() const OVERRIDE FINAL;
+
     NodePtr getInputRecursive(int inputIndex) const;
 
     void getChannelOptions(TimeValue time, ImagePlaneDesc* rgbLayer, ImagePlaneDesc* alphaLayer, int* alphaChannelIndex, ImagePlaneDesc* displayChannels) const;

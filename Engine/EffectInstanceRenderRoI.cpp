@@ -103,7 +103,6 @@ NATRON_NAMESPACE_ENTER;
 ActionRetCodeEnum
 EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
                                                         const RequestPassSharedDataPtr& requestPassSharedData,
-                                                        unsigned int mipMapLevel,
                                                         const RectD& roiCanonical,
                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
                                                         bool *isPassThrough)
@@ -170,7 +169,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                     *isPassThrough = true;
 
                     FrameViewRequestPtr createdRequest;
-                    return ptInput->requestRender(passThroughTime, passThroughView, mipMapLevel, plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest);
+                    return ptInput->requestRender(passThroughTime, passThroughView, requestData->getProxyScale(), requestData->getMipMapLevel(), plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest);
                 }
             }
         }
@@ -211,7 +210,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         results->getIdentityData(&inputNbIdentity, &inputTimeIdentity, &inputIdentityView);
 
     }
-    *isIdentity = inputNbIdentity != -1 && inputNbIdentity != -2;
+    *isIdentity = inputNbIdentity >= 0 || inputNbIdentity == -2;
     if (!*isIdentity) {
         return eActionStatusOK;
     }
@@ -226,7 +225,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest);
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest);
 
     } else {
         assert(inputNbIdentity != -1);
@@ -236,7 +235,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest);
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest);
 
     }
 } // EffectInstance::Implementation::handleIdentityEffect
@@ -313,7 +312,7 @@ EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataP
     }
 
     FrameViewRequestPtr inputRequest;
-    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest);
+    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getProxyScale(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest);
 
     // Create a distorsion functions stack
     Distortion2DStackPtr distoStack(new Distortion2DStack);
@@ -564,7 +563,7 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
             initArgs.bounds = roiPixels;
             initArgs.cachePolicy = eCacheAccessModeReadWrite;
             initArgs.renderClone = _publicInterface->shared_from_this();
-            initArgs.proxyScale = render->getProxyScale();
+            initArgs.proxyScale = requestPassData->getProxyScale();
             initArgs.mipMapLevel = mappedMipMapLevel;
             initArgs.isDraft = isDraftRender;
             initArgs.nodeTimeInvariantHash = nodeFrameViewHash;
@@ -692,7 +691,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
             tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
             tmpImgInitArgs.bufferFormat = imageBufferLayout;
             tmpImgInitArgs.mipMapLevel = mipMapLevel;
-            tmpImgInitArgs.proxyScale = render->getProxyScale();
+            tmpImgInitArgs.proxyScale = requestData->getProxyScale();
             tmpImgInitArgs.glContext = glContext;
             switch (backendType) {
                 case eRenderBackendTypeOpenGL:
@@ -748,7 +747,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
                     tmpImgInitArgs.cachePolicy = eCacheAccessModeNone;
                     tmpImgInitArgs.bufferFormat = imageBufferLayout;
                     tmpImgInitArgs.mipMapLevel = mipMapLevel;
-                    tmpImgInitArgs.proxyScale = render->getProxyScale();
+                    tmpImgInitArgs.proxyScale = requestData->getProxyScale();
                     tmpImgInitArgs.glContext = glContext;
                     switch (backendType) {
                         case eRenderBackendTypeOpenGL:
@@ -890,7 +889,7 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 ActionRetCodeEnum
 EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
                                                            const FrameViewRequestPtr& requestPassData,
-                                                           const RenderScale& combinedScale,
+                                                           const RenderScale& proxyScale,
                                                            unsigned int mipMapLevel,
                                                            const RectD& roiCanonical,
                                                            const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers)
@@ -911,6 +910,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
         results->getFramesNeeded(&framesNeeded);
     }
 
+    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(mipMapLevel, proxyScale);
 
     // Compute the regions of interest in input for this RoI.
     // The regions of interest returned is only valid for this RoI, we don't cache it. Rather we cache on the input the bounding box
@@ -1003,7 +1003,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassShar
                         }
                         for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
                             FrameViewRequestPtr createdRequest;
-                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest);
+                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, proxyScale, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest);
                             if (isFailureRetCode(stat)) {
                                 return stat;
                             }
@@ -1051,8 +1051,9 @@ public:
 };
 
 ActionRetCodeEnum
-EffectInstance::requestRender(TimeValue time,
+EffectInstance::requestRender(TimeValue timeInArgs,
                               ViewIdx view,
+                              const RenderScale& proxyScale,
                               unsigned int mipMapLevel,
                               const ImagePlaneDesc& plane,
                               const RectD & roiCanonical,
@@ -1061,6 +1062,35 @@ EffectInstance::requestRender(TimeValue time,
                               const RequestPassSharedDataPtr& requestPassSharedData,
                               FrameViewRequestPtr* createdRequest)
 {
+    // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
+    TimeValue time =  roundImageTimeToEpsilon(timeInArgs);
+
+    // Check that time and view can be rendered by this effect:
+    // round the time to closest integer if the effect is not continuous
+    {
+        int roundedTime = std::floor(time + 0.5);
+
+        // A continuous effect is identity on itself on nearest integer time
+        if (roundedTime != time && !canRenderContinuously()) {
+            // We do not cache it because for non continuous effects we only cache stuff at
+            // valid frame times
+            return requestRender(TimeValue(roundedTime), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+        }
+    }
+
+    // If the effect is not frame varying, forward the request to frame 0
+    if (!isFrameVarying() && time != 0.) {
+        return requestRender(TimeValue(0), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+    }
+
+
+    // Non view aware effect is identity on the main view
+    if (isViewInvariant() == eViewInvarianceAllViewsInvariant && view != 0) {
+        // We do not cache it because for we only cache stuff for
+        // valid views
+        return requestRender(time, ViewIdx(0), proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+    }
+    
     TreeRenderPtr render = getCurrentRender();
     assert(render);
     
@@ -1068,12 +1098,12 @@ EffectInstance::requestRender(TimeValue time,
     {
         FrameViewPair frameView;
         // Requested time is rounded to an epsilon so we can be sure to find it again in getImage, accounting for precision
-        frameView.time = roundImageTimeToEpsilon(time);
+        frameView.time = time;
         frameView.view = view;
 
         // Create the frame/view request object
         {
-            bool created = _imp->getOrCreateFrameViewRequest(frameView.time, frameView.view, mipMapLevel, plane, &requestData);
+            bool created = _imp->getOrCreateFrameViewRequest(frameView.time, frameView.view, proxyScale, mipMapLevel, plane, &requestData);
             (void)created;
         }
         *createdRequest = requestData;
@@ -1101,7 +1131,6 @@ EffectInstance::requestRender(TimeValue time,
     // If the render requested a proxy scale different than 1, we fail because we cannot render at scale 1 then resize at an arbitrary scale.
 
     const bool renderFullScaleThenDownScale = !getCurrentSupportRenderScale() && requestData->getMipMapLevel() > 0;
-    const RenderScale& proxyScale = render->getProxyScale();
 
     if (!getCurrentSupportRenderScale() && (proxyScale.x != 1. || proxyScale.y != 1.)) {
         setPersistentMessage(eMessageTypeError, tr("This node does not support custom proxy scale. It can only render at full resolution").toStdString());
@@ -1136,7 +1165,7 @@ EffectInstance::requestRender(TimeValue time,
     std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
     {
         bool isPassThrough;
-        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, requestPassSharedData, mappedMipMapLevel, roiCanonical, &inputLayersNeeded, &isPassThrough);
+        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, requestPassSharedData, roiCanonical, &inputLayersNeeded, &isPassThrough);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1320,7 +1349,7 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
 
     const double par = getAspectRatio(-1);
     const unsigned int mappedMipMapLevel = requestData->getRenderMappedMipMapLevel();
-    const RenderScale mappedCombinedScale = EffectInstance::Implementation::getCombinedScale(mappedMipMapLevel, getCurrentRender()->getProxyScale());
+    const RenderScale mappedCombinedScale = EffectInstance::Implementation::getCombinedScale(mappedMipMapLevel, requestData->getProxyScale());
 
     RectI renderMappedRoI;
     requestData->getCurrentRoI().toPixelEnclosing(mappedCombinedScale, par, &renderMappedRoI);

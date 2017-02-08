@@ -836,15 +836,6 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
         }
     }
 
-    // Non view aware effect is identity on the main view
-    if (isViewInvariant() == eViewInvarianceAllViewsInvariant && view != 0) {
-        // We do not cache it because for we only cache stuff for
-        // valid views
-        *results = IsIdentityResults::create(IsIdentityKeyPtr());
-        (*results)->setIdentityData(-2, time, ViewIdx(0));
-        return eActionStatusOK;
-    }
-
     const bool renderScaleSupported = getCurrentSupportRenderScale();
     const RenderScale mappedScale = renderScaleSupported ? scale : RenderScale(1.);
 
@@ -862,11 +853,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
-        cacheKey.reset(new IsIdentityKey(hash, timeKey, viewKey, getNode()->getPluginID()));
+        cacheKey.reset(new IsIdentityKey(hash, time, view, getNode()->getPluginID()));
     }
 
 
@@ -1026,7 +1013,7 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
         ViewIdx identityView;
         identityResults->getIdentityData(&inputIdentityNb, &identityTime, &identityView);
 
-        if (inputIdentityNb != -1) {
+        if (inputIdentityNb >= 0) {
             // This effect is identity
             EffectInstancePtr identityInputNode = getInput(inputIdentityNb);
             if (!identityInputNode) {
@@ -1344,12 +1331,8 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     NodePtr thisNode = getNode();
 
     GetFramesNeededKeyPtr cacheKey;
-    {
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
-        cacheKey.reset(new GetFramesNeededKey(hash, timeKey, viewKey, getNode()->getPluginID()));
-    }
+    cacheKey.reset(new GetFramesNeededKey(hash, time, view, getNode()->getPluginID()));
+
     *results = GetFramesNeededResults::create(cacheKey);
 
     CacheEntryLockerPtr cacheAccess;
@@ -1845,6 +1828,7 @@ EffectInstance::getTimeInvariantMetaDatas_public(GetTimeInvariantMetaDatasResult
         _imp->checkMetadata(*metadata);
     }
 
+    _imp->setTimeInvariantMetadataResults(*results);
     cacheAccess->insertInCache();
 
 

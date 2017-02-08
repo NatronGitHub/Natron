@@ -411,6 +411,7 @@ public:
      **/
     bool getOrCreateFrameViewRequest(TimeValue time,
                                      ViewIdx view,
+                                     const RenderScale& proxyScale,
                                      unsigned int mipMapLevel,
                                      const ImagePlaneDesc& plane,
                                      FrameViewRequestPtr* request);
@@ -447,7 +448,6 @@ public:
      **/
     ActionRetCodeEnum handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
                                               const RequestPassSharedDataPtr& requestPassSharedData,
-                                              unsigned int mipMapLevel,
                                               const RectD& roiCanonical,
                                               std::map<int, std::list<ImagePlaneDesc> >* neededComp,
                                               bool *isPassThrough);
@@ -489,7 +489,7 @@ public:
 
     ActionRetCodeEnum handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
                                                  const FrameViewRequestPtr& requestPassData,
-                                                 const RenderScale& combinedScale,
+                                                 const RenderScale& proxyScale,
                                                  unsigned int mipMapLevel,
                                                  const RectD& roi,
                                                  const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);

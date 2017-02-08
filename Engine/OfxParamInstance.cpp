@@ -1578,7 +1578,12 @@ OfxChoiceInstance::setOption(int num)
     if ( num == (dim - 1) ) {
         ChoiceOption option;
         option.id = getProperties().getStringProperty(kOfxParamPropChoiceOption, num);
+        option.label = option.id;
         int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
+        int optionIDDim = getProperties().getDimension(kOfxParamPropChoiceEnum);
+        if (num < optionIDDim) {
+            option.id = getProperties().getStringProperty(kOfxParamPropChoiceEnum, num);
+        }
         if (num < labelOptionDim) {
             option.tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, num);
         }
@@ -1587,10 +1592,15 @@ OfxChoiceInstance::setOption(int num)
 
         int labelOptionDim = getProperties().getDimension(kOfxParamPropChoiceLabelOption);
         assert(labelOptionDim == 0 || labelOptionDim == dim);
-
+        int optionIDDim = getProperties().getDimension(kOfxParamPropChoiceEnum);
+        assert(optionIDDim == 0 || optionIDDim == dim);
         std::vector<ChoiceOption> entries(dim);
         for (std::size_t i = 0; i < entries.size(); ++i) {
             entries[i].id = getProperties().getStringProperty(kOfxParamPropChoiceOption, i);
+            entries[i].label = entries[i].id;
+            if ( (int)i < optionIDDim ) {
+                entries[i].id = getProperties().getStringProperty(kOfxParamPropChoiceEnum, i);
+            }
             if ( (int)i < labelOptionDim ) {
                 entries[i].tooltip = getProperties().getStringProperty(kOfxParamPropChoiceLabelOption, i);
             }

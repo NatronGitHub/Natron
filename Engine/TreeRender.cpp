@@ -194,6 +194,7 @@ struct TreeRenderPrivate
     ActionRetCodeEnum launchRenderInternal(const EffectInstancePtr& renderClone,
                                            TimeValue time,
                                            ViewIdx view,
+                                           const RenderScale& proxyScale,
                                            unsigned int mipMapLevel,
                                            const ImagePlaneDesc* plane,
                                            const RectD* canonicalRoI,
@@ -312,18 +313,6 @@ ViewIdx
 TreeRender::getView() const
 {
     return _imp->ctorArgs->view;
-}
-
-const RenderScale&
-TreeRender::getProxyScale() const
-{
-    return _imp->ctorArgs->proxyScale;
-}
-
-unsigned int
-TreeRender::getMipMapLevel() const
-{
-    return _imp->ctorArgs->mipMapLevel;
 }
 
 RenderStatsPtr
@@ -812,6 +801,7 @@ ActionRetCodeEnum
 TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
                                         TimeValue time,
                                         ViewIdx view,
+                                        const RenderScale& proxyScale,
                                         unsigned int mipMapLevel,
                                         const ImagePlaneDesc* planeParam,
                                         const RectD* canonicalRoIParam,
@@ -854,7 +844,7 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
 
     // Cycle through the tree to find and requested frames and RoIs
     {
-        ActionRetCodeEnum stat = renderClone->requestRender(time, view, mipMapLevel, plane, canonicalRoI, -1, FrameViewRequestPtr(), requestData, outputRequest);
+        ActionRetCodeEnum stat = renderClone->requestRender(time, view, proxyScale, mipMapLevel, plane, canonicalRoI, -1, FrameViewRequestPtr(), requestData, outputRequest);
 
         if (isFailureRetCode(stat)) {
             return stat;
@@ -922,12 +912,13 @@ ActionRetCodeEnum
 TreeRender::launchRenderWithArgs(const EffectInstancePtr& renderClone,
                                  TimeValue time,
                                  ViewIdx view,
+                                 const RenderScale& proxyScale,
                                  unsigned int mipMapLevel,
                                  const ImagePlaneDesc* plane,
                                  const RectD* canonicalRoI,
                                  FrameViewRequestPtr* outputRequest)
 {
-    return _imp->launchRenderInternal(renderClone, time, view, mipMapLevel, plane, canonicalRoI, outputRequest);
+    return _imp->launchRenderInternal(renderClone, time, view, proxyScale, mipMapLevel, plane, canonicalRoI, outputRequest);
 }
 
 ActionRetCodeEnum
@@ -940,7 +931,7 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
     if (isFailureRetCode(_imp->state)) {
         return _imp->state;
     }
-    return _imp->launchRenderInternal(_imp->rootRenderClone, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
+    return _imp->launchRenderInternal(_imp->rootRenderClone, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
 
 
 } // launchRender

@@ -639,7 +639,7 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
     
 
     // We must call getRegionOfInterest on the time and view and the current render window of the current action of this effect.
-    RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), getCurrentRender()->getProxyScale());
+    RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), inArgs.requestData->getProxyScale());
 
 
     // If we are during a render action, retrieve the current renderWindow
@@ -726,8 +726,8 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& reques
         inputTime = requestPass->getTime();
         inputView = requestPass->getView();
         inputMipMapLevel = requestPass->getRenderMappedMipMapLevel();
+        inputProxyScale = requestPass->getProxyScale();
         TreeRenderPtr render = requestPass->getRenderClone()->getCurrentRender();
-        inputProxyScale = render->getProxyScale();
         draftMode = render->isDraftRender();
         playback = render->isPlayback();
         byPassCache = render->isByPassCacheEnabled();
@@ -756,14 +756,24 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
 
     // Get the requested RoI for the input, if we can recover it, otherwise TreeRender will render the RoD.
     RectD roiCanonical;
-    bool gotRoI = resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical);
+    if (!resolveRoIForGetImage(inArgs, inArgs.inputTime, &roiCanonical)) {
+        // If we did not resolve the RoI, ask for the RoD
+        GetRegionOfDefinitionResultsPtr results;
+        RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
+        ActionRetCodeEnum stat = inputEffect->getRegionOfDefinition_public(inArgs.inputTime, combinedScale, inArgs.inputView, &results);
+        if (isFailureRetCode(stat)) {
+            return stat;
+        }
+        assert(results);
+        roiCanonical = results->getRoD();
+    }
 
     // Launch a render to recover the image.
     // It should be very fast if the image was already rendered.
     TreeRenderPtr renderObject = getCurrentRender();
     FrameViewRequestPtr outputRequest;
     if (renderObject) {
-        ActionRetCodeEnum status = renderObject->launchRenderWithArgs(inputEffect, inArgs.inputTime, inArgs.inputView, inArgs.inputMipMapLevel, inArgs.plane, gotRoI ? &roiCanonical : 0, &outputRequest);
+        ActionRetCodeEnum status = renderObject->launchRenderWithArgs(inputEffect, inArgs.inputTime, inArgs.inputView, inArgs.inputProxyScale, inArgs.inputMipMapLevel, inArgs.plane, &roiCanonical, &outputRequest);
         if (isFailureRetCode(status)) {
             return false;
         }
@@ -773,7 +783,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         rargs->time = inArgs.inputTime;
         rargs->view = inArgs.inputView;
         rargs->treeRootEffect = inputEffect;
-        rargs->canonicalRoI = gotRoI ? &roiCanonical : 0;
+        rargs->canonicalRoI = &roiCanonical;
         rargs->proxyScale = inArgs.inputProxyScale;
         rargs->mipMapLevel = inArgs.inputMipMapLevel;
         rargs->plane = inArgs.plane;
@@ -795,7 +805,7 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // Get the RoI in pixel coordinates of the effect we rendered
     RenderScale inputCombinedScale = EffectInstance::Implementation::getCombinedScale(inArgs.inputMipMapLevel, inArgs.inputProxyScale);
     double inputPar = getAspectRatio(inArgs.inputNb);
-    outputRequest->getCurrentRoI().toPixelEnclosing(inputCombinedScale, inputPar, &outArgs->roiPixel);
+    roiCanonical.toPixelEnclosing(inputCombinedScale, inputPar, &outArgs->roiPixel);
 
 
     // Map the output image to the plug-in preferred format

@@ -374,6 +374,7 @@ ImagePrivate::insertTilesInCache()
             }
             CacheEntryLocker::CacheEntryStatusEnum status = thisChannelTile.entryLocker->getStatus();
             if (status == CacheEntryLocker::eCacheEntryStatusMustCompute && !renderAborted) {
+                assert(thisChannelTile.buffer->isAllocated());
                 thisChannelTile.entryLocker->insertInCache();
             }
         }

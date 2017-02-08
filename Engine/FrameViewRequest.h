@@ -125,6 +125,7 @@ public:
 
     FrameViewRequest(TimeValue time,
                      ViewIdx view,
+                     const RenderScale& proxyScale,
                      unsigned int mipMapLevel,
                      const ImagePlaneDesc& plane,
                      U64 timeViewHash,
@@ -179,6 +180,12 @@ public:
      **/
     unsigned int getRenderMappedMipMapLevel() const;
     void setRenderMappedMipMapLevel(unsigned int mipMapLevel) const;
+
+    /**
+     * @brief Returns the proxy scale - it is applied combined with the downscaling given
+     * by the mipmap level.
+     **/
+    const RenderScale& getProxyScale() const;
 
     /**
      * @brief Get the plane to render

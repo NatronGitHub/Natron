@@ -225,6 +225,12 @@ ViewerInstance::addSupportedBitDepth(std::list<ImageBitDepthEnum>* depths) const
     depths->push_back(eImageBitDepthByte);
 }
 
+bool
+ViewerInstance::supportsMultipleClipDepths() const
+{
+    return true;
+}
+
 void
 ViewerInstance::fetchRenderCloneKnobs()
 {
@@ -952,7 +958,7 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
     }
 
     // Get the alpha from the alpha image
-    if (alpha_pixels[args.alphaChannelIndex]) {
+    if (args.alphaChannelIndex != -1 && alpha_pixels[args.alphaChannelIndex]) {
         tmpPix[3] = Image::convertPixelDepth<PIX, float>(*alpha_pixels[args.alphaChannelIndex]);
     }
     if (srcNComps == 1) {

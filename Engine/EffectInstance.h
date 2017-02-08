@@ -1210,6 +1210,7 @@ public:
      **/
     ActionRetCodeEnum requestRender(TimeValue time,
                                     ViewIdx view,
+                                    const RenderScale& proxyScale,
                                     unsigned int mipMapLevel,
                                     const ImagePlaneDesc& plane,
                                     const RectD & roiCanonical,

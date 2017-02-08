@@ -570,19 +570,21 @@ EffectInstance::getClosestSupportedBitDepth(ImageBitDepthEnum depth)
 {
     bool foundShort = false;
     bool foundByte = false;
-
+    bool foundFloat = false;
     for (std::list<ImageBitDepthEnum>::const_iterator it = _imp->common->supportedDepths.begin(); it != _imp->common->supportedDepths.end(); ++it) {
         if (*it == depth) {
             return depth;
         } else if (*it == eImageBitDepthFloat) {
-            return eImageBitDepthFloat;
+            foundFloat = true;
         } else if (*it == eImageBitDepthShort) {
             foundShort = true;
         } else if (*it == eImageBitDepthByte) {
             foundByte = true;
         }
     }
-    if (foundShort) {
+    if (foundFloat) {
+        return eImageBitDepthFloat;
+    } else if (foundShort) {
         return eImageBitDepthShort;
     } else if (foundByte) {
         return eImageBitDepthByte;

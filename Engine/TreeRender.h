@@ -164,6 +164,7 @@ public:
     ActionRetCodeEnum launchRenderWithArgs(const EffectInstancePtr& renderClone,
                                            TimeValue time,
                                            ViewIdx view,
+                                           const RenderScale& proxyScale,
                                            unsigned int mipMapLevel,
                                            const ImagePlaneDesc* plane,
                                            const RectD* canonicalRoI,
@@ -182,15 +183,6 @@ public:
      **/
     ViewIdx getView() const;
 
-    /**
-     * @brief Get the proxy scale of the render
-     **/
-    const RenderScale& getProxyScale() const;
-
-    /**
-     * @brief Get the mipmaplevel of the render
-     **/
-    unsigned int getMipMapLevel() const;
 
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer

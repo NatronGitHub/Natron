@@ -156,7 +156,12 @@ EffectInstance::Implementation::removeFrameViewRequest(const FrameViewRequestPtr
 }
 
 bool
-EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, FrameViewRequestPtr* request)
+EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
+                                                            ViewIdx view,
+                                                            const RenderScale& proxyScale,
+                                                            unsigned int mipMapLevel,
+                                                            const ImagePlaneDesc& plane,
+                                                            FrameViewRequestPtr* request)
 {
     assert(renderData);
     // Needs to be locked: frame requests may be added spontaneously by the plug-in
@@ -181,7 +186,7 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, View
 
 
     FrameViewRequestPtr& ret = renderData->frames[p];
-    ret.reset(new FrameViewRequest(time, view, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
+    ret.reset(new FrameViewRequest(time, view, proxyScale, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
     *request = ret;
     return true;
 }
@@ -407,7 +412,7 @@ EffectInstance::Implementation::tiledRenderingFunctor(const RectToRender & rectT
         glCheckError(GL_GPU);
     }
 
-    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(args.requestData->getRenderMappedMipMapLevel(), render->getProxyScale());
+    RenderScale combinedScale = EffectInstance::Implementation::getCombinedScale(args.requestData->getRenderMappedMipMapLevel(), args.requestData->getProxyScale());
     
     // If this tile is identity, copy input image instead
     ActionRetCodeEnum stat;
@@ -459,7 +464,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
         inArgs->inputTime = rectToRender.identityTime;
         inArgs->inputView = rectToRender.identityView;
         inArgs->inputMipMapLevel = args.requestData->getRenderMappedMipMapLevel();
-        inArgs->inputProxyScale = render->getProxyScale();
+        inArgs->inputProxyScale = args.requestData->getProxyScale();
         inArgs->inputNb = rectToRender.identityInputNumber;
         inArgs->plane = &it->first;
 
