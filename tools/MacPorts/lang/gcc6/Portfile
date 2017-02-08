@@ -9,6 +9,9 @@ subport             libgcc {}
 
 epoch               2
 version             6.3.0
+if {${name} eq ${subport}} {
+    revision        1
+}
 platforms           darwin
 categories          lang
 maintainers         mww openmaintainer
@@ -47,6 +50,9 @@ set major           [lindex [split ${version} .-] 0]
 
 platform darwin {
     configure.pre_args-append --build=${build_arch}-apple-darwin${os.major}
+
+    # see https://gcc.gnu.org/ml/gcc-patches/2012-05/msg00672.html
+    patchfiles-append         patch-float128.diff
 }
 
 configure.dir       ${workpath}/build
@@ -183,7 +189,7 @@ if {${subport} eq "libgcc"} {
             }
         }
 
-        file delete -force ${destroot}${prefix}/bin              
+        file delete -force ${destroot}${prefix}/bin
         file delete -force ${destroot}${prefix}/share
         file delete -force ${destroot}${prefix}/include
         file delete -force ${destroot}${prefix}/lib/libgcc
