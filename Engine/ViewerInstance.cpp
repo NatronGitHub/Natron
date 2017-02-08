@@ -1419,7 +1419,7 @@ ViewerInstance::render(const RenderActionArgs& args)
         }
     }
 
-    if (alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
+    if (colorImage && alphaImage && colorImage->getBitDepth() != alphaImage->getBitDepth()) {
         setPersistentMessage(eMessageTypeError, tr("Host did not take into account requested bit-depth").toStdString());
         return eActionStatusFailed;
     }

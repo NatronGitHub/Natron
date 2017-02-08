@@ -32,6 +32,14 @@ Natron multiple times on the same computer, the different processes will share t
 - For convenience, a PyPlug may specify a list of the nodes inside its node graph that should have their viewer overlay displayed when the PyPlug setting panel is opened. For instance, imagine that the PyPlug uses a Transform node internally, it is possible to display the Transform node handle on the viewer when the PyPlug settings panel is opened, even if the Transform node panel itself is closed
 
 
+## Version 2.2.5
+
+### Plugins
+
+- DenoiseSharpen: the output is now the noisy source when Noise Analysis is not locked. It is easier to see where there is noise that way, and it also makes the plugin usable in Resolve (which calls render even if non-significant parameters are changed)
+- remork many plugins so that they work better in DaVinci Resolve (all generators including Radial and Rectangle, CopyRectangle, DenoiseSharpen, LensDistortion, HSVTool, ImageStatistics, Position)
+
+
 ## Version 2.2.4
 
 - Write: remove Python page, add Info page
@@ -42,7 +50,7 @@ Natron multiple times on the same computer, the different processes will share t
 
 - Readers and writers now only get the colorspace from the filename if it is before the extension and preceded by a delimiter
 - BilateralGuided: bug fix
-- Natron can now use plugins compiled with the DaVinci Resolve OpenFX SDK (which assumes that the host is Resolve), such as the Paul Dore plugins (see https://github.com/baldavenger/).
+- Natron can now use plugins compiled with the DaVinci Resolve OpenFX SDK (which assumes that the host is Resolve), such as the Paul Dore plugins (see https://github.com/baldavenger/). These plugins may require CUDA runtime library to run. It can be found in the Resolve installation. On macOS, execute `cp "/Applications/DaVinci Resolve/DaVinci Resolve.app/Contents/Libraries/libcudart.dylib /Applications/Natron.app/Contents/Frameworks/libcudart.7.5.dylib`
 
 
 ## Version 2.2.3
