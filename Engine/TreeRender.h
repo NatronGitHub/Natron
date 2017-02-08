@@ -44,6 +44,24 @@
 
 NATRON_NAMESPACE_ENTER;
 
+struct RequestPassSharedDataPrivate;
+class RequestPassSharedData
+{
+public:
+    RequestPassSharedData();
+
+    ~RequestPassSharedData();
+
+    void addDependencyFreeRender(const FrameViewRequestPtr& render);
+
+    void addTaskToRender(const FrameViewRequestPtr& render);
+
+private:
+
+    friend class FrameViewRenderRunnable;
+    friend struct TreeRenderPrivate;
+    boost::scoped_ptr<RequestPassSharedDataPrivate> _imp;
+};
 
 /**
  * @brief Setup thread local storage through a render tree starting from the tree root.
@@ -71,8 +89,10 @@ public:
         // The view at which to render
         ViewIdx view;
 
-        // The node at the bottom of the tree (from which we want to pull an image from)
-        NodePtr treeRoot;
+        // The node at the bottom of the tree (from which we want to pull an image from).
+        // If calling launchRenderWithArgs() the treeRoot is expected to be a render clone of the
+        // effect that was created in TreeRender::create, otherwise this can be the main instance.
+        EffectInstancePtr treeRootEffect;
 
         // When painting with a roto item, this points to the item used to draw
         RotoDrawableItemPtr activeRotoDrawableItem;
@@ -130,9 +150,24 @@ public:
     static TreeRenderPtr create(const CtorArgsPtr& inArgs);
 
     /**
-     * @brief Launch the actual render
+     * @brief Launch the actual render on the tree that was constructed in create().
+     * @param outputResults[out] The output results if the render succeeded. The image
+     * can be retrieved on the request with getImagePlane().
+     * @returns The status, eActionStatusOK if everything went fine.
      **/
     ActionRetCodeEnum launchRender(FrameViewRequestPtr* outputRequest);
+
+    /**
+     * @brief Same as launchRender() except that it launches the render on a different node than the root
+     * of the tree with different parameters. 
+     **/
+    ActionRetCodeEnum launchRenderWithArgs(const EffectInstancePtr& renderClone,
+                                           TimeValue time,
+                                           ViewIdx view,
+                                           unsigned int mipMapLevel,
+                                           const ImagePlaneDesc* plane,
+                                           const RectD* canonicalRoI,
+                                           FrameViewRequestPtr* outputRequest);
 
 
     virtual ~TreeRender();
@@ -156,11 +191,6 @@ public:
      * @brief Get the mipmaplevel of the render
      **/
     unsigned int getMipMapLevel() const;
-
-    /**
-     * @brief Get proxy scale + mipmap scale combined
-     **/
-    const RenderScale& getProxyMipMapScale() const;
 
     /**
      * @brief Is this render aborted ? This is extremely fast as it just dereferences an atomic integer
@@ -200,7 +230,7 @@ public:
     /**
      * @brief The root node in the tree (i.e: the effect from which we want the results)
      **/
-    NodePtr getTreeRoot() const;
+    EffectInstancePtr getTreeRootRenderClone() const;
 
 
     /**
@@ -213,11 +243,6 @@ public:
      **/
     OSGLContextPtr getGPUOpenGLContext() const;
     OSGLContextPtr getCPUOpenGLContext() const;
-
-    /**
-     * @brief Get the RoI in canonical coordinates that was requested to the tree root
-     **/
-    RectD getCanonicalRoI() const;
 
 private Q_SLOTS:
 
@@ -256,12 +281,8 @@ private:
     friend class AbortableThread;
 #endif
 
-    void addDependencyFreeRender(const FrameViewRequestPtr& render);
 
-    void addTaskToRender(const FrameViewRequestPtr& render);
 
-    friend class AddDependencyFreeRender_RAII;
-    friend class EffectInstance;
     boost::scoped_ptr<TreeRenderPrivate> _imp;
 };
 

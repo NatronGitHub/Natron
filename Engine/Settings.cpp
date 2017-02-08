@@ -2696,9 +2696,8 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
                 } else {
                     appPTR->reloadStylesheets();
                 }
-            } else {
-                parent = parent->getParentKnob();
             }
+            parent = parent->getParentKnob();
         }
     }
     return ret;

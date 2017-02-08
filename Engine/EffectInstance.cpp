@@ -761,12 +761,18 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
     // Launch a render to recover the image.
     // It should be very fast if the image was already rendered.
     TreeRenderPtr renderObject = getCurrentRender();
-    if (!renderObject) {
+    FrameViewRequestPtr outputRequest;
+    if (renderObject) {
+        ActionRetCodeEnum status = renderObject->launchRenderWithArgs(inputEffect, inArgs.inputTime, inArgs.inputView, inArgs.inputMipMapLevel, inArgs.plane, gotRoI ? &roiCanonical : 0, &outputRequest);
+        if (isFailureRetCode(status)) {
+            return false;
+        }
+    } else {
         // We are not during a render, create one.
         TreeRender::CtorArgsPtr rargs(new TreeRender::CtorArgs());
         rargs->time = inArgs.inputTime;
         rargs->view = inArgs.inputView;
-        rargs->treeRoot = inputEffect->getNode();
+        rargs->treeRootEffect = inputEffect;
         rargs->canonicalRoI = gotRoI ? &roiCanonical : 0;
         rargs->proxyScale = inArgs.inputProxyScale;
         rargs->mipMapLevel = inArgs.inputMipMapLevel;
@@ -775,12 +781,12 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         rargs->playback = inArgs.playback;
         rargs->byPassCache = inArgs.byPassCache;
         renderObject = TreeRender::create(rargs);
+        ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
+        if (isFailureRetCode(status)) {
+            return false;
+        }
     }
-    FrameViewRequestPtr outputRequest;
-    ActionRetCodeEnum status = renderObject->launchRender(&outputRequest);
-    if (isFailureRetCode(status)) {
-        return false;
-    }
+
 
     // Copy in output the distortion stack
     outArgs->distortionStack = outputRequest->getDistorsionStack();
@@ -900,8 +906,8 @@ EffectInstance::getCurrentTime_TLS() const
         return KnobHolder::getCurrentTime_TLS();
     }
 
-    if (!_imp->renderData->currentFrameView.empty()) {
-        FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.back().lock();
+    FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.lock();
+    if (requestData) {
         return requestData->getTime();
     }
 
@@ -914,9 +920,8 @@ EffectInstance::getCurrentView_TLS() const
     if (!_imp->renderData) {
         return KnobHolder::getCurrentView_TLS();
     }
-
-    if (!_imp->renderData->currentFrameView.empty()) {
-        FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.back().lock();
+    FrameViewRequestPtr requestData = _imp->renderData->currentFrameView.lock();
+    if (requestData) {
         return requestData->getView();
     }
 
@@ -941,15 +946,22 @@ EffectInstance::getTLSObject() const
 }
 
 EffectInstanceTLSDataPtr
+EffectInstance::getTLSObjectForThread(QThread* /*thread*/) const
+{
+    return EffectInstanceTLSDataPtr();
+}
+
+EffectInstanceTLSDataPtr
 EffectInstance::getOrCreateTLSObject() const
 {
     return EffectInstanceTLSDataPtr();
 }
 
 void
-EffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& /*request*/)
+EffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request)
 {
-
+    assert(_imp->renderData);
+    _imp->renderData->currentFrameView = request;
 }
 
 EffectInstance::NotifyRenderingStarted_RAII::NotifyRenderingStarted_RAII(Node* node)

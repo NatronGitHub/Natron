@@ -281,7 +281,7 @@ Node::makePreviewImage(TimeValue time,
 
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
-        args->treeRoot = shared_from_this();
+        args->treeRootEffect = getEffectInstance();
         args->time = time;
         args->view = ViewIdx(0);
         args->mipMapLevel = mipMapLevel;

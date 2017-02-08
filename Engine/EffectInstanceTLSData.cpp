@@ -37,15 +37,20 @@ NATRON_NAMESPACE_ENTER
 
 struct EffectInstanceTLSDataPrivate
 {
+    // protects all data members since the multi-thread suite threads may access TLS of another thread
+    // using the getTLSObjectForThread() function
+    mutable QMutex lock;
+
     // We use a list here because actions may be recursive.
     // The last element in this list is always the arguments of
     // the current action.
     std::list<GenericActionTLSArgsPtr> actionsArgsStack;
 
-    FrameViewRequestPtr currentFrameViewRequest;
+    FrameViewRequestWPtr currentFrameViewRequest;
 
     EffectInstanceTLSDataPrivate()
-    : actionsArgsStack()
+    : lock()
+    , actionsArgsStack()
     , currentFrameViewRequest()
     {
 
@@ -99,6 +104,8 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const 
     args->scale = scale;
     args->renderWindow = renderWindow;
     args->outputPlanes = outputPlanes;
+
+    QMutexLocker k(&_imp->lock);
 #ifdef DEBUG
     args->canSetValue = false;
     if (!_imp->actionsArgsStack.empty()) {
@@ -113,6 +120,7 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const 
 void
 EffectInstanceTLSData::popArgs()
 {
+    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return;
     }
@@ -124,6 +132,7 @@ EffectInstanceTLSData::popArgs()
 bool
 EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 {
+    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
@@ -135,6 +144,7 @@ EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 bool
 EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const
 {
+    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
@@ -158,6 +168,7 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
                                                   RectI* renderWindow,
                                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
 {
+    QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
         return false;
     }
@@ -189,10 +200,12 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
 void
 EffectInstanceTLSData::setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData)
 {
+    QMutexLocker k(&_imp->lock);
     if (requestData) {
-        assert(!_imp->currentFrameViewRequest);
+        assert(!_imp->currentFrameViewRequest.lock());
         _imp->currentFrameViewRequest = requestData;
     } else {
+        assert(_imp->currentFrameViewRequest.lock());
         _imp->currentFrameViewRequest.reset();
     }
 }
@@ -201,7 +214,8 @@ EffectInstanceTLSData::setCurrentFrameViewRequest(const FrameViewRequestPtr& req
 FrameViewRequestPtr
 EffectInstanceTLSData::getCurrentFrameViewRequest() const
 {
-    return _imp->currentFrameViewRequest;
+    QMutexLocker k(&_imp->lock);
+    return _imp->currentFrameViewRequest.lock();
 }
 
 SetCurrentFrameViewRequest_RAII::SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request)

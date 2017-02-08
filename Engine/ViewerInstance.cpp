@@ -1364,6 +1364,12 @@ ViewerInstance::render(const RenderActionArgs& args)
 
     ImagePtr dstImage = args.outputPlanes.begin()->second;
 
+#ifdef DEBUG
+    if (dstImage->getBitDepth() != getBitDepth(-1)) {
+        setPersistentMessage(eMessageTypeError, tr("Host did not take into account bitdepth").toStdString());
+        return eActionStatusFailed;
+    }
+#endif
 
     DisplayChannelsEnum displayChannels = (DisplayChannelsEnum)_imp->displayChannels.lock()->getValue();
 

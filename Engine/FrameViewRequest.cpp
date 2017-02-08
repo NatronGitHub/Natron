@@ -203,7 +203,7 @@ FrameViewRequest::FrameViewRequest(TimeValue time,
 
 FrameViewRequest::~FrameViewRequest()
 {
-
+    qDebug() << "Delete";
 }
 
 EffectInstancePtr
@@ -362,6 +362,7 @@ FrameViewRequest::markDependencyAsRendered(const FrameViewRequestPtr& effectRequ
 {
     QMutexLocker k(&_imp->lock);
     std::set<FrameViewRequestWPtr>::iterator foundDep = _imp->dependencies.find(effectRequesting);
+    assert(foundDep != _imp->dependencies.end());
     if (foundDep != _imp->dependencies.end()) {
         _imp->dependencies.erase(foundDep);
         _imp->renderedDependencies.insert(effectRequesting);
@@ -400,7 +401,12 @@ FrameViewRequest::getListeners() const
     return ret;
 }
 
-
+std::size_t
+FrameViewRequest::getNumListeners() const
+{
+    QMutexLocker k(&_imp->lock);
+    return _imp->listeners.size();
+}
 
 bool
 FrameViewRequest::checkIfByPassCacheEnabledAndTurnoff() const

@@ -470,8 +470,8 @@ HistogramCPU::run()
         ImagePtr image;
         {
             TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
-            args->treeRoot = treeRoot;
-            assert(args->treeRoot);
+            args->treeRootEffect = treeRoot->getEffectInstance();
+            assert(args->treeRootEffect);
             args->time = request.viewer->getTimelineCurrentTime();
             args->view = request.viewer->getCurrentView_TLS();
             

@@ -1723,7 +1723,7 @@ protected:
 
 
         TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
-        args->treeRoot = outputNode;
+        args->treeRootEffect = outputNode->getEffectInstance();
         args->time = time;
         args->view = view;
 
@@ -2158,7 +2158,7 @@ public:
     static void createRenderViewerObject(RenderViewerProcessFunctorArgs* inArgs)
     {
         TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
-        args->treeRoot = inArgs->viewerProcessNode;
+        args->treeRootEffect = inArgs->viewerProcessNode->getEffectInstance();
         args->time = inArgs->time;
         args->view = inArgs->view;
 
@@ -3253,7 +3253,6 @@ public:
             } else {
                 bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
                 bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
-                processArgs[0] = processArgs[1];
             }
 
             framesContainer->frames.push_back(bufferObject);

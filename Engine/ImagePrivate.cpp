@@ -29,22 +29,9 @@
 NATRON_NAMESPACE_ENTER;
 
 void
-ImagePrivate::initTileAndFetchFromCache(int tx, int ty)
+ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &tile)
 {
     CachePtr cache = appPTR->getCache();
-
-    TileCoord coord = {tx, ty};
-    assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
-
-    // This tile was already initialized.
-    {
-        TileMap::const_iterator found = tiles.find(coord);
-        if (found != tiles.end()) {
-            assert(found->second.perChannelTile.size() > 0);
-            return;
-        }
-    }
-    Image::Tile& tile = tiles[coord];
 
     const std::string& planeID = layer.getPlaneID();
 
@@ -71,10 +58,10 @@ ImagePrivate::initTileAndFetchFromCache(int tx, int ty)
         case eImageBufferLayoutMonoChannelTiled:
             assert(tileSizeX != 0 && tileSizeY != 0);
             // The tile bounds may not necessarily be a square if we are on the edge.
-            tile.tileBounds.x1 = std::max(tx, originalBounds.x1);
-            tile.tileBounds.y1 = std::max(ty, originalBounds.y1);
-            tile.tileBounds.x2 = std::min(tx + tileSizeX, originalBounds.x2);
-            tile.tileBounds.y2 = std::min(ty + tileSizeY, originalBounds.y2);
+            tile.tileBounds.x1 = std::max(coord.tx, originalBounds.x1);
+            tile.tileBounds.y1 = std::max(coord.ty, originalBounds.y1);
+            tile.tileBounds.x2 = std::min(coord.tx + tileSizeX, originalBounds.x2);
+            tile.tileBounds.y2 = std::min(coord.ty + tileSizeY, originalBounds.y2);
             break;
         case eImageBufferLayoutRGBACoplanarFullRect:
         case eImageBufferLayoutRGBAPackedFullRect:
@@ -597,9 +584,6 @@ ImagePrivate::copyUntiledImageToTiledImage(const Image& fromImage, const Image::
     const StorageModeEnum fromStorage = fromImage.getStorageMode();
     const StorageModeEnum toStorage = firstTile.perChannelTile[0].buffer->getStorageMode();
 
-
-    int tileSizeX,tileSizeY;
-    Cache::getTileSizePx(firstTile.perChannelTile[0].buffer->getBitDepth(), &tileSizeX, &tileSizeY);
     assert(tilesRect.width() % tileSizeX == 0 && tilesRect.height() % tileSizeY == 0);
 
 
@@ -725,15 +709,13 @@ ImagePrivate::copyTiledImageToUntiledImage(const Image& fromImage, const Image::
     const StorageModeEnum toStorage = firstTile.perChannelTile[0].buffer->getStorageMode();
     Image::CopyPixelsArgs argsCpy = args;
 
-    int tileSizeX,tileSizeY;
-    Cache::getTileSizePx(firstTile.perChannelTile[0].buffer->getBitDepth(), &tileSizeX, &tileSizeY);
-    assert(tilesRect.width() % tileSizeX == 0 && tilesRect.height() % tileSizeY == 0);
+    assert(tilesRect.width() % fromImage._imp->tileSizeX == 0 && tilesRect.height() % fromImage._imp->tileSizeY == 0);
 
 
     std::vector<TileCoord> tileIndices;
     // Copy each tile individually
-    for (int ty = tilesRect.y1; ty < tilesRect.y2; ty += tileSizeY) {
-        for (int tx = tilesRect.x1; tx < tilesRect.x2; tx += tileSizeX) {
+    for (int ty = tilesRect.y1; ty < tilesRect.y2; ty += fromImage._imp->tileSizeY) {
+        for (int tx = tilesRect.x1; tx < tilesRect.x2; tx += fromImage._imp->tileSizeX) {
             TileCoord c = {tx, ty};
             tileIndices.push_back(c);
         } // for all tiles horizontally

@@ -122,6 +122,37 @@ struct MultiThreadPrivate
 
 NATRON_NAMESPACE_ANONYMOUS_ENTER
 
+static void copyOFXRenderTLS(const EffectInstancePtr& effect,
+                             QThread* spawnerThread,
+                             boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> &frameViewSetter,
+                             boost::scoped_ptr<RenderActionArgsSetter_RAII> &renderActionData)
+{
+    EffectInstanceTLSDataPtr tlsSpawnerThread = effect->getTLSObjectForThread(spawnerThread);
+    EffectInstanceTLSDataPtr tlsSpawnedThread = effect->getOrCreateTLSObject();
+    if (!tlsSpawnerThread || !tlsSpawnedThread) {
+        return;
+    }
+
+    // Copy the request: this will enable threads from the multi-thread suite to
+    // correctly know that they are in an action on a render thread
+    FrameViewRequestPtr request = tlsSpawnerThread->getCurrentFrameViewRequest();
+    if (request) {
+        frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(effect, request));
+    }
+
+    // Copy the current render action args: this will enable threads from the multi-thread suite to
+    // correctly know that they are in a render action.
+    TimeValue time;
+    ViewIdx view;
+    RenderScale scale;
+    RectI renderWindow;
+    std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
+    if (tlsSpawnerThread->getCurrentRenderActionArgs(&time, &view, &scale, &renderWindow, &outputPlanes)) {
+        renderActionData.reset(new RenderActionArgsSetter_RAII(tlsSpawnedThread, time, view, scale, renderWindow, outputPlanes));
+    }
+
+}
+
 // Using QtConcurrent doesn't work with The Foundry Furnace plug-ins because they expect fresh threads
 // to be created. As QtConcurrent's thread-pool recycles thread, it seems to make Furnace crash.
 // We think this is because Furnace must keep an internal thread-local state that becomes then dirty
@@ -146,11 +177,9 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
     // this thread doesn't have any TLS set.
     // However some functions in the OpenFX API might require it.
     boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
+    boost::scoped_ptr<RenderActionArgsSetter_RAII> renderActionData;
     if (spawnedThread != spawnerThread && effect) {
-        EffectInstanceTLSDataPtr tls = effect->getTLSObject();
-        if (tls) {
-            frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(effect, tls->getCurrentFrameViewRequest()));
-        }
+        copyOFXRenderTLS(effect, spawnerThread, frameViewSetter, renderActionData);
     }
 
     ActionRetCodeEnum ret = eActionStatusOK;
@@ -178,6 +207,7 @@ public:
                         unsigned int threadIndex,
                         unsigned int threadMax,
                         void *customArg,
+                        QThread* spawnerThread,
                         const EffectInstancePtr& effect,
                         ActionRetCodeEnum *stat)
     : QThread()
@@ -187,6 +217,7 @@ public:
     , _threadIndex(threadIndex)
     , _threadMax(threadMax)
     , _customArg(customArg)
+    , _spawnerThread(spawnerThread)
     , _effect(effect)
     , _stat(stat)
     {
@@ -201,17 +232,15 @@ private:
 
         _imp->pushThreadIndex(this, _threadIndex);
 
-        
         // If we launched the functor in a new thread,
         // this thread doesn't have any TLS set.
         // However some functions in the OpenFX API might require it.
         boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
+        boost::scoped_ptr<RenderActionArgsSetter_RAII> renderActionData;
         if (_effect) {
-            EffectInstanceTLSDataPtr tls = _effect->getTLSObject();
-            if (tls) {
-                frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(_effect, tls->getCurrentFrameViewRequest()));
-            }
+            copyOFXRenderTLS(_effect, _spawnerThread, frameViewSetter, renderActionData);
         }
+
 
         assert(*_stat == eActionStatusFailed);
         try {
@@ -232,6 +261,7 @@ private:
     unsigned int _threadIndex;
     unsigned int _threadMax;
     void *_customArg;
+    QThread* _spawnerThread;
     EffectInstancePtr _effect;
     ActionRetCodeEnum *_stat;
 };
@@ -350,7 +380,7 @@ MultiThread::launchThreads(ThreadFunctor func, unsigned int nThreads, void *cust
             // at most maxConcurrentThread should be running at the same time
             QVector<NonThreadPoolThread*> threads(nThreads);
             for (unsigned int i = 0; i < nThreads; ++i) {
-                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, customArg, effect, &status[i]);
+                threads[i] = new NonThreadPoolThread(imp, func, i, nThreads, customArg, spawnerThread, effect, &status[i]);
             }
             unsigned int i = 0; // index of next thread to launch
             unsigned int running = 0; // number of running threads

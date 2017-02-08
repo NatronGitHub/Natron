@@ -92,10 +92,8 @@ TLSHolder<T>::cleanupPerThreadData(const QThread* curThread) const
 
 template <typename T>
 boost::shared_ptr<T>
-TLSHolder<T>::getTLSData() const
+TLSHolder<T>::getTLSDataForThread(QThread* curThread) const
 {
-    QThread* curThread  = QThread::currentThread();
-
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
     boost::shared_ptr<T> ret;
 #ifndef NATRON_TLS_DISABLE_COPY
@@ -116,6 +114,14 @@ TLSHolder<T>::getTLSData() const
     }
 
     return ret;
+}
+
+template <typename T>
+boost::shared_ptr<T>
+TLSHolder<T>::getTLSData() const
+{
+    QThread* curThread  = QThread::currentThread();
+    return getTLSDataForThread(curThread);
 }
 
 template <typename T>

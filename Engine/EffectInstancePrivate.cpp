@@ -279,7 +279,7 @@ EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& 
 
             // If this image is requested multiple times , do not render it on OpenGL since we do not use the cache.
             if (*renderBackend == eRenderBackendTypeOpenGL) {
-                if (requestPassData->getListeners().size() > 1) {
+                if (requestPassData->getNumListeners() > 1) {
                     *renderBackend = eRenderBackendTypeCPU;
                 }
             }
@@ -324,8 +324,8 @@ EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& 
     }
 
     if (!retSet) {
-        NodePtr treeRoot = _publicInterface->getCurrentRender()->getTreeRoot();
-        if (treeRoot->getEffectInstance().get() == _publicInterface)  {
+        EffectInstancePtr treeRoot = _publicInterface->getCurrentRender()->getTreeRootRenderClone();
+        if (treeRoot.get() == _publicInterface)  {
             // Always cache the root node because a subsequent render may ask for it
             ret = eCacheAccessModeReadWrite;
             retSet = true;
@@ -334,7 +334,7 @@ EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& 
 
     if (!retSet) {
         const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
-        const int requestsCount = requestPassData->getListeners().size();
+        const int requestsCount = requestPassData->getNumListeners();
 
         bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated,  requestsCount);
         if (useCache) {

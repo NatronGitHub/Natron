@@ -165,15 +165,9 @@ public:
 
     }
 
-    void setData(ImagePrivate* imp)
+    void setData(const std::vector<TileCoord> &tileIndices, ImagePrivate* imp)
     {
-        // Initialize each tile
-        for (int ty = imp->boundsRoundedToTile.y1; ty < imp->boundsRoundedToTile.y2; ty += imp->tileSizeY) {
-            for (int tx = imp->boundsRoundedToTile.x1; tx < imp->boundsRoundedToTile.x2; tx += imp->tileSizeX) {
-                TileCoord c = {tx, ty};
-                _tileIndices.push_back(c);
-            }
-        }
+        _tileIndices = tileIndices;
         _imp = imp;
     }
 
@@ -190,8 +184,13 @@ public:
         ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _tileIndices.size(), &fromIndex, &toIndex);
         for (int i = fromIndex; i < toIndex; ++i) {
             const TileCoord& c = _tileIndices[i];
+            TileMap::iterator found = _imp->tiles.find(c);
+            if (found == _imp->tiles.end()) {
+                assert(false);
+                continue;
+            }
             try {
-                _imp->initTileAndFetchFromCache(c.tx, c.ty);
+                _imp->initTileAndFetchFromCache(c, found->second);
             } catch (...) {
                 return eActionStatusFailed;
             }
@@ -279,7 +278,7 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
             break;
     }
 
-
+    assert(boundsRoundedToTile.width() % tileSizeX == 0 && boundsRoundedToTile.height() % tileSizeY == 0);
     if (args.externalBuffer) {
         initFromExternalBuffer(args);
     } else {
@@ -292,17 +291,41 @@ ImagePrivate::initTiles()
 {
     if (tileSizeX == boundsRoundedToTile.width() && tileSizeY == boundsRoundedToTile.height()) {
         // Single tile
-        initTileAndFetchFromCache(0, 0);
+        TileCoord c = {0, 0};
+        initTileAndFetchFromCache(c, tiles[c]);
     } else {
-#ifdef NATRON_IMAGE_SEQUENTIAL_INIT
-        for (int ty = imp->boundsRoundedToTile.y1; ty < imp->boundsRoundedToTile.y2; ty += tileSizeY) {
-            for (int tx = imp->boundsRoundedToTile.x1; tx < imp->boundsRoundedToTile.x2; tx += tileSizeX) {
-                initTileAndFetchFromCache(tx, ty);
+
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+        std::vector<TileCoord> tileIndices;
+#endif
+        // Initialize each tile
+        for (int ty = boundsRoundedToTile.y1; ty < boundsRoundedToTile.y2; ty += tileSizeY) {
+            for (int tx = boundsRoundedToTile.x1; tx < boundsRoundedToTile.x2; tx += tileSizeX) {
+                TileCoord c = {tx, ty};
+                assert(tx % tileSizeX == 0 && ty % tileSizeY == 0);
+
+                // This tile was already initialized.
+                {
+                    TileMap::const_iterator found = tiles.find(c);
+                    if (found != tiles.end()) {
+                        assert(found->second.perChannelTile.size() > 0);
+                        continue;
+                    }
+                }
+                Image::Tile& tile = tiles[c];
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
+                tileIndices.push_back(c);
+                (void)tile;
+#else
+                initTileAndFetchFromCache(c, tile);
+#endif
             }
         }
-#else
+
+
+#ifndef NATRON_IMAGE_SEQUENTIAL_INIT
         TileFetcherProcessor processor(renderClone);
-        processor.setData(this);
+        processor.setData(tileIndices, this);
         ActionRetCodeEnum stat = processor.launchThreads();
         if (stat == eActionStatusFailed) {
             throw std::bad_alloc();
@@ -874,7 +897,7 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     //find bottom
     RectI bboxX = bboxM;
     RectI bboxA = bboxX;
-    bboxA.y2 = bboxX.y1;
+    bboxA.y2 = bboxA.y1;
     for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
         bool hasRenderedTileOnLine = false;
         for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
@@ -895,19 +918,15 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     }
     if ( !bboxA.isNull() ) { // empty boxes should not be pushed
         // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        bboxA.intersect(roi, &bboxA);
-        rectsToRender->push_back(bboxA);
-    }
-
-    if (bboxX.isNull()) {
-        // There may be nothing else to process.
-        return;
+        RectI bboxAIntersected;
+        bboxA.intersect(roi, &bboxAIntersected);
+        rectsToRender->push_back(bboxAIntersected);
     }
 
     // Now, find the "B" rectangle
     //find top
     RectI bboxB = bboxX;
-    bboxB.y1 = bboxX.y2;
+    bboxB.y1 = bboxB.y2;
 
     for (int y = bboxX.y2 - tileSizeY; y >= bboxX.y1; y -= tileSizeY) {
         bool hasRenderedTileOnLine = false;
@@ -930,13 +949,14 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
 
     if ( !bboxB.isNull() ) { // empty boxes should not be pushed
         // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        bboxB.intersect(roi, &bboxB);
-        rectsToRender->push_back(bboxB);
+        RectI bboxBIntersected;
+        bboxB.intersect(roi, &bboxBIntersected);
+        rectsToRender->push_back(bboxBIntersected);
     }
 
     //find left
     RectI bboxC = bboxX;
-    bboxC.x2 = bboxX.x1;
+    bboxC.x2 = bboxC.x1;
     if ( bboxX.y1 < bboxX.y2 ) {
         for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
             bool hasRenderedTileOnCol = false;
@@ -960,13 +980,14 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     }
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
         // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        bboxC.intersect(roi, &bboxC);
-        rectsToRender->push_back(bboxC);
+        RectI bboxCIntersected;
+        bboxC.intersect(roi, &bboxCIntersected);
+        rectsToRender->push_back(bboxCIntersected);
     }
 
     //find right
     RectI bboxD = bboxX;
-    bboxD.x1 = bboxX.x2;
+    bboxD.x1 = bboxD.x2;
     if ( bboxX.y1 < bboxX.y2 ) {
         for (int x = bboxX.x2 - tileSizeX; x >= bboxX.x1; x -= tileSizeX) {
             bool hasRenderedTileOnCol = false;
@@ -989,8 +1010,9 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     }
     if ( !bboxD.isNull() ) { // empty boxes should not be pushed
         // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        bboxD.intersect(roi, &bboxD);
-        rectsToRender->push_back(bboxD);
+        RectI bboxDIntersected;
+        bboxD.intersect(roi, &bboxDIntersected);
+        rectsToRender->push_back(bboxDIntersected);
     }
 
     assert( bboxA.bottom() == bboxM.bottom() );
@@ -1018,8 +1040,9 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
 
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
         // Ensure the bbox lies in the RoI since we rounded to tile size earlier
-        bboxX.intersect(roi, &bboxX);
-        rectsToRender->push_back(bboxX);
+        RectI bboxXIntersected;
+        bboxX.intersect(roi, &bboxXIntersected);
+        rectsToRender->push_back(bboxXIntersected);
     }
 
 } // getMinimalRectsToRenderFromTilesState

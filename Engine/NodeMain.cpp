@@ -163,6 +163,7 @@ Node::load(const CreateNodeArgsPtr& args)
     }
     _imp->effect = createFunc(thisShared);
     assert(_imp->effect);
+    assert(!_imp->effect->isRenderClone());
     if (!_imp->effect) {
         throw std::runtime_error(tr("Could not create instance of %1").arg(QString::fromUtf8(getPluginID().c_str())).toStdString());
     }

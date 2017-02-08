@@ -180,11 +180,6 @@ private:
 /**
  * @brief Use this class if you need to hold TLS data on an object.
  * @param T is the data type held in the thread local storage.
- * @param multipleInstance If true, then the TLS object will be mapped against this object
- * so that there can be multiple instance of it in the global TLS. Otherwise only
- * a single instance of the TLS object will be present.
- *
- *
  **/
 template <typename T>
 class TLSHolder
@@ -206,10 +201,14 @@ public:
 
     virtual ~TLSHolder() {}
 
-    // Even though these data are unique to the holder thread, we need a Mutex when copying one thread data
-    // over another one.
-    // Each data member of sub-classes must be protected by this mutex in getters/setters
+    // Returns tls data for the current thread
     boost::shared_ptr<T> getTLSData() const;
+
+    // Warning this does not hold any promise on the thread safety of the returned object
+    // if the thread in parameter is different than the current thread.
+    boost::shared_ptr<T> getTLSDataForThread(QThread* thread) const;
+
+    // Get or create tls data for the current thread
     boost::shared_ptr<T> getOrCreateTLSData() const;
 
 private:

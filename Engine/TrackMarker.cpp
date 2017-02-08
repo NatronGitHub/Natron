@@ -693,7 +693,7 @@ TrackMarker::getMarkerImage(TimeValue time,
 
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
-        args->treeRoot = input;
+        args->treeRootEffect = input->getEffectInstance();
         args->time = time;
         args->view = ViewIdx(0);
 

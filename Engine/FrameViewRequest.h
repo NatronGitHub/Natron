@@ -48,12 +48,6 @@
 
 NATRON_NAMESPACE_ENTER;
 
-// This controls how many frames a plug-in can pre-fetch (per view and per input)
-// This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
-// do not all stick altogether in memory
-#define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 4
-
-
 // If 2 image times differ by lesser than this epsilon they are assumed the same.
 #define NATRON_IMAGE_TIME_EQUALITY_EPS 1e-5
 #define NATRON_IMAGE_TIME_EQUALITY_DECIMALS 5
@@ -246,6 +240,10 @@ public:
      **/
     std::list<FrameViewRequestPtr> getListeners() const;
 
+    /**
+     * @brief Same as getListeners().size()
+     **/
+    std::size_t getNumListeners() const;
 
     /**
      * @brief  When true, a subsequent render of this frame/view will not be allowed to read the cache

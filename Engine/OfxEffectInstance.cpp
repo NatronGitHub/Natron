@@ -456,6 +456,12 @@ OfxEffectInstance::getTLSObject() const
 }
 
 EffectInstanceTLSDataPtr
+OfxEffectInstance::getTLSObjectForThread(QThread* thread) const
+{
+    return _imp->common->tlsData->getTLSDataForThread(thread);
+}
+
+EffectInstanceTLSDataPtr
 OfxEffectInstance::getOrCreateTLSObject() const
 {
     return _imp->common->tlsData->getOrCreateTLSData();

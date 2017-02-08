@@ -126,10 +126,7 @@ struct DefaultKnobs
 
     KnobStringWPtr nodeLabelKnob, ofxSubLabelKnob;
     KnobBoolWPtr previewEnabledKnob;
-    KnobBoolWPtr disableNodeKnob;
     KnobChoiceWPtr openglRenderingEnabledKnob;
-    KnobIntWPtr lifeTimeKnob;
-    KnobBoolWPtr enableLifeTimeKnob;
     KnobButtonWPtr keepInAnimationModuleKnob;
     KnobStringWPtr knobChangedCallback;
     KnobStringWPtr inputChangedCallback;
@@ -162,6 +159,14 @@ struct DefaultKnobs
     {
 
     }
+
+};
+
+struct RenderDefaultKnobs
+{
+    KnobBoolWPtr disableNodeKnob;
+    KnobIntWPtr lifeTimeKnob;
+    KnobBoolWPtr enableLifeTimeKnob;
 
 };
 
@@ -285,7 +290,7 @@ struct RenderCloneData
     std::vector<EffectInstancePtr> inputs;
 
     // This is the current frame/view being requested or rendered by the main render thread.
-    std::list<FrameViewRequestWPtr> currentFrameView;
+    FrameViewRequestWPtr currentFrameView;
 
     // Contains data for all frame/view pair that are going to be computed
     // for this frame/view pair with the overall RoI to avoid rendering several times with this node.
@@ -317,7 +322,7 @@ struct RenderCloneData
 
     RenderCloneData()
     : lock()
-    , instanceSafeRenderMutex(QMutex::Recursive)
+    , instanceSafeRenderMutex()
     , inputs()
     , currentFrameView()
     , frames()
@@ -377,6 +382,9 @@ public:
 
     // Default implementation knobs. They are shared with the main instance implementation.
     boost::shared_ptr<DefaultKnobs> defKnobs;
+
+    // Knobs specific to each render clone
+    RenderDefaultKnobs renderKnobs;
 
 public:
 
@@ -438,6 +446,7 @@ public:
      * nodes.
      **/
     ActionRetCodeEnum handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
+                                              const RequestPassSharedDataPtr& requestPassSharedData,
                                               unsigned int mipMapLevel,
                                               const RectD& roiCanonical,
                                               std::map<int, std::list<ImagePlaneDesc> >* neededComp,
@@ -451,12 +460,14 @@ public:
                                            const RenderScale& combinedScale,
                                            const RectD& canonicalRoi,
                                            const FrameViewRequestPtr& requestData,
+                                           const RequestPassSharedDataPtr& requestPassSharedData,
                                            bool *isIdentity);
 
     /**
      * @brief Helper function in the implementation of renderRoI to handle effects that can concatenate (distortion etc...)
      **/
-    ActionRetCodeEnum handleConcatenation(const FrameViewRequestPtr& requestData,
+    ActionRetCodeEnum handleConcatenation(const RequestPassSharedDataPtr& requestPassSharedData,
+                                          const FrameViewRequestPtr& requestData,
                                           const FrameViewRequestPtr& requester,
                                           int inputNbInRequester,
                                           const RenderScale& renderScale,
@@ -476,11 +487,12 @@ public:
      **/
     CacheAccessModeEnum shouldRenderUseCache(const FrameViewRequestPtr& requestPassData);
 
-    ActionRetCodeEnum handleUpstreamFramesNeeded(const FrameViewRequestPtr& requestPassData,
-                                                        const RenderScale& combinedScale,
-                                                        unsigned int mipMapLevel,
-                                                        const RectD& roi,
-                                                        const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
+    ActionRetCodeEnum handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                 const FrameViewRequestPtr& requestPassData,
+                                                 const RenderScale& combinedScale,
+                                                 unsigned int mipMapLevel,
+                                                 const RectD& roi,
+                                                 const std::map<int, std::list<ImagePlaneDesc> >& neededInputLayers);
 
 
     bool canSplitRenderWindowWithIdentityRectangles(const FrameViewRequestPtr& requestPassData,

@@ -102,6 +102,7 @@ NATRON_NAMESPACE_ENTER;
  **/
 ActionRetCodeEnum
 EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPtr& requestData,
+                                                        const RequestPassSharedDataPtr& requestPassSharedData,
                                                         unsigned int mipMapLevel,
                                                         const RectD& roiCanonical,
                                                         std::map<int, std::list<ImagePlaneDesc> >* inputLayersNeeded,
@@ -169,7 +170,7 @@ EffectInstance::Implementation::handlePassThroughPlanes(const FrameViewRequestPt
                     *isPassThrough = true;
 
                     FrameViewRequestPtr createdRequest;
-                    return ptInput->requestRender(passThroughTime, passThroughView, mipMapLevel, plane, roiCanonical, passThroughInputNb, requestData, &createdRequest);
+                    return ptInput->requestRender(passThroughTime, passThroughView, mipMapLevel, plane, roiCanonical, passThroughInputNb, requestData, requestPassSharedData, &createdRequest);
                 }
             }
         }
@@ -186,6 +187,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
                                                      const RenderScale& combinedScale,
                                                      const RectD& canonicalRoi,
                                                      const FrameViewRequestPtr& requestData,
+                                                     const RequestPassSharedDataPtr& requestPassSharedData,
                                                      bool *isIdentity)
 {
 
@@ -224,7 +226,7 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, &createdRequest);
+        return _publicInterface->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, -1, requestData, requestPassSharedData, &createdRequest);
 
     } else {
         assert(inputNbIdentity != -1);
@@ -234,13 +236,14 @@ EffectInstance::Implementation::handleIdentityEffect(double par,
         }
 
         FrameViewRequestPtr createdRequest;
-        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, &createdRequest);
+        return identityInput->requestRender(inputTimeIdentity, inputIdentityView, requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, inputNbIdentity, requestData, requestPassSharedData, &createdRequest);
 
     }
 } // EffectInstance::Implementation::handleIdentityEffect
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleConcatenation(const FrameViewRequestPtr& requestData,
+EffectInstance::Implementation::handleConcatenation(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                    const FrameViewRequestPtr& requestData,
                                                     const FrameViewRequestPtr& requester,
                                                     int inputNbInRequester,
                                                     const RenderScale& renderScale,
@@ -310,7 +313,7 @@ EffectInstance::Implementation::handleConcatenation(const FrameViewRequestPtr& r
     }
 
     FrameViewRequestPtr inputRequest;
-    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, &inputRequest);
+    distoInput->requestRender(requestData->getTime(), requestData->getView(), requestData->getMipMapLevel(), requestData->getPlaneDesc(), canonicalRoi, disto->inputNbToDistort, requestData, requestPassSharedData, &inputRequest);
 
     // Create a distorsion functions stack
     Distortion2DStackPtr distoStack(new Distortion2DStack);
@@ -806,15 +809,21 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
     // we waited.
     bool hasReleasedThread = false;
     if (safety == eRenderSafetyInstanceSafe) {
-        QThreadPool::globalInstance()->releaseThread();
+        if (isRunningInThreadPoolThread()) {
+            QThreadPool::globalInstance()->releaseThread();
+            hasReleasedThread = true;
+        }
         locker.reset( new QMutexLocker( &renderData->instanceSafeRenderMutex ) );
-        hasReleasedThread = true;
+
     } else if (safety == eRenderSafetyUnsafe) {
         PluginPtr p = _publicInterface->getNode()->getPlugin();
         assert(p);
-        QThreadPool::globalInstance()->releaseThread();
+        if (isRunningInThreadPoolThread()) {
+            QThreadPool::globalInstance()->releaseThread();
+            hasReleasedThread = true;
+        }
         locker.reset( new QMutexLocker( p->getPluginLock().get() ) );
-        hasReleasedThread = true;
+
     } else {
         // no need to lock
         Q_UNUSED(locker);
@@ -879,7 +888,8 @@ EffectInstance::Implementation::launchRenderForSafetyAndBackend(const FrameViewR
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewRequestPtr& requestPassData,
+EffectInstance::Implementation::handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                           const FrameViewRequestPtr& requestPassData,
                                                            const RenderScale& combinedScale,
                                                            unsigned int mipMapLevel,
                                                            const RectD& roiCanonical,
@@ -993,7 +1003,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
                         }
                         for (std::list<ImagePlaneDesc>::const_iterator planeIt = inputPlanesNeeded->begin(); planeIt != inputPlanesNeeded->end(); ++planeIt) {
                             FrameViewRequestPtr createdRequest;
-                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, &createdRequest);
+                            ActionRetCodeEnum stat = inputEffect->requestRender(inputTime, viewIt->first, mipMapLevel, *planeIt, inputRoI, inputNb, requestPassData, requestPassSharedData, &createdRequest);
                             if (isFailureRetCode(stat)) {
                                 return stat;
                             }
@@ -1020,12 +1030,12 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
 class AddDependencyFreeRender_RAII
 {
     FrameViewRequestPtr _requestData;
-    TreeRenderPtr _render;
+    RequestPassSharedDataPtr _requestPassSharedData;
 public:
 
-    AddDependencyFreeRender_RAII(const TreeRenderPtr& render, const FrameViewRequestPtr& requestData)
+    AddDependencyFreeRender_RAII(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
     : _requestData(requestData)
-    , _render(render)
+    , _requestPassSharedData(requestPassSharedData)
     {
 
     }
@@ -1035,7 +1045,7 @@ public:
         // If this render has no dependencies, add it to the things to render
 
         if (_requestData->getNumDependencies() == 0) {
-            _render->addDependencyFreeRender(_requestData);
+            _requestPassSharedData->addDependencyFreeRender(_requestData);
         }
     }
 };
@@ -1048,6 +1058,7 @@ EffectInstance::requestRender(TimeValue time,
                               const RectD & roiCanonical,
                               int inputNbInRequester,
                               const FrameViewRequestPtr& requester,
+                              const RequestPassSharedDataPtr& requestPassSharedData,
                               FrameViewRequestPtr* createdRequest)
 {
     TreeRenderPtr render = getCurrentRender();
@@ -1069,9 +1080,9 @@ EffectInstance::requestRender(TimeValue time,
     }
 
     // When exiting this function, add the request to the dependency free list if it has no dependencies.
-    AddDependencyFreeRender_RAII addDependencyFreeRender(render, requestData);
+    AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, requestData);
 
-    render->addTaskToRender(requestData);
+    requestPassSharedData->addTaskToRender(requestData);
 
     // Add this frame/view as depdency of the requester
     if (requester) {
@@ -1125,7 +1136,7 @@ EffectInstance::requestRender(TimeValue time,
     std::map<int, std::list<ImagePlaneDesc> > inputLayersNeeded;
     {
         bool isPassThrough;
-        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, mappedMipMapLevel, roiCanonical, &inputLayersNeeded, &isPassThrough);
+        ActionRetCodeEnum upstreamRetCode = _imp->handlePassThroughPlanes(requestData, requestPassSharedData, mappedMipMapLevel, roiCanonical, &inputLayersNeeded, &isPassThrough);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1143,7 +1154,7 @@ EffectInstance::requestRender(TimeValue time,
     const double par = getAspectRatio(-1);
     {
         bool isIdentity;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, rod, mappedCombinedScale, roiCanonical, requestData, &isIdentity);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleIdentityEffect(par, rod, mappedCombinedScale, roiCanonical, requestData, requestPassSharedData, &isIdentity);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1158,7 +1169,7 @@ EffectInstance::requestRender(TimeValue time,
     {
 
         bool concatenated;
-        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestData, requester, inputNbInRequester, mappedCombinedScale, roiCanonical, &concatenated);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleConcatenation(requestPassSharedData, requestData, requester, inputNbInRequester, mappedCombinedScale, roiCanonical, &concatenated);
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
         }
@@ -1252,7 +1263,7 @@ EffectInstance::requestRender(TimeValue time,
         requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
     } else {
         requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusNotRendered);
-        ActionRetCodeEnum upstreamRetCode = _imp->handleUpstreamFramesNeeded(requestData, mappedCombinedScale, mappedMipMapLevel, roundedCanonicalRoI, inputLayersNeeded);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleUpstreamFramesNeeded(requestPassSharedData, requestData, mappedCombinedScale, mappedMipMapLevel, roundedCanonicalRoI, inputLayersNeeded);
         
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;

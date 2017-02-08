@@ -999,6 +999,7 @@ public:
     virtual ViewIdx getCurrentView_TLS() const OVERRIDE;
 
     virtual EffectInstanceTLSDataPtr getTLSObject() const;
+    virtual EffectInstanceTLSDataPtr getTLSObjectForThread(QThread* thread) const;
     virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const;
 
 #ifdef DEBUG
@@ -1214,6 +1215,7 @@ public:
                                     const RectD & roiCanonical,
                                     int inputNbInRequester,
                                     const FrameViewRequestPtr& requester,
+                                    const RequestPassSharedDataPtr& requestPassSharedData,
                                     FrameViewRequestPtr* createdRequest);
 
     /**

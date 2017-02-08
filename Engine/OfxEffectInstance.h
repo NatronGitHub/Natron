@@ -254,6 +254,7 @@ public:
     virtual void onInteractViewportSelectionUpdated(const RectD& rectangle, bool onRelease) OVERRIDE FINAL;
     virtual void setInteractColourPicker(const OfxRGBAColourD& color, bool setColor, bool hasColor) OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getTLSObject() const OVERRIDE FINAL;
+    virtual EffectInstanceTLSDataPtr getTLSObjectForThread(QThread* thread) const OVERRIDE FINAL;
     virtual EffectInstanceTLSDataPtr getOrCreateTLSObject() const OVERRIDE FINAL;
 #ifdef DEBUG
     virtual void checkCanSetValueAndWarn() OVERRIDE FINAL;

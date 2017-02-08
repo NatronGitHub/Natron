@@ -398,7 +398,7 @@ TrackerFrameAccessor::GetImage(int /*clip*/,
 
     TreeRender::CtorArgsPtr args(new TreeRender::CtorArgs);
     {
-        args->treeRoot = _imp->trackerInput;
+        args->treeRootEffect = _imp->trackerInput->getEffectInstance();
         args->time = TimeValue(frame);
         args->view = ViewIdx(0);
 

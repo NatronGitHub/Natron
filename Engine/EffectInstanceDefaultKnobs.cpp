@@ -362,7 +362,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         param->setHintToolTip( tr("When disabled, this node acts as a pass through.") );
         settingsPage->addKnob(param);
 
-        _imp->defKnobs->disableNodeKnob = param;
+        _imp->renderKnobs.disableNodeKnob = param;
     }
 
     {
@@ -389,7 +389,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
         param->setHintToolTip( tr("This is the frame range during which the node will be active if Enable Lifetime is checked") );
         settingsPage->addKnob(param);
 
-        _imp->defKnobs->lifeTimeKnob = param;
+        _imp->renderKnobs.lifeTimeKnob = param;
     }
     {
         KnobBoolPtr param = createKnob<KnobBool>(kEnableLifeTimeNodeKnobName);
@@ -402,7 +402,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
                                   "Outside of this frame range, it behaves as if the Disable parameter is checked") );
         settingsPage->addKnob(param);
 
-        _imp->defKnobs->enableLifeTimeKnob = param;
+        _imp->renderKnobs.enableLifeTimeKnob = param;
     }
 
     PluginOpenGLRenderSupport glSupport = ePluginOpenGLRenderSupportNone;
@@ -1063,14 +1063,14 @@ EffectInstance::getOFXSubLabelKnob() const
 KnobBoolPtr
 EffectInstance::getDisabledKnob() const
 {
-    return _imp->defKnobs->disableNodeKnob.lock();
+    return _imp->renderKnobs.disableNodeKnob.lock();
 }
 
 bool
 EffectInstance::isLifetimeActivated(int *firstFrame,
                           int *lastFrame) const
 {
-    KnobBoolPtr enableLifetimeKnob = _imp->defKnobs->enableLifeTimeKnob.lock();
+    KnobBoolPtr enableLifetimeKnob = _imp->renderKnobs.enableLifeTimeKnob.lock();
 
     if (!enableLifetimeKnob) {
         return false;
@@ -1078,7 +1078,7 @@ EffectInstance::isLifetimeActivated(int *firstFrame,
     if ( !enableLifetimeKnob->getValue() ) {
         return false;
     }
-    KnobIntPtr lifetimeKnob = _imp->defKnobs->lifeTimeKnob.lock();
+    KnobIntPtr lifetimeKnob = _imp->renderKnobs.lifeTimeKnob.lock();
     *firstFrame = lifetimeKnob->getValue(DimIdx(0));
     *lastFrame = lifetimeKnob->getValue(DimIdx(1));
 
@@ -1126,13 +1126,13 @@ EffectInstance::getProcessAllLayersKnob() const
 KnobBoolPtr
 EffectInstance::getLifeTimeEnabledKnob() const
 {
-    return _imp->defKnobs->enableLifeTimeKnob.lock();
+    return _imp->renderKnobs.enableLifeTimeKnob.lock();
 }
 
 KnobIntPtr
 EffectInstance::getLifeTimeKnob() const
 {
-    return _imp->defKnobs->lifeTimeKnob.lock();
+    return _imp->renderKnobs.lifeTimeKnob.lock();
 }
 
 
@@ -1152,7 +1152,7 @@ bool
 EffectInstance::isNodeDisabledForFrame(TimeValue time, ViewIdx view) const
 {
     // Check disabled knob
-    KnobBoolPtr b = _imp->defKnobs->disableNodeKnob.lock();
+    KnobBoolPtr b = _imp->renderKnobs.disableNodeKnob.lock();
     if (b && b->getValueAtTime(time, DimIdx(0), view)) {
         return true;
     }
@@ -1188,7 +1188,7 @@ bool
 EffectInstance::getDisabledKnobValue() const
 {
     // Check disabled knob
-    KnobBoolPtr b = _imp->defKnobs->disableNodeKnob.lock();
+    KnobBoolPtr b = _imp->renderKnobs.disableNodeKnob.lock();
     if (b && b->getValue()) {
         return true;
     }
@@ -1221,7 +1221,7 @@ EffectInstance::getDisabledKnobValue() const
 void
 EffectInstance::setNodeDisabled(bool disabled)
 {
-    KnobBoolPtr b = _imp->defKnobs->disableNodeKnob.lock();
+    KnobBoolPtr b = _imp->renderKnobs.disableNodeKnob.lock();
 
     if (b) {
         b->setValue(disabled);
@@ -1540,9 +1540,9 @@ EffectInstance::fetchRenderCloneKnobs()
     // For default knobs, since most of them are not used when rendering use the main instance ones instead.
     _imp->defKnobs = mainInstance->_imp->defKnobs;
 
-    _imp->defKnobs->disableNodeKnob = toKnobBool(getKnobByName(kDisableNodeKnobName));
-    _imp->defKnobs->lifeTimeKnob = toKnobInt(getKnobByName(kLifeTimeNodeKnobName));
-    _imp->defKnobs->enableLifeTimeKnob = toKnobBool(getKnobByName(kEnableLifeTimeNodeKnobName));
+    _imp->renderKnobs.disableNodeKnob = toKnobBool(getKnobByName(kDisableNodeKnobName));
+    _imp->renderKnobs.lifeTimeKnob = toKnobInt(getKnobByName(kLifeTimeNodeKnobName));
+    _imp->renderKnobs.enableLifeTimeKnob = toKnobBool(getKnobByName(kEnableLifeTimeNodeKnobName));
 }
 
 void
@@ -1719,8 +1719,8 @@ EffectInstance::handleDefaultKnobChanged(const KnobIPtr& what, ValueChangedReaso
             works.push_back(w);
             getApp()->getRenderQueue()->renderNonBlocking(works);
         }
-    } else if (what == _imp->defKnobs->disableNodeKnob.lock()) {
-        getNode()->s_disabledKnobToggled( _imp->defKnobs->disableNodeKnob.lock()->getValue() );
+    } else if (what == _imp->renderKnobs.disableNodeKnob.lock()) {
+        getNode()->s_disabledKnobToggled( _imp->renderKnobs.disableNodeKnob.lock()->getValue() );
     } else if ( what == _imp->defKnobs->nodeLabelKnob.lock() || what == _imp->defKnobs->ofxSubLabelKnob.lock() ) {
         getNode()->s_nodeExtraLabelChanged();
     } else if ( what == _imp->defKnobs->hideInputs.lock() ) {
