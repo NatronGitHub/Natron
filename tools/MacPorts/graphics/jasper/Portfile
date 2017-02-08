@@ -8,7 +8,7 @@ version         2.0.10
 categories      graphics
 platforms       darwin
 license         JasPer-2
-maintainers     jmr openmaintainer
+maintainers     {jmr @jmroot} openmaintainer
 description     Library for manipulating JPEG-2000 images
 
 long_description \

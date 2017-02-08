@@ -232,7 +232,7 @@ subport curl-ca-bundle {
 
     # Only try to fetch from the master site shortly after the port is updated, to guard against stealth updates.
     if {[clock seconds] - ${certdata_updated} < 604800} {
-        master_sites-append     http://hg.mozilla.org/mozilla-central/archive/${certdata_version}${extract.suffix}/${certdata_path}?dummy=:certdata
+        master_sites-append     https://hg.mozilla.org/mozilla-central/archive/${certdata_version}${extract.suffix}/${certdata_path}?dummy=:certdata
     } else {
         master_sites-append     macports_distfiles::certdata
     }
