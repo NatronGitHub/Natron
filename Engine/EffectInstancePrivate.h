@@ -407,6 +407,8 @@ public:
                                      const ImagePlaneDesc& plane,
                                      FrameViewRequestPtr* request);
 
+    void removeFrameViewRequest(const FrameViewRequestPtr& request);
+
     /**
      * @brief Set the results of the getFrameRange action for this render
      **/

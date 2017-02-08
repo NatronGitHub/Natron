@@ -345,6 +345,14 @@ public:
         // Default - NULL
         const RenderBackendTypeEnum* renderBackend;
 
+        // If the getImagePlane call is made during a render, this is the render window in pixel coordinates
+        // that was passed to render. If NULL, the render window is assumed to be the union of all requested regions
+        // on the requestData. If there's no request data, that means we are not during a render then the current render
+        // window is assumed to be the region of definition.
+        //
+        // Default - NULL
+        const RectI* currentRenderWindow;
+
         // A pointer to the request data of the frame requesting the image
         //
         // Default - NULL
@@ -370,7 +378,7 @@ public:
         GetImageInArgs();
 
         // Initialize the inArgs with the current render action args
-        GetImageInArgs(const FrameViewRequestPtr& requestPass, const RenderBackendTypeEnum* backend);
+        GetImageInArgs(const FrameViewRequestPtr& requestPass, const RectI* renderWindow, const RenderBackendTypeEnum* backend);
     };
 
     struct GetImageOutArgs
@@ -410,6 +418,12 @@ public:
     bool getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* outArgs) WARN_UNUSED_RETURN;
 
 private:
+
+    /**
+     * @brief In output the RoI in canonical coordinates is set to ask for on the input effect.
+     * @returns True if it could resolve the RoI, false otherwise in which case the caller should
+     * ask for the RoD.
+     **/
     bool resolveRoIForGetImage(const GetImageInArgs& inArgs,
                                TimeValue inputTime,
                                RectD* roiCanonical);

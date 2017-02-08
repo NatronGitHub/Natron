@@ -625,8 +625,9 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
     }
 
 
-
     // Is there a request that was filed with getFramesNeeded on this input at the given time/view ?
+    // There may be not as we do not create a FrameViewRequest for all frames needed by a plug-in
+    // e.g: Slitscan can ask for over 1000 frames in input.
     {
         EffectInstancePtr inputEffect = getInput(inArgs.inputNb);
         FrameViewRequestPtr inputRequestPass = inputEffect->_imp->getFrameViewRequest(inputTime, inArgs.inputView);
@@ -636,18 +637,40 @@ EffectInstance::resolveRoIForGetImage(const GetImageInArgs& inArgs,
         }
     }
     
-    
-    // This node did not request anything on the input in getFramesNeeded action: it did a raw call to fetchImage without advertising us.
-    //
-    // Either the user passed an optional bounds parameter or we have to compute the RoI using getRegionsOfInterest.
-    // We must call getRegionOfInterest on the time and view of the current action of this effect.
 
+    // We must call getRegionOfInterest on the time and view and the current render window of the current action of this effect.
     RenderScale currentScale = EffectInstance::Implementation::getCombinedScale(inArgs.requestData->getRenderMappedMipMapLevel(), getCurrentRender()->getProxyScale());
 
 
-    // We have to retrieve the time and view of the current action in the TLS since it was not passed in parameter.
-    RectD thisEffectRenderWindowCanonical = inArgs.requestData->getCurrentRoI();
+    // If we are during a render action, retrieve the current renderWindow
+    RectD thisEffectRenderWindowCanonical;
+    if (inArgs.currentRenderWindow) {
+        assert(inArgs.requestData);
+        double par = getAspectRatio(-1);
+        RectD rod;
+        {
+            GetRegionOfDefinitionResultsPtr results;
+            ActionRetCodeEnum stat = getRegionOfDefinition_public(inArgs.requestData->getTime(), currentScale, inArgs.requestData->getView(), &results);
+            if (isFailureRetCode(stat)) {
+                return false;
+            }
+            rod = results->getRoD();
+        }
+        inArgs.currentRenderWindow->toCanonical(currentScale, par, rod, &thisEffectRenderWindowCanonical);
+    }
 
+    // If we are not during a render action, we may be in an action called on a render thread and have a FrameViewRequest:
+    // we at least now the RoI asked on this image
+    if (thisEffectRenderWindowCanonical.isNull() && inArgs.requestData) {
+        thisEffectRenderWindowCanonical = inArgs.requestData->getCurrentRoI();
+    }
+
+
+    // If we still did not figure out the current render window so far, that means we are probably not on a render thread anyway so just
+    // return false and let getImagePlane ask for the RoD in input.
+    if (thisEffectRenderWindowCanonical.isNull()) {
+        return false;
+    }
 
     // Get the roi for the current render window
 
@@ -675,6 +698,7 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 , optionalBounds(0)
 , plane(0)
 , renderBackend(0)
+, currentRenderWindow(0)
 , requestData()
 , draftMode(false)
 , playback(false)
@@ -683,7 +707,7 @@ EffectInstance::GetImageInArgs::GetImageInArgs()
 
 }
 
-EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& requestPass, const RenderBackendTypeEnum* backend)
+EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& requestPass, const RectI* renderWindow, const RenderBackendTypeEnum* backend)
 : inputNb(0)
 , inputTime(0)
 , inputView(0)
@@ -692,6 +716,7 @@ EffectInstance::GetImageInArgs::GetImageInArgs(const FrameViewRequestPtr& reques
 , optionalBounds(0)
 , plane(0)
 , renderBackend(backend)
+, currentRenderWindow(renderWindow)
 , requestData(requestPass)
 , draftMode(false)
 , playback(false)

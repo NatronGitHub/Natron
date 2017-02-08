@@ -1629,7 +1629,7 @@ OfxEffectInstance::render(const RenderActionArgs& args)
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
 
 
-        RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale, outputPlanesMap);
+        RenderActionArgsSetter_RAII actionArgsTls(tls, args.time, args.view, args.renderScale, args.roi, outputPlanesMap);
         
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
         

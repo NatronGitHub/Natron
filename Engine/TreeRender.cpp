@@ -800,11 +800,15 @@ private:
 
     virtual void run() OVERRIDE FINAL
     {
-        ActionRetCodeEnum stat = _request->getRenderClone()->launchRender(_request);
+
+        EffectInstancePtr renderClone = _request->getRenderClone();
+        ActionRetCodeEnum stat = renderClone->launchRender(_request);
         if (isFailureRetCode(stat)) {
             QMutexLocker k(&_imp->stateMutex);
             _imp->state = stat;
         }
+
+
 
         QMutexLocker k(&_imp->dependencyFreeRendersMutex);
 
@@ -820,7 +824,7 @@ private:
         // For each frame/view that depend on this frame, remove it from the dependencies list.
         std::list<FrameViewRequestPtr> listeners = _request->getListeners();
         for (std::list<FrameViewRequestPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            (*it)->removeDependency(_request);
+            (*it)->markDependencyAsRendered(_request);
 
             // If the task has all its dependencies available, add it to the render queue.
             if ((*it)->getNumDependencies() == 0) {

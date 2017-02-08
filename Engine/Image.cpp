@@ -606,9 +606,10 @@ Image::getCachePolicy() const
 }
 
 void
-Image::getRestToRender(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
+Image::getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const
 {
-
+    *hasPendingResults = false;
+    *hasUnRenderedTile = false;
 
     for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
 
@@ -756,7 +757,7 @@ Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const Rec
     }
 
     // Search for rendered lines from top to bottom
-    for (int y = roiRoundedToTileSize.y2 - 1; y >= roiRoundedToTileSize.y1; y -= tileSizeY) {
+    for (int y = roiRoundedToTileSize.y2 - tileSizeY; y >= roiRoundedToTileSize.y1; y -= tileSizeY) {
 
         bool hasTileUnrenderedOnLine = false;
         for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
@@ -805,7 +806,7 @@ Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const Rec
     }
 
     // Search for rendered columns from right to left
-    for (int x = roiRoundedToTileSize.x2 - 1; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
+    for (int x = roiRoundedToTileSize.x2 - tileSizeX; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
 
         bool hasTileUnrenderedOnCol = false;
         for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
@@ -886,12 +887,19 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
         if (hasRenderedTileOnLine) {
             break;
         } else {
-            ++bboxX.y1;
+            bboxX.y1 += tileSizeY;
             bboxA.y2 = bboxX.y1;
         }
     }
     if ( !bboxA.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        bboxA.intersect(roi, &bboxA);
         rectsToRender->push_back(bboxA);
+    }
+
+    if (bboxX.isNull()) {
+        // There may be nothing else to process.
+        return;
     }
 
     // Now, find the "B" rectangle
@@ -899,7 +907,7 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     RectI bboxB = bboxX;
     bboxB.y1 = bboxX.y2;
 
-    for (int y = bboxX.y2 - 1; y >= bboxX.y1; y -= tileSizeY) {
+    for (int y = bboxX.y2 - tileSizeY; y >= bboxX.y1; y -= tileSizeY) {
         bool hasRenderedTileOnLine = false;
         for (int x = bboxX.x1; x < bboxX.x2; x += tileSizeX) {
             TileCoord c = {x, y};
@@ -913,12 +921,14 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
         if (hasRenderedTileOnLine) {
             break;
         } else {
-            --bboxX.y2;
+            bboxX.y2 -= tileSizeY;
             bboxB.y1 = bboxX.y2;
         }
     }
 
     if ( !bboxB.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        bboxB.intersect(roi, &bboxB);
         rectsToRender->push_back(bboxB);
     }
 
@@ -941,12 +951,14 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
             if (hasRenderedTileOnCol) {
                 break;
             } else {
-                ++bboxX.x1;
+                bboxX.x1 += tileSizeX;
                 bboxC.x2 = bboxX.x1;
             }
         }
     }
     if ( !bboxC.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        bboxC.intersect(roi, &bboxC);
         rectsToRender->push_back(bboxC);
     }
 
@@ -954,7 +966,7 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     RectI bboxD = bboxX;
     bboxD.x1 = bboxX.x2;
     if ( bboxX.y1 < bboxX.y2 ) {
-        for (int x = bboxX.x2 - 1; x >= bboxX.x1; x -= tileSizeX) {
+        for (int x = bboxX.x2 - tileSizeX; x >= bboxX.x1; x -= tileSizeX) {
             bool hasRenderedTileOnCol = false;
             for (int y = bboxX.y1; y < bboxX.y2; y += tileSizeY) {
                 TileCoord c = {x, y};
@@ -968,12 +980,14 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
             if (hasRenderedTileOnCol) {
                 break;
             } else {
-                --bboxX.x2;
+                bboxX.x2 -= tileSizeX;
                 bboxD.x1 = bboxX.x2;
             }
         }
     }
     if ( !bboxD.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        bboxD.intersect(roi, &bboxD);
         rectsToRender->push_back(bboxD);
     }
 
@@ -1001,6 +1015,8 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     bboxX = getMinimalBboxToRenderFromTilesState(tiles, bboxX, tileSizeX, tileSizeY);
 
     if ( !bboxX.isNull() ) { // empty boxes should not be pushed
+        // Ensure the bbox lies in the RoI since we rounded to tile size earlier
+        bboxX.intersect(roi, &bboxX);
         rectsToRender->push_back(bboxX);
     }
 

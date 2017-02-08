@@ -272,7 +272,7 @@ DiskCacheNode::render(const RenderActionArgs& args)
 
     for (std::list<std::pair<ImagePlaneDesc, ImagePtr > >::const_iterator it = args.outputPlanes.begin(); it != args.outputPlanes.end(); ++it) {
 
-        GetImageInArgs inArgs(args.requestData, &args.backendType);
+        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
         inArgs.plane = &it->first;
         GetImageOutArgs outArgs;

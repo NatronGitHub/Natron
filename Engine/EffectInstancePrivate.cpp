@@ -141,6 +141,20 @@ EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
     return found->second;
 }
 
+void
+EffectInstance::Implementation::removeFrameViewRequest(const FrameViewRequestPtr& request)
+{
+    QMutexLocker k(&renderData->lock);
+
+    FrameViewPair p = {request->getTime(),request->getView()};
+    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
+    if (found == renderData->frames.end()) {
+        return;
+    }
+    renderData->frames.erase(found);
+
+}
+
 bool
 EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time, ViewIdx view, unsigned int mipMapLevel, const ImagePlaneDesc& plane, FrameViewRequestPtr* request)
 {
@@ -440,6 +454,7 @@ EffectInstance::Implementation::renderHandlerIdentity(const RectToRender & rectT
     for (std::map<ImagePlaneDesc, ImagePtr>::const_iterator it = rectToRender.tmpRenderPlanes.begin(); it != rectToRender.tmpRenderPlanes.end(); ++it) {
         boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs( new EffectInstance::GetImageInArgs() );
         inArgs->renderBackend = &rectToRender.backendType;
+        inArgs->currentRenderWindow = &rectToRender.rect;
         inArgs->requestData = args.requestData;
         inArgs->inputTime = rectToRender.identityTime;
         inArgs->inputView = rectToRender.identityView;
@@ -653,7 +668,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(maskInputNb);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
-                GetImageInArgs inArgs(args.requestData, &rectToRender.backendType);
+                GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &rectToRender.backendType);
                 inArgs.plane = &foundNeededLayers->second.front();
                 inArgs.inputNb = maskInputNb;
                 GetImageOutArgs outArgs;
@@ -713,7 +728,7 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(mainInputNb);
 
-            GetImageInArgs inArgs(args.requestData, &rectToRender.backendType);
+            GetImageInArgs inArgs(args.requestData, &rectToRender.rect, &rectToRender.backendType);
             if (foundNeededLayers != inputPlanesNeeded.end() && !foundNeededLayers->second.empty()) {
 
 

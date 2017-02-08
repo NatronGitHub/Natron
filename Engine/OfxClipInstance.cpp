@@ -727,11 +727,17 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     // Get the current action arguments from the thread local storage
     FrameViewRequestPtr requestData = effectTLS->getCurrentFrameViewRequest();
 
+    // If we are in the render action, retrieve the current render window from the TLS
+    RectI currentRenderWindow;
 
+    // Also retrieve generic parameters in case we are not in the render action
     TimeValue currentActionTime;
     ViewIdx currentActionView;
     RenderScale currentActionScale;
-    bool gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale);
+    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &currentRenderWindow, 0);
+    if (!gotTLS) {
+        gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale);
+    }
     assert(gotTLS);
     if (!gotTLS) {
         // If there's no tls object this is a bug in Natron
@@ -799,7 +805,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
 
     EffectInstance::GetImageOutArgs outArgs;
     RenderBackendTypeEnum backend = retTexture ? eRenderBackendTypeOpenGL : eRenderBackendTypeCPU;
-    boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs(new EffectInstance::GetImageInArgs(requestData, &backend));
+    boost::scoped_ptr<EffectInstance::GetImageInArgs> inArgs(new EffectInstance::GetImageInArgs(requestData, currentRenderWindow.isNull() ? 0 : &currentRenderWindow, &backend));
     inArgs->inputTime = inputTime;
     inArgs->inputView = inputView;
     inArgs->inputNb = inputNb;
@@ -917,8 +923,9 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     TimeValue currentActionTime;
     ViewIdx currentActionView;
     RenderScale currentActionScale;
+    RectI currentRenderWindow;
     std::map<ImagePlaneDesc, ImagePtr> outputPlanes;
-    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &outputPlanes);
+    bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &currentRenderWindow, &outputPlanes);
 
 
     // Get the current action arguments. The action must be the render action, otherwise it fails.
@@ -971,7 +978,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
     // We then just allocate on the fly the plane
     if (!image) {
         Image::InitStorageArgs initArgs;
-        requestData->getCurrentRoI().toPixelEnclosing(currentActionScale, par, &initArgs.bounds);
+        initArgs.bounds = currentRenderWindow;
         initArgs.storage = retTexture ? eStorageModeGLTex : eStorageModeRAM;
         initArgs.layer = plane;
         initArgs.proxyScale = currentActionScale;
@@ -1038,11 +1045,11 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
     OfxImageCommon* retCommon = 0;
     if (retImage) {
-        OfxImage* ofxImage = new OfxImage(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, image->getBounds(), Distortion2DStackPtr(), componentsStr, nComps, par);
+        OfxImage* ofxImage = new OfxImage(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distortion2DStackPtr(), componentsStr, nComps, par);
         *retImage = ofxImage;
         retCommon = ofxImage;
     } else if (retTexture) {
-        OfxTexture* ofxTex = new OfxTexture(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, image->getBounds(), Distortion2DStackPtr(), componentsStr, nComps, par);
+        OfxTexture* ofxTex = new OfxTexture(effect, -1, image, rod, premult, fielding, nodeFrameViewHash, currentRenderWindow, Distortion2DStackPtr(), componentsStr, nComps, par);
         *retTexture = ofxTex;
         retCommon = ofxTex;
     }

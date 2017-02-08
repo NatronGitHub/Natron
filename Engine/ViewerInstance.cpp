@@ -1372,7 +1372,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     ImagePtr colorImage, alphaImage;
     if (selectedLayer.getNumComponents() > 0) {
         GetImageOutArgs outArgs;
-        GetImageInArgs inArgs(args.requestData, &args.backendType);
+        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
         inArgs.plane = &selectedLayer;
         bool ok = getImagePlane(inArgs, &outArgs);
@@ -1383,7 +1383,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     }
     if (selectedAlphaLayer.getNumComponents() > 0 && selectedAlphaLayer != selectedLayer) {
         GetImageOutArgs outArgs;
-        GetImageInArgs inArgs(args.requestData, &args.backendType);
+        GetImageInArgs inArgs(args.requestData, &args.roi, &args.backendType);
         inArgs.inputNb = 0;
         inArgs.plane = &selectedLayer;
         bool ok = getImagePlane(inArgs, &outArgs);

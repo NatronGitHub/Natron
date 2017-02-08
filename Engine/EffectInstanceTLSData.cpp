@@ -90,12 +90,14 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
 
 void
 EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale,
+                                            const RectI& renderWindow,
                                             const std::map<ImagePlaneDesc, ImagePtr>& outputPlanes)
 {
     RenderActionTLSDataPtr args(new RenderActionTLSData);
     args->time = time;
     args->view = view;
     args->scale = scale;
+    args->renderWindow = renderWindow;
     args->outputPlanes = outputPlanes;
 #ifdef DEBUG
     args->canSetValue = false;
@@ -153,6 +155,7 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
 
 bool
 EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,
+                                                  RectI* renderWindow,
                                                   std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const
 {
     if (_imp->actionsArgsStack.empty()) {
@@ -171,6 +174,9 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
     }
     if (scale) {
         *scale = args->scale;
+    }
+    if (renderWindow) {
+        *renderWindow = args->renderWindow;
     }
 
     if (outputPlanes) {

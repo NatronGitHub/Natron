@@ -89,6 +89,10 @@ GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_ON
 #include "Engine/ViewIdx.h"
 #include "Engine/ViewerInstance.h"
 
+// This controls how many frames a plug-in can pre-fetch per input
+// This is to avoid cases where the user would for example use the FrameBlend node with a huge amount of frames so that they
+// do not all stick altogether in memory
+#define NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING 3
 
 NATRON_NAMESPACE_ENTER;
 
@@ -403,14 +407,12 @@ void
 EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& requestData, const RectI& renderMappedRoI, const RenderScale& renderMappedScale, std::list<RectToRender>* renderRects, bool* hasPendingTiles)
 {
     // Compute the rectangle portion (renderWindow) left to render.
-    // The renderwindow is the bounding box of all tiles that are left to render (not the tiles that are pending)
-
-    // If the image is entirely cached, do not even compute it and insert it in the output planes map
     Image::TileStateMap tilesState;
     bool hasUnRenderedTile;
     ImagePtr cacheImage = requestData->getImagePlane();
-    cacheImage->getRestToRender(&tilesState, &hasUnRenderedTile, hasPendingTiles);
+    cacheImage->getTilesRenderState(&tilesState, &hasUnRenderedTile, hasPendingTiles);
 
+    // The image is already computed
     if (!hasUnRenderedTile) {
         return;
     }
@@ -635,7 +637,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
     // When accumulating, re-use the same buffer of previous steps and resize it if needed.
     // Note that in this mode only a single plane can be rendered at once
     RotoStrokeItemPtr attachedStroke = toRotoStrokeItem(_publicInterface->getAttachedRotoItem());
-    assert(attachedStroke->isRenderClone());
+    assert(!attachedStroke || attachedStroke->isRenderClone());
     bool isAccumulating = attachedStroke && attachedStroke->isCurrentlyDrawing();
     ImagePtr accumBuffer;
     if (isAccumulating) {
@@ -955,6 +957,7 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
 
         bool inputIsContinuous = inputEffect->canRenderContinuously();
 
+        int nbRequestedFramesForInput = 0;
         {
 
 
@@ -991,10 +994,18 @@ EffectInstance::Implementation::handleUpstreamFramesNeeded(const FrameViewReques
                             if (isFailureRetCode(stat)) {
                                 return stat;
                             }
+                            ++nbRequestedFramesForInput;
+                            if (nbRequestedFramesForInput >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                                break;
+                            }
                         } // for each plane needed
-
+                        if (nbRequestedFramesForInput >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                            break;
+                        }
                     } // for all frames
-
+                    if (nbRequestedFramesForInput >= NATRON_MAX_FRAMES_NEEDED_PRE_FETCHING) {
+                        break;
+                    }
                 } // for all ranges
             } // for all views
         } // EffectInstance::NotifyInputNRenderingStarted_RAII
@@ -1062,6 +1073,7 @@ EffectInstance::requestRender(TimeValue time,
     // Add this frame/view as depdency of the requester
     if (requester) {
         requester->addDependency(requestData);
+        requestData->addListener(requester);
     }
 
 
@@ -1234,7 +1246,7 @@ EffectInstance::requestRender(TimeValue time,
         requestData->setImagePlane(image);
 
         Image::TileStateMap tilesState;
-        image->getRestToRender(&tilesState, &hasUnRenderedTile, &hasPendingTiles);
+        image->getTilesRenderState(&tilesState, &hasUnRenderedTile, &hasPendingTiles);
     }
 
     // If there's nothing to render, do not even add the inputs as needed dependencies.
@@ -1281,6 +1293,14 @@ EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
         }
     }
     ActionRetCodeEnum stat = launchRenderInternal(requestData);
+
+    // We are done with this request, remove it from the created requests.
+    _imp->removeFrameViewRequest(requestData);
+
+    // Remove all stashes input frame view requests that we kept around.
+    requestData->clearRenderedDependencies();
+
+    // Notify that we are done rendering
     requestData->notifyRenderFinished(stat);
     return stat;
 } // launchRender

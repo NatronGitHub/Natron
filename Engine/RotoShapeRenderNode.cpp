@@ -471,7 +471,7 @@ RotoShapeRenderNode::render(const RenderActionArgs& args)
             if (strokeStartPointIndex == 0 && strokeMultiIndex == 0) {
 
                 GetImageOutArgs outArgs;
-                GetImageInArgs inArgs(args.requestData, &args.backendType);
+                GetImageInArgs inArgs(args.requestData, &args.roi,&args.backendType);
                 inArgs.inputNb = 0;
                 if (!getImagePlane(inArgs, &outArgs)) {
                     setPersistentMessage(eMessageTypeError, tr("Failed to fetch source image").toStdString());

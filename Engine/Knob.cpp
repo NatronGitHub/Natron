@@ -5314,7 +5314,7 @@ KnobHolder::removeRenderClone(const TreeRenderPtr& render)
     for (std::size_t i = 0; i < _imp->knobs.size(); ++i) {
         KnobHelperPtr k = toKnobHelper(_imp->knobs[i]);
         QMutexLocker locker(&k->_imp->common->renderClonesMapMutex);
-        std::map<KnobHolderWPtr, KnobIWPtr>::const_iterator found = k->_imp->common->renderClonesMap.find(clone);
+        std::map<KnobHolderWPtr, KnobIWPtr>::iterator found = k->_imp->common->renderClonesMap.find(clone);
         if (found != k->_imp->common->renderClonesMap.end()) {
             k->_imp->common->renderClonesMap.erase(found);
         }

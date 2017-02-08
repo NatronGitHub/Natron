@@ -676,7 +676,7 @@ public:
      * @param hasPendingResults[out] If set to true, then the caller should, after rendering the given rectangles
      * call waitForPendingTiles() and then afterwards recheck the rectangles left to render.
      **/
-    void getRestToRender(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
+    void getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bool *hasPendingResults) const;
 
     /**
      * @brief Returns the bounding box of the unrendered portion in the tiles map.

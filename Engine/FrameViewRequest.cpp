@@ -127,6 +127,10 @@ struct FrameViewRequestPrivate
     // (i.e: the set is empty)
     std::set<FrameViewRequestWPtr> dependencies;
 
+    // List of dependnencies that we already rendered (they are no longer in the dependencies set)
+    // but that we still keep around so that the associated image plane is not destroyed.
+    std::set<FrameViewRequestPtr> renderedDependencies;
+
     // The listeners of this frame/view:
     // This frame/view is in the dependencies list each of the listeners.
     std::set<FrameViewRequestWPtr> listeners;
@@ -347,15 +351,28 @@ FrameViewRequest::setCurrentRoI(const RectD& roi)
 void
 FrameViewRequest::addDependency(const FrameViewRequestPtr& effectRequesting)
 {
-    QMutexLocker k(&_imp->lock);
-    _imp->dependencies.insert(effectRequesting);
+    {
+        QMutexLocker k(&_imp->lock);
+        _imp->dependencies.insert(effectRequesting);
+    }
 }
 
 void
-FrameViewRequest::removeDependency(const FrameViewRequestPtr& effectRequesting)
+FrameViewRequest::markDependencyAsRendered(const FrameViewRequestPtr& effectRequesting)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->dependencies.insert(effectRequesting);
+    std::set<FrameViewRequestWPtr>::iterator foundDep = _imp->dependencies.find(effectRequesting);
+    if (foundDep != _imp->dependencies.end()) {
+        _imp->dependencies.erase(foundDep);
+        _imp->renderedDependencies.insert(effectRequesting);
+    }
+}
+
+void
+FrameViewRequest::clearRenderedDependencies()
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->renderedDependencies.clear();
 }
 
 int

@@ -219,10 +219,15 @@ public:
     void addDependency(const FrameViewRequestPtr& other);
 
     /**
-     * @brief Remove a dependency previously added by addDependency. This should be called once the "other" frame/view 
-     * is done rendering.
+     * @brief Remove a dependency previously added by addDependency but does not destroy it.
+     * This should be called once the "other" frame/view * is done rendering.
      **/
-    void removeDependency(const FrameViewRequestPtr& other);
+    void markDependencyAsRendered(const FrameViewRequestPtr& other);
+
+    /**
+     * @brief Destroy all dependencies that were already rendered
+     **/
+    void clearRenderedDependencies();
 
     /**
      * @brief Get the number of dependencies left to render for this frame/view.
