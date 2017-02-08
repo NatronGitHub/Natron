@@ -403,13 +403,9 @@ ImagePrivate::getTilesCoordinates(const RectI& pixelCoordinates) const
     }
 
     RectI ret = pixelCoordinates;
-    ret = pixelCoordinates;
-
-    // Get the tile size from the first tile
-    const Image::Tile& firstTile = tiles.begin()->second;
 
     // Round to the tile size
-    ret.roundToTileSize(firstTile.tileBounds.width(), firstTile.tileBounds.height());
+    ret.roundToTileSize(tileSizeX, tileSizeY);
 
     // Intersect to the bounds rounded to tile size.
     ret.intersect(boundsRoundedToTile, &ret);

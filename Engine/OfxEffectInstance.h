@@ -79,6 +79,16 @@ public:
                                        const std::string & longLabel) WARN_UNUSED_RETURN;
 };
 
+class ThreadIsActionCaller_RAII
+{
+
+public:
+
+    ThreadIsActionCaller_RAII(const OfxEffectInstancePtr& effect);
+
+    ~ThreadIsActionCaller_RAII();
+};
+
 struct OfxEffectInstancePrivate;
 class OfxEffectInstance
     : public AbstractOfxEffectInstance

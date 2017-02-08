@@ -406,6 +406,9 @@ EffectInstance::Implementation::canSplitRenderWindowWithIdentityRectangles(const
 void
 EffectInstance::Implementation::checkRestToRender(const FrameViewRequestPtr& requestData, const RectI& renderMappedRoI, const RenderScale& renderMappedScale, std::list<RectToRender>* renderRects, bool* hasPendingTiles)
 {
+    renderRects->clear();
+
+    
     // Compute the rectangle portion (renderWindow) left to render.
     Image::TileStateMap tilesState;
     bool hasUnRenderedTile;
@@ -1361,16 +1364,21 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
 
         // The render went OK: push the cache images tiles to the cache
 
-        if (requestData->getCachePolicy() != eCacheAccessModeNone) {
+        if (requestData->getCachePolicy() == eCacheAccessModeNone) {
+            renderRects.clear();
+            hasPendingTiles = false;
+        } else {
 
             // Push to the cache the tiles that we rendered
             cacheImage->pushTilesToCacheIfNotAborted();
 
             // Wait for any pending results. After this line other threads that should have computed should be done
             cacheImage->waitForPendingTiles();
+
+            _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
+
         }
 
-        _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
     } // while there is still something not rendered
 
     // If using GPU and out of memory retry on CPU if possible

@@ -185,21 +185,17 @@ struct OfxEffectInstancePrivate
 };
 
 
-class ThreadIsActionCaller_RAII
+
+ThreadIsActionCaller_RAII::ThreadIsActionCaller_RAII(const OfxEffectInstancePtr& effect)
 {
-    
-public:
-    
-    ThreadIsActionCaller_RAII(const OfxEffectInstancePtr& effect)
-    {
-        appPTR->setOFXLastActionCaller_TLS(effect);
-    }
-    
-    ~ThreadIsActionCaller_RAII()
-    {
-        appPTR->setOFXLastActionCaller_TLS(OfxEffectInstancePtr());
-    }
-};
+    appPTR->setOFXLastActionCaller_TLS(effect);
+}
+
+ThreadIsActionCaller_RAII::~ThreadIsActionCaller_RAII()
+{
+    appPTR->setOFXLastActionCaller_TLS(OfxEffectInstancePtr());
+}
+
 
 OfxEffectInstance::OfxEffectInstance(const NodePtr& node)
 : AbstractOfxEffectInstance(node)

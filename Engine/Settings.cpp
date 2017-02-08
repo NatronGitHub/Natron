@@ -2686,19 +2686,21 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
 
     // Check if the knob is part of the appearance tab. If so
     // refresh stylesheet
-    KnobIPtr parent = k->getParentKnob();
-    while (parent) {
-        if (parent == _imp->_appearanceTab) {
-            if (reason == eValueChangedReasonRestoreDefault) {
-                ++_imp->_nRedrawStyleSheetRequests;
+    KnobPagePtr isPage = toKnobPage(k);
+    if (!isPage) {
+        KnobIPtr parent = k->getParentKnob();
+        while (parent) {
+            if (parent == _imp->_appearanceTab) {
+                if (reason == eValueChangedReasonRestoreDefault) {
+                    ++_imp->_nRedrawStyleSheetRequests;
+                } else {
+                    appPTR->reloadStylesheets();
+                }
             } else {
-                appPTR->reloadStylesheets();
+                parent = parent->getParentKnob();
             }
-        } else {
-            parent = parent->getParentKnob();
         }
     }
-
     return ret;
 } // onKnobValueChanged
 

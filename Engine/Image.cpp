@@ -236,7 +236,7 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     renderClone = args.renderClone;
     enabledChannels = args.components;
     bitdepth = args.bitdepth;
-    tilesAllocated = args.delayAllocation;
+    tilesAllocated = !args.delayAllocation;
     storage = args.storage;
     glContext = args.glContext;
     textureTarget = args.textureTarget;
@@ -846,6 +846,8 @@ Image::getMinimalRectsToRenderFromTilesState(const TileStateMap& tiles, const Re
     if (bboxM.isNull()) {
         return;
     }
+
+    bboxM.roundToTileSize(tileSizeX, tileSizeY);
 
     // optimization by Fred, Jan 31, 2014
     //

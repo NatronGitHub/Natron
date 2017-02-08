@@ -37,7 +37,7 @@
 
 NATRON_NAMESPACE_ENTER;
 
-
+#ifndef NATRON_TLS_DISABLE_COPY
 template <typename T>
 void
 TLSHolder<T>::copyTLS(const QThread* fromThread,
@@ -57,6 +57,7 @@ TLSHolder<T>::copyAndReturnNewTLS(const QThread* fromThread,
 
     return boost::shared_ptr<T>();
 }
+#endif
 
 template <typename T>
 bool
@@ -96,11 +97,13 @@ TLSHolder<T>::getTLSData() const
     QThread* curThread  = QThread::currentThread();
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+    boost::shared_ptr<T> ret;
+#ifndef NATRON_TLS_DISABLE_COPY
+    ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
     if (ret) {
         return ret;
     }
-
+#endif
 
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     {
@@ -122,12 +125,16 @@ TLSHolder<T>::getOrCreateTLSData() const
     QThread* curThread  = QThread::currentThread();
 
     //This thread might be registered by a spawner thread, copy the TLS and attempt to find the TLS for this holder.
-    boost::shared_ptr<T> ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
+    boost::shared_ptr<T> ret;
+
+#ifndef NATRON_TLS_DISABLE_COPY
+    ret = appPTR->getAppTLS()->copyTLSFromSpawnerThread<T>(this, curThread);
 
     if (ret) {
         return ret;
     }
-
+#endif
+    
     //Attempt to find an object in the map. It will be there if we already called getOrCreateTLSData() for this thread
     //Note that if present, this call is extremely fast as we do not block other threads
     {
@@ -154,6 +161,7 @@ TLSHolder<T>::getOrCreateTLSData() const
     return data.value;
 }
 
+#ifndef NATRON_TLS_DISABLE_COPY
 template <typename T>
 boost::shared_ptr<T>
 AppTLS::copyTLSFromSpawnerThread(const TLSHolderBase* holder,
@@ -243,6 +251,7 @@ AppTLS::copyTLSFromSpawnerThreadInternal(const TLSHolderBase* holder,
 
     return tls;
 }
+#endif // !NATRON_TLS_DISABLE_COPY
 
 NATRON_NAMESPACE_EXIT;
 

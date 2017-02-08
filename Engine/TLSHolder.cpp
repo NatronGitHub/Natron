@@ -44,8 +44,10 @@ NATRON_NAMESPACE_ENTER;
 AppTLS::AppTLS()
     : _objectMutex()
     , _object( new GLobalTLSObject() )
+#ifndef NATRON_TLS_DISABLE_COPY
     , _spawnsMutex()
     , _spawns()
+#endif
 {
 }
 
@@ -65,7 +67,7 @@ AppTLS::registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder)
     }
 }
 
-
+#ifndef NATRON_TLS_DISABLE_COPY
 void
 AppTLS::copyTLS(QThread* fromThread,
                 QThread* toThread)
@@ -96,7 +98,7 @@ AppTLS::softCopy(QThread* fromThread,
     QWriteLocker k(&_spawnsMutex);
     _spawns[toThread] = fromThread;
 }
-
+#endif
 void
 AppTLS::cleanupTLSForThread()
 {
@@ -105,6 +107,7 @@ AppTLS::cleanupTLSForThread()
 
     // Clean-up any thread data on the TLSHolder
 
+#ifndef NATRON_TLS_DISABLE_COPY
     // If this thread was spawned, but TLS not used, do not bother to clean-up
     {
         // Try to find first with a read-lock so we still allow other threads to run
@@ -128,6 +131,7 @@ AppTLS::cleanupTLSForThread()
             }
         }
     }
+#endif
 
     // First determine if this thread has objects to clean. Do it under
     // a read locker so we don't lock out other threads

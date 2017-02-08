@@ -1160,6 +1160,7 @@ OfxHost::getCurrentEffect_TLS() const
 struct OfxFunctorArgs
 {
     void* customArg;
+    OfxEffectInstancePtr effect;
     OfxThreadFunctionV1* ofxFunc;
 };
 
@@ -1167,7 +1168,9 @@ static ActionRetCodeEnum ofxMultiThreadFunctor(unsigned int threadIndex,
                                                unsigned int threadMax,
                                                void *customArg)
 {
+
     OfxFunctorArgs* args = (OfxFunctorArgs*)customArg;
+    ThreadIsActionCaller_RAII actionCallerRaii(args->effect);
     try {
         args->ofxFunc(threadIndex, threadMax, args->customArg);
         return eActionStatusOK;
@@ -1192,6 +1195,7 @@ OfxHost::multiThread(OfxThreadFunctionV1 func,
 
     OfxFunctorArgs args;
     args.ofxFunc = func;
+    args.effect = effect;
     args.customArg = customArg;
     // OpenFX does not pass the image effect instance pointer back to us so we loose the context...
     // The only way to recover it will be in the aborted() function entry point with help of thread local storage.

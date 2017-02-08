@@ -873,6 +873,8 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
     }
     QThreadPool* threadPool = QThreadPool::globalInstance();
 
+    bool isThreadPoolThread = isRunningInThreadPoolThread();
+
     // While we still have tasks to render loop
     while (numTasksRemaining > 0) {
 
@@ -887,8 +889,19 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
             threadPool->start(new FrameViewRenderRunnable(_imp.get(), request));
         }
 
+        // If this thread is a threadpool thread, it may wait for a while that results gets available.
+        // Release the thread to the thread pool so that it may use this thread for other runnables
+        // and reserve it back when done waiting.
+        if (isThreadPoolThread) {
+            QThreadPool::globalInstance()->releaseThread();
+        }
+
         // Wait until a task is finished: we should be able to launch more tasks afterwards.
         _imp->dependencyFreeRendersEmptyCond.wait(&_imp->dependencyFreeRendersMutex);
+
+        if (isThreadPoolThread) {
+            QThreadPool::globalInstance()->reserveThread();
+        }
 
         // We have been woken-up by a finished task, check if the render is still OK
         {

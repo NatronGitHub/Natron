@@ -48,6 +48,8 @@
 
 #include "Engine/EngineFwd.h"
 
+#define NATRON_TLS_DISABLE_COPY
+
 NATRON_NAMESPACE_ENTER;
 
 ///This must be stored as a shared_ptr
@@ -81,10 +83,12 @@ protected:
      **/
     virtual bool cleanupPerThreadData(const QThread* curThread) const = 0;
 
+#ifndef NATRON_TLS_DISABLE_COPY
     /**
      * @brief Copy all the TLS from fromThread to toThread
      **/
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const = 0;
+#endif
 };
 
 
@@ -118,6 +122,7 @@ public:
      **/
     void registerTLSHolder(const boost::shared_ptr<const TLSHolderBase>& holder);
 
+#ifndef NATRON_TLS_DISABLE_COPY
 
     /**
      * @brief Copy all the TLS from fromThread to toThread
@@ -145,7 +150,7 @@ public:
     boost::shared_ptr<T> copyTLSFromSpawnerThread(const TLSHolderBase* holder,
                                                   const QThread* curThread);
 
-
+#endif
     /**
      * @brief Should be called by any thread using TLS when done to cleanup its TLS
      **/
@@ -163,10 +168,12 @@ private:
     mutable QReadWriteLock _objectMutex;
     GLobalTLSObjectPtr _object;
 
+#ifndef NATRON_TLS_DISABLE_COPY
     //if a thread is a spawned thread, then copy the tls from the spawner thread instead
     //of creating a new object and no longer mark it as spawned
     mutable QReadWriteLock _spawnsMutex;
     ThreadSpawnMap _spawns;
+#endif
 };
 
 
@@ -209,8 +216,10 @@ private:
 
     virtual bool canCleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool cleanupPerThreadData(const QThread* curThread) const OVERRIDE FINAL WARN_UNUSED_RETURN;
+#ifndef NATRON_TLS_DISABLE_COPY
     virtual void copyTLS(const QThread* fromThread, const QThread* toThread) const OVERRIDE FINAL;
     boost::shared_ptr<T> copyAndReturnNewTLS(const QThread* fromThread, const QThread* toThread) const WARN_UNUSED_RETURN;
+#endif
 
     //Store a cache on the object to be faster than using the getOrCreate... function from AppTLS
     mutable QReadWriteLock perThreadDataMutex;
