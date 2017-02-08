@@ -1429,19 +1429,6 @@ public:
 public:
 
 
-
-
-    /**
-     * @brief Indicates how many simultaneous renders the plugin can deal with.
-     * By default it returns the plug-in safety.
-     * RenderSafetyEnum::eRenderSafetyUnsafe - indicating that only a single 'render' call can be made at any time amoung all instances,
-     * RenderSafetyEnum::eRenderSafetyInstanceSafe - indicating that any instance can have a single 'render' call at any one time,
-     * RenderSafetyEnum::eRenderSafetyFullySafe - indicating that any instance of a plugin can have multiple renders running simultaneously
-     * RenderSafetyEnum::eRenderSafetyFullySafeFrame - Same as eRenderSafetyFullySafe but the plug-in also flagged  kOfxImageEffectPluginPropHostFrameThreading to true.
-     **/
-    virtual RenderSafetyEnum getRenderThreadSafety() const WARN_UNUSED_RETURN;
-
-
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const WARN_UNUSED_RETURN;
 
 

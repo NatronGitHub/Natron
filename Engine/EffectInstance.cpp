@@ -1169,12 +1169,6 @@ EffectInstance::getCreateChannelSelectorKnob() const
 }
 
 
-RenderSafetyEnum
-EffectInstance::getRenderThreadSafety() const
-{
-    return (RenderSafetyEnum)getNode()->getPlugin()->getProperty<int>(kNatronPluginPropRenderSafety);
-}
-
 PluginOpenGLRenderSupport
 EffectInstance::getCurrentOpenGLSupport() const
 {

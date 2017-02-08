@@ -144,7 +144,6 @@ public:
     virtual bool isOutput() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual bool isGeneratorAndFilter() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual PluginOpenGLRenderSupport getCurrentOpenGLSupport() const OVERRIDE FINAL WARN_UNUSED_RETURN;
-    virtual RenderSafetyEnum getRenderThreadSafety() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual void onScriptNameChanged(const std::string& fullyQualifiedName) OVERRIDE FINAL;
     virtual int getMaxInputCount() const OVERRIDE FINAL WARN_UNUSED_RETURN;
     virtual std::string getInputLabel (int inputNb) const OVERRIDE FINAL WARN_UNUSED_RETURN;

@@ -1697,28 +1697,6 @@ OfxEffectInstance::getCurrentOpenGLSupport() const
     }
 }
 
-RenderSafetyEnum
-OfxEffectInstance::getRenderThreadSafety() const
-{
-    if (!_imp->common->effect) {
-        return eRenderSafetyUnsafe;
-    }
-    const std::string & safety = _imp->common->effect->getRenderThreadSafety();
-    if (safety == kOfxImageEffectRenderUnsafe) {
-        return eRenderSafetyUnsafe;
-    } else if (safety == kOfxImageEffectRenderInstanceSafe) {
-        return  eRenderSafetyInstanceSafe;
-    } else if (safety == kOfxImageEffectRenderFullySafe) {
-        if ( _imp->common->effect->getHostFrameThreading() ) {
-            return eRenderSafetyFullySafeFrame;
-        } else {
-            return eRenderSafetyFullySafe;
-        }
-    } else {
-        qDebug() << "Unknown thread safety level: " << safety.c_str();
-        return eRenderSafetyUnsafe;
-    }
-}
 
 const std::string &
 OfxEffectInstance::getShortLabel() const

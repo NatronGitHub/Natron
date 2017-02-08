@@ -1190,11 +1190,6 @@ EffectInstance::requestRender(TimeValue time,
 
     // The RoD in pixel coordinates at the scale of mappedCombinedScale
     RectI pixelRoDRenderMapped;
-
-    // Depending on tiles support we are going to modify the RoI to clip it to the bounds of this effect.
-    // We still keep in memory what was requested for later on
-    const RectI originalRenderMappedRoI = renderMappedRoI;
-
     rod.toPixelEnclosing(mappedCombinedScale, par, &pixelRoDRenderMapped);
 
     if (!getCurrentSupportTiles()) {
@@ -1230,9 +1225,9 @@ EffectInstance::requestRender(TimeValue time,
     {
         RectD curRoI = requestData->getCurrentRoI();
         if (curRoI.isNull()) {
-            curRoI = roiCanonical;
+            curRoI = roundedCanonicalRoI;
         } else {
-            curRoI.merge(roiCanonical);
+            curRoI.merge(roundedCanonicalRoI);
         }
         requestData->setCurrentRoI(curRoI);
     }
