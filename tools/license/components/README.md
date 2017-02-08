@@ -29,6 +29,7 @@ Natron binaries include components from the following libraries:
 ## openfx-misc
 
 * Mesa (MIT) http://www.mesa3d.org
+* TinyThread++ (libpng/zlib License) http://tinythreadpp.bitsnbites.eu/
 
 ## openfx-io
 
