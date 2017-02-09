@@ -968,6 +968,8 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
     // Get the alpha from the alpha image
     if (args.alphaChannelIndex != -1 && alpha_pixels[args.alphaChannelIndex]) {
         tmpPix[3] = Image::convertPixelDepth<PIX, float>(*alpha_pixels[args.alphaChannelIndex]);
+    } else {
+        tmpPix[3] = 1.;
     }
     if (srcNComps == 1) {
         // Single-channel image: replicate the single channel to all RGB channels

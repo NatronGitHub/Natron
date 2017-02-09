@@ -1177,7 +1177,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // If you do that, the previous data in PBO will be discarded and
     // glMapBufferARB() returns a new allocated pointer immediately
     // even if GPU is still working with the previous data.
-    std::size_t bytesCount = imageData.tileBounds.area() * imageData.nComps * getSizeOfForBitDepth(imageData.bitDepth);
+    int dataSizeOf = getSizeOfForBitDepth(imageData.bitDepth);
+    std::size_t bytesCount = imageData.tileBounds.area() * imageData.nComps * dataSizeOf;
 
     GL_GPU::BufferDataARB(GL_PIXEL_UNPACK_BUFFER_ARB, bytesCount, NULL, GL_DYNAMIC_DRAW_ARB);
 
@@ -1187,7 +1188,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     assert(ret);
     if (ret) {
         // update data directly on the mapped buffer
-        std::memcpy(ret, imageData.ptrs[0], bytesCount);
+        unsigned char* srcpixels = Image::pixelAtStatic(imageData.tileBounds.x1, imageData.tileBounds.y1, imageData.tileBounds, imageData.nComps, dataSizeOf, (unsigned char*)imageData.ptrs[0]);
+        std::memcpy(ret, srcpixels, bytesCount);
         GLboolean result = GL_GPU::UnmapBufferARB(GL_PIXEL_UNPACK_BUFFER_ARB); // release the mapped buffer
         assert(result == GL_TRUE);
         Q_UNUSED(result);

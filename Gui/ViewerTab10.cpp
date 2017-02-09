@@ -258,10 +258,17 @@ ViewerTab::keyReleaseEvent(QKeyEvent* e)
     if (!gui) {
         return QWidget::keyPressEvent(e);
     }
+    Qt::Key key = (Qt::Key)e->key();
     double scale = 1. / ( 1 << _imp->viewer->getCurrentRenderScale() );
     if ( notifyOverlaysKeyUp(RenderScale(scale), e) ) {
         _imp->viewer->redraw();
     } else {
+        // If pressing modifiers for the picker, update it to reflect the input image if needed
+        if (key == Qt::Key_Control || key == Qt::Key_Alt) {
+            _imp->viewer->updateColorPicker(0);
+            _imp->viewer->updateColorPicker(1);
+        }
+        
         handleUnCaughtKeyUpEvent(e);
         QWidget::keyReleaseEvent(e);
     }
