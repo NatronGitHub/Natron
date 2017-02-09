@@ -9,6 +9,8 @@
 
 ### Plugins
 
+- TODO: Transform: fix undo when manipulating the viewer interact #1576
+- TODO: SlitScan: fix manipulating the interact on the Retime Map input #1577
 - DenoiseSharpen: the output is now the noisy source when Noise Analysis is not locked. It is easier to see where there is noise that way, and it also makes the plugin usable in Resolve (which calls render even if non-significant parameters are changed)
 - remork many plugins so that they work better in DaVinci Resolve (all generators including Radial and Rectangle, CopyRectangle, DenoiseSharpen, LensDistortion, HSVTool, ImageStatistics, Position)
 
