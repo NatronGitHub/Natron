@@ -768,6 +768,10 @@ EffectInstance::getImagePlane(const GetImageInArgs& inArgs, GetImageOutArgs* out
         roiCanonical = results->getRoD();
     }
 
+    if (roiCanonical.isNull()) {
+        return false;
+    }
+
     // Launch a render to recover the image.
     // It should be very fast if the image was already rendered.
     TreeRenderPtr renderObject = getCurrentRender();
