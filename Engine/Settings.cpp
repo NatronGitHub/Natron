@@ -1338,7 +1338,7 @@ SettingsPrivate::initializeKnobsAppearance()
     _systemFontChoice->setHintToolTip( tr("List of all fonts available on the system") );
     _systemFontChoice->setLabel(tr("Font"));
     _systemFontChoice->setAddNewLine(false);
-    _systemFontChoice->setDefaultValue(0);
+    _systemFontChoice->setDefaultValueFromID(NATRON_FONT);
     knobsRequiringRestart.insert(_systemFontChoice);
     _appearanceTab->addKnob(_systemFontChoice);
 
@@ -1769,8 +1769,8 @@ SettingsPrivate::initializeKnobsScriptEditorColors()
 
     _scriptEditorFontChoice = _publicInterface->createKnob<KnobChoice>("scriptEditorFont");
     _scriptEditorFontChoice->setHintToolTip( tr("List of all fonts available on the system") );
+    _scriptEditorFontChoice->setDefaultValueFromID(NATRON_SCRIPT_FONT);
     _scriptEditorFontChoice->setLabel(tr("Font"));
-    _scriptEditorFontChoice->setDefaultValue(0);
 
     _scriptEditorColorsTab->addKnob(_scriptEditorFontChoice);
 
@@ -2256,6 +2256,7 @@ Settings::saveSettingsToFile()
         return;
     }
 
+    bool hasWrittenSomething = false;
 
     SERIALIZATION_NAMESPACE::SettingsSerialization serialization;
     serialization.pluginsData = _imp->pluginsData;
@@ -2274,6 +2275,7 @@ Settings::saveSettingsToFile()
             continue;
         }
         serialization.knobs.push_back(k);
+        hasWrittenSomething = true;
 
     } // for all knobs
 
@@ -2296,6 +2298,7 @@ Settings::saveSettingsToFile()
                 id.majorVersion = plugin->getMajorVersion();
                 id.minorVersion = plugin->getMinorVersion();
                 serialization.pluginsData[id] = data;
+                hasWrittenSomething = true;
             }
         }
     }
@@ -2314,11 +2317,17 @@ Settings::saveSettingsToFile()
 
             shortcut.modifiers = KeybindShortcut::modifiersToStringList(it2->second.modifiers);
             shortcut.symbol = KeybindShortcut::keySymbolToString(it2->second.currentShortcut);
+            hasWrittenSomething = true;
 
         }
     }
 
-    SERIALIZATION_NAMESPACE::write(ofile, serialization, NATRON_SETTINGS_FILE_HEADER);
+    if (!hasWrittenSomething) {
+        ofile.close();
+        QFile::remove(QString::fromUtf8(settingsFilePath.c_str()));
+    } else {
+        SERIALIZATION_NAMESPACE::write(ofile, serialization, NATRON_SETTINGS_FILE_HEADER);
+    }
 
 
 } // saveSettingsToFile
@@ -2972,15 +2981,6 @@ Settings::populateSystemFonts(const std::vector<std::string>& fonts)
     }
     _imp->_systemFontChoice->populateChoices(options);
     _imp->_scriptEditorFontChoice->populateChoices(options);
-
-    for (U32 i = 0; i < fonts.size(); ++i) {
-        if (fonts[i] == NATRON_FONT) {
-            _imp->_systemFontChoice->setDefaultValueWithoutApplying(i);
-        }
-        if (fonts[i] == NATRON_SCRIPT_FONT) {
-            _imp->_scriptEditorFontChoice->setDefaultValueWithoutApplying(i);
-        }
-    }
 }
 
 void

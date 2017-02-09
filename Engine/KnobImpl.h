@@ -631,6 +631,7 @@ Knob<T>::setDefaultValue(const T & v,
             }
         }
     }
+    onDefaultValueChanged(dimension);
     resetToDefaultValue(dimension, ViewSetSpec::all());
     computeHasModifications();
 }
@@ -659,6 +660,7 @@ Knob<T>::setDefaultValues(const std::vector<T>& values, DimIdx dimensionStartOff
 
         }
     }
+    onDefaultValueChanged(DimSpec::all());
     resetToDefaultValue(DimSpec::all(), ViewSetSpec::all());
     computeHasModifications();
 
@@ -693,6 +695,7 @@ Knob<T>::setDefaultValueWithoutApplying(const T& v,
         }
 
     }
+    onDefaultValueChanged(dimension);
     computeHasModifications();
 }
 

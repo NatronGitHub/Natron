@@ -54,10 +54,10 @@ Node::makeDocumentation(bool genHTML) const
 
         pluginID = QString::fromUtf8(plugin->getPluginID().c_str());
         pluginLabel =  QString::fromUtf8( Plugin::makeLabelWithoutSuffix( plugin->getPluginLabel() ).c_str());
-        pluginDescription =  QString::fromUtf8( plugin->getProperty<std::string>(kNatronPluginPropDescription).c_str() );
-        pluginIcon = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
-        pluginGroup = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
-        pluginDescriptionIsMarkdown = plugin->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
+        pluginDescription =  QString::fromUtf8( plugin->getPropertyUnsafe<std::string>(kNatronPluginPropDescription).c_str() );
+        pluginIcon = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
+        pluginGroup = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+        pluginDescriptionIsMarkdown = plugin->getPropertyUnsafe<bool>(kNatronPluginPropDescriptionIsMarkdown);
 
 
         for (int i = 0; i < _imp->effect->getMaxInputCount(); ++i) {

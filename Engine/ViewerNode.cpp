@@ -263,7 +263,7 @@ ViewerNode::onViewerProcessNodeMetadataRefreshed(const NodePtr& viewerProcessNod
             break;
         }
     }
-    if (viewerProcess_i != -1) {
+    if (viewerProcess_i == -1) {
         // The _imp->internalViewerProcessNode may not be yet set if we are still in the createNode() call in the
         // ViewerNode::createViewerProcessNode() call.
         return;
@@ -832,18 +832,6 @@ bool
 ViewerNode::isFullFrameProcessingEnabled() const
 {
     return _imp->fullFrameButtonKnob.lock()->getValue();
-}
-
-double
-ViewerNode::getGain() const
-{
-    return _imp->gainSliderKnob.lock()->getValue();
-}
-
-double
-ViewerNode::getGamma() const
-{
-    return _imp->gammaSliderKnob.lock()->getValue();
 }
 
 void

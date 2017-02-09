@@ -1455,6 +1455,7 @@ ViewerInstance::render(const RenderActionArgs& args)
     bool doAutoContrast = _imp->autoContrastKnob.lock()->getValue();
     if (!doAutoContrast) {
         renderViewerArgs.gain = _imp->gainKnob.lock()->getValue();
+        renderViewerArgs.gain = std::pow(2, renderViewerArgs.gain);
         renderViewerArgs.offset = 0;
     } else {
 

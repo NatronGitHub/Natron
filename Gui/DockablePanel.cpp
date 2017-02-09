@@ -195,11 +195,11 @@ DockablePanel::DockablePanel(Gui* gui,
             PluginPtr plugin = nodeForDocumentation->getPlugin();
             assert(plugin);
 
-            QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+            QString resourcesPath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
 
             QString iconFilePath = resourcesPath;
             StrUtils::ensureLastPathSeparator(iconFilePath);
-            iconFilePath += QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+            iconFilePath += QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
 ;
             if (QFile::exists(iconFilePath)) {
                 QPixmap ic(iconFilePath);
@@ -834,7 +834,7 @@ DockablePanel::helpString() const
     EffectInstancePtr iseffect = toEffectInstance(_imp->_holder.lock());
 
     if (iseffect) {
-        isMarkdown = iseffect->getNode()->getPlugin()->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown);
+        isMarkdown = iseffect->getNode()->getPlugin()->getPropertyUnsafe<bool>(kNatronPluginPropDescriptionIsMarkdown);
     }
 
     if (Qt::mightBeRichText(_imp->_helpToolTip) || isMarkdown) {

@@ -319,7 +319,7 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
     NodePtr internalNode = node->getNode();
 
     // Serializatino, don't do anything
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     if (serialization) {
         return;
     }
@@ -328,7 +328,7 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
 
 
     // Try to autoconnect if there is a selection
-    bool autoConnect = args.getProperty<bool>(kCreateNodeArgsPropAutoConnect);
+    bool autoConnect = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropAutoConnect);
     if ( selectedNodes.empty() || serialization) {
         autoConnect = false;
     }
@@ -352,8 +352,8 @@ NodeGraph::setNodeToDefaultPosition(const NodeGuiPtr& node, const NodesGuiList& 
 
     if (!hasPositionnedNode) {
         // If there's a position hint, use it to position the node
-        double xPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
-        double yPosHint = args.getProperty<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
+        double xPosHint = args.getPropertyUnsafe<double>(kCreateNodeArgsPropNodeInitialPosition, 0);
+        double yPosHint = args.getPropertyUnsafe<double>(kCreateNodeArgsPropNodeInitialPosition, 1);
 
         if ((xPosHint != INT_MIN) && (yPosHint != INT_MIN)) {
             QPointF pos = node->mapToParent( node->mapFromScene( QPointF(xPosHint, yPosHint) ) );

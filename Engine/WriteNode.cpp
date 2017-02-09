@@ -875,7 +875,7 @@ WriteNodePrivate::refreshPluginSelectorKnob()
         for (IOPluginSetForFormat::reverse_iterator it = writersForFormat.rbegin(); it != writersForFormat.rend(); ++it) {
             PluginPtr plugin = appPTR->getPluginBinary(QString::fromUtf8( it->pluginID.c_str() ), -1, -1, false);
 
-            QString tooltip = tr("Use %1 version %2.%3 to write this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1));
+            QString tooltip = tr("Use %1 version %2.%3 to write this file format").arg(QString::fromUtf8(plugin->getPluginLabel().c_str())).arg( plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0)).arg(plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1));
             entries.push_back( ChoiceOption(plugin->getPluginID(), "", tooltip.toStdString()));
 
         }
@@ -1040,13 +1040,13 @@ WriteNode::onEffectCreated(const CreateNodeArgs& args)
     std::string pattern;
 
 
-    std::vector<std::string> defaultParamValues = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+    std::vector<std::string> defaultParamValues = args.getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
     std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
     if (foundFileName != defaultParamValues.end()) {
         std::string propName(kCreateNodeArgsPropParamValue);
         propName += "_";
         propName += kOfxImageEffectFileParamName;
-        pattern = args.getProperty<std::string>(propName);
+        pattern = args.getPropertyUnsafe<std::string>(propName);
     }
 
 

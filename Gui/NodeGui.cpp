@@ -263,8 +263,8 @@ NodeGui::initialize(NodeGraph* dag,
 
     {
         bool isTopLevelNodeBeingCreated = internalNode->getApp()->isTopLevelNodeBeingCreated(internalNode);
-        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-        bool panelOpened = isViewerNode ? false : args.getProperty<bool>(kCreateNodeArgsPropSettingsOpened);
+        SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        bool panelOpened = isViewerNode ? false : args.getPropertyUnsafe<bool>(kCreateNodeArgsPropSettingsOpened);
         if ((!serialization && panelOpened && isTopLevelNodeBeingCreated) ) {
             ensurePanelCreated();
         }
@@ -467,9 +467,9 @@ NodeGui::getInitialSize(int *w,
         *w = *h = 0;
         return;
     }
-    QString resourcesPath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    QString resourcesPath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
     StrUtils::ensureLastPathSeparator(resourcesPath);
-    resourcesPath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+    resourcesPath +=  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
 
     if ( !resourcesPath.isEmpty() && QFile::exists(resourcesPath) && appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph() ) {
         *w = TO_DPIX(NODE_WIDTH) + TO_DPIX(NATRON_PLUGIN_ICON_SIZE) + TO_DPIX(PLUGIN_ICON_OFFSET) * 2;
@@ -508,9 +508,9 @@ NodeGui::createGui()
 
     PluginPtr plugin = node->getPlugin();
     
-    QString iconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    QString iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
     StrUtils::ensureLastPathSeparator(iconFilePath);
-    iconFilePath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+    iconFilePath +=  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
 
 
     BackdropGuiPtr isBd = toBackdropGui( shared_from_this() );
@@ -3981,7 +3981,7 @@ NodeGui::onNodePresetsChanged()
     if ( getSettingPanel() ) {
         getSettingPanel()->setPluginIDAndVersion(plugin->getPluginLabel(),
                                                  plugin->getPluginID(),
-                                                 plugin->getProperty<std::string>(kNatronPluginPropDescription),
+                                                 plugin->getPropertyUnsafe<std::string>(kNatronPluginPropDescription),
                                                  plugin->getMajorVersion(),
                                                  plugin->getMinorVersion());
     }
@@ -3989,9 +3989,9 @@ NodeGui::onNodePresetsChanged()
     QPixmap pixmap;
     if (appPTR->getCurrentSettings()->isPluginIconActivatedOnNodeGraph()) {
 
-        QString pluginIconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+        QString pluginIconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
         StrUtils::ensureLastPathSeparator(pluginIconFilePath);
-        pluginIconFilePath +=  QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+        pluginIconFilePath +=  QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
 
         if (QFile::exists(pluginIconFilePath)) {
             QPixmap pixmap(pluginIconFilePath);

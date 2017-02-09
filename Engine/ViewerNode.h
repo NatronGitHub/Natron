@@ -217,10 +217,6 @@ public:
 
     bool isFullFrameProcessingEnabled() const;
 
-    double getGain() const;
-
-    double getGamma() const;
-
     RectD getUserRoI() const;
 
     void setUserRoI(const RectD& rect);

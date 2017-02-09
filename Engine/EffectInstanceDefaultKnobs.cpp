@@ -409,7 +409,7 @@ EffectInstance::createNodePage(const KnobPagePtr& settingsPage)
 
     PluginPtr plugin = getNode()->getPlugin();
     if (plugin && plugin->isOpenGLEnabled()) {
-        glSupport = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
+        glSupport = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
     }
 
     if (glSupport != ePluginOpenGLRenderSupportNone) {
@@ -745,7 +745,7 @@ EffectInstance::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsMultiLine();
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropDescription));
+            param->setValue(pyPlug->getPropertyUnsafe<std::string>(kNatronPluginPropDescription));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionHint));
         param->setAddNewLine(false);
@@ -758,7 +758,7 @@ EffectInstance::createPyPlugPage()
         param->setDeclaredByPlugin(false);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<bool>(kNatronPluginPropDescriptionIsMarkdown));
+            param->setValue(pyPlug->getPropertyUnsafe<bool>(kNatronPluginPropDescriptionIsMarkdown));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginDescriptionIsMarkdownHint));
         page->addKnob(param);
@@ -772,8 +772,8 @@ EffectInstance::createPyPlugPage()
         param->setDimensionName(DimIdx(0), "Major");
         param->setDimensionName(DimIdx(1), "Minor");
         if (pyPlug) {
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 0));
-            param->setValue((int)pyPlug->getProperty<unsigned int>(kNatronPluginPropVersion, 1), ViewSetSpec::all(), DimSpec(1));
+            param->setValue((int)pyPlug->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0));
+            param->setValue((int)pyPlug->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1), ViewSetSpec::all(), DimSpec(1));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginVersionHint));
         page->addKnob(param);
@@ -786,8 +786,8 @@ EffectInstance::createPyPlugPage()
         param->setEvaluateOnChange(false);
         param->setAsShortcutKnob(true);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 0));
-            param->setValue(pyPlug->getProperty<int>(kNatronPluginPropShortcut, 1), ViewSetSpec::all(), DimSpec(1));
+            param->setValue(pyPlug->getPropertyUnsafe<int>(kNatronPluginPropShortcut, 0));
+            param->setValue(pyPlug->getPropertyUnsafe<int>(kNatronPluginPropShortcut, 1), ViewSetSpec::all(), DimSpec(1));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginShortcutHint));
         page->addKnob(param);
@@ -799,7 +799,7 @@ EffectInstance::createPyPlugPage()
         param->setDeclaredByPlugin(false);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile));
+            param->setValue(pyPlug->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugExtScriptFile));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginCallbacksPythonScriptHint));
         page->addKnob(param);
@@ -811,7 +811,7 @@ EffectInstance::createPyPlugPage()
         param->setDeclaredByPlugin(false);
         param->setEvaluateOnChange(false);
         if (pyPlug) {
-            param->setValue(pyPlug->getProperty<std::string>(kNatronPluginPropIconFilePath));
+            param->setValue(pyPlug->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath));
         }
         param->setHintToolTip( tr(kNatronNodeKnobPyPlugPluginIconFileHint));
         page->addKnob(param);

@@ -761,7 +761,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
 
     QString resourcesPath;
     if (internalPlugin) {
-        resourcesPath = QString::fromUtf8(internalPlugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+        resourcesPath = QString::fromUtf8(internalPlugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
     }
     QString iconFilePath = resourcesPath;
     StrUtils::ensureLastPathSeparator(iconFilePath);
@@ -797,8 +797,8 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
     // At this point any plug-in MUST be in a toolbutton, so it must have a parent.
     assert(!treeNode->getChildren().empty() || treeNode->getParent());
 
-    int majorVersion = internalPlugin ? internalPlugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0) : 1;
-    int minorVersion = internalPlugin ? internalPlugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1) : 0;
+    int majorVersion = internalPlugin ? internalPlugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0) : 1;
+    int minorVersion = internalPlugin ? internalPlugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1) : 0;
 
     ToolButton* pluginsToolButton = new ToolButton(getApp(),
                                                    treeNode,
@@ -828,7 +828,7 @@ Gui::findOrCreateToolButton(const PluginGroupNodePtr & treeNode)
 
         QKeySequence defaultNodeShortcut;
         QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);
-        std::vector<std::string> groupingSplit = internalPlugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+        std::vector<std::string> groupingSplit = internalPlugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
         for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
             shortcutGroup.push_back( QLatin1Char('/') );
             shortcutGroup.push_back(QString::fromUtf8(groupingSplit[j].c_str()));

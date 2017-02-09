@@ -546,7 +546,7 @@ toChoiceKnobDimView(const KnobDimViewBasePtr& data)
     return boost::dynamic_pointer_cast<ChoiceKnobDimView>(data);
 }
 
-
+struct KnobChoicePrivate;
 class KnobChoice
     : public QObject, public KnobIntBase
 {
@@ -712,6 +712,12 @@ public:
 
     virtual void onLinkChanged() OVERRIDE FINAL;
 
+    virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE FINAL;
+
+    virtual void setCurrentDefaultValueAsInitialValue() OVERRIDE FINAL;
+
+    std::string getDefaultEntryID() const;
+
 Q_SIGNALS:
 
     void populated();
@@ -719,7 +725,8 @@ Q_SIGNALS:
     void entryAppended();
 
 private:
-    
+
+    virtual void onDefaultValueChanged(DimSpec dimension) OVERRIDE FINAL;
 
     virtual bool hasModificationsVirtual(const KnobDimViewBasePtr& data, DimIdx dimension) const OVERRIDE FINAL;
 
@@ -735,7 +742,7 @@ private:
 private:
 
     static const std::string _typeNameStr;
-
+    boost::scoped_ptr<KnobChoicePrivate> _imp;
 
 };
 

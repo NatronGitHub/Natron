@@ -3135,12 +3135,15 @@ ViewerGL::getColorAt(double x,
     }
 
     *imgMmlevel = image->getMipMapLevel();
-    double scale = 1. / ( 1 << *imgMmlevel );
+    double mipMapScale = 1. / ( 1 << *imgMmlevel );
+    RenderScale scale = image->getProxyScale();
+    scale.x *= mipMapScale;
+    scale.y *= mipMapScale;
     double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
 
     ///Convert to pixel coords
-    int xPixel = std::floor(x  * scale / par);
-    int yPixel = std::floor(y * scale);
+    int xPixel = std::floor(x  * scale.x / par);
+    int yPixel = std::floor(y * scale.y);
     bool gotval;
     switch (image->getBitDepth()) {
         case eImageBitDepthByte:

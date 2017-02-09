@@ -580,7 +580,7 @@ Node::getMajorVersion() const
         return 0;
     }
 
-    return (int)plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+    return (int)plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0);
 }
 
 int
@@ -592,7 +592,7 @@ Node::getMinorVersion() const
         return 0;
     }
 
-    return (int)plugin->getProperty<unsigned int>(kNatronPluginPropVersion, 1);
+    return (int)plugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1);
 }
 
 
@@ -718,8 +718,8 @@ Node::getPluginIconFilePath() const
         return std::string();
     }
 
-    std::string resourcesPath = plugin->getProperty<std::string>(kNatronPluginPropResourcesPath);
-    std::string filename = plugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
+    std::string resourcesPath = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath);
+    std::string filename = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath);
     if (filename.empty()) {
         return filename;
     }
@@ -767,7 +767,7 @@ Node::getPluginResourcesPath() const
     if (!plugin) {
         return std::string();
     }
-    return plugin->getProperty<std::string>(kNatronPluginPropResourcesPath);
+    return plugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath);
 }
 
 std::string
@@ -804,7 +804,7 @@ Node::getPluginDescription() const
         }
     }
 
-    return plugin->getProperty<std::string>(kNatronPluginPropDescription);
+    return plugin->getPropertyUnsafe<std::string>(kNatronPluginPropDescription);
 }
 
 void
@@ -814,7 +814,7 @@ Node::getPluginGrouping(std::vector<std::string>* grouping) const
     if (!plugin) {
         return;
     }
-    *grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    *grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
 }
 
 

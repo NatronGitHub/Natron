@@ -94,10 +94,10 @@ Node::load(const CreateNodeArgsPtr& args)
     assert(!_imp->effect);
 
     // Should this node be persistent
-    _imp->isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
+    _imp->isPersistent = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropVolatile);
 
     // For Readers & Writers this is a hack to enable the internal decoder/encoder node to have a pointer to the main node the user sees
-    _imp->ioContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
+    _imp->ioContainer = args->getPropertyUnsafe<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
 
     NodeCollectionPtr group = getGroup();
     assert(group);
@@ -111,10 +111,10 @@ Node::load(const CreateNodeArgsPtr& args)
     group->addNode(thisShared);
 
     // Should we report errors if load fails ?
-    _imp->wasCreatedSilently = args->getProperty<bool>(kCreateNodeArgsPropSilent);
+    _imp->wasCreatedSilently = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropSilent);
 
     // If this is a pyplug, load its properties
-    std::string pyPlugID = args->getProperty<std::string>(kCreateNodeArgsPropPyPlugID);
+    std::string pyPlugID = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPyPlugID);
     if (!pyPlugID.empty()) {
         _imp->pyPlugHandle = appPTR->getPluginBinary(QString::fromUtf8(pyPlugID.c_str()), -1, -1, false);
         _imp->isPyPlug = true;
@@ -122,10 +122,10 @@ Node::load(const CreateNodeArgsPtr& args)
 
 
     // Any serialization from project load or copy/paste ?
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
     // Should we load a preset ?
-    std::string presetLabel = args->getProperty<std::string>(kCreateNodeArgsPropPreset);
+    std::string presetLabel = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPreset);
     if (!presetLabel.empty()) {
         // If there's a preset specified, load serialization from preset
 
@@ -151,12 +151,12 @@ Node::load(const CreateNodeArgsPtr& args)
 
 
 
-    std::string argFixedName = args->getProperty<std::string>(kCreateNodeArgsPropNodeInitialName);
+    std::string argFixedName = args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropNodeInitialName);
 
     PluginPtr pluginPtr = _imp->plugin.lock();
 
     // Get the function pointer to create the plug-in instance
-    EffectBuilder createFunc = (EffectBuilder)pluginPtr->getProperty<void*>(kNatronPluginPropCreateFunc);
+    EffectBuilder createFunc = (EffectBuilder)pluginPtr->getPropertyUnsafe<void*>(kNatronPluginPropCreateFunc);
     assert(createFunc);
     if (!createFunc) {
         throw std::invalid_argument("Node::load: No kNatronPluginPropCreateFunc property set on plug-in!");
@@ -183,7 +183,7 @@ Node::load(const CreateNodeArgsPtr& args)
         }
     }
 
-    bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    bool argsNoNodeGui = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
 
 
     // Make sure knobs initialization does not attempt to call knobChanged or trigger a render.
@@ -288,7 +288,7 @@ void
 Node::setValuesFromSerialization(const CreateNodeArgs& args)
 {
 
-    std::vector<std::string> params = args.getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+    std::vector<std::string> params = args.getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
 
     assert( QThread::currentThread() == qApp->thread() );
     const std::vector< KnobIPtr > & nodeKnobs = getKnobs();
@@ -307,25 +307,25 @@ Node::setValuesFromSerialization(const CreateNodeArgs& args)
                 propName += "_";
                 propName += params[i];
                 if (isBool) {
-                    std::vector<bool> v = args.getPropertyN<bool>(propName);
+                    std::vector<bool> v = args.getPropertyNUnsafe<bool>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
                         isBool->setValue(v[d]);
                     }
                 } else if (isInt) {
-                    std::vector<int> v = args.getPropertyN<int>(propName);
+                    std::vector<int> v = args.getPropertyNUnsafe<int>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
                         isInt->setValue(v[d]);
                     }
                 } else if (isDbl) {
-                    std::vector<double> v = args.getPropertyN<double>(propName);
+                    std::vector<double> v = args.getPropertyNUnsafe<double>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
                         isDbl->setValue(v[d]);
                     }
                 } else if (isStr) {
-                    std::vector<std::string> v = args.getPropertyN<std::string>(propName);
+                    std::vector<std::string> v = args.getPropertyNUnsafe<std::string>(propName);
                     nDims = std::min((int)v.size(), nDims);
                     for (int d = 0; d < nDims; ++d) {
                         isStr->setValue(v[d]);
@@ -779,7 +779,7 @@ Node::loadInternalNodeGraph(bool initialSetupAllowed,
         PluginPtr pyPlug = _imp->pyPlugHandle.lock();
         // For old PyPlugs based on Python scripts, the nodes are created by the Python script after the Group itself
         // gets created. So don't do anything
-        bool isPythonScriptPyPlug = pyPlug && pyPlug->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+        bool isPythonScriptPyPlug = pyPlug && pyPlug->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsPythonScript);
         if (isPythonScriptPyPlug) {
             return;
         }
@@ -1226,7 +1226,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
     std::string nodePreset = getCurrentNodePresets();
     SERIALIZATION_NAMESPACE::NodeSerializationPtr presetSerialization, pyPlugSerialization, projectSerialization;
     if (args) {
-        projectSerialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+        projectSerialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
     }
     if (!nodePreset.empty()) {
         try {
@@ -1240,9 +1240,9 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
     if (_imp->isPyPlug) {
         PluginPtr pyPlugHandle = _imp->pyPlugHandle.lock();
         if (pyPlugHandle) {
-            bool isPythonScriptPyPlug = pyPlugHandle->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
+            bool isPythonScriptPyPlug = pyPlugHandle->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsPythonScript);
             if (!isPythonScriptPyPlug) {
-                std::string filePath = pyPlugHandle->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+                std::string filePath = pyPlugHandle->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
                 pyPlugSerialization.reset(new SERIALIZATION_NAMESPACE::NodeSerialization);
                 getNodeSerializationFromPresetFile(filePath, pyPlugSerialization.get());
             }
@@ -1322,7 +1322,7 @@ Node::restoreNodeToDefaultState(const CreateNodeArgsPtr& args)
     if (!nodeCreated) {
         bool initialSubGraphSetupAllowed = false;
         if (args) {
-            initialSubGraphSetupAllowed = !args->getProperty<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
+            initialSubGraphSetupAllowed = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNodeGroupDisableCreateInitialNodes);
         }
 
         loadInternalNodeGraph(initialSubGraphSetupAllowed, projectSerialization.get(), pyPlugSerialization.get());

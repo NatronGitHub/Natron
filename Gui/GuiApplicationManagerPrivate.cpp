@@ -167,7 +167,7 @@ GuiApplicationManagerPrivate::findPluginToolButtonOrCreateInternal(const std::li
     if (grouping.empty()) {
         // This is a leaf (plug-in), take the plug-in label and icon
         treeNodeName = QString::fromUtf8(plugin->getLabelWithoutSuffix().c_str());
-        iconFilePath = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str());
+        iconFilePath = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str());
     } else {
         // For menu items, take from grouping
         treeNodeName = grouping[0];

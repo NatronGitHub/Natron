@@ -748,15 +748,32 @@ ChoiceKnobDimView::copy(const CopyInArgs& inArgs, CopyOutArgs* outArgs)
     return hasChanged;
 }
 
+struct KnobChoicePrivate {
+
+    // The default value as a string
+    mutable QMutex defaultEntryMutex;
+    std::string initialDefaultEntryID, defaultEntryID;
+
+    KnobChoicePrivate()
+    : defaultEntryMutex()
+    , initialDefaultEntryID()
+    , defaultEntryID()
+    {
+
+    }
+};
+
 KnobChoice::KnobChoice(const KnobHolderPtr& holder,
                        const std::string &name,
                        int nDims)
 : KnobIntBase(holder, name, nDims)
+, _imp(new KnobChoicePrivate)
 {
 }
 
 KnobChoice::KnobChoice(const KnobHolderPtr& holder, const KnobIPtr& mainInstance)
 : KnobIntBase(holder, mainInstance)
+, _imp(new KnobChoicePrivate)
 {
 
 }
@@ -967,28 +984,50 @@ KnobChoice::findAndSetOldChoice()
     }
 
 
+    // Also ensure the default index is correct wrt the new chocies
+    std::string defChoiceID = getDefaultEntryID();
+
     for (std::list<ViewIdx>::const_iterator it = views.begin(); it != views.end(); ++it) {
 
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), *it));
         assert(data);
 
         int found = -1;
-
+        int foundDefValue = -1;
         {
             QMutexLocker k(&data->valueMutex);
 
-            if ( !data->activeEntry.id.empty() ) {
+            for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
+                if ( !data->activeEntry.id.empty() && data->menuOptions[i].id == data->activeEntry.id ) {
+                    // Refresh label and hint, even if ID is the same
+                    data->activeEntry = data->menuOptions[i];
+                    found = i;
+                } else if (!defChoiceID.empty() && data->menuOptions[i].id == defChoiceID) {
+                    foundDefValue = i;
+                }
+                if (foundDefValue != -1 && found != -1) {
+                    break;
+                }
+            }
 
-                for (std::size_t i = 0; i < data->menuOptions.size(); ++i) {
-                    if ( data->menuOptions[i].id == data->activeEntry.id ) {
-                        // Refresh label and hint, even if ID is the same
-                        data->activeEntry = data->menuOptions[i];
-                        found = i;
-                        break;
-                    }
+        }
+
+        if (foundDefValue != -1) {
+            int defIndex = getDefaultValue(DimIdx(0));
+            int curIndex = getValue();
+            if (foundDefValue != defIndex) {
+                setDefaultValueWithoutApplying(foundDefValue);
+                // If this is the first time we call populateChoices
+                // the default index might not be the correct one, ensure it is valid.
+                if (curIndex == defIndex) {
+                    // Find the index of the default entry and update the default index
+                    setValue(foundDefValue);
+                    return;
                 }
             }
         }
+
+
         if (found != -1) {
             // Make sure we don't call knobChanged if we found the value
             blockValueChanges();
@@ -1004,12 +1043,31 @@ KnobChoice::findAndSetOldChoice()
 bool
 KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
 {
-    bool hasChanged = false;
     KnobDimViewKeySet sharedKnobs;
+
+    bool mustSetDefaultEntry = false;
+    std::string defaultEntryID;
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
         assert(data);
 
+        {
+            // Check if the default value string is empty, if so initialize it
+            QMutexLocker k2(&_imp->defaultEntryMutex);
+            if (_imp->initialDefaultEntryID.empty()) {
+                mustSetDefaultEntry = true;
+            }
+        }
+
+        int defValueIndex = getDefaultValue(DimIdx(0));
+        if (mustSetDefaultEntry) {
+            // The default entry ID was not set yet, set it from the index.
+            if (defValueIndex >= 0 && defValueIndex < (int)entries.size()) {
+                defaultEntryID = entries[defValueIndex].id;
+            }
+        }
+        
+        
         QMutexLocker k(&data->valueMutex);
         sharedKnobs = data->sharedKnobs;
 
@@ -1024,30 +1082,34 @@ KnobChoice::populateChoices(const std::vector<ChoiceOption> &entries)
                 data->menuOptions[i].label = data->menuOptions[i].id;
             }
         }
-        hasChanged = true;
 
     } // QMutexLocker
 
-    if (hasChanged) {
-
-        //  Try to restore the last choice.
-        findAndSetOldChoice();
-
-        for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
-            KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
-            assert(sharedKnob);
-            if (!sharedKnob) {
-                continue;
-            }
-            // Notify tooltip changed because we changed the menu entries
-            sharedKnob->_signalSlotHandler->s_helpChanged();
-
-            Q_EMIT sharedKnob->populated();
-        }
-
+    if (mustSetDefaultEntry) {
+         QMutexLocker k2(&_imp->defaultEntryMutex);
+        _imp->initialDefaultEntryID = defaultEntryID;
+        _imp->defaultEntryID = defaultEntryID;
     }
 
-    return hasChanged;
+
+    //  Try to restore the last choice.
+    findAndSetOldChoice();
+
+    for (KnobDimViewKeySet::const_iterator it = sharedKnobs.begin(); it!=sharedKnobs.end(); ++it) {
+        KnobChoicePtr sharedKnob = toKnobChoice(it->knob.lock());
+        assert(sharedKnob);
+        if (!sharedKnob) {
+            continue;
+        }
+        // Notify tooltip changed because we changed the menu entries
+        sharedKnob->_signalSlotHandler->s_helpChanged();
+
+        Q_EMIT sharedKnob->populated();
+    }
+
+
+
+    return true;
 } // KnobChoice::populateChoices
 
 
@@ -1511,8 +1573,65 @@ KnobChoice::choiceMatch(const std::string& choiceID,
 }
 
 void
+KnobChoice::setCurrentDefaultValueAsInitialValue()
+{
+    {
+        QMutexLocker l(&_imp->defaultEntryMutex);
+        _imp->initialDefaultEntryID = _imp->defaultEntryID;
+    }
+    KnobIntBase::setCurrentDefaultValueAsInitialValue();
+}
+
+std::string
+KnobChoice::getDefaultEntryID() const
+{
+    QMutexLocker l(&_imp->defaultEntryMutex);
+    return _imp->defaultEntryID;
+}
+
+void
+KnobChoice::onDefaultValueChanged(DimSpec /*dimension*/)
+{
+    int defIndex = getDefaultValue(DimIdx(0));
+
+    ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
+    assert(data);
+    std::string optionID;
+    {
+        QMutexLocker k(&data->valueMutex);
+        if (defIndex >= 0 && defIndex < (int)data->menuOptions.size()) {
+            optionID = data->menuOptions[defIndex].id;
+        }
+    }
+    if (optionID.empty()) {
+        return;
+    }
+
+    QMutexLocker k2(&_imp->defaultEntryMutex);
+    if (_imp->initialDefaultEntryID.empty()) {
+        _imp->initialDefaultEntryID = optionID;
+    }
+    _imp->defaultEntryID = optionID;
+
+}
+
+bool
+KnobChoice::hasDefaultValueChanged(DimIdx /*dimension*/) const
+{
+    QMutexLocker l(&_imp->defaultEntryMutex);
+    return _imp->defaultEntryID != _imp->initialDefaultEntryID;
+}
+
+void
 KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value)
 {
+    {
+        QMutexLocker k(&_imp->defaultEntryMutex);
+        if (_imp->initialDefaultEntryID.empty()) {
+            _imp->initialDefaultEntryID = value;
+        }
+        _imp->defaultEntryID = value;
+    }
     int index = -1;
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
@@ -1523,12 +1642,19 @@ KnobChoice::setDefaultValueFromIDWithoutApplying(const std::string & value)
     if (index != -1) {
         return setDefaultValueWithoutApplying(index, DimSpec(0));
     }
-    throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabelWithoutApplying: unknown label ") + value);
 }
 
 void
 KnobChoice::setDefaultValueFromID(const std::string & value)
 {
+    {
+        QMutexLocker k(&_imp->defaultEntryMutex);
+        if (_imp->initialDefaultEntryID.empty()) {
+            _imp->initialDefaultEntryID = value;
+        }
+        _imp->defaultEntryID = value;
+    }
+
     int index = -1;
     {
         ChoiceKnobDimViewPtr data = toChoiceKnobDimView(getDataForDimView(DimIdx(0), ViewIdx(0)));
@@ -1539,7 +1665,6 @@ KnobChoice::setDefaultValueFromID(const std::string & value)
     if (index != -1) {
         return setDefaultValue(index, DimSpec(0));
     }
-     throw std::runtime_error(std::string("KnobChoice::setDefaultValueFromLabel: unknown label ") + value);
 }
 
 KnobDimViewBasePtr

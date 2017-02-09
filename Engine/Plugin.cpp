@@ -97,7 +97,7 @@ Plugin::create(void* createEffectFunc,
         ret->setPropertyN<std::string>(kNatronPluginPropGroupIconFilePath, groupIconFilePath);
     } else {
 
-        std::vector<std::string> grouping = ret->getPropertyN<std::string>(kNatronPluginPropGrouping);
+        std::vector<std::string> grouping = ret->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
         std::string iconPath;
         const std::string& mainGroup = grouping[0];
         if ( mainGroup == PLUGIN_GROUP_COLOR) {
@@ -163,7 +163,7 @@ Plugin::~Plugin()
 std::string
 Plugin::getPluginID() const
 {
-    return getProperty<std::string>(kNatronPluginPropID);
+    return getPropertyUnsafe<std::string>(kNatronPluginPropID);
 }
 
 void
@@ -205,7 +205,7 @@ Plugin::getPresetFiles() const
 std::string
 Plugin::getPluginShortcutGroup() const
 {
-    std::string ret = getProperty<std::string>(kNatronPluginPropLabel);
+    std::string ret = getPropertyUnsafe<std::string>(kNatronPluginPropLabel);
     bool isViewer = ret == "Viewer";
     ret += ' ';
     if (!isViewer) {
@@ -220,19 +220,19 @@ Plugin::getPluginShortcutGroup() const
 std::string
 Plugin::getPluginLabel() const
 {
-    return getProperty<std::string>(kNatronPluginPropLabel);
+    return getPropertyUnsafe<std::string>(kNatronPluginPropLabel);
 }
 
 int
 Plugin::getMajorVersion() const
 {
-    return getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+    return getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0);
 }
 
 int
 Plugin::getMinorVersion() const
 {
-    return getProperty<unsigned int>(kNatronPluginPropVersion, 1);
+    return getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1);
 }
 
 std::string
@@ -290,7 +290,7 @@ QStringList
 Plugin::getGroupingAsQStringList() const
 {
     QStringList ret;
-    std::vector<std::string> groupingStd = getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> groupingStd = getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
     for (std::size_t i = 0; i < groupingStd.size(); ++i) {
         ret.push_back(QString::fromUtf8(groupingStd[i].c_str()));
     }
@@ -300,7 +300,7 @@ Plugin::getGroupingAsQStringList() const
 std::string
 Plugin::getGroupingString() const
 {
-    std::vector<std::string> groupingStd = getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> groupingStd = getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
     std::string ret;
     for (std::size_t i = 0; i < groupingStd.size(); ++i) {
         ret += groupingStd[i];
@@ -317,7 +317,7 @@ Plugin::generateUserFriendlyPluginID() const
     std::stringstream ss;
     ss << getLabelWithoutSuffix();
     ss << "  [";
-    ss << getProperty<std::string>(kNatronPluginPropGrouping, 0);
+    ss << getPropertyUnsafe<std::string>(kNatronPluginPropGrouping, 0);
     ss << ']';
     return ss.str();
 }
@@ -328,7 +328,7 @@ Plugin::generateUserFriendlyPluginIDMajorEncoded() const
     std::stringstream ss;
     ss << getLabelVersionMajorEncoded();
     ss << "  [";
-    ss << getProperty<std::string>(kNatronPluginPropGrouping, 0);
+    ss << getPropertyUnsafe<std::string>(kNatronPluginPropGrouping, 0);
     ss << ']';
     return ss.str();
 }
@@ -362,8 +362,8 @@ bool
 Plugin::getIsUserCreatable() const
 {
     return _isEnabled &&
-    !getProperty<bool>(kNatronPluginPropIsInternalOnly) &&
-    !getProperty<bool>(kNatronPluginPropIsDeprecated);
+    !getPropertyUnsafe<bool>(kNatronPluginPropIsInternalOnly) &&
+    !getPropertyUnsafe<bool>(kNatronPluginPropIsDeprecated);
 }
 
 void

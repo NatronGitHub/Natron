@@ -153,12 +153,12 @@ NodeSettingsPanel::onSettingsButtonClicked()
 
     PluginPtr internalPlugin = node->getNode()->getPlugin();
 
-    QString resourcesPath = QString::fromUtf8(internalPlugin->getProperty<std::string>(kNatronPluginPropResourcesPath).c_str());
+    QString resourcesPath = QString::fromUtf8(internalPlugin->getPropertyUnsafe<std::string>(kNatronPluginPropResourcesPath).c_str());
     StrUtils::ensureLastPathSeparator(resourcesPath);
 
 
     QString shortcutGroup = QString::fromUtf8(kShortcutGroupNodes);
-    std::vector<std::string> groupingSplit = internalPlugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> groupingSplit = internalPlugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
     for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
         shortcutGroup.push_back( QLatin1Char('/') );
         shortcutGroup.push_back(QString::fromUtf8(groupingSplit[j].c_str()));
@@ -175,7 +175,7 @@ NodeSettingsPanel::onSettingsButtonClicked()
 
         QAction* action = new QAction(loadPresetsMenu);
         action->setText(tr("Default"));
-        std::string iconFilePath = internalPlugin->getProperty<std::string>(kNatronPluginPropIconFilePath);
+        std::string iconFilePath = internalPlugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath);
         if (!iconFilePath.empty()) {
 
             QString filePath = resourcesPath;

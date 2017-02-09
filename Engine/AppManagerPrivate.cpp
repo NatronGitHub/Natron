@@ -260,9 +260,9 @@ AppManagerPrivate::findPluginById(const std::string& newId,
              ++itver) {
             if ( ( (*itver)->getPluginID() == newId ) &&
                    (major == -1 ||
-                    (*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) &&
+                    (*itver)->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0) == (unsigned int)major) &&
                    (minor == -1 ||
-                    (*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 1) == (unsigned int)minor ) ) {
+                    (*itver)->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1) == (unsigned int)minor ) ) {
                 return (*itver);
             }
         }

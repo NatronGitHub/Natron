@@ -728,7 +728,8 @@ EffectInstance::Implementation::renderHandlerPostProcess(const RectToRender & re
 
         ImagePtr mainInputImage;
 
-        if (mainInputNb != -1) {
+        bool copyUnProcessed = it->second->canCallCopyUnProcessedChannels(processChannels);
+        if (copyUnProcessed && mainInputNb != -1) {
             // Get the main input image to copy channels from it if a RGBA checkbox is unchecked
 
             std::map<int, std::list<ImagePlaneDesc> >::const_iterator foundNeededLayers = inputPlanesNeeded.find(mainInputNb);

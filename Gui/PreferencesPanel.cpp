@@ -477,7 +477,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
         for (PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin(); itver != it->second.rend(); ++itver) {
             PluginPtr plugin = *itver;
             assert(plugin);
-            if (plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly)) {
+            if (plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsInternalOnly)) {
                 continue;
             }
 
@@ -545,7 +545,7 @@ PreferencesPanel::createPluginsView(QGridLayout* pluginsFrameLayout)
                 checkbox->setChecked(plugin->isOpenGLEnabled());
                 QObject::connect( checkbox, SIGNAL(clicked(bool)), this, SLOT(onGLEnabledCheckBoxChecked(bool)) );
                 _imp->pluginsView->setItemWidget(node.item, COL_GL_ENABLED, checkbox);
-                if ((PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport) == ePluginOpenGLRenderSupportNone) {
+                if ((PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport) == ePluginOpenGLRenderSupportNone) {
                     checkbox->setChecked(false);
                     checkbox->setReadOnly(true);
                 }

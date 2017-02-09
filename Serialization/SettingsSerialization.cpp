@@ -33,8 +33,7 @@ SERIALIZATION_NAMESPACE_ENTER;
 void
 SettingsSerialization::encode(YAML::Emitter& em) const
 {
-    assert(!knobs.empty());
-    if (knobs.empty() && pluginsData.empty()) {
+    if (knobs.empty() && pluginsData.empty() && shortcuts.empty()) {
         return;
     }
     em << YAML::BeginMap;
@@ -112,7 +111,7 @@ SettingsSerialization::decode(const YAML::Node& node)
         YAML::Node knobsNode = node["Settings"];
         for (std::size_t i = 0; i < knobsNode.size(); ++i) {
             KnobSerializationPtr n(new KnobSerialization);
-            n->decode(node[i]);
+            n->decode(knobsNode[i]);
             knobs.push_back(n);
         }
     }

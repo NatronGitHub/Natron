@@ -1476,8 +1476,8 @@ AppManager::onAllPluginsLoaded()
             std::string otherLabelWithoutSuffix = Plugin::makeLabelWithoutSuffix( (*other)->getPluginLabel() );
             if (otherLabelWithoutSuffix == labelWithoutSuffix) {
 
-                std::vector<std::string> otherGrouping = (*other)->getPropertyN<std::string>(kNatronPluginPropGrouping);
-                std::vector<std::string> thisGrouping = (*first)->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                std::vector<std::string> otherGrouping = (*other)->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+                std::vector<std::string> thisGrouping = (*first)->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
                 bool allEqual = false;
                 if (otherGrouping.size() == thisGrouping.size()) {
                     allEqual = true;
@@ -1519,7 +1519,7 @@ void
 AppManager::onPluginLoaded(const PluginPtr& plugin)
 {
     std::string shortcutGrouping(kShortcutGroupNodes);
-    std::vector<std::string> groups = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> groups = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
     std::string pluginID = plugin->getPluginID();
     std::string pluginLabel = plugin->getLabelWithoutSuffix();
 
@@ -1531,8 +1531,8 @@ AppManager::onPluginLoaded(const PluginPtr& plugin)
     KeyboardModifiers modifiers(eKeyboardModifierNone);
     Key symbol = (Key)0;
     {
-        int symbol_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 0);
-        int mods_i = plugin->getProperty<int>(kNatronPluginPropShortcut, 1);
+        int symbol_i = plugin->getPropertyUnsafe<int>(kNatronPluginPropShortcut, 0);
+        int mods_i = plugin->getPropertyUnsafe<int>(kNatronPluginPropShortcut, 1);
         if (symbol_i != 0) {
             symbol = (Key)symbol_i;
         }
@@ -2291,7 +2291,7 @@ AppManager::getPluginBinaryFromOldID(const QString & pluginId,
         assert( !it->second.empty() );
         PluginVersionsOrdered::const_reverse_iterator itver = it->second.rbegin();
         std::string friendlyLabel = (*itver)->getPluginLabel();
-        std::string grouping0 = (*itver)->getProperty<std::string>(kNatronPluginPropGrouping, 0);
+        std::string grouping0 = (*itver)->getPropertyUnsafe<std::string>(kNatronPluginPropGrouping, 0);
         friendlyLabel.append("  [" + grouping0 + "]");
 
         if (friendlyLabel == pluginId.toStdString()) {
@@ -2394,11 +2394,11 @@ AppManager::getPluginBinary(const QString & pluginId,
         // Try to find the exact major version, with the highest minor
         // (thus the reverse iterator)
         PluginPtr nextPlugin = *(foundID->second.rbegin());
-        int nextVersion = (int)nextPlugin->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+        int nextVersion = (int)nextPlugin->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0);
         for (PluginVersionsOrdered::const_reverse_iterator itver = foundID->second.rbegin();
              itver != foundID->second.rend();
              ++itver) {
-            int thisMajorVersion = (int)(*itver)->getProperty<unsigned int>(kNatronPluginPropVersion, 0);
+            int thisMajorVersion = (int)(*itver)->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0);
             if (thisMajorVersion == majorVersion) {
                 return *itver;
             } else if (thisMajorVersion > majorVersion &&

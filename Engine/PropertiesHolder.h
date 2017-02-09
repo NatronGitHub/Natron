@@ -265,38 +265,86 @@ public:
         return found->second->getNDimensions();
     }
 
+    /**
+     * @brief Returns true if the property exists
+     **/
+    bool hasProperty(const std::string& name) const
+    {
+        ensurePropertiesCreated();
+        std::map<std::string, boost::shared_ptr<PropertyBase> >::const_iterator found = _properties.find(name);
+        return found != _properties.end();
+    }
 
     /**
      * @brief Returns the value of the property at the given index associated to the given name
+     * This function returns false if it could not be found or the index
+     * is invalid.
+     **/
+    template<typename T>
+    bool getPropertySafe(const std::string& name, int index, T* value) const
+    {
+        ensurePropertiesCreated();
+
+        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, false);
+        if (!propTemplate) {
+            return false;
+        }
+        if (index < 0 || index >= (int)propTemplate->value.size()) {
+            return false;
+        }
+
+        *value = propTemplate->value[index];
+        return true;
+    }
+
+    /**
+     * @brief Same as getPropertySafe
      * This function throws an invalid_argument exception if it could not be found or the index
      * is invalid.
      **/
     template<typename T>
-    T getProperty(const std::string& name, int index = 0) const
+    T getPropertyUnsafe(const std::string& name, int index = 0) const
     {
         ensurePropertiesCreated();
 
         boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
+
         if (index < 0 || index >= (int)propTemplate->value.size()) {
-            throw std::invalid_argument("PropertiesHolder::getProperty(): index out of range for " + name);
+            throw std::invalid_argument("PropertiesHolder::getPropertyNoCheck(): index out of range for " + name);
         }
 
         return propTemplate->value[index];
+        
     }
 
     /**
      * @brief Same as getProperty except that it returns all dimensions of the property at once.
+     * This function returns false if it could not be found.
      **/
     template<typename T>
-    const std::vector<T>& getPropertyN(const std::string& name) const
+    bool getPropertyNSafe(const std::string& name, std::vector<T>* values) const
     {
         ensurePropertiesCreated();
 
-        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
-        
-        return propTemplate->value;
+        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name, false);
+        if (!propTemplate) {
+            return false;
+        }
+        *values = propTemplate->value;
+        return true;
     }
 
+    /**
+     * @brief Same as getProperty except that it returns all dimensions of the property at once.
+    * This function throws an invalid_argument exception if it could not be found
+     **/
+    template<typename T>
+    const std::vector<T>& getPropertyNUnsafe(const std::string& name) const
+    {
+        ensurePropertiesCreated();
+        boost::shared_ptr<Property<T> > propTemplate = getProp<T>(name);
+        return propTemplate->value;
+    }
 protected:
 
     /**

@@ -914,8 +914,8 @@ Project::initializeKnobs()
         _imp->defaultLayersList = param;
     }
 
-    KnobPagePtr lutPages = createKnob<KnobPage>("lutPage");
-    lutPages->setLabel(tr("Lut"));
+    //KnobPagePtr lutPages = createKnob<KnobPage>("lutPage");
+    //lutPages->setLabel(tr("Lut"));
 
 
     std::vector<ChoiceOption> colorSpaces;
@@ -931,7 +931,8 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(1);
-        lutPages->addKnob(param);
+        param->setSecret(true);
+        page->addKnob(param);
         _imp->colorSpace8u = param;
     }
 
@@ -942,7 +943,8 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(2);
-        lutPages->addKnob(param);
+        param->setSecret(true);
+        page->addKnob(param);
         _imp->colorSpace16u = param;
     }
 
@@ -953,7 +955,8 @@ Project::initializeKnobs()
         param->setAnimationEnabled(false);
         param->populateChoices(colorSpaces);
         param->setDefaultValue(0);
-        lutPages->addKnob(param);
+        param->setSecret(true);
+        page->addKnob(param);
         _imp->colorSpace32f = param;
     }
 

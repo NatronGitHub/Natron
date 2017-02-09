@@ -387,9 +387,9 @@ DocumentationManager::handler(QHttpRequest *req,
                 }
 
                 if (plugin) {
-                    std::vector<std::string> groupList = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                    std::vector<std::string> groupList = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
                     if (groupList.at(0) == group.toStdString()) {
-                        pluginsOrderedByLabel[Plugin::makeLabelWithoutSuffix( plugin->getProperty<std::string>(kNatronPluginPropLabel) )] = pluginID;
+                        pluginsOrderedByLabel[Plugin::makeLabelWithoutSuffix( plugin->getPropertyUnsafe<std::string>(kNatronPluginPropLabel) )] = pluginID;
                     }
                 }
             }
@@ -471,7 +471,7 @@ DocumentationManager::handler(QHttpRequest *req,
                 }
 
                 if (plugin) {
-                    std::vector<std::string> groupList = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+                    std::vector<std::string> groupList = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
                     groups.push_back(QString::fromUtf8(groupList[0].c_str()));
                 }
             }

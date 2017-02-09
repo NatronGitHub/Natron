@@ -1000,8 +1000,8 @@ GuiApplicationManager::onPluginLoaded(const PluginPtr& plugin)
 PluginGroupNodePtr
 GuiApplicationManager::findPluginToolButtonOrCreate(const PluginPtr& plugin)
 {
-    std::vector<std::string> grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
-    std::vector<std::string> iconGrouping = plugin->getPropertyN<std::string>(kNatronPluginPropGroupIconFilePath);
+    std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
+    std::vector<std::string> iconGrouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGroupIconFilePath);
     QStringList qGroup, qIconGrouping;
     for (std::size_t i = 0; i < grouping.size(); ++i) {
         qGroup.push_back(QString::fromUtf8(grouping[i].c_str()));

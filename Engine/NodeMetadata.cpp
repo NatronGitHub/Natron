@@ -145,75 +145,61 @@ NodeMetadata::setStringNMetadata(const std::string& name, const std::string valu
 bool
 NodeMetadata::getIntMetadata(const std::string& name, int index, int *value) const
 {
-    try {
-        *value = _imp->getProperty<int>(name, index);
-        return true;
-    } catch (...) {
-        return false;
-    }
+    return _imp->getPropertySafe<int>(name, index, value);
 }
 
 bool
 NodeMetadata::getDoubleMetadata(const std::string& name, int index, double *value) const
 {
-    try {
-        *value = _imp->getProperty<double>(name, index);
-        return true;
-    } catch (...) {
-        return false;
-    }
+    return _imp->getPropertySafe<double>(name, index, value);
 }
 
 bool
 NodeMetadata::getStringMetadata(const std::string& name, int index, std::string *value) const
 {
-    try {
-        *value = _imp->getProperty<std::string>(name, index);
-        return true;
-    } catch (...) {
-        return false;
-    }
+    return _imp->getPropertySafe<std::string>(name, index, value);
+
 }
 
 bool
 NodeMetadata::getIntNMetadata(const std::string& name, int count, int *value) const
 {
-    try {
-        const std::vector<int>& values = _imp->getPropertyN<int>(name);
-        int nVal = std::min(count, (int)values.size());
-        memcpy(value, values.data(), sizeof(int) * nVal);
-        return true;
-    } catch (...) {
+    std::vector<int> values;
+    if (!_imp->getPropertyNSafe<int>(name, &values)) {
         return false;
     }
+    int nVal = std::min(count, (int)values.size());
+    memcpy(value, values.data(), sizeof(int) * nVal);
+    return true;
+
 }
 
 bool
 NodeMetadata::getDoubleNMetadata(const std::string& name, int count, double *value) const
 {
-    try {
-        const std::vector<double>& values = _imp->getPropertyN<double>(name);
-        int nVal = std::min(count, (int)values.size());
-        memcpy(value, values.data(), sizeof(double) * nVal);
-        return true;
-    } catch (...) {
+    std::vector<double> values;
+    if (!_imp->getPropertyNSafe<double>(name, &values)) {
         return false;
     }
+    int nVal = std::min(count, (int)values.size());
+    memcpy(value, values.data(), sizeof(double) * nVal);
+    return true;
+
 }
 
 bool
 NodeMetadata::getStringNMetadata(const std::string& name, int count, std::string *value) const
 {
-    try {
-        const std::vector<std::string>& values = _imp->getPropertyN<std::string>(name);
-        int nVal = std::min(count, (int)values.size());
-        for (int i = 0; i < nVal; ++i) {
-            value[i] = values[i];
-        }
-        return true;
-    } catch (...) {
+    std::vector<std::string> values;
+    if (!_imp->getPropertyNSafe<std::string>(name, &values)) {
         return false;
     }
+
+    int nVal = std::min(count, (int)values.size());
+    for (int i = 0; i < nVal; ++i) {
+        value[i] = values[i];
+    }
+    return true;
 
 }
 

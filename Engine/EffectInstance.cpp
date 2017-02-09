@@ -121,7 +121,7 @@ EffectInstance::setRenderCloneInput(const EffectInstancePtr& input, int inputNb)
 KnobHolderPtr
 EffectInstance::createRenderCopy(const TreeRenderPtr& render) const
 {
-    EffectRenderCloneBuilder createFunc = (EffectRenderCloneBuilder)getNode()->getPlugin()->getProperty<void*>(kNatronPluginPropCreateRenderCloneFunc);
+    EffectRenderCloneBuilder createFunc = (EffectRenderCloneBuilder)getNode()->getPlugin()->getPropertyUnsafe<void*>(kNatronPluginPropCreateRenderCloneFunc);
     assert(createFunc);
     if (!createFunc) {
         throw std::invalid_argument("EffectInstance::createRenderCopy: No kNatronPluginPropCreateRenderCloneFunc property set on plug-in!");
@@ -1194,7 +1194,7 @@ EffectInstance::getCreateChannelSelectorKnob() const
 PluginOpenGLRenderSupport
 EffectInstance::getCurrentOpenGLSupport() const
 {
-    return (PluginOpenGLRenderSupport)getNode()->getPlugin()->getProperty<int>(kNatronPluginPropOpenGLSupport);
+    return (PluginOpenGLRenderSupport)getNode()->getPlugin()->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
 }
 
 bool
@@ -1770,7 +1770,7 @@ EffectInstance::getCurrentOpenGLRenderSupport()
 
     PluginPtr plugin = getNode()->getPlugin();
     if (plugin) {
-        PluginOpenGLRenderSupport pluginProp = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
+        PluginOpenGLRenderSupport pluginProp = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
         if (pluginProp != ePluginOpenGLRenderSupportYes) {
             return pluginProp;
         }
@@ -1901,7 +1901,7 @@ EffectInstance::refreshDynamicProperties()
     PluginOpenGLRenderSupport pluginGLSupport = ePluginOpenGLRenderSupportNone;
     PluginPtr plugin = getNode()->getPlugin();
     if (plugin) {
-        pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getProperty<int>(kNatronPluginPropOpenGLSupport);
+        pluginGLSupport = (PluginOpenGLRenderSupport)plugin->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
         if (plugin->isOpenGLEnabled() && pluginGLSupport == ePluginOpenGLRenderSupportYes) {
             // Ok the plug-in supports OpenGL, figure out now if can be turned on/off by the instance
             pluginGLSupport = getCurrentOpenGLSupport();

@@ -2214,6 +2214,8 @@ public:
 
             // Viewer textures are always RGBA
             initArgs.layer = ImagePlaneDesc::getRGBAComponents();
+            initArgs.mipMapLevel = inArgs->outputImage->getMipMapLevel();
+            initArgs.proxyScale = inArgs->outputImage->getProxyScale();
             initArgs.bitdepth = inArgs->outputImage->getBitDepth();
             initArgs.storage = eStorageModeRAM;
             initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;

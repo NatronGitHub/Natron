@@ -354,6 +354,33 @@ Image::CopyPixelsArgs::CopyPixelsArgs()
 
 }
 
+static bool isCopyPixelsNeeded(ImagePrivate* thisImage, ImagePrivate* otherImage)
+{
+    if (thisImage->tiles.size() != otherImage->tiles.size()) {
+        return false;
+    }
+    if ((thisImage->storage == eStorageModeGLTex || otherImage->storage == eStorageModeGLTex)) {
+        return false;
+    }
+
+    if (thisImage->originalBounds != otherImage->originalBounds) {
+        return false;
+    }
+    if (thisImage->bitdepth != otherImage->bitdepth) {
+        return false;
+    }
+    if (thisImage->tiles.begin()->second.perChannelTile.size() != otherImage->tiles.begin()->second.perChannelTile.size()) {
+        return false;
+    }
+    if (thisImage->layer.getNumComponents() != otherImage->layer.getNumComponents()) {
+        return false;
+    }
+    // Only support copying buffers with different layouts if they have 1 component only
+    if (thisImage->bufferFormat != otherImage->bufferFormat && thisImage->layer.getNumComponents() != 1) {
+        return false;
+    }
+    return true;
+}
 
 void
 Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
@@ -372,42 +399,18 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
         return;
     }
 
+#ifdef DEBUG
+    if (_imp->proxyScale.x != other._imp->proxyScale.x ||
+        _imp->proxyScale.y != other._imp->proxyScale.y ||
+        _imp->mipMapLevel != other._imp->mipMapLevel) {
+        qDebug() << "Warning: attempt to call copyPixels on images with different scale";
+    }
+#endif
+
 
     // Optimize: try to just copy the memory buffer pointers instead of copying the memory itself
     if (!args.forceCopyEvenIfBuffersHaveSameLayout && roi == _imp->originalBounds) {
-
-        bool copyPointers = true;
-        if (_imp->tiles.size() != other._imp->tiles.size()) {
-            copyPointers = false;
-        }
-        if (copyPointers) {
-            StorageModeEnum thisStorage = getStorageMode();
-            StorageModeEnum otherStorage = other.getStorageMode();
-            if ((thisStorage == eStorageModeGLTex || otherStorage == eStorageModeGLTex)) {
-                copyPointers = false;
-            }
-        }
-        if (copyPointers && _imp->originalBounds != other._imp->originalBounds) {
-            copyPointers = false;
-        }
-        if (copyPointers && getBitDepth() != other.getBitDepth()) {
-            copyPointers = false;
-        }
-        if (copyPointers && _imp->tiles.begin()->second.perChannelTile.size() != other._imp->tiles.begin()->second.perChannelTile.size()) {
-            copyPointers = false;
-        }
-        if (copyPointers && _imp->layer.getNumComponents() != other._imp->layer.getNumComponents()) {
-            copyPointers = false;
-        }
-        // Only support copying buffers with different layouts if they have 1 component only
-        if (copyPointers) {
-            ImageBufferLayoutEnum thisLayout = _imp->bufferFormat;
-            ImageBufferLayoutEnum otherFormat = other._imp->bufferFormat;
-            if (thisLayout != otherFormat && _imp->layer.getNumComponents() != 1) {
-                copyPointers = false;
-            }
-        }
-
+        bool copyPointers = isCopyPixelsNeeded(_imp.get(), other._imp.get());
         if (copyPointers) {
             assert(_imp->tiles.size() == other._imp->tiles.size());
             TileMap::iterator oit = other._imp->tiles.begin();
@@ -417,6 +420,7 @@ Image::copyPixels(const Image& other, const CopyPixelsArgs& args)
                     it->second.perChannelTile[c].buffer = oit->second.perChannelTile[c].buffer;
                 }
             }
+            return;
         }
 
     } // !args.forceCopyEvenIfBuffersHaveSameLayout

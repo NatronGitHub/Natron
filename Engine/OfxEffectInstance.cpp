@@ -223,7 +223,7 @@ OfxEffectInstance::describePlugin()
     PluginPtr natronPlugin = getNode()->getPlugin();
     assert(natronPlugin);
 
-    OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = (OFX::Host::ImageEffect::ImageEffectPlugin*)natronPlugin->getProperty<void*>(kNatronPluginPropOpenFXPluginPtr);
+    OFX::Host::ImageEffect::ImageEffectPlugin* ofxPlugin = (OFX::Host::ImageEffect::ImageEffectPlugin*)natronPlugin->getPropertyUnsafe<void*>(kNatronPluginPropOpenFXPluginPtr);
     assert(ofxPlugin);
     if (!ofxPlugin) {
         throw std::logic_error("OfxEffectInstance::describePlugin kNatronPluginPropOpenFXPluginPtr is NULL");
@@ -2301,7 +2301,7 @@ void
 OfxEffectInstance::onEnableOpenGLKnobValueChanged(bool activated)
 {
     PluginPtr p = getNode()->getPlugin();
-    PluginOpenGLRenderSupport support = (PluginOpenGLRenderSupport)p->getProperty<int>(kNatronPluginPropOpenGLSupport);
+    PluginOpenGLRenderSupport support = (PluginOpenGLRenderSupport)p->getPropertyUnsafe<int>(kNatronPluginPropOpenGLSupport);
     if (support == ePluginOpenGLRenderSupportYes) {
         // The property may only change if the plug-in has the property set to yes on the descriptor
         if (activated) {

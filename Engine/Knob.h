@@ -2248,7 +2248,7 @@ public:
     /**
      * @brief Set the current default value as if it was the initial default value passed to the knob
      **/
-    void setCurrentDefaultValueAsInitialValue();
+    virtual void setCurrentDefaultValueAsInitialValue();
 
     /**
      * @brief Set a default value for a specific dimension
@@ -2263,6 +2263,14 @@ public:
     void setDefaultValueWithoutApplying(const T& v, DimSpec dimension = DimSpec(0));
     void setDefaultValuesWithoutApplying(const std::vector<T>& values, DimIdx dimensionStartOffset = DimIdx(0));
 
+protected:
+
+    virtual void onDefaultValueChanged(DimSpec dimension)
+    {
+        Q_UNUSED(dimension);
+    }
+
+public:
 
     //////////////////////////////////////////////////////////////////////
     ///////////////////////////////////
@@ -2315,7 +2323,7 @@ public:
 
     bool getValueFromCurve(TimeValue time, ViewIdx view, DimIdx dimension, bool clamp, T* ret);
 
-    virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE FINAL;
+    virtual bool hasDefaultValueChanged(DimIdx dimension) const OVERRIDE ;
 
 
     /**

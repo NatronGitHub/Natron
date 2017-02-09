@@ -3051,14 +3051,7 @@ initializeDefaultValueSerializationStorage(const KnobIPtr& knob,
         defValue->serializeDefaultValue = isStringBase->hasDefaultValueChanged(dimension);
     } else if (isChoice) {
         knobSer->_dataType = eSerializationValueVariantTypeString;
-        //serialization->_defaultValue.isString
-        std::vector<ChoiceOption> entries = isChoice->getEntries();
-        int defIndex = isChoice->getDefaultValue(dimension);
-        std::string defaultValueChoice;
-        if (defIndex >= 0 && defIndex < (int)entries.size()) {
-            defaultValueChoice = entries[defIndex].id;
-        }
-        defValue->value.isString = defaultValueChoice;
+        defValue->value.isString = isChoice->getDefaultEntryID();
         defValue->serializeDefaultValue = isChoice->hasDefaultValueChanged(dimension);
     }
 } // initializeDefaultValueSerializationStorage

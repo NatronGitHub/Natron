@@ -291,8 +291,8 @@ Project::restoreGroupFromSerialization(const SERIALIZATION_NAMESPACE::NodeSerial
                              .arg( QString::fromUtf8( (*it)->_pluginID.c_str() ) )
                              .arg((*it)->_pluginMajorVersion)
                              .arg((*it)->_pluginMinorVersion)
-                             .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 0) )
-                             .arg( node->getPlugin()->getProperty<unsigned int>(kNatronPluginPropVersion, 1) ) );
+                             .arg( node->getPlugin()->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 0) )
+                             .arg( node->getPlugin()->getPropertyUnsafe<unsigned int>(kNatronPluginPropVersion, 1) ) );
                 appPTR->writeToErrorLog_mt_safe(tr("Project"), QDateTime::currentDateTime(), text);
             }
         }

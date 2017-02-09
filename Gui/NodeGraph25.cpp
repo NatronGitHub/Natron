@@ -373,7 +373,7 @@ NodeGraph::keyPressEvent(QKeyEvent* e)
             PluginPtr plugin = *it->second.rbegin();
 
             QString group = QString::fromUtf8(kShortcutGroupNodes);
-            std::vector<std::string> groupingSplit = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            std::vector<std::string> groupingSplit = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
             for (std::size_t j = 0; j < groupingSplit.size(); ++j) {
                 group.push_back( QLatin1Char('/') );
                 group.push_back(QString::fromUtf8(groupingSplit[j].c_str()));

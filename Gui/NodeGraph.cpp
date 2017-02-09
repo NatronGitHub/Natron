@@ -390,8 +390,8 @@ NodeGraph::createNodeGui(const NodePtr & node, const CreateNodeArgs& args)
 
     setNodeToDefaultPosition(node_ui, selectedNodes, args);
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    bool addUndoRedo = args.getProperty<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args.getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    bool addUndoRedo = args.getPropertyUnsafe<bool>(kCreateNodeArgsPropAddUndoRedoCommand);
     if (addUndoRedo) {
         pushUndoCommand( new AddMultipleNodesCommand(this, node) );
     } else if (!serialization ) {

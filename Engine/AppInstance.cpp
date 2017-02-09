@@ -184,7 +184,7 @@ public:
     bool isGuiDisabledRecursive() const
     {
         assert(args);
-        if (args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI)) {
+        if (args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI)) {
             return true;
         }
         CreateNodeStackItemPtr p = parent.lock();
@@ -712,7 +712,7 @@ public:
 
 
         // Check recursively if we should create the node UI or not
-        bool argsNoNodeGui = args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+        bool argsNoNodeGui = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
         CreateNodeStackItemPtr parent = _item->parent.lock();
         if (!argsNoNodeGui && parent) {
             argsNoNodeGui |= parent->isGuiDisabledRecursive();
@@ -746,13 +746,13 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
 
 {
     /*If the plug-in is a toolset, execute the toolset script and don't actually create a node*/
-    bool istoolsetScript = plugin->getProperty<bool>(kNatronPluginPropPyPlugIsToolset);
+    bool istoolsetScript = plugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsToolset);
     NodePtr node;
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
-    NodeCollectionPtr group = args->getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    NodeCollectionPtr group = args->getPropertyUnsafe<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
 
-    std::string pyPlugFile = plugin->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+    std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
     std::string pyPlugDirPath;
 
     std::size_t foundSlash = pyPlugFile.find_last_of("/");
@@ -763,8 +763,8 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
     std::string pyPlugID = plugin->getPluginID();
 
     // Backward compat with older PyPlugs using Python scripts
-    bool isPyPlugEncodedWithPythonScript = plugin->getProperty<bool>(kNatronPluginPropPyPlugIsPythonScript);
-    QString extScriptFile = QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile).c_str());
+    bool isPyPlugEncodedWithPythonScript = plugin->getPropertyUnsafe<bool>(kNatronPluginPropPyPlugIsPythonScript);
+    QString extScriptFile = QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugExtScriptFile).c_str());
     if (!isPyPlugEncodedWithPythonScript && !extScriptFile.isEmpty()) {
         // A pyplug might have custom functions defined in a custmo Python script, check if such
         // file exists. If so import it
@@ -788,7 +788,7 @@ AppInstance::createNodeFromPyPlug(const PluginPtr& plugin, const CreateNodeArgsP
         }
     }
 
-    std::string originalPluginID = plugin->getProperty<std::string>(kNatronPluginPropPyPlugContainerID);
+    std::string originalPluginID = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugContainerID);
     if (originalPluginID.empty()) {
         originalPluginID = PLUGINID_NATRON_GROUP;
     }
@@ -927,21 +927,21 @@ AppInstance::openFileDialogIfNeeded(const CreateNodeArgsPtr& args)
     // True if the caller set a value for the kOfxImageEffectFileParamName parameter
     bool hasDefaultFilename = false;
     {
-        std::vector<std::string> defaultParamValues = args->getPropertyN<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
+        std::vector<std::string> defaultParamValues = args->getPropertyNUnsafe<std::string>(kCreateNodeArgsPropNodeInitialParamValues);
         std::vector<std::string>::iterator foundFileName  = std::find(defaultParamValues.begin(), defaultParamValues.end(), std::string(kOfxImageEffectFileParamName));
         if (foundFileName != defaultParamValues.end()) {
             std::string propName(kCreateNodeArgsPropParamValue);
             propName += "_";
             propName += kOfxImageEffectFileParamName;
-            hasDefaultFilename = !args->getProperty<std::string>(propName).empty();
+            hasDefaultFilename = !args->getPropertyUnsafe<std::string>(propName).empty();
         }
     }
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
-    bool isSilent = args->getProperty<bool>(kCreateNodeArgsPropSilent);
-    bool isPersistent = !args->getProperty<bool>(kCreateNodeArgsPropVolatile);
-    bool hasGui = !args->getProperty<bool>(kCreateNodeArgsPropNoNodeGUI);
+    bool isSilent = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropSilent);
+    bool isPersistent = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropVolatile);
+    bool hasGui = !args->getPropertyUnsafe<bool>(kCreateNodeArgsPropNoNodeGUI);
     bool mustOpenDialog = !isSilent && !serialization && isPersistent && !hasDefaultFilename && hasGui && !isBackground();
 
     if (mustOpenDialog) {
@@ -965,13 +965,13 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     NodePtr node;
     PluginPtr plugin;
 
-    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getProperty<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
+    SERIALIZATION_NAMESPACE::NodeSerializationPtr serialization = args->getPropertyUnsafe<SERIALIZATION_NAMESPACE::NodeSerializationPtr >(kCreateNodeArgsPropNodeSerialization);
 
-    QString argsPluginID = QString::fromUtf8(args->getProperty<std::string>(kCreateNodeArgsPropPluginID).c_str());
-    int versionMajor = args->getProperty<int>(kCreateNodeArgsPropPluginVersion, 0);
-    int versionMinor = args->getProperty<int>(kCreateNodeArgsPropPluginVersion, 1);
+    QString argsPluginID = QString::fromUtf8(args->getPropertyUnsafe<std::string>(kCreateNodeArgsPropPluginID).c_str());
+    int versionMajor = args->getPropertyUnsafe<int>(kCreateNodeArgsPropPluginVersion, 0);
+    int versionMinor = args->getPropertyUnsafe<int>(kCreateNodeArgsPropPluginVersion, 1);
 
-    bool isSilentCreation = args->getProperty<bool>(kCreateNodeArgsPropSilent);
+    bool isSilentCreation = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropSilent);
 
     QString findId = argsPluginID;
 
@@ -997,7 +997,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     }
 
     // If it is a reader or writer, create a ReadNode or WriteNode instead that will contain this plug-in
-    NodePtr argsIOContainer = args->getProperty<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
+    NodePtr argsIOContainer = args->getPropertyUnsafe<NodePtr>(kCreateNodeArgsPropMetaNodeContainer);
     if (!argsIOContainer) {
         if ( ReadNode::isBundledReader( argsPluginID.toStdString() ) ) {
             args->addParamDefaultValue(kNatronReadNodeParamDecodingPluginID, argsPluginID.toStdString());
@@ -1027,7 +1027,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
         return node;
     }
 
-    bool allowUserCreatablePlugins = args->getProperty<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins);
+    bool allowUserCreatablePlugins = args->getPropertyUnsafe<bool>(kCreateNodeArgsPropAllowNonUserCreatablePlugins);
     if ( !plugin->getIsUserCreatable() && !allowUserCreatablePlugins ) {
         //The plug-in should not be instantiable by the user
         qDebug() << "Attempt to create" << argsPluginID << "which is not user creatable";
@@ -1050,7 +1050,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
     }
 
     // If the plug-in is a PyPlug create it with createNodeFromPyPlug()
-    std::string pyPlugFile = plugin->getProperty<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
+    std::string pyPlugFile = plugin->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugScriptAbsoluteFilePath);
     if ( !pyPlugFile.empty() ) {
         try {
             return createNodeFromPyPlug(plugin, args);
@@ -1065,7 +1065,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
 
     // Get the group container
-    NodeCollectionPtr argsGroup = args->getProperty<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
+    NodeCollectionPtr argsGroup = args->getPropertyUnsafe<NodeCollectionPtr >(kCreateNodeArgsPropGroupContainer);
     if (!argsGroup) {
         argsGroup = getProject();
     }
@@ -1081,7 +1081,7 @@ AppInstance::createNodeInternal(const CreateNodeArgsPtr& args)
 
         // If this is a stereo plug-in, check that the project has been set for multi-view
         if (!isSilentCreation) {
-            std::vector<std::string> grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
             if (!grouping.empty() && grouping[0] == PLUGIN_GROUP_MULTIVIEW) {
                 int nbViews = getProject()->getProjectViewsCount();
                 if (nbViews < 2) {
@@ -1165,17 +1165,17 @@ AppInstance::exportDocs(const QString path)
             if (!plugin) {
                 continue;
             }
-            if (plugin->getProperty<bool>(kNatronPluginPropIsDeprecated) ) {
+            if (plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsDeprecated) ) {
                 continue;
             }
             if (!ReadNode::isBundledReader(*it) &&
                 !WriteNode::isBundledWriter(*it) &&
-                plugin->getProperty<bool>(kNatronPluginPropIsInternalOnly) ) {
+                plugin->getPropertyUnsafe<bool>(kNatronPluginPropIsInternalOnly) ) {
                 continue;
             }
 
 
-            std::vector<std::string> grouping = plugin->getPropertyN<std::string>(kNatronPluginPropGrouping);
+            std::vector<std::string> grouping = plugin->getPropertyNUnsafe<std::string>(kNatronPluginPropGrouping);
 
             QString group0 = QString::fromUtf8(grouping[0].c_str());
             groups.push_back(group0);
@@ -1220,7 +1220,7 @@ AppInstance::exportDocs(const QString path)
                 mdDir.mkdir(QLatin1String("plugins"));
                 mdDir.cd(QLatin1String("plugins"));
 
-                QFile imgFile( QString::fromUtf8(plugin->getProperty<std::string>(kNatronPluginPropIconFilePath).c_str()) );
+                QFile imgFile( QString::fromUtf8(plugin->getPropertyUnsafe<std::string>(kNatronPluginPropIconFilePath).c_str()) );
                 if ( imgFile.exists() ) {
                     QString dstPath = mdDir.absolutePath() + QString::fromUtf8("/") + pluginID + QString::fromUtf8(".png");
                     if (QFile::exists(dstPath)) {

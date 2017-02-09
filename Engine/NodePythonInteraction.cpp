@@ -78,7 +78,7 @@ NodePrivate::figureOutCallbackName(const std::string& inCallback, std::string* o
     }
     // Python callbacks may be in a python script with indicated by the plug-in
     // check if it exists
-    std::string extScriptFile = plugin.lock()->getProperty<std::string>(kNatronPluginPropPyPlugExtScriptFile);
+    std::string extScriptFile = plugin.lock()->getPropertyUnsafe<std::string>(kNatronPluginPropPyPlugExtScriptFile);
     std::string moduleName;
     if (!extScriptFile.empty()) {
         std::size_t foundDot = extScriptFile.find_last_of(".");

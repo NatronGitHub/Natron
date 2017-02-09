@@ -127,7 +127,11 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
     std::map<TimeValue, ImageTileKeyPtr> framesDisplayed;
     viewer->getViewer()->getViewerProcessHashStored(&framesDisplayed);
 
-    ViewerInstancePtr internalViewerProcessNode = viewer->getInternalNode()->getViewerProcessNode(0);
+    ViewerNodePtr internalNode = viewer->getInternalNode();
+    if (!internalNode) {
+        return;
+    }
+    ViewerInstancePtr internalViewerProcessNode = internalNode->getViewerProcessNode(0);
 
     // For all frames in the map:
     // 1) Check the hash is still valid at that frame
