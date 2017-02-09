@@ -430,7 +430,7 @@ OfxEffectInstance::isInitialized() const
 OfxEffectInstance::~OfxEffectInstance()
 {
     _imp->common->overlayInteract.reset();
-    if (_imp->common->effect) {
+    if (_imp->common.use_count() == 1 && _imp->common->effect) {
         _imp->common->effect->destroyInstanceAction();
     }
 }
@@ -1428,6 +1428,7 @@ OfxEffectInstance::isIdentity(TimeValue time,
     std::string inputclip;
 
     OfxTime identityTimeOfx = time;
+    OfxStatus stat;
     {
 
         OfxRectI ofxRoI;
@@ -1448,8 +1449,9 @@ OfxEffectInstance::isIdentity(TimeValue time,
 
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
 
-        OfxStatus stat = _imp->common->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
-        if (stat == kOfxStatFailed) {
+        stat = _imp->common->effect->isIdentityAction(identityTimeOfx, field, ofxRoI, scale, view, inputclip);
+        assert(stat != kOfxStatErrBadHandle);
+        if (stat == kOfxStatFailed || stat == kOfxStatErrBadHandle) {
             return eActionStatusFailed;
         } else if (stat == kOfxStatReplyDefault) {
             return eActionStatusOK;

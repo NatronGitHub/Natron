@@ -510,7 +510,9 @@ public:
                 outPtrs[1] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[1]);
             } else {
                 // We are in eImageBufferLayoutRGBAPackedFullRect layout
-                outPtrs[1] = outPtrs[0] + 1;
+                if (outPtrs[0]) {
+                    outPtrs[1] = outPtrs[0] + 1;
+                }
             }
             if (nComps > 2) {
                 if (ptrs[2]) {
@@ -519,7 +521,9 @@ public:
                     outPtrs[2] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[2]);
                 } else {
                     // We are in eImageBufferLayoutRGBAPackedFullRect layout
-                    outPtrs[2] = outPtrs[1] + 1;
+                    if (outPtrs[1]) {
+                        outPtrs[2] = outPtrs[1] + 1;
+                    }
                 }
             }
             if (nComps > 3) {
@@ -529,7 +533,9 @@ public:
                     outPtrs[3] = (PIX*)pixelAtStatic(x, y, bounds, 1, dataSizeOf, (unsigned char*)ptrs[3]);
                 } else {
                     // We are in eImageBufferLayoutRGBAPackedFullRect layout
-                    outPtrs[3] = outPtrs[2] + 1;
+                    if (outPtrs[2]) {
+                        outPtrs[3] = outPtrs[2] + 1;
+                    }
                 }
             }
         }

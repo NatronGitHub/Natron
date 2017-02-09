@@ -199,6 +199,7 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                         DSTPIX* dst_pix = dstPixelPtrs[c];
                         for (int x = renderWindow.x1; x < renderWindow.x2; ++x) {
                             // They are of the same bitdepth since srcMaxValue == dstMaxValue was checked above
+                            assert(*src_pix == *src_pix); // check for NaNs
                             *dst_pix = (DSTPIX)*src_pix;
                             src_pix += srcPixelStride;
                             dst_pix += dstPixelStride;
@@ -210,15 +211,15 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
         } else {
             // Start of the line for error diffusion
             // coverity[dont_call]
-            int start = rand() % renderWindow.width();
+            int start = rand() % renderWindow.width() + renderWindow.x1;
 
             const SRCPIX* srcPixelPtrs[4];
             int srcPixelStride;
-            Image::getChannelPointers<SRCPIX>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, nComp, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
+            Image::getChannelPointers<SRCPIX>((const SRCPIX**)srcBufPtrs, start, y, srcBounds, nComp, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
             DSTPIX* dstPixelPtrs[4];
             int dstPixelStride;
-            Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
+            Image::getChannelPointers<DSTPIX>((const DSTPIX**)dstBufPtrs, start, y, dstBounds, nComp, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
             const SRCPIX* srcPixelStart[4];
             DSTPIX* dstPixelStart[4];
@@ -227,8 +228,8 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
             
 
             for (int backward = 0; backward < 2; ++backward) {
-                int x = backward ? start - 1 : start;
-                int end = backward ? -1 : renderWindow.width();
+                int x = backward ? std::max(renderWindow.x1, start - 1) : start;
+                int end = backward ? renderWindow.x1 - 1 : renderWindow.x2;
                 unsigned error[3] = {
                     0x80, 0x80, 0x80
                 };
@@ -242,12 +243,11 @@ convertToFormatInternal_sameComps(const RectI & renderWindow,
                         SRCPIX sourcePixel;
                         if (srcPixelPtrs[k]) {
                             sourcePixel = *srcPixelPtrs[k];
+                            assert(sourcePixel == sourcePixel); // check for NaNs
                         } else {
                             sourcePixel = 0;
                         }
-#                 ifdef DEBUG
-                     //   assert(sourcePixel == sourcePixel); // check for NaN
-#                 endif
+
                         DSTPIX pix;
                         if ( (k == 3) || (!srcLut && !dstLut) ) {
                             pix = Image::convertPixelDepth<SRCPIX, DSTPIX>(sourcePixel);
@@ -350,15 +350,15 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
             return;
         }
 
-        int start = rand() % renderWindow.width();
+        int start = rand() % renderWindow.width() + renderWindow.x1;
 
         const SRCPIX* srcPixelPtrs[4];
         int srcPixelStride;
-        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, renderWindow.x1 + start, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
+        Image::getChannelPointers<SRCPIX, srcNComps>((const SRCPIX**)srcBufPtrs, start, y, srcBounds, (SRCPIX**)srcPixelPtrs, &srcPixelStride);
 
         DSTPIX* dstPixelPtrs[4];
         int dstPixelStride;
-        Image::getChannelPointers<DSTPIX, dstNComps>((const DSTPIX**)dstBufPtrs, renderWindow.x1 + start, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
+        Image::getChannelPointers<DSTPIX, dstNComps>((const DSTPIX**)dstBufPtrs, start, y, dstBounds, (DSTPIX**)dstPixelPtrs, &dstPixelStride);
 
         const SRCPIX* srcPixelStart[4];
         DSTPIX* dstPixelStart[4];
@@ -369,10 +369,10 @@ static convertToFormatInternalForColorSpace(const RectI & renderWindow,
         // We do twice the loop, once from starting point to end and once from starting point - 1 to real start
         for (int backward = 0; backward < 2; ++backward) {
 
-            int x = backward ? start - 1 : start;
+            int x = backward ? std::max(renderWindow.x1, start - 1) : start;
 
             // End is pointing to the first pixel outside the line a la stl
-            int end = backward ? -1 : renderWindow.width();
+            int end = backward ? renderWindow.x1 - 1 : renderWindow.x2;
 
             // The error will be updated and diffused throughout the scanline
             unsigned error[3] = {

@@ -1172,7 +1172,7 @@ template <int srcNComps>
 void
 fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
                                     const RectI& roi,
-                                    unsigned int* dstPixels)
+                                    unsigned int* buf)
 {
 
 
@@ -1183,21 +1183,23 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
 
     const unsigned char alpha = 255;
 
+
     for (int y = roi.y1; y < roi.y2; ++y) {
 
-        const int start_x = (int)( rand() % (roi.x2 - roi.x1) );
+        const int start_x = (int)( rand() % (roi.width()) ) + roi.x1;
 
         for (int backward = 0; backward < 2; ++backward) {
 
 
-            int x = backward ? start_x - 1 : start_x;
-            const int end_x = backward ? -1 : roi.x2;
+            int x = backward ? std::max(roi.x1, start_x - 1) : start_x;
+            const int end_x = backward ? roi.x1 - 1 : roi.x2;
             assert( backward == 1 || ( x >= 0 && x < (roi.x2 - roi.x1) ) );
 
             const float* srcPixels[4];
             int srcPixelStride;
             Image::getChannelPointers<float, srcNComps>((const float**)srcImage.ptrs, x, y, srcImage.tileBounds, (float**)srcPixels, &srcPixelStride);
 
+            unsigned int* dstPixels = buf + y * roi.width() + x;
 
             unsigned error[3] = {0x80, 0x80, 0x80};
 
@@ -1214,12 +1216,12 @@ fullRectFloatCPUImageToPBOForNComps(const Image::CPUTileData& srcImage,
                 }
 
                 *dstPixels = toBGRA( (U8)(error[0] >> 8), (U8)(error[1] >> 8), (U8)(error[2] >> 8), alpha );
-                ++dstPixels;
-
                 if (backward) {
                     --x;
+                    --dstPixels;
                 } else {
                     ++x;
+                    ++dstPixels;
                 }
             } // for each pixels along the line
         } // backward ?

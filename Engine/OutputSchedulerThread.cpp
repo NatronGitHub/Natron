@@ -2079,6 +2079,8 @@ public:
 
     bool isPartialRect;
     ImagePtr viewerProcessImages[2];
+    ImagePtr colorPickerImages[2];
+    ImagePtr colorPickerInputImages[2];
     RectD canonicalRoi[2];
     ImageTileKeyPtr viewerProcessImageKey[2];
 };
@@ -2107,12 +2109,12 @@ typedef boost::shared_ptr<ViewerRenderBufferedFrameContainer> ViewerRenderBuffer
 struct RenderViewerProcessFunctorArgs
 {
     NodePtr viewerProcessNode;
+    NodePtr colorPickerNode, colorPickerInputNode;
     TreeRenderPtr renderObject;
     TimeValue time;
     ViewIdx view;
     RenderStatsPtr stats;
     ActionRetCodeEnum retCode;
-    ImagePtr outputImage;
     RectD roi;
 
     // Store the key of the first tile in the outputImage
@@ -2120,6 +2122,9 @@ struct RenderViewerProcessFunctorArgs
     // the image is still cached to update the cache line
     // on the timeline.
     ImageTileKeyPtr viewerProcessImageTileKey;
+    ImagePtr outputImage;
+    ImagePtr colorPickerImage, colorPickerInputImage;
+
     unsigned int viewerMipMapLevel;
     bool isDraftModeEnabled;
     bool isPlayback;
@@ -2178,9 +2183,41 @@ public:
         args->playback = inArgs->isPlayback;
         args->byPassCache = inArgs->byPassCache;
 
+        if (inArgs->colorPickerNode) {
+            args->extraNodesToSample.push_back(inArgs->colorPickerNode);
+        }
+        if (inArgs->colorPickerInputImage) {
+            args->extraNodesToSample.push_back(inArgs->colorPickerInputNode);
+        }
+
         inArgs->retCode = eActionStatusFailed;
         inArgs->renderObject = TreeRender::create(args);
 
+    }
+
+    static ImagePtr convertImageForViewerDisplay(const ImagePtr& image)
+    {
+        if (!image) {
+            return image;
+        }
+        Image::InitStorageArgs initArgs;
+        initArgs.bounds = image->getBounds();
+
+        // Viewer textures are always RGBA
+
+        initArgs.layer = image->getLayer();
+        initArgs.mipMapLevel = image->getMipMapLevel();
+        initArgs.proxyScale = image->getProxyScale();
+        initArgs.bitdepth = image->getBitDepth();
+        initArgs.storage = eStorageModeRAM;
+        initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
+        ImagePtr mappedImage = Image::create(initArgs);
+
+        Image::CopyPixelsArgs copyArgs;
+        copyArgs.roi = initArgs.bounds;
+        copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
+        mappedImage->copyPixels(*image, copyArgs);
+        return mappedImage;
     }
 
     static void launchRenderFunctor(const RenderViewerProcessFunctorArgsPtr& inArgs)
@@ -2209,25 +2246,28 @@ public:
                 }
             }
 
-            Image::InitStorageArgs initArgs;
-            initArgs.bounds = inArgs->outputImage->getBounds();
+            // The viewer-process node always renders 4 channel images
+            assert(inArgs->outputImage->getLayer().getNumComponents() == 4);
+            inArgs->outputImage = convertImageForViewerDisplay(inArgs->outputImage);
 
-            // Viewer textures are always RGBA
-            initArgs.layer = ImagePlaneDesc::getRGBAComponents();
-            initArgs.mipMapLevel = inArgs->outputImage->getMipMapLevel();
-            initArgs.proxyScale = inArgs->outputImage->getProxyScale();
-            initArgs.bitdepth = inArgs->outputImage->getBitDepth();
-            initArgs.storage = eStorageModeRAM;
-            initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
-            ImagePtr mappedImage = Image::create(initArgs);
-
-            Image::CopyPixelsArgs copyArgs;
-            copyArgs.roi = initArgs.bounds;
-            copyArgs.monoConversion = Image::eMonoToPackedConversionCopyToAll;
-            mappedImage->copyPixels(*inArgs->outputImage, copyArgs);
-            inArgs->outputImage = mappedImage;
-
-
+            // Extra color-picker images as-well.
+            if (inArgs->colorPickerNode) {
+                {
+                    FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerNode);
+                    if (req) {
+                        inArgs->colorPickerImage = req->getImagePlane();
+                        inArgs->colorPickerImage = convertImageForViewerDisplay(inArgs->colorPickerImage);
+                    }
+                }
+                if (inArgs->colorPickerInputNode) {
+                    FrameViewRequestPtr req = inArgs->renderObject->getExtraRequestedResultsForNode(inArgs->colorPickerInputNode);
+                    if (req) {
+                        inArgs->colorPickerInputImage = req->getImagePlane();
+                        inArgs->colorPickerInputImage = convertImageForViewerDisplay(inArgs->colorPickerInputImage);
+                    }
+                }
+            }
+            
         }
     }
 
@@ -2273,14 +2313,14 @@ public:
     } // getViewerMipMapLevel
 
     static void createRenderViewerProcessArgs(const ViewerNodePtr& viewer,
-                                                     int viewerProcess_i,
-                                                     TimeValue time,
-                                                     ViewIdx view,
-                                                     bool isPlayback,
-                                                     const RenderStatsPtr& stats,
-                                                     const RectD* roiParam,
-                                                     ViewerRenderBufferedFrame* bufferedFrame,
-                                                     RenderViewerProcessFunctorArgs* outArgs)
+                                              int viewerProcess_i,
+                                              TimeValue time,
+                                              ViewIdx view,
+                                              bool isPlayback,
+                                              const RenderStatsPtr& stats,
+                                              const RectD* roiParam,
+                                              ViewerRenderBufferedFrame* bufferedFrame,
+                                              RenderViewerProcessFunctorArgs* outArgs)
     {
 
         bool fullFrameProcessing = viewer->isFullFrameProcessingEnabled();
@@ -2295,15 +2335,23 @@ public:
             roi = viewer->getUiContext()->getImageRectangleDisplayed();
         }
 
-        (outArgs)->isPlayback = isPlayback;
-        (outArgs)->isDraftModeEnabled = draftModeEnabled;
-        (outArgs)->viewerMipMapLevel = mipMapLevel;
-        (outArgs)->byPassCache = byPassCache;
-        (outArgs)->roi = roi;
-        (outArgs)->stats = stats;
-        (outArgs)->time = time;
-        (outArgs)->view = view;
-        (outArgs)->viewerProcessNode = viewer->getViewerProcessNode(viewerProcess_i)->getNode();
+        outArgs->isPlayback = isPlayback;
+        outArgs->isDraftModeEnabled = draftModeEnabled;
+        outArgs->viewerMipMapLevel = mipMapLevel;
+        outArgs->byPassCache = byPassCache;
+        outArgs->roi = roi;
+        outArgs->stats = stats;
+        outArgs->time = time;
+        outArgs->view = view;
+        if (!isPlayback) {
+            outArgs->colorPickerNode = viewerProcess_i == 0 ? viewer->getCurrentAInput() : viewer->getCurrentBInput();
+            if (outArgs->colorPickerNode) {
+                // Also sample the "main" input of the color picker node, this is useful for keyers.
+                int mainInput = outArgs->colorPickerNode->getPreferredInput();
+                outArgs->colorPickerInputNode = outArgs->colorPickerNode->getInput(mainInput);
+            }
+        }
+        outArgs->viewerProcessNode = viewer->getViewerProcessNode(viewerProcess_i)->getNode();
         createRenderViewerObject(outArgs);
         bufferedFrame->canonicalRoi[viewerProcess_i] = roi;
 
@@ -2330,6 +2378,8 @@ private:
 
         bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
+        bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
+        bufferedFrame->colorPickerInputImages[viewerProcess_i] = processArgs->colorPickerInputImage;
 
     }
 
@@ -2442,6 +2492,8 @@ ViewerDisplayScheduler::processFrame(const BufferedFrameContainerPtr& frames)
             ViewerNode::UpdateViewerArgs::TextureUpload upload;
             upload.canonicalRoI = viewerObject->canonicalRoi[i];
             upload.image = viewerObject->viewerProcessImages[i];
+            upload.colorPickerImage = viewerObject->colorPickerImages[i];
+            upload.colorPickerInputImage = viewerObject->colorPickerInputImages[i];
             upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
             args.viewerUploads[i].push_back(upload);
         }
@@ -3201,6 +3253,8 @@ public:
 
         bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
+        bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
+        bufferedFrame->colorPickerInputImages[viewerProcess_i] = processArgs->colorPickerInputImage;
         
     }
 
@@ -3501,6 +3555,8 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
             ViewerNode::UpdateViewerArgs::TextureUpload upload;
             upload.canonicalRoI = viewerObject->canonicalRoi[i];
             upload.image = viewerObject->viewerProcessImages[i];
+            upload.colorPickerImage = viewerObject->colorPickerImages[i];
+            upload.colorPickerInputImage = viewerObject->colorPickerInputImages[i];
             upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
             args.viewerUploads[i].push_back(upload);
         }

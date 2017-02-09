@@ -86,6 +86,8 @@ public:
      * 4) glTexSubImage2D or glTexImage2D depending whether yo need to resize the texture or not.
      **/
     virtual void transferBufferFromRAMtoGPU(const ImagePtr& image,
+                                            const ImagePtr& colorPickerImage,
+                                            const ImagePtr& colorPickerInputImage,
                                             int textureIndex,
                                             bool isPartialRect,
                                             TimeValue time,

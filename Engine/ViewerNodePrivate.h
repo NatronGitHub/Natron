@@ -83,7 +83,7 @@ NATRON_NAMESPACE_ENTER;
 
 #define kViewerNodeParamFullFrame "fullFrame"
 #define kViewerNodeParamFullFrameLabel "Full Frame"
-#define kViewerNodeParamFullFrameHint "When checked, the viewer will render the image in its entirety (at full resolution) not just the visible portion. This may be useful when panning/zooming during playback"
+#define kViewerNodeParamFullFrameHint "When checked, the viewer will render the image in its entirety (at full resolution) not just the visible portion. The \"Downscale Level\" parameter is meaningless when this is checked. This may be useful when panning/zooming during playback"
 
 #define kViewerNodeParamEnableUserRoI "enableRegionOfInterest"
 #define kViewerNodeParamEnableUserRoILabel "Region Of Interest"

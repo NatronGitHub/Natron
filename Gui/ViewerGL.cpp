@@ -1016,7 +1016,8 @@ void
 ViewerGL::clearLastRenderedImage()
 {
     for (int i = 0; i < 2; ++i) {
-        _imp->displayTextures[i].image.reset();
+        _imp->displayTextures[i].colorPickerImage.reset();
+        _imp->displayTextures[i].colorPickerInputImage.reset();
     }
 }
 
@@ -1041,6 +1042,8 @@ ViewerGL::removeViewerProcessHashAtTime(TimeValue time)
 
 void
 ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
+                                     const ImagePtr& colorPickerImage,
+                                     const ImagePtr& colorPickerInputImage,
                                      int textureIndex,
                                      bool isPartialRect,
                                      TimeValue time,
@@ -1123,7 +1126,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
         _imp->displayTextures[1].time = time;
     } else {
 
-        _imp->displayTextures[textureIndex].image = image;
+        _imp->displayTextures[textureIndex].colorPickerImage = colorPickerImage;
+        _imp->displayTextures[textureIndex].colorPickerInputImage = colorPickerInputImage;
         _imp->displayTextures[textureIndex].originalCanonicalRoi = originalCanonicalRoi;
         // re-use the existing texture if possible
         if (!image) {
@@ -1772,6 +1776,7 @@ ViewerGL::updateColorPicker(int textureIndex,
     float r, g, b, a;
     bool linear = appPTR->getCurrentSettings()->getColorPickerLinear();
     bool picked = false;
+    bool pickInput = (qApp->keyboardModifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::AltModifier);
     RectD rod = getRoD(textureIndex);
     RectD formatCanonical = getCanonicalFormat(textureIndex);
     unsigned int mmLevel;
@@ -1789,7 +1794,7 @@ ViewerGL::updateColorPicker(int textureIndex,
                    ( imgPosCanonical.y() >= formatCanonical.bottom() ) &&
                    ( imgPosCanonical.y() < formatCanonical.top() ) ) ) {
                 //imgPos must be in canonical coordinates
-                picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, &r, &g, &b, &a, &mmLevel);
+                picked = getColorAt(imgPosCanonical.x(), imgPosCanonical.y(), linear, textureIndex, pickInput, &r, &g, &b, &a, &mmLevel);
             }
         }
     }
@@ -2620,10 +2625,9 @@ ViewerGL::getViewerTab() const
 bool
 ViewerGL::pickColorInternal(double x,
                             double y,
-                            bool /*pickInput*/)
+                            bool pickInput)
 {
 
-#pragma message WARN("Todo: use pickInput")
     float r, g, b, a;
     QPointF imgPos;
     {
@@ -2639,7 +2643,7 @@ ViewerGL::pickColorInternal(double x,
     for (int i = 0; i < 2; ++i) {
         // imgPos must be in canonical coordinates
         unsigned int mmLevel;
-        bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, &r, &g, &b, &a, &mmLevel);
+        bool picked = getColorAt(imgPos.x(), imgPos.y(), linear, i, pickInput, &r, &g, &b, &a, &mmLevel);
         if (picked) {
             if (i == 0) {
                 _imp->viewerTab->getGui()->setColorPickersColor(currentView, r, g, b, a);
@@ -2812,13 +2816,15 @@ ViewerGL::updateRectangleColorPickerInternal()
 
     ViewIdx currentView = getInternalNode()->getCurrentView_TLS();
 
+    bool pickInput = (qApp->keyboardModifiers() & (Qt::ControlModifier | Qt::AltModifier | Qt::ShiftModifier)) == (Qt::ControlModifier | Qt::AltModifier);
+
     rect.set_left( std::min( topLeft.x(), btmRight.x() ) );
     rect.set_right( std::max( topLeft.x(), btmRight.x() ) );
     rect.set_bottom( std::min( topLeft.y(), btmRight.y() ) );
     rect.set_top( std::max( topLeft.y(), btmRight.y() ) );
     for (int i = 0; i < 2; ++i) {
         unsigned int mm;
-        bool picked = getColorAtRect(rect, linear, i, &r, &g, &b, &a, &mm);
+        bool picked = getColorAtRect(rect, linear, i, pickInput, &r, &g, &b, &a, &mm);
         if (picked) {
             if (i == 0) {
                 _imp->viewerTab->getGui()->setColorPickersColor(currentView, r, g, b, a);
@@ -3087,6 +3093,7 @@ ViewerGL::getColorAt(double x,
                      double y,           // x and y in canonical coordinates
                      bool forceLinear,
                      int textureIndex,
+                     bool pickInput, 
                      float* r,
                      float* g,
                      float* b,
@@ -3100,7 +3107,12 @@ ViewerGL::getColorAt(double x,
 
 
 
-    ImagePtr image = _imp->displayTextures[textureIndex].image;
+    ImagePtr image;
+    if (pickInput) {
+        image = _imp->displayTextures[textureIndex].colorPickerInputImage;
+    } else {
+        image = _imp->displayTextures[textureIndex].colorPickerImage;
+    }
     if (!image) {
         return false;
     }
@@ -3281,6 +3293,7 @@ bool
 ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
                          bool forceLinear,
                          int textureIndex,
+                         bool pickInput,
                          float* r,
                          float* g,
                          float* b,
@@ -3294,7 +3307,12 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
 
 
 
-    ImagePtr image = _imp->displayTextures[textureIndex].image;
+    ImagePtr image;
+    if (pickInput) {
+        image = _imp->displayTextures[textureIndex].colorPickerInputImage;
+    } else {
+        image = _imp->displayTextures[textureIndex].colorPickerImage;
+    }
     if (!image) {
         return false;
     }

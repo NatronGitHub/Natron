@@ -354,6 +354,7 @@ public:
 
     void restoreOpenGLRenderer();
 
+    void restoreNumThreads();
 
 };
 
@@ -2417,6 +2418,8 @@ Settings::loadSettingsFromFile(int loadType)
             _imp->tryLoadOpenColorIOConfig();
         }
 
+        // Restore number of threads
+        _imp->restoreNumThreads();
 
         // If the appearance changed, flag it
         try {
@@ -2601,6 +2604,26 @@ crash_application()
     *a = 1;
 }
 
+void
+SettingsPrivate::restoreNumThreads()
+{
+    int nbThreads = _numberOfThreads->getValue();
+#ifdef DEBUG
+    if (nbThreads == -1) {
+        nbThreads = 1;
+    }
+#endif
+    assert(nbThreads >= 0);
+    if (nbThreads == 0) {
+        int idealCount = appPTR->getHardwareIdealThreadCount();
+        assert(idealCount > 0);
+        idealCount = std::max(idealCount, 1);
+        QThreadPool::globalInstance()->setMaxThreadCount(idealCount);
+    } else {
+        QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
+    }
+}
+
 bool
 Settings::onKnobValueChanged(const KnobIPtr& k,
                              ValueChangedReasonEnum reason,
@@ -2628,22 +2651,7 @@ Settings::onKnobValueChanged(const KnobIPtr& k,
         }
 
     }  else if ( k == _imp->_numberOfThreads ) {
-        int nbThreads = _imp->_numberOfThreads->getValue();
-#ifdef DEBUG
-        if (nbThreads == -1) {
-            nbThreads = 1;
-        }
-#endif
-        assert(nbThreads >= 0);
-        if (nbThreads == 0) {
-            int idealCount = appPTR->getHardwareIdealThreadCount();
-            assert(idealCount > 0);
-            idealCount = std::max(idealCount, 1);
-            QThreadPool::globalInstance()->setMaxThreadCount(idealCount);
-        } else {
-            QThreadPool::globalInstance()->setMaxThreadCount(nbThreads);
-        }
-
+        _imp->restoreNumThreads();
     } else if ( k == _imp->_ocioConfigKnob ) {
         if (_imp->_ocioConfigKnob->getActiveEntry().id == NATRON_CUSTOM_OCIO_CONFIG_NAME) {
             _imp->_customOcioConfigFile->setEnabled(true);

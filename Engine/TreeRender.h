@@ -94,6 +94,13 @@ public:
         // effect that was created in TreeRender::create, otherwise this can be the main instance.
         EffectInstancePtr treeRootEffect;
 
+        // List of nodes that belong to the tree upstream of treeRootEffect for which we desire
+        // a pointer of the resulting image. This is useful for the Viewer to enable color-picking:
+        // the output image is the image out of the ViewerProcess node, but what the user really
+        // wants is the color-picker of the image in input of the Viewer (group) node.
+        // These images can then be retrieved using the getExtraRequestedResultsForNode() function.
+        std::list<NodePtr> extraNodesToSample;
+
         // When painting with a roto item, this points to the item used to draw
         RotoDrawableItemPtr activeRotoDrawableItem;
 
@@ -224,6 +231,11 @@ public:
      **/
     EffectInstancePtr getTreeRootRenderClone() const;
 
+    /**
+     * @brief Returns the request of the given node if it was requested in the
+     * extraNodesToSample list in the ctor arguments.
+     **/
+    FrameViewRequestPtr getExtraRequestedResultsForNode(const NodePtr& node) const;
 
     /**
      * @brief Returns the object used to gather stats for this rende

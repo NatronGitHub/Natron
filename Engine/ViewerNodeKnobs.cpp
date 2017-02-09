@@ -1337,6 +1337,9 @@ ViewerNode::onKnobsLoaded()
     // Refresh visibility & enabledness
     _imp->fpsKnob.lock()->setEnabled(_imp->enableFpsKnob.lock()->getValue());
 
+    bool fullFrameOn = _imp->fullFrameButtonKnob.lock()->getValue();
+    _imp->downscaleChoiceKnob.lock()->setEnabled(!fullFrameOn);
+
     RenderEnginePtr engine = getNode()->getRenderEngine();
     // Refresh playback mode
     PlaybackModeEnum mode = (PlaybackModeEnum)_imp->playbackModeKnob.lock()->getValue();
@@ -1784,6 +1787,9 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         _imp->uiContext->setTimelineBounds(_imp->inPointKnob.lock()->getValue(), _imp->outPointKnob.lock()->getValue());
     } else if (k == _imp->outPointKnob.lock()) {
         _imp->uiContext->setTimelineBounds(_imp->inPointKnob.lock()->getValue(), _imp->outPointKnob.lock()->getValue());
+    } else if (k == _imp->fullFrameButtonKnob.lock()) {
+        bool fullFrameOn = _imp->fullFrameButtonKnob.lock()->getValue();
+        _imp->downscaleChoiceKnob.lock()->setEnabled(!fullFrameOn);
     } else {
         caught = false;
     }

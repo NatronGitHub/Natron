@@ -76,7 +76,8 @@ struct TextureInfo
 {
     TextureInfo()
     : texture()
-    , image()
+    , colorPickerImage()
+    , colorPickerInputImage()
     , mipMapLevel(0)
     , premult(eImagePremultiplicationOpaque)
     , time(0)
@@ -91,7 +92,7 @@ struct TextureInfo
 
     GLTexturePtr texture;
 
-    ImagePtr image;
+    ImagePtr colorPickerImage, colorPickerInputImage;
 
     unsigned int mipMapLevel;
 

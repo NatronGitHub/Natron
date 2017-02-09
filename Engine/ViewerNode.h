@@ -268,6 +268,9 @@ public:
             // A pointer to the image on CPU
             ImagePtr image;
 
+            // Pointers to the color picker images
+            ImagePtr colorPickerImage, colorPickerInputImage;
+
             // The hash of the viewer process node
             ImageTileKeyPtr viewerProcessImageKey;
         };

@@ -351,6 +351,7 @@ ViewerInstancePrivate::buildGammaLut(double gamma, RamBuffer<float>* gammaLookup
 float
 ViewerInstancePrivate::lookupGammaLut(float value, const float* gammaLookupBuffer)
 {
+    assert(value == value); // check for NaN
     if (value < 0.) {
         return 0.;
     } else if (value > 1.) {
@@ -581,7 +582,7 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
     channelOptions.push_back(ChoiceOption("-", "", ""));
 
     int foundColorPlaneIndex = -1;
-
+    int foundColorPlaneAlpha = -1;
     for (std::list<ImagePlaneDesc>::iterator it2 = upstreamAvailableLayers.begin(); it2 != upstreamAvailableLayers.end(); ++it2) {
 
         if (foundColorPlaneIndex == -1 && it2->isColorPlane()) {
@@ -592,6 +593,9 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
         layerOptions.push_back(layerOption);
 
         std::size_t nChans = (std::size_t)it2->getNumComponents();
+        if (foundColorPlaneAlpha == -1 && it2->isColorPlane() && nChans == 4) {
+            foundColorPlaneAlpha = channelOptions.size() + 3;
+        }
         for (std::size_t c = 0; c < nChans; ++c) {
             ChoiceOption chanOption = it2->getChannelOption(c);
             channelOptions.push_back(chanOption);
@@ -612,11 +616,14 @@ ViewerInstancePrivate::refreshLayerAndAlphaChannelComboBox()
         }
     }
 
-    // If the old alpha channel choice does no longer exist, fallback on None
-    if (!alphaChannelKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
-        alphaChannelKnob->setValue(0);
+    // If the old alpha choice does no longer exist or it is "-" fallback on color-plane alpha channel
+    if (alphaChannelKnob->getValue() == 0 || !alphaChannelKnob->isActiveEntryPresentInEntries(ViewIdx(0))) {
+        if (foundColorPlaneIndex != -1) {
+            alphaChannelKnob->setValue(foundColorPlaneAlpha);
+        } else {
+            alphaChannelKnob->setValue(0);
+        }
     }
-
     setDisplayChannelsFromLayer(upstreamAvailableLayers);
 
 } // refreshLayerAndAlphaChannelComboBox
@@ -953,6 +960,7 @@ genericViewerProcessFunctor(const RenderViewerArgs& args,
 
     for (int i = 0; i < 3; ++i) {
         if (color_pixels[i]) {
+            assert(*color_pixels[i] == *color_pixels[i]); // check for NaNs
             tmpPix[i] = Image::convertPixelDepth<PIX, float>(*color_pixels[i]);
         }
     }
@@ -1026,13 +1034,13 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
 
         // For error diffusion, we start at each line at a random pixel along the line so it does
         // not create a pattern in the output image.
-        const int startX = (int)( rand() % (roi.x2 - roi.x1) );
+        const int startX = (int)( rand() % (roi.width()) ) + roi.x1;
 
         for (int backward = 0; backward < 2; ++backward) {
 
-            int x = backward ? startX - 1 : startX;
+            int x = backward ? std::max(roi.x1, startX - 1) : startX;
 
-            const int endX = backward ? -1 : roi.x2;
+            const int endX = backward ? roi.x1 - 1 : roi.x2;
 
             unsigned error[3] = {0x80, 0x80, 0x80};
 
@@ -1048,6 +1056,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
             int dstPixelStride;
             unsigned char* dst_pixels[4];
             Image::getChannelPointers<unsigned char>((const unsigned char**)args.dstImage.ptrs, x, y, args.dstImage.tileBounds, args.dstImage.nComps, (unsigned char**)dst_pixels, &dstPixelStride);
+            assert(dst_pixels[0]);
 
             while (x != endX) {
                 float tmpPix[4];
@@ -1081,25 +1090,35 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                     uTmpPix[0] = Image::clampIfInt<U8>( (double)uTmpPix[0] + matteA );
 
                 }
-
+                // The viewer has the particularity to write-out BGRA 8-bit images instead of RGBA since the resulting
+                // image is directly fed to the GL_BGRA OpenGL texture format.
                 *reinterpret_cast<unsigned int*>(dst_pixels[0]) = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);
-
-                for (int i = 0; i < 4; ++i) {
-                    if (color_pixels[i]) {
-                        color_pixels[i] += colorPixelStride;
-                    }
-                    if (alpha_pixels[i]) {
-                        alpha_pixels[i] += alphaPixelStride;
-                    }
-                    if (dst_pixels[i]) {
-                        dst_pixels[i] += dstPixelStride;
-                    }
-                }
-
                 if (backward) {
                     --x;
+                    for (int i = 0; i < 4; ++i) {
+                        if (color_pixels[i]) {
+                            color_pixels[i] -= colorPixelStride;
+                        }
+                        if (alpha_pixels[i]) {
+                            alpha_pixels[i] -= alphaPixelStride;
+                        }
+                        if (dst_pixels[i]) {
+                            dst_pixels[i] -= dstPixelStride;
+                        }
+                    }
                 } else {
                     ++x;
+                    for (int i = 0; i < 4; ++i) {
+                        if (color_pixels[i]) {
+                            color_pixels[i] += colorPixelStride;
+                        }
+                        if (alpha_pixels[i]) {
+                            alpha_pixels[i] += alphaPixelStride;
+                        }
+                        if (dst_pixels[i]) {
+                            dst_pixels[i] += dstPixelStride;
+                        }
+                    }
                 }
 
             } // for each pixels on the line

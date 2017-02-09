@@ -102,6 +102,14 @@ struct TreeRenderPrivate
     // Render args of the root node
     EffectInstancePtr rootRenderClone;
 
+    // Map of nodes that belong to the tree upstream of tree root for which we desire
+    // a pointer of the resulting image. This is useful for the Viewer to enable color-picking:
+    // the output image is the image out of the ViewerProcess node, but what the user really
+    // wants is the color-picker of the image in input of the Viewer (group) node.
+    // These images can then be retrieved using the getExtraRequestedResultsForNode() function.
+    std::map<NodePtr, FrameViewRequestPtr> extraRequestedResults;
+    mutable QMutex extraRequestedResultsMutex;
+
     // the OpenGL contexts
     OSGLContextWPtr openGLContext, cpuOpenGLContext;
 
@@ -133,6 +141,8 @@ struct TreeRenderPrivate
     , state(eActionStatusOK)
     , renderClonesMap()
     , rootRenderClone()
+    , extraRequestedResults()
+    , extraRequestedResultsMutex()
     , openGLContext()
     , cpuOpenGLContext()
     , aborted()
@@ -224,6 +234,16 @@ TreeRender::getTreeRootRenderClone() const
     return _imp->rootRenderClone;
 }
 
+FrameViewRequestPtr
+TreeRender::getExtraRequestedResultsForNode(const NodePtr& node) const
+{
+    QMutexLocker k(&_imp->extraRequestedResultsMutex);
+    std::map<NodePtr, FrameViewRequestPtr>::const_iterator found = _imp->extraRequestedResults.find(node);
+    if (found == _imp->extraRequestedResults.end()) {
+        return FrameViewRequestPtr();
+    }
+    return found->second;
+}
 
 OSGLContextPtr
 TreeRender::getGPUOpenGLContext() const
@@ -624,6 +644,11 @@ TreeRenderPrivate::init(const TreeRender::CtorArgsPtr& inArgs, const TreeRenderP
     handleNaNs = appPTR->getCurrentSettings()->isNaNHandlingEnabled();
     useConcatenations = appPTR->getCurrentSettings()->isTransformConcatenationEnabled();
 
+    // Initialize all requested extra nodes to a null result
+    for (std::list<NodePtr>::const_iterator it = inArgs->extraNodesToSample.begin(); it != inArgs->extraNodesToSample.end(); ++it) {
+        extraRequestedResults.insert(std::make_pair(*it, FrameViewRequestPtr()));
+    }
+
 #if 0
     // If abortable thread, set abort info on the thread, to make the render abortable faster
     AbortableThread* isAbortable = dynamic_cast<AbortableThread*>( ownerThread );
@@ -741,13 +766,14 @@ class FrameViewRenderRunnable : public QRunnable
 
     RequestPassSharedDataPtr _sharedData;
     FrameViewRequestPtr _request;
-
+    TreeRenderPrivate* _imp;
 public:
 
-    FrameViewRenderRunnable(const RequestPassSharedDataPtr& sharedData, const FrameViewRequestPtr& request)
+    FrameViewRenderRunnable(TreeRenderPrivate* imp, const RequestPassSharedDataPtr& sharedData, const FrameViewRequestPtr& request)
     : QRunnable()
     , _sharedData(sharedData)
     , _request(request)
+    , _imp(imp)
     {
         assert(request);
     }
@@ -788,6 +814,16 @@ private:
             // If the task has all its dependencies available, add it to the render queue.
             if ((*it)->getNumDependencies() == 0) {
                 _sharedData->_imp->dependencyFreeRenders.insert(*it);
+            }
+        }
+
+
+        // If the results for this node were requested by the caller, insert them
+        {
+            QMutexLocker k(&_imp->extraRequestedResultsMutex);
+            std::map<NodePtr, FrameViewRequestPtr>::iterator foundRequested = _imp->extraRequestedResults.find(renderClone->getNode());
+            if (foundRequested != _imp->extraRequestedResults.end() && !foundRequested->second) {
+                foundRequested->second = _request;
             }
         }
 
@@ -878,7 +914,7 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
             FrameViewRequestPtr request = *requestData->_imp->dependencyFreeRenders.begin();
             requestData->_imp->dependencyFreeRenders.erase(requestData->_imp->dependencyFreeRenders.begin());
 
-            threadPool->start(new FrameViewRenderRunnable(requestData, request));
+            threadPool->start(new FrameViewRenderRunnable(this, requestData, request));
         }
 
         // If this thread is a threadpool thread, it may wait for a while that results gets available.
