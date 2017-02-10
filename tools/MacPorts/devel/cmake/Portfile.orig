@@ -2,6 +2,7 @@
 
 PortSystem          1.0
 PortGroup           muniversal 1.0
+PortGroup           compiler_blacklist_versions 1.0
 
 name                cmake
 
@@ -53,12 +54,12 @@ if {${subport} eq ${name}} {
 
     # devel
 
-    version         20170131
-    set dist_branch 3.7
-    set dist_date   20170131
-    set dist_hash   g5eb3c
-    checksums       rmd160 783c3de3d0d752e4978bf4e23c8b1cc2c92495a6 \
-                    sha256 ffede2b7e72e5bcbce7b7e273ed6f2432723bb8dc2ddd35bf0ff2664def02a61
+    version         20170207
+    set dist_branch 3.8
+    set dist_date   20170207
+    set dist_hash   g6a98f
+    checksums       rmd160 93129d0cdabec93aa1070c665cfca0b133bb63f4 \
+                    sha256 39819c8bac24b1d6a07f0c12aa7ceaab91323aa05ab3e20f7361353c2678913c
 
     master_sites    http://www.cmake.org/files/dev/
     distname        ${name}-${dist_branch}.${dist_date}-${dist_hash}
@@ -104,6 +105,14 @@ configure.env-append \
                     CMAKE_PREFIX_PATH=${prefix} \
                     CMAKE_INCLUDE_PATH=${prefix}/include/ncurses \
                     CMAKE_LIBRARY_PATH=${prefix}/lib
+
+# when using libc++, require Clang 3.4 or newer; Clang 3.3 produces
+# bad stream reading code. See also MP ticket #44129:
+# < https://trac.macports.org/ticket/44129 >
+
+if {${configure.cxx_stdlib} eq "libc++"} {
+    compiler.blacklist-append *gcc* {clang < 500} macports-clang-3.3
+}
 
 platform darwin {
     configure.env-append \

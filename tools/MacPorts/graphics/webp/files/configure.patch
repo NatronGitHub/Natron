@@ -1,6 +1,6 @@
---- configure.orig	2016-12-16 11:10:20.000000000 +1100
-+++ configure	2017-01-23 23:56:32.000000000 +1100
-@@ -13348,8 +13348,8 @@
+--- configure.orig	2017-01-30 14:41:24.000000000 -0600
++++ configure	2017-02-07 19:28:50.000000000 -0600
+@@ -13347,8 +13347,8 @@
      darwin*)
        # Special case for OSX builds. Append these to give the user a chance to
        # override with --with-gl*
@@ -11,7 +11,7 @@
        ;;
    esac
  
-@@ -13366,7 +13366,7 @@
+@@ -13365,7 +13365,7 @@
        none) ;;
        *) CPPFLAGS="$flag $CPPFLAGS";;
      esac

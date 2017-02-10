@@ -3,8 +3,7 @@
 PortSystem              1.0
 
 name                    webp
-version                 0.5.2
-revision                1
+version                 0.6.0
 categories              graphics science devel
 platforms               darwin
 maintainers             ryandesign openmaintainer
@@ -28,18 +27,17 @@ long_description        WebP is a new image format that provides lossy \
 homepage                https://developers.google.com/speed/webp/
 master_sites            http://downloads.webmproject.org/releases/webp/
 
-checksums               rmd160  c5fa8789459d80102c8cdbf2f216eab3a9db5a3a \
-                        sha256  b75310c810b3eda222c77f6d6c26b061240e3d9060095de44b2c1bae291ecdef
+checksums               rmd160  82c3c6d5031de162b5282be49619ac1c343598b2 \
+                        sha256  c928119229d4f8f35e20113ffb61f281eda267634a8dc2285af4b0ee27cf2b40
 
-depends_lib             port:freeglut \
-                        port:giflib \
+depends_lib             port:giflib \
                         port:jpeg \
                         port:libpng \
-                        port:mesa \
-                        port:tiff \
-                        port:zlib
+                        port:tiff
 
 distname                libwebp-${version}
+
+patchfiles              configure.patch
 
 configure.args-append       \
     --enable-libwebpmux     \
