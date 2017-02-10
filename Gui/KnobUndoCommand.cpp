@@ -26,7 +26,7 @@
 
 #include <stdexcept>
 #include <sstream> // stringstream
-
+#include <QDebug>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -327,6 +327,8 @@ MultipleKnobEditsUndoCommand::undo()
         Knob<double>* isDouble = dynamic_cast<Knob<double>*>( knob.get() );
         Knob<std::string>* isString = dynamic_cast<Knob<std::string>*>( knob.get() );
         KeyFrame k;
+        // For setValue calls, only set back the old value once per-dimension
+        std::set<int> dimensionsUndone;
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KnobHelper::ValueChangedReturnCodeEnum retCode = (KnobHelper::ValueChangedReturnCodeEnum)it2->setValueRetCode;
 
@@ -347,6 +349,11 @@ MultipleKnobEditsUndoCommand::undo()
                         assert(false);
                     }
                 } else {
+                    // Only set back the first value that was set in the command
+                    if (dimensionsUndone.find(it2->dimension) != dimensionsUndone.end()) {
+                        continue;
+                    }
+                    dimensionsUndone.insert(it2->dimension);
                     if (isInt) {
                         knobUI->setValue<int>(it2->dimension, it2->oldValue.toInt(), &k, true, _reason);
                     } else if (isBool) {
@@ -398,7 +405,6 @@ MultipleKnobEditsUndoCommand::redo()
 
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
             KeyFrame k;
-
             if (!firstRedoCalled) {
                 if (isInt) {
                     it2->oldValue.setValue( isInt->getValueAtTime(it2->time, it2->dimension) );
