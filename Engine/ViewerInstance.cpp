@@ -2930,10 +2930,6 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         bool isDrawing = false;
         instance->getApp()->getActiveRotoDrawingStroke(&rotoPaintNode, &curStroke, &isDrawing);
 
-        if (!isDrawing) {
-            uiContext->updateColorPicker(params->textureIndex);
-        }
-
         const UpdateViewerParams::CachedTile& firstTile = params->tiles.front();
         ImagePtr originalImage;
         originalImage = params->colorImage;
@@ -2953,6 +2949,10 @@ ViewerInstance::ViewerInstancePrivate::updateViewer(boost::shared_ptr<UpdateView
         }
 
         uiContext->endTransferBufferFromRAMToGPU(params->textureIndex, texture, originalImage, params->time, params->rod,  params->pixelAspectRatio, depth, params->mipMapLevel, params->srcPremult, params->gain, params->gamma, params->offset, params->lut, params->recenterViewport, params->viewportCenter, params->isPartialRect);
+
+        if (!isDrawing) {
+            uiContext->updateColorPicker(params->textureIndex);
+        }
     }
 
     //
