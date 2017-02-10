@@ -95,7 +95,7 @@ struct CacheReportInfo
 
 
 struct CacheBucket;
-class SharedMemoryReader;
+class SharedMemoryProcessLocalReadLocker;
 /**
  * @brief Small RAII style class used to lock an entry corresponding to a hash key to ensure
  * only a single thread can work on it at once.
@@ -149,7 +149,7 @@ public:
 
     /**
      * @brief If the status was eCacheEntryStatusComputationPending, this waits for the results
-     * to be available by another thread that called insert(). 
+     * to be available by another thread that called insertInCache().
      * If results are ready when woken up
      * the status will become eCacheEntryStatusCached and the entry passed to the constructor is ready.
      * If the status can still not be found in the cache and no other threads is computing it, the status
@@ -170,9 +170,9 @@ public:
 
 private:
 
-    bool lookupAndSetStatusInternal(bool hasWriteRights, std::size_t timeSpentWaitingForPendingEntryMS, std::size_t timeout);
+    bool lookupAndSetStatusInternal(bool hasWriteRights, boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout);
 
-    void lookupAndSetStatus(boost::scoped_ptr<SharedMemoryReader>& shmAccess, std::size_t timeSpentWaitingForPendingEntryMS, std::size_t timeout);
+    void lookupAndSetStatus(boost::scoped_ptr<SharedMemoryProcessLocalReadLocker>& shmAccess, std::size_t *timeSpentWaitingForPendingEntryMS, std::size_t timeout);
 
     boost::scoped_ptr<CacheEntryLockerPrivate> _imp;
 };

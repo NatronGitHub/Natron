@@ -70,7 +70,7 @@ EffectInstanceTLSData::~EffectInstanceTLSData()
 }
 
 void
-EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
+EffectInstanceTLSData::pushActionArgs(const std::string& actionName, TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                               , bool canSetValue
                               , bool canBeCalledRecursively
@@ -81,6 +81,7 @@ EffectInstanceTLSData::pushActionArgs(TimeValue time, ViewIdx view, const Render
     args->time = time;
     args->view = view;
     args->scale = scale;
+    args->actionName = actionName;
 #ifdef DEBUG
     args->canSetValue = canSetValue;
 #endif
@@ -104,7 +105,7 @@ EffectInstanceTLSData::pushRenderActionArgs(TimeValue time, ViewIdx view, const 
     args->scale = scale;
     args->renderWindow = renderWindow;
     args->outputPlanes = outputPlanes;
-
+    args->actionName = "Render";
     QMutexLocker k(&_imp->lock);
 #ifdef DEBUG
     args->canSetValue = false;
@@ -140,9 +141,31 @@ EffectInstanceTLSData::isDuringActionThatCannotSetValue() const
 }
 #endif
 
+bool
+EffectInstanceTLSData::isCurrentAction(const std::string& actionName) const
+{
+    QMutexLocker k(&_imp->lock);
+    if (_imp->actionsArgsStack.empty()) {
+        return false;
+    }
+    const GenericActionTLSArgsPtr& args = _imp->actionsArgsStack.back();
+    return actionName == args->actionName;
+}
 
 bool
-EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const
+EffectInstanceTLSData::hasActionInStack(const std::string& actionName) const
+{
+    QMutexLocker k(&_imp->lock);
+    for (std::list<GenericActionTLSArgsPtr>::const_iterator it = _imp->actionsArgsStack.begin(); it != _imp->actionsArgsStack.end(); ++it) {
+        if ((*it)->actionName == actionName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool
+EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale, std::string* actionName) const
 {
     QMutexLocker k(&_imp->lock);
     if (_imp->actionsArgsStack.empty()) {
@@ -158,6 +181,9 @@ EffectInstanceTLSData::getCurrentActionArgs(TimeValue* time, ViewIdx* view, Rend
     }
     if (scale) {
         *scale = args->scale;
+    }
+    if (actionName) {
+        *actionName = args->actionName;
     }
     return true;
 }

@@ -59,6 +59,7 @@ public:
     : time(0)
     , view()
     , scale()
+    , actionName()
 #ifdef DEBUG
     , canSetValue(true)
 #endif
@@ -77,6 +78,9 @@ public:
 
     // the scale parameter passed to an OpenFX action
     RenderScale scale;
+
+    // Identifier of the action to prevent infinite recursion
+    std::string actionName;
 
 #ifdef DEBUG
     // whether or not this action can set value
@@ -123,7 +127,7 @@ public:
      * @brief Push TLS for an action that is not the render action. Mainly this will be needed by OfxClipInstance::getRegionOfDefinition and OfxClipInstance::getImage
      * This should only be needed for OpenFX plug-ins, as the Natron A.P.I already pass all required arguments in parameter.
      **/
-    void pushActionArgs(TimeValue time, ViewIdx view, const RenderScale& scale
+    void pushActionArgs(const std::string& actionName, TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                         , bool canSetValue
                         , bool canBeCalledRecursively
@@ -156,7 +160,17 @@ public:
      * @brief Retrieve the current thread action args. This will return true on success, false if we are not
      * between a push/pop bracket.
      **/
-    bool getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale) const;
+    bool getCurrentActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale, std::string* actionName) const;
+
+    /**
+     * @brief Returns true if this given action is the current one
+     **/
+    bool isCurrentAction(const std::string& actionName) const;
+
+    /**
+     * @brief Returns true if one of the actions in the stack is the given action
+     **/
+    bool hasActionInStack(const std::string& actionName) const;
 
     /**
      * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
@@ -190,6 +204,7 @@ class EffectActionArgsSetter_RAII
 public:
 
     EffectActionArgsSetter_RAII(const EffectInstanceTLSDataPtr& tls,
+                                const std::string& actionName,
                                 TimeValue time, ViewIdx view, const RenderScale& scale
 #ifdef DEBUG
                                 , bool canSetValue
@@ -198,7 +213,7 @@ public:
     )
     : tls(tls)
     {
-        tls->pushActionArgs(time, view, scale
+        tls->pushActionArgs(actionName, time, view, scale
 #ifdef DEBUG
                             , canSetValue
                             , canBeCalledRecursively

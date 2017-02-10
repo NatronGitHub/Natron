@@ -377,7 +377,8 @@ OfxEffectInstance::createInstanceAction()
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
     
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,  TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+    assert(!tls->isCurrentAction(kOfxActionCreateInstance));
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionCreateInstance, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ false
@@ -956,7 +957,7 @@ OfxEffectInstance::onInputChanged(int inputNo)
 
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionInstanceChanged, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
@@ -1057,7 +1058,10 @@ OfxEffectInstance::getTimeInvariantMetaDatas(NodeMetadata& metadata)
 
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
+    if (tls->hasActionInStack(kOfxImageEffectActionGetClipPreferences)) {
+        return eActionStatusReplyDefault;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetClipPreferences, TimeValue(0), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
@@ -1081,7 +1085,7 @@ OfxEffectInstance::onMetadataChanged(const NodeMetadata& metadata)
     RenderScale s(1.);
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionInstanceChanged, TimeValue(getApp()->getTimeLine()->currentFrame()), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
@@ -1116,7 +1120,10 @@ OfxEffectInstance::getRegionOfDefinition(TimeValue time,
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
 
-    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+    if (tls->hasActionInStack(kOfxImageEffectActionGetRegionOfDefinition)) {
+        return eActionStatusFailed;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetRegionOfDefinition, time, view, scale
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ true
@@ -1182,7 +1189,8 @@ OfxEffectInstance::calcDefaultRegionOfDefinition(TimeValue time,
     // the following ofxh function does the job
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
+
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetRegionOfDefinition, time, view, scale
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ true
@@ -1230,9 +1238,11 @@ OfxEffectInstance::getRegionsOfInterest(TimeValue time,
 
     {
         ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+        if (tls->hasActionInStack(kOfxImageEffectActionGetRegionsOfInterest)) {
+            return eActionStatusFailed;
+        }
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionGetRegionsOfInterest, time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1292,21 +1302,23 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
     }
     assert(_imp->common->effect);
 
+    EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
+    if (tls->hasActionInStack(kOfxImageEffectActionGetFramesNeeded)) {
+        return eActionStatusFailed;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls,kOfxImageEffectActionGetFramesNeeded, time, view, RenderScale(1.)
+#ifdef DEBUG
+                                              , /*canSetValue*/ false
+                                              , /*canBeCalledRecursively*/ false
+#endif
+                                              );
+
     if ( isViewAware() ) {
         OFX::Host::ImageEffect::ViewsRangeMap inputRanges;
         {
             assert(_imp->common->effect);
             
             ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-
-            EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-            EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, RenderScale(1.)
-#ifdef DEBUG
-                                                      , /*canSetValue*/ false
-                                                      , /*canBeCalledRecursively*/ false
-#endif
-                                                      );
-
 
             OfxStatus stat = _imp->common->effect->getFrameViewsNeeded( (OfxTime)time, view, inputRanges );
             if (stat == kOfxStatFailed) {
@@ -1385,7 +1397,10 @@ OfxEffectInstance::getFrameRange(double *first, double *last)
 
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,TimeValue(0), ViewIdx(0), RenderScale(1.)
+        if (tls->hasActionInStack(kOfxImageEffectActionGetTimeDomain)) {
+            return eActionStatusFailed;
+        }
+        EffectActionArgsSetter_RAII actionArgsTls(tls,kOfxImageEffectActionGetTimeDomain, TimeValue(0), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -1440,7 +1455,8 @@ OfxEffectInstance::isIdentity(TimeValue time,
         assert(_imp->common->effect);
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, scale
+
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionIsIdentity, time, view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -1529,7 +1545,10 @@ OfxEffectInstance::beginSequenceRender(double first,
 
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
+        if (tls->hasActionInStack(kOfxImageEffectActionBeginSequenceRender)) {
+            return eActionStatusFailed;
+        }
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionBeginSequenceRender, TimeValue(first), view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1573,8 +1592,12 @@ OfxEffectInstance::endSequenceRender(double first,
         OfxGLContextEffectData* isOfxGLData = dynamic_cast<OfxGLContextEffectData*>( glContextData.get() );
         void* oglData = isOfxGLData ? isOfxGLData->getDataHandle() : 0;
 
+
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(first), view, scale
+        if (tls->hasActionInStack(kOfxImageEffectActionEndSequenceRender)) {
+            return eActionStatusFailed;
+        }
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxImageEffectActionEndSequenceRender, TimeValue(first), view, scale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1735,7 +1758,7 @@ OfxEffectInstance::drawOverlay(TimeValue time,
     if (_imp->common->overlayInteract) {
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionDraw,  time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ false
@@ -1780,7 +1803,7 @@ OfxEffectInstance::onOverlayPenDown(TimeValue time,
         penPosViewport.y = viewportPos.y();
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenDown, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -1826,7 +1849,7 @@ OfxEffectInstance::onOverlayPenMotion(TimeValue time,
 
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenMotion, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -1868,7 +1891,7 @@ OfxEffectInstance::onOverlayPenUp(TimeValue time,
         penPosViewport.y = viewportPos.y();
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionPenUp, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -1901,7 +1924,7 @@ OfxEffectInstance::onOverlayKeyDown(TimeValue time,
     if (_imp->common->overlayInteract) {
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyDown, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -1935,7 +1958,7 @@ OfxEffectInstance::onOverlayKeyUp(TimeValue time,
 
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyUp, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -1970,7 +1993,7 @@ OfxEffectInstance::onOverlayKeyRepeat(TimeValue time,
     if (_imp->common->overlayInteract) {
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionKeyRepeat, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -2002,7 +2025,7 @@ OfxEffectInstance::onOverlayFocusGained(TimeValue time,
     if (_imp->common->overlayInteract) {
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionGainFocus, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -2034,7 +2057,7 @@ OfxEffectInstance::onOverlayFocusLost(TimeValue time,
 
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls,  time, view, renderScale
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxInteractActionLoseFocus, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ true
                                                   , /*canBeCalledRecursively*/ true
@@ -2173,7 +2196,7 @@ OfxEffectInstance::knobChanged(const KnobIPtr& k,
     RenderScale renderScale  = getNode()->getOverlayInteractRenderScale();
     
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,  time, ViewIdx(0), renderScale
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionInstanceChanged, time, ViewIdx(0), renderScale
 #ifdef DEBUG
                                               , /*canSetValue*/ true
                                               , /*canBeCalledRecursively*/ true
@@ -2407,7 +2430,10 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
 
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, RenderScale(1.)
+    if (tls->hasActionInStack(kFnOfxImageEffectActionGetClipComponents)) {
+        return eActionStatusFailed;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls,kFnOfxImageEffectActionGetClipComponents,  time, view, RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ false
@@ -2571,7 +2597,10 @@ OfxEffectInstance::getDistortion(TimeValue time,
     {
 
         EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-        EffectActionArgsSetter_RAII actionArgsTls(tls, time, view, renderScale
+        if (tls->hasActionInStack(kFnOfxImageEffectActionGetTransform)) {
+            return eActionStatusFailed;
+        }
+        EffectActionArgsSetter_RAII actionArgsTls(tls, kFnOfxImageEffectActionGetTransform, time, view, renderScale
 #ifdef DEBUG
                                                   , /*canSetValue*/ false
                                                   , /*canBeCalledRecursively*/ true
@@ -2717,7 +2746,10 @@ OfxEffectInstance::attachOpenGLContext(TimeValue time, ViewIdx view, const Rende
 
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls,time, view, scale
+    if (tls->hasActionInStack(kOfxActionOpenGLContextAttached)) {
+        return eActionStatusFailed;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls,kOfxActionOpenGLContextAttached, time, view, scale
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ false
@@ -2758,7 +2790,10 @@ OfxEffectInstance::dettachOpenGLContext( const OSGLContextPtr& /*glContext*/, co
 
 
     EffectInstanceTLSDataPtr tls = _imp->common->tlsData->getOrCreateTLSData();
-    EffectActionArgsSetter_RAII actionArgsTls(tls, TimeValue(0), ViewIdx(0), RenderScale(1.)
+    if (tls->hasActionInStack(kOfxActionOpenGLContextDetached)) {
+        return eActionStatusFailed;
+    }
+    EffectActionArgsSetter_RAII actionArgsTls(tls, kOfxActionOpenGLContextDetached, TimeValue(0), ViewIdx(0), RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ false
                                               , /*canBeCalledRecursively*/ false
