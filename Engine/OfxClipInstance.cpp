@@ -544,7 +544,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time,
     if (effect) {
         EffectInstanceTLSDataPtr effectTLS = effect->getTLSObject();
         if (effectTLS) {
-            effectTLS->getCurrentActionArgs(0, 0, &scale);
+            effectTLS->getCurrentActionArgs(0, 0, &scale, 0);
         }
     }
 
@@ -567,7 +567,7 @@ OfxClipInstance::getRegionOfDefinition(OfxTime time) const
     if (effect) {
         EffectInstanceTLSDataPtr effectTLS = effect->getTLSObject();
         if (effectTLS) {
-            effectTLS->getCurrentActionArgs(0, &view, &scale);
+            effectTLS->getCurrentActionArgs(0, &view, &scale, 0);
         }
     }
     getRegionOfDefinitionInternal(time, view, scale, effect, &ret);
@@ -736,7 +736,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     RenderScale currentActionScale;
     bool gotTLS = effectTLS->getCurrentRenderActionArgs(&currentActionTime, &currentActionView, &currentActionScale, &currentRenderWindow, 0);
     if (!gotTLS) {
-        gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale);
+        gotTLS = effectTLS->getCurrentActionArgs(&currentActionTime, &currentActionView, &currentActionScale, 0);
     }
     assert(gotTLS);
     if (!gotTLS) {

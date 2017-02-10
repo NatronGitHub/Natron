@@ -359,6 +359,10 @@ ViewerGL::Implementation::drawRenderingVAO(unsigned int mipMapLevel,
             }
         }
 
+        assert(displayTextures[textureIndex].texture);
+        GL_GPU::ActiveTexture(GL_TEXTURE0);
+        GL_GPU::GetIntegerv(GL_TEXTURE_BINDING_2D, (GLint*)&prevBoundTexture);
+        GL_GPU::BindTexture( GL_TEXTURE_2D, displayTextures[textureIndex].texture->getTexID() );
         glCheckError(GL_GPU);
 
         GL_GPU::BindBuffer(GL_ARRAY_BUFFER, this->vboVerticesId);

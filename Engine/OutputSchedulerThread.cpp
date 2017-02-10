@@ -526,7 +526,6 @@ OutputSchedulerThread::startTasksFromLastStartedFrame()
     }
 
     if (canContinue) {
-        QMutexLocker l(&_imp->renderThreadsMutex);
         startTasks(frame);
     }
 } // startTasksFromLastStartedFrame

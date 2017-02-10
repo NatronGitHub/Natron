@@ -1398,7 +1398,7 @@ ViewerNode::knobChanged(const KnobIPtr& k, ValueChangedReasonEnum reason,
         } else {
             value = 0;
         }
-        _imp->gainSliderKnob.lock()->setValue(value);
+        _imp->gainSliderKnob.lock()->setValue(value, ViewIdx(0), DimIdx(0), eValueChangedReasonPluginEdited);
     } else if (k == _imp->gainSliderKnob.lock()) {
         KnobButtonPtr enableKnob = _imp->enableGainButtonKnob.lock();
         if (reason == eValueChangedReasonUserEdited) {

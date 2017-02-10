@@ -1065,7 +1065,7 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                 double alphaMatteValue;
                 genericViewerProcessFunctor<PIX, maxValue, srcNComps, channels>(args, color_pixels, alpha_pixels, tmpPix, &alphaMatteValue);
 
-                U8 uTmpPix[4];
+                unsigned char uTmpPix[4];
                 if (!args.dstColorspace) {
                     for (int i = 0 ; i < 4; ++i) {
                         uTmpPix[i] = Color::floatToInt<256>(tmpPix[i]);
@@ -1074,14 +1074,14 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                     for (int i = 0; i < 3; ++i) {
                         error[i] = (error[i] & 0xff) + args.dstColorspace->toColorSpaceUint8xxFromLinearFloatFast(tmpPix[i]);
                         assert(error[i] < 0x10000);
-                        uTmpPix[i] = (U8)(error[i] >> 8);
+                        uTmpPix[i] = (unsigned char)(error[i] >> 8);
                     }
                     uTmpPix[3] = Color::floatToInt<256>(tmpPix[3]);
                 }
 
 
                 if (channels == eDisplayChannelsMatte) {
-                    U8 matteA;
+                    unsigned char matteA;
                     if (args.dstColorspace) {
                         matteA = args.dstColorspace->toColorSpaceUint8FromLinearFloatFast(alphaMatteValue) / 2;
                     } else {
@@ -1089,12 +1089,13 @@ applyViewerProcess8bit_generic(const RenderViewerArgs& args, const RectI & roi)
                     }
 
                     // Add to the red channel the matte value
-                    uTmpPix[0] = Image::clampIfInt<U8>( (double)uTmpPix[0] + matteA );
+                    uTmpPix[0] = Image::clampIfInt<unsigned char>( (double)uTmpPix[0] + matteA );
 
                 }
                 // The viewer has the particularity to write-out BGRA 8-bit images instead of RGBA since the resulting
                 // image is directly fed to the GL_BGRA OpenGL texture format.
                 *reinterpret_cast<unsigned int*>(dst_pixels[0]) = toBGRA(uTmpPix[0], uTmpPix[1], uTmpPix[2], uTmpPix[3]);
+                
                 if (backward) {
                     --x;
                     for (int i = 0; i < 4; ++i) {

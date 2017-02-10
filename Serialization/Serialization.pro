@@ -53,7 +53,6 @@ HEADERS += \
     NodeSerialization.h \
     NodeBackdropSerialization.h \
     NodeClipBoard.h \
-    NodeGroupSerialization.h \
     NodeGuiSerialization.h \
     NodeSerialization.h \
     ProjectGuiSerialization.h \
