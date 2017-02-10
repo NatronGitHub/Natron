@@ -532,8 +532,8 @@ MultipleKnobEditsUndoCommand::undo()
             // block knobChanged handler for this knob until the last change so we don't clutter the main-thread with useless action calls
             knob->blockValueChanges();
         }
-
-        for (std::list<ValueToSet>::reverse_iterator it2 = it->second.rbegin(); it2 != it->second.rend(); ++it2) {
+        std::set<int> dimensionsUndone;
+        for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 
             if (next == it->second.end() && it->second.size() > 1) {
                 // Re-enable knobChanged for the last change on this knob
@@ -544,7 +544,11 @@ MultipleKnobEditsUndoCommand::undo()
             if (it2->setValueRetCode == eValueChangedReturnCodeKeyframeAdded) {
                 knob->deleteValueAtTime(it2->time, it2->view, it2->dimension, eValueChangedReasonUserEdited);
             }
-
+            // Only set back the first value that was set in the command
+            if (dimensionsUndone.find(it2->dimension) != dimensionsUndone.end()) {
+                continue;
+            }
+            dimensionsUndone.insert(it2->dimension);
             int nDims = knob->getNDimensions();
             std::list<ViewIdx> allViews = knob->getViewsList();
             if (it2->dimension.isAll()) {

@@ -2411,11 +2411,12 @@ private:
                 processArgs[i].reset(new RenderViewerProcessFunctorArgs);
             }
 
+            ViewerCompositingOperatorEnum viewerBlend = _viewer->getCurrentOperator();
             bool viewerBEqualsViewerA = _viewer->getCurrentAInput() == _viewer->getCurrentBInput();
 
             // Launch the 2nd viewer process in a separate thread
             QFuture<void> processBFuture;
-            if (!viewerBEqualsViewerA) {
+            if (!viewerBEqualsViewerA && viewerBlend != eViewerCompositingOperatorNone) {
                 processBFuture = QtConcurrent::run(this,
                                                    &ViewerRenderFrameRunnable::createAndLaunchRenderInThread,
                                                    processArgs[1],
@@ -2429,12 +2430,14 @@ private:
             createAndLaunchRenderInThread(processArgs[0], 0, time, stats, bufferObject.get());
 
             // Wait for the 2nd viewer process
-            if (!viewerBEqualsViewerA) {
-                processBFuture.waitForFinished();
-            } else {
-                bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
-                bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
-                processArgs[0] = processArgs[1];
+            if (viewerBlend != eViewerCompositingOperatorNone) {
+                if (!viewerBEqualsViewerA) {
+                    processBFuture.waitForFinished();
+                } else {
+                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                    bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
+                    processArgs[0] = processArgs[1];
+                }
             }
 
             // Check for failures
@@ -3283,12 +3286,12 @@ public:
             for (int i = 0; i < 2; ++i) {
                 processArgs[i].reset(new RenderViewerProcessFunctorArgs);
             }
-
+            ViewerCompositingOperatorEnum viewerBlend = viewer->getCurrentOperator();
             bool viewerBEqualsViewerA = viewer->getCurrentAInput() == viewer->getCurrentBInput();
 
             // Launch the 2nd viewer process in a separate thread
             QFuture<void> processBFuture ;
-            if (!viewerBEqualsViewerA) {
+            if (!viewerBEqualsViewerA && viewerBlend != eViewerCompositingOperatorNone) {
                 processBFuture = QtConcurrent::run(boost::bind(&RenderCurrentFrameFunctorRunnable::createAndLaunchRenderInThread,
                                                                this,
                                                                viewer,
@@ -3304,18 +3307,19 @@ public:
             createAndLaunchRenderInThread(viewer, processArgs[0], 0, _args->time, stats, roiParam, bufferObject.get());
 
             // Wait for the 2nd viewer process
-            if (!viewerBEqualsViewerA) {
-                processBFuture.waitForFinished();
-            } else {
-                bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
-                bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
+            if (viewerBlend != eViewerCompositingOperatorNone) {
+                if (!viewerBEqualsViewerA) {
+                    processBFuture.waitForFinished();
+                } else  {
+                    bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
+                    bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
+                }
             }
-
             framesContainer->frames.push_back(bufferObject);
-            
+
             
         } // for all views
-
+        
     }
 
     virtual void run() OVERRIDE FINAL
