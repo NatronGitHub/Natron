@@ -598,7 +598,8 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
 
 
 ActionRetCodeEnum
-EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
+EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                                           const FrameViewRequestPtr& requestData,
                                                                            const RectI& roiPixels,
                                                                            unsigned int mipMapLevel,
                                                                            const RenderScale& combinedScale,
@@ -608,7 +609,7 @@ EffectInstance::Implementation::allocateRenderBackendStorageForRenderRects(const
 
 
     RenderBackendTypeEnum backendType;
-    resolveRenderBackend(requestData, roiPixels, &backendType);
+    resolveRenderBackend(requestPassSharedData, requestData, roiPixels, &backendType);
     
     // The image format supported by the plug-in (co-planar, packed RGBA, etc...)
     ImageBufferLayoutEnum imageBufferLayout = _publicInterface->getPreferredBufferLayout();
@@ -1042,11 +1043,8 @@ public:
 
     ~AddDependencyFreeRender_RAII()
     {
-        // If this render has no dependencies, add it to the things to render
 
-        if (_requestData->getNumDependencies() == 0) {
-            _requestPassSharedData->addDependencyFreeRender(_requestData);
-        }
+        _requestPassSharedData->addTaskToRender(_requestData);
     }
 };
 
@@ -1112,12 +1110,19 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     // When exiting this function, add the request to the dependency free list if it has no dependencies.
     AddDependencyFreeRender_RAII addDependencyFreeRender(requestPassSharedData, requestData);
 
-    requestPassSharedData->addTaskToRender(requestData);
 
     // Add this frame/view as depdency of the requester
     if (requester) {
-        requester->addDependency(requestData);
-        requestData->addListener(requester);
+        requester->addDependency(requestPassSharedData, requestData);
+        requestData->addListener(requestPassSharedData, requester);
+    }   
+
+    // If this request was already requested, don't request again except if the RoI is not
+    // contained in the request RoI
+    if (requestData->getStatus() != FrameViewRequest::eFrameViewRequestStatusNotRendered) {
+        if (requestData->getCurrentRoI().contains(roiCanonical)) {
+            return eActionStatusOK;
+        }
     }
 
 
@@ -1225,7 +1230,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
     ////////////////////////////// Compute RoI depending on render scale ///////////////////////////////////////////////////
 
     // Should the output of this render be cached ?
-    CacheAccessModeEnum cachePolicy = _imp->shouldRenderUseCache(requestData);
+    CacheAccessModeEnum cachePolicy = _imp->shouldRenderUseCache(requestPassSharedData, requestData);
     requestData->setCachePolicy(cachePolicy);
 
     // The RoD in pixel coordinates at the scale of mappedCombinedScale
@@ -1292,7 +1297,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusRendered);
     } else {
         requestData->initStatus(FrameViewRequest::eFrameViewRequestStatusNotRendered);
-        ActionRetCodeEnum upstreamRetCode = _imp->handleUpstreamFramesNeeded(requestPassSharedData, requestData, mappedCombinedScale, mappedMipMapLevel, roundedCanonicalRoI, inputLayersNeeded);
+        ActionRetCodeEnum upstreamRetCode = _imp->handleUpstreamFramesNeeded(requestPassSharedData, requestData, proxyScale, mappedMipMapLevel, roundedCanonicalRoI, inputLayersNeeded);
         
         if (isFailureRetCode(upstreamRetCode)) {
             return upstreamRetCode;
@@ -1310,10 +1315,10 @@ static void invalidateCachedPlanesToRender(const std::map<ImagePlaneDesc, ImageP
 }
 
 ActionRetCodeEnum
-EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
+EffectInstance::launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
     
-    // Set the frame view request on the TLS for OpenFX
+    // Set the frame view request as a member of this class since we use a local copy for the render this is thread-safe.
     SetCurrentFrameViewRequest_RAII tlsSetFrameViewRequest(shared_from_this(), requestData);
 
     {
@@ -1330,13 +1335,8 @@ EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
                 break;
         }
     }
-    ActionRetCodeEnum stat = launchRenderInternal(requestData);
+    ActionRetCodeEnum stat = launchRenderInternal(requestPassSharedData, requestData);
 
-    // We are done with this request, remove it from the created requests.
-    _imp->removeFrameViewRequest(requestData);
-
-    // Remove all stashes input frame view requests that we kept around.
-    requestData->clearRenderedDependencies();
 
     // Notify that we are done rendering
     requestData->notifyRenderFinished(stat);
@@ -1344,7 +1344,7 @@ EffectInstance::launchRender(const FrameViewRequestPtr& requestData)
 } // launchRender
 
 ActionRetCodeEnum
-EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
+EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData)
 {
 
     const double par = getAspectRatio(-1);
@@ -1386,14 +1386,11 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
         // There may be no rectangles to render if all rectangles are pending (i.e: this render should wait for another thread
         // to complete the render first)
         if (!renderRects.empty()) {
-            renderRetCode = _imp->allocateRenderBackendStorageForRenderRects(requestData, renderMappedRoI, mappedMipMapLevel, mappedCombinedScale, &producedImagePlanes, &renderRects);
-            if (isFailureRetCode(renderRetCode)) {
-                break;
+            renderRetCode = _imp->allocateRenderBackendStorageForRenderRects(requestPassSharedData, requestData, renderMappedRoI, mappedMipMapLevel, mappedCombinedScale, &producedImagePlanes, &renderRects);
+            if (!isFailureRetCode(renderRetCode)) {
+                renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, renderRects, producedImagePlanes);
             }
-            renderRetCode = _imp->launchRenderForSafetyAndBackend(requestData, mappedCombinedScale, renderRects, producedImagePlanes);
-            if (isFailureRetCode(renderRetCode)) {
-                break;
-            }
+
         }
 
 
@@ -1407,11 +1404,20 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
             // Push to the cache the tiles that we rendered
             cacheImage->pushTilesToCacheIfNotAborted();
 
+
+            if (isFailureRetCode(renderRetCode)) {
+                break;
+            }
+
             // Wait for any pending results. After this line other threads that should have computed should be done
             cacheImage->waitForPendingTiles();
 
             _imp->checkRestToRender(requestData, renderMappedRoI, mappedCombinedScale, &renderRects, &hasPendingTiles);
 
+        }
+
+        if (isFailureRetCode(renderRetCode)) {
+            break;
         }
 
     } // while there is still something not rendered
@@ -1424,7 +1430,7 @@ EffectInstance::launchRenderInternal(const FrameViewRequestPtr& requestData)
             return eActionStatusFailed;
         }
        
-        return launchRenderInternal(requestData);
+        return launchRenderInternal(requestPassSharedData, requestData);
     }
 
     if (renderRetCode != eActionStatusOK) {

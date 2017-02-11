@@ -4515,7 +4515,7 @@ OfxParametricInstance::addControlPoint(int curveIndex,
     }
 
     KnobParametricPtr knob = resolveRenderKnob<KnobParametric>(_knob.lock());
-
+    
     ActionRetCodeEnum stat;
     EffectInstancePtr effect = toEffectInstance( knob->getHolder() );
     KeyframeTypeEnum interpolation = eKeyframeTypeSmooth; // a reasonable default

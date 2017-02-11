@@ -81,6 +81,25 @@ FrameView_compare_less::operator() (const FrameViewPair & lhs,
     }
 }
 
+struct PerLaunchRequestData
+{
+
+    // Dependencies of this frame/view.
+    // This frame/view will not be able to render until all dependencies will be rendered.
+    // (i.e: the set is empty)
+    std::set<FrameViewRequestPtr> dependencies;
+
+    // List of dependnencies that we already rendered (they are no longer in the dependencies set)
+    // but that we still keep around so that the associated image plane is not destroyed.
+    std::set<FrameViewRequestPtr> renderedDependencies;
+
+    // The listeners of this frame/view:
+    // This frame/view is in the dependencies list each of the listeners.
+    std::set<FrameViewRequestWPtr> listeners;
+};
+
+typedef std::map<RequestPassSharedDataWPtr, PerLaunchRequestData> LaunchRequestDataMap;
+
 struct FrameViewRequestPrivate
 {
     // Protects all data members;
@@ -125,18 +144,8 @@ struct FrameViewRequestPrivate
     // Final roi. Each request led from different branches has its roi unioned into the finalRoI
     RectD finalRoi;
 
-    // Dependencies of this frame/view.
-    // This frame/view will not be able to render until all dependencies will be rendered.
-    // (i.e: the set is empty)
-    std::set<FrameViewRequestWPtr> dependencies;
-
-    // List of dependnencies that we already rendered (they are no longer in the dependencies set)
-    // but that we still keep around so that the associated image plane is not destroyed.
-    std::set<FrameViewRequestPtr> renderedDependencies;
-
-    // The listeners of this frame/view:
-    // This frame/view is in the dependencies list each of the listeners.
-    std::set<FrameViewRequestWPtr> listeners;
+    // For each launch request a list of dependencies and listeners.
+    LaunchRequestDataMap requestData;
 
     // The required frame/views in input, set on first request
     GetFramesNeededResultsPtr frameViewsNeeded;
@@ -155,7 +164,6 @@ struct FrameViewRequestPrivate
 
     // True if cache write is allowed but not cache read
     bool byPassCache;
-
 
     FrameViewRequestPrivate(TimeValue time,
                             ViewIdx view,
@@ -179,8 +187,7 @@ struct FrameViewRequestPrivate
     , retCode(eActionStatusOK)
     , image()
     , finalRoi()
-    , dependencies()
-    , listeners()
+    , requestData()
     , frameViewsNeeded()
     , frameViewHash(timeViewHash)
     , neededComps()
@@ -289,11 +296,20 @@ FrameViewRequest::setCachePolicy(CacheAccessModeEnum policy)
     _imp->cachingPolicy = policy;
 }
 
+FrameViewRequest::FrameViewRequestStatusEnum
+FrameViewRequest::getStatus() const
+{
+    QMutexLocker k(&_imp->statusMutex);
+    return _imp->status;
+}
+
 void
 FrameViewRequest::initStatus(FrameViewRequestStatusEnum status)
 {
-    QMutexLocker k(&_imp->statusMutex);
-    _imp->status = status;
+    {
+        QMutexLocker k(&_imp->statusMutex);
+        _imp->status = status;
+    }
 }
 
 FrameViewRequest::FrameViewRequestStatusEnum
@@ -313,6 +329,7 @@ FrameViewRequest::notifyRenderFinished(ActionRetCodeEnum stat)
 {
     QMutexLocker k(&_imp->statusMutex);
     _imp->retCode = stat;
+    _imp->status = FrameViewRequest::eFrameViewRequestStatusRendered;
 
     // Wake-up all other threads stuck in waitForPendingResults()
     _imp->statusPendingCond.wakeAll();
@@ -348,8 +365,11 @@ FrameViewRequest::waitForPendingResults()
 RectD
 FrameViewRequest::getCurrentRoI() const
 {
-    QMutexLocker k(&_imp->lock);
-    return _imp->finalRoi;
+
+    {
+        QMutexLocker k(&_imp->lock);
+        return _imp->finalRoi;
+    }
 }
 
 void
@@ -360,63 +380,86 @@ FrameViewRequest::setCurrentRoI(const RectD& roi)
 }
 
 void
-FrameViewRequest::addDependency(const FrameViewRequestPtr& effectRequesting)
+FrameViewRequest::addDependency(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& deps)
 {
+
     {
         QMutexLocker k(&_imp->lock);
-        _imp->dependencies.insert(effectRequesting);
+        PerLaunchRequestData& data = _imp->requestData[request];
+        data.dependencies.insert(deps);
     }
-}
-
-void
-FrameViewRequest::markDependencyAsRendered(const FrameViewRequestPtr& effectRequesting)
-{
-    QMutexLocker k(&_imp->lock);
-    std::set<FrameViewRequestWPtr>::iterator foundDep = _imp->dependencies.find(effectRequesting);
-    assert(foundDep != _imp->dependencies.end());
-    if (foundDep != _imp->dependencies.end()) {
-        _imp->dependencies.erase(foundDep);
-        _imp->renderedDependencies.insert(effectRequesting);
-    }
-}
-
-void
-FrameViewRequest::clearRenderedDependencies()
-{
-    QMutexLocker k(&_imp->lock);
-    _imp->renderedDependencies.clear();
 }
 
 int
-FrameViewRequest::getNumDependencies() const
+FrameViewRequest::markDependencyAsRendered(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& deps)
 {
+    FrameViewRequestStatusEnum status;
+    {
+        QMutexLocker k1(&_imp->statusMutex);
+        status = _imp->status;
+    }
+
     QMutexLocker k(&_imp->lock);
-    return _imp->dependencies.size();
+    PerLaunchRequestData& data = _imp->requestData[request];
+
+    // If this FrameViewRequest is pass-through, copy results from the pass-through dependency
+    if (status == eFrameViewRequestStatusPassThrough) {
+        assert(deps && data.dependencies.size() == 1 && *data.dependencies.begin() == deps);
+        _imp->image = deps->getImagePlane();
+        _imp->finalRoi = deps->getCurrentRoI();
+    }
+
+    std::set<FrameViewRequestPtr>::iterator foundDep = data.dependencies.find(deps);
+    assert(foundDep != data.dependencies.end());
+    if (foundDep != data.dependencies.end()) {
+        data.dependencies.erase(foundDep);
+        data.renderedDependencies.insert(deps);
+    }
+    return data.dependencies.size();
 }
 
 void
-FrameViewRequest::addListener(const FrameViewRequestPtr& other)
+FrameViewRequest::clearRenderedDependencies(const RequestPassSharedDataPtr& request)
 {
     QMutexLocker k(&_imp->lock);
-    _imp->listeners.insert(other);
+    PerLaunchRequestData& data = _imp->requestData[request];
+    data.renderedDependencies.clear();
+}
+
+int
+FrameViewRequest::getNumDependencies(const RequestPassSharedDataPtr& request) const
+{
+    QMutexLocker k(&_imp->lock);
+    PerLaunchRequestData& data = _imp->requestData[request];
+    return data.dependencies.size();
+}
+
+void
+FrameViewRequest::addListener(const RequestPassSharedDataPtr& request, const FrameViewRequestPtr& other)
+{
+    QMutexLocker k(&_imp->lock);
+    PerLaunchRequestData& data = _imp->requestData[request];
+    data.listeners.insert(other);
 }
 
 std::list<FrameViewRequestPtr>
-FrameViewRequest::getListeners() const
+FrameViewRequest::getListeners(const RequestPassSharedDataPtr& request) const
 {
     std::list<FrameViewRequestPtr> ret;
     QMutexLocker k(&_imp->lock);
-    for (std::set<FrameViewRequestWPtr>::const_iterator it = _imp->listeners.begin(); it != _imp->listeners.end(); ++it) {
+    PerLaunchRequestData& data = _imp->requestData[request];
+    for (std::set<FrameViewRequestWPtr>::const_iterator it = data.listeners.begin(); it != data.listeners.end(); ++it) {
         ret.push_back(it->lock());
     }
     return ret;
 }
 
 std::size_t
-FrameViewRequest::getNumListeners() const
+FrameViewRequest::getNumListeners(const RequestPassSharedDataPtr& request) const
 {
     QMutexLocker k(&_imp->lock);
-    return _imp->listeners.size();
+    PerLaunchRequestData& data = _imp->requestData[request];
+    return data.listeners.size();
 }
 
 bool

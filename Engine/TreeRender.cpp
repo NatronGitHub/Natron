@@ -62,14 +62,30 @@ enum TreeRenderStateEnum
     eTreeRenderStateInitFailed,
 };
 
+struct FrameViewRequestSharedDataPair
+{
+    FrameViewRequestPtr request;
+    RequestPassSharedDataPtr launchData;
+};
+
 // Render first the tasks with more dependencies: it has more chance to make more dependency-free new renders
 // to enable better concurrency
 struct FrameViewRequestComparePriority
 {
+    RequestPassSharedData* _launchData;
+
+    FrameViewRequestComparePriority(RequestPassSharedData* launchData)
+    : _launchData(launchData)
+    {
+
+    }
+
     bool operator() (const FrameViewRequestPtr& lhs, const FrameViewRequestPtr& rhs) const
     {
-        int lNum = lhs->getNumListeners();
-        int rNum = rhs->getNumListeners();
+        RequestPassSharedDataPtr sharedData = _launchData->shared_from_this();
+
+        int lNum = lhs->getNumListeners(sharedData);
+        int rNum = rhs->getNumListeners(sharedData);
         if (lNum < rNum) {
             return true;
         } else if (lNum > rNum) {
@@ -603,6 +619,7 @@ TreeRenderPrivate::clearRenderClones()
         it->first->removeRenderClone(thisShared);
     }
     renderClonesMap.clear();
+    rootRenderClone.reset();
 }
 
 ActionRetCodeEnum
@@ -706,10 +723,10 @@ struct RequestPassSharedDataPrivate
     // The status global to the tasks, protected by dependencyFreeRendersMutex
     ActionRetCodeEnum stat;
 
-    RequestPassSharedDataPrivate()
+    RequestPassSharedDataPrivate(RequestPassSharedData* publicInterface)
     : dependencyFreeRendersMutex()
     , dependencyFreeRendersEmptyCond()
-    , dependencyFreeRenders()
+    , dependencyFreeRenders(FrameViewRequestComparePriority(publicInterface))
     , allRenderTasksToProcess()
     , stat(eActionStatusOK)
     {
@@ -718,7 +735,7 @@ struct RequestPassSharedDataPrivate
 };
 
 RequestPassSharedData::RequestPassSharedData()
-: _imp(new RequestPassSharedDataPrivate)
+: _imp(new RequestPassSharedDataPrivate(this))
 {
 
 }
@@ -728,19 +745,14 @@ RequestPassSharedData::~RequestPassSharedData()
 
 }
 
-
-void
-RequestPassSharedData::addDependencyFreeRender(const FrameViewRequestPtr& render)
-{
-    QMutexLocker k(&_imp->dependencyFreeRendersMutex);
-    _imp->dependencyFreeRenders.insert(render);
-}
-
 void
 RequestPassSharedData::addTaskToRender(const FrameViewRequestPtr& render)
 {
      QMutexLocker k(&_imp->dependencyFreeRendersMutex);
     _imp->allRenderTasksToProcess.insert(render);
+    if (render->getNumDependencies(shared_from_this()) == 0) {
+        _imp->dependencyFreeRenders.insert(render);
+    }
 }
 
 class TLSCleanupRAII
@@ -789,7 +801,11 @@ private:
     {
 
         EffectInstancePtr renderClone = _request->getRenderClone();
-        ActionRetCodeEnum stat = renderClone->launchRender(_request);
+        ActionRetCodeEnum stat = renderClone->launchRender(_sharedData, _request);
+
+
+        // Remove all stashes input frame view requests that we kept around.
+        _request->clearRenderedDependencies(_sharedData);
 
         QMutexLocker k(&_sharedData->_imp->dependencyFreeRendersMutex);
 
@@ -807,12 +823,12 @@ private:
         }
 
         // For each frame/view that depend on this frame, remove it from the dependencies list.
-        std::list<FrameViewRequestPtr> listeners = _request->getListeners();
+        std::list<FrameViewRequestPtr> listeners = _request->getListeners(_sharedData);
         for (std::list<FrameViewRequestPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            (*it)->markDependencyAsRendered(_request);
+            int numDepsLeft = (*it)->markDependencyAsRendered(_sharedData, _request);
 
             // If the task has all its dependencies available, add it to the render queue.
-            if ((*it)->getNumDependencies() == 0) {
+            if (numDepsLeft == 0) {
                 _sharedData->_imp->dependencyFreeRenders.insert(*it);
             }
         }
@@ -954,7 +970,8 @@ TreeRender::launchRenderWithArgs(const EffectInstancePtr& renderClone,
                                  const RectD* canonicalRoI,
                                  FrameViewRequestPtr* outputRequest)
 {
-    return _imp->launchRenderInternal(renderClone, time, view, proxyScale, mipMapLevel, plane, canonicalRoI, outputRequest);
+    ActionRetCodeEnum stat =  _imp->launchRenderInternal(renderClone, time, view, proxyScale, mipMapLevel, plane, canonicalRoI, outputRequest);
+    return stat;
 }
 
 ActionRetCodeEnum
@@ -967,9 +984,8 @@ TreeRender::launchRender(FrameViewRequestPtr* outputRequest)
     if (isFailureRetCode(_imp->state)) {
         return _imp->state;
     }
-    return _imp->launchRenderInternal(_imp->rootRenderClone, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
-
-
+    _imp->state = _imp->launchRenderInternal(_imp->rootRenderClone, _imp->ctorArgs->time, _imp->ctorArgs->view, _imp->ctorArgs->proxyScale, _imp->ctorArgs->mipMapLevel, _imp->ctorArgs->plane, _imp->ctorArgs->canonicalRoI, outputRequest);
+    return _imp->state;
 } // launchRender
 
 NATRON_NAMESPACE_EXIT;

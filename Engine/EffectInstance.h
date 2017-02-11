@@ -1224,7 +1224,7 @@ public:
      * is rendered. Only a single thread will be able to call launchRender on the same frame view request.
      * This function must be called on the FrameViewRequest object returned by requestRender()
      **/
-    ActionRetCodeEnum launchRender(const FrameViewRequestPtr& requestData);
+    ActionRetCodeEnum launchRender(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
     /**
      * @brief Convenience function for getCurrentRender()->isRenderAborted()
@@ -1269,7 +1269,7 @@ public:
 
 private:
 
-    ActionRetCodeEnum launchRenderInternal(const FrameViewRequestPtr& requestData);
+    ActionRetCodeEnum launchRenderInternal(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestData);
 
     virtual KnobHolderPtr createRenderCopy(const TreeRenderPtr& render) const OVERRIDE FINAL;
 

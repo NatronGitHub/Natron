@@ -498,6 +498,7 @@ typedef boost::weak_ptr<PluginGroupNode> PluginGroupNodeWPtr;
 typedef boost::weak_ptr<NodeCollection> NodeCollectionWPtr;
 typedef boost::weak_ptr<OSGLContextAttacher> OSGLContextAttacherWPtr;
 typedef boost::weak_ptr<PluginMemory> PluginMemoryWPtr;
+typedef boost::weak_ptr<RequestPassSharedData> RequestPassSharedDataWPtr;
 typedef boost::weak_ptr<RotoPaintInteract> RotoPaintInteractWPtr;
 typedef boost::weak_ptr<RotoPaint> RotoPaintWPtr;
 typedef boost::weak_ptr<RotoDrawableItem> RotoDrawableItemWPtr;

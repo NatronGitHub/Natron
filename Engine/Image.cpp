@@ -324,7 +324,7 @@ ImagePrivate::initTiles()
 
 
 #ifndef NATRON_IMAGE_SEQUENTIAL_INIT
-        TileFetcherProcessor processor(renderClone);
+        TileFetcherProcessor processor(renderClone.lock());
         processor.setData(tileIndices, this);
         ActionRetCodeEnum stat = processor.launchThreads();
         if (stat == eActionStatusFailed) {
@@ -649,7 +649,11 @@ Image::getTilesRenderState(TileStateMap* tileStatus, bool* hasUnRenderedTile, bo
             if (it->second.perChannelTile[c].entryLocker) {
                 status = it->second.perChannelTile[c].entryLocker->getStatus();
             } else {
-                status = CacheEntryLocker::eCacheEntryStatusMustCompute;
+                if (_imp->cachePolicy == eCacheAccessModeNone) {
+                    status = CacheEntryLocker::eCacheEntryStatusMustCompute;
+                } else {
+                    status = CacheEntryLocker::eCacheEntryStatusCached;
+                }
             }
 
             if (status == CacheEntryLocker::eCacheEntryStatusMustCompute) {
@@ -1117,7 +1121,7 @@ Image::fill(const RectI & roi,
 
         RGBAColourF color = {r, g, b, a};
 
-        FillProcessor processor(_imp->renderClone);
+        FillProcessor processor(_imp->renderClone.lock());
         processor.setValues(tileData.ptrs, tileData.tileBounds, tileData.bitDepth, tileData.nComps, color);
         processor.setRenderWindow(tileRoI);
         processor.process();
@@ -1332,7 +1336,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
     if (previousLevelImage->_imp->bufferFormat == eImageBufferLayoutMonoChannelTiled) {
         InitStorageArgs args;
         args.bounds = roi;
-        args.renderClone = _imp->renderClone;
+        args.renderClone = _imp->renderClone.lock();
         args.layer = previousLevelImage->_imp->layer;
         args.bitdepth = previousLevelImage->getBitDepth();
         args.proxyScale = previousLevelImage->getProxyScale();
@@ -1357,7 +1361,7 @@ Image::downscaleMipMap(const RectI & roi, unsigned int downscaleLevels) const
         {
             InitStorageArgs args;
             args.bounds = halvedRoI;
-            args.renderClone = _imp->renderClone;
+            args.renderClone = _imp->renderClone.lock();
             args.layer = previousLevelImage->_imp->layer;
             args.bitdepth = previousLevelImage->getBitDepth();
             args.proxyScale = previousLevelImage->getProxyScale();
@@ -1505,7 +1509,7 @@ Image::applyMaskMix(const RectI& roi,
         RectI tileRoI;
         roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-        MaskMixProcessor processor(_imp->renderClone);
+        MaskMixProcessor processor(_imp->renderClone.lock());
         processor.setValues(srcImgData, maskImgData, dstImgData, mix, maskInvert);
         processor.setRenderWindow(tileRoI);
         processor.process();
@@ -1613,7 +1617,7 @@ Image::copyUnProcessedChannels(const RectI& roi,
         RectI tileRoI;
         roi.intersect(dstImgData.tileBounds, &tileRoI);
 
-        CopyUnProcessedProcessor processor(_imp->renderClone);
+        CopyUnProcessedProcessor processor(_imp->renderClone.lock());
         processor.setValues(srcImgData, dstImgData, processChannels);
         processor.setRenderWindow(tileRoI);
         processor.process();

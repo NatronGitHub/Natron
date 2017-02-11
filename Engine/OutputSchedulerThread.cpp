@@ -2080,6 +2080,7 @@ public:
     ImagePtr viewerProcessImages[2];
     ImagePtr colorPickerImages[2];
     ImagePtr colorPickerInputImages[2];
+    ActionRetCodeEnum retCode[2];
     RectD canonicalRoi[2];
     ImageTileKeyPtr viewerProcessImageKey[2];
 };
@@ -2375,6 +2376,7 @@ private:
 
         launchRenderFunctor(processArgs);
 
+        bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
         bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
         bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
@@ -2433,6 +2435,7 @@ private:
                 if (!viewerBEqualsViewerA) {
                     processBFuture.waitForFinished();
                 } else {
+                    bufferObject->retCode[1] = processArgs[0]->retCode;
                     bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
                     bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
                     processArgs[0] = processArgs[1];
@@ -2497,9 +2500,14 @@ ViewerDisplayScheduler::processFrame(const BufferedFrameContainerPtr& frames)
             upload.colorPickerImage = viewerObject->colorPickerImages[i];
             upload.colorPickerInputImage = viewerObject->colorPickerInputImages[i];
             upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
+            if (viewerObject->retCode[i] == eActionStatusAborted) {
+                continue;
+            }
             args.viewerUploads[i].push_back(upload);
         }
-        isViewer->updateViewer(args);
+        if (!args.viewerUploads[0].empty() || !args.viewerUploads[1].empty()) {
+            isViewer->updateViewer(args);
+        }
     }
     isViewer->redrawViewerNow();
    
@@ -3253,6 +3261,7 @@ public:
 
         ViewerRenderFrameRunnable::launchRenderFunctor(processArgs);
 
+        bufferedFrame->retCode[viewerProcess_i] = processArgs->retCode;
         bufferedFrame->viewerProcessImageKey[viewerProcess_i] = processArgs->viewerProcessImageTileKey;
         bufferedFrame->viewerProcessImages[viewerProcess_i] = processArgs->outputImage;
         bufferedFrame->colorPickerImages[viewerProcess_i] = processArgs->colorPickerImage;
@@ -3310,6 +3319,7 @@ public:
                 if (!viewerBEqualsViewerA) {
                     processBFuture.waitForFinished();
                 } else  {
+                    bufferObject->retCode[1] = processArgs[0]->retCode;
                     bufferObject->viewerProcessImageKey[1] = processArgs[0]->viewerProcessImageTileKey;
                     bufferObject->viewerProcessImages[1] = processArgs[0]->outputImage;
                 }
@@ -3561,9 +3571,14 @@ ViewerCurrentFrameRequestSchedulerPrivate::processProducedFrame(const BufferedFr
             upload.colorPickerImage = viewerObject->colorPickerImages[i];
             upload.colorPickerInputImage = viewerObject->colorPickerInputImages[i];
             upload.viewerProcessImageKey = viewerObject->viewerProcessImageKey[i];
+            if (viewerObject->retCode[i] == eActionStatusAborted) {
+                continue;
+            }
             args.viewerUploads[i].push_back(upload);
         }
-        viewerNode->updateViewer(args);
+        if (!args.viewerUploads[0].empty() || !args.viewerUploads[1].empty()) {
+            viewerNode->updateViewer(args);
+        }
 
         if (viewerObject->stats) {
             double wallTime = 0;

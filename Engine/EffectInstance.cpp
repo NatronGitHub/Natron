@@ -563,7 +563,7 @@ EffectInstance::getInput(int n) const
         if (n < 0 || n >= (int)_imp->renderData->inputs.size()) {
             return EffectInstancePtr();
         }
-        return _imp->renderData->inputs[n];
+        return _imp->renderData->inputs[n].lock();
     } else {
         NodePtr inputNode = getNode()->getInput(n);
         if (inputNode) {

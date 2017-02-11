@@ -45,14 +45,12 @@
 NATRON_NAMESPACE_ENTER;
 
 struct RequestPassSharedDataPrivate;
-class RequestPassSharedData
+class RequestPassSharedData : public boost::enable_shared_from_this<RequestPassSharedData>
 {
 public:
     RequestPassSharedData();
 
     ~RequestPassSharedData();
-
-    void addDependencyFreeRender(const FrameViewRequestPtr& render);
 
     void addTaskToRender(const FrameViewRequestPtr& render);
 

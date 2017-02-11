@@ -149,6 +149,11 @@ public:
     unsigned int getMipMapLevel() const;
 
     /**
+     * @brief Get the status of the request
+     **/
+    FrameViewRequestStatusEnum getStatus() const;
+
+    /**
      * @brief Called in requestRender to initialize the status of this object.
      **/
     void initStatus(FrameViewRequestStatusEnum status);
@@ -217,40 +222,41 @@ public:
     /**
      * @brief Add a new dependency to this frame/view. This frame/view will not be able to render until all dependencies will be rendered.
      **/
-    void addDependency(const FrameViewRequestPtr& other);
+    void addDependency(const RequestPassSharedDataPtr& requestData, const FrameViewRequestPtr& other);
 
     /**
      * @brief Remove a dependency previously added by addDependency but does not destroy it.
      * This should be called once the "other" frame/view * is done rendering.
+     * @returns The number of dependencies left
      **/
-    void markDependencyAsRendered(const FrameViewRequestPtr& other);
+    int markDependencyAsRendered(const RequestPassSharedDataPtr& requestData, const FrameViewRequestPtr& other);
 
     /**
      * @brief Destroy all dependencies that were already rendered
      **/
-    void clearRenderedDependencies();
+    void clearRenderedDependencies(const RequestPassSharedDataPtr& requestData);
 
     /**
      * @brief Get the number of dependencies left to render for this frame/view.
      * If this returns 0, then this frame/view can be rendered.
      **/
-    int getNumDependencies() const;
+    int getNumDependencies(const RequestPassSharedDataPtr& requestData) const;
 
     /**
      * @brief Add the "other" frame/view as a listener of this frame/view. This means
      * that this frame/view is in the dependencies list of the "other" frame/view.
      **/
-    void addListener(const FrameViewRequestPtr& other);
+    void addListener(const RequestPassSharedDataPtr& requestData, const FrameViewRequestPtr& other);
 
     /**
      * @brief Returns all frame/view requests that have this frame/view as a dependency.
      **/
-    std::list<FrameViewRequestPtr> getListeners() const;
+    std::list<FrameViewRequestPtr> getListeners(const RequestPassSharedDataPtr& requestData) const;
 
     /**
      * @brief Same as getListeners().size()
      **/
-    std::size_t getNumListeners() const;
+    std::size_t getNumListeners(const RequestPassSharedDataPtr& requestData) const;
 
     /**
      * @brief  When true, a subsequent render of this frame/view will not be allowed to read the cache
@@ -317,7 +323,6 @@ private:
     
 };
 
-typedef std::map<FrameViewPair, boost::shared_ptr<FrameViewRequest>, FrameView_compare_less> NodeFrameViewRequestData;
 
 
 NATRON_NAMESPACE_EXIT;

@@ -295,6 +295,8 @@ OfxEffectInstance::describePlugin()
             break;
     }
 
+    ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
+
     ///Create clips & parameters
     OfxStatus stat = _imp->common->effect->populate();
     if (stat != kOfxStatOK) {
@@ -1309,7 +1311,7 @@ OfxEffectInstance::getFramesNeeded(TimeValue time,
     EffectActionArgsSetter_RAII actionArgsTls(tls,kOfxImageEffectActionGetFramesNeeded, time, view, RenderScale(1.)
 #ifdef DEBUG
                                               , /*canSetValue*/ false
-                                              , /*canBeCalledRecursively*/ false
+                                              , /*canBeCalledRecursively*/ true
 #endif
                                               );
 

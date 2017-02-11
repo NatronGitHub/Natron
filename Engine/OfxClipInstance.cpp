@@ -810,7 +810,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     inArgs->inputView = inputView;
     inArgs->inputNb = inputNb;
     inArgs->plane = &plane;
-    inArgs->optionalBounds = &boundsParam;
+    inArgs->optionalBounds = boundsParam.isNull() ? 0 : &boundsParam;
 
     // If clipGetImage is called out of the blue in a non render action, still support it.
     if (!requestData) {
@@ -1238,9 +1238,9 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
 
     assert(internalImage);
 
-    unsigned int mipMapLevel = internalImage->getMipMapLevel();
     RenderScale scale = internalImage->getProxyScale();
     {
+        unsigned int mipMapLevel = internalImage->getMipMapLevel();
         double mipMapScale = Image::getScaleFromMipMapLevel(mipMapLevel);
         scale.x *= mipMapScale;
         scale.y *= mipMapScale;
@@ -1310,7 +1310,7 @@ OfxImageCommon::OfxImageCommon(const EffectInstancePtr& outputClipEffect,
     // Image::getRoD() is in *CANONICAL* coordinates
     // OFX::Image RoD is in *PIXEL* coordinates
     RectI pixelRod;
-    rod.toPixelEnclosing(mipMapLevel, par, &pixelRod);
+    rod.toPixelEnclosing(scale, par, &pixelRod);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.left(), 0);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.bottom(), 1);
     ofxImageBase->setIntProperty(kOfxImagePropRegionOfDefinition, pixelRod.right(), 2);

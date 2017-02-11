@@ -88,7 +88,7 @@ struct ImagePrivate
     // This must be set if the cache policy is not none.
     // This will be used to prevent inserting in the cache part of images that had
     // their render aborted.
-    EffectInstancePtr renderClone;
+    EffectInstanceWPtr renderClone;
 
     // The channels enabled
     std::bitset<4> enabledChannels;

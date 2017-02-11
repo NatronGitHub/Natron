@@ -277,6 +277,9 @@ struct EffectInstanceCommonData
 
 };
 
+typedef std::map<FrameViewPair, FrameViewRequestWPtr, FrameView_compare_less> NodeFrameViewRequestData;
+
+
 // Data specific to a render clone
 struct RenderCloneData
 {
@@ -287,13 +290,15 @@ struct RenderCloneData
     mutable QMutex instanceSafeRenderMutex;
 
     // Render-local inputs vector
-    std::vector<EffectInstancePtr> inputs;
+    std::vector<EffectInstanceWPtr> inputs;
 
     // This is the current frame/view being requested or rendered by the main render thread.
     FrameViewRequestWPtr currentFrameView;
 
     // Contains data for all frame/view pair that are going to be computed
     // for this frame/view pair with the overall RoI to avoid rendering several times with this node.
+    // We don't hold a strong reference here so that when all listeners to the frame/view are done listening
+    // the FrameViewRequest (hence the embedded image) is destroyed and resources released.
     NodeFrameViewRequestData frames;
 
     // The results of the get frame range action for this render
@@ -416,7 +421,6 @@ public:
                                      const ImagePlaneDesc& plane,
                                      FrameViewRequestPtr* request);
 
-    void removeFrameViewRequest(const FrameViewRequestPtr& request);
 
     /**
      * @brief Set the results of the getFrameRange action for this render
@@ -479,13 +483,13 @@ public:
     /**
      * @brief Helper function in the implementation of renderRoI to determine the image backend (OpenGL, CPU...)
      **/
-    ActionRetCodeEnum resolveRenderBackend(const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend);
+    ActionRetCodeEnum resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend);
 
     /**
      * @brief Helper function in the implementation of renderRoI to determine if a render should use the Cache or not.
      * @returns The cache access type, i.e: none, write only or read/write
      **/
-    CacheAccessModeEnum shouldRenderUseCache(const FrameViewRequestPtr& requestPassData);
+    CacheAccessModeEnum shouldRenderUseCache(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData);
 
     ActionRetCodeEnum handleUpstreamFramesNeeded(const RequestPassSharedDataPtr& requestPassSharedData,
                                                  const FrameViewRequestPtr& requestPassData,
@@ -521,7 +525,8 @@ public:
                            bool* hasPendingTiles);
 
 
-    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const FrameViewRequestPtr& requestData,
+    ActionRetCodeEnum allocateRenderBackendStorageForRenderRects(const RequestPassSharedDataPtr& requestPassSharedData,
+                                                                 const FrameViewRequestPtr& requestData,
                                                                  const RectI& roiPixels,
                                                                  unsigned int mipMapLevel,
                                                                  const RenderScale& combinedScale,

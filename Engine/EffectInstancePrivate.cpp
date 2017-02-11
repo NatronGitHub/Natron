@@ -138,9 +138,10 @@ EffectInstance::Implementation::getFrameViewRequest(TimeValue time,
     if (found == renderData->frames.end()) {
         return FrameViewRequestPtr();
     }
-    return found->second;
+    return found->second.lock();
 }
 
+#if 0
 void
 EffectInstance::Implementation::removeFrameViewRequest(const FrameViewRequestPtr& request)
 {
@@ -154,6 +155,7 @@ EffectInstance::Implementation::removeFrameViewRequest(const FrameViewRequestPtr
     renderData->frames.erase(found);
 
 }
+#endif
 
 bool
 EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
@@ -177,16 +179,22 @@ EffectInstance::Implementation::getOrCreateFrameViewRequest(TimeValue time,
     QMutexLocker k(&renderData->lock);
 
     FrameViewPair p = {time, view};
-    NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
-    if (found != renderData->frames.end()) {
-        *request = found->second;
-        return false;
+    {
+        NodeFrameViewRequestData::iterator found = renderData->frames.find(p);
+        if (found != renderData->frames.end()) {
+            *request = found->second.lock();
+            if (*request) {
+                return false;
+            }
+            // The request was destroyed because no other request needed it, remove it from the map
+            renderData->frames.erase(found);
+        }
     }
-
-
-
-    FrameViewRequestPtr& ret = renderData->frames[p];
-    ret.reset(new FrameViewRequest(time, view, proxyScale, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
+    
+    
+    
+    FrameViewRequestPtr ret(new FrameViewRequest(time, view, proxyScale, mipMapLevel, plane, hash, _publicInterface->shared_from_this()));
+    renderData->frames.insert(std::make_pair(p, ret));
     *request = ret;
     return true;
 }
@@ -245,7 +253,7 @@ EffectInstance::Implementation::getCombinedScale(unsigned int mipMapLevel, const
 }
 
 ActionRetCodeEnum
-EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend)
+EffectInstance::Implementation::resolveRenderBackend(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData, const RectI& roi, RenderBackendTypeEnum* renderBackend)
 {
     // Default to CPU
     *renderBackend = eRenderBackendTypeCPU;
@@ -284,7 +292,7 @@ EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& 
 
             // If this image is requested multiple times , do not render it on OpenGL since we do not use the cache.
             if (*renderBackend == eRenderBackendTypeOpenGL) {
-                if (requestPassData->getNumListeners() > 1) {
+                if (requestPassData->getNumListeners(requestPassSharedData) > 1) {
                     *renderBackend = eRenderBackendTypeCPU;
                 }
             }
@@ -317,7 +325,7 @@ EffectInstance::Implementation::resolveRenderBackend(const FrameViewRequestPtr& 
 } // resolveRenderBackend
 
 CacheAccessModeEnum
-EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& requestPassData)
+EffectInstance::Implementation::shouldRenderUseCache(const RequestPassSharedDataPtr& requestPassSharedData, const FrameViewRequestPtr& requestPassData)
 {
     bool retSet = false;
     CacheAccessModeEnum ret = eCacheAccessModeNone;
@@ -339,7 +347,7 @@ EffectInstance::Implementation::shouldRenderUseCache(const FrameViewRequestPtr& 
 
     if (!retSet) {
         const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
-        const int requestsCount = requestPassData->getNumListeners();
+        const int requestsCount = requestPassData->getNumListeners(requestPassSharedData);
 
         bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated,  requestsCount);
         if (useCache) {
