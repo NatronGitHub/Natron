@@ -725,7 +725,7 @@ OfxClipInstance::getInputImageInternal(const OfxTime time,
     }
 
     // Get the current action arguments from the thread local storage
-    FrameViewRequestPtr requestData = effectTLS->getCurrentFrameViewRequest();
+    FrameViewRequestPtr requestData = effect->getCurrentFrameViewRequest();
 
     // If we are in the render action, retrieve the current render window from the TLS
     RectI currentRenderWindow;
@@ -929,7 +929,7 @@ OfxClipInstance::getOutputImageInternal(const std::string* ofxPlane,
 
 
     // Get the current action arguments. The action must be the render action, otherwise it fails.
-    FrameViewRequestPtr requestData = effectTLS->getCurrentFrameViewRequest();
+    FrameViewRequestPtr requestData = effect->getCurrentFrameViewRequest();
     if (!gotTLS || !requestData) {
         assert(false);
         std::cerr << effect->getScriptName_mt_safe() << ": clipGetImage on the output clip may only be called during the render action" << std::endl;
@@ -1399,16 +1399,6 @@ OfxClipInstance::getEffectHolder() const
     assert(!effect->isRenderClone() || effect->getMainInstance() == mainInstance);
 #endif
 
-
-    if (!effect) {
-        return effect;
-    }
-    if ( effect->isReader() ) {
-        NodePtr ioContainer = effect->getNode()->getIOContainer();
-        if (ioContainer) {
-            return ioContainer->getEffectInstance();
-        }
-    }
     return effect;
 }
 

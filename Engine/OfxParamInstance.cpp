@@ -3593,9 +3593,22 @@ OfxStringInstance::projectEnvVar_setProxy(std::string& str) const
 OfxStatus
 OfxStringInstance::get(std::string &str)
 {
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
 
     if (fileKnob) {
         str = fileKnob->getValue();
@@ -3614,9 +3627,22 @@ OfxStatus
 OfxStringInstance::get(OfxTime time,
                        std::string & str)
 {
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
 
     if (fileKnob) {
         str = fileKnob->getValueAtTime(TimeValue(time), DimIdx(0), fileKnob->getCurrentView_TLS());
@@ -3635,10 +3661,22 @@ OfxStringInstance::get(OfxTime time,
 OfxStatus
 OfxStringInstance::set(const char* str)
 {
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
 
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
@@ -3662,11 +3700,22 @@ OfxStringInstance::set(OfxTime time,
 {
     assert( KnobString::canAnimateStatic() );
 
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
 
-
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
     if (fileKnob) {
         std::string s(str);
         projectEnvVar_setProxy(s);
@@ -3896,10 +3945,22 @@ OfxStringInstance::getNumKeys(unsigned int &nKeys) const
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
     if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }    if (strknob) {
         knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
         knob = boost::dynamic_pointer_cast<KnobI>(fileKnob);
@@ -3918,9 +3979,22 @@ OfxStringInstance::getKeyTime(int nth,
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
     if (strknob) {
         knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
@@ -3941,9 +4015,22 @@ OfxStringInstance::getKeyIndex(OfxTime time,
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
     if (strknob) {
         knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
@@ -3962,9 +4049,22 @@ OfxStringInstance::deleteKey(OfxTime time)
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
     if (strknob) {
         knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {
@@ -3983,9 +4083,22 @@ OfxStringInstance::deleteAllKeys()
 {
     KnobIPtr knob;
 
-    KnobFilePtr fileKnob = resolveRenderKnob<KnobFile>(_imp->fileKnob.lock());
-    KnobStringPtr strknob = resolveRenderKnob<KnobString>(_imp->stringKnob.lock());
-    KnobPathPtr pathKnob = resolveRenderKnob<KnobPath>(_imp->pathKnob.lock());
+    KnobFilePtr fileKnob;
+    KnobStringPtr strknob;
+    KnobPathPtr pathKnob;
+
+    fileKnob = _imp->fileKnob.lock();
+    if (fileKnob) {
+        fileKnob = resolveRenderKnob<KnobFile>(fileKnob);
+    }
+    strknob = _imp->stringKnob.lock();
+    if (strknob) {
+        strknob = resolveRenderKnob<KnobString>(strknob);
+    }
+    pathKnob = _imp->pathKnob.lock();
+    if (pathKnob) {
+        pathKnob = resolveRenderKnob<KnobPath>(pathKnob);
+    }
     if (strknob) {
         knob = boost::dynamic_pointer_cast<KnobI>(strknob);
     } else if (fileKnob) {

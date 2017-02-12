@@ -309,18 +309,18 @@ EffectInstance::getComponentsNeededInternal(TimeValue time,
     std::list<ImagePlaneDesc> upstreamAvailableLayers;
     PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
     if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) || (passThrough == ePassThroughRenderAllRequestedPlanes) ) {
-        
-        assert(*passThroughInputNb != -1);
 
+        if ((*passThroughInputNb != -1)) {
 
-        ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, &upstreamAvailableLayers);
-        if (!isFailureRetCode(stat)) {
+            ActionRetCodeEnum stat = getAvailableLayers(time, view, *passThroughInputNb, &upstreamAvailableLayers);
+            if (!isFailureRetCode(stat)) {
 
-            // upstreamAvailableLayers now contain all available planes in input of this node
-            // Remove from this list all layers produced from this node to get the pass-through planes list
-            removeFromLayersList(*layersProduced, &upstreamAvailableLayers);
+                // upstreamAvailableLayers now contain all available planes in input of this node
+                // Remove from this list all layers produced from this node to get the pass-through planes list
+                removeFromLayersList(*layersProduced, &upstreamAvailableLayers);
 
-            *passThroughPlanes = upstreamAvailableLayers;
+                *passThroughPlanes = upstreamAvailableLayers;
+            }
         }
     } // if pass-through for planes
 

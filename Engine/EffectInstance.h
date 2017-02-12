@@ -993,7 +993,8 @@ private:
 
 public:
     
-    virtual void setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request);
+    void setCurrentFrameViewRequest(const FrameViewRequestPtr& request);
+    FrameViewRequestPtr getCurrentFrameViewRequest() const;
 
     virtual TimeValue getCurrentTime_TLS() const OVERRIDE;
     virtual ViewIdx getCurrentView_TLS() const OVERRIDE;

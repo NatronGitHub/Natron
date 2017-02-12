@@ -1078,7 +1078,11 @@ EffectInstance::requestRender(TimeValue timeInArgs,
 
     // If the effect is not frame varying, forward the request to frame 0
     if (!isFrameVarying() && time != 0.) {
-        return requestRender(TimeValue(0), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+
+        // Avoid infinite recursion if the requester effect is the same that was already identity
+        if (!requester || requester->getRenderClone().get() != this) {
+            return requestRender(TimeValue(0), view, proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
+        }
     }
 
 

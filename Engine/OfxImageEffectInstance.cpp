@@ -581,14 +581,6 @@ OfxImageEffectInstance::newParam(const std::string &paramName,
         throw std::runtime_error( std::string("Parameter ") + paramName + " has unknown OFX type " + paramType );
     }
 
-    /**
-     * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
-     * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
-     * interacting with the Reader or the container is actually the same.
-     **/
-    if ( knob->getHolder() != getOfxEffectInstance() ) {
-        getOfxEffectInstance()->addKnob(knob);
-    }
 
     OfxParamToKnob* ptk = dynamic_cast<OfxParamToKnob*>(instance);
     assert(ptk);

@@ -131,6 +131,8 @@ public:
 
         // Make sure each node in the tree gets rendered at least once
         bool byPassCache;
+
+        CtorArgs();
     };
 
     typedef boost::shared_ptr<CtorArgs> CtorArgsPtr;

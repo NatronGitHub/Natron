@@ -46,12 +46,10 @@ struct EffectInstanceTLSDataPrivate
     // the current action.
     std::list<GenericActionTLSArgsPtr> actionsArgsStack;
 
-    FrameViewRequestWPtr currentFrameViewRequest;
 
     EffectInstanceTLSDataPrivate()
     : lock()
     , actionsArgsStack()
-    , currentFrameViewRequest()
     {
 
     }
@@ -223,36 +221,16 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
     return true;
 }
 
-void
-EffectInstanceTLSData::setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData)
-{
-    QMutexLocker k(&_imp->lock);
-    if (requestData) {
-        assert(!_imp->currentFrameViewRequest.lock());
-        _imp->currentFrameViewRequest = requestData;
-    } else {
-        assert(_imp->currentFrameViewRequest.lock());
-        _imp->currentFrameViewRequest.reset();
-    }
-}
-
-
-FrameViewRequestPtr
-EffectInstanceTLSData::getCurrentFrameViewRequest() const
-{
-    QMutexLocker k(&_imp->lock);
-    return _imp->currentFrameViewRequest.lock();
-}
 
 SetCurrentFrameViewRequest_RAII::SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request)
 : _effect(effect)
 {
-    effect->setCurrentFrameViewRequestTLS(request);
+    effect->setCurrentFrameViewRequest(request);
 }
 
 SetCurrentFrameViewRequest_RAII::~SetCurrentFrameViewRequest_RAII()
 {
-    _effect->setCurrentFrameViewRequestTLS(FrameViewRequestPtr());
+    _effect->setCurrentFrameViewRequest(FrameViewRequestPtr());
 }
 
 NATRON_NAMESPACE_EXIT

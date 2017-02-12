@@ -260,7 +260,6 @@ public:
     virtual void checkCanSetValueAndWarn() OVERRIDE FINAL;
 #endif
 
-    virtual void setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request) OVERRIDE FINAL;
 public:
 
     virtual bool getCanDistort() const OVERRIDE FINAL WARN_UNUSED_RETURN;

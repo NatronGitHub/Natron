@@ -950,7 +950,7 @@ WriteNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 void
 WriteNode::initializeKnobs()
 {
-    KnobPagePtr controlpage = createKnob<KnobPage>("controlsPage");
+    KnobPagePtr controlpage = createKnob<KnobPage>("Controls");
     controlpage->setLabel(tr("Controls"));
 
     ///Find a  "lastFrame" parameter and add it after it

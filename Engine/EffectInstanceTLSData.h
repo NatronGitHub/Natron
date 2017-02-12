@@ -179,17 +179,6 @@ public:
                                     RectI* renderWindow,
                                     std::map<ImagePlaneDesc, ImagePtr>* outputPlanes) const;
 
-    /**
-     * @brief Push TLS for the render action for any plug-in (not only OpenFX). This will be needed in EffectInstance::getImage
-     **/
-    void setCurrentFrameViewRequest(const FrameViewRequestPtr& requestData);
-
-    
-    /**
-     * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
-     **/
-    FrameViewRequestPtr getCurrentFrameViewRequest() const;
-
     
 private:
     

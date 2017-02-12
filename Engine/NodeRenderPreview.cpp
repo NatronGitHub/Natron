@@ -108,10 +108,10 @@ renderPreviewTemplated(const void* srcPtrs[4],
                 } else {
 
                     float tmpPix[3];
-                    for (int c = 0; c < srcNComps; ++c) {
+                    for (int c = 0; c < 3; ++c) {
                         if (srcPixelPtrs[c]) {
                             tmpPix[c] = Image::convertPixelDepth<PIX, float>(*srcPixelPtrs[c]);
-                            ++srcPixelPtrs[c];
+                            srcPixelPtrs[c] += pixelStride;
                         } else {
                             tmpPix[c] = 0;
                         }

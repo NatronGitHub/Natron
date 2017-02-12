@@ -432,8 +432,8 @@ OfxEffectInstance::isInitialized() const
 
 OfxEffectInstance::~OfxEffectInstance()
 {
-    _imp->common->overlayInteract.reset();
     if (_imp->common.use_count() == 1 && _imp->common->effect) {
+        _imp->common->overlayInteract.reset();
         _imp->common->effect->destroyInstanceAction();
     }
 }
@@ -470,12 +470,6 @@ OfxEffectInstance::getOrCreateTLSObject() const
     return _imp->common->tlsData->getOrCreateTLSData();
 }
 
-void
-OfxEffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request)
-{
-    EffectInstanceTLSDataPtr tls = getOrCreateTLSObject();
-    tls->setCurrentFrameViewRequest(request);
-}
 
 void
 OfxEffectInstance::tryInitializeOverlayInteracts()
@@ -2443,7 +2437,7 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
                                               );
 
     ThreadIsActionCaller_RAII actionCaller(toOfxEffectInstance(shared_from_this()));
-    
+
     OFX::Host::ImageEffect::ComponentsMap compMap;
     OFX::Host::ImageEffect::ClipInstance* ptClip = 0;
     OfxTime ptTime;
@@ -2458,6 +2452,11 @@ OfxEffectInstance::getLayersProducedAndNeeded(TimeValue time,
         if (clip) {
             *passThroughInputNb = clip->getInputNb();
         }
+    }
+    PassThroughEnum passThrough = isPassThroughForNonRenderedPlanes();
+    if ( (passThrough == ePassThroughPassThroughNonRenderedPlanes) || (passThrough == ePassThroughRenderAllRequestedPlanes) ) {
+        // If the plug-in is pass-through but did not indicate a clip, ensure we specify the main input at least
+        *passThroughInputNb = getNode()->getPreferredInput();
     }
     *passThroughTime = TimeValue(ptTime);
     *passThroughView = ViewIdx(ptView_i);

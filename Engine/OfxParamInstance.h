@@ -157,7 +157,21 @@ public:
         if (!ret) {
             return ret;
         }
+
+
+        /**
+         * For readers/writers embedded in a ReadNode or WriteNode, the holder will be the ReadNode and WriteNode
+         * but to ensure that all functions such as getKnobByName actually work, we add them to the knob vector so that
+         * interacting with the Reader or the container is actually the same.
+         **/
+        EffectInstancePtr thisEffect = _effect.lock();
+        if ( ret->getHolder() != thisEffect ) {
+            thisEffect->addKnob(ret);
+            ret->setActualCloneForHolder(thisEffect);
+        }
+
         ret->setLabel(getParamLabel(param));
+        
         return ret;
     }
 

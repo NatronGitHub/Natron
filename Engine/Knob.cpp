@@ -1415,6 +1415,17 @@ KnobHelper::setName(const std::string & name,
     _imp->common->name = finalName;
 } // KnobHelper::setName
 
+void
+KnobHelper::setActualCloneForHolder(const KnobHolderPtr& holder)
+{
+    // Register the knob in the render clones map
+    {
+        QMutexLocker locker(&_imp->common->renderClonesMapMutex);
+        _imp->common->renderClonesMap[holder] = shared_from_this();
+    }
+
+}
+
 KnobIPtr
 KnobHelper::getCloneForHolderInternal(const KnobHolderPtr& holder) const
 {

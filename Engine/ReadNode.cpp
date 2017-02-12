@@ -509,12 +509,6 @@ ReadNodePrivate::createDefaultReadNode()
         embeddedPlugin = node;
     }
 
-    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
-    _publicInterface->getNode()->declarePythonKnobs();
-
-    //Destroy it to keep the default parameters
-    destroyReadNode();
-
     separatorKnob.lock()->setSecret(true);
 }
 
@@ -668,6 +662,8 @@ ReadNodePrivate::createReadNode(bool throwErrors,
 
         node = _publicInterface->getApp()->createNode(args);
 
+        // Duplicate all knobs
+
         // Set the filename value
         if (node) {
             KnobFilePtr fileKnob = boost::dynamic_pointer_cast<KnobFile>(node->getKnobByName(kOfxImageEffectFileParamName));
@@ -685,8 +681,6 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         }
         placeReadNodeKnobsInPage();
 
-        //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
-        _publicInterface->getNode()->declarePythonKnobs();
     }
 
 
@@ -694,15 +688,28 @@ ReadNodePrivate::createReadNode(bool throwErrors,
         defaultFallback = true;
     }
 
+    // Refreh sub-graph connections
     if (node) {
         outputNode->swapInput(node, 0);
         node->swapInput(inputNode, 0);
     } else {
         outputNode->swapInput(inputNode, 0);
     }
+
     if (defaultFallback) {
         createDefaultReadNode();
     }
+
+    //We need to explcitly refresh the Python knobs since we attached the embedded node knobs into this node.
+    _publicInterface->getNode()->declarePythonKnobs();
+
+#if 0
+    if (defaultFallback) {
+
+        //Destroy it to keep the default parameters
+        destroyReadNode();
+    }
+#endif
 
 
     //Clone the old values of the generic knobs
@@ -834,7 +841,7 @@ ReadNode::isHostChannelSelectorSupported(bool* /*defaultR*/,
 void
 ReadNode::initializeKnobs()
 {
-    KnobPagePtr controlpage = createKnob<KnobPage>("controlsPage");
+    KnobPagePtr controlpage = createKnob<KnobPage>("Controls");
     controlpage->setLabel(tr("Controls"));
     {
         KnobButtonPtr param = createKnob<KnobButton>("fileInfo");

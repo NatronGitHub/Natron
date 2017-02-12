@@ -1248,6 +1248,11 @@ public:
         return boost::dynamic_pointer_cast<K>(k);
     }
 
+    /**
+     * @brief Hack for the meta Read/Write nodes
+     **/
+    virtual void setActualCloneForHolder(const KnobHolderPtr& holder) = 0;
+
 protected:
 
     virtual KnobIPtr getCloneForHolderInternal(const KnobHolderPtr& holder) const = 0;
@@ -1528,7 +1533,7 @@ protected:
 public:
 
 
-
+    virtual void setActualCloneForHolder(const KnobHolderPtr& holder) OVERRIDE FINAL;
 
     virtual void autoFoldDimensions(ViewIdx view) OVERRIDE FINAL;
 

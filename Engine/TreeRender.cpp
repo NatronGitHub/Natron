@@ -227,6 +227,23 @@ struct TreeRenderPrivate
                                            FrameViewRequestPtr* outputRequest);
 };
 
+TreeRender::CtorArgs::CtorArgs()
+: time(0)
+, view(0)
+, treeRootEffect()
+, extraNodesToSample()
+, activeRotoDrawableItem()
+, stats()
+, canonicalRoI(0)
+, plane(0)
+, proxyScale(1.)
+, mipMapLevel(0)
+, draftMode(false)
+, playback(false)
+, byPassCache(false)
+{
+
+}
 
 TreeRender::TreeRender()
 : _imp(new TreeRenderPrivate(this))

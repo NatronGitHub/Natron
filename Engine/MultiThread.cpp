@@ -124,7 +124,6 @@ NATRON_NAMESPACE_ANONYMOUS_ENTER
 
 static void copyOFXRenderTLS(const EffectInstancePtr& effect,
                              QThread* spawnerThread,
-                             boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> &frameViewSetter,
                              boost::scoped_ptr<RenderActionArgsSetter_RAII> &renderActionData)
 {
     EffectInstanceTLSDataPtr tlsSpawnerThread = effect->getTLSObjectForThread(spawnerThread);
@@ -133,12 +132,6 @@ static void copyOFXRenderTLS(const EffectInstancePtr& effect,
         return;
     }
 
-    // Copy the request: this will enable threads from the multi-thread suite to
-    // correctly know that they are in an action on a render thread
-    FrameViewRequestPtr request = tlsSpawnerThread->getCurrentFrameViewRequest();
-    if (request) {
-        frameViewSetter.reset(new SetCurrentFrameViewRequest_RAII(effect, request));
-    }
 
     // Copy the current render action args: this will enable threads from the multi-thread suite to
     // correctly know that they are in a render action.
@@ -176,10 +169,9 @@ threadFunctionWrapper(MultiThreadPrivate* imp,
     // If we launched the functor in a new thread,
     // this thread doesn't have any TLS set.
     // However some functions in the OpenFX API might require it.
-    boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
     boost::scoped_ptr<RenderActionArgsSetter_RAII> renderActionData;
     if (spawnedThread != spawnerThread && effect) {
-        copyOFXRenderTLS(effect, spawnerThread, frameViewSetter, renderActionData);
+        copyOFXRenderTLS(effect, spawnerThread , renderActionData);
     }
 
     ActionRetCodeEnum ret = eActionStatusOK;
@@ -235,10 +227,9 @@ private:
         // If we launched the functor in a new thread,
         // this thread doesn't have any TLS set.
         // However some functions in the OpenFX API might require it.
-        boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> frameViewSetter;
         boost::scoped_ptr<RenderActionArgsSetter_RAII> renderActionData;
         if (_effect) {
-            copyOFXRenderTLS(_effect, _spawnerThread, frameViewSetter, renderActionData);
+            copyOFXRenderTLS(_effect, _spawnerThread, renderActionData);
         }
 
 

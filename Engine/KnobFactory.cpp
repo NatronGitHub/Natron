@@ -115,7 +115,9 @@ KnobFactory::createRenderCloneKnob(const KnobIPtr& mainInstanceKnob, const KnobH
 
     // If the knob does not evaluate on change, do not copy it anyway since the value is irrelevant to the render.
     if (!mainInstanceKnob->getEvaluateOnChange()) {
-        return toKnobHelper(mainInstanceKnob);
+        KnobHelperPtr mainInstance = toKnobHelper(mainInstanceKnob);
+        mainInstance->setActualCloneForHolder(holder);
+        return mainInstance;
     }
 
     KnobRenderCloneBuilder builder = (KnobRenderCloneBuilder)(builderFunc.second);

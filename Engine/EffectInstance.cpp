@@ -971,8 +971,15 @@ EffectInstance::getOrCreateTLSObject() const
     return EffectInstanceTLSDataPtr();
 }
 
+FrameViewRequestPtr
+EffectInstance::getCurrentFrameViewRequest() const
+{
+    assert(_imp->renderData);
+    return _imp->renderData->currentFrameView.lock();
+}
+
 void
-EffectInstance::setCurrentFrameViewRequestTLS(const FrameViewRequestPtr& request)
+EffectInstance::setCurrentFrameViewRequest(const FrameViewRequestPtr& request)
 {
     assert(_imp->renderData);
     _imp->renderData->currentFrameView = request;
