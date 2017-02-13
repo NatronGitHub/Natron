@@ -940,7 +940,6 @@ void
 ViewerNode::redrawViewer()
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
     OpenGLViewerI* uiContext = getUiContext();
     if (uiContext) {
         uiContext->redraw();
@@ -952,7 +951,6 @@ void
 ViewerNode::redrawViewerNow()
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
     OpenGLViewerI* uiContext = getUiContext();
     if (uiContext) {
         uiContext->redrawNow();
@@ -1050,8 +1048,6 @@ ViewerNode::clearLastRenderedImage()
 void
 ViewerNode::updateViewer(const UpdateViewerArgs& args)
 {
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
 
     OpenGLViewerI* uiContext = getUiContext();
     assert(uiContext);

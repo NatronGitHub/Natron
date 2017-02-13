@@ -65,6 +65,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
+    struct Implementation;
+
+
 
     /*3 different constructors, that all take a different parameter related to OpenGL or Qt widget parenting.
        When constructing a viewer for the 1st time in the app, you must pass a NULL shareWidget. Otherwise,you
@@ -92,7 +95,7 @@ public:
      *@returns Returns a const reference to the dataWindow of the currentFrame(BBOX) in canonical coordinates
      **/
     // MT-SAFE: used only by the main-thread, can return a const ref
-    const RectD& getRoD(int textureIndex) const;
+    RectD getRoD(int textureIndex) const;
 
 
     /**
@@ -102,11 +105,7 @@ public:
 
     double getPAR(int texIndex) const;
 
-    /**
-     *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
-     * It calls QGLWidget::resizeEvent(QResizeEvent*).
-     **/
-    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+
 
     /**
      *@returns Returns the height of the frame with the scale factor applied to it.
@@ -447,6 +446,10 @@ Q_SIGNALS:
 
     void selectionCleared();
 
+    void mustCallUpdateOnMainThread();
+
+    void mustCallUpdateGLOnMainThread();
+
 private:
     /**
      *@brief The paint function. That's where all the drawing is done.
@@ -472,6 +475,14 @@ private:
      *@brief Handles the resizing of the viewer
      **/
     virtual void resizeGL(int width, int height) OVERRIDE FINAL;
+
+    /**
+     *@brief Hack to allow the resizeEvent to be publicly used elsewhere.
+     * It calls QGLWidget::resizeEvent(QResizeEvent*).
+     **/
+    virtual void resizeEvent(QResizeEvent* e) OVERRIDE FINAL;
+
+    virtual void paintEvent(QPaintEvent* e) OVERRIDE FINAL;
 
 private:
 
@@ -558,7 +569,6 @@ private:
     static double currentTimeForEvent(QInputEvent* e);
 
 private:
-    struct Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 };
 

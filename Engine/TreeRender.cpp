@@ -793,8 +793,8 @@ public:
 class FrameViewRenderRunnable : public QRunnable
 {
 
-    RequestPassSharedDataPtr _sharedData;
-    FrameViewRequestPtr _request;
+    RequestPassSharedDataWPtr _sharedData;
+    FrameViewRequestWPtr _request;
     TreeRenderPrivate* _imp;
 public:
 
@@ -809,44 +809,45 @@ public:
 
     virtual ~FrameViewRenderRunnable()
     {
-
     }
 
 private:
 
     virtual void run() OVERRIDE FINAL
     {
+        FrameViewRequestPtr request = _request.lock();
+        RequestPassSharedDataPtr sharedData = _sharedData.lock();
 
-        EffectInstancePtr renderClone = _request->getRenderClone();
-        ActionRetCodeEnum stat = renderClone->launchRender(_sharedData, _request);
+        EffectInstancePtr renderClone = request->getRenderClone();
+        ActionRetCodeEnum stat = renderClone->launchRender(sharedData, request);
 
 
         // Remove all stashes input frame view requests that we kept around.
-        _request->clearRenderedDependencies(_sharedData);
+        request->clearRenderedDependencies(sharedData);
 
-        QMutexLocker k(&_sharedData->_imp->dependencyFreeRendersMutex);
+        QMutexLocker k(&sharedData->_imp->dependencyFreeRendersMutex);
 
         if (isFailureRetCode(stat)) {
-            _sharedData->_imp->stat = stat;
+            sharedData->_imp->stat = stat;
         }
 
         // Remove this render from all tasks left
         {
-            std::set<FrameViewRequestPtr>::const_iterator foundTask = _sharedData->_imp->allRenderTasksToProcess.find(_request);
-            assert(foundTask != _sharedData->_imp->allRenderTasksToProcess.end());
-            if (foundTask != _sharedData->_imp->allRenderTasksToProcess.end()) {
-                _sharedData->_imp->allRenderTasksToProcess.erase(foundTask);
+            std::set<FrameViewRequestPtr>::const_iterator foundTask = sharedData->_imp->allRenderTasksToProcess.find(request);
+            assert(foundTask != sharedData->_imp->allRenderTasksToProcess.end());
+            if (foundTask != sharedData->_imp->allRenderTasksToProcess.end()) {
+                sharedData->_imp->allRenderTasksToProcess.erase(foundTask);
             }
         }
 
         // For each frame/view that depend on this frame, remove it from the dependencies list.
-        std::list<FrameViewRequestPtr> listeners = _request->getListeners(_sharedData);
+        std::list<FrameViewRequestPtr> listeners = request->getListeners(sharedData);
         for (std::list<FrameViewRequestPtr>::const_iterator it = listeners.begin(); it != listeners.end(); ++it) {
-            int numDepsLeft = (*it)->markDependencyAsRendered(_sharedData, _request);
+            int numDepsLeft = (*it)->markDependencyAsRendered(sharedData, request);
 
             // If the task has all its dependencies available, add it to the render queue.
             if (numDepsLeft == 0) {
-                _sharedData->_imp->dependencyFreeRenders.insert(*it);
+                sharedData->_imp->dependencyFreeRenders.insert(*it);
             }
         }
 
@@ -856,12 +857,12 @@ private:
             QMutexLocker k(&_imp->extraRequestedResultsMutex);
             std::map<NodePtr, FrameViewRequestPtr>::iterator foundRequested = _imp->extraRequestedResults.find(renderClone->getNode());
             if (foundRequested != _imp->extraRequestedResults.end() && !foundRequested->second) {
-                foundRequested->second = _request;
+                foundRequested->second = request;
             }
         }
 
         // Notify the main render thread that some more stuff can be rendered (or that we are done)
-        _sharedData->_imp->dependencyFreeRendersEmptyCond.wakeOne();
+        sharedData->_imp->dependencyFreeRendersEmptyCond.wakeOne();
     }
 };
 
@@ -936,6 +937,11 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
 
     bool isThreadPoolThread = isRunningInThreadPoolThread();
 
+    // See bug https://bugreports.qt.io/browse/QTBUG-20251
+    // The Qt thread-pool mem-leaks the runnable if using release/reserveThread
+    // Instead we explicitly manage them and ensure they do not hold any external strong refs.
+    std::vector<boost::shared_ptr<FrameViewRenderRunnable> > runnables;
+
     // While we still have tasks to render loop
     while (numTasksRemaining > 0) {
 
@@ -946,8 +952,10 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
 
             FrameViewRequestPtr request = *requestData->_imp->dependencyFreeRenders.begin();
             requestData->_imp->dependencyFreeRenders.erase(requestData->_imp->dependencyFreeRenders.begin());
-
-            threadPool->start(new FrameViewRenderRunnable(this, requestData, request));
+            boost::shared_ptr<FrameViewRenderRunnable> runnable(new FrameViewRenderRunnable(this, requestData, request));
+            runnable->setAutoDelete(false);
+            runnables.push_back(runnable);
+            threadPool->start(runnable.get());
         }
 
         // If this thread is a threadpool thread, it may wait for a while that results gets available.
@@ -972,7 +980,7 @@ TreeRenderPrivate::launchRenderInternal(const EffectInstancePtr& renderClone,
         
         numTasksRemaining = requestData->_imp->allRenderTasksToProcess.size();
     }
-    
+    runnables.clear();
     
     return eActionStatusOK;
 } // launchRenderInternal

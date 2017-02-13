@@ -129,11 +129,6 @@ public:
      **/
     bool hasNodes() const;
 
-    /**
-     * @brief Returns true if a node is currently rendering in this collection. This is recursive and will look
-     * into all sub collections too
-     **/
-    bool hasNodeRendering() const;
 
     /**
      * @brief Connects the node 'input' to the node 'output' on the input number 'inputNumber'

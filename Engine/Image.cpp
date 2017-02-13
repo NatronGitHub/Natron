@@ -59,8 +59,7 @@ Image::create(const InitStorageArgs& args)
 
 Image::~Image()
 {
-
-    pushTilesToCacheIfNotAborted();
+ 
     
     // If this image is the last image holding a pointer to memory buffers, ensure these buffers
     // gets deallocated in a specific thread and not a render thread
@@ -82,7 +81,16 @@ Image::~Image()
 void
 Image::discardTiles()
 {
-    _imp->cachePolicy = eCacheAccessModeNone;
+    for (TileMap::iterator it = _imp->tiles.begin(); it != _imp->tiles.end(); ++it) {
+
+        Image::Tile& tile = it->second;
+
+        for (std::size_t c = 0; c < tile.perChannelTile.size(); ++c) {
+            Image::MonoChannelTile& thisChannelTile = tile.perChannelTile[c];
+            thisChannelTile.entryLocker.reset();
+        }
+        
+    } // for each tile
 }
 
 void
@@ -277,7 +285,6 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
             tileSizeY = originalBounds.height();
             break;
     }
-
     assert(boundsRoundedToTile.width() % tileSizeX == 0 && boundsRoundedToTile.height() % tileSizeY == 0);
     if (args.externalBuffer) {
         initFromExternalBuffer(args);
@@ -816,7 +823,7 @@ Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const Rec
     for (int x = roiRoundedToTileSize.x1; x < roiRoundedToTileSize.x2; x += tileSizeX) {
 
         bool hasTileUnrenderedOnCol = false;
-        for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
+        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
 
             TileCoord c = {x, y};
             TileStateMap::const_iterator foundTile = tiles.find(c);
@@ -840,7 +847,7 @@ Image::getMinimalBboxToRenderFromTilesState(const TileStateMap& tiles, const Rec
     for (int x = roiRoundedToTileSize.x2 - tileSizeX; x >= roiRoundedToTileSize.x1; x -= tileSizeX) {
 
         bool hasTileUnrenderedOnCol = false;
-        for (int y = roiRoundedToTileSize.y1; y <= roiRoundedToTileSize.y2; y += tileSizeY) {
+        for (int y = roiRoundedToTileSize.y1; y < roiRoundedToTileSize.y2; y += tileSizeY) {
 
             TileCoord c = {x, y};
             TileStateMap::const_iterator foundTile = tiles.find(c);

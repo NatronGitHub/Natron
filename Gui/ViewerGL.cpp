@@ -113,6 +113,22 @@ GCC_DIAG_UNUSED_PRIVATE_FIELD_ON
 
 NATRON_NAMESPACE_ENTER;
 
+struct OpenGLContextLocker
+{
+    ViewerGL::Implementation *_imp;
+
+    OpenGLContextLocker(ViewerGL::Implementation* imp)
+    : _imp(imp)
+    {
+        _imp->lockGLContext();
+    }
+
+    ~OpenGLContextLocker()
+    {
+        _imp->releaseGLContext();
+    }
+};
+
 
 ViewerGL::ViewerGL(ViewerTab* parent,
                    const QGLWidget* shareWidget)
@@ -126,6 +142,8 @@ ViewerGL::ViewerGL(ViewerTab* parent,
     setMouseTracking(true);
 
     QObject::connect( appPTR, SIGNAL(checkerboardSettingsChanged()), this, SLOT(onCheckerboardSettingsChanged()) );
+    QObject::connect( this, SIGNAL(mustCallUpdateOnMainThread()), this, SLOT(update()));
+    QObject::connect( this, SIGNAL(mustCallUpdateGLOnMainThread()), this, SLOT(updateGL()));
 }
 
 ViewerGL::~ViewerGL()
@@ -167,8 +185,7 @@ bool
 ViewerGL::displayingImage() const
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    QMutexLocker k(&_imp->displayDataMutex);
     return _imp->displayTextures[0].isVisible || _imp->displayTextures[1].isVisible;
 }
 
@@ -256,6 +273,13 @@ public:
 };
 
 void
+ViewerGL::paintEvent(QPaintEvent* e)
+{
+    OpenGLContextLocker locker(_imp.get());
+    QGLWidget::paintEvent(e);
+}
+
+void
 ViewerGL::paintGL()
 {
     // always running in the main thread
@@ -331,8 +355,11 @@ ViewerGL::paintGL()
             bInputNode = viewerNode->getCurrentBInput();
 
             bool drawTexture[2];
-            drawTexture[0] = _imp->displayTextures[0].isVisible;
-            drawTexture[1] = _imp->displayTextures[1].isVisible && compOperator != eViewerCompositingOperatorNone;
+            {
+                QMutexLocker k(&_imp->displayDataMutex);
+                drawTexture[0] = _imp->displayTextures[0].isVisible;
+                drawTexture[1] = _imp->displayTextures[1].isVisible && compOperator != eViewerCompositingOperatorNone;
+            }
             if ( (aInputNode == bInputNode) &&
                 (compOperator != eViewerCompositingOperatorWipeMinus) &&
                 (compOperator != eViewerCompositingOperatorStackMinus) ) {
@@ -355,7 +382,11 @@ ViewerGL::paintGL()
             bool checkerboard = viewerNode->isCheckerboardEnabled();
             if (checkerboard) {
                 // draw checkerboard texture, but only on the left side if in wipe mode
-                RectD canonicalFormat = _imp->displayTextures[0].format;
+                RectD canonicalFormat;
+                {
+                    QMutexLocker k(&_imp->displayDataMutex);
+                    canonicalFormat = _imp->displayTextures[0].format;
+                }
                 if (compOperator == eViewerCompositingOperatorNone) {
                     _imp->drawCheckerboardTexture(canonicalFormat);
                 } else if ( operatorIsWipe(compOperator) ) {
@@ -373,7 +404,16 @@ ViewerGL::paintGL()
 
 
             ///Depending on the premultiplication of the input image we use a different blending func
-            ImagePremultiplicationEnum premultA = _imp->displayTextures[0].premult;
+            ImagePremultiplicationEnum premultA;
+            unsigned int mipMapLevels[2];
+            double par;
+            {
+                QMutexLocker k(&_imp->displayDataMutex);
+                premultA = _imp->displayTextures[0].premult;
+                par = _imp->displayTextures[0].pixelAspectRatio;
+                mipMapLevels[0] = _imp->displayTextures[0].mipMapLevel;
+                mipMapLevels[1] = _imp->displayTextures[1].mipMapLevel;
+            }
 
             // Left side of the wipe is displayed as Opaque if there is no checkerboard.
             // That way, unpremultiplied images can easily be displayed, even if their alpha is zero.
@@ -383,7 +423,7 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorNone: {
                 if (drawTexture[0]) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWhole, true);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, eDrawPolygonModeWhole, true);
                 }
                 break;
             }
@@ -391,16 +431,16 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackUnder: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     GL_GPU::Enable(GL_BLEND);
                     GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     GL_GPU::Disable(GL_BLEND);
                 }
 
@@ -410,17 +450,17 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackOver: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[1]) {
                     GL_GPU::Enable(GL_BLEND);
                     GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE_MINUS_CONSTANT_ALPHA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     GL_GPU::Disable(GL_BLEND);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
 
                 break;
@@ -429,17 +469,17 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackMinus: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     GL_GPU::Enable(GL_BLEND);
                     GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     GL_GPU::BlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     GL_GPU::Disable(GL_BLEND);
                 }
                 break;
@@ -448,40 +488,42 @@ ViewerGL::paintGL()
             case eViewerCompositingOperatorStackOnionSkin: {
                 if (drawTexture[0] && !stack) {
                     BlendSetter b(checkerboard ? premultA : eImagePremultiplicationOpaque);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, eDrawPolygonModeWipeLeft, true);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, eDrawPolygonModeWipeLeft, true);
                 }
                 if (drawTexture[0]) {
                     BlendSetter b(premultA);
-                    _imp->drawRenderingVAO(_imp->displayTextures[0].mipMapLevel, 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[0], 0, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                 }
                 if (drawTexture[1]) {
                     GL_GPU::Enable(GL_BLEND);
                     GL_GPU::BlendFunc(GL_CONSTANT_ALPHA, GL_ONE);
                     //glBlendEquation(GL_FUNC_REVERSE_SUBTRACT);
-                    _imp->drawRenderingVAO(_imp->displayTextures[1].mipMapLevel, 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
+                    _imp->drawRenderingVAO(mipMapLevels[1], 1, stack ? eDrawPolygonModeWhole : eDrawPolygonModeWipeRight, false);
                     GL_GPU::Disable(GL_BLEND);
                 }
                 break;
             }
             } // switch
 
-            for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
-                const RectI &texRect = _imp->partialUpdateTextures[i].texture->getBounds();
-                const double par = _imp->displayTextures[0].pixelAspectRatio;
-                RectD canonicalTexRect;
-                texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
+            {
+                QMutexLocker k(&_imp->displayDataMutex);
+                for (std::size_t i = 0; i < _imp->partialUpdateTextures.size(); ++i) {
+                    const RectI &texRect = _imp->partialUpdateTextures[i].texture->getBounds();
+                    RectD canonicalTexRect;
+                    texRect.toCanonical_noClipping(_imp->partialUpdateTextures[i].mipMapLevel, par /*, rod*/, &canonicalTexRect);
 
-                GL_GPU::ActiveTexture(GL_TEXTURE0);
-                GL_GPU::BindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
-                GL_GPU::Begin(GL_POLYGON);
-                GL_GPU::TexCoord2d(0, 0); GL_GPU::Vertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
-                GL_GPU::TexCoord2d(0, 1); GL_GPU::Vertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
-                GL_GPU::TexCoord2d(1, 1); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
-                GL_GPU::TexCoord2d(1, 0); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
-                GL_GPU::End();
-                GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
-
-                glCheckError(GL_GPU);
+                    GL_GPU::ActiveTexture(GL_TEXTURE0);
+                    GL_GPU::BindTexture( GL_TEXTURE_2D, _imp->partialUpdateTextures[i].texture->getTexID() );
+                    GL_GPU::Begin(GL_POLYGON);
+                    GL_GPU::TexCoord2d(0, 0); GL_GPU::Vertex2d(canonicalTexRect.x1, canonicalTexRect.y1);
+                    GL_GPU::TexCoord2d(0, 1); GL_GPU::Vertex2d(canonicalTexRect.x1, canonicalTexRect.y2);
+                    GL_GPU::TexCoord2d(1, 1); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y2);
+                    GL_GPU::TexCoord2d(1, 0); GL_GPU::Vertex2d(canonicalTexRect.x2, canonicalTexRect.y1);
+                    GL_GPU::End();
+                    GL_GPU::BindTexture(GL_TEXTURE_2D, 0);
+                    
+                    glCheckError(GL_GPU);
+                }
             }
         } // GLProtectAttrib a(GL_COLOR_BUFFER_BIT | GL_ENABLE_BIT | GL_CURRENT_BIT);
 
@@ -563,7 +605,12 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
 
             // Draw format
             {
-                renderText(canonicalFormat.right(), canonicalFormat.bottom(), _imp->currentViewerInfo_resolutionOverlay[i], _imp->textRenderingColor, _imp->textFont);
+                QString str;
+                {
+                    QMutexLocker k(&_imp->displayDataMutex);
+                    str = _imp->currentViewerInfo_resolutionOverlay[i];
+                }
+                renderText(canonicalFormat.right(), canonicalFormat.bottom(), str, _imp->textRenderingColor, _imp->textFont);
 
 
                 QPoint topRight( canonicalFormat.right(), canonicalFormat.top() );
@@ -593,17 +640,26 @@ ViewerGL::drawOverlay(unsigned int mipMapLevel,
                 glCheckErrorIgnoreOSXBug(GL_GPU);
             }
 
-            if ( !_imp->displayTextures[i].isVisible || (!bInput && i == 1)) {
+            bool visible;
+            {
+                QMutexLocker k(&_imp->displayDataMutex);
+                visible = _imp->displayTextures[i].isVisible;
+            }
+            if ( !visible || (!bInput && i == 1)) {
                 continue;
             }
             RectD dataW = getRoD(i);
 
 
             if (dataW != canonicalFormat) {
-                renderText(dataW.right(), dataW.top(),
-                           _imp->currentViewerInfo_topRightBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
-                renderText(dataW.left(), dataW.bottom(),
-                           _imp->currentViewerInfo_btmLeftBBOXoverlay[i], _imp->rodOverlayColor, _imp->textFont);
+                QString topRightStr, btmLeftStr;
+                {
+                    QMutexLocker k(&_imp->displayDataMutex);
+                    topRightStr = _imp->currentViewerInfo_topRightBBOXoverlay[i];
+                    btmLeftStr = _imp->currentViewerInfo_btmLeftBBOXoverlay[i];
+                }
+                renderText(dataW.right(), dataW.top(), topRightStr, _imp->rodOverlayColor, _imp->textFont);
+                renderText(dataW.left(), dataW.bottom(), btmLeftStr, _imp->rodOverlayColor, _imp->textFont);
                 glCheckError(GL_GPU);
 
                 QPointF topRight2( dataW.right(), dataW.top() );
@@ -695,7 +751,11 @@ ViewerGL::drawPickerPixel()
         }
 
         QPointF pos = _imp->lastPickerPos;
-        unsigned int mipMapLevel = _imp->displayTextures[0].mipMapLevel;
+        unsigned int mipMapLevel;
+        {
+            QMutexLocker k(&_imp->displayDataMutex);
+            mipMapLevel = _imp->displayTextures[0].mipMapLevel;
+        }
 
         if (mipMapLevel != 0) {
             pos *= (1 << mipMapLevel);
@@ -866,7 +926,6 @@ GLuint
 ViewerGL::getPboID(int index)
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
     assert( QGLContext::currentContext() == context() );
 
     if ( index >= (int)_imp->pboIds.size() ) {
@@ -972,6 +1031,7 @@ ViewerGL::isExtensionSupported(const char *extension)
 void
 ViewerGL::clearPartialUpdateTextures()
 {
+    QMutexLocker k(&_imp->displayDataMutex);
     _imp->partialUpdateTextures.clear();
 }
 
@@ -1015,6 +1075,7 @@ ViewerGL::refreshMetadata(int inputNb, const NodeMetadata& metadata)
 void
 ViewerGL::clearLastRenderedImage()
 {
+    QMutexLocker k(&_imp->displayDataMutex);
     for (int i = 0; i < 2; ++i) {
         _imp->displayTextures[i].colorPickerImage.reset();
         _imp->displayTextures[i].colorPickerInputImage.reset();
@@ -1054,7 +1115,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                                      const ImageTileKeyPtr& viewerProcessNodeTileKey)
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
+    OpenGLContextLocker locker(_imp.get());
+    
     makeCurrent();
 
     glCheckError(GL_GPU);
@@ -1093,68 +1155,74 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
         QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
         _imp->uploadedTexturesViewerHash[time] = viewerProcessNodeTileKey;
     }
-    
+
 
     GLTexturePtr tex;
-    if (isPartialRect) {
+    {
+        QMutexLocker displayDataLocker(&_imp->displayDataMutex);
+        if (isPartialRect) {
 
-        assert(image);
+            assert(image);
 
-        // For small partial updates overlays, we make new textures
-        int format, internalFormat, glType;
+            // For small partial updates overlays, we make new textures
+            int format, internalFormat, glType;
 
-        if (bitdepth == eImageBitDepthFloat) {
-            Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+            if (bitdepth == eImageBitDepthFloat) {
+                Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+            } else {
+                Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+            }
+            tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+
+            TextureInfo info;
+            info.texture = tex;
+            info.mipMapLevel = image ? image->getMipMapLevel() : 0;
+            info.premult = _imp->displayTextures[0].premult;
+            info.pixelAspectRatio = _imp->displayTextures[0].pixelAspectRatio;
+            info.time = time;
+            info.isPartialImage = true;
+            info.originalCanonicalRoi = originalCanonicalRoi;
+            info.isVisible = true;
+            _imp->partialUpdateTextures.push_back(info);
+
+            // Update time otherwise overlays won't refresh since we are not updating the displayTextures
+            _imp->displayTextures[0].time = time;
+            _imp->displayTextures[1].time = time;
         } else {
-            Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
-        }
-        tex.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
 
-        TextureInfo info;
-        info.texture = tex;
-        info.mipMapLevel = image ? image->getMipMapLevel() : 0;
-        info.premult = _imp->displayTextures[0].premult;
-        info.pixelAspectRatio = _imp->displayTextures[0].pixelAspectRatio;
-        info.time = time;
-        info.isPartialImage = true;
-        info.originalCanonicalRoi = originalCanonicalRoi;
-        info.isVisible = true;
-        _imp->partialUpdateTextures.push_back(info);
+            _imp->displayTextures[textureIndex].colorPickerImage = colorPickerImage;
+            _imp->displayTextures[textureIndex].colorPickerInputImage = colorPickerInputImage;
+            _imp->displayTextures[textureIndex].originalCanonicalRoi = originalCanonicalRoi;
+            // re-use the existing texture if possible
+            if (!image) {
+                _imp->displayTextures[textureIndex].isVisible = false;
+            } else {
+                tex = _imp->displayTextures[textureIndex].texture;
+                if (tex->type() != bitdepth) {
+                    int format, internalFormat, glType;
 
-        // Update time otherwise overlays won't refresh since we are not updating the displayTextures
-        _imp->displayTextures[0].time = time;
-        _imp->displayTextures[1].time = time;
-    } else {
-
-        _imp->displayTextures[textureIndex].colorPickerImage = colorPickerImage;
-        _imp->displayTextures[textureIndex].colorPickerInputImage = colorPickerInputImage;
-        _imp->displayTextures[textureIndex].originalCanonicalRoi = originalCanonicalRoi;
-        // re-use the existing texture if possible
-        if (!image) {
-            _imp->displayTextures[textureIndex].isVisible = false;
-        } else {
-            tex = _imp->displayTextures[textureIndex].texture;
-            if (tex->type() != bitdepth) {
-                int format, internalFormat, glType;
-
-                if (bitdepth == eImageBitDepthFloat) {
-                    Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
-                } else {
-                    Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+                    if (bitdepth == eImageBitDepthFloat) {
+                        Texture::getRecommendedTexParametersForRGBAFloatTexture(&format, &internalFormat, &glType);
+                    } else {
+                        Texture::getRecommendedTexParametersForRGBAByteTexture(&format, &internalFormat, &glType);
+                    }
+                    _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
                 }
-                _imp->displayTextures[textureIndex].texture.reset( new Texture(GL_TEXTURE_2D, GL_LINEAR, GL_NEAREST, GL_CLAMP_TO_EDGE, bitdepth, format, internalFormat, glType, true) );
+
+                tex->ensureTextureHasSize(imageData.tileBounds, 0);
+
+
+                _imp->displayTextures[textureIndex].isVisible = true;
+                _imp->displayTextures[textureIndex].mipMapLevel = image ? image->getMipMapLevel() : 0;
+                _imp->displayTextures[textureIndex].time = time;
             }
 
-            tex->ensureTextureHasSize(imageData.tileBounds, 0);
-
-            _imp->displayTextures[textureIndex].isVisible = true;
-            _imp->displayTextures[textureIndex].mipMapLevel = image ? image->getMipMapLevel() : 0;
-            _imp->displayTextures[textureIndex].time = time;
+            displayDataLocker.unlock();
+            setRegionOfDefinition(rod, _imp->displayTextures[textureIndex].pixelAspectRatio, textureIndex);
+            
+            Q_EMIT imageChanged(textureIndex);
         }
-        setRegionOfDefinition(rod, _imp->displayTextures[textureIndex].pixelAspectRatio, textureIndex);
-
-        Q_EMIT imageChanged(textureIndex);
-    }
+    } // displayDataLocker
 
     if (recenterViewer) {
         QMutexLocker k(&_imp->zoomCtxMutex);
@@ -1219,6 +1287,7 @@ ViewerGL::disconnectInputTexture(int textureIndex, bool clearRoD)
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+    QMutexLocker k(&_imp->displayDataMutex);
     assert(textureIndex == 0 || textureIndex == 1);
     if (_imp->displayTextures[textureIndex].isVisible) {
         _imp->displayTextures[textureIndex].isVisible = false;
@@ -1666,7 +1735,11 @@ ViewerGL::penMotionInternal(int x,
 void
 ViewerGL::mouseDoubleClickEvent(QMouseEvent* e)
 {
-    unsigned int mipMapLevel = _imp->displayTextures[0].mipMapLevel;
+    unsigned int mipMapLevel;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        mipMapLevel = _imp->displayTextures[0].mipMapLevel;
+    }
     QPointF pos_opengl;
     {
         QMutexLocker l(&_imp->zoomCtxMutex);
@@ -1875,12 +1948,13 @@ ViewerGL::checkIfViewPortRoIValidOrRenderForInput(int texIndex)
             mipMapLevel = downscale_i;
         }
     }
+    RectD roiCanonical = getImageRectangleDisplayed();
 
+    QMutexLocker k(&_imp->displayDataMutex);
     if (_imp->displayTextures[texIndex].mipMapLevel != mipMapLevel) {
         return false;
     }
 
-    RectD roiCanonical = getImageRectangleDisplayed();
     roiCanonical.intersect(_imp->displayTextures[texIndex].rod, &roiCanonical);
 
     RectI roiPixel;
@@ -2137,12 +2211,10 @@ ViewerGL::disconnectViewer()
 }
 
 /* The dataWindow of the currentFrame(BBOX) in canonical coordinates */
-const RectD&
+RectD
 ViewerGL::getRoD(int textureIndex) const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    QMutexLocker k(&_imp->displayDataMutex);
     return _imp->displayTextures[textureIndex].rod;
 }
 
@@ -2151,15 +2223,14 @@ ViewerGL::getRoD(int textureIndex) const
 RectD
 ViewerGL::getCanonicalFormat(int texIndex) const
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-
+    QMutexLocker k(&_imp->displayDataMutex);
     return _imp->displayTextures[texIndex].format;
 }
 
 double
 ViewerGL::getPAR(int texIndex) const
 {
+    QMutexLocker k(&_imp->displayDataMutex);
     return _imp->displayTextures[texIndex].pixelAspectRatio;
 }
 
@@ -2169,13 +2240,14 @@ ViewerGL::setRegionOfDefinition(const RectD & rod,
                                 int textureIndex)
 {
     // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
 
     RectI pixelRoD;
     rod.toPixelEnclosing(0, par, &pixelRoD);
+
+    QMutexLocker k(&_imp->displayDataMutex);
 
     _imp->displayTextures[textureIndex].pixelAspectRatio = par;
     _imp->displayTextures[textureIndex].rod = rod;
@@ -2209,15 +2281,24 @@ ViewerGL::setFormat(const std::string& formatName, const RectD& format, double p
     if ( !_imp->viewerTab->getGui() ) {
         return;
     }
-    if (_imp->displayTextures[textureIndex].format != format || _imp->displayTextures[textureIndex].pixelAspectRatio != par) {
-        _imp->displayTextures[textureIndex].format = format;
-        _imp->displayTextures[textureIndex].pixelAspectRatio = par;
-        if (!getZoomOrPannedSinceLastFit() && _imp->zoomCtx.screenWidth() != 0 && _imp->zoomCtx.screenHeight() != 0) {
-            fitImageToFormat();
+
+    bool callFit = false;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        if (_imp->displayTextures[textureIndex].format != format || _imp->displayTextures[textureIndex].pixelAspectRatio != par) {
+            _imp->displayTextures[textureIndex].format = format;
+            _imp->displayTextures[textureIndex].pixelAspectRatio = par;
+            if (!getZoomOrPannedSinceLastFit() && _imp->zoomCtx.screenWidth() != 0 && _imp->zoomCtx.screenHeight() != 0) {
+                callFit = true;
+            }
         }
+        _imp->currentViewerInfo_resolutionOverlay[textureIndex] = QString::fromUtf8(formatName.c_str());
+
+    }
+    if (callFit) {
+        fitImageToFormat();
     }
 
-    _imp->currentViewerInfo_resolutionOverlay[textureIndex] = QString::fromUtf8(formatName.c_str());
 }
 
 /*display black in the viewer*/
@@ -2226,8 +2307,12 @@ ViewerGL::clearViewer()
 {
     // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
-    _imp->displayTextures[0].isVisible = false;
-    _imp->displayTextures[1].isVisible = false;
+
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        _imp->displayTextures[0].isVisible = false;
+        _imp->displayTextures[1].isVisible = false;
+    }
     update();
 }
 
@@ -2295,6 +2380,8 @@ ViewerGL::resizeEvent(QResizeEvent* e)
 { // public to hack the protected field
   // always running in the main thread
     assert( qApp && qApp->thread() == QThread::currentThread() );
+
+    OpenGLContextLocker locker(_imp.get());
     QGLWidget::resizeEvent(e);
 }
 
@@ -2495,17 +2582,21 @@ ViewerGL::swapOpenGLBuffers()
 void
 ViewerGL::redraw()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    update();
+    if (QThread::currentThread() != qApp->thread()) {
+        Q_EMIT mustCallUpdateOnMainThread();
+    } else {
+        update();
+    }
 }
 
 void
 ViewerGL::redrawNow()
 {
-    // always running in the main thread
-    assert( qApp && qApp->thread() == QThread::currentThread() );
-    updateGL();
+    if (QThread::currentThread() != qApp->thread()) {
+        Q_EMIT mustCallUpdateGLOnMainThread();
+    } else {
+        updateGL();
+    }
 }
 
 
@@ -2752,9 +2843,7 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
                  }
              } else {
                  if (_imp->pickerState == ePickerStateInactive) {
-                     //if ( !_imp->viewerTab->getInternalNode()->getRenderEngine()->hasThreadsWorking() ) {
                      updateColorPicker( texIndex, widgetPos.x(), widgetPos.y() );
-                     // }
                  } else if ( ( _imp->pickerState == ePickerStatePoint) || ( _imp->pickerState == ePickerStateRectangle) ) {
                      if ( !_imp->infoViewer[texIndex]->colorVisible() ) {
                          _imp->infoViewer[texIndex]->showColorInfo();
@@ -2782,7 +2871,11 @@ ViewerGL::updateInfoWidgetColorPickerInternal(const QPointF & imgPos,
         }
     }
 
-    double par = _imp->displayTextures[texIndex].pixelAspectRatio;
+    double par;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        par = _imp->displayTextures[texIndex].pixelAspectRatio;
+    }
     QPoint imgPosPixel;
     imgPosPixel.rx() = std::floor(imgPos.x() / par);
     imgPosPixel.ry() = std::floor( imgPos.y() );
@@ -2887,12 +2980,16 @@ ViewerGL::getTextureColorAt(int x,
     *a = 0;
 
     ImageBitDepthEnum bitDepth;
-    if (_imp->displayTextures[0].texture) {
-        bitDepth = _imp->displayTextures[0].texture->type();
-    } else if (_imp->displayTextures[1].texture) {
-        bitDepth = _imp->displayTextures[1].texture->type();
-    } else {
-        return;
+
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        if (_imp->displayTextures[0].texture) {
+            bitDepth = _imp->displayTextures[0].texture->type();
+        } else if (_imp->displayTextures[1].texture) {
+            bitDepth = _imp->displayTextures[1].texture->type();
+        } else {
+            return;
+        }
     }
 
     QPointF pos;
@@ -3007,7 +3104,11 @@ ViewerGL::getMipMapLevelCombinedToZoomFactor() const
     if (!getInternalNode()) {
         return 0;
     }
-    int mmLvl = _imp->displayTextures[0].mipMapLevel;
+    int mmLvl;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        mmLvl = _imp->displayTextures[0].mipMapLevel;
+    }
     double factor = getZoomFactor();
 
     if (factor > 1) {
@@ -3110,15 +3211,18 @@ ViewerGL::getColorAt(double x,
 
 
     ImagePtr image;
-    if (pickInput) {
-        image = _imp->displayTextures[textureIndex].colorPickerInputImage;
-    } else {
-        image = _imp->displayTextures[textureIndex].colorPickerImage;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        if (pickInput) {
+            image = _imp->displayTextures[textureIndex].colorPickerInputImage;
+        } else {
+            image = _imp->displayTextures[textureIndex].colorPickerImage;
+        }
+        if (!image) {
+            return false;
+        }
     }
-    if (!image) {
-        return false;
-    }
-
+    
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
@@ -3153,7 +3257,11 @@ ViewerGL::getColorAt(double x,
     RenderScale scale = image->getProxyScale();
     scale.x *= mipMapScale;
     scale.y *= mipMapScale;
-    double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
+    double par;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        par = _imp->displayTextures[textureIndex].pixelAspectRatio;
+    }
 
     ///Convert to pixel coords
     int xPixel = std::floor(x  * scale.x / par);
@@ -3310,13 +3418,17 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
 
 
     ImagePtr image;
-    if (pickInput) {
-        image = _imp->displayTextures[textureIndex].colorPickerInputImage;
-    } else {
-        image = _imp->displayTextures[textureIndex].colorPickerImage;
-    }
-    if (!image) {
-        return false;
+
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        if (pickInput) {
+            image = _imp->displayTextures[textureIndex].colorPickerInputImage;
+        } else {
+            image = _imp->displayTextures[textureIndex].colorPickerImage;
+        }
+        if (!image) {
+            return false;
+        }
     }
 
 
@@ -3326,7 +3438,7 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
         image->getTileAt(0, 0, &tile);
         image->getCPUTileData(tile, &imageData);
     }
-
+    
     ViewerColorSpaceEnum srcCS = _imp->viewerTab->getGui()->getApp()->getDefaultColorSpaceForBitDepth(image->getBitDepth());
     const Color::Lut* dstColorSpace;
     const Color::Lut* srcColorSpace;
@@ -3340,7 +3452,11 @@ ViewerGL::getColorAtRect(const RectD &roi, // rectangle in canonical coordinates
     }
 
     *imgMmlevel = image->getMipMapLevel();
-    double par = _imp->displayTextures[textureIndex].pixelAspectRatio;
+    double par;
+    {
+        QMutexLocker k(&_imp->displayDataMutex);
+        par = _imp->displayTextures[textureIndex].pixelAspectRatio;
+    }
 
 
     RectI roiPixels;
@@ -3373,6 +3489,7 @@ TimeValue
 ViewerGL::getCurrentlyDisplayedTime() const
 {
 
+    QMutexLocker k(&_imp->displayDataMutex);
     if (_imp->displayTextures[0].isVisible) {
         return _imp->displayTextures[0].time;
     } else {

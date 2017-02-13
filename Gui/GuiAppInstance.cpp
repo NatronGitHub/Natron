@@ -851,7 +851,7 @@ GuiAppInstance::setLastViewerUsingTimeline(const NodePtr& node)
 
         return;
     }
-    if ( node->isEffectViewerInstance() ) {
+    if ( node->isEffectViewerNode() ) {
         QMutexLocker k(&_imp->lastTimelineViewerMutex);
         _imp->lastTimelineViewer = node;
     }

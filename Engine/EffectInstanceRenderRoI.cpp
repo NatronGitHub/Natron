@@ -1397,6 +1397,11 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 
         }
 
+        if (isFailureRetCode(renderRetCode) && requestData->getCachePolicy() != eCacheAccessModeNone) {
+            cacheImage->discardTiles();
+            break;
+        }
+
 
         // The render went OK: push the cache images tiles to the cache
 
@@ -1408,11 +1413,6 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
             // Push to the cache the tiles that we rendered
             cacheImage->pushTilesToCacheIfNotAborted();
 
-
-            if (isFailureRetCode(renderRetCode)) {
-                break;
-            }
-
             // Wait for any pending results. After this line other threads that should have computed should be done
             cacheImage->waitForPendingTiles();
 
@@ -1420,9 +1420,6 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 
         }
 
-        if (isFailureRetCode(renderRetCode)) {
-            break;
-        }
 
     } // while there is still something not rendered
 

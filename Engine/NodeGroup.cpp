@@ -310,34 +310,6 @@ NodeCollection::quitAnyProcessingForAllNodes_non_blocking()
     quitAnyProcessingInternal(false);
 }
 
-bool
-NodeCollection::hasNodeRendering() const
-{
-    QMutexLocker k(&_imp->nodesMutex);
-
-    for (NodesList::iterator it = _imp->nodes.begin(); it != _imp->nodes.end(); ++it) {
-        if ( (*it)->isOutputNode() ) {
-            NodeGroupPtr isGrp = (*it)->isEffectNodeGroup();
-            PrecompNodePtr isPrecomp = (*it)->isEffectPrecompNode();
-            if (isGrp) {
-                if ( isGrp->hasNodeRendering() ) {
-                    return true;
-                }
-            } else if (isPrecomp) {
-                if ( isPrecomp->getPrecompApp()->getProject()->hasNodeRendering() ) {
-                    return true;
-                }
-            } else {
-                if ( (*it)->getRenderEngine()->hasThreadsWorking() ) {
-                    return true;
-                }
-            }
-        }
-    }
-
-    return false;
-}
-
 
 void
 NodeCollection::refreshViewersAndPreviews()

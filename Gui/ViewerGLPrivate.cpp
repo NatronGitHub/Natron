@@ -112,6 +112,9 @@ ViewerGL::Implementation::Implementation(ViewerGL* this_,
     , isUpdatingTexture(false)
     , renderOnPenUp(false)
     , updateViewerPboIndex(0)
+    , openglContextLockedMutex()
+    , openglContextLockedCond()
+    , openglContextLocked(0)
 {
     infoViewer[0] = 0;
     infoViewer[1] = 0;
@@ -761,6 +764,25 @@ ViewerGL::Implementation::refreshSelectionRectangle(const QPointF & pos)
     double ymax = std::max( pos.y(), lastDragStartPos.y() );
 
     selectionRectangle.setRect(xmin, ymin, xmax - xmin, ymax - ymin);
+}
+
+void
+ViewerGL::Implementation::lockGLContext()
+{
+    openglContextLockedMutex.lock();
+    while (openglContextLocked > 0) {
+        openglContextLockedCond.wait(&openglContextLockedMutex);
+    }
+    ++openglContextLocked;
+}
+
+void
+ViewerGL::Implementation::releaseGLContext()
+{
+    assert(openglContextLocked > 0);
+    --openglContextLocked;
+    openglContextLockedCond.wakeOne();
+    openglContextLockedMutex.unlock();
 }
 
 NATRON_NAMESPACE_EXIT;

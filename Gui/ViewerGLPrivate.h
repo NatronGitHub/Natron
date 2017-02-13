@@ -30,6 +30,7 @@
 CLANG_DIAG_OFF(deprecated)
 CLANG_DIAG_OFF(uninitialized)
 #include <QtCore/QMutex>
+#include <QtCore/QWaitCondition>
 CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
@@ -125,6 +126,10 @@ struct ViewerGL::Implementation
     GLuint vboVerticesId; //!< VBO holding the vertices for the texture mapping.
     GLuint vboTexturesId; //!< VBO holding texture coordinates.
     GLuint iboTriangleStripId; /*!< IBOs holding vertices indexes for triangle strip sets*/
+
+    // Protects displayTextures, partialUpdateTextures, currentViewerInfo_btmLeftBBOXoverlay currentViewerInfo_topRightBBOXoverlay currentViewerInfo_resolutionOverlay
+    mutable QMutex displayDataMutex;
+
     TextureInfo displayTextures[2]; /*!< A pointer to the textures that would be used if A and B are displayed*/
     std::vector<TextureInfo> partialUpdateTextures; /*!< Pointer to the partial rectangle textures overlayed onto the displayed texture when tracking*/
     InfoViewerWidget* infoViewer[2]; /*!< Pointer to the info bar below the viewer holding pixel/mouse/format related info*/
@@ -185,6 +190,11 @@ struct ViewerGL::Implementation
     // Protects uploadedTexturesViewerHash
     mutable QMutex uploadedTexturesViewerHashMutex;
 
+    // Used to ensure a single thread is using the QGLWidget opengl context.
+    mutable QMutex openglContextLockedMutex;
+    QWaitCondition openglContextLockedCond;
+    int openglContextLocked;
+
 public:
 
     /**
@@ -221,6 +231,9 @@ public:
 
     void drawCheckerboardTexture(const QPolygonF& polygon);
 
+    void lockGLContext();
+
+    void releaseGLContext();
 
 private:
     /**

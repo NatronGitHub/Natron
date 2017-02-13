@@ -647,7 +647,8 @@ Project::onAutoSaveTimerTriggered()
 
     ///check that all schedulers are not working.
     ///If so launch an auto-save, otherwise, restart the timer.
-    bool canAutoSave = !hasNodeRendering() && !getApp()->isShowingDialog();
+    QThreadPool* tp = QThreadPool::globalInstance();
+    bool canAutoSave = tp->activeThreadCount() < tp->maxThreadCount() && !getApp()->isShowingDialog();
 
     if (canAutoSave) {
         boost::shared_ptr<QFutureWatcher<void> > watcher(new QFutureWatcher<void>);

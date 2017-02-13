@@ -460,37 +460,26 @@ private:
 
 struct ViewerCurrentFrameRequestSchedulerPrivate;
 class ViewerCurrentFrameRequestScheduler
-    : public GenericSchedulerThread
 {
-GCC_DIAG_SUGGEST_OVERRIDE_OFF
-    Q_OBJECT
-GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
     ViewerCurrentFrameRequestScheduler(const NodePtr& viewer);
 
-    virtual ~ViewerCurrentFrameRequestScheduler();
+    ~ViewerCurrentFrameRequestScheduler();
 
     void renderCurrentFrame(bool enableRenderStats);
 
+    void onWaitForAbortCompleted();
+    void onWaitForThreadToQuit();
+    void onAbortRequested(bool keepOldestRender);
+    void onQuitRequested(bool allowRestarts);
+
+    bool hasThreadsAlive() const;
 private:
 
-    virtual void onWaitForAbortCompleted() OVERRIDE FINAL;
-    virtual void onWaitForThreadToQuit() OVERRIDE FINAL;
-    virtual void onAbortRequested(bool keepOldestRender) OVERRIDE FINAL;
-    virtual void onQuitRequested(bool allowRestarts) OVERRIDE FINAL;
-    virtual void executeOnMainThread(const ExecOnMTArgsPtr& inArgs) OVERRIDE FINAL;
+    void renderCurrentFrameInternal(const boost::shared_ptr<CurrentFrameFunctorArgs>& args, bool useSingleThread);
 
-    /**
-     * @brief How to pick the task to process from the consumer thread
-     **/
-    virtual TaskQueueBehaviorEnum tasksQueueBehaviour() const OVERRIDE FINAL;
-
-    /**
-     * @brief Must be implemented to execute the work of the thread for 1 loop. This function will be called in a infinite loop by the thread
-     **/
-    virtual ThreadStateEnum threadLoopOnce(const GenericThreadStartArgsPtr& inArgs) OVERRIDE FINAL WARN_UNUSED_RETURN;
     boost::scoped_ptr<ViewerCurrentFrameRequestSchedulerPrivate> _imp;
 };
 
@@ -666,11 +655,6 @@ public:
      * @brief Returns true if threads owned by the engine are still alive
      **/
     bool hasThreadsAlive() const;
-
-    /**
-     * @brief Returns true if the scheduler is active and some render threads are doing work.
-     **/
-    bool hasThreadsWorking() const;
 
     /**
      * @brief Returns true if playback is active
