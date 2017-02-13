@@ -1498,6 +1498,11 @@ public:
     virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
                                                   unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
     {
+        // If this plug-in has TLS, clear the action stack since it has been copied from the caller thread.
+        EffectInstanceTLSDataPtr tlsData = _imp->_publicInterface->getTLSObject();
+        if (tlsData) {
+            tlsData->clearActionStack();
+        }
         int fromIndex, toIndex;
         ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _rectsToRender.size(), &fromIndex, &toIndex);
         for (int i = fromIndex; i < toIndex; ++i) {

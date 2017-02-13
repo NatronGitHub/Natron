@@ -272,11 +272,13 @@ public:
     }
 };
 
+
+
 void
-ViewerGL::paintEvent(QPaintEvent* e)
+ViewerGL::glDraw()
 {
     OpenGLContextLocker locker(_imp.get());
-    QGLWidget::paintEvent(e);
+    QGLWidget::glDraw();
 }
 
 void

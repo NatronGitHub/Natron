@@ -1170,7 +1170,7 @@ OutputSchedulerThreadPrivate::validateRenderSequenceArgs(RenderSequenceArgs& arg
 
     KnobIPtr outputFileNameKnob = treeRoot->getKnobByName(kOfxImageEffectFileParamName);
     KnobFilePtr outputFileName = toKnobFile(outputFileNameKnob);
-    std::string pattern = outputFileName ? outputFileName->getValue() : std::string();
+    std::string pattern = outputFileName ? outputFileName->getRawFileName() : std::string();
 
     if ( treeRoot->getEffectInstance()->isViewAware() ) {
 
@@ -2647,7 +2647,9 @@ RenderEngine::renderFrameRange(bool isBlocking,
                                RenderDirectionEnum forward)
 {
     // We are going to start playback, abort any current viewer refresh
-    _imp->currentFrameScheduler->onAbortRequested(true);
+    if (_imp->currentFrameScheduler) {
+        _imp->currentFrameScheduler->onAbortRequested(true);
+    }
     
     setPlaybackAutoRestartEnabled(true);
 

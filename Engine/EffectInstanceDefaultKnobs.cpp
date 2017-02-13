@@ -1489,7 +1489,7 @@ EffectInstance::initializeDefaultKnobs(bool loadingSerialization, bool hasGUI)
 
         KnobButtonPtr renderButton = createKnob<KnobButton>("startRender");
         renderButton->setDeclaredByPlugin(false);
-        renderButton->setLabel(tr("Label"));
+        renderButton->setLabel(tr("Render"));
         renderButton->setHintToolTip( tr("Starts rendering the specified frame range.") );
         renderButton->setAsRenderButton();
         renderButton->setName("startRender");

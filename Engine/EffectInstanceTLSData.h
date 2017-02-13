@@ -173,6 +173,11 @@ public:
     bool hasActionInStack(const std::string& actionName) const;
 
     /**
+     * @brief Clears the stack
+     **/
+    void clearActionStack();
+
+    /**
      * @brief Same as above execpt for the render action. Any field can be set to NULL if you do not need to retrieve it
      **/
     bool getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view, RenderScale* scale,

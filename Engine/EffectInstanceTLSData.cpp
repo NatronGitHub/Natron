@@ -221,6 +221,13 @@ EffectInstanceTLSData::getCurrentRenderActionArgs(TimeValue* time, ViewIdx* view
     return true;
 }
 
+void
+EffectInstanceTLSData::clearActionStack()
+{
+    QMutexLocker k(&_imp->lock);
+    _imp->actionsArgsStack.clear();
+}
+
 
 SetCurrentFrameViewRequest_RAII::SetCurrentFrameViewRequest_RAII(const EffectInstancePtr& effect, const FrameViewRequestPtr& request)
 : _effect(effect)
