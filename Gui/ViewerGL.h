@@ -42,6 +42,7 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/OpenGLViewerI.h"
+#include "Engine/FrameViewRequest.h"
 #include "Engine/ViewIdx.h"
 #include "Engine/EngineFwd.h"
 
@@ -49,6 +50,8 @@ CLANG_DIAG_ON(uninitialized)
 
 
 NATRON_NAMESPACE_ENTER;
+
+typedef std::map<FrameViewPair, ImageTileKeyPtr, FrameView_compare_less> ViewerCachedImagesMap;
 
 /**
  *@class ViewerGL
@@ -161,6 +164,7 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             TimeValue time,
+                                            ViewIdx view,
                                             const RectD& originalCanonicalRoi,
                                             const RectD& rod,
                                             bool recenterViewer,
@@ -412,12 +416,12 @@ public:
      * @brief Returns the viewer process hash for each frame that was uploaded on the viewer.
      * This is used to display the cache green line on the timeline
      **/
-    void getViewerProcessHashStored(std::map<TimeValue, ImageTileKeyPtr>* hashes) const;
+    void getViewerProcessHashStored(ViewerCachedImagesMap* hashes) const;
 
     /**
      * @brief Removes a hash stored in the viewer process frame/hash map
      **/
-    void removeViewerProcessHashAtTime(TimeValue time);
+    void removeViewerProcessHashAtTime(TimeValue time, ViewIdx view);
 
     void s_selectionCleared()
     {

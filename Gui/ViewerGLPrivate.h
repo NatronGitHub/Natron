@@ -35,7 +35,6 @@ CLANG_DIAG_ON(deprecated)
 CLANG_DIAG_ON(uninitialized)
 
 #include "Engine/Image.h"
-
 #include "Gui/TextRenderer.h"
 #include "Gui/ViewerGL.h"
 #include "Gui/ZoomContext.h"
@@ -185,7 +184,7 @@ struct ViewerGL::Implementation
 
     // A map storing the hash of the viewerProcess A node accross time.
     // This is used to display the timeline cache bar.
-    std::map<TimeValue, ImageTileKeyPtr> uploadedTexturesViewerHash;
+    ViewerCachedImagesMap uploadedTexturesViewerHash;
 
     // Protects uploadedTexturesViewerHash
     mutable QMutex uploadedTexturesViewerHashMutex;

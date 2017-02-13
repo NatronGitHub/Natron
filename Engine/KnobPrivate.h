@@ -410,35 +410,27 @@ public:
 
     struct ShmData
     {
-        U64 nodeTimeInvariantHash;
+        U64 nodeTimeViewVariantHash;
         int dimension;
-        TimeValue time;
-        ViewIdx view;
 
         ShmData()
         {
 
         }
 
-        ShmData(U64 nodeTimeInvariantHash,
-                int dimension,
-                TimeValue time,
-                ViewIdx view)
-        : nodeTimeInvariantHash(nodeTimeInvariantHash)
+        ShmData(U64 nodeTimeViewVariantHash,
+                int dimension)
+        : nodeTimeViewVariantHash(nodeTimeViewVariantHash)
         , dimension(dimension)
-        , time(time)
-        , view(view)
         {
 
         }
     };
 
-    KnobExpressionKey(U64 nodeTimeInvariantHash,
+    KnobExpressionKey(U64 nodeTimeViewVariantHash,
                       int dimension,
-                      TimeValue time,
-                      ViewIdx view,
                       const std::string& knobScriptName)
-    : _data(nodeTimeInvariantHash, dimension, time, view)
+    : _data(nodeTimeViewVariantHash, dimension)
     , _knobScriptName(knobScriptName)
     {
 
@@ -475,10 +467,8 @@ private:
 
     virtual void appendToHash(Hash64* hash) const OVERRIDE FINAL
     {
-        hash->append(_data.nodeTimeInvariantHash);
+        hash->append(_data.nodeTimeViewVariantHash);
         hash->append(_data.dimension);
-        hash->append((double)_data.time);
-        hash->append((int)_data.view);
         Hash64::appendQString(QString::fromUtf8(_knobScriptName.c_str()), hash);
     }
 

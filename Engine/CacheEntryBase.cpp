@@ -85,26 +85,6 @@ CacheEntryBase::getHashKey() const
     return _imp->key->getHash();
 }
 
-
-TimeValue
-CacheEntryBase::getTime() const
-{
-    if (!_imp->key) {
-        return TimeValue(0.);
-    }
-    return _imp->key->getTime();
-
-}
-
-ViewIdx
-CacheEntryBase::getView() const
-{
-    if (!_imp->key) {
-        return ViewIdx(0);
-    }
-    return _imp->key->getView();
-}
-
 std::size_t
 CacheEntryBase::getMetadataSize() const
 {

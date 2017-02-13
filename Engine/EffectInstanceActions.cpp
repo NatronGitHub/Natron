@@ -460,14 +460,8 @@ EffectInstance::getLayersProducedAndNeeded_public(TimeValue inArgsTime, ViewIdx 
 
 
     GetComponentsKeyPtr cacheKey;
+    cacheKey.reset(new GetComponentsKey(hash,  getNode()->getPluginID()));
 
-    {
-
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
-        cacheKey.reset(new GetComponentsKey(hash, timeKey, viewKey, getNode()->getPluginID()));
-    }
 
     *results = GetComponentsResults::create(cacheKey);
 
@@ -853,7 +847,7 @@ EffectInstance::isIdentity_public(bool useIdentityCache, // only set to true whe
 
     IsIdentityKeyPtr cacheKey;
     {
-        cacheKey.reset(new IsIdentityKey(hash, time, view, getNode()->getPluginID()));
+        cacheKey.reset(new IsIdentityKey(hash, getNode()->getPluginID()));
     }
 
 
@@ -966,12 +960,8 @@ EffectInstance::getRegionOfDefinition_public(TimeValue inArgsTime,
     }
 
     GetRegionOfDefinitionKeyPtr cacheKey;
-    {
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
-        cacheKey.reset(new GetRegionOfDefinitionKey(hash, timeKey, viewKey, mappedScale, getNode()->getPluginID()));
-    }
+    cacheKey.reset(new GetRegionOfDefinitionKey(hash, mappedScale, getNode()->getPluginID()));
+
 
     *results = GetRegionOfDefinitionResults::create(cacheKey);
 
@@ -1331,7 +1321,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
     NodePtr thisNode = getNode();
 
     GetFramesNeededKeyPtr cacheKey;
-    cacheKey.reset(new GetFramesNeededKey(hash, time, view, getNode()->getPluginID()));
+    cacheKey.reset(new GetFramesNeededKey(hash, getNode()->getPluginID()));
 
     *results = GetFramesNeededResults::create(cacheKey);
 
@@ -1419,11 +1409,7 @@ EffectInstance::getFramesNeeded_public(TimeValue inArgsTime,
 
 
     if (!cacheKey) {
-
-        TimeValue timeKey;
-        ViewIdx viewKey;
-        getTimeViewParametersDependingOnFrameViewVariance(time, view, &timeKey, &viewKey);
-        cacheKey.reset(new GetFramesNeededKey(0, timeKey, viewKey, getNode()->getPluginID()));
+        cacheKey.reset(new GetFramesNeededKey(0,  getNode()->getPluginID()));
 
     }
     
@@ -1984,14 +1970,12 @@ EffectInstance::getDefaultMetadata(NodeMetadata &metadata)
     metadata.setOutputFrameRate(frameRate);
     metadata.setOutputFielding(eImageFieldingOrderNone);
 
-    bool hasAnimation = getHasAnimation();
-
     // An effect is frame varying if one of its inputs is varying or it has animation
-    metadata.setIsFrameVarying(hasOneInputFrameVarying || hasAnimation);
+    metadata.setIsFrameVarying(hasOneInputFrameVarying);
 
     // An effect is continuous if at least one of its inputs is continuous or if one of its knobs
     // is animated
-    metadata.setIsContinuous(hasOneInputContinuous || hasAnimation);
+    metadata.setIsContinuous(hasOneInputContinuous);
 
     // now find the best depth that the plugin supports
     deepestBitDepth = getClosestSupportedBitDepth(deepestBitDepth);

@@ -141,9 +141,7 @@ Image::InitStorageArgs::InitStorageArgs()
 , proxyScale(1.)
 , mipMapLevel(0)
 , isDraft(false)
-, nodeTimeInvariantHash(0)
-, time(0)
-, view(0)
+, nodeTimeViewVariantHash(0)
 , glContext()
 , textureTarget(GL_TEXTURE_2D)
 , externalBuffer()
@@ -247,9 +245,7 @@ ImagePrivate::init(const Image::InitStorageArgs& args)
     storage = args.storage;
     glContext = args.glContext;
     textureTarget = args.textureTarget;
-    nodeHash = args.nodeTimeInvariantHash;
-    time = args.time;
-    view = args.view;
+    nodeHash = args.nodeTimeViewVariantHash;
     isDraftImage = args.isDraft;
 
     // OpenGL texture back-end only supports 32-bit float RGBA packed format.

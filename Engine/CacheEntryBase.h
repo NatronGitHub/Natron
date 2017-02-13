@@ -111,16 +111,6 @@ public:
     virtual std::size_t getMetadataSize() const;
 
     /**
-     * @brief Returns the key time
-     **/
-    TimeValue getTime() const;
-
-    /**
-     * @brief Returns the key view
-     **/
-    ViewIdx getView() const;
-
-    /**
      * @brief Returns whether the data storage of this entry is exactly the size of NATRON_TILE_SIZE_BYTES or not.
      * In this case, Natron optimizes the storage of the entry in a tile aligned memory mapped file.
      * If true the toMemorySegment and fromMemorySegment function will have their tileDataPtr set to 

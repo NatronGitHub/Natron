@@ -346,7 +346,7 @@ EffectInstance::Implementation::shouldRenderUseCache(const RequestPassSharedData
     }
 
     if (!retSet) {
-        const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying();
+        const bool isFrameVaryingOrAnimated = _publicInterface->isFrameVarying() || _publicInterface->getHasAnimation();
         const int requestsCount = requestPassData->getNumListeners(requestPassSharedData);
 
         bool useCache = _publicInterface->shouldCacheOutput(isFrameVaryingOrAnimated,  requestsCount);
@@ -369,30 +369,6 @@ EffectInstance::Implementation::shouldRenderUseCache(const RequestPassSharedData
     }
     return ret;
 } // shouldRenderUseCache
-
-
-
-ActionRetCodeEnum
-EffectInstance::Implementation::tiledRenderingFunctorInSeparateThread(const RectToRender & rectToRender,
-                                                                      const TiledRenderingFunctorArgs& args,
-                                                                      QThread* spawnerThread)
-{
-    ///Make the thread-storage live as long as the render action is called if we're in a newly launched thread in eRenderSafetyFullySafeFrame mode
-    QThread* curThread = QThread::currentThread();
-
-    // Set the frame view request on the TLS for OpenFX
-    boost::scoped_ptr<SetCurrentFrameViewRequest_RAII> tlsSetFrameViewRequest;
-    if (spawnerThread != curThread) {
-
-        // Set the frame view request on the TLS
-        tlsSetFrameViewRequest.reset(new SetCurrentFrameViewRequest_RAII(_publicInterface->shared_from_this(), args.requestData));
-    }
-
-
-    ActionRetCodeEnum ret = tiledRenderingFunctor(rectToRender, args);
-
-    return ret;
-} // tiledRenderingFunctorInSeparateThread
 
 
 ActionRetCodeEnum

@@ -1083,7 +1083,7 @@ ViewerGL::clearLastRenderedImage()
 }
 
 void
-ViewerGL::getViewerProcessHashStored(std::map<TimeValue, ImageTileKeyPtr>* hashes) const
+ViewerGL::getViewerProcessHashStored(ViewerCachedImagesMap* hashes) const
 {
     QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
     *hashes = _imp->uploadedTexturesViewerHash;
@@ -1091,10 +1091,11 @@ ViewerGL::getViewerProcessHashStored(std::map<TimeValue, ImageTileKeyPtr>* hashe
 
 
 void
-ViewerGL::removeViewerProcessHashAtTime(TimeValue time)
+ViewerGL::removeViewerProcessHashAtTime(TimeValue time, ViewIdx view)
 {
     QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
-    std::map<TimeValue, ImageTileKeyPtr>::iterator found = _imp->uploadedTexturesViewerHash.find(time);
+    FrameViewPair p = {time, view};
+    ViewerCachedImagesMap::iterator found = _imp->uploadedTexturesViewerHash.find(p);
     if (found != _imp->uploadedTexturesViewerHash.end()) {
         _imp->uploadedTexturesViewerHash.erase(found);
     }
@@ -1108,6 +1109,7 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
                                      int textureIndex,
                                      bool isPartialRect,
                                      TimeValue time,
+                                     ViewIdx view,
                                      const RectD& originalCanonicalRoi,
                                      const RectD& rod,
                                      bool recenterViewer,
@@ -1153,7 +1155,8 @@ ViewerGL::transferBufferFromRAMtoGPU(const ImagePtr& image,
     // Insert the hash in the frame/hash map so we can update the timeline's cache bar
     if (!isPartialRect && textureIndex == 0 && viewerProcessNodeTileKey) {
         QMutexLocker k(&_imp->uploadedTexturesViewerHashMutex);
-        _imp->uploadedTexturesViewerHash[time] = viewerProcessNodeTileKey;
+        FrameViewPair p = {time, view};
+        _imp->uploadedTexturesViewerHash[p] = viewerProcessNodeTileKey;
     }
 
 

@@ -77,8 +77,6 @@ public:
         eComputeHashTypeOnlyMetadataSlaves,
 
         // The resulting hash is used to cache  data that are time and view variant (such as an Image).
-        // The time and view itself should not be appended to the hash, this is done externally in
-        // EffectInstance::getTimeViewParametersDependingOnFrameViewVariance
         eComputeHashTypeTimeViewVariant
     };
 

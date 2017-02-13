@@ -235,6 +235,9 @@ GCC_DIAG_SUGGEST_OVERRIDE_ON
 
 public:
 
+    class Implementation;
+
+
     struct RenderActionArgs
     {
         // The time at which to render
@@ -978,8 +981,6 @@ public:
 
     virtual void appendToHash(const ComputeHashArgs& args, Hash64* hash) OVERRIDE;
 
-    void getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, TimeValue* timeOut, ViewIdx* viewOut);
-
 public:
 
     /**
@@ -1244,7 +1245,7 @@ public:
     //// Dynamic properties
     void setRenderThreadSafety(RenderSafetyEnum safety);
     RenderSafetyEnum getCurrentRenderThreadSafety() const;
-    RenderSafetyEnum getPluginRenderThreadSafety() const;
+    virtual RenderSafetyEnum getPluginRenderThreadSafety() const;
     void revertToPluginThreadSafety();
 
     void setCurrentOpenGLRenderSupport(PluginOpenGLRenderSupport support);
@@ -1897,6 +1898,7 @@ public:
     void findPluginFormatKnobs();
 
     void setRenderCloneInput(const EffectInstancePtr& input, int inputNb);
+    
 
 private:
 
@@ -1983,7 +1985,6 @@ private:
 
     
     
-    class Implementation;
     boost::scoped_ptr<Implementation> _imp; // PIMPL: hide implementation details
 
     friend class ReadNode;

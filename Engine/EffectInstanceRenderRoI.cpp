@@ -566,9 +566,7 @@ EffectInstance::Implementation::fetchCachedTiles(const FrameViewRequestPtr& requ
             initArgs.proxyScale = requestPassData->getProxyScale();
             initArgs.mipMapLevel = mappedMipMapLevel;
             initArgs.isDraft = isDraftRender;
-            initArgs.nodeTimeInvariantHash = nodeFrameViewHash;
-            initArgs.time = requestPassData->getTime();
-            initArgs.view = requestPassData->getView();
+            initArgs.nodeTimeViewVariantHash = nodeFrameViewHash;
             // Cache storage is always disk
             initArgs.storage = eStorageModeDisk;
             // Cache format is always mono channel tiled
@@ -1076,6 +1074,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         }
     }
 
+#if 0
     // If the effect is not frame varying, forward the request to frame 0
     if (!isFrameVarying() && time != 0.) {
 
@@ -1092,6 +1091,7 @@ EffectInstance::requestRender(TimeValue timeInArgs,
         // valid views
         return requestRender(time, ViewIdx(0), proxyScale, mipMapLevel, plane, roiCanonical, inputNbInRequester, requester, requestPassSharedData, createdRequest);
     }
+#endif
     
     TreeRenderPtr render = getCurrentRender();
     assert(render);
@@ -1458,6 +1458,58 @@ EffectInstance::launchRenderInternal(const RequestPassSharedDataPtr& requestPass
 } // launchRenderInternal
 
 
+
+class HostFrameThreadingRenderProcessor : public MultiThreadProcessorBase
+{
+
+    std::vector<RectToRender> _rectsToRender;
+    boost::shared_ptr<EffectInstance::Implementation::TiledRenderingFunctorArgs> _args;
+    EffectInstance::Implementation* _imp;
+
+public:
+
+    HostFrameThreadingRenderProcessor(const EffectInstancePtr& renderClone)
+    : MultiThreadProcessorBase(renderClone)
+    {
+
+    }
+
+    virtual ~HostFrameThreadingRenderProcessor()
+    {
+
+    }
+
+    void setData(const std::list<RectToRender> &rectsToRender, const boost::shared_ptr<EffectInstance::Implementation::TiledRenderingFunctorArgs>& args, EffectInstance::Implementation* imp)
+    {
+        int i = 0;
+        _rectsToRender.resize(rectsToRender.size());
+        for (std::list<RectToRender>::const_iterator it = rectsToRender.begin(); it != rectsToRender.end(); ++it, ++i) {
+            _rectsToRender[i] = *it;
+        }
+        _args = args;
+        _imp = imp;
+    }
+
+    virtual ActionRetCodeEnum launchThreads(unsigned int nCPUs = 0) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        return MultiThreadProcessorBase::launchThreads(nCPUs);
+    }
+
+    virtual ActionRetCodeEnum multiThreadFunction(unsigned int threadID,
+                                                  unsigned int nThreads) OVERRIDE FINAL WARN_UNUSED_RETURN
+    {
+        int fromIndex, toIndex;
+        ImageMultiThreadProcessorBase::getThreadRange(threadID, nThreads, 0, _rectsToRender.size(), &fromIndex, &toIndex);
+        for (int i = fromIndex; i < toIndex; ++i) {
+            ActionRetCodeEnum stat = _imp->tiledRenderingFunctor(_rectsToRender[i], *_args);
+            if (isFailureRetCode(stat)) {
+                return stat;
+            }
+        }
+        return eActionStatusOK;
+    }
+};
+
 ActionRetCodeEnum
 EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const FrameViewRequestPtr& requestData,
                                                                         const OSGLContextPtr& glContext,
@@ -1523,17 +1575,17 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 #endif
 
 
-    TiledRenderingFunctorArgs functorArgs;
-    functorArgs.glContextData = glContextData;
-    functorArgs.glContext = glContext;
-    functorArgs.requestData = requestData;
-    functorArgs.producedImagePlanes = producedImagePlanes;
+    boost::shared_ptr<TiledRenderingFunctorArgs> functorArgs(new TiledRenderingFunctorArgs);
+    functorArgs->glContextData = glContextData;
+    functorArgs->glContext = glContext;
+    functorArgs->requestData = requestData;
+    functorArgs->producedImagePlanes = producedImagePlanes;
 
     if (!attemptHostFrameThreading) {
 
         for (std::list<RectToRender>::const_iterator it = renderRects.begin(); it != renderRects.end(); ++it) {
 
-            ActionRetCodeEnum functorRet = tiledRenderingFunctor(*it, functorArgs);
+            ActionRetCodeEnum functorRet = tiledRenderingFunctor(*it, *functorArgs);
             if (isFailureRetCode(functorRet)) {
                 return functorRet;
             }
@@ -1542,41 +1594,11 @@ EffectInstance::Implementation::launchPluginRenderAndHostFrameThreading(const Fr
 
     } else { // attemptHostFrameThreading
 
-        std::list<RectToRender> rectsToRenderList = renderRects;
-        RectToRender lastRectToRender = rectsToRenderList.back();
-
-        bool isThreadPoolThread = isRunningInThreadPoolThread();
-
-        // If the current thread is a thread-pool thread, make it also do an iteration instead
-        // of waiting for other threads
-        if (isThreadPoolThread) {
-            rectsToRenderList.pop_back();
-        }
-
-        QThread* curThread = QThread::currentThread();
-
-        std::vector<ActionRetCodeEnum> threadReturnCodes;
-        QFuture<ActionRetCodeEnum> ret = QtConcurrent::mapped( rectsToRenderList,
-                                                              boost::bind(&EffectInstance::Implementation::tiledRenderingFunctorInSeparateThread,
-                                                                          this,
-                                                                          _1,
-                                                                          functorArgs,
-                                                                          curThread) );
-        if (isThreadPoolThread) {
-            ActionRetCodeEnum retCode = tiledRenderingFunctor(lastRectToRender, functorArgs);
-            threadReturnCodes.push_back(retCode);
-        }
-
-        // Wait for other threads to be finished
-        ret.waitForFinished();
-        
-        for (QFuture<ActionRetCodeEnum>::const_iterator  it2 = ret.begin(); it2 != ret.end(); ++it2) {
-            threadReturnCodes.push_back(*it2);
-        }
-        for (std::vector<ActionRetCodeEnum>::const_iterator it2 = threadReturnCodes.begin(); it2 != threadReturnCodes.end(); ++it2) {
-            if (isFailureRetCode(*it2)) {
-                return *it2;
-            }
+        HostFrameThreadingRenderProcessor processor(_publicInterface->shared_from_this());
+        processor.setData(renderRects, functorArgs, this);
+        ActionRetCodeEnum stat = processor.launchThreads();
+        if (isFailureRetCode(stat)) {
+            return stat;
         }
     } // !attemptHostFrameThreading
 

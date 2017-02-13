@@ -151,9 +151,7 @@ CacheEntryKeyBase::fromMemorySegment(ExternalSegmentType* segment, const std::st
 
 struct ImageTileKeyShmData
 {
-    U64 nodeTimeInvariantHash;
-    TimeValue time;
-    ViewIdx view;
+    U64 nodeTimeViewVariantHash;
     RenderScale proxyScale;
     unsigned int mipMapLevel;
     bool draftMode;
@@ -162,9 +160,7 @@ struct ImageTileKeyShmData
     
 
     ImageTileKeyShmData()
-    : nodeTimeInvariantHash(0)
-    , time(0)
-    , view(0)
+    : nodeTimeViewVariantHash(0)
     , proxyScale(1.)
     , mipMapLevel(0)
     , draftMode(false)
@@ -190,9 +186,7 @@ struct ImageTileKeyPrivate
 };
 
 
-ImageTileKey::ImageTileKey(U64 nodeTimeInvariantHash,
-                           TimeValue time,
-                           ViewIdx view,
+ImageTileKey::ImageTileKey(U64 nodeTimeViewVariantHash,
                            const std::string& layerChannel,
                            const RenderScale& scale,
                            unsigned int mipMapLevel,
@@ -202,9 +196,7 @@ ImageTileKey::ImageTileKey(U64 nodeTimeInvariantHash,
 : CacheEntryKeyBase()
 , _imp(new ImageTileKeyPrivate())
 {
-    _imp->data.nodeTimeInvariantHash = nodeTimeInvariantHash;
-    _imp->data.time = time;
-    _imp->data.view = view;
+    _imp->data.nodeTimeViewVariantHash = nodeTimeViewVariantHash;
     _imp->layerChannel = layerChannel;
     _imp->data.proxyScale = scale;
     _imp->data.mipMapLevel = mipMapLevel;
@@ -228,19 +220,7 @@ ImageTileKey::~ImageTileKey()
 U64
 ImageTileKey::getNodeTimeInvariantHashKey() const
 {
-    return _imp->data.nodeTimeInvariantHash;
-}
-
-TimeValue
-ImageTileKey::getTime() const
-{
-    return _imp->data.time;
-}
-
-ViewIdx
-ImageTileKey::getView() const
-{
-    return _imp->data.view;
+    return _imp->data.nodeTimeViewVariantHash;
 }
 
 int
@@ -253,9 +233,7 @@ void
 ImageTileKey::appendToHash(Hash64* hash) const
 {
     Hash64::appendQString(QString::fromUtf8(_imp->layerChannel.c_str()), hash);
-    hash->append(_imp->data.nodeTimeInvariantHash);
-    hash->append((double)_imp->data.time);
-    hash->append((int)_imp->data.view);
+    hash->append(_imp->data.nodeTimeViewVariantHash);
     hash->append(_imp->data.proxyScale.x);
     hash->append(_imp->data.proxyScale.y);
     hash->append(_imp->data.mipMapLevel);
@@ -310,10 +288,8 @@ ImageTileKey::getMetadataSize() const
     std::size_t ret = CacheEntryKeyBase::getMetadataSize();
 
     // Also count the null character.
-    ret += sizeof(_imp->data.nodeTimeInvariantHash);
+    ret += sizeof(_imp->data.nodeTimeViewVariantHash);
     ret += (_imp->layerChannel.size() + 1) * sizeof(char);
-    ret += sizeof(_imp->data.time);
-    ret += sizeof(_imp->data.view);
     ret += sizeof(_imp->data.tileBounds);
     ret += sizeof(_imp->data.proxyScale);
     ret += sizeof(_imp->data.mipMapLevel);
@@ -341,9 +317,7 @@ ImageTileKey::toMemorySegment(ExternalSegmentType* segment, const std::string& o
     }
     objectPointers->push_back(segment->get_handle_from_address(layerChannel));
 
-    data->nodeTimeInvariantHash = _imp->data.nodeTimeInvariantHash;
-    data->time = _imp->data.time;
-    data->view = _imp->data.view;
+    data->nodeTimeViewVariantHash = _imp->data.nodeTimeViewVariantHash;
     data->tileBounds = _imp->data.tileBounds;
     data->proxyScale = _imp->data.proxyScale;
     data->mipMapLevel = _imp->data.mipMapLevel;
@@ -367,9 +341,7 @@ ImageTileKey::fromMemorySegment(ExternalSegmentType* segment, const std::string&
         throw std::bad_alloc();
     }
 
-    _imp->data.nodeTimeInvariantHash = data->nodeTimeInvariantHash;
-    _imp->data.time = data->time;
-    _imp->data.view = data->view;
+    _imp->data.nodeTimeViewVariantHash = data->nodeTimeViewVariantHash;
     _imp->data.tileBounds = data->tileBounds;
     _imp->data.proxyScale = data->proxyScale;
     _imp->data.mipMapLevel = data->mipMapLevel;

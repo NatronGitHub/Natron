@@ -113,22 +113,7 @@ public:
     std::string getHolderPluginID() const;
     void setHolderPluginID(const std::string& holderID);
 
-    /**
-     * @brief Returns the key time
-     **/
-    virtual TimeValue getTime() const
-    {
-        return TimeValue(0.);
-    }
-
-    /**
-     * @brief Returns the key view
-     **/
-    virtual ViewIdx getView() const
-    {
-        return ViewIdx(0);
-    }
-
+    
     /**
      * @brief Must return a unique string identifying this class.
      * Imagine 2 key derived class having the same parameters in the same order, the hash
@@ -161,9 +146,7 @@ public:
 
     ImageTileKey();
 
-    ImageTileKey(U64 nodeTimeInvariantHash,
-                 TimeValue time,
-                 ViewIdx view,
+    ImageTileKey(U64 nodeTimeViewVariantHash,
                  const std::string& layerChannel,
                  const RenderScale& proxyScale,
                  unsigned int mipMapLevel,
@@ -187,9 +170,6 @@ public:
 
     ImageBitDepthEnum getBitDepth() const;
 
-    virtual TimeValue getTime() const OVERRIDE FINAL;
-
-    virtual ViewIdx getView() const OVERRIDE FINAL;
 
     virtual std::size_t getMetadataSize() const OVERRIDE FINAL;
 

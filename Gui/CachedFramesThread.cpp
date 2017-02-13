@@ -124,7 +124,7 @@ CachedFramesThread::getCachedFrames(std::list<TimeValue>* cachedFrames) const
 void
 CachedFramesThread::Implementation::refreshCachedFramesInternal()
 {
-    std::map<TimeValue, ImageTileKeyPtr> framesDisplayed;
+    ViewerCachedImagesMap framesDisplayed;
     viewer->getViewer()->getViewerProcessHashStored(&framesDisplayed);
 
     ViewerNodePtr internalNode = viewer->getInternalNode();
@@ -139,13 +139,13 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
 
     std::list<TimeValue> updatedCachedFrames;
 
-    for (std::map<TimeValue, ImageTileKeyPtr>::const_iterator it = framesDisplayed.begin(); it != framesDisplayed.end(); ++it) {
+    for (ViewerCachedImagesMap::const_iterator it = framesDisplayed.begin(); it != framesDisplayed.end(); ++it) {
 
 
         U64 hash = it->second->getHash();
 
 
-        bool isValid = false;
+        bool isValid = true;
 
         bool isCached = appPTR->getCache()->hasCacheEntryForHash(hash);
         if (!isCached) {
@@ -158,18 +158,19 @@ CachedFramesThread::Implementation::refreshCachedFramesInternal()
         {
             HashableObject::ComputeHashArgs hashArgs;
             hashArgs.hashType = HashableObject::eComputeHashTypeTimeViewVariant;
-            hashArgs.time = it->second->getTime();
-            hashArgs.view = it->second->getView();
+            hashArgs.time = it->first.time;
+            hashArgs.view = it->first.view;
             nodeFrameViewHash = internalViewerProcessNode->computeHash(hashArgs);
         }
-        if (nodeFrameViewHash != hash) {
+        U64 entryNodeHash = it->second->getNodeTimeInvariantHashKey();
+        if (nodeFrameViewHash != entryNodeHash) {
             isValid = false;
         }
 
         if (!isValid) {
-            viewer->getViewer()->removeViewerProcessHashAtTime(it->first);
+            viewer->getViewer()->removeViewerProcessHashAtTime(it->first.time, it->first.view);
         } else {
-            updatedCachedFrames.push_back(it->first);
+            updatedCachedFrames.push_back(it->first.time);
         }
 
     }

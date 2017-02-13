@@ -113,8 +113,6 @@ struct ImagePrivate
 
     // The following values are passed to the ImageTileKey
     U64 nodeHash;
-    TimeValue time;
-    ViewIdx view;
     bool isDraftImage;
 
     ImagePrivate()
@@ -137,8 +135,6 @@ struct ImagePrivate
     , glContext()
     , textureTarget(0)
     , nodeHash(0)
-    , time(0)
-    , view(0)
     , isDraftImage(false)
     {
 

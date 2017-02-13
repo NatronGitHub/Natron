@@ -155,8 +155,6 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
         ImageTileKeyPtr requestedScaleKey;
         if (cachePolicy != eCacheAccessModeNone) {
             requestedScaleKey.reset(new ImageTileKey(nodeHash,
-                                                     time,
-                                                     view,
                                                      channelName,
                                                      proxyScale,
                                                      mipMapLevel,
@@ -207,8 +205,6 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
                     const bool useDraft = (const bool)draft_i;
 
                     ImageTileKeyPtr keyToReadCache(new ImageTileKey(nodeHash,
-                                                                    time,
-                                                                    view,
                                                                     channelName,
                                                                     proxyScale,
                                                                     lookupLevel,
@@ -256,9 +252,7 @@ ImagePrivate::initTileAndFetchFromCache(const TileCoord& coord, Image::Tile &til
                                 tmpArgs.mipMapLevel = mipMapLevel;
                                 tmpArgs.externalBuffer = thisChannelTile.buffer;
                                 tmpArgs.storage = thisChannelTile.buffer->getStorageMode();
-                                tmpArgs.nodeTimeInvariantHash = nodeHash;
-                                tmpArgs.time = time;
-                                tmpArgs.view = view;
+                                tmpArgs.nodeTimeViewVariantHash = nodeHash;
                                 fullScaleImage = Image::create(tmpArgs);
                             }
 

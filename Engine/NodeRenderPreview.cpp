@@ -316,6 +316,8 @@ Node::makePreviewImage(TimeValue time,
                 initArgs.bounds = imageForPreview->getBounds();
                 initArgs.bufferFormat = eImageBufferLayoutRGBAPackedFullRect;
                 initArgs.storage = eStorageModeRAM;
+                initArgs.mipMapLevel = imageForPreview->getMipMapLevel();
+                initArgs.proxyScale = imageForPreview->getProxyScale();
                 initArgs.layer = imageForPreview->getLayer();
                 initArgs.bitdepth = imageForPreview->getBitDepth();
                 imageForPreview = Image::create(initArgs);

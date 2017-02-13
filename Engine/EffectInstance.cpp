@@ -136,27 +136,6 @@ EffectInstance::createRenderEngine()
     return new RenderEngine(getNode());
 }
 
-void
-EffectInstance::getTimeViewParametersDependingOnFrameViewVariance(TimeValue time, ViewIdx view, TimeValue* timeOut, ViewIdx* viewOut)
-{
-    bool frameVarying = isFrameVarying();
-
-    // If the node is frame varying, append the time to its hash.
-    // Do so as well if it is view varying
-    if (frameVarying) {
-        // Make sure the time is rounded to the image equality epsilon to account for double precision if we want to reproduce the
-        // same hash
-        *timeOut = roundImageTimeToEpsilon(time);
-    } else {
-        *timeOut = TimeValue(0);
-    }
-
-    if (isViewInvariant() == eViewInvarianceAllViewsVariant) {
-        *viewOut = view;
-    } else {
-        *viewOut = ViewIdx(0);
-    }
-}
 
 U64
 EffectInstance::computeHash(const ComputeHashArgs& args)
@@ -218,6 +197,12 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     } else {
         // We must add the input hash at the frames needed because a node may depend on a value at a different frame
 
+        if (isFrameVarying()) {
+            hash->append((double)roundImageTimeToEpsilon(args.time));
+        }
+        if (isViewInvariant() == eViewInvarianceAllViewsVariant) {
+            hash->append((int)args.view);
+        }
 
         ActionRetCodeEnum stat = getFramesNeeded_public(args.time, args.view, &framesNeededResults);
 
@@ -267,13 +252,8 @@ EffectInstance::appendToHash(const ComputeHashArgs& args, Hash64* hash)
     // If we used getFramesNeeded, cache it now if possible
     if (framesNeededResults) {
         GetFramesNeededKeyPtr cacheKey;
+        cacheKey.reset(new GetFramesNeededKey(hashValue, getNode()->getPluginID()));
 
-        {
-            TimeValue timeKey;
-            ViewIdx viewKey;
-            getTimeViewParametersDependingOnFrameViewVariance(args.time, args.view, &timeKey, &viewKey);
-            cacheKey.reset(new GetFramesNeededKey(hashValue, timeKey, viewKey, getNode()->getPluginID()));
-        }
 
         CacheEntryLockerPtr cacheAccess = appPTR->getCache()->get(framesNeededResults);
         
@@ -1729,9 +1709,13 @@ EffectInstance::refreshInfos()
 void
 EffectInstance::setRenderThreadSafety(RenderSafetyEnum safety)
 {
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
+    {
+        QMutexLocker k(&_imp->common->pluginsPropMutex);
 
-    _imp->common->props.currentThreadSafety = safety;
+        _imp->common->pluginSafety = safety;
+        _imp->common->pluginSafetyLocked = true;
+    }
+    refreshDynamicProperties();
 }
 
 RenderSafetyEnum
@@ -1751,17 +1735,21 @@ EffectInstance::getCurrentRenderThreadSafety() const
 void
 EffectInstance::revertToPluginThreadSafety()
 {
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-
-    _imp->common->props.currentThreadSafety = _imp->common->pluginSafety;
+    {
+        QMutexLocker k(&_imp->common->pluginsPropMutex);
+        if (!_imp->common->pluginSafetyLocked) {
+            return;
+        }
+        _imp->common->pluginSafetyLocked = false;
+    }
+    refreshDynamicProperties();
 }
 
 
 RenderSafetyEnum
 EffectInstance::getPluginRenderThreadSafety() const
 {
-    QMutexLocker k(&_imp->common->pluginsPropMutex);
-    return _imp->common->pluginSafety;
+    return (RenderSafetyEnum)getNode()->getPlugin()->getPropertyUnsafe<int>(kNatronPluginPropRenderSafety);
 }
 
 void
@@ -1927,14 +1915,28 @@ EffectInstance::refreshDynamicProperties()
     bool canDistort = getCanDistort();
     bool currentDeprecatedTransformSupport = getCanTransform();
 
-    _imp->common->pluginSafety = getCurrentRenderThreadSafety();
-
-    if (!tilesSupported && _imp->common->pluginSafety == eRenderSafetyFullySafeFrame) {
-        // an effect which does not support tiles cannot support host frame threading
-        setRenderThreadSafety(eRenderSafetyFullySafe);
-    } else {
-        setRenderThreadSafety(_imp->common->pluginSafety);
+    bool safetyLocked;
+    {
+        QMutexLocker k(&_imp->common->pluginsPropMutex);
+        safetyLocked = _imp->common->pluginSafetyLocked;
     }
+
+    {
+        QMutexLocker k(&_imp->common->pluginsPropMutex);
+        if (!safetyLocked) {
+            _imp->common->pluginSafety = getPluginRenderThreadSafety();
+        }
+
+        if (!tilesSupported && _imp->common->pluginSafety == eRenderSafetyFullySafeFrame) {
+            // an effect which does not support tiles cannot support host frame threading
+            _imp->common->props.currentThreadSafety = eRenderSafetyFullySafe;
+        } else {
+            _imp->common->props.currentThreadSafety = _imp->common->pluginSafety;
+        }
+    }
+
+
+
 
     setCurrentSupportTiles(multiResSupported && tilesSupported);
     setCurrentSupportRenderScale(renderScaleSupported);

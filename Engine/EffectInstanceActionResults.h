@@ -50,9 +50,7 @@ class EffectInstanceActionKeyBase : public CacheEntryKeyBase
 {
 public:
 
-    EffectInstanceActionKeyBase(U64 nodeTimeInvariantHash,
-                                TimeValue time,
-                                ViewIdx view,
+    EffectInstanceActionKeyBase(U64 nodeTimeViewVariantHash,
                                 const RenderScale& scale,
                                 const std::string& pluginID);
 
@@ -61,15 +59,7 @@ public:
         
     }
 
-    virtual TimeValue getTime() const OVERRIDE FINAL
-    {
-        return _data.time;
-    }
 
-    virtual ViewIdx getView() const OVERRIDE FINAL
-    {
-        return _data.view;
-    }
 
     virtual void toMemorySegment(ExternalSegmentType* segment, const std::string& objectNamesPrefix, ExternalSegmentTypeHandleList* objectPointers) const OVERRIDE;
 
@@ -83,9 +73,7 @@ private:
 
     struct KeyShmData
     {
-        U64 nodeTimeInvariantHash;
-        TimeValue time;
-        ViewIdx view;
+        U64 nodeTimeViewVariantHash;
         RenderScale scale;
     };
 
@@ -96,12 +84,10 @@ class GetRegionOfDefinitionKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetRegionOfDefinitionKey(U64 nodeTimeInvariantHash,
-                             TimeValue time,
-                             ViewIdx view,
+    GetRegionOfDefinitionKey(U64 nodeTimeViewVariantHash,
                              const RenderScale& scale,
                              const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, scale, pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, scale, pluginID)
     {
 
     }
@@ -167,11 +153,9 @@ class IsIdentityKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    IsIdentityKey(U64 nodeTimeInvariantHash,
-                  TimeValue time,
-                  ViewIdx view,
+    IsIdentityKey(U64 nodeTimeViewVariantHash,
                   const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, RenderScale(1.), pluginID)
     {
 
     }
@@ -243,11 +227,9 @@ class GetFramesNeededKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetFramesNeededKey(U64 nodeTimeInvariantHash,
-                       TimeValue time,
-                       ViewIdx view,
+    GetFramesNeededKey(U64 nodeTimeViewVariantHash,
                        const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, RenderScale(1.), pluginID)
     {
         
     }
@@ -315,7 +297,7 @@ public:
 
     GetFrameRangeKey(U64 nodeTimeInvariantHash,
                      const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, TimeValue(0.), ViewIdx(0), RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, RenderScale(1.), pluginID)
     {
 
     }
@@ -376,9 +358,9 @@ class GetTimeInvariantMetaDatasKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetTimeInvariantMetaDatasKey(U64 nodeTimeViewInvariantHash,
+    GetTimeInvariantMetaDatasKey(U64 nodeTimeInvariantHash,
                                  const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeViewInvariantHash, TimeValue(0.), ViewIdx(0), RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeInvariantHash,  RenderScale(1.), pluginID)
     {
 
     }
@@ -439,11 +421,9 @@ class GetComponentsKey : public EffectInstanceActionKeyBase
 {
 public:
 
-    GetComponentsKey(U64 nodeTimeInvariantHash,
-                     TimeValue time,
-                     ViewIdx view,
+    GetComponentsKey(U64 nodeTimeViewVariantHash,
                      const std::string& pluginID)
-    : EffectInstanceActionKeyBase(nodeTimeInvariantHash, time, view, RenderScale(1.), pluginID)
+    : EffectInstanceActionKeyBase(nodeTimeViewVariantHash, RenderScale(1.), pluginID)
     {
 
     }

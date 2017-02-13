@@ -91,6 +91,7 @@ public:
                                             int textureIndex,
                                             bool isPartialRect,
                                             TimeValue time,
+                                            ViewIdx view,
                                             const RectD& originalCanonicalRoi,
                                             const RectD& rod,
                                             bool recenterViewer,

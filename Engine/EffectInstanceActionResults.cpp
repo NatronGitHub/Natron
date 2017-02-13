@@ -36,16 +36,12 @@ namespace bip = boost::interprocess;
 
 NATRON_NAMESPACE_ENTER;
 
-EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeTimeInvariantHash,
-                                                         TimeValue time,
-                                                         ViewIdx view,
+EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeTimeViewVariantHash,
                                                          const RenderScale& scale,
                                                          const std::string& pluginID)
 : _data()
 {
-    _data.nodeTimeInvariantHash = nodeTimeInvariantHash;
-    _data.time = time;
-    _data.view = view;
+    _data.nodeTimeViewVariantHash = nodeTimeViewVariantHash;
     _data.scale = scale;
     setHolderPluginID(pluginID);
 }
@@ -53,9 +49,7 @@ EffectInstanceActionKeyBase::EffectInstanceActionKeyBase(U64 nodeTimeInvariantHa
 void
 EffectInstanceActionKeyBase::appendToHash(Hash64* hash) const
 {
-    hash->append(_data.nodeTimeInvariantHash);
-    hash->append((double)_data.time);
-    hash->append((int)_data.view);
+    hash->append(_data.nodeTimeViewVariantHash);
     hash->append(_data.scale.x);
     hash->append(_data.scale.y);
 }
@@ -78,9 +72,7 @@ std::size_t
 EffectInstanceActionKeyBase::getMetadataSize() const
 {
     std::size_t ret = CacheEntryKeyBase::getMetadataSize();
-    ret += sizeof(_data.nodeTimeInvariantHash);
-    ret += sizeof(_data.time);
-    ret += sizeof(_data.view);
+    ret += sizeof(_data.nodeTimeViewVariantHash);
     ret += sizeof(_data.scale);
     return ret;
 }

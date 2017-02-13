@@ -207,19 +207,8 @@ public:
         // In order to be cached, the tiles of the image need to know the node hash of the node they correspond to.
         //
         // Default - 0
-        U64 nodeTimeInvariantHash;
+        U64 nodeTimeViewVariantHash;
 
-        // In order to be cached, the image may need to be stamped with a time.
-        // Effects that are time invariant should leave this to the default value
-        //
-        // Default - 0
-        TimeValue time;
-
-        // In order to be cached, the image may need to be stamped with a view.
-        // Effects that are view invariant should leave this to the default value
-        //
-        // Default - 0
-        ViewIdx view;
 
         // If the storage is set to OpenGL texture, this is the OpenGL context to which the texture belongs to.
         //

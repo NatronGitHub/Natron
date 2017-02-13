@@ -224,6 +224,9 @@ struct EffectInstanceCommonData
     // a brush to ensure only 1 render thread is running.
     RenderSafetyEnum pluginSafety;
 
+    // When true pluginSafety cannot be changed by the plug-in
+    bool pluginSafetyLocked;
+
     DynamicProperties props;
 
 
@@ -261,6 +264,7 @@ struct EffectInstanceCommonData
     , attachedContexts()
     , pluginsPropMutex()
     , pluginSafety(eRenderSafetyInstanceSafe)
+    , pluginSafetyLocked(false)
     , props()
     , supportedComponentsMutex()
     , supportedInputComponents()
@@ -553,10 +557,6 @@ public:
         EffectOpenGLContextDataPtr glContextData;
         std::map<ImagePlaneDesc, ImagePtr> producedImagePlanes;
     };
-
-    ActionRetCodeEnum tiledRenderingFunctorInSeparateThread(const RectToRender & rectToRender,
-                                                            const TiledRenderingFunctorArgs& args,
-                                                            QThread* spawnerThread);
 
 
     ActionRetCodeEnum tiledRenderingFunctor(const RectToRender & rectToRender,
