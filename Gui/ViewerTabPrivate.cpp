@@ -189,6 +189,7 @@ ViewerTabPrivate::getOverlayTransform(TimeValue time,
 
 static TimeValue
 transformTimeForNode(const EffectInstancePtr& currentNode,
+                     int inputNb,
                      TimeValue inTime,
                      ViewIdx view)
 {
@@ -201,7 +202,8 @@ transformTimeForNode(const EffectInstancePtr& currentNode,
         }
         results->getFramesNeeded(&framesNeeded);
     }
-    FramesNeededMap::iterator foundInput0 = framesNeeded.find(0 /*input*/);
+    FramesNeededMap::iterator foundInput0 = framesNeeded.find(inputNb /*input*/);
+
 
     if ( foundInput0 == framesNeeded.end() ) {
         return inTime;
@@ -235,15 +237,11 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
         return true;
     }
 
-    if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
-        *newTime = transformTimeForNode(currentNode, time, view);
-    } else {
-        *newTime = time;
-    }
+
 
     ///Test all inputs recursively, going from last to first, preferring non optional inputs.
-    std::list<EffectInstancePtr> nonOptionalInputs;
-    std::list<EffectInstancePtr> optionalInputs;
+    std::list<int> nonOptionalInputs;
+    std::list<int> optionalInputs;
     int maxInp = currentNode->getMaxInputCount();
 
     ///We cycle in reverse by default. It should be a setting of the application.
@@ -253,21 +251,31 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
         bool optional = currentNode->isInputOptional(i);
         if (inp) {
             if (optional) {
-                optionalInputs.push_back(inp);
+                optionalInputs.push_back(i);
             } else {
-                nonOptionalInputs.push_back(inp);
+                nonOptionalInputs.push_back(i);
             }
+
         }
+
     }
 
-    if ( nonOptionalInputs.empty() && optionalInputs.empty() ) {
-        return false;
-    }
 
     ///Cycle through all non optional inputs first
-    for (std::list<EffectInstancePtr> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
+
+    for (std::list<int> ::iterator it = nonOptionalInputs.begin(); it != nonOptionalInputs.end(); ++it) {
         TimeValue inputTime;
-        bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
+        bool isOk = false;
+        EffectInstancePtr input = currentNode->getInput(*it);
+        if (input) {
+
+            if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
+                *newTime = transformTimeForNode(currentNode, *it, time, view);
+            } else {
+                *newTime = time;
+            }
+            isOk = getTimeTransform(*newTime, view, target, input, &inputTime);
+        }
         if (isOk) {
             *newTime = inputTime;
 
@@ -276,9 +284,18 @@ ViewerTabPrivate::getTimeTransform(TimeValue time,
     }
 
     ///Cycle through optional inputs...
-    for (std::list<EffectInstancePtr> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
+    for (std::list<int> ::iterator it = optionalInputs.begin(); it != optionalInputs.end(); ++it) {
         TimeValue inputTime;
-        bool isOk = getTimeTransform(*newTime, view, target, *it, &inputTime);
+        bool isOk = false;
+        EffectInstancePtr input = currentNode->getInput(*it);
+        if (input) {
+            if ( !currentNode->getNode()->getEffectInstance()->isNodeDisabledForFrame(time, view) ) {
+                *newTime = transformTimeForNode(currentNode, *it, time, view);
+            } else {
+                *newTime = time;
+            }
+            isOk = getTimeTransform(*newTime, view, target, input, &inputTime);
+        }
         if (isOk) {
             *newTime = inputTime;
 

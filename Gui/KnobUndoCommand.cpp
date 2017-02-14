@@ -26,7 +26,7 @@
 
 #include <stdexcept>
 #include <sstream> // stringstream
-
+#include <QDebug>
 #if !defined(Q_MOC_RUN) && !defined(SBK_RUN)
 GCC_DIAG_UNUSED_LOCAL_TYPEDEFS_OFF
 GCC_DIAG_OFF(unused-parameter)
@@ -532,6 +532,7 @@ MultipleKnobEditsUndoCommand::undo()
             // block knobChanged handler for this knob until the last change so we don't clutter the main-thread with useless action calls
             knob->blockValueChanges();
         }
+
         std::set<int> dimensionsUndone;
         for (std::list<ValueToSet>::iterator it2 = it->second.begin(); it2 != it->second.end(); ++it2) {
 

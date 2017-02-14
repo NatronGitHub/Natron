@@ -1158,6 +1158,7 @@ applyViewerProcess8bitForComponents(const RenderViewerArgs& args, const RectI & 
         case eDisplayChannelsMatte:
             applyViewerProcess8bit_generic<PIX, maxValue, srcNComps, eDisplayChannelsMatte>(args, roi);
             break;
+
     }
 }
 
